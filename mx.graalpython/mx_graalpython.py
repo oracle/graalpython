@@ -277,7 +277,7 @@ def libpythonvm_build_args():
     return build_args
 
 
-def graalpy_native_pgo_build_and_test(args):
+def graalpy_native_pgo_build_and_test(_):
     """
     Builds a PGO-instrumented GraalPy native standalone, runs the unittests to generate a profile,
     then builds a PGO-optimized GraalPy native standalone with the collected profile.
@@ -287,20 +287,31 @@ def graalpy_native_pgo_build_and_test(args):
 
     with set_env(GRAALPY_PGO_PROFILE=""):
         mx.log(mx.colorize("[PGO] Building PGO-instrumented native image", color="yellow"))
-        native_bin = graalpy_standalone('native', enterprise=True, build=True)
+        build_home = graalpy_standalone_home('native', enterprise=True, build=True)
+        instrumented_home = build_home + "_PGO_INSTRUMENTED"
+        shutil.rmtree(instrumented_home, ignore_errors=True)
+        shutil.copytree(build_home, instrumented_home, symlinks=True, ignore_dangling_symlinks=True)
+        instrumented_launcher = os.path.join(instrumented_home, 'bin', _graalpy_launcher())
 
-    mx.log(mx.colorize("[PGO] Instrumented build complete.", color="yellow"))
+    mx.log(mx.colorize(f"[PGO] Instrumented build complete: {instrumented_home}", color="yellow"))
 
-    mx.log(mx.colorize(f"[PGO] Running graalpytest with instrumented binary: {native_bin}", color="yellow"))
+    mx.log(mx.colorize(f"[PGO] Running graalpytest with instrumented binary: {instrumented_launcher}", color="yellow"))
     with tempfile.TemporaryDirectory() as d:
         with set_env(
                 GRAALPYTEST_ALLOW_NO_JAVA_ASSERTIONS="true",
-                GRAAL_PYTHON_VM_ARGS=f"--vm.XX:ProfilesDumpFile={os.path.join(d, '$UUID$.iprof')}"
+                GRAAL_PYTHON_VM_ARGS="\v".join([
+                    f"--vm.XX:ProfilesDumpFile={os.path.join(d, '$UUID$.iprof')}",
+                    f"--vm.XX:ProfilesLCOVFile={os.path.join(d, '$UUID$.info')}",
+                ]),
+                GRAALPY_HOME=instrumented_home,
         ):
-            graalpytest(["--python", native_bin, "."])
-        iprof_path = os.path.join(SUITE.dir, 'default.iprof')
+            graalpytest(["--python", instrumented_launcher, "test_venv.py"])
+            mx.command_function('benchmark')(["meso-small:*"])
 
-        mx.run([
+        iprof_path = Path(SUITE.dir) / 'default.iprof'
+        lcov_path = Path(SUITE.dir) / 'default.lcov'
+
+        run([
             os.path.join(
                 graalvm_jdk(enterprise=True),
                 "bin",
@@ -310,11 +321,30 @@ def graalpy_native_pgo_build_and_test(args):
             f"--input-dir={d}",
             f"--output-file={iprof_path}"
         ])
+        run([
+            "/usr/bin/env",
+            "lcov",
+            "-o", str(lcov_path),
+            *itertools.chain.from_iterable([
+                ["-a", f.absolute().as_posix()] for f in Path(d).glob("*.info")
+            ])
+        ], nonZeroIsFatal=False)
+        run([
+            "/usr/bin/env",
+            "genhtml",
+            "--source-directory", str(Path(SUITE.dir) / "com.oracle.graal.python" / "src"),
+            "--source-directory", str(Path(SUITE.dir) / "com.oracle.graal.python.pegparser" / "src"),
+            "--source-directory", str(Path(SUITE.get_output_root()) / "com.oracle.graal.python" / "src_gen"),
+            "--include", "com/oracle/graal/python",
+            "--keep-going",
+            "-o", "lcov_html",
+            str(lcov_path),
+        ], nonZeroIsFatal=False)
 
     if not os.path.isfile(iprof_path):
         mx.abort(f"[PGO] Could not find profile file at expected location: {iprof_path}")
 
-    with set_env(GRAALPY_PGO_PROFILE=iprof_path):
+    with set_env(GRAALPY_PGO_PROFILE=str(iprof_path)):
         mx.log(mx.colorize("[PGO] Building optimized native image with collected profile", color="yellow"))
         native_bin = graalpy_standalone('native', enterprise=True, build=True)
 
@@ -717,9 +747,12 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
             mx.abort("PGO is only supported on enterprise NI")
         if pgo_profile:
             mx_args.append(f"--extra-image-builder-argument=--pgo={pgo_profile}")
+            mx_args.append(f"--extra-image-builder-argument=-H:+UnlockExperimentalVMOptions")
             mx_args.append(f"--extra-image-builder-argument=-H:+PGOPrintProfileQuality")
         else:
             mx_args.append(f"--extra-image-builder-argument=--pgo-instrument")
+            mx_args.append(f"--extra-image-builder-argument=-H:+UnlockExperimentalVMOptions")
+            mx_args.append(f"--extra-image-builder-argument=-H:+ProfilingLCOV")
 
     if mx_gate.get_jacoco_agent_args() or (build and not DISABLE_REBUILD):
         mx_build_args = mx_args

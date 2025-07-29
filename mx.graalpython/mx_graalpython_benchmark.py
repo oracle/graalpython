@@ -279,6 +279,10 @@ class GraalPythonVm(AbstractPythonIterationsControlVm):
     @property
     @functools.lru_cache
     def interpreter(self):
+        if home := mx.get_env("GRAALPY_HOME"):
+            launcher = join(home, "bin", "graalpy")
+            mx.log(f"Using {launcher} based on GRAALPY_HOME environment variable.")
+            return launcher
         from mx_graalpython import graalpy_standalone
         launcher = graalpy_standalone(self.launcher_type, build=False)
         mx.log(f"Using {launcher} based on enabled/excluded GraalPy standalone build targets.")
