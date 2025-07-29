@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -126,6 +126,11 @@ def _reference_sign(args):
         return -1
     else:
         return 1
+
+def _reference_is_compact(args):
+    n = args[0]
+    # the range is impl. specific, but let's assume it's at least int32
+    return 1 if -2147483648 <= n <= 2147483647 else 0
 
 
 class DummyNonInt():
@@ -420,7 +425,25 @@ class TestPyLong(CPyExtTestCase):
         argspec="OniiO",
         arguments=["PyObject* object", "Py_ssize_t n", "int little_endian", "int is_signed", "PyObject* unused"],
     )
-    
+
+    test_PyUnstable_Long_IsCompact = CPyExtFunction(
+        _reference_is_compact,
+        # for CPython the range is different, so we test only obvious values
+        lambda: ((0,),  (-1,), (1,), (9223372036854775807 * 10,)),
+        resultspec="i",
+        argspec='O',
+        arguments=["PyLongObject* o"],
+    )
+
+    test_PyUnstable_Long_CompactValue = CPyExtFunction(
+        lambda x: x[0],
+        # for CPython the range is different, so we test only obvious values
+        lambda: ((0,),  (-1,), (1,)),
+        resultspec="l",
+        argspec='O',
+        arguments=["PyLongObject* o"],
+    )
+
     test__PyLong_Sign = CPyExtFunction(
         _reference_sign,
         lambda: (

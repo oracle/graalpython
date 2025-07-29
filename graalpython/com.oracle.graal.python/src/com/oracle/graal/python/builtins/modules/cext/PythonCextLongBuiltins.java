@@ -45,6 +45,7 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.C
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_UNSIGNED_CHAR_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CharPtrAsTruffleString;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstPyLongObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.LONG_LONG;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
@@ -228,6 +229,20 @@ public final class PythonCextLongBuiltins {
                         @Bind Node inliningTarget,
                         @Cached PyLongFromUnicodeObject fromUnicodeObject) {
             return fromUnicodeObject.execute(inliningTarget, s, base);
+        }
+    }
+
+    @CApiBuiltin(ret = Int, args = {ConstPyLongObject}, call = Direct)
+    abstract static class PyUnstable_Long_IsCompact extends CApiUnaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        static int doI(Object value) {
+            if (value instanceof Integer || value instanceof Long) {
+                return 1;
+            } else if (value instanceof PInt pInt) {
+                return pInt.fitsIn(PInt.MIN_LONG, PInt.MAX_LONG) ? 1 : 0;
+            }
+            return 0;
         }
     }
 
