@@ -91,6 +91,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.compiler.Compiler;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
@@ -98,7 +99,6 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -274,9 +274,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__create_dynamic__", minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class CreateDynamic extends PythonBinaryBuiltinNode {
+    public abstract static class CreateDynamic extends Node {
 
         @Child private CheckFunctionResultNode checkResultNode;
 
@@ -287,13 +285,18 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached("createFor($node)") IndirectCallData indirectCallData,
-                        @Cached ReadAttributeFromPythonObjectNode readNameNode,
-                        @Cached ReadAttributeFromPythonObjectNode readOriginNode,
+                        @Cached PyObjectGetAttr getAttr,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached TruffleString.EqualNode eqNode,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
-            TruffleString name = castToTruffleStringNode.execute(inliningTarget, readNameNode.execute(moduleSpec, T_NAME));
-            TruffleString path = castToTruffleStringNode.execute(inliningTarget, readOriginNode.execute(moduleSpec, T_ORIGIN));
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
+                        @Cached PRaiseNode raiseNode) {
+            TruffleString name, path;
+            try {
+                name = castToTruffleStringNode.execute(inliningTarget, getAttr.execute(inliningTarget, moduleSpec, T_NAME));
+                path = castToTruffleStringNode.execute(inliningTarget, getAttr.execute(inliningTarget, moduleSpec, T_ORIGIN));
+            } catch (CannotCastException e) {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
+            }
 
             PythonLanguage language = context.getLanguage(inliningTarget);
             Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);

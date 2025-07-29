@@ -51,14 +51,12 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeE
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
-import java.io.PrintWriter;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.util.logging.Level;
 
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import org.graalvm.collections.Pair;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -96,14 +94,12 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
@@ -115,6 +111,7 @@ import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -140,35 +137,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 public abstract class CExtCommonNodes {
-    @TruffleBoundary
-    public static void fatalError(Node location, PythonContext context, TruffleString prefix, TruffleString msg, int status) {
-        fatalErrorString(location, context, prefix != null ? prefix.toJavaStringUncached() : null, msg.toJavaStringUncached(), status);
-    }
-
-    @TruffleBoundary
-    public static void fatalErrorString(Node location, PythonContext context, String prefix, String msg, int status) {
-        PrintWriter stderr = new PrintWriter(context.getStandardErr());
-        stderr.print("Fatal Python error: ");
-        if (prefix != null) {
-            stderr.print(prefix);
-            stderr.print(": ");
-        }
-        if (msg != null) {
-            stderr.print(msg);
-        } else {
-            stderr.print("<message not set>");
-        }
-        stderr.println();
-        stderr.flush();
-
-        if (status < 0) {
-            PosixSupportLibrary posixLib = PosixSupportLibrary.getUncached();
-            Object posixSupport = context.getPosixSupport();
-            posixLib.abort(posixSupport);
-            // abort does not return
-        }
-        throw new PythonExitException(location, status);
-    }
 
     @GenerateUncached
     @GenerateInline

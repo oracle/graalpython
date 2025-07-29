@@ -992,12 +992,14 @@ class BuiltinImporter:
         if spec.name not in sys.builtin_module_names:
             raise ImportError(f'{spec.name!r} is not a built-in module',
                               name=spec.name)
-        return _call_with_frames_removed(_imp.create_builtin, spec)
+        # GraalPy change: we don't need _call_with_frames_removed
+        return _imp.create_builtin(spec)
 
     @staticmethod
     def exec_module(module):
         """Exec a built-in module"""
-        _call_with_frames_removed(_imp.exec_builtin, module)
+        # GraalPy change: we don't need _call_with_frames_removed
+        _imp.exec_builtin(module)
 
     @classmethod
     @_requires_builtin
@@ -1127,7 +1129,8 @@ class FrozenImporter:
 
     @classmethod
     def find_spec(cls, fullname, path=None, target=None):
-        info = _call_with_frames_removed(_imp.find_frozen, fullname)
+        # GraalPy change: we don't need _call_with_frames_removed
+        info = _imp.find_frozen(fullname)
         if info is None:
             return None
         # We get the marshaled data in exec_module() (the loader
@@ -1172,7 +1175,8 @@ class FrozenImporter:
     def exec_module(module):
         spec = module.__spec__
         name = spec.name
-        code = _call_with_frames_removed(_imp.get_frozen_object, name)
+        # GraalPy change: we don't need _call_with_frames_removed
+        code = _imp.get_frozen_object(name)
         exec(code, module.__dict__)
 
     @classmethod
@@ -1307,7 +1311,8 @@ def _find_and_load_unlocked(name, import_):
     parent_spec = None
     if parent:
         if parent not in sys.modules:
-            _call_with_frames_removed(import_, parent)
+            # GraalPy change: we don't need _call_with_frames_removed
+            import_(parent)
         # Crazy side-effects!
         if name in sys.modules:
             return sys.modules[name]
@@ -1412,7 +1417,8 @@ def _handle_fromlist(module, fromlist, import_, *, recursive=False):
         elif not hasattr(module, x):
             from_name = f'{module.__name__}.{x}'
             try:
-                _call_with_frames_removed(import_, from_name)
+                # GraalPy change: we don't need _call_with_frames_removed
+                import_(from_name)
             except ModuleNotFoundError as exc:
                 # Backwards-compatibility dictates we ignore failed
                 # imports triggered by fromlist for modules that don't

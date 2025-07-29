@@ -212,7 +212,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
-import com.oracle.graal.python.nodes.ErrorMessages;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.nativeimage.ProcessProperties;
 import org.graalvm.polyglot.io.ProcessHandler.Redirect;
@@ -223,6 +222,7 @@ import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ErrorAndMessagePair;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.OperationWouldBlockException;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursorLibrary;
@@ -2030,12 +2030,6 @@ public final class EmulatedPosixSupport extends PosixResources {
     @TruffleBoundary
     private static void interruptThread() {
         Thread.currentThread().interrupt();
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public void abort(@CachedLibrary("this") PosixSupportLibrary thisLib) {
-        throw new PythonExitException(thisLib, 134); // 134 == 128 + SIGABRT
     }
 
     // TODO the implementation of the following builtins is taken from posix.py,

@@ -37,18 +37,19 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import sys
+import os
 import platform
+import re
+import select
+import subprocess
+import sys
+import tempfile
 import unittest
+from dataclasses import dataclass
+from textwrap import dedent
 
-if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() != 'aarch64')) and (sys.implementation.name != 'graalpy' or __graalpython__.posix_module_backend() != 'java'):
-    import os
-    import re
-    import select
-    import subprocess
-    import tempfile
-    import termios
-    from textwrap import dedent
+if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() != 'aarch64')) and (
+        sys.implementation.name != 'graalpy' or __graalpython__.posix_module_backend() != 'java'):
 
     # The terminal tests can be flaky
     def autoretry(fn):
@@ -63,7 +64,15 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
                     print("Retrying test")
                     continue
             fn(*args, **kwargs)
+
         return decorated
+
+
+    @dataclass
+    class ExpectedInOutItem:
+        prompt: str
+        input: str
+        output: str
 
 
     @autoretry
@@ -73,6 +82,7 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
         env['PYTHONIOENCODING'] = 'utf-8'
         pty_parent, pty_child = os.openpty()
         try:
+            import termios
             termios.tcsetwinsize(pty_parent, (60, 80))
             proc = subprocess.Popen(
                 [sys.executable, '-I', *python_args],
@@ -82,17 +92,16 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
                 stderr=pty_child,
             )
             out = ''
-            input_and_output = []
+            input_and_output: list[ExpectedInOutItem] = []
             expected_preamble = ''
-            in_matches = list(re.finditer(r'^(>>>|\.\.\.) (.*)', stdin, flags=re.MULTILINE))
+            in_matches = list(re.finditer(r'^(>>>|\.\.\.) ?(.*)', stdin, flags=re.MULTILINE))
             for i, match in enumerate(in_matches):
                 if i == 0:
                     expected_preamble = stdin[:match.start() - 1] if match.start() else ''
-                input_and_output.append((
-                    match.group(1),
-                    match.group(2),
-                    stdin[match.end():in_matches[i + 1].start() - 1 if i + 1 < len(in_matches) else -1],
-                ))
+                prompt = match.group(1)
+                expected_input = match.group(2)
+                expected_output = stdin[match.end():in_matches[i + 1].start() - 1 if i + 1 < len(in_matches) else -1]
+                input_and_output.append(ExpectedInOutItem(prompt, expected_input, expected_output))
             index = -1
             whole_out = ''
             while True:
@@ -100,18 +109,18 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
                 assert pty_parent in rlist, f"Timed out waiting for REPL output. Output: {whole_out}{out}"
                 out += os.read(pty_parent, 1024).decode('utf-8')
                 out = re.sub(r'\x1b\[(?:\?2004[hl]|\d+[A-G])', '', out)
-                out = out.replace('\r\n', '\n')
+                out = re.sub(r'\r+\n', '\n', out)
                 if out == '>>> ' or out.endswith(('\n>>> ', '\n... ')):
                     prompt = out[:3]
                     actual = out[:-5]
                     if index >= 0:
-                        expected_prompt, current_in, expected_out = input_and_output[index]
-                        assert prompt == expected_prompt
-                        expected = f'{expected_prompt} {current_in}{expected_out}'
+                        current = input_and_output[index]
+                        assert prompt == current.prompt, f"Actual prompt: {prompt}\nExpected prompt: {current.prompt}"
+                        expected = f'{current.prompt} {current.input}{current.output}'
                     else:
                         expected = expected_preamble
                     if index >= 0 or not ignore_preamble:
-                        assert actual == expected, f'Actual:\n{actual!r}\nExpected:\n{expected!r}'
+                        assert actual == expected, f'Actual:\n{actual!r}\nExpected:\n{expected!r}\nWhole output:\n{whole_out}{out}'
                     index += 1
                     whole_out += out[:-4]
                     out = out[-4:]
@@ -123,7 +132,7 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
                         assert not out.strip(), f"Garbage after EOF:\n{out!r}"
                         return
                     else:
-                        _, next_in, _ = input_and_output[index]
+                        next_in = input_and_output[index].input
                         os.write(pty_parent, next_in.encode('utf-8') + b'\r')
         finally:
             os.close(pty_child)
@@ -147,21 +156,21 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
             >>> def foo():
             ...   a = 1
             ...   return a
-            ... 
+            ...
             >>> class Foo:
             ...   def meth(self):
             ...     return 1
-            ... 
+            ...
             >>> from functools import wraps
             >>> @wraps
             ... def foo(fn):
             ...   return fn
-            ... 
+            ...
             >>> from contextlib import contextmanager
             >>> @contextmanager
             ... class Foo:
             ...   pass
-            ... 
+            ...
             >>> """
             ... asdf
             ... """
@@ -182,7 +191,7 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
             >>> class BrokenRepr:
             ...   def __repr__(self):
             ...     asdf
-            ... 
+            ...
             >>> BrokenRepr()
             Traceback (most recent call last):
               File "<stdin>", line 1, in <module>

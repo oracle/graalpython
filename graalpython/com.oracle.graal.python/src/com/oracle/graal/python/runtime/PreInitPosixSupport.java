@@ -610,12 +610,6 @@ public class PreInitPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final void abort(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
-        checkNotInPreInitialization();
-        nativeLib.abort(nativePosixSupport);
-    }
-
-    @ExportMessage
     final boolean wcoredump(int status,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
         checkNotInPreInitialization();
