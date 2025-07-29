@@ -1814,6 +1814,8 @@ class Popen:
 
             # Truffle change
             if sys.platform == 'win32':
+                if len(args) == 1 and isinstance(args[0], os.PathLike):
+                    args = [os.fspath(args[0])]
                 if executable is None and len(args) == 1:
                     import shlex
                     executable = next(shlex.shlex(list2cmdline(args)))
