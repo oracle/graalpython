@@ -149,6 +149,7 @@ mx python-gate --tags python-unittest
 
 If some of the tests fail, you can re-run just a single test like this, substituting TEST-SELECTOR with the test you want to run. You can use the whole failed test name including the path as the selector.
 Note that you can insert `-d` to debug on the Java level or use `--inspect` to debug in the Chrome debugger.
+Use `com.oracle.graal.python.runtime.exception.ExceptionUtils.printPythonLikeStackTrace()` in the Java debugger to print the current Python traceback on `stderr`.
 
 ```bash
 mx [-d] graalpytest [--inspect] TEST-SELECTOR
