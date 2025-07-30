@@ -2310,6 +2310,8 @@ public final class EmulatedPosixSupport extends PosixResources {
                     throw createUnsupportedFeature("Only key=value environment variables are supported in fork_exec");
                 }
             }
+        } else {
+            envMap = new HashMap<>(environ);
         }
 
         String[] argStrings;
