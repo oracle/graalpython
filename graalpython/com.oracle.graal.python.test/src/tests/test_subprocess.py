@@ -162,6 +162,21 @@ class TestSubprocess(unittest.TestCase):
                 result = subprocess.run([sys.executable, "-c", "import __graalpython__; not __graalpython__.java_assert()"])
             assert result.returncode == 0
 
+    def test_subprocess_inherits_environ(self):
+        import os
+        import subprocess
+        prev = os.environ.get("FOOBAR")
+        try:
+            expected_value = f"42{prev}".strip()
+            os.environ["FOOBAR"] = expected_value
+            out = subprocess.check_output([sys.executable, '-c', "import os; print(os.environ['FOOBAR'])"]).decode().strip()
+            assert out == expected_value, f"{out!r} != {expected_value!r}"
+        finally:
+            if prev:
+                os.environ["FOOBAR"] = prev
+            else:
+                del os.environ["FOOBAR"]
+
     @unittest.skipUnless(sys.implementation.name == 'graalpy', "GraalPy-specific test")
     @unittest.skipIf(sys.platform == 'win32', "TODO the cmd replacement breaks the test")
     def test_graal_python_args(self):
