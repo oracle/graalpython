@@ -527,10 +527,15 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @TruffleBoundary
-    private static Buffer readBytesFromChannel(ReadableByteChannel channel, long size) throws IOException {
+    private static Buffer readBytesFromChannel(ReadableByteChannel channel, long sizeIn) throws IOException {
+        long size = sizeIn;
         if (channel instanceof SeekableByteChannel seekableByteChannel) {
-            long availableSize = seekableByteChannel.size() - seekableByteChannel.position();
-            size = Math.min(size, availableSize);
+            try {
+                long availableSize = seekableByteChannel.size() - seekableByteChannel.position();
+                size = Math.min(size, availableSize);
+            } catch (IOException e) {
+                // pass and read what we can
+            }
         }
         size = Math.min(size, MAX_READ);
         ByteBuffer dst = ByteBuffer.allocate((int) size);

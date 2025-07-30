@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -312,7 +312,7 @@ public enum OSErrorEnum {
                     return new ErrorAndMessagePair(oserror, oserror.getMessage());
                 }
             } else { // Generic IOException
-                OSErrorEnum oserror = tryFindErrnoFromMessage(e);
+                OSErrorEnum oserror = tryFindErrnoFromMessage(e, eqNode);
                 if (oserror == null) {
                     return new ErrorAndMessagePair(OSErrorEnum.EIO, getMessage(e));
                 } else {
@@ -360,15 +360,13 @@ public enum OSErrorEnum {
     }
 
     @TruffleBoundary
-    private static OSErrorEnum tryFindErrnoFromMessage(Exception e) {
-        if (e.getMessage().contains("Broken pipe")) {
-            return OSErrorEnum.EPIPE;
-        }
-        Matcher m = ERRNO_PATTERN.matcher(e.getMessage());
+    private static OSErrorEnum tryFindErrnoFromMessage(Exception e, TruffleString.EqualNode eqNode) {
+        String message = e.getMessage();
+        Matcher m = ERRNO_PATTERN.matcher(message);
         if (m.find()) {
             return fromNumber(Integer.parseInt(m.group(1)));
         }
-        return null;
+        return OSErrorEnum.fromMessage(toTruffleStringUncached(message), eqNode);
     }
 
     @ValueType
