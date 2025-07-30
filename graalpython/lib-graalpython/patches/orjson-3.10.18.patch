@@ -1,4 +1,4 @@
-commit 121a88e014aba626f45c72baed02b32c7b125f07
+commit a889953c08d33854e574ab06e9593e0484c4c147
 Author: stepan <stepan.sindelar@oracle.com>
 Date:   Wed Jul 9 18:50:37 2025 +0200
 
@@ -683,7 +683,7 @@ index 4f1c76b..3d2c7e9 100644
      }
  }
 diff --git a/src/str/pyunicode_new.rs b/src/str/pyunicode_new.rs
-index 7b1c2df..0f21024 100644
+index 7b1c2df..5ac8dec 100644
 --- a/src/str/pyunicode_new.rs
 +++ b/src/str/pyunicode_new.rs
 @@ -1,75 +1,30 @@
@@ -765,14 +765,32 @@ index 7b1c2df..0f21024 100644
 -        core::ptr::write(data_ptr, 0);
 -        validate_str!(ptr);
 -        ptr.cast::<PyObject>()
-+        PyUnicode_FromStringAndSize(buf.as_ptr() as *const i8, usize_to_isize(num_chars))
++        PyUnicode_FromStringAndSize(buf.as_ptr() as *const i8, usize_to_isize(buf.len()))
      }
  }
 diff --git a/src/str/scalar.rs b/src/str/scalar.rs
-index 12adb63..c8e6a2e 100644
+index 12adb63..99fce8f 100644
 --- a/src/str/scalar.rs
 +++ b/src/str/scalar.rs
-@@ -40,7 +40,9 @@ pub fn str_impl_kind_scalar(buf: &str) -> *mut pyo3_ffi::PyObject {
+@@ -1,11 +1,17 @@
+ // SPDX-License-Identifier: (Apache-2.0 OR MIT)
+ 
++use pyo3_ffi::PyUnicode_FromStringAndSize;
+ use crate::str::pyunicode_new::{
+     pyunicode_ascii, pyunicode_fourbyte, pyunicode_onebyte, pyunicode_twobyte,
+ };
++use crate::util::usize_to_isize;
+ 
+ #[inline(never)]
+ pub fn str_impl_kind_scalar(buf: &str) -> *mut pyo3_ffi::PyObject {
++    // all the optimizations below don't make sense for GraalPy
++    return unsafe {
++        PyUnicode_FromStringAndSize(buf.as_ptr() as *const i8, usize_to_isize(buf.len()))
++    };
+     let num_chars = bytecount::num_chars(buf.as_bytes());
+     if buf.len() == num_chars {
+         return pyunicode_ascii(buf.as_ptr(), num_chars);
+@@ -40,7 +46,9 @@ pub fn str_impl_kind_scalar(buf: &str) -> *mut pyo3_ffi::PyObject {
  #[inline(always)]
  pub fn unicode_from_str(buf: &str) -> *mut pyo3_ffi::PyObject {
      if unlikely!(buf.is_empty()) {

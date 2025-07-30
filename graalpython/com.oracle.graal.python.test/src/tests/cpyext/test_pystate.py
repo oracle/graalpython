@@ -91,8 +91,9 @@ class TestPystate(CPyExtTestCase):
         import threading
         start = threading.Barrier(2, timeout=20)
 
-        caught_ex = None
+        caught_ex = "initial value of caught_ex"
         def other_thread():
+            nonlocal caught_ex
             try:
                 start.wait() # ensure we are in the try, before raising
                 r = 0
@@ -100,8 +101,9 @@ class TestPystate(CPyExtTestCase):
                     for j in range(i, 1000000000):
                         r += j / i
             except Exception as e:
-                nonlocal caught_ex
                 caught_ex = e
+            else:
+                caught_ex = "no exception caught"
 
 
         t = threading.Thread(target=other_thread)
@@ -111,4 +113,4 @@ class TestPystate(CPyExtTestCase):
         SetAsyncExcCaller.trigger_ex(t.ident, Exception("test my message"))
         t.join()
 
-        assert "test my message" in str(caught_ex), str(caught_ex)
+        assert "test my message" in str(caught_ex), f"{str(caught_ex)=}, {t.is_alive()=}"
