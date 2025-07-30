@@ -99,8 +99,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
-import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
-import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -141,8 +139,7 @@ public final class ModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         @SuppressWarnings("unused")
-        static Object doGeneric(Object cls, Object[] varargs, PKeyword[] kwargs,
-                        @Bind Node inliningTarget,
+        static PythonModule doGeneric(Object cls, Object[] varargs, PKeyword[] kwargs,
                         @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             return PFactory.createPythonModule(language, cls, getInstanceShape.execute(cls));
@@ -161,15 +158,12 @@ public final class ModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public PNone module(PythonModule self, TruffleString name, Object doc,
-                        @Bind Node inliningTarget,
                         @Cached WriteAttributeToObjectNode writeName,
                         @Cached WriteAttributeToObjectNode writeDoc,
                         @Cached WriteAttributeToObjectNode writePackage,
                         @Cached WriteAttributeToObjectNode writeLoader,
-                        @Cached WriteAttributeToObjectNode writeSpec,
-                        @Cached GetOrCreateDictNode getDict) {
-            // create dict if missing
-            getDict.execute(inliningTarget, self);
+                        @Cached WriteAttributeToObjectNode writeSpec) {
+            assert GetDictIfExistsNode.getUncached().execute(self) != null : "PythonModule always have a dict";
 
             // init
             writeName.execute(self, T___NAME__, name);
@@ -216,19 +210,14 @@ public final class ModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(none)")
         static Object doManaged(PythonModule self, @SuppressWarnings("unused") PNone none,
-                        @Bind Node inliningTarget,
-                        @Exclusive @Cached GetDictIfExistsNode getDict,
-                        @Cached SetDictNode setDict) {
+                        @Exclusive @Cached GetDictIfExistsNode getDict) {
             PDict dict = getDict.execute(self);
-            if (dict == null) {
-                dict = createDict(inliningTarget, self, setDict);
-            }
+            assert dict != null : "PythonModule always have a dict";
             return dict;
         }
 
         @Specialization(guards = "isNoValue(none)")
         static Object doNativeObject(PythonAbstractNativeObject self, @SuppressWarnings("unused") PNone none,
-                        @Bind Node inliningTarget,
                         @Exclusive @Cached GetDictIfExistsNode getDict,
                         @Cached PRaiseNode raiseNode) {
             PDict dict = getDict.execute(self);
@@ -242,12 +231,6 @@ public final class ModuleBuiltins extends PythonBuiltins {
         static Object doError(Object self, @SuppressWarnings("unused") Object dict,
                         @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.DESCRIPTOR_DICT_FOR_MOD_OBJ_DOES_NOT_APPLY_FOR_P, self);
-        }
-
-        private static PDict createDict(Node inliningTarget, PythonModule self, SetDictNode setDict) {
-            PDict dict = PFactory.createDictFixedStorage(PythonLanguage.get(inliningTarget), self);
-            setDict.execute(inliningTarget, self, dict);
-            return dict;
         }
     }
 
