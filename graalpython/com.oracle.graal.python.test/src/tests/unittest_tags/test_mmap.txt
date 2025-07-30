@@ -14,7 +14,7 @@ test.test_mmap.MmapTests.test_find_end @ darwin-arm64,darwin-x86_64,linux-aarch6
 test.test_mmap.MmapTests.test_flush_return_value @ darwin-arm64,darwin-x86_64,win32-AMD64
 test.test_mmap.MmapTests.test_length_0_large_offset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mmap.MmapTests.test_length_0_offset @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_mmap.MmapTests.test_offset @ darwin-x86_64,linux-x86_64
+test.test_mmap.MmapTests.test_offset @ darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mmap.MmapTests.test_prot_readonly @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_mmap.MmapTests.test_read_all @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_mmap.MmapTests.test_read_invalid_arg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
