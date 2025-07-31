@@ -57,7 +57,7 @@ import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStr
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetIndexedSlotsCountNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
+import com.oracle.graal.python.nodes.attributes.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -99,14 +99,14 @@ public final class DescriptorBuiltins extends PythonBuiltins {
         static TruffleString doGetSetDescriptor(VirtualFrame frame, GetSetDescriptor self,
                         @Shared @Cached("create(T___QUALNAME__)") GetFixedAttributeNode readQualNameNode,
                         @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            return simpleTruffleStringFormatNode.format("%s.%s", toStr(readQualNameNode.executeObject(frame, self.getType())), self.getName());
+            return simpleTruffleStringFormatNode.format("%s.%s", toStr(readQualNameNode.execute(frame, self.getType())), self.getName());
         }
 
         @Specialization
         static TruffleString doIndexedSlotDescriptor(VirtualFrame frame, IndexedSlotDescriptor self,
                         @Shared @Cached("create(T___QUALNAME__)") GetFixedAttributeNode readQualNameNode,
                         @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            return simpleTruffleStringFormatNode.format("%s.%s", toStr(readQualNameNode.executeObject(frame, self.getType())), self.getName());
+            return simpleTruffleStringFormatNode.format("%s.%s", toStr(readQualNameNode.execute(frame, self.getType())), self.getName());
         }
 
         @TruffleBoundary

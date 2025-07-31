@@ -579,7 +579,7 @@ public final class PFactory {
     }
 
     public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, PBuiltinFunction function, Object klass) {
-        PythonBuiltinClassType type = (PythonBuiltinClassType) function.getInitialPythonClass();
+        PythonBuiltinClassType type = (PythonBuiltinClassType) function.getPythonClass();
         return trace(language, new PBuiltinFunction(type, type.getInstanceShape(language), function.getName(), klass,
                         function.getDefaults(), function.getKwDefaults(), function.getFlags(), function.getCallTarget(),
                         function.getSlot(), function.getSlotWrapper()));

@@ -96,6 +96,7 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNod
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
+import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -254,6 +255,7 @@ public abstract class PGuards {
         return PythonNativeClass.isInstance(klass);
     }
 
+    @Idempotent
     public static boolean isPythonClass(Object klass) {
         return PythonAbstractClass.isInstance(klass) || klass instanceof PythonBuiltinClassType;
     }
@@ -294,6 +296,10 @@ public abstract class PGuards {
         return obj instanceof PythonAbstractObject;
     }
 
+    public static boolean isForeignObject(Object obj) {
+        return IsForeignObjectNode.executeUncached(obj);
+    }
+
     public static boolean canBeInteger(Object idx) {
         return isBoolean(idx) || isInteger(idx) || isPInt(idx);
     }
@@ -307,12 +313,7 @@ public abstract class PGuards {
     }
 
     public static boolean isBuiltinPInt(PInt obj) {
-        /*
-         * int's __class__ cannot be reassigned and other objects cannot have their class assigned
-         * to builtin int, so it is enough to look at the initial class. PInt constructor ensures
-         * that it cannot be PythonBuiltinClass.
-         */
-        return obj.getInitialPythonClass() == PythonBuiltinClassType.PInt;
+        return obj.getPythonClass() == PythonBuiltinClassType.PInt;
     }
 
     public static boolean isPString(Object obj) {
@@ -460,14 +461,7 @@ public abstract class PGuards {
     }
 
     private static boolean isBuiltinImmutableTypeInstance(PythonObject dict, PythonBuiltinClassType type) {
-        /*
-         * Immutable types' __class__ cannot be reassigned and other objects cannot have their class
-         * assigned to immutable types, so it is enough to look at the initial class. The Java
-         * constructor of the object must ensure that it cannot be PythonBuiltinClass, see PDict for
-         * an example.
-         */
-        assert !(dict.getInitialPythonClass() instanceof PythonBuiltinClass pbc) || pbc.getType() != type;
-        return dict.getInitialPythonClass() == type;
+        return dict.getPythonClass() == type;
     }
 
     public static boolean isBuiltinDict(PythonObject dict) {

@@ -49,6 +49,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
 
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromModuleNode;
 import org.graalvm.collections.EconomicMap;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -79,8 +80,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.attributes.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonSenaryBuiltinNode;
@@ -622,7 +622,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
             @Specialization(replaces = "doSingleContext")
             static Object doRead(
                             @Bind PythonContext context,
-                            @Cached ReadAttributeFromObjectNode read) {
+                            @Cached ReadAttributeFromModuleNode read) {
                 PythonModule module = context.lookupBuiltinModule(BuiltinNames.T__SRE);
                 return read.execute(module, T_MATCH_CONSTRUCTOR);
             }
@@ -643,7 +643,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         protected static final TruffleString T__PATTERN__FALLBACK_COMPILE = tsLiteral("_Pattern__fallback_compile");
 
         @Child private HiddenAttr.ReadNode readCacheNode = HiddenAttr.ReadNode.create();
-        @Child private GetAttributeNode getFallbackCompileNode;
+        @Child private GetFixedAttributeNode getFallbackCompileNode;
         @Child private CallNode callFallbackCompileNode;
         @Child private CallNode callFallbackMethodNode;
         @Child private SliceNodes.CreateSliceNode createSliceNode;
@@ -666,7 +666,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                         @Cached @Shared PyNumberAsSizeNode asSizeNode,
                         @Cached @Shared PyObjectSizeNode lengthNode,
                         @CachedLibrary(limit = "1") @Shared InteropLibrary libCompiledRegex,
-                        @Cached("create(method.getMethodName())") GetAttributeNode getFallbackMethodNode,
+                        @Cached("create(method.getMethodName())") GetFixedAttributeNode getFallbackMethodNode,
                         @Cached @Shared TRegexCallExec tRegexCallExec,
                         @Cached @Shared CreateMatchFromTRegexResultNode createMatchFromTRegexResultNode) {
             int pos = asSizeNode.executeExact(frame, inliningTarget, indexNode.execute(frame, inliningTarget, posArg));
@@ -686,8 +686,9 @@ public final class SREModuleBuiltins extends PythonBuiltins {
             reCheckInputTypeNode.execute(frame, input, tRegexCache.isBinary());
 
             if (fallbackProfile.profile(inliningTarget, libCompiledRegex.isNull(compiledRegex))) {
-                Object fallbackRegex = getCallFallbackCompileNode().executeWithoutFrame(getGetFallbackCompileNode().executeObject(frame, pattern));
-                return getCallFallbackMethodNode().executeWithoutFrame(getFallbackMethodNode.executeObject(frame, fallbackRegex), input, pos, endPos);
+                GetFixedAttributeNode getFixedAttributeNode = getGetFallbackCompileNode();
+                Object fallbackRegex = getCallFallbackCompileNode().executeWithoutFrame(getFixedAttributeNode.execute(frame, pattern));
+                return getCallFallbackMethodNode().executeWithoutFrame(getFallbackMethodNode.execute(frame, fallbackRegex), input, pos, endPos);
             }
 
             Object truncatedInput = input;
@@ -716,7 +717,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                         @Cached @Shared PyNumberAsSizeNode asSizeNode,
                         @Cached @Shared PyObjectSizeNode lengthNode,
                         @CachedLibrary(limit = "1") @Shared InteropLibrary libCompiledRegex,
-                        @Cached("create(method.getMethodName())") GetAttributeNode getFallbackMethodNode,
+                        @Cached("create(method.getMethodName())") GetFixedAttributeNode getFallbackMethodNode,
                         @Cached @Shared TRegexCallExec tRegexCallExec,
                         @Cached @Shared CreateMatchFromTRegexResultNode createMatchFromTRegexResultNode) {
             return doCached(frame, pattern, input, posArg, endPosArg, method, mustAdvance, inliningTarget, pattern, cachedMethod, mustAdvance, tRegexCompileNode, tRegexCache,
@@ -738,7 +739,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                         @Cached @Shared InlinedConditionProfile fallbackProfile,
                         @Cached @Shared InlinedConditionProfile truncatingInputProfile,
                         @CachedLibrary(limit = "1") @Shared InteropLibrary libCompiledRegex,
-                        @Cached("create(method.getMethodName())") GetAttributeNode getFallbackMethodNode,
+                        @Cached("create(method.getMethodName())") GetFixedAttributeNode getFallbackMethodNode,
                         @Cached @Shared TRegexCallExec tRegexCallExec,
                         @Cached @Shared CreateMatchFromTRegexResultNode createMatchFromTRegexResultNode) {
             TRegexCache tRegexCache = getTRegexCache(pattern);
@@ -752,10 +753,10 @@ public final class SREModuleBuiltins extends PythonBuiltins {
             return (TRegexCache) readCacheNode.executeCached(pattern, HiddenAttr.TREGEX_CACHE, null);
         }
 
-        private GetAttributeNode getGetFallbackCompileNode() {
+        private GetFixedAttributeNode getGetFallbackCompileNode() {
             if (getFallbackCompileNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getFallbackCompileNode = insert(GetAttributeNode.create(T__PATTERN__FALLBACK_COMPILE));
+                getFallbackCompileNode = insert(GetFixedAttributeNode.create(T__PATTERN__FALLBACK_COMPILE));
             }
             return getFallbackCompileNode;
         }

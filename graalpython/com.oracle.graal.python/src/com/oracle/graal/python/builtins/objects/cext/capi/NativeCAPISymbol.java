@@ -123,7 +123,6 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_FLOAT_SUBTYPE_NEW("GraalPyPrivate_Float_SubtypeNew", PyObjectTransfer, PyTypeObject, ArgDescriptor.Double),
     FUN_COMPLEX_SUBTYPE_FROM_DOUBLES("GraalPyPrivate_Complex_SubtypeFromDoubles", PyObjectTransfer, PyTypeObject, ArgDescriptor.Double, ArgDescriptor.Double),
     FUN_EXCEPTION_SUBTYPE_NEW("GraalPyPrivate_Exception_SubtypeNew", PyObjectTransfer, PyTypeObject, PyObject),
-    FUN_SUBCLASS_CHECK("GraalPyPrivate_SubclassCheck", Int, PyObject),
     FUN_UNICODE_SUBTYPE_NEW("GraalPyPrivate_Unicode_SubtypeNew", PyObjectTransfer, PyTypeObject, PyObject),
     FUN_CHECK_BASICSIZE_FOR_GETSTATE("GraalPyPrivate_CheckBasicsizeForGetstate", Int, PyTypeObject, Int),
     FUN_MMAP_INIT_BUFFERPROTOCOL("GraalPyPrivate_MMap_InitBufferProtocol", ArgDescriptor.Void, PyTypeObject),

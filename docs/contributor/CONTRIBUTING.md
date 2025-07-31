@@ -127,10 +127,10 @@ If the IDE was initialized properly by using the command mentioned above, the ex
 
 Both of these commands also work when you have a `graalpy` executable, e.g. inside a `venv`.
 
-For debugging the C API and native extensions, first make sure you rebuild (`mx clean` first!) graalpything with the environment variable `CFLAGS=-g` set.
+For debugging the C API and native extensions, first make sure you rebuild (`mx clean` first!) graalpython with the environment variable `CFLAGS=-g` set.
 This will keep debug symbols in our C API implementation which should allow you to use `gdb` or [`rr`](https://rr-project.org/) to debug.
 When you build an SVM image, debugging the entire application is possible, and there are [docs](https://www.graalvm.org/reference-manual/native-image/guides/debug-native-image-process/) to see Java code when inside the native debugger.
-Make sure you find and keep the `libpythonvm.so.debug` file around next to your GraalPy build, you can find it somewhere under `graal/sdk/mxbuild`.
+Make sure you find and keep the `libpythonvm.so.debug` file around next to your GraalPy build, you can find it under `mxbuild/*/libpythonvm`.
 
 ## Advanced Commands to Develop and Debug
 
@@ -149,6 +149,7 @@ mx python-gate --tags python-unittest
 
 If some of the tests fail, you can re-run just a single test like this, substituting TEST-SELECTOR with the test you want to run. You can use the whole failed test name including the path as the selector.
 Note that you can insert `-d` to debug on the Java level or use `--inspect` to debug in the Chrome debugger.
+Use `com.oracle.graal.python.runtime.exception.ExceptionUtils.printPythonLikeStackTrace()` in the Java debugger to print the current Python traceback on `stderr`.
 
 ```bash
 mx [-d] graalpytest [--inspect] TEST-SELECTOR

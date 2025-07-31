@@ -1,0 +1,6 @@
+DYNAMIC_IMPORTS=/tools,/graal-enterprise,/truffle-enterprise,/vm-enterprise,/substratevm-enterprise,substratevm-enterprise-gcs
+BUILD_TARGETS=GRAALPY_NATIVE_STANDALONE
+COMPONENTS=SubstrateVM Enterprise,Truffle SVM Macro Enterprise,suite:substratevm-enterprise-gcs
+NATIVE_IMAGES=lib:pythonvm
+EXTRA_IMAGE_BUILDER_ARGUMENTS=pythonvm:-H:+UnlockExperimentalVMOptions pythonvm:-H:Log=HostInliningPhase,~CanonicalizerPhase,~GraphBuilderPhase pythonvm:-H:+TruffleHostInliningPrintExplored pythonvm:-H:MethodFilter=com.oracle.graal.python.*.* pythonvm:-H:-UnlockExperimentalVMOptions pythonvm:-Dgraal.LogFile=host-inlining.txt
+GRAALVM_SKIP_ARCHIVE=true

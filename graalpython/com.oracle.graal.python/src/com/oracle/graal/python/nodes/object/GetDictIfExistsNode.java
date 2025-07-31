@@ -42,6 +42,7 @@ package com.oracle.graal.python.nodes.object;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_OBJECT_GET_DICT_PTR;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_dict;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -53,6 +54,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -125,12 +127,25 @@ public abstract class GetDictIfExistsNode extends PNodeWithContext {
     @InliningCutoff
     static PDict doNativeObject(PythonAbstractNativeObject object,
                     @Bind Node inliningTarget,
+                    @Cached IsTypeNode isTypeNode,
+                    @Cached CStructAccess.ReadObjectNode getNativeDict,
                     @CachedLibrary(limit = "1") InteropLibrary lib,
                     @Cached PythonToNativeNode toNative,
                     @Cached CStructAccess.ReadObjectNode readObjectNode,
                     @Cached CStructAccess.WriteObjectNewRefNode writeObjectNode,
                     @Cached InlinedBranchProfile createDict,
                     @Cached CExtNodes.PCallCapiFunction callGetDictPtr) {
+        if (isTypeNode.execute(inliningTarget, object)) {
+            // Optimization for native types: read at the known offset instead of calling
+            // _PyObject_GetDictPtr()
+            Object dict = getNativeDict.readFromObj(object, PyTypeObject__tp_dict);
+            if (dict instanceof PDict pdict) {
+                return pdict;
+            } else {
+                return null;
+            }
+        }
+
         Object dictPtr = callGetDictPtr.call(FUN_PY_OBJECT_GET_DICT_PTR, toNative.execute(object));
         if (lib.isNull(dictPtr)) {
             return null;

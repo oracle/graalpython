@@ -135,7 +135,7 @@ public final class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
         PBuiltinFunction getter = PFactory.createBuiltinFunction(language, name, type, 1, flags, rawCallTarget);
         GetSetDescriptor callable = PFactory.createGetSetDescriptor(language, getter, getter, name, type, false);
         callable.setAttribute(T___DOC__, toTruffleStringUncached(builtin.doc()));
-        WriteAttributeToObjectNode.getUncached(true).execute(type, name, callable);
+        WriteAttributeToObjectNode.getUncached().execute(type, name, callable);
     }
 
     @Builtin(name = "raw", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true, doc = "value")

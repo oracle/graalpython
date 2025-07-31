@@ -81,7 +81,7 @@ public abstract class DigestObject extends PythonBuiltinObject {
     }
 
     public PythonBuiltinClassType getType() {
-        return (PythonBuiltinClassType) getInitialPythonClass();
+        return (PythonBuiltinClassType) getPythonClass();
     }
 
     // The JDK does not expose the block sizes used by digests, so

@@ -144,8 +144,8 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.attributes.GetFixedAttributeNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromModuleNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -269,7 +269,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
             handle = DlOpenNode.loadNFILibrary(context, NFIBackend.NATIVE, J_DEFAULT_LIBRARY, rtldLocal);
             if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
                 PythonModule sysModule = context.getSysModule();
-                Object loadLibraryMethod = ReadAttributeFromObjectNode.getUncached().execute(ctypesModule, toTruffleStringUncached("LoadLibrary"));
+                Object loadLibraryMethod = ReadAttributeFromModuleNode.getUncached().execute(ctypesModule, toTruffleStringUncached("LoadLibrary"));
                 Object pythonLib = CallNode.executeUncached(loadLibraryMethod, toTruffleStringUncached(PythonContext.getSupportLibName("python-native")), 0);
                 WriteAttributeToPythonObjectNode.getUncached().execute(sysModule, toTruffleStringUncached("dllhandle"), pythonLib);
             }
@@ -546,9 +546,9 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                         // This shouldn't call the slot directly to make sure the check in the
                         // wrapper runs
                         @Cached("create(T___NEW__)") LookupAndCallUnaryNode lookupAndCallUnaryNode,
-                        @Cached("create(T___SETSTATE__)") GetAttributeNode setStateAttr) {
+                        @Cached("create(T___SETSTATE__)") GetFixedAttributeNode setStateAttr) {
             Object obj = lookupAndCallUnaryNode.executeObject(frame, typ);
-            Object meth = setStateAttr.executeObject(frame, obj);
+            Object meth = setStateAttr.execute(frame, obj);
             callNode.execute(frame, meth, state);
             return obj;
         }

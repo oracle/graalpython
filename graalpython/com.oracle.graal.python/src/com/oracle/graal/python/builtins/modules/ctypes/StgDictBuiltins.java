@@ -82,7 +82,7 @@ import com.oracle.graal.python.lib.PySequenceCheckNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
+import com.oracle.graal.python.nodes.attributes.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
@@ -184,11 +184,11 @@ public final class StgDictBuiltins extends PythonBuiltins {
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached PyObjectGetItem getItemNode,
                         @Cached GetInternalObjectArrayNode getArray,
-                        @Cached("create(T__FIELDS_)") GetAttributeNode getAttrString,
+                        @Cached("create(T__FIELDS_)") GetFixedAttributeNode getAttrString,
                         @Cached MakeFieldsNode recursiveNode,
                         @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @Cached PRaiseNode raiseNode) {
-            Object fields = getAttrString.executeObject(frame, descr.proto);
+            Object fields = getAttrString.execute(frame, descr.proto);
             if (!sequenceCheckNode.execute(inliningTarget, fields)) {
                 throw raiseNode.raise(inliningTarget, TypeError, FIELDS_MUST_BE_A_SEQUENCE);
             }

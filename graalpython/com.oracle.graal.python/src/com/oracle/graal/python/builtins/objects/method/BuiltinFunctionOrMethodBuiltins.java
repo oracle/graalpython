@@ -64,7 +64,7 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
+import com.oracle.graal.python.nodes.attributes.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetSignatureNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -104,28 +104,28 @@ public final class BuiltinFunctionOrMethodBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isBuiltinFunction(self)")
         static TruffleString reprBuiltinFunction(VirtualFrame frame, PMethod self,
-                        @Shared @Cached("createGetAttributeNode()") GetAttributeNode getNameNode,
+                        @Shared @Cached("createGetAttributeNode()") GetFixedAttributeNode getNameNode,
                         @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             // (tfel): this only happens for builtin modules ... I think
-            return simpleTruffleStringFormatNode.format("<built-in function %s>", getNameNode.executeObject(frame, self.getFunction()));
+            return simpleTruffleStringFormatNode.format("<built-in function %s>", getNameNode.execute(frame, self.getFunction()));
         }
 
         @Specialization(guards = "isBuiltinFunction(self)")
         static TruffleString reprBuiltinFunction(VirtualFrame frame, PBuiltinMethod self,
-                        @Shared @Cached("createGetAttributeNode()") GetAttributeNode getNameNode,
+                        @Shared @Cached("createGetAttributeNode()") GetFixedAttributeNode getNameNode,
                         @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            return simpleTruffleStringFormatNode.format("<built-in function %s>", getNameNode.executeObject(frame, self.getFunction()));
+            return simpleTruffleStringFormatNode.format("<built-in function %s>", getNameNode.execute(frame, self.getFunction()));
         }
 
         @Specialization(guards = "!isBuiltinFunction(self)")
         static TruffleString reprBuiltinMethod(VirtualFrame frame, PBuiltinMethod self,
                         @Bind Node inliningTarget,
                         @Shared @Cached GetClassNode getClassNode,
-                        @Shared @Cached("createGetAttributeNode()") GetAttributeNode getNameNode,
+                        @Shared @Cached("createGetAttributeNode()") GetFixedAttributeNode getNameNode,
                         @Shared @Cached GetNameNode getTypeNameNode,
                         @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             TruffleString typeName = getTypeNameNode.execute(inliningTarget, getClassNode.execute(inliningTarget, self.getSelf()));
-            return simpleTruffleStringFormatNode.format("<built-in method %s of %s object at 0x%s>", getNameNode.executeObject(frame, self.getFunction()), typeName,
+            return simpleTruffleStringFormatNode.format("<built-in method %s of %s object at 0x%s>", getNameNode.execute(frame, self.getFunction()), typeName,
                             PythonAbstractObject.systemHashCodeAsHexString(self.getSelf()));
         }
 
@@ -133,17 +133,17 @@ public final class BuiltinFunctionOrMethodBuiltins extends PythonBuiltins {
         static TruffleString reprBuiltinMethod(VirtualFrame frame, PMethod self,
                         @Bind Node inliningTarget,
                         @Shared @Cached GetClassNode getClassNode,
-                        @Shared @Cached("createGetAttributeNode()") GetAttributeNode getNameNode,
+                        @Shared @Cached("createGetAttributeNode()") GetFixedAttributeNode getNameNode,
                         @Shared @Cached GetNameNode getTypeNameNode,
                         @Shared("formatter") @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             TruffleString typeName = getTypeNameNode.execute(inliningTarget, getClassNode.execute(inliningTarget, self.getSelf()));
-            return simpleTruffleStringFormatNode.format("<built-in method %s of %s object at 0x%s>", getNameNode.executeObject(frame, self.getFunction()), typeName,
+            return simpleTruffleStringFormatNode.format("<built-in method %s of %s object at 0x%s>", getNameNode.execute(frame, self.getFunction()), typeName,
                             PythonAbstractObject.systemHashCodeAsHexString(self.getSelf()));
         }
 
         @NeverDefault
-        protected static GetAttributeNode createGetAttributeNode() {
-            return GetAttributeNode.create(T___NAME__);
+        protected static GetFixedAttributeNode createGetAttributeNode() {
+            return GetFixedAttributeNode.create(T___NAME__);
         }
     }
 

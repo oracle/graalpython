@@ -33,10 +33,9 @@ import java.util.List;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -49,49 +48,34 @@ import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public class PythonObject extends PythonAbstractObject {
-    public static final byte CLASS_CHANGED_FLAG = 0b1;
     /**
      * Indicates that the object doesn't allow {@code __dict__}, but may have slots
      */
-    public static final byte HAS_SLOTS_BUT_NO_DICT_FLAG = 0b10;
+    public static final byte HAS_SLOTS_BUT_NO_DICT_FLAG = 0b1;
     /**
      * Indicates that the shape has some properties that may contain {@link PNone#NO_VALUE} and
      * therefore the shape itself is not enough to resolve any lookups.
      */
-    public static final byte HAS_NO_VALUE_PROPERTIES = 0b100;
+    public static final byte HAS_NO_VALUE_PROPERTIES = 0b10;
     /**
      * Indicates that the object has a dict in the form of an actual dictionary
      */
-    public static final byte HAS_MATERIALIZED_DICT = 0b1000;
+    public static final byte HAS_MATERIALIZED_DICT = 0b100;
     /**
      * Indicates that the object is a static base in the CPython's tp_new_wrapper sense.
      *
      * @see com.oracle.graal.python.nodes.function.builtins.WrapTpNew
      */
-    public static final byte IS_STATIC_BASE = 0b10000;
+    public static final byte IS_STATIC_BASE = 0b1000;
 
-    private final Object initialPythonClass;
+    private Object pythonClass;
 
     @SuppressWarnings("this-escape") // escapes in the assertion
     public PythonObject(Object pythonClass, Shape instanceShape) {
         super(instanceShape);
         assert pythonClass != null;
-        assert consistentStorage(pythonClass);
-        this.initialPythonClass = pythonClass;
-    }
-
-    private boolean consistentStorage(Object pythonClass) {
-        Object constantClass = HiddenAttr.ReadNode.executeUncached(this, HiddenAttr.CLASS, null);
-        if (constantClass == null) {
-            return true;
-        }
-        if (constantClass instanceof PythonBuiltinClass) {
-            constantClass = ((PythonBuiltinClass) constantClass).getType();
-        }
-        if (constantClass instanceof PythonAbstractNativeObject && pythonClass instanceof PythonAbstractNativeObject) {
-            return true;
-        }
-        return constantClass == (pythonClass instanceof PythonBuiltinClass ? ((PythonBuiltinClass) pythonClass).getType() : pythonClass);
+        assert !PGuards.isPythonClass(getShape().getDynamicType()) || IsSameTypeNode.executeUncached(getShape().getDynamicType(), pythonClass) : getShape().getDynamicType() + " vs " + pythonClass;
+        this.pythonClass = pythonClass;
     }
 
     public void setDict(Node inliningTarget, HiddenAttr.WriteNode writeNode, PDict dict) {
@@ -99,8 +83,13 @@ public class PythonObject extends PythonAbstractObject {
     }
 
     @NeverDefault
-    public Object getInitialPythonClass() {
-        return initialPythonClass;
+    public Object getPythonClass() {
+        return pythonClass;
+    }
+
+    public void setPythonClass(Object pythonClass) {
+        assert getShape().getDynamicType() == PNone.NO_VALUE;
+        this.pythonClass = pythonClass;
     }
 
     @TruffleBoundary
@@ -141,12 +130,11 @@ public class PythonObject extends PythonAbstractObject {
     @Override
     public String toString() {
         String className = "unknown";
-        Object storedPythonClass = HiddenAttr.ReadNode.executeUncached(this, HiddenAttr.CLASS, null);
-        if (storedPythonClass instanceof PythonManagedClass) {
-            className = ((PythonManagedClass) storedPythonClass).getQualName().toJavaStringUncached();
-        } else if (storedPythonClass instanceof PythonBuiltinClassType) {
-            className = ((PythonBuiltinClassType) storedPythonClass).getName().toJavaStringUncached();
-        } else if (PGuards.isNativeClass(storedPythonClass)) {
+        if (pythonClass instanceof PythonManagedClass managedClass) {
+            className = managedClass.getQualName().toJavaStringUncached();
+        } else if (pythonClass instanceof PythonBuiltinClassType pbct) {
+            className = pbct.getName().toJavaStringUncached();
+        } else if (PGuards.isNativeClass(pythonClass)) {
             className = "native";
         }
         return "<" + className + " object at 0x" + Integer.toHexString(hashCode()) + ">";

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,6 +48,10 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 
+/**
+ * Extra information for ctypes stored in a type's dict. See
+ * https://github.com/python/cpython/blob/fece15d29f28e89f1231afa80508c80ed28dc37d/Modules/_ctypes/ctypes.h#L333
+ */
 public final class StgDictObject extends PDict {
 
     protected static final int VOID_PTR_SIZE = Long.BYTES; // sizeof(void *)

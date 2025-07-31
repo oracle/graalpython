@@ -97,6 +97,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromModuleNode;
 import org.graalvm.options.OptionKey;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -2690,7 +2691,7 @@ public final class PythonContext extends Python3Core {
     public TruffleString getSoAbi() {
         if (soABI == null) {
             PythonModule sysModule = this.lookupBuiltinModule(T_SYS);
-            Object implementationObj = ReadAttributeFromObjectNode.getUncached().execute(sysModule, T_IMPLEMENTATION);
+            Object implementationObj = ReadAttributeFromModuleNode.getUncached().execute(sysModule, T_IMPLEMENTATION);
             // sys.implementation.cache_tag
             TruffleString cacheTag = (TruffleString) PyObjectGetAttr.executeUncached(implementationObj, T_CACHE_TAG);
             // sys.implementation._multiarch

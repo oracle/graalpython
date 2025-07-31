@@ -31,6 +31,7 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyHe
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyHeapTypeObject__ht_qualname;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_name;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_BUILTINS;
+import static com.oracle.graal.python.nodes.ErrorMessages.ATTR_NAME_MUST_BE_STRING;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___ABSTRACTMETHODS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___ANNOTATIONS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___BASES__;
@@ -95,15 +96,18 @@ import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToArrayNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.exception.AttributeErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetBuiltins.UpdateSingleNode;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked0Node;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked1Node;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
+import com.oracle.graal.python.builtins.objects.thread.ThreadLocalBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
@@ -135,8 +139,9 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
+import com.oracle.graal.python.nodes.attributes.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.nodes.attributes.MergedObjectTypeModuleGetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
@@ -160,7 +165,6 @@ import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -201,8 +205,8 @@ public final class TypeBuiltins extends PythonBuiltins {
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            Object moduleNameObj = readModuleNode.executeObject(frame, self);
-            Object qualNameObj = readQualNameNode.executeObject(frame, self);
+            Object moduleNameObj = readModuleNode.execute(frame, self);
+            Object qualNameObj = readQualNameNode.execute(frame, self);
             TruffleString moduleName = null;
             if (moduleNameObj != NO_VALUE) {
                 try {
@@ -255,7 +259,7 @@ public final class TypeBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object getDoc(PythonAbstractNativeObject self, @SuppressWarnings("unused") PNone value) {
-            return ReadAttributeFromObjectNode.getUncachedForceType().execute(self, T___DOC__);
+            return ReadAttributeFromObjectNode.getUncached().execute(self, T___DOC__);
         }
 
         @Specialization(guards = {"!isNoValue(value)", "!isDeleteMarker(value)", "!isPythonBuiltinClass(self)"})
@@ -522,6 +526,11 @@ public final class TypeBuiltins extends PythonBuiltins {
         @Child private CallSlotDescrGet callSlotValueGet;
         @Child private LookupAttributeInMRONode.Dynamic lookupAsClass;
 
+        /**
+         * Keep in sync with {@link ObjectBuiltins.GetAttributeNode} and
+         * {@link ThreadLocalBuiltins.GetAttributeNode} and
+         * {@link MergedObjectTypeModuleGetAttributeNode}
+         */
         @Specialization
         protected Object doIt(VirtualFrame frame, Object object, Object keyObj,
                         @Bind Node inliningTarget,
@@ -529,38 +538,35 @@ public final class TypeBuiltins extends PythonBuiltins {
                         @Cached GetObjectSlotsNode getDescrSlotsNode,
                         @Cached GetObjectSlotsNode getValueSlotsNode,
                         @Cached LookupAttributeInMRONode.Dynamic lookup,
-                        @Cached CastToTruffleStringNode castToString,
+                        @Cached CastToTruffleStringChecked1Node castToString,
                         @Cached InlinedBranchProfile hasDescProfile,
                         @Cached InlinedConditionProfile hasDescrGetProfile,
                         @Cached InlinedBranchProfile hasValueProfile,
                         @Cached InlinedBranchProfile hasNonDescriptorValueProfile,
-                        @Cached InlinedBranchProfile errorProfile,
                         @Cached PRaiseNode raiseNode) {
-            TruffleString key;
-            try {
-                key = castToString.execute(inliningTarget, keyObj);
-            } catch (CannotCastException e) {
-                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
-            }
+            TruffleString key = castToString.cast(inliningTarget, keyObj, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
 
-            Object metatype = getClassNode.execute(inliningTarget, object);
-            Object descr = lookup.execute(metatype, key);
+            Object type = getClassNode.execute(inliningTarget, object);
+            Object descr = lookup.execute(type, key);
+            boolean hasDescr = descr != PNone.NO_VALUE;
+
             TpSlot get = null;
             boolean hasDescrGet = false;
-            if (descr != NO_VALUE) {
-                // acts as a branch profile
+            if (hasDescr) {
+                hasDescProfile.enter(inliningTarget);
                 var descrSlots = getDescrSlotsNode.execute(inliningTarget, descr);
                 get = descrSlots.tp_descr_get();
                 hasDescrGet = hasDescrGetProfile.profile(inliningTarget, get != null);
                 if (hasDescrGet && TpSlotDescrSet.PyDescr_IsData(descrSlots)) {
-                    return dispatchDescrGet(frame, object, metatype, descr, get);
+                    return dispatchDescrGet(frame, object, type, descr, get);
                 }
             }
-            Object value = readAttribute(object, key);
-            if (value != NO_VALUE) {
+
+            // The only difference between all 3 nodes
+            Object value = readAttributeOfClass(object, key);
+            if (value != PNone.NO_VALUE) {
                 hasValueProfile.enter(inliningTarget);
-                var valueSlots = getValueSlotsNode.execute(inliningTarget, value);
-                var valueGet = valueSlots.tp_descr_get();
+                var valueGet = getValueSlotsNode.execute(inliningTarget, value).tp_descr_get();
                 if (valueGet == null) {
                     hasNonDescriptorValueProfile.enter(inliningTarget);
                     return value;
@@ -568,19 +574,20 @@ public final class TypeBuiltins extends PythonBuiltins {
                     return dispatchValueGet(frame, object, value, valueGet);
                 }
             }
-            if (descr != NO_VALUE) {
+
+            if (hasDescr) {
                 hasDescProfile.enter(inliningTarget);
                 if (!hasDescrGet) {
                     return descr;
                 } else {
-                    return dispatchDescrGet(frame, object, metatype, descr, get);
+                    return dispatchDescrGet(frame, object, type, descr, get);
                 }
             }
-            errorProfile.enter(inliningTarget);
-            throw raiseNode.raiseWithData(inliningTarget, AttributeError, AttributeErrorBuiltins.dataForObjKey(object, key), ErrorMessages.OBJ_N_HAS_NO_ATTR_S, object, key);
+
+            throw raiseNode.raiseAttributeError(inliningTarget, ErrorMessages.OBJ_N_HAS_NO_ATTR_S, object, key);
         }
 
-        private Object readAttribute(Object object, TruffleString key) {
+        private Object readAttributeOfClass(Object object, TruffleString key) {
             if (lookupAsClass == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 lookupAsClass = insert(LookupAttributeInMRONode.Dynamic.create());
@@ -603,7 +610,7 @@ public final class TypeBuiltins extends PythonBuiltins {
             }
             // NO_VALUE 2nd argument indicates the descriptor was found on the target object itself
             // (or a base)
-            return callSlotValueGet.executeCached(frame, getSlot, descr, NO_VALUE, type);
+            return callSlotValueGet.executeCached(frame, getSlot, descr, PNone.NO_VALUE, type);
         }
     }
 
@@ -611,29 +618,22 @@ public final class TypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SetattrNode extends SetAttrBuiltinNode {
         @Specialization(guards = "!isImmutable(object)")
-        void setString(VirtualFrame frame, Object object, TruffleString key, Object value,
+        static void set(VirtualFrame frame, Object object, Object keyObject, Object value,
                         @Bind Node inliningTarget,
-                        @Shared @Cached ObjectNodes.GenericSetAttrNode genericSetAttrNode,
-                        @Shared @Cached("createForceType()") WriteAttributeToObjectNode write) {
+                        @Cached CastToTruffleStringChecked0Node castKeyNode,
+                        @Cached ObjectNodes.GenericSetAttrNode genericSetAttrNode,
+                        @Cached WriteAttributeToObjectNode write) {
+            TruffleString key = castKeyNode.cast(inliningTarget, keyObject, ATTR_NAME_MUST_BE_STRING);
             genericSetAttrNode.execute(inliningTarget, frame, object, key, value, write);
         }
 
-        @Specialization(guards = "!isImmutable(object)")
-        @InliningCutoff
-        static void set(VirtualFrame frame, Object object, Object key, Object value,
-                        @Bind Node inliningTarget,
-                        @Shared @Cached ObjectNodes.GenericSetAttrNode genericSetAttrNode,
-                        @Shared @Cached("createForceType()") WriteAttributeToObjectNode write) {
-            genericSetAttrNode.execute(inliningTarget, frame, object, key, value, write);
-        }
-
-        @Specialization(guards = "isImmutable(object)")
         @TruffleBoundary
+        @Specialization(guards = "isImmutable(object)")
         void setBuiltin(Object object, Object key, Object value) {
             if (PythonContext.get(this).isInitialized()) {
                 throw PRaiseNode.raiseStatic(this, TypeError, ErrorMessages.CANT_SET_ATTRIBUTE_R_OF_IMMUTABLE_TYPE_N, PyObjectReprAsTruffleStringNode.executeUncached(key), object);
             } else {
-                set(null, object, key, value, null, ObjectNodes.GenericSetAttrNode.getUncached(), WriteAttributeToObjectNode.getUncached(true));
+                set(null, object, key, value, null, CastToTruffleStringChecked0Node.getUncached(), ObjectNodes.GenericSetAttrNode.getUncached(), WriteAttributeToObjectNode.getUncached());
             }
         }
 
@@ -942,7 +942,7 @@ public final class TypeBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNoValue(value)")
         static Object getModule(PythonClass cls, @SuppressWarnings("unused") PNone value,
                         @Bind Node inliningTarget,
-                        @Cached ReadAttributeFromObjectNode readAttrNode,
+                        @Shared @Cached ReadAttributeFromObjectNode readAttrNode,
                         @Shared @Cached PRaiseNode raiseNode) {
             Object module = readAttrNode.execute(cls, T___MODULE__);
             if (module == NO_VALUE) {
@@ -953,7 +953,7 @@ public final class TypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(value)")
         static Object setModule(PythonClass cls, Object value,
-                        @Cached WriteAttributeToObjectNode writeAttrNode) {
+                        @Shared @Cached WriteAttributeToObjectNode writeAttrNode) {
             writeAttrNode.execute(cls, T___MODULE__, value);
             return PNone.NONE;
         }
@@ -961,7 +961,7 @@ public final class TypeBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNoValue(value)")
         static Object getModule(PythonAbstractNativeObject cls, @SuppressWarnings("unused") PNone value,
                         @Bind Node inliningTarget,
-                        @Cached("createForceType()") ReadAttributeFromObjectNode readAttr,
+                        @Shared @Cached ReadAttributeFromObjectNode readAttrNode,
                         @Shared @Cached GetTypeFlagsNode getFlags,
                         @Cached CStructAccess.ReadCharPtrNode getTpNameNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
@@ -970,7 +970,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                         @Shared @Cached PRaiseNode raiseNode) {
             // see function 'typeobject.c: type_module'
             if ((getFlags.execute(cls) & TypeFlags.HEAPTYPE) != 0) {
-                Object module = readAttr.execute(cls, T___MODULE__);
+                Object module = readAttrNode.execute(cls, T___MODULE__);
                 if (module == NO_VALUE) {
                     throw raiseNode.raise(inliningTarget, AttributeError);
                 }
@@ -991,13 +991,13 @@ public final class TypeBuiltins extends PythonBuiltins {
         static Object setNative(PythonAbstractNativeObject cls, Object value,
                         @Bind Node inliningTarget,
                         @Shared @Cached GetTypeFlagsNode getFlags,
-                        @Cached("createForceType()") WriteAttributeToObjectNode writeAttr,
+                        @Shared @Cached WriteAttributeToObjectNode writeAttrNode,
                         @Shared @Cached PRaiseNode raiseNode) {
             long flags = getFlags.execute(cls);
             if ((flags & TypeFlags.HEAPTYPE) == 0) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANT_SET_N_S, cls, T___MODULE__);
             }
-            writeAttr.execute(cls, T___MODULE__, value);
+            writeAttrNode.execute(cls, T___MODULE__, value);
             return PNone.NONE;
         }
 

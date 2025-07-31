@@ -62,7 +62,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringCheckedNode;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked1Node;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
@@ -218,7 +218,7 @@ public final class UnicodeEncodeErrorBuiltins extends PythonBuiltins {
         @Specialization
         static TruffleString doIt(Node inliningTarget, PBaseException exceptionObject,
                         @Cached(inline = false) BaseExceptionAttrNode attrNode,
-                        @Cached CastToTruffleStringCheckedNode castToStringNode,
+                        @Cached CastToTruffleStringChecked1Node castToStringNode,
                         @Cached PRaiseNode raiseNode) {
             Object obj = attrNode.get(exceptionObject, IDX_OBJECT, UNICODE_ERROR_ATTR_FACTORY);
             if (obj == null) {
@@ -298,7 +298,7 @@ public final class UnicodeEncodeErrorBuiltins extends PythonBuiltins {
         @Specialization
         static TruffleString doIt(Node inliningTarget, PBaseException exceptionObject,
                         @Cached(inline = false) BaseExceptionAttrNode attrNode,
-                        @Cached CastToTruffleStringCheckedNode castToStringNode,
+                        @Cached CastToTruffleStringChecked1Node castToStringNode,
                         @Cached PRaiseNode raiseNode) {
             Object obj = attrNode.get(exceptionObject, IDX_ENCODING, UNICODE_ERROR_ATTR_FACTORY);
             if (obj == null) {

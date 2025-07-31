@@ -37,11 +37,9 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.object.SetDictNode;
-import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -78,6 +76,7 @@ public final class PythonModule extends PythonObject {
     private PythonBuiltins builtins;
     private Object moduleState;
 
+    @TruffleBoundary
     public PythonModule(Object clazz, Shape instanceShape) {
         super(clazz, instanceShape);
         setAttribute(T___NAME__, PNone.NO_VALUE);
@@ -87,6 +86,7 @@ public final class PythonModule extends PythonObject {
         setAttribute(T___SPEC__, PNone.NO_VALUE);
         setAttribute(T___CACHED__, PNone.NO_VALUE);
         setAttribute(T___FILE__, PNone.NO_VALUE);
+        GetOrCreateDictNode.executeUncached(this);
     }
 
     /**
@@ -102,6 +102,7 @@ public final class PythonModule extends PythonObject {
         setAttribute(T___SPEC__, PNone.NONE);
         setAttribute(T___CACHED__, PNone.NO_VALUE);
         setAttribute(T___FILE__, PNone.NO_VALUE);
+        GetOrCreateDictNode.executeUncached(this);
     }
 
     /**
@@ -110,10 +111,7 @@ public final class PythonModule extends PythonObject {
     @TruffleBoundary
     public static PythonModule createInternal(TruffleString moduleName) {
         PythonLanguage language = PythonLanguage.get(null);
-        PythonModule pythonModule = new PythonModule(language, moduleName);
-        PDict dict = PFactory.createDictFixedStorage(language, pythonModule);
-        SetDictNode.executeUncached(pythonModule, dict);
-        return pythonModule;
+        return new PythonModule(language, moduleName);
     }
 
     public PythonBuiltins getBuiltins() {

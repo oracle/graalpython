@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.type;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_SUBCLASS_CHECK;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyHeapTypeObject__ht_qualname;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_base;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_bases;
@@ -188,7 +187,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
+import com.oracle.graal.python.nodes.attributes.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -241,7 +240,6 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
@@ -1241,7 +1239,7 @@ public abstract class TypeNodes {
         private ReadAttributeFromObjectNode getReadAttr() {
             if (readAttr == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                readAttr = insert(ReadAttributeFromObjectNode.createForceType());
+                readAttr = insert(ReadAttributeFromObjectNode.create());
             }
             return readAttr;
         }
@@ -1323,7 +1321,7 @@ public abstract class TypeNodes {
         @Specialization
         static boolean check(Node inliningTarget, Object type,
                         @Cached NeedsNativeAllocationNode needsNativeAllocationNode,
-                        @Cached(inline = false) ReadAttributeFromObjectNode read,
+                        @Cached ReadAttributeFromObjectNode read,
                         @Cached GetWeakListOffsetNode getWeakListOffsetNode) {
             if (needsNativeAllocationNode.execute(inliningTarget, type)) {
                 return getWeakListOffsetNode.execute(inliningTarget, type) != 0;
@@ -1378,7 +1376,7 @@ public abstract class TypeNodes {
         @Specialization
         protected static Object getSolid(Node inliningTarget, Object type,
                         @Cached GetBaseClassNode getBaseClassNode,
-                        @Cached(value = "createForceType()", inline = false) ReadAttributeFromObjectNode readAttr,
+                        @Cached ReadAttributeFromObjectNode readAttr,
                         @Cached InlinedBranchProfile typeIsNotBase,
                         @Cached InlinedBranchProfile hasBase,
                         @Cached InlinedBranchProfile hasNoBase) {
@@ -1388,7 +1386,7 @@ public abstract class TypeNodes {
 
         @TruffleBoundary
         protected static Object solidBaseTB(Object type, Node inliningTarget, GetBaseClassNode getBaseClassNode, PythonContext context, int depth) {
-            return solidBase(type, inliningTarget, getBaseClassNode, context, ReadAttributeFromObjectNode.getUncachedForceType(), InlinedBranchProfile.getUncached(),
+            return solidBase(type, inliningTarget, getBaseClassNode, context, ReadAttributeFromObjectNode.getUncached(), InlinedBranchProfile.getUncached(),
                             InlinedBranchProfile.getUncached(), InlinedBranchProfile.getUncached(), depth);
         }
 
@@ -1438,10 +1436,8 @@ public abstract class TypeNodes {
             if (typeSlots != null && length(typeSlots) != 0) {
                 return true;
             }
-            Object typeNewMethod = LookupAttributeInMRONode.lookup(T___NEW__, GetMroStorageNode.executeUncached(type), ReadAttributeFromObjectNode.getUncached(), true,
-                            DynamicObjectLibrary.getUncached());
-            Object baseNewMethod = LookupAttributeInMRONode.lookup(T___NEW__, GetMroStorageNode.executeUncached(base), ReadAttributeFromObjectNode.getUncached(), true,
-                            DynamicObjectLibrary.getUncached());
+            Object typeNewMethod = LookupAttributeInMRONode.lookup(T___NEW__, GetMroStorageNode.executeUncached(type), ReadAttributeFromObjectNode.getUncached(), true);
+            Object baseNewMethod = LookupAttributeInMRONode.lookup(T___NEW__, GetMroStorageNode.executeUncached(base), ReadAttributeFromObjectNode.getUncached(), true);
             return typeNewMethod != baseNewMethod;
         }
 
@@ -1755,17 +1751,19 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        @InliningCutoff
         static boolean doNativeClass(Node inliningTarget, PythonAbstractNativeObject obj,
                         @Cached IsBuiltinClassProfile profile,
                         @Cached GetPythonObjectClassNode getClassNode,
-                        @Cached(inline = false) CExtNodes.PCallCapiFunction nativeTypeCheck) {
+                        @Cached CStructAccess.ReadI64Node getTpFlagsNode) {
             Object type = getClassNode.execute(inliningTarget, obj);
             if (profile.profileClass(inliningTarget, type, PythonBuiltinClassType.PythonClass)) {
                 return true;
             }
+
             if (PythonNativeClass.isInstance(type)) {
-                return (int) nativeTypeCheck.call(FUN_SUBCLASS_CHECK, obj.getPtr()) == 1;
+                // Equivalent of PyType_FastSubclass(Py_TYPE(type), Py_TPFLAGS_TYPE_SUBCLASS);
+                long tp_flags = getTpFlagsNode.readFromObj(PythonNativeClass.cast(type), PyTypeObject__tp_flags);
+                return (tp_flags & TYPE_SUBCLASS) != 0;
             }
             return false;
         }
@@ -1946,7 +1944,7 @@ public abstract class TypeNodes {
                         @Cached("create(T___SET_NAME__)") LookupSpecialMethodNode getSetNameNode,
                         @Cached CallNode callSetNameNode,
                         @Cached CallNode callInitSubclassNode,
-                        @Cached("create(T___INIT_SUBCLASS__)") GetAttributeNode getInitSubclassNode,
+                        @Cached("create(T___INIT_SUBCLASS__)") GetFixedAttributeNode getInitSubclassNode,
                         @Cached GetMroStorageNode getMroStorageNode,
                         @Bind PythonLanguage language,
                         @Cached PRaiseNode raise,
@@ -2062,7 +2060,7 @@ public abstract class TypeNodes {
             // Call __init_subclass__ on the parent of a newly generated type
             SuperObject superObject = PFactory.createSuperObject(language);
             superObject.init(newType, newType, newType);
-            callInitSubclassNode.execute(frame, getInitSubclassNode.executeObject(frame, superObject), PythonUtils.EMPTY_OBJECT_ARRAY, kwds);
+            callInitSubclassNode.execute(frame, getInitSubclassNode.execute(frame, superObject), PythonUtils.EMPTY_OBJECT_ARRAY, kwds);
 
             newType.initializeMroShape(language);
 

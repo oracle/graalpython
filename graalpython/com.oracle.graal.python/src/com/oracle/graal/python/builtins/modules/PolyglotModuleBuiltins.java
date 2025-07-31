@@ -102,7 +102,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
+import com.oracle.graal.python.nodes.attributes.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
@@ -352,10 +352,10 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "isModuleMethod(fun)")
         static Object exportSymbol(VirtualFrame frame, Object fun, @SuppressWarnings("unused") PNone name,
                         @Bind Node inliningTarget,
-                        @Cached("create(T___NAME__)") GetAttributeNode.GetFixedAttributeNode getNameAttributeNode,
+                        @Cached("create(T___NAME__)") GetFixedAttributeNode getNameAttributeNode,
                         @Cached CastToJavaStringNode castToStringNode,
                         @Cached PRaiseNode raiseNode) {
-            Object attrNameValue = getNameAttributeNode.executeObject(frame, fun);
+            Object attrNameValue = getNameAttributeNode.execute(frame, fun);
             String methodName;
             try {
                 methodName = castToStringNode.execute(attrNameValue);

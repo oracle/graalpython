@@ -44,13 +44,13 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.type.MroShape;
 import com.oracle.graal.python.builtins.objects.type.MroShape.MroShapeLookupResult;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -62,7 +62,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -71,12 +70,12 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @ImportStatic(PythonOptions.class)
@@ -89,28 +88,29 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
     public abstract static class Dynamic extends PNodeWithContext {
         public abstract Object execute(Object klass, TruffleString key);
 
-        @Specialization(guards = "stringEquals(key, cachedKey, equalNode)", limit = "2")
-        protected static Object lookupConstantMRO(Object klass, @SuppressWarnings("unused") TruffleString key,
-                        @Cached("key") @SuppressWarnings("unused") TruffleString cachedKey,
-                        @Cached @SuppressWarnings("unused") TruffleString.EqualNode equalNode,
-                        @Cached("create(key)") LookupAttributeInMRONode lookup) {
+        @Specialization(guards = "equalNode.execute(inliningTarget, key, cachedKey)", limit = "2")
+        static Object lookupConstantMROEquals(Object klass, TruffleString key,
+                        @Bind Node inliningTarget,
+                        @Cached("key") TruffleString cachedKey,
+                        @Cached @Shared StringUtils.EqualNode equalNode,
+                        @Cached("create(cachedKey)") LookupAttributeInMRONode lookup) {
             return lookup.execute(klass);
         }
 
-        @Specialization(replaces = "lookupConstantMRO")
+        // Merged PythonBuiltinClassType and generic cases to have single @InliningCutoff
         @InliningCutoff
-        protected Object lookupInBuiltinType(PythonBuiltinClassType klass, TruffleString key,
-                        @Cached ReadAttributeFromPythonObjectNode readAttrNode) {
-            return findAttr(PythonContext.get(this), klass, key, readAttrNode);
-        }
-
-        @Specialization(replaces = "lookupConstantMRO")
-        @InliningCutoff
-        protected static Object lookupGeneric(Object klass, TruffleString key,
+        @Specialization(replaces = "lookupConstantMROEquals")
+        static Object lookupGeneric(Object klass, TruffleString key,
                         @Bind Node inliningTarget,
+                        @Cached InlinedConditionProfile pbctProfile,
+                        @Cached ReadAttributeFromPythonObjectNode readPBCTAttrNode,
                         @Cached GetMroStorageNode getMroNode,
-                        @Cached(value = "createForceType()", uncached = "getUncachedForceType()") ReadAttributeFromObjectNode readAttrNode) {
-            return lookup(key, getMroNode.execute(inliningTarget, klass), readAttrNode, false, DynamicObjectLibrary.getUncached());
+                        @Cached ReadAttributeFromObjectNode readAttrNode) {
+            if (pbctProfile.profile(inliningTarget, klass instanceof PythonBuiltinClassType)) {
+                return findAttr(PythonContext.get(inliningTarget), (PythonBuiltinClassType) klass, key, readPBCTAttrNode);
+            } else {
+                return lookup(key, getMroNode.execute(inliningTarget, klass), readAttrNode, false);
+            }
         }
 
         @NeverDefault
@@ -124,9 +124,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
     }
 
     private final boolean skipNonStaticBases;
-    protected final TruffleString key;
-    @Child private TypeNodes.IsSameTypeNode isSameTypeNode;
-    @Child private GetMroStorageNode getMroNode;
+    final TruffleString key;
 
     public LookupAttributeInMRONode(TruffleString key, boolean skipNonStaticBases) {
         this.key = key;
@@ -147,7 +145,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         return LookupAttributeInMRONodeGen.create(key, true);
     }
 
-    protected static Object findAttr(Python3Core core, PythonBuiltinClassType klass, TruffleString key) {
+    static Object findAttr(Python3Core core, PythonBuiltinClassType klass, TruffleString key) {
         return findAttr(core, klass, key, ReadAttributeFromPythonObjectNode.getUncached());
     }
 
@@ -164,15 +162,8 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         return value;
     }
 
-    @Specialization(guards = {"isSingleContext()", "klass == cachedKlass"}, limit = "getAttributeAccessInlineCacheMaxDepth()")
-    protected static Object lookupPBCTCached(@SuppressWarnings("unused") PythonBuiltinClassType klass,
-                    @Cached("klass") @SuppressWarnings("unused") PythonBuiltinClassType cachedKlass,
-                    @Cached("findAttr(getContext(), cachedKlass, key)") Object cachedValue) {
-        return cachedValue;
-    }
-
     @Idempotent
-    protected static boolean canCache(Object value) {
+    static boolean canCache(Object value) {
         return value instanceof Long ||
                         value instanceof Integer ||
                         value instanceof Boolean ||
@@ -180,44 +171,11 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
                         value instanceof PNone;
     }
 
-    @Specialization(guards = {"klass == cachedKlass", "canCache(cachedValue)"}, limit = "getAttributeAccessInlineCacheMaxDepth()")
-    protected static Object lookupPBCTCachedMulti(@SuppressWarnings("unused") PythonBuiltinClassType klass,
-                    @Cached("klass") @SuppressWarnings("unused") PythonBuiltinClassType cachedKlass,
+    @Specialization(guards = {"klass == cachedKlass", "isSingleContext() || canCache(cachedValue)"}, limit = "getAttributeAccessInlineCacheMaxDepth()")
+    static Object lookupPBCTCached(PythonBuiltinClassType klass,
+                    @Cached("klass") PythonBuiltinClassType cachedKlass,
                     @Cached("findAttr(getContext(), cachedKlass, key)") Object cachedValue) {
         return cachedValue;
-    }
-
-    public static PythonBuiltinClassType findOwnerInMro(Python3Core core, PythonBuiltinClassType klass, TruffleString key) {
-        PythonBuiltinClassType current = klass;
-        ReadAttributeFromPythonObjectNode readNode = ReadAttributeFromPythonObjectNode.getUncached();
-        while (current != null) {
-            if (readNode.execute(core.lookupType(current), key) != PNone.NO_VALUE) {
-                return current;
-            }
-            current = current.getBase();
-        }
-        return null;
-    }
-
-    @Specialization(replaces = {"lookupPBCTCached", "lookupPBCTCachedMulti"}, guards = "klass == cachedKlass", //
-                    limit = "getAttributeAccessInlineCacheMaxDepth()")
-    @InliningCutoff
-    protected Object lookupPBCTCachedOwner(@SuppressWarnings("unused") PythonBuiltinClassType klass,
-                    @Cached("klass") @SuppressWarnings("unused") PythonBuiltinClassType cachedKlass,
-                    @Cached("findOwnerInMro(getContext(), cachedKlass, key)") PythonBuiltinClassType ownerKlass,
-                    @Shared @Cached ReadAttributeFromPythonObjectNode readAttrNode) {
-        if (ownerKlass == null) {
-            return PNone.NO_VALUE;
-        } else {
-            return readAttrNode.execute(PythonContext.get(this).lookupType(ownerKlass), key);
-        }
-    }
-
-    @Specialization(replaces = "lookupPBCTCachedOwner")
-    @InliningCutoff
-    protected Object lookupPBCTGeneric(PythonBuiltinClassType klass,
-                    @Shared @Cached ReadAttributeFromPythonObjectNode readAttrNode) {
-        return findAttr(PythonContext.get(this), klass, key, readAttrNode);
     }
 
     // PythonClass specializations:
@@ -230,32 +188,31 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         private static final InvalidateLookupException INSTANCE = new InvalidateLookupException();
     }
 
-    private static boolean skipNonStaticBase(Object clsObj, boolean skipNonStaticBases, DynamicObjectLibrary dylib) {
-        return skipNonStaticBases && clsObj instanceof PythonClass && !((PythonClass) clsObj).isStaticBase(dylib);
+    private static boolean skipNonStaticBase(Object clsObj, boolean skipNonStaticBases) {
+        return skipNonStaticBases && clsObj instanceof PythonClass && !((PythonClass) clsObj).isStaticBase();
     }
 
-    protected AttributeAssumptionPair findAttrAndAssumptionInMRO(Object klass) {
+    AttributeAssumptionPair findAttrAndAssumptionInMRO(Object klass) {
         CompilerAsserts.neverPartOfCompilation();
-        DynamicObjectLibrary dylib = DynamicObjectLibrary.getUncached();
         // Regarding potential side effects to MRO caused by __eq__ of the keys in the dicts that we
         // search through: CPython seems to read the MRO once and then compute the result also
         // ignoring the side effects. Moreover, CPython has lookup cache, so the side effects
         // may or may not be visible during subsequent lookups. We want to avoid triggering the side
         // effects twice, so we succeed this lookup no matter what, however, we will invalidate on
         // the next lookup if there were some MRO side effects.
-        MroSequenceStorage mro = getMro(klass);
+        MroSequenceStorage mro = GetMroStorageNode.executeUncached(klass);
         Assumption attrAssumption = mro.createAttributeInMROFinalAssumption(key);
         Object result = PNone.NO_VALUE;
         for (int i = 0; i < mro.length(); i++) {
             PythonAbstractClass clsObj = mro.getPythonClassItemNormalized(i);
             if (i > 0) {
                 assert clsObj != klass : "MRO chain is incorrect: '" + klass + "' was found at position " + i;
-                getMro(clsObj).addAttributeInMROFinalAssumption(key, attrAssumption);
+                GetMroStorageNode.executeUncached(clsObj).addAttributeInMROFinalAssumption(key, attrAssumption);
             }
-            if (skipNonStaticBase(clsObj, skipNonStaticBases, dylib)) {
+            if (skipNonStaticBase(clsObj, skipNonStaticBases)) {
                 continue;
             }
-            Object value = ReadAttributeFromObjectNode.getUncachedForceType().execute(clsObj, key);
+            Object value = ReadAttributeFromObjectNode.getUncached().execute(clsObj, key);
             if (value != PNone.NO_VALUE) {
                 result = value;
                 break;
@@ -268,13 +225,14 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         }
     }
 
-    @Specialization(guards = {"isSingleContext()", "isSameType(cachedKlass, klass)", "cachedAttrInMROInfo != null"}, //
+    @Specialization(guards = {"isSingleContext()", "isSameTypeNode.execute(inliningTarget, cachedKlass, klass)", "cachedAttrInMROInfo != null"}, //
                     limit = "getAttributeAccessInlineCacheMaxDepth()", //
                     assumptions = "cachedAttrInMROInfo.assumption()", //
                     rewriteOn = InvalidateLookupException.class)
-    protected static Object lookupConstantMROCached(@SuppressWarnings("unused") Object klass,
+    static Object lookupConstantMROCached(Object klass,
                     @Bind Node inliningTarget,
-                    @Cached("klass") @SuppressWarnings("unused") Object cachedKlass,
+                    @Cached("klass") Object cachedKlass,
+                    @Cached IsSameTypeNode isSameTypeNode,
                     @Cached InlinedBranchProfile shouldInvalidate,
                     @Cached("findAttrAndAssumptionInMRO(cachedKlass)") AttributeAssumptionPair cachedAttrInMROInfo) {
         if (shouldInvalidate.wasEntered(inliningTarget)) {
@@ -287,127 +245,169 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         return cachedAttrInMROInfo.value;
     }
 
-    public MroShapeLookupResult lookupInMroShape(MroShape shape, Object klass) {
-        assert MroShape.validate(klass, PythonLanguage.get(this));
-        return shape.lookup(key);
-    }
-
-    // This specialization works well only for multi-context mode
-    // Note: MroShape creation and updates are disabled in multi-context mode, see
-    // PythonClass#initializeMroShape
-    @Specialization(guards = {"!isSingleContext()", "cachedMroShape != null", "klass.getMroShape() == cachedMroShape"}, //
-                    limit = "getAttributeAccessInlineCacheMaxDepth()")
+    // The slow-path specializations are extracted in a separate node to have a single cutoff from
+    // the fast path
     @InliningCutoff
-    protected Object lookupConstantMROShape(PythonClass klass,
-                    @SuppressWarnings("unused") @Cached("klass.getMroShape()") MroShape cachedMroShape,
-                    @Cached("lookupInMroShape(cachedMroShape, klass)") MroShapeLookupResult lookupResult) {
-        return lookupResult.getFromMro(getMro(klass), key);
+    @Specialization(replaces = {"lookupPBCTCached", "lookupConstantMROCached"})
+    Object lookupSlowPath(Object klass,
+                    @Cached SlowPath slowPathNode) {
+        return slowPathNode.execute(klass, key, skipNonStaticBases);
     }
 
-    @NeverDefault
-    protected static ReadAttributeFromObjectNode[] create(int size) {
-        ReadAttributeFromObjectNode[] nodes = new ReadAttributeFromObjectNode[size];
-        for (int i = 0; i < size; i++) {
-            nodes[i] = ReadAttributeFromObjectNode.createForceType();
-        }
-        return nodes;
-    }
+    public abstract static class SlowPath extends PNodeWithContext {
 
-    @Specialization(guards = {"isSingleContext()", "isSameType(cachedKlass, klass)", "mroLength < 32"}, //
-                    limit = "getAttributeAccessInlineCacheMaxDepth()", //
-                    replaces = "lookupConstantMROShape", //
-                    assumptions = "lookupStable")
-    @ExplodeLoop(kind = ExplodeLoop.LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
-    @InliningCutoff
-    protected Object lookupConstantMRO(@SuppressWarnings("unused") Object klass,
-                    @Cached("klass") @SuppressWarnings("unused") Object cachedKlass,
-                    @Cached("getMro(cachedKlass)") MroSequenceStorage mro,
-                    @Cached("mro.getLookupStableAssumption()") @SuppressWarnings("unused") Assumption lookupStable,
-                    @Cached("mro.length()") int mroLength,
-                    @Exclusive @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
-                    @Cached("create(mroLength)") ReadAttributeFromObjectNode[] readAttrNodes) {
-        for (int i = 0; i < mroLength; i++) {
-            Object kls = mro.getPythonClassItemNormalized(i);
-            if (skipNonStaticBase(kls, skipNonStaticBases, dylib)) {
-                continue;
+        @Child private GetMroStorageNode getMroNode;
+
+        public abstract Object execute(Object klass, TruffleString key, boolean skipNonStaticBases);
+
+        static PythonBuiltinClassType findOwnerInMro(Python3Core core, PythonBuiltinClassType klass, TruffleString key) {
+            PythonBuiltinClassType current = klass;
+            ReadAttributeFromPythonObjectNode readNode = ReadAttributeFromPythonObjectNode.getUncached();
+            while (current != null) {
+                if (readNode.execute(core.lookupType(current), key) != PNone.NO_VALUE) {
+                    return current;
+                }
+                current = current.getBase();
             }
-            Object value = readAttrNodes[i].execute(kls, key);
-            if (value != PNone.NO_VALUE) {
-                return value;
+            return null;
+        }
+
+        // used to be replaces = lookupPBCTCached
+        @Specialization(guards = "klass == cachedKlass", limit = "getAttributeAccessInlineCacheMaxDepth()")
+        Object lookupPBCTCachedOwner(PythonBuiltinClassType klass, TruffleString key, boolean skipNonStaticBases,
+                        @Cached("klass") PythonBuiltinClassType cachedKlass,
+                        @Cached("findOwnerInMro(getContext(), cachedKlass, key)") PythonBuiltinClassType ownerKlass,
+                        @Shared @Cached ReadAttributeFromPythonObjectNode readAttrNode) {
+            if (ownerKlass == null) {
+                return PNone.NO_VALUE;
+            } else {
+                return readAttrNode.execute(PythonContext.get(this).lookupType(ownerKlass), key);
             }
         }
-        return PNone.NO_VALUE;
-    }
 
-    @Specialization(guards = {"mroLength == cachedMroLength", "cachedMroLength < 32"}, //
-                    replaces = {"lookupConstantMROCached", "lookupConstantMRO"}, //
-                    limit = "getAttributeAccessInlineCacheMaxDepth()")
-    @ExplodeLoop(kind = ExplodeLoop.LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
-    @InliningCutoff
-    protected Object lookupCachedLen(@SuppressWarnings("unused") Object klass,
-                    @Bind("getMro(klass)") MroSequenceStorage mro,
-                    @Bind("mro.length()") @SuppressWarnings("unused") int mroLength,
-                    @Cached("mro.length()") int cachedMroLength,
-                    @Exclusive @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
-                    @Cached("create(cachedMroLength)") ReadAttributeFromObjectNode[] readAttrNodes) {
-        for (int i = 0; i < cachedMroLength; i++) {
-            Object kls = mro.getPythonClassItemNormalized(i);
-            if (skipNonStaticBase(kls, skipNonStaticBases, dylib)) {
-                continue;
-            }
-            Object value = readAttrNodes[i].execute(kls, key);
-            if (value != PNone.NO_VALUE) {
-                return value;
-            }
+        @Specialization(replaces = "lookupPBCTCachedOwner")
+        Object lookupPBCTGeneric(PythonBuiltinClassType klass, TruffleString key, boolean skipNonStaticBases,
+                        @Shared @Cached ReadAttributeFromPythonObjectNode readAttrNode) {
+            return findAttr(PythonContext.get(this), klass, key, readAttrNode);
         }
-        return PNone.NO_VALUE;
-    }
 
-    @Specialization(replaces = {"lookupConstantMROCached", "lookupConstantMRO", "lookupCachedLen"})
-    @Megamorphic
-    @InliningCutoff
-    protected Object lookupGeneric(Object klass,
-                    @Exclusive @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
-                    @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode) {
-        return lookup(key, getMro(klass), readAttrNode, skipNonStaticBases, dylib);
-    }
-
-    protected GetMroStorageNode ensureGetMroNode() {
-        if (getMroNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            getMroNode = insert(GetMroStorageNode.create());
+        // This specialization works well only for multi-context mode
+        // Note: MroShape creation and updates are disabled in multi-context mode, see
+        // PythonClass#initializeMroShape
+        @Specialization(guards = {"!isSingleContext()", "cachedMroShape != null", "klass.getMroShape() == cachedMroShape"}, //
+                        limit = "getAttributeAccessInlineCacheMaxDepth()")
+        Object lookupConstantMROShape(PythonClass klass, TruffleString key, boolean skipNonStaticBases,
+                        @Cached("klass.getMroShape()") MroShape cachedMroShape,
+                        @Cached("lookupInMroShape(cachedMroShape, klass, key)") MroShapeLookupResult lookupResult) {
+            return lookupResult.getFromMro(getMro(klass), key);
         }
-        return getMroNode;
-    }
 
-    protected MroSequenceStorage getMro(Object clazz) {
-        return ensureGetMroNode().executeCached(clazz);
+        @NeverDefault
+        static ReadAttributeFromObjectNode[] create(int size) {
+            ReadAttributeFromObjectNode[] nodes = new ReadAttributeFromObjectNode[size];
+            for (int i = 0; i < size; i++) {
+                nodes[i] = ReadAttributeFromObjectNode.create();
+            }
+            return nodes;
+        }
+
+        @Specialization(guards = {"isSingleContext()", "isSameTypeNode.execute(inliningTarget, cachedKlass, klass)", "mroLength < 32"}, //
+                        limit = "getAttributeAccessInlineCacheMaxDepth()", //
+                        replaces = "lookupConstantMROShape", //
+                        assumptions = "lookupStable")
+        @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
+        static Object lookupConstantMRO(Object klass, TruffleString key, boolean skipNonStaticBases,
+                        @Bind Node inliningTarget,
+                        @Cached("klass") Object cachedKlass,
+                        @Cached IsSameTypeNode isSameTypeNode,
+                        @Cached("getMroUncached(cachedKlass)") MroSequenceStorage mro,
+                        @Cached("mro.getLookupStableAssumption()") Assumption lookupStable,
+                        @Cached("mro.length()") int mroLength,
+                        @Cached("create(mroLength)") ReadAttributeFromObjectNode[] readAttrNodes) {
+            for (int i = 0; i < mroLength; i++) {
+                Object kls = mro.getPythonClassItemNormalized(i);
+                if (skipNonStaticBase(kls, skipNonStaticBases)) {
+                    continue;
+                }
+                Object value = readAttrNodes[i].execute(kls, key);
+                if (value != PNone.NO_VALUE) {
+                    return value;
+                }
+            }
+            return PNone.NO_VALUE;
+        }
+
+        // used to be replaces = lookupConstantMROCached
+        @Specialization(guards = {"mroLength == cachedMroLength", "cachedMroLength < 32"}, //
+                        replaces = "lookupConstantMRO", //
+                        limit = "getAttributeAccessInlineCacheMaxDepth()")
+        @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
+        Object lookupCachedLen(Object klass, TruffleString key, boolean skipNonStaticBases,
+                        @Bind("getMro(klass)") MroSequenceStorage mro,
+                        @Bind("mro.length()") int mroLength,
+                        @Cached("mro.length()") int cachedMroLength,
+                        @Cached("create(cachedMroLength)") ReadAttributeFromObjectNode[] readAttrNodes) {
+            for (int i = 0; i < cachedMroLength; i++) {
+                Object kls = mro.getPythonClassItemNormalized(i);
+                if (skipNonStaticBase(kls, skipNonStaticBases)) {
+                    continue;
+                }
+                Object value = readAttrNodes[i].execute(kls, key);
+                if (value != PNone.NO_VALUE) {
+                    return value;
+                }
+            }
+            return PNone.NO_VALUE;
+        }
+
+        // used to be replaces = lookupConstantMROCached
+        @Specialization(replaces = {"lookupConstantMRO", "lookupCachedLen"})
+        @Megamorphic
+        @InliningCutoff
+        Object lookupGeneric(Object klass, TruffleString key, boolean skipNonStaticBases,
+                        @Cached ReadAttributeFromObjectNode readAttrNode) {
+            return lookup(key, getMro(klass), readAttrNode, skipNonStaticBases);
+        }
+
+        public MroShapeLookupResult lookupInMroShape(MroShape shape, Object klass, TruffleString key) {
+            assert MroShape.validate(klass, PythonLanguage.get(this));
+            return shape.lookup(key);
+        }
+
+        GetMroStorageNode ensureGetMroNode() {
+            if (getMroNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getMroNode = insert(GetMroStorageNode.create());
+            }
+            return getMroNode;
+        }
+
+        MroSequenceStorage getMro(Object clazz) {
+            return ensureGetMroNode().executeCached(clazz);
+        }
+
+        static MroSequenceStorage getMroUncached(Object clazz) {
+            return GetMroStorageNode.executeUncached(clazz);
+        }
+
     }
 
     @TruffleBoundary
     public static Object lookupSlowPath(Object klass, TruffleString key) {
-        return lookup(key, GetMroStorageNode.executeUncached(klass), ReadAttributeFromObjectNode.getUncachedForceType(), false, DynamicObjectLibrary.getUncached());
+        return lookup(key, GetMroStorageNode.executeUncached(klass), ReadAttributeFromObjectNode.getUncached(), false);
     }
 
-    public static Object lookup(TruffleString key, MroSequenceStorage mro, ReadAttributeFromObjectNode readAttrNode, boolean skipNonStaticBases, DynamicObjectLibrary dylib) {
+    public static Object lookup(TruffleString key, MroSequenceStorage mro, ReadAttributeFromObjectNode readTypeAttrNode, boolean skipNonStaticBases) {
         for (int i = 0; i < mro.length(); i++) {
             Object kls = mro.getPythonClassItemNormalized(i);
-            if (skipNonStaticBase(kls, skipNonStaticBases, dylib)) {
+            if (skipNonStaticBase(kls, skipNonStaticBases)) {
                 continue;
             }
-            Object value = readAttrNode.execute(kls, key);
+            Object value = readTypeAttrNode.execute(kls, key);
             if (value != PNone.NO_VALUE) {
                 return value;
             }
         }
         return PNone.NO_VALUE;
-    }
-
-    protected boolean isSameType(Object cachedKlass, Object klass) {
-        if (isSameTypeNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            isSameTypeNode = insert(IsSameTypeNodeGen.create());
-        }
-        return isSameTypeNode.executeCached(cachedKlass, klass);
     }
 }

@@ -81,6 +81,7 @@ import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -196,6 +197,7 @@ public abstract class TpSlotDescrGet {
             return execute(frame, this, slot, self, obj, type);
         }
 
+        @NeverDefault
         public static CallSlotDescrGet create() {
             return CallSlotDescrGetNodeGen.create();
         }
@@ -248,6 +250,22 @@ public abstract class TpSlotDescrGet {
             PArguments.setArgument(arguments, 2, type);
             RootCallTarget callTarget = PythonLanguage.get(inliningTarget).getBuiltinSlotCallTarget(slot.callTargetIndex);
             return invoke.execute(frame, inliningTarget, callTarget, arguments);
+        }
+
+        @GenerateInline
+        @GenerateCached(false)
+        public abstract static class Lazy extends Node {
+
+            public final CallSlotDescrGet get(Node inliningTarget) {
+                return execute(inliningTarget);
+            }
+
+            abstract CallSlotDescrGet execute(Node inliningTarget);
+
+            @Specialization
+            static CallSlotDescrGet doIt(@Cached(inline = false) CallSlotDescrGet node) {
+                return node;
+            }
         }
     }
 

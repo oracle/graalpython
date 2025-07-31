@@ -54,7 +54,7 @@ import com.oracle.graal.python.lib.PyDictSetItem;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromModuleNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -103,7 +103,7 @@ public abstract class SetupAnnotationsNode extends PNodeWithContext {
 
         @Specialization
         static void doModule(Node inliningTarget, PythonModule locals,
-                        @Cached(inline = false) ReadAttributeFromObjectNode read,
+                        @Cached ReadAttributeFromModuleNode read,
                         @Cached(inline = false) WriteAttributeToObjectNode write,
                         @Cached @Exclusive InlinedBranchProfile create) {
             Object annotations = read.execute(locals, T___ANNOTATIONS__);

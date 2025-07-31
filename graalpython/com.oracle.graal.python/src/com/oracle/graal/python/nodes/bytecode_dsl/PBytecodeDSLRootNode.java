@@ -168,7 +168,7 @@ import com.oracle.graal.python.nodes.argument.keywords.ConcatDictToStorageNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.keywords.NonMappingException;
 import com.oracle.graal.python.nodes.argument.keywords.SameDictKeyException;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
+import com.oracle.graal.python.nodes.attributes.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.bytecode.CopyDictWithoutKeysNode;
 import com.oracle.graal.python.nodes.bytecode.GetSendValueNode;

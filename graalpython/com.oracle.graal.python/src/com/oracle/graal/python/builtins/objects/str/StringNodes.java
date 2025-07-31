@@ -61,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Read
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.str.StringNodesFactory.CastToTruffleStringChecked0NodeGen;
 import com.oracle.graal.python.builtins.objects.str.StringNodesFactory.IsInternedStringNodeGen;
 import com.oracle.graal.python.builtins.objects.str.StringNodesFactory.StringMaterializeNodeGen;
 import com.oracle.graal.python.lib.IteratorExhausted;
@@ -202,7 +203,7 @@ public abstract class StringNodes {
         @InliningCutoff
         static int other(Object x,
                         @Bind Node inliningTarget,
-                        @Cached CastToTruffleStringCheckedNode cast,
+                        @Cached CastToTruffleStringChecked2Node cast,
                         @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
             TruffleString tstring = cast.cast(inliningTarget, x, ErrorMessages.DESCRIPTOR_REQUIRES_S_OBJ_RECEIVED_P, "str", x);
             return doString(tstring, codePointLengthNode);
@@ -242,30 +243,152 @@ public abstract class StringNodes {
         }
     }
 
+    // One variant per arity to avoid extra Object[] allocations
     @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
-    public abstract static class CastToTruffleStringCheckedNode extends PNodeWithContext {
-        public final TruffleString cast(Node inliningTarget, Object object, TruffleString errMsgFormat, Object... errMsgArgs) {
-            return execute(inliningTarget, object, errMsgFormat, errMsgArgs);
+    public abstract static class CastToTruffleStringChecked0Node extends PNodeWithContext {
+        public static CastToTruffleStringChecked0Node getUncached() {
+            return CastToTruffleStringChecked0NodeGen.getUncached();
         }
 
-        abstract TruffleString execute(Node inliningTarget, Object object, TruffleString errMsgFormat, Object[] errMsgArgs);
+        public final TruffleString cast(Node inliningTarget, Object object, TruffleString errMsg) {
+            return execute(inliningTarget, object, errMsg);
+        }
 
+        abstract TruffleString execute(Node inliningTarget, Object object, TruffleString errMsg);
+
+        @SuppressWarnings("unused")
         @Specialization
-        static TruffleString doTruffleString(TruffleString self, @SuppressWarnings("unused") TruffleString errMsgFormat, @SuppressWarnings("unused") Object[] errMsgArgs) {
+        static TruffleString doTruffleString(TruffleString self, TruffleString errMsg) {
             return self;
         }
 
         @Specialization(guards = "!isTruffleString(self)")
         @InliningCutoff
-        static TruffleString doConvert(Node inliningTarget, Object self, TruffleString errMsgFormat, Object[] errMsgArgs,
+        static TruffleString doConvert(Node inliningTarget, Object self, TruffleString errMsg,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached PRaiseNode raiseNode) {
             try {
                 return castToTruffleStringNode.execute(inliningTarget, self);
             } catch (CannotCastException e) {
-                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, errMsgFormat, errMsgArgs);
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, errMsg);
+            }
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class CastToTruffleStringChecked1Node extends PNodeWithContext {
+        public final TruffleString cast(Node inliningTarget, Object object, TruffleString errMsgFormat, Object errMsgArg1) {
+            return execute(inliningTarget, object, errMsgFormat, errMsgArg1);
+        }
+
+        abstract TruffleString execute(Node inliningTarget, Object object, TruffleString errMsgFormat, Object errMsgArg1);
+
+        @SuppressWarnings("unused")
+        @Specialization
+        static TruffleString doTruffleString(TruffleString self, TruffleString errMsgFormat, Object errMsgArg1) {
+            return self;
+        }
+
+        @Specialization(guards = "!isTruffleString(self)")
+        @InliningCutoff
+        static TruffleString doConvert(Node inliningTarget, Object self, TruffleString errMsgFormat, Object errMsgArg1,
+                        @Cached CastToTruffleStringNode castToTruffleStringNode,
+                        @Cached PRaiseNode raiseNode) {
+            try {
+                return castToTruffleStringNode.execute(inliningTarget, self);
+            } catch (CannotCastException e) {
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, errMsgFormat, errMsgArg1);
+            }
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class CastToTruffleStringChecked2Node extends PNodeWithContext {
+        public final TruffleString cast(Node inliningTarget, Object object, TruffleString errMsgFormat, Object errMsgArg1, Object errMsgArg2) {
+            return execute(inliningTarget, object, errMsgFormat, errMsgArg1, errMsgArg2);
+        }
+
+        abstract TruffleString execute(Node inliningTarget, Object object, TruffleString errMsgFormat, Object errMsgArg1, Object errMsgArg2);
+
+        @SuppressWarnings("unused")
+        @Specialization
+        static TruffleString doTruffleString(TruffleString self, TruffleString errMsgFormat, Object errMsgArg1, Object errMsgArg2) {
+            return self;
+        }
+
+        @Specialization(guards = "!isTruffleString(self)")
+        @InliningCutoff
+        static TruffleString doConvert(Node inliningTarget, Object self, TruffleString errMsgFormat, Object errMsgArg1, Object errMsgArg2,
+                        @Cached CastToTruffleStringNode castToTruffleStringNode,
+                        @Cached PRaiseNode raiseNode) {
+            try {
+                return castToTruffleStringNode.execute(inliningTarget, self);
+            } catch (CannotCastException e) {
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, errMsgFormat, errMsgArg1, errMsgArg2);
+            }
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class CastToTruffleStringChecked3Node extends PNodeWithContext {
+        public final TruffleString cast(Node inliningTarget, Object object, TruffleString errMsgFormat, Object errMsgArg1, Object errMsgArg2, Object errMsgArg3) {
+            return execute(inliningTarget, object, errMsgFormat, errMsgArg1, errMsgArg2, errMsgArg3);
+        }
+
+        abstract TruffleString execute(Node inliningTarget, Object object, TruffleString errMsgFormat, Object errMsgArg1, Object errMsgArg2, Object errMsgArg3);
+
+        @SuppressWarnings("unused")
+        @Specialization
+        static TruffleString doTruffleString(TruffleString self, TruffleString errMsgFormat, Object errMsgArg1, Object errMsgArg2, Object errMsgArg3) {
+            return self;
+        }
+
+        @Specialization(guards = "!isTruffleString(self)")
+        @InliningCutoff
+        static TruffleString doConvert(Node inliningTarget, Object self, TruffleString errMsgFormat, Object errMsgArg1, Object errMsgArg2, Object errMsgArg3,
+                        @Cached CastToTruffleStringNode castToTruffleStringNode,
+                        @Cached PRaiseNode raiseNode) {
+            try {
+                return castToTruffleStringNode.execute(inliningTarget, self);
+            } catch (CannotCastException e) {
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, errMsgFormat, errMsgArg1, errMsgArg2, errMsgArg3);
+            }
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class CastToTruffleStringChecked4Node extends PNodeWithContext {
+        public final TruffleString cast(Node inliningTarget, Object object, TruffleString errMsgFormat, Object errMsgArg1, Object errMsgArg2, Object errMsgArg3, Object errMsgArg4) {
+            return execute(inliningTarget, object, errMsgFormat, errMsgArg1, errMsgArg2, errMsgArg3, errMsgArg4);
+        }
+
+        abstract TruffleString execute(Node inliningTarget, Object object, TruffleString errMsgFormat, Object errMsgArg1, Object errMsgArg2, Object errMsgArg3, Object errMsgArg4);
+
+        @SuppressWarnings("unused")
+        @Specialization
+        static TruffleString doTruffleString(TruffleString self, TruffleString errMsgFormat, Object errMsgArg1, Object errMsgArg2, Object errMsgArg3, Object errMsgArg4) {
+            return self;
+        }
+
+        @Specialization(guards = "!isTruffleString(self)")
+        @InliningCutoff
+        static TruffleString doConvert(Node inliningTarget, Object self, TruffleString errMsgFormat, Object errMsgArg1, Object errMsgArg2, Object errMsgArg3, Object errMsgArg4,
+                        @Cached CastToTruffleStringNode castToTruffleStringNode,
+                        @Cached PRaiseNode raiseNode) {
+            try {
+                return castToTruffleStringNode.execute(inliningTarget, self);
+            } catch (CannotCastException e) {
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, errMsgFormat, errMsgArg1, errMsgArg2, errMsgArg3, errMsgArg4);
             }
         }
     }

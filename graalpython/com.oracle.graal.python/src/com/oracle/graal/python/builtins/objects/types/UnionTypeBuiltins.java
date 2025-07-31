@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked1Node;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
@@ -84,8 +85,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -192,17 +191,12 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
         @Specialization
         Object getattribute(VirtualFrame frame, PUnionType self, Object nameObj,
                         @Bind Node inliningTarget,
-                        @Cached CastToTruffleStringNode cast,
+                        @Cached CastToTruffleStringChecked1Node castToString,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached GetClassNode getClassNode,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached ObjectBuiltins.GetAttributeNode genericGetAttribute) {
-            TruffleString name;
-            try {
-                name = cast.execute(inliningTarget, nameObj);
-            } catch (CannotCastException e) {
-                return genericGetAttribute.execute(frame, self, nameObj);
-            }
+            TruffleString name = castToString.cast(inliningTarget, nameObj, ErrorMessages.ATTR_NAME_MUST_BE_STRING, nameObj);
             if (equalNode.execute(name, T___MODULE__, TS_ENCODING)) {
                 return getAttr.execute(frame, inliningTarget, getClassNode.execute(inliningTarget, self), name);
             }
