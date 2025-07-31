@@ -352,6 +352,11 @@ version = '== 3.10.5'
 patch = 'orjson-3.10.5.patch'
 license = 'Apache-2.0 OR MIT'
 
+[[orjson.rules]]
+version = '== 3.10.18'
+patch = 'orjson-3.10.18.patch'
+license = 'Apache-2.0 OR MIT'
+
 [[ormsgpack.rules]]
 version = '>= 1.8.0, <= 1.9.1'
 patch = 'ormsgpack-1.8.0-1.9.1.patch'
