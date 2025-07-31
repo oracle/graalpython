@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -68,12 +68,11 @@ def lazy_attributes_from_delegate(module, delegate_name, attributes, owner_modul
     This will only cache the attributes in the caller module.
 
     :param delegate_name: the delegate module
-    :param attributes: a list of attributes names to be loaded lazily from the delagate module
+    :param attributes: a list of attributes names to be loaded lazily from the delegate module
     :param owner_module: the owner module (where this is called from)
     :param on_import_error: a dict of replacement attributes in case of import error
     :return:
     """
-    attributes.append('__all__')
 
     def __getattr__(attr):
         if attr in attributes:
@@ -86,6 +85,7 @@ def lazy_attributes_from_delegate(module, delegate_name, attributes, owner_modul
                     raise
 
             new_globals = dict(**delegate_module.__dict__)
+            new_globals = { key: new_globals[key] for key in attributes }
             new_globals.update(**owner_module.__dict__)
             owner_module.__dict__.update(**new_globals)
 
