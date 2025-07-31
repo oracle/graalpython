@@ -1007,3 +1007,10 @@ license = 'MIT'
 [[zstandard.rules]]
 patch = 'zstandard.patch'
 license = 'BSD-3-Clause'
+
+[[gensim.add-sources]]
+version = '4.3.3'
+url = 'https://github.com/piskvorky/gensim/archive/refs/tags/4.3.3.tar.gz'
+
+[[gensim.rules]]
+version = '== 4.3.3'
