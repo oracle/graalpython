@@ -300,24 +300,31 @@ diff --git a/src/ffi/long.rs b/src/ffi/long.rs
 index 438143b..9599e83 100644
 --- a/src/ffi/long.rs
 +++ b/src/ffi/long.rs
-@@ -37,10 +37,16 @@ pub struct PyLongObject {
+@@ -37,13 +37,21 @@ pub struct PyLongObject {
      pub ob_digit: u32,
  }
  
-+extern "C" {
-+    pub fn GraalPyPrivate_Long_lv_tag(
-+        v: *mut pyo3_ffi::PyObject
-+    ) -> usize;
-+}
-+
- #[cfg(Py_3_12)]
+-#[cfg(Py_3_12)]
++#[cfg(any(Py_3_12, GraalPy))]
  #[inline(always)]
  pub fn pylong_is_unsigned(ptr: *mut pyo3_ffi::PyObject) -> bool {
 -    unsafe { (*ptr.cast::<PyLongObject>()).long_value.lv_tag & SIGN_MASK == 0 }
-+    unsafe { GraalPyPrivate_Long_lv_tag(ptr) & SIGN_MASK == 0 }
++    unsafe {
++        ffi!(PyLong_AsUnsignedLongLong(ptr));
++        if (ffi!(PyErr_Occurred()).is_null()) {
++            return true;
++        } else {
++            ffi!(PyErr_Clear());
++            return false;
++        }
++    }
  }
  
- #[cfg(not(Py_3_12))]
+-#[cfg(not(Py_3_12))]
++#[cfg(not(any(Py_3_12, GraalPy)))]
+ #[inline(always)]
+ pub fn pylong_is_unsigned(ptr: *mut pyo3_ffi::PyObject) -> bool {
+     unsafe { (*ptr.cast::<pyo3_ffi::PyVarObject>()).ob_size > 0 }
 diff --git a/src/lib.rs b/src/lib.rs
 index 21f72d2..488ab2a 100644
 --- a/src/lib.rs
@@ -358,6 +365,15 @@ index 21f72d2..488ab2a 100644
          Py_DECREF(err_msg);
  
          if !cause_exc.is_null() {
+@@ -332,7 +332,7 @@ fn raise_dumps_exception_dynamic(err: &str) -> *mut PyObject {
+         let err_msg =
+             PyUnicode_FromStringAndSize(err.as_ptr().cast::<c_char>(), usize_to_isize(err.len()));
+         PyErr_SetObject(typeref::JsonEncodeError, err_msg);
+-        debug_assert!(ffi!(Py_REFCNT(err_msg)) == 2);
++        // debug_assert!(ffi!(Py_REFCNT(err_msg)) == 2);
+         Py_DECREF(err_msg);
+         let mut tp: *mut PyObject = null_mut();
+         let mut val: *mut PyObject = null_mut();
 @@ -388,14 +388,14 @@ pub unsafe extern "C" fn dumps(
          if unlikely!(!kwnames.is_null()) {
              for i in 0..=Py_SIZE(kwnames).saturating_sub(1) {
@@ -393,7 +409,7 @@ index 0cad0ad..ae2e8fe 100644
      #[inline(never)]
      pub fn write_buf(&self, buf: &mut SmallFixedBuffer) -> Result<(), TimeError> {
 -        if unsafe { (*self.ptr.cast::<pyo3_ffi::PyDateTime_Time>()).hastzinfo == 1 } {
-+        if unsafe { pyo3_ffi::Py_IsNone(GraalPyDateTime_DATE_GET_TZINFO(self.ptr)) != 0 } {
++        if unsafe { pyo3_ffi::Py_IsNone(PyTruffle_PyDateTime_GET_TZINFO(self.ptr)) != 0 } {
              return Err(TimeError::HasTimezone);
          }
          let hour = ffi!(PyDateTime_TIME_GET_HOUR(self.ptr)) as u8;
@@ -402,7 +418,7 @@ index 0cad0ad..ae2e8fe 100644
  }
  
 +extern "C" {
-+    pub fn GraalPyDateTime_DATE_GET_TZINFO(obj: *mut pyo3_ffi::PyObject) -> *mut pyo3_ffi::PyObject;
++    pub fn PyTruffle_PyDateTime_GET_TZINFO(obj: *mut pyo3_ffi::PyObject) -> *mut pyo3_ffi::PyObject;
 +}
 +
  impl DateTimeLike for DateTime {
@@ -413,7 +429,7 @@ index 0cad0ad..ae2e8fe 100644
  
      fn has_tz(&self) -> bool {
 -        unsafe { (*(self.ptr.cast::<pyo3_ffi::PyDateTime_DateTime>())).hastzinfo == 1 }
-+        unsafe { pyo3_ffi::Py_IsNone(GraalPyDateTime_DATE_GET_TZINFO(self.ptr)) == 0 }
++        unsafe { pyo3_ffi::Py_IsNone(PyTruffle_PyDateTime_GET_TZINFO(self.ptr)) == 0 }
      }
  
      #[inline(never)]
@@ -484,6 +500,20 @@ index 505840e..e984191 100644
              match pyobject_to_obtype(value, self.state.opts()) {
                  ObType::Str => {
                      seq.serialize_element(&StrSerializer::new(value))?;
+diff --git a/src/serialize/per_type/numpy.rs b/src/serialize/per_type/numpy.rs
+index f888029..4a0fe0e 100644
+--- a/src/serialize/per_type/numpy.rs
++++ b/src/serialize/per_type/numpy.rs
+@@ -196,8 +196,7 @@ impl NumpyArray {
+     pub fn new(ptr: *mut PyObject, opts: Opt) -> Result<Self, PyArrayError> {
+         let capsule = ffi!(PyObject_GetAttr(ptr, ARRAY_STRUCT_STR));
+         let array = unsafe {
+-            (*capsule.cast::<PyCapsule>())
+-                .pointer
++            ffi!(PyCapsule_GetPointer(capsule, core::ptr::null_mut()))
+                 .cast::<PyArrayInterface>()
+         };
+         if unsafe { (*array).two != 2 } {
 diff --git a/src/serialize/serializer.rs b/src/serialize/serializer.rs
 index 7b9a5de..e291912 100644
 --- a/src/serialize/serializer.rs
@@ -863,51 +893,69 @@ index ccf425c..bc9268d 100644
      };
  }
  
-@@ -121,8 +121,8 @@ macro_rules! reverse_pydict_incref {
-     ($op:expr) => {
-         unsafe {
-             if pyo3_ffi::_Py_IsImmortal($op) == 0 {
--                debug_assert!(ffi!(Py_REFCNT($op)) >= 2);
--                (*$op).ob_refcnt.ob_refcnt -= 1;
-+                // debug_assert!(ffi!(Py_REFCNT($op)) >= 2);
-+                ffi!(Py_DECREF($op))
-             }
-         }
-     };
-@@ -183,13 +183,12 @@ macro_rules! str_hash {
+@@ -116,14 +116,14 @@ macro_rules! str_from_slice {
      };
  }
  
--#[cfg(Py_3_13)]
+-#[cfg(all(Py_3_12, not(Py_GIL_DISABLED)))]
++#[cfg(any(GraalPy, all(Py_3_12, not(Py_GIL_DISABLED))))]
+ macro_rules! reverse_pydict_incref {
+     ($op:expr) => {
+         unsafe {
+-            if pyo3_ffi::_Py_IsImmortal($op) == 0 {
+-                debug_assert!(ffi!(Py_REFCNT($op)) >= 2);
+-                (*$op).ob_refcnt.ob_refcnt -= 1;
+-            }
++            // if pyo3_ffi::_Py_IsImmortal($op) == 0 {
++                // debug_assert!(ffi!(Py_REFCNT($op)) >= 2);
++                ffi!(Py_DECREF($op))
++            // }
+         }
+     };
+ }
+@@ -136,7 +136,7 @@ macro_rules! reverse_pydict_incref {
+     };
+ }
+ 
+-#[cfg(not(Py_3_12))]
++#[cfg(not(any(GraalPy, Py_3_12)))]
+ macro_rules! reverse_pydict_incref {
+     ($op:expr) => {
+         unsafe {
+@@ -183,10 +183,11 @@ macro_rules! str_hash {
+     };
+ }
+ 
++/*
+ #[cfg(Py_3_13)]
  macro_rules! pydict_contains {
      ($obj1:expr, $obj2:expr) => {
-         unsafe { pyo3_ffi::PyDict_Contains(pyo3_ffi::PyType_GetDict($obj1), $obj2) == 1 }
+-        unsafe { pyo3_ffi::PyDict_Contains(pyo3_ffi::PyType_GetDict($obj1), $obj2) == 1 }
++        unsafe { pyo3_ffi::PyDict_Contains(pyo3_ffi::PyObject_GenericGetDict($obj1.cast::<pyo3_ffi::PyObject>(), core::ptr::null_mut()), $obj2) == 1 }
+     };
+ }
+ 
+@@ -215,8 +216,8 @@ macro_rules! pydict_contains {
+         }
      };
  }
 -
-+/*
- #[cfg(all(Py_3_12, not(Py_3_13)))]
+ #[cfg(not(Py_3_10))]
++*/
  macro_rules! pydict_contains {
      ($obj1:expr, $obj2:expr) => {
-@@ -222,6 +221,7 @@ macro_rules! pydict_contains {
          unsafe { pyo3_ffi::PyDict_Contains((*$obj1).tp_dict, $obj2) == 1 }
-     };
- }
-+*/
- 
- #[cfg(Py_3_12)]
- macro_rules! use_immortal {
-@@ -234,6 +234,9 @@ macro_rules! use_immortal {
+@@ -234,6 +235,9 @@ macro_rules! use_immortal {
  macro_rules! use_immortal {
      ($op:expr) => {
          unsafe {
 +            // orjson makes assumption about something being immortal that is not immortal
 +            // on GraalPy: update the caller to do proper refcounting instead
-+            debug_assert!(ffi!(_Py_IsImmortal($op)) == 1);
++            // debug_assert!(ffi!(_Py_IsImmortal($op)) == 1);
              ffi!(Py_INCREF($op));
              $op
          }
-@@ -256,20 +259,11 @@ macro_rules! pydict_next {
+@@ -256,20 +260,11 @@ macro_rules! pydict_next {
  
  macro_rules! pydict_setitem {
      ($dict:expr, $pykey:expr, $pyval:expr) => {
