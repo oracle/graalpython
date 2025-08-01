@@ -610,10 +610,9 @@ def _graalpy_launcher():
     return f"{name}.exe" if WIN32 else name
 
 
-# dev means Default TruffleRuntime and "build the minimum possible"
+# dev only has effect if standalone_type is 'jvm' and means minimal, Default TruffleRuntime (no JIT)
 def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=True):
     assert standalone_type in ['native', 'jvm']
-    assert not (enterprise and dev), "EE dev standalones are not implemented yet"
     jdk_version = mx.get_jdk().version
 
     # Check if GRAALPY_HOME points to some compatible pre-built GraalPy standalone
@@ -677,7 +676,7 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
 
     python_home = os.path.join(SUITE.dir, 'mxbuild', f"{mx.get_os()}-{mx.get_arch()}", standalone_dist)
 
-    if dev and standalone_type == 'native':
+    if standalone_type == 'native':
         debuginfo = os.path.join(SUITE.dir, 'mxbuild', f"{mx.get_os()}-{mx.get_arch()}", "libpythonvm", "libpythonvm.so.debug")
         if os.path.exists(debuginfo):
             shutil.copy(debuginfo, os.path.join(python_home, 'lib'))
@@ -868,7 +867,7 @@ def python_svm(_=None):
     Also builds the standalone if not built already."""
     if mx_gate.get_jacoco_agent_args():
         return python_jvm()
-    launcher = graalpy_standalone('native', dev=True)
+    launcher = graalpy_standalone('native')
     mx.log(launcher)
     return launcher
 
@@ -2497,9 +2496,6 @@ def graalpy_standalone_wrapper(args_in):
     parser.add_argument('--no-build', action='store_true',
                         help="Doesn't build the standalone, only prints the patch to its launcher")
     args = parser.parse_args(args_in)
-    if args.edition == 'ee':
-        if not mx.suite('graalpython-enterprise', fatalIfMissing=False):
-            mx.abort("You must add --dynamicimports graalpython-enterprise for EE edition")
     print(graalpy_standalone(args.type, enterprise=args.edition == 'ee', build=not args.no_build))
 
 def graalpy_jmh(args):
