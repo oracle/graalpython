@@ -321,7 +321,7 @@ def graalpy_native_pgo_build_and_test(_):
                 GRAALPY_HOME=instrumented_home,
         ):
             graalpytest(["--python", instrumented_launcher, "test_venv.py"])
-            mx.command_function('benchmark')(["meso-small:*"])
+            mx.command_function('benchmark')(["meso-small:*", "--", "--python-vm", "graalpython", "--python-vm-config", "custom"])
 
         iprof_path = Path(SUITE.dir) / 'default.iprof'
         lcov_path = Path(SUITE.dir) / 'default.lcov'
