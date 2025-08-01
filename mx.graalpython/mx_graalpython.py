@@ -41,7 +41,7 @@ from functools import wraps
 from pathlib import Path
 from textwrap import dedent
 
-from typing import cast
+from typing import cast, Union
 
 import downstream_tests
 import mx_graalpython_benchmark
@@ -280,7 +280,7 @@ def libpythonvm_build_args():
             try:
                 profile = cmd([])
             except BaseException:
-                pass
+                mx.log(f"Not using any PGO profile")
             else:
                 mx.log(f"Using PGO profile {profile}")
                 build_args += [
@@ -1072,7 +1072,7 @@ def _list_graalpython_unittests(paths=None, exclude=None):
 
 def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env=None,
                          use_pytest=False, cwd=None, lock=None, out=None, err=None, nonZeroIsFatal=True, timeout=None,
-                         report=False, parallel=None, runner_args=None):
+                         report: Union[Task, bool, None] = False, parallel=None, runner_args=None):
     if lock:
         lock.acquire()
 
@@ -1148,7 +1148,7 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
     return result
 
 
-def run_hpy_unittests(python_binary, args=None, env=None, nonZeroIsFatal=True, timeout=None, report=False):
+def run_hpy_unittests(python_binary, args=None, env=None, nonZeroIsFatal=True, timeout=None, report: Union[Task, bool, None] = False):
     t0 = time.time()
     result = downstream_tests.downstream_test_hpy(python_binary, args=args, env=env, check=nonZeroIsFatal, timeout=timeout)
     if report:
@@ -1160,7 +1160,7 @@ def run_hpy_unittests(python_binary, args=None, env=None, nonZeroIsFatal=True, t
 
 
 def run_tagged_unittests(python_binary, env=None, cwd=None, nonZeroIsFatal=True, checkIfWithGraalPythonEE=False,
-                         report=False, parallel=8, exclude=None, paths=()):
+                         report: Union[Task, bool, None] = False, parallel=8, exclude=None, paths=()):
 
     if checkIfWithGraalPythonEE:
         mx.run([python_binary, "-c", "import sys; print(sys.version)"])
@@ -1432,13 +1432,13 @@ def graalpython_gate_runner(args, tasks):
         if task:
             run_mx([
                 "--dy", "graalpython,/substratevm",
-                "-p", os.path.join(mx.suite("truffle"), "..", "vm"),
+                "-p", os.path.join(mx.suite("truffle").dir, "..", "vm"),
                 "--native-images=",
                 "build",
             ], env={**os.environ, **LATEST_JAVA_HOME})
             run_mx([
                 "--dy", "graalpython,/substratevm",
-                "-p", os.path.join(mx.suite("truffle"), "..", "vm"),
+                "-p", os.path.join(mx.suite("truffle").dir, "..", "vm"),
                 "--native-images=",
                 "gate", "svm-truffle-tck-python",
             ])
