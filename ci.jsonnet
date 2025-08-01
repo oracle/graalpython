@@ -230,6 +230,15 @@
         "python-svm-build": gpgate + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest"     : tier2                     + provide(GPY_NATIVE_STANDALONE),
         }),
+        "python-pgo-profile": gpgate_ee + platform_spec(no_jobs) + platform_spec({
+            "linux:amd64:jdk-latest"     : weekly + t("01:30:00") + task_spec({
+                run: [["mx", "python-native-pgo"]],
+                logs+: [
+                    "default.iprof.gz",
+                    "default.lcov",
+                ],
+            }),
+        }),
         "python-svm-unittest": gpgate + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest"     : tier2                     + require(GPY_NATIVE_STANDALONE),
             "linux:aarch64:jdk-latest"   : tier3                     + provide(GPY_NATIVE_STANDALONE),

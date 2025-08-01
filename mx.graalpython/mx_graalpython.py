@@ -28,6 +28,7 @@ import contextlib
 import datetime
 import fnmatch
 import glob
+import gzip
 import itertools
 import os
 import pathlib
@@ -41,14 +42,11 @@ from functools import wraps
 from pathlib import Path
 from textwrap import dedent
 
-from typing import cast
+from typing import cast, Union
 
 import downstream_tests
 import mx_graalpython_benchmark
 import mx_urlrewrites
-
-if sys.version_info[0] < 3:
-    raise RuntimeError("The build scripts are no longer compatible with Python 2")
 
 import tempfile
 from argparse import ArgumentParser
@@ -274,7 +272,102 @@ def libpythonvm_build_args():
     build_args += bytecode_dsl_build_args()
     if mx_sdk_vm_ng.is_nativeimage_ee() and mx.get_os() == 'linux' and 'NATIVE_IMAGE_AUXILIARY_ENGINE_CACHE' not in os.environ:
         build_args += ['--gc=G1', '-H:-ProtectionKeys']
+    if not os.environ.get("GRAALPY_PGO_PROFILE") and mx.suite('graalpython-enterprise', fatalIfMissing=False):
+        cmd = mx.command_function('python-get-latest-profile', fatalIfMissing=False)
+        if cmd:
+            profile = None
+            try:
+                profile = cmd([])
+            except BaseException:
+                pass
+            if profile and os.path.exists(profile):
+                mx.log(f"Using PGO profile {profile}")
+                build_args += [
+                    f"--pgo={profile}",
+                    "-H:+UnlockExperimentalVMOptions",
+                    "-H:+PGOPrintProfileQuality",
+                    "-H:-UnlockExperimentalVMOptions",
+                ]
+            else:
+                mx.log(f"Not using any PGO profile")
     return build_args
+
+
+def graalpy_native_pgo_build_and_test(_):
+    """
+    Builds a PGO-instrumented GraalPy native standalone, runs the unittests to generate a profile,
+    then builds a PGO-optimized GraalPy native standalone with the collected profile.
+    The profile file will be named 'default.iprof' in native image build directory.
+    """
+    with set_env(GRAALPY_PGO_PROFILE=""):
+        mx.log(mx.colorize("[PGO] Building PGO-instrumented native image", color="yellow"))
+        build_home = graalpy_standalone_home('native', enterprise=True, build=True)
+        instrumented_home = build_home + "_PGO_INSTRUMENTED"
+        shutil.rmtree(instrumented_home, ignore_errors=True)
+        shutil.copytree(build_home, instrumented_home, symlinks=True, ignore_dangling_symlinks=True)
+        instrumented_launcher = os.path.join(instrumented_home, 'bin', _graalpy_launcher())
+
+    mx.log(mx.colorize(f"[PGO] Instrumented build complete: {instrumented_home}", color="yellow"))
+
+    mx.log(mx.colorize(f"[PGO] Running graalpytest with instrumented binary: {instrumented_launcher}", color="yellow"))
+    with tempfile.TemporaryDirectory() as d:
+        with set_env(
+                GRAALPYTEST_ALLOW_NO_JAVA_ASSERTIONS="true",
+                GRAAL_PYTHON_VM_ARGS="\v".join([
+                    f"--vm.XX:ProfilesDumpFile={os.path.join(d, '$UUID$.iprof')}",
+                    f"--vm.XX:ProfilesLCOVFile={os.path.join(d, '$UUID$.info')}",
+                ]),
+                GRAALPY_HOME=instrumented_home,
+        ):
+            graalpytest(["--python", instrumented_launcher, "test_venv.py"])
+            mx.command_function('benchmark')(["meso-small:*", "--", "--python-vm", "graalpython", "--python-vm-config", "custom"])
+
+        iprof_path = Path(SUITE.dir) / 'default.iprof'
+        lcov_path = Path(SUITE.dir) / 'default.lcov'
+
+        run([
+            os.path.join(
+                graalvm_jdk(enterprise=True),
+                "bin",
+                f"native-image-configure{'.exe' if mx.is_windows() else ''}",
+            ),
+            "merge-pgo-profiles",
+            f"--input-dir={d}",
+            f"--output-file={iprof_path}"
+        ])
+        run([
+            "/usr/bin/env",
+            "lcov",
+            "-o", str(lcov_path),
+            *itertools.chain.from_iterable([
+                ["-a", f.absolute().as_posix()] for f in Path(d).glob("*.info")
+            ])
+        ], nonZeroIsFatal=False)
+        run([
+            "/usr/bin/env",
+            "genhtml",
+            "--source-directory", str(Path(SUITE.dir) / "com.oracle.graal.python" / "src"),
+            "--source-directory", str(Path(SUITE.dir) / "com.oracle.graal.python.pegparser" / "src"),
+            "--source-directory", str(Path(SUITE.get_output_root()) / "com.oracle.graal.python" / "src_gen"),
+            "--include", "com/oracle/graal/python",
+            "--keep-going",
+            "-o", "lcov_html",
+            str(lcov_path),
+        ], nonZeroIsFatal=False)
+
+    if not os.path.isfile(iprof_path):
+        mx.abort(f"[PGO] Could not find profile file at expected location: {iprof_path}")
+
+    with set_env(GRAALPY_PGO_PROFILE=str(iprof_path)):
+        mx.log(mx.colorize("[PGO] Building optimized native image with collected profile", color="yellow"))
+        native_bin = graalpy_standalone('native', enterprise=True, build=True)
+
+    mx.log(mx.colorize(f"[PGO] Optimized PGO build complete: {native_bin}", color="yellow"))
+
+    iprof_gz_path = str(iprof_path) + '.gz'
+    with open(iprof_path, 'rb') as f_in, gzip.open(iprof_gz_path, 'wb') as f_out:
+        shutil.copyfileobj(f_in, f_out)
+    mx.log(mx.colorize(f"[PGO] Gzipped profile at: {iprof_gz_path}", color="yellow"))
 
 
 def full_python(args, env=None):
@@ -666,6 +759,19 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
     if BUILD_NATIVE_IMAGE_WITH_ASSERTIONS:
         mx_args.append("--extra-image-builder-argument=-ea")
 
+    pgo_profile = os.environ.get("GRAALPY_PGO_PROFILE")
+    if pgo_profile is not None:
+        if not enterprise or standalone_type != "native":
+            mx.abort("PGO is only supported on enterprise NI")
+        if pgo_profile:
+            mx_args.append(f"--extra-image-builder-argument=--pgo={pgo_profile}")
+            mx_args.append(f"--extra-image-builder-argument=-H:+UnlockExperimentalVMOptions")
+            mx_args.append(f"--extra-image-builder-argument=-H:+PGOPrintProfileQuality")
+        else:
+            mx_args.append(f"--extra-image-builder-argument=--pgo-instrument")
+            mx_args.append(f"--extra-image-builder-argument=-H:+UnlockExperimentalVMOptions")
+            mx_args.append(f"--extra-image-builder-argument=-H:+ProfilingLCOV")
+
     if mx_gate.get_jacoco_agent_args() or (build and not DISABLE_REBUILD):
         mx_build_args = mx_args
         if BYTECODE_DSL_INTERPRETER:
@@ -908,7 +1014,9 @@ def graalpytest(args):
             python_binary = graalpy_standalone_native()
     elif 'graalpy' in os.path.basename(python_binary) or 'mxbuild' in python_binary:
         is_graalpy = True
-        gp_args = ["--vm.ea", "--vm.esa", "--experimental-options=true", "--python.EnableDebuggingBuiltins"]
+        gp_args = ["--experimental-options=true", "--python.EnableDebuggingBuiltins"]
+        if env.get("GRAALPYTEST_ALLOW_NO_JAVA_ASSERTIONS") != "true":
+            gp_args += ["--vm.ea", "--vm.esa"]
         mx.log(f"Executable seems to be GraalPy, prepending arguments: {gp_args}")
         python_args += gp_args
     if is_graalpy and BYTECODE_DSL_INTERPRETER:
@@ -963,7 +1071,7 @@ def _list_graalpython_unittests(paths=None, exclude=None):
 
 def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env=None,
                          use_pytest=False, cwd=None, lock=None, out=None, err=None, nonZeroIsFatal=True, timeout=None,
-                         report=False, parallel=None, runner_args=None):
+                         report: Union[Task, bool, None] = False, parallel=None, runner_args=None):
     if lock:
         lock.acquire()
 
@@ -1039,7 +1147,7 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
     return result
 
 
-def run_hpy_unittests(python_binary, args=None, env=None, nonZeroIsFatal=True, timeout=None, report=False):
+def run_hpy_unittests(python_binary, args=None, env=None, nonZeroIsFatal=True, timeout=None, report: Union[Task, bool, None] = False):
     t0 = time.time()
     result = downstream_tests.downstream_test_hpy(python_binary, args=args, env=env, check=nonZeroIsFatal, timeout=timeout)
     if report:
@@ -1051,7 +1159,7 @@ def run_hpy_unittests(python_binary, args=None, env=None, nonZeroIsFatal=True, t
 
 
 def run_tagged_unittests(python_binary, env=None, cwd=None, nonZeroIsFatal=True, checkIfWithGraalPythonEE=False,
-                         report=False, parallel=8, exclude=None, paths=()):
+                         report: Union[Task, bool, None] = False, parallel=8, exclude=None, paths=()):
 
     if checkIfWithGraalPythonEE:
         mx.run([python_binary, "-c", "import sys; print(sys.version)"])
@@ -1323,13 +1431,13 @@ def graalpython_gate_runner(args, tasks):
         if task:
             run_mx([
                 "--dy", "graalpython,/substratevm",
-                "-p", os.path.join(mx.suite("truffle"), "..", "vm"),
+                "-p", os.path.join(mx.suite("truffle").dir, "..", "vm"),
                 "--native-images=",
                 "build",
             ], env={**os.environ, **LATEST_JAVA_HOME})
             run_mx([
                 "--dy", "graalpython,/substratevm",
-                "-p", os.path.join(mx.suite("truffle"), "..", "vm"),
+                "-p", os.path.join(mx.suite("truffle").dir, "..", "vm"),
                 "--native-images=",
                 "gate", "svm-truffle-tck-python",
             ])
@@ -2554,4 +2662,5 @@ mx.update_commands(SUITE, {
     'graalpy-jmh': [graalpy_jmh, ''],
     'deploy-local-maven-repo': [deploy_local_maven_repo_wrapper, ''],
     'downstream-test': [run_downstream_test, ''],
+    'python-native-pgo': [graalpy_native_pgo_build_and_test, 'Build PGO-instrumented native image, run tests, then build PGO-optimized native image'],
 })

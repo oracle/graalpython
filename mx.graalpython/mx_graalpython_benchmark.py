@@ -62,6 +62,7 @@ SUBGROUP_GRAAL_PYTHON = "graalpython"
 
 PYTHON_VM_REGISTRY_NAME = "Python"
 CONFIGURATION_DEFAULT = "default"
+CONFIGURATION_CUSTOM = "custom"
 CONFIGURATION_INTERPRETER = "interpreter"
 CONFIGURATION_NATIVE_INTERPRETER = "native-interpreter"
 CONFIGURATION_DEFAULT_MULTI = "default-multi"
@@ -279,6 +280,13 @@ class GraalPythonVm(AbstractPythonIterationsControlVm):
     @property
     @functools.lru_cache
     def interpreter(self):
+        if self.config_name() == CONFIGURATION_CUSTOM:
+            home = mx.get_env("GRAALPY_HOME")
+            if not home:
+                mx.abort("The custom benchmark config for graalpy is to run with a custom GRAALPY_HOME locally")
+            launcher = join(home, "bin", "graalpy")
+            mx.log(f"Using {launcher} based on GRAALPY_HOME environment for custom config.")
+            return launcher
         from mx_graalpython import graalpy_standalone
         launcher = graalpy_standalone(self.launcher_type, build=False)
         mx.log(f"Using {launcher} based on enabled/excluded GraalPy standalone build targets.")
@@ -1029,6 +1037,7 @@ def register_vms(suite, sandboxed_options):
         python_vm_registry.add_vm(GraalPythonVm(config_name=name, extra_polyglot_args=extra_polyglot_args), suite, 10)
 
     # GraalPy VMs:
+    add_graalpy_vm(CONFIGURATION_CUSTOM)
     add_graalpy_vm(CONFIGURATION_DEFAULT)
     add_graalpy_vm(CONFIGURATION_INTERPRETER, '--experimental-options', '--engine.Compilation=false')
     add_graalpy_vm(CONFIGURATION_DEFAULT_MULTI, '--experimental-options', '-multi-context')
