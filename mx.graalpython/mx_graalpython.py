@@ -274,6 +274,21 @@ def libpythonvm_build_args():
     build_args += bytecode_dsl_build_args()
     if mx_sdk_vm_ng.is_nativeimage_ee() and mx.get_os() == 'linux' and 'NATIVE_IMAGE_AUXILIARY_ENGINE_CACHE' not in os.environ:
         build_args += ['--gc=G1', '-H:-ProtectionKeys']
+    if not os.environ.get("GRAALPY_PGO_PROFILE") and mx.suite('graalpython-enterprise', fatalIfMissing=False):
+        cmd = mx.command_function('python-get-latest-profile', fatalIfMissing=False)
+        if cmd:
+            try:
+                profile = cmd([])
+            except BaseException:
+                pass
+            else:
+                mx.log(f"Using PGO profile {profile}")
+                build_args += [
+                    f"--pgo={profile}",
+                    "-H:+UnlockExperimentalVMOptions",
+                    "-H:+PGOPrintProfileQuality",
+                    "-H:-UnlockExperimentalVMOptions",
+                ]
     return build_args
 
 
