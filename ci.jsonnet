@@ -234,7 +234,7 @@
             "linux:amd64:jdk-latest"     : weekly + t("01:30:00") + task_spec({
                 run: [["mx", "python-native-pgo"]],
                 logs+: [
-                    "default.iprof",
+                    "default.iprof.gz",
                     "default.lcov",
                 ],
             }),

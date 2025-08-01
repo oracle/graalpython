@@ -28,6 +28,7 @@ import contextlib
 import datetime
 import fnmatch
 import glob
+import gzip
 import itertools
 import os
 import pathlib
@@ -46,9 +47,6 @@ from typing import cast, Union
 import downstream_tests
 import mx_graalpython_benchmark
 import mx_urlrewrites
-
-if sys.version_info[0] < 3:
-    raise RuntimeError("The build scripts are no longer compatible with Python 2")
 
 import tempfile
 from argparse import ArgumentParser
@@ -364,6 +362,11 @@ def graalpy_native_pgo_build_and_test(_):
         native_bin = graalpy_standalone('native', enterprise=True, build=True)
 
     mx.log(mx.colorize(f"[PGO] Optimized PGO build complete: {native_bin}", color="yellow"))
+
+    iprof_gz_path = str(iprof_path) + '.gz'
+    with open(iprof_path, 'rb') as f_in, gzip.open(iprof_gz_path, 'wb') as f_out:
+        shutil.copyfileobj(f_in, f_out)
+    mx.log(mx.colorize(f"[PGO] Gzipped profile at: {iprof_gz_path}", color="yellow"))
 
 
 def full_python(args, env=None):
