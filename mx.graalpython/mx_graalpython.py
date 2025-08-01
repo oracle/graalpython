@@ -275,11 +275,12 @@ def libpythonvm_build_args():
     if not os.environ.get("GRAALPY_PGO_PROFILE") and mx.suite('graalpython-enterprise', fatalIfMissing=False):
         cmd = mx.command_function('python-get-latest-profile', fatalIfMissing=False)
         if cmd:
+            profile = None
             try:
                 profile = cmd([])
             except BaseException:
-                mx.log(f"Not using any PGO profile")
-            else:
+                pass
+            if profile and os.path.exists(profile):
                 mx.log(f"Using PGO profile {profile}")
                 build_args += [
                     f"--pgo={profile}",
@@ -287,6 +288,8 @@ def libpythonvm_build_args():
                     "-H:+PGOPrintProfileQuality",
                     "-H:-UnlockExperimentalVMOptions",
                 ]
+            else:
+                mx.log(f"Not using any PGO profile")
     return build_args
 
 
@@ -296,8 +299,6 @@ def graalpy_native_pgo_build_and_test(_):
     then builds a PGO-optimized GraalPy native standalone with the collected profile.
     The profile file will be named 'default.iprof' in native image build directory.
     """
-    import tempfile
-
     with set_env(GRAALPY_PGO_PROFILE=""):
         mx.log(mx.colorize("[PGO] Building PGO-instrumented native image", color="yellow"))
         build_home = graalpy_standalone_home('native', enterprise=True, build=True)
