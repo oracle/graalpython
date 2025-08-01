@@ -46,9 +46,9 @@ from asdl.asdl_java import generate
 def stamp(sst_path: pathlib.Path, ast_path: pathlib.Path):
     if sst_path.is_dir() and ast_path.is_dir():
         return [
-            p.read_text() for p in sorted(sst_path.rglob("*")) if p.is_file()
+            p.read_bytes() for p in sorted(sst_path.rglob("*")) if p.is_file()
         ] + [
-            p.read_text() for p in sorted(ast_path.rglob("*")) if p.is_file()
+            p.read_bytes() for p in sorted(ast_path.rglob("*")) if p.is_file()
         ]
     else:
         return []
