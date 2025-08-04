@@ -42,17 +42,22 @@ package com.oracle.graal.python.builtins;
 
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
+import java.util.Locale;
+
+import org.graalvm.nativeimage.ImageInfo;
+
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public enum PythonOS {
-    PLATFORM_JAVA("java", "Java"),
-    PLATFORM_CYGWIN("cygwin", "CYGWIN"),
     PLATFORM_LINUX("linux", "Linux"),
     PLATFORM_DARWIN("darwin", "Darwin"),
     PLATFORM_WIN32("win32", "Windows"),
-    PLATFORM_SUNOS("sunos", "SunOS"),
-    PLATFORM_FREEBSD("freebsd", "FreeBSD"),
     PLATFORM_ANY(null, null);
+
+    public static final String SUPPORTED_PLATFORMS = "linux/amd64, linux/aarch64, macos/amd64, macos/aarch64, and windows/amd64";
 
     private final TruffleString name;
     private final TruffleString uname;
@@ -73,28 +78,62 @@ public enum PythonOS {
     private static final PythonOS current;
 
     static {
-        String property = System.getProperty("os.name");
-        PythonOS os = PLATFORM_JAVA;
-        if (property != null) {
-            property = property.toLowerCase();
-            if (property.contains("cygwin")) {
-                os = PLATFORM_CYGWIN;
-            } else if (property.contains("linux")) {
-                os = PLATFORM_LINUX;
-            } else if (property.contains("mac")) {
-                os = PLATFORM_DARWIN;
-            } else if (property.contains("windows")) {
-                os = PLATFORM_WIN32;
-            } else if (property.contains("sunos")) {
-                os = PLATFORM_SUNOS;
-            } else if (property.contains("freebsd")) {
-                os = PLATFORM_FREEBSD;
-            }
+        String property = System.getProperty("os.name", "").toLowerCase(Locale.ENGLISH);
+        if (property.contains("linux")) {
+            current = PLATFORM_LINUX;
+        } else if (property.contains("mac") || property.contains("darwin")) {
+            current = PLATFORM_DARWIN;
+        } else if (property.contains("windows")) {
+            current = PLATFORM_WIN32;
+        } else {
+            current = PLATFORM_ANY;
         }
-        current = os;
     }
 
     public static PythonOS getPythonOS() {
+        if (current == PLATFORM_ANY) {
+            if (ImageInfo.inImageBuildtimeCode()) {
+                throw new RuntimeException("Native images with GraalPy are only supported on " + SUPPORTED_PLATFORMS + ".");
+            }
+            String emulated = PythonLanguage.get(null).getEngineOption(PythonOptions.UnsupportedPlatformEmulates);
+            if (!emulated.isEmpty()) {
+                switch (emulated) {
+                    case "linux":
+                        return PLATFORM_LINUX;
+                    case "macos":
+                        return PLATFORM_DARWIN;
+                    case "windows":
+                        return PLATFORM_WIN32;
+                    default:
+                        throw new UnsupportedPlatform("UnsupportedPlatformEmulates must be exactly one of \"linux\", \"macos\", or \"windows\"");
+                }
+            } else {
+                throw new UnsupportedPlatform("This platform is not currently supported. " +
+                                "Currently supported platforms are " + SUPPORTED_PLATFORMS + ". " +
+                                "If you are running on one of these platforms and are receiving this error, that indicates a bug in this build of GraalPy. " +
+                                "If you are running on a different platform and accept that any functionality that interacts with the system may be " +
+                                "incorrect and Python native extensions will not work, you can specify the system property \"UnsupportedPlatformEmulates\" " +
+                                "with a value of either \"linux\", \"macos\", or \"windows\" to continue further and have GraalPy behave as if it were running on " +
+                                "the OS specified. Loading native libraries will not work and should be disabled using the context options. " +
+                                "See https://www.graalvm.org/python/docs/ for details on GraalPy modules with both native and Java backends, " +
+                                "and https://www.graalvm.org/truffle/javadoc/org/graalvm/polyglot/Context.Builder.html to learn about disallowing native access.");
+            }
+        }
         return current;
+    }
+
+    public static void throwIfUnsupported(String msg) {
+        if (current == PLATFORM_ANY) {
+            throw new UnsupportedPlatform(msg +
+                            "\nThis point was reached as earlier platform checks were overridden using the system property UnsupportedPlatformEmulates");
+        }
+    }
+
+    public static final class UnsupportedPlatform extends AbstractTruffleException {
+        public UnsupportedPlatform(String msg) {
+            super(msg);
+        }
+
+        private static final long serialVersionUID = 1L;
     }
 }

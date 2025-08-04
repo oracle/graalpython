@@ -28,6 +28,7 @@ package com.oracle.graal.python.runtime;
 import static com.oracle.graal.python.builtins.PythonOS.PLATFORM_DARWIN;
 import static com.oracle.graal.python.builtins.PythonOS.PLATFORM_WIN32;
 import static com.oracle.graal.python.builtins.PythonOS.getPythonOS;
+import static com.oracle.graal.python.builtins.PythonOS.throwIfUnsupported;
 import static com.oracle.graal.python.builtins.modules.SysModuleBuiltins.T_CACHE_TAG;
 import static com.oracle.graal.python.builtins.modules.SysModuleBuiltins.T__MULTIARCH;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_CLOSED;
@@ -222,7 +223,7 @@ public final class PythonContext extends Python3Core {
     public static String getSupportLibName(PythonOS os, String libName) {
         // note: this should be aligned with MX's "lib" substitution
         return switch (os) {
-            case PLATFORM_LINUX, PLATFORM_FREEBSD, PLATFORM_SUNOS -> J_LIB_PREFIX + libName + J_EXT_SO;
+            case PLATFORM_LINUX -> J_LIB_PREFIX + libName + J_EXT_SO;
             case PLATFORM_DARWIN -> J_LIB_PREFIX + libName + J_EXT_DYLIB;
             case PLATFORM_WIN32 -> libName + J_EXT_DLL;
             default -> libName;
@@ -231,6 +232,10 @@ public final class PythonContext extends Python3Core {
 
     @TruffleBoundary
     public static String getSupportLibName(String libName) {
+        throwIfUnsupported("Trying to load a native library on an unsupported platform. " +
+                        "This is not possible and will fail. " +
+                        "Ensure that native access is disallowed for this context and configure GraalPy to use Java backends where possible. " +
+                        "Refer to https://www.graalvm.org/python/docs/ for more information on native and Java module backends.");
         return getSupportLibName(getPythonOS(), libName);
     }
 

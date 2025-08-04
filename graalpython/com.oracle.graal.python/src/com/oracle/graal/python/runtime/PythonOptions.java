@@ -103,6 +103,12 @@ public final class PythonOptions {
                     "Determines default values for the CoreHome, StdLibHome, SysBasePrefix, SysPrefix.", usageSyntax = "<path>", stability = OptionStability.STABLE) //
     public static final OptionKey<String> PythonHome = new OptionKey<>("");
 
+    @EngineOption @Option(category = OptionCategory.EXPERT, help = "Allow running on unsupported platforms, making GraalPy behave as if running on macOS, Windows, or Linux. " +
+                    "This option is useful to run GraalPy on platforms with a compliant Java implementation, but without native support for GraalPy. " +
+                    "When this option is set, native libraries cannot be loaded and the Java backends must be used for common operating system libraries provided by Python.", //
+                    usageSyntax = "windows|macos|linux", stability = OptionStability.STABLE) //
+    public static final OptionKey<String> UnsupportedPlatformEmulates = new OptionKey<>("");
+
     @Option(category = OptionCategory.USER, help = "Set the location of sys.prefix. Overrides any environment variables or Java options.", usageSyntax = "<path>", stability = OptionStability.STABLE) //
     public static final OptionKey<TruffleString> SysPrefix = new OptionKey<>(T_EMPTY_STRING, TS_OPTION_TYPE);
 
