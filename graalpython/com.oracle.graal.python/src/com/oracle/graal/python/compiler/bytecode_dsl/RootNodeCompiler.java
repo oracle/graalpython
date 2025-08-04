@@ -1094,8 +1094,6 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         return buildComprehensionCodeUnit(node, node.generators, "<listcomp>",
                         (statementCompiler) -> {
                             statementCompiler.b.beginMakeList();
-                            // TODO: GR-64741 (do not collect to array manually)
-                            statementCompiler.b.emitLoadConstant(PythonUtils.EMPTY_OBJECT_ARRAY);
                             statementCompiler.b.endMakeList();
                         },
                         (statementCompiler, collection) -> {
@@ -1127,7 +1125,6 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         return buildComprehensionCodeUnit(node, node.generators, "<setcomp>",
                         (statementCompiler) -> {
                             statementCompiler.b.beginMakeSet();
-                            statementCompiler.b.emitLoadConstant(PythonUtils.EMPTY_OBJECT_ARRAY);
                             statementCompiler.b.endMakeSet();
                         },
                         (statementCompiler, collection) -> {
@@ -1788,7 +1785,9 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                     b.emitLoadLocal(function);
                     b.endBlock();
 
+                    b.beginCollectToObjectArray();
                     emitUnstar(() -> b.emitLoadLocal(receiver), args);
+                    b.endCollectToObjectArray();
                     emitKeywords(keywords, function);
                 } else {
                     assert len(keywords) == 0;
@@ -1809,7 +1808,9 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                     b.emitLoadLocal(function);
                     b.endBlock();
 
+                    b.beginCollectToObjectArray();
                     emitUnstar(args);
+                    b.endCollectToObjectArray();
                     emitKeywords(keywords, function);
                 } else {
                     assert len(keywords) == 0;
@@ -2011,12 +2012,9 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                     break;
                 case TUPLE:
                     b.beginMakeTuple();
-                    // TODO: GR-64741 (do not collect to array manually)
-                    b.beginCollectToObjectArray();
                     for (ConstantValue cv : value.getTupleElements()) {
                         createConstant(cv);
                     }
-                    b.endCollectToObjectArray();
                     b.endMakeTuple();
                     break;
                 case FROZENSET:
@@ -2309,79 +2307,54 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         private void emitUnstar(Runnable initialElementsProducer, ExprTy[] args, Runnable finalElementsProducer) {
             boolean noExtraElements = initialElementsProducer == null && finalElementsProducer == null;
             if (noExtraElements && len(args) == 0) {
-                b.emitLoadConstant(PythonUtils.EMPTY_OBJECT_ARRAY);
+                /**
+                 * We don't need to emit anything for an empty array.
+                 */
             } else if (noExtraElements && len(args) == 1 && args[0] instanceof ExprTy.Starred) {
                 // Optimization for single starred argument: we can just upack it. For generic
                 // algorithm see the next branch
-                b.beginUnpackStarred();
+                b.beginUnpackStarredVariadic();
                 ((ExprTy.Starred) args[0]).value.accept(this);
-                b.endUnpackStarred();
+                b.endUnpackStarredVariadic();
             } else if (anyIsStarred(args)) {
                 /**
-                 * We emit one or more arrays and concatenate them using Unstar. Each array
-                 * corresponds to a contiguous sequence of arguments or the result of unpacking a
-                 * single starred argument.
+                 * We emit one or more arrays. These are not concatenated directly, but rather
+                 * expect that the caller is receiving them into @Variadic annotated argument, as that handles
+                 * the concatenation. Each array corresponds to a contiguous sequence of arguments or the result
+                 * of unpacking a single starred argument.
                  *
                  * For example, for the argument list a, b, *c, d, e, *f, g we would emit:
                  *
                  * @formatter:off
-                 * Unstar(
-                 *   CollectToObjectArray(a, b),
-                 *   UnpackStarred(c),
-                 *   CollectToObjectArray(d, e),
-                 *   UnpackStarred(f),
-                 *   CollectToObjectArray(g)
-                 * )
+                 *   a,
+                 *   b,
+                 *   UnpackStarredVariadic(c),
+                 *   d,
+                 *   e,
+                 *   UnpackStarredVariadic(f),
+                 *   g
                  * @formatter:on
+                 *
+                 * CollectObjectToArray is no longer necessary, as the UnpackStarredVariadic return @Variadic.
                  */
-                b.beginUnstar();
-                boolean inVariadic = false;
-                int numOperands = 0;
-
                 if (initialElementsProducer != null) {
-                    b.beginCollectToObjectArray();
                     initialElementsProducer.run();
-                    inVariadic = true;
                 }
 
                 for (int i = 0; i < args.length; i++) {
                     if (args[i] instanceof ExprTy.Starred) {
-                        if (inVariadic) {
-                            b.endCollectToObjectArray();
-                            inVariadic = false;
-                            numOperands++;
-                        }
-
-                        b.beginUnpackStarred();
+                        b.beginUnpackStarredVariadic();
                         ((ExprTy.Starred) args[i]).value.accept(this);
-                        b.endUnpackStarred();
-                        numOperands++;
+                        b.endUnpackStarredVariadic();
                     } else {
-                        if (!inVariadic) {
-                            b.beginCollectToObjectArray();
-                            inVariadic = true;
-                        }
-
                         args[i].accept(this);
                     }
                 }
 
                 if (finalElementsProducer != null) {
-                    if (!inVariadic) {
-                        b.beginCollectToObjectArray();
-                        inVariadic = true;
-                    }
                     finalElementsProducer.run();
                 }
-
-                if (inVariadic) {
-                    b.endCollectToObjectArray();
-                    numOperands++;
-                }
-
-                b.endUnstar(numOperands);
             } else {
-                b.beginCollectToObjectArray();
                 if (initialElementsProducer != null) {
                     initialElementsProducer.run();
                 }
@@ -2389,7 +2362,6 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 if (finalElementsProducer != null) {
                     finalElementsProducer.run();
                 }
-                b.endCollectToObjectArray();
             }
         }
 
@@ -2397,9 +2369,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         public Void visit(ExprTy.Set node) {
             boolean newStatement = beginSourceSection(node, b);
             b.beginMakeSet();
-            if (len(node.elements) == 0) {
-                b.emitLoadConstant(PythonUtils.EMPTY_OBJECT_ARRAY);
-            } else {
+            if (len(node.elements) != 0) {
                 emitUnstar(node.elements);
             }
             b.endMakeSet();
@@ -2814,12 +2784,9 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             } else {
                 b.beginMakeTuple();
             }
-            // TODO: GR-64741 (do not collect to array manually)
-            b.beginCollectToObjectArray();
             for (TypeParamTy typeParam : typeParams) {
                 typeParam.accept(this);
             }
-            b.endCollectToObjectArray();
             if (useList) {
                 b.endMakeList();
             } else {
@@ -3348,10 +3315,12 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             }
 
             // positional args
+            b.beginCollectToObjectArray();
             emitUnstar(() -> {
                 emitMakeFunction(body, node, node.name, null, null);
                 emitPythonConstant(toTruffleStringUncached(node.name), b);
             }, node.bases, finalElements);
+            b.endCollectToObjectArray();
 
             // keyword args
             validateKeywords(node.keywords);

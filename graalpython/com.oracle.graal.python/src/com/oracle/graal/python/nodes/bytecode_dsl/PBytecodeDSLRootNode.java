@@ -1493,7 +1493,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation
     public static final class MakeList {
         @Specialization
-        public static PList perform(Object[] elements,
+        public static PList perform(@Variadic Object[] elements,
                         @Bind PBytecodeDSLRootNode rootNode) {
             return PFactory.createList(rootNode.getLanguage(), elements);
         }
@@ -1503,14 +1503,14 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @ImportStatic({PBytecodeDSLRootNode.class})
     public static final class MakeSet {
         @Specialization(guards = "elements.length == 0")
-        public static PSet doEmpty(VirtualFrame frame, Object[] elements,
+        public static PSet doEmpty(VirtualFrame frame, @Variadic Object[] elements,
                         @Bind PBytecodeDSLRootNode rootNode) {
             // creates set backed by empty HashingStorage
             return PFactory.createSet(rootNode.getLanguage());
         }
 
         @Specialization(guards = "elements.length != 0")
-        public static PSet doNonEmpty(VirtualFrame frame, Object[] elements,
+        public static PSet doNonEmpty(VirtualFrame frame, @Variadic Object[] elements,
                         @Bind PBytecodeDSLRootNode rootNode,
                         @Bind Node inliningTarget,
                         @Cached MakeSetStorageNode makeSetStorageNode) {
@@ -1539,7 +1539,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation
     public static final class MakeTuple {
         @Specialization
-        public static Object perform(Object[] elements,
+        public static Object perform(@Variadic Object[] elements,
                         @Bind PBytecodeDSLRootNode rootNode) {
             return PFactory.createTuple(rootNode.getLanguage(), elements);
         }
@@ -2510,32 +2510,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    /**
-     * Flattens an array of arrays. Used for splatting Starred expressions.
-     */
-    @Operation
-    @ConstantOperand(type = int.class, specifyAtEnd = true)
-    public static final class Unstar {
-        @Specialization(guards = "length != 1")
-        public static Object[] perform(@Variadic Object[] values, int length) {
-            // if len <= 1, we should emit load constant "empty array", or emit just unpack starred
-            assert length > 1;
-            CompilerAsserts.partialEvaluationConstant(length);
-            int totalLength = 0;
-            for (int i = 0; i < length; i++) {
-                totalLength += ((Object[]) values[i]).length;
-            }
-            Object[] result = new Object[totalLength];
-            int idx = 0;
-            for (int i = 0; i < length; i++) {
-                int nl = ((Object[]) values[i]).length;
-                System.arraycopy(values[i], 0, result, idx, nl);
-                idx += nl;
-            }
-            return result;
-        }
-    }
-
     @Operation
     @ConstantOperand(type = LocalAccessor.class)
     public static final class KwargsMerge {
@@ -2565,8 +2539,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @Variadic
     @ImportStatic({PGuards.class})
-    public static final class UnpackStarred {
+    public static final class UnpackStarredVariadic {
         public static boolean isListOrTuple(PSequence obj, Node inliningTarget, InlinedConditionProfile isListProfile) {
             return isListProfile.profile(inliningTarget, PGuards.isBuiltinList(obj)) || PGuards.isBuiltinTuple(obj);
         }
@@ -2592,7 +2567,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Cached PyObjectGetIter getIter,
                         @Cached PyIterNextNode getNextNode,
                         @Cached IsBuiltinObjectProfile notIterableProfile,
-                        @Exclusive @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
 
             Object iterator;
             try {
