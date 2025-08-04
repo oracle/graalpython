@@ -1,0 +1,21 @@
+diff --git a/setup.py b/setup.py
+index 4029e9e..14095fc 100644
+--- a/setup.py
++++ b/setup.py
+@@ -5,6 +5,7 @@ import sys
+ from setuptools import Extension, setup
+ 
+ PYPY = hasattr(sys, "pypy_version_info")
++GRAALPY = sys.implementation.name == 'graalpy'
+ 
+ libraries = []
+ macros = []
+@@ -14,7 +15,7 @@ if sys.platform == "win32":
+     libraries.append("ws2_32")
+     macros = [("__LITTLE_ENDIAN__", "1")]
+ 
+-if not PYPY and not os.environ.get("MSGPACK_PUREPYTHON"):
++if not PYPY and not GRAALPY and not os.environ.get("MSGPACK_PUREPYTHON"):
+     ext_modules.append(
+         Extension(
+             "msgpack._cmsgpack",

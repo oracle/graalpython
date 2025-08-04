@@ -359,6 +359,10 @@ url = 'https://github.com/ml-explore/mlx/archive/refs/tags/v0.16.2.tar.gz'
 version = '0.16.1'
 url = 'https://github.com/ml-explore/mlx/archive/refs/tags/v0.16.1.tar.gz'
 
+[[msgpack.rules]]
+patch = 'msgpack.patch'
+license = 'Apache-2.0'
+
 [[nanobind.rules]]
 patch = 'nanobind.patch'
 license = 'BSD-3-Clause'
