@@ -109,17 +109,22 @@ license = 'Apache-2.0 OR BSD-3-Clause'
 version = '>= 43.0.0'
 note = "Versions newer than 43 do not need a patch."
 
-[[Cython.rules]]
+[[cython.rules]]
+version = '>= 3.1, <= 3.1.2'
+patch = 'cython-3.1.2.patch'
+license = 'Apache-2.0'
+
+[[cython.rules]]
 version = '>= 3.0.10, <= 3.0.12'
 patch = 'Cython-3.0.10.patch'
 license = 'Apache-2.0'
 
-[[Cython.rules]]
+[[cython.rules]]
 version = '== 0.29.37'
 patch = 'Cython-0.29.37.patch'
 license = 'Apache-2.0'
 
-[[Cython.rules]]
+[[cython.rules]]
 version = '== 0.29.32'
 # Also referenced outside of pip in ray patches
 # Also referenced outside of pip in tensorflow patches
