@@ -164,7 +164,7 @@ test.test_capi.test_list.CAPITest.test_list_setitem @ darwin-arm64,darwin-x86_64
 test.test_capi.test_list.CAPITest.test_list_setslice @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_capi.test_list.CAPITest.test_list_size @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_capi.test_list.CAPITest.test_list_sort @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_capi.test_long.LongTests.test_compact @ darwin-arm64,linux-aarch64
+test.test_capi.test_long.LongTests.test_compact @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_capi.test_long.LongTests.test_long_aslongandoverflow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_capi.test_long.LongTests.test_long_aslonglong @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_capi.test_long.LongTests.test_long_aslonglongandoverflow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
