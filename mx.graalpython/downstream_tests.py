@@ -148,9 +148,7 @@ def downstream_test_pyo3(graalpy, testdir):
 
 @downstream_test('pydantic-core')
 def downstream_test_pydantic_core(graalpy, testdir):
-    # XXX https://github.com/pydantic/pydantic-core/pull/1771 not merged yet
-    # run(['git', 'clone', 'https://github.com/pydantic/pydantic-core.git', '-b', 'main'], cwd=testdir)
-    run(['git', 'clone', 'https://github.com/msimacek/pydantic-core.git', '-b', 'msimacek/graalpy'], cwd=testdir)
+    run(['git', 'clone', 'https://github.com/pydantic/pydantic-core.git', '-b', 'main'], cwd=testdir)
     src = testdir / 'pydantic-core'
     run(['uv', 'sync', '--python', graalpy, '--group', 'testing'], cwd=src)
     # XXX UNSAFE_PYO3_SKIP_VERSION_CHECK should not be necessary once pydantic-core updates to a newer pyo3 version
