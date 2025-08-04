@@ -34,9 +34,54 @@ import collections
 import enum
 import sys
 import types
+import traceback
 
-import _tkinter # If this fails your Python may not be configured for Tk
-TclError = _tkinter.TclError
+def _setup_tkinter():
+    import os
+    import subprocess
+
+    print("GraalPy requires additional setup to enable Tkinter support on macOS.\n")
+
+    print("Ensure pip and required packages are installed:")
+    print("    mx python -m ensurepip")
+    print("    mx python -m pip install cffi setuptools\n")
+
+    print("Install system dependencies:")
+    print("    brew install tcl-tk@8")
+
+    if sys.stdin.isatty():
+        resp = input("Would you like to run pip setup and build now? [Y/n]: ").strip().lower()
+        if resp in ("", "y", "yes"):
+            try:
+                subprocess.check_call(["mx", "python", "-m", "ensurepip"])
+                subprocess.check_call(["mx", "python", "-m", "pip", "install", "cffi", "setuptools"])
+                subprocess.check_call(["brew", "install", "tcl-tk@8"])
+                current_dir = os.path.dirname(__file__)
+                tklib_build_path = os.path.abspath(os.path.join(
+                    current_dir,
+                    "../../../../../darwin-aarch64/GRAALPY_JVM_STANDALONE/lib/python3.12/_tkinter/tklib_build.py"
+                ))
+
+                subprocess.check_call(["mx", "python", tklib_build_path])
+            except Exception as build_err:
+                    raise build_err
+    else:
+        print("\n Run in an interactive terminal to auto-run pip setup and build.")
+
+
+
+try:
+    import _tkinter
+except ModuleNotFoundError as e:
+    tb = traceback.format_exc()
+    missing_tklib = "_tkinter.tklib_cffi" in tb or "_tkinter" in tb
+
+    if missing_tklib:
+        _setup_tkinter()
+        import _tkinter
+    else:
+        TclError = _tkinter.TclError
+
 from tkinter.constants import *
 import re
 
