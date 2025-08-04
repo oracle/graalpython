@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -295,3 +295,30 @@ def test_docstring_via_type_contructor():
     assert foo.__doc__ == 'my doc'
     foo2 = type(foo)(foo.__code__, foo.__globals__, foo.__name__, foo.__defaults__, foo.__closure__)
     assert foo2.__doc__ == 'my doc'
+
+def test_args_kwargs_eval_order():
+    l = []
+    def a1():
+        nonlocal l
+        l.append(101)
+        return 1
+    def a2():
+        nonlocal l
+        l.append(102)
+        return 1
+    def k1():
+        nonlocal l
+        l.append(201)
+        return 1
+    def k2():
+        nonlocal l
+        l.append(202)
+        return 1
+    def k3():
+        nonlocal l
+        l.append(203)
+        return 1
+    def f(*args, **kwargs):
+        pass
+    f(a1(), a2(), k1=k1(), k2=k2(), k3=k3())
+    assert l == [101, 102, 201, 202, 203]

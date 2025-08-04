@@ -2072,28 +2072,9 @@ def warn_about_old_hardcoded_version():
             return f"Hardcoded version in `{m.group().strip()}` should have {GRAAL_VERSION_MAJ_MIN} as <major>.<minor> version."
 
     files_with_versions = {
-        "graalpython/graalpy-maven-plugin/pom.xml": {
-            r"^  <version>(\d+\.\d+)(?:\.\d+)*</version>" : hardcoded_ver_is_behind_major_minor,
-            r'<graalpy.version>(\d+\.\d+)(?:\.\d+)*</graalpy.version>' : hardcoded_ver_is_behind_major_minor
-        },
         "graalpython/com.oracle.graal.python.test.integration/pom.xml": {
             r'<com.oracle.graal.python.test.polyglot.version>(\d+\.\d+)(?:\.\d+)*' : hardcoded_ver_is_behind_major_minor,
-        },
-        "graalpython/graalpy-archetype-polyglot-app/pom.xml": {
-            r"^  <version>(\d+\.\d+)(?:\.\d+)*</version>" : hardcoded_ver_is_behind_major_minor,
-        },
-        "graalpython/graalpy-jbang/examples/hello.java": {
-            r"//DEPS org.graalvm.python:jbang[^:]*:\${env.GRAALPY_VERSION:(\d+\.\d+)(?:\.\d+)*" : hardcoded_ver_is_behind_major_minor,
-        },
-        "graalpython/graalpy-jbang/templates/graalpy-template_local_repo.java.qute": {
-            r"//DEPS org.graalvm.python:jbang[^:]*:\${env.GRAALPY_VERSION:(\d+\.\d+)(?:\.\d+)*" : hardcoded_ver_is_behind_major_minor,
-        },
-        "graalpython/graalpy-jbang/templates/graalpy-template.java.qute": {
-            r"//DEPS org.graalvm.python:jbang[^:]*:\${env.GRAALPY_VERSION:(\d+\.\d+)(?:\.\d+)*" : hardcoded_ver_is_behind_major_minor,
-        },
-        "graalpython/graalpy-archetype-polyglot-app/src/main/resources/archetype-resources/pom.xml": {
-            r'<graalpy.version>(\d+\.\d+)(?:\.\d+)*</graalpy.version>' : hardcoded_ver_is_behind_major_minor,
-        },
+        }
     }
     replacements = set()
     for path, patterns in files_with_versions.items():
