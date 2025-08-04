@@ -1,0 +1,13 @@
+diff --git a/setupinfo.py b/setupinfo.py
+index 6417fb9..324bea0 100644
+--- a/setupinfo.py
++++ b/setupinfo.py
+@@ -535,7 +535,7 @@ OPTION_WITH_UNICODE_STRINGS = has_option('with-unicode-strings')
+ OPTION_WITHOUT_ASSERT = has_option('without-assert')
+ OPTION_WITHOUT_THREADING = has_option('without-threading')
+ OPTION_WITHOUT_CYTHON = has_option('without-cython')
+-OPTION_WITH_CYTHON = has_option('with-cython')
++OPTION_WITH_CYTHON = True
+ OPTION_WITH_CYTHON_GDB = has_option('cython-gdb')
+ OPTION_WITH_REFNANNY = has_option('with-refnanny')
+ OPTION_WITH_COVERAGE = has_option('with-coverage')

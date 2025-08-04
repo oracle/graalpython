@@ -289,6 +289,11 @@ patch = 'llvmlite.patch'
 license = 'BSD-2-Clause'
 
 [[lxml.rules]]
+version = '>= 6'
+patch = 'lxml-6.patch'
+license = 'BSD-3-Clause'
+
+[[lxml.rules]]
 version = '>= 5.3.2, <= 5.4.0'
 patch = 'lxml-5.4.0.patch'
 license = 'BSD-3-Clause'
