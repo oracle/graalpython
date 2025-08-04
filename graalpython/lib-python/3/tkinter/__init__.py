@@ -34,7 +34,6 @@ import collections
 import enum
 import sys
 import types
-import traceback
 
 def _setup_tkinter():
     import os
@@ -72,15 +71,10 @@ def _setup_tkinter():
 
 try:
     import _tkinter
-except ModuleNotFoundError as e:
-    tb = traceback.format_exc()
-    missing_tklib = "_tkinter.tklib_cffi" in tb or "_tkinter" in tb
-
-    if missing_tklib:
-        _setup_tkinter()
-        import _tkinter
-    else:
-        TclError = _tkinter.TclError
+except Exception:
+    _setup_tkinter()
+    import _tkinter
+    TclError = _tkinter.TclError
 
 from tkinter.constants import *
 import re
