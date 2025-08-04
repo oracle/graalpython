@@ -155,10 +155,8 @@ def downstream_test_pydantic_core(graalpy, testdir):
     run(['uv', 'sync', '--python', graalpy, '--group', 'testing'], cwd=src)
     # XXX UNSAFE_PYO3_SKIP_VERSION_CHECK should not be necessary once pydantic-core updates to a newer pyo3 version
     run(['uv', 'pip', 'install', '-e', '.'], cwd=src, env={**os.environ, 'UNSAFE_PYO3_SKIP_VERSION_CHECK': '1'})
-    # XXX remove after hypothesis PR merged and released
-    run(['uv', 'pip', 'install',
-         'git+https://github.com/msimacek/hypothesis@msimacek/graalpy#egg=hypothesis&subdirectory=hypothesis-python'],
-        cwd=src)
+    # XXX remove after pydantic-core updates to hypothesis >= 6.136.7
+    run(['uv', 'pip', 'install', 'hypothesis==6.136.7'], cwd=src)
     run(['uv', 'run', 'pytest', '-v', '--tb=short'], cwd=src)
 
 
