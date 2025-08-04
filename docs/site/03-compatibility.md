@@ -525,25 +525,6 @@ img.pylogo {
     </div>
   </div>
 </section>
-{% comment %}
-<section class="content-section download-homescreen">
-  <div class="wrapper">
-    <div>
-      <div class="container">
-        <h3 class="truffle__subtitle">Download GraalPy from Maven Central</h3>
-        <div>
-          <h5 class="download-text">
-            Have a Java application?
-          </h5>
-          <h5 class="download-text">
-You can extend it with Python code or leverage packages from the Python ecosystem. GraalPy is available on <a href="https://central.sonatype.com/artifact/org.graalvm.polyglot/python" target="_blank">Maven Central</a> and can be added as a dependency to your Maven or Gradle project as — see <a href="#" target="_blank">setup instructions</a>.
-          </h5>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-{% endcomment %}
 
 <section class="boxes">
     <div class="wrapper">
