@@ -21,15 +21,15 @@ elif sys.platform == 'darwin':
     # homebrew
     homebrew = os.environ.get('HOMEBREW_PREFIX', '')
     incdirs = [
-        '/opt/homebrew/opt/tcl-tk@8.6/include',
-        '/opt/homebrew/opt/tcl-tk@8.6/include/tcl-tk',
+        '/opt/homebrew/opt/tcl-tk@8/include',
+        '/opt/homebrew/opt/tcl-tk@8/include/tcl-tk',
     ]
 
     linklibs = ['tcl8.6', 'tk8.6']
     libdirs = []
     if homebrew:
         incdirs.append(homebrew + '/include')
-        libdirs.append(homebrew + '/opt/tcl-tk@8.6/lib')
+        libdirs.append(homebrew + '/opt/tcl-tk@8/lib')
 else:
     # On some Linux distributions, the tcl and tk libraries are
     # stored in /usr/include, so we must check this case also
