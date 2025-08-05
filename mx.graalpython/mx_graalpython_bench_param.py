@@ -58,6 +58,7 @@ ITER_6 = ['-i', '6']
 ITER_5 = ['-i', '5']
 WARMUP_2 = ['-w', '2']
 
+# For benchmarking with Truffle compilation
 MICRO_BENCHMARKS = {
     'arith-binop': ITER_10 + ['5'],
     'arith-modulo-sized': ITER_10 + ['500'],
@@ -119,6 +120,7 @@ MICRO_BENCHMARKS = {
     'virtualize-in-try-catch-oom': ITER_10,
 }
 
+# For benchmarking the interpreter with --engine.Compilation=false
 MICRO_BENCHMARKS_SMALL = {
     'arith-modulo-sized': ITER_6 + WARMUP_2 + ['1'],
     'if-generic': ITER_10 + WARMUP_2 + ['500000'],
