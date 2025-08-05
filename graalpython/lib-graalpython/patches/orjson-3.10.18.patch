@@ -1,14 +1,8 @@
-commit a889953c08d33854e574ab06e9593e0484c4c147
-Author: stepan <stepan.sindelar@oracle.com>
-Date:   Wed Jul 9 18:50:37 2025 +0200
-
-    Adapt for GraalPy
-
 diff --git a/build.rs b/build.rs
-index 43538c0..85857ba 100644
+index 43538c0..d6394a5 100644
 --- a/build.rs
 +++ b/build.rs
-@@ -40,7 +40,8 @@ fn main() {
+@@ -40,14 +40,15 @@ fn main() {
  
      #[cfg(any(target_arch = "x86_64", target_arch = "aarch64"))]
      if is_64_bit_python {
@@ -17,7 +11,26 @@ index 43538c0..85857ba 100644
 +        // println!("cargo:rustc-cfg=feature=\"inline_int\"");
      }
  
-     if env::var("ORJSON_DISABLE_YYJSON").is_ok() {
+-    if env::var("ORJSON_DISABLE_YYJSON").is_ok() {
+-        if env::var("CARGO_FEATURE_YYJSON").is_ok() {
+-            panic!("ORJSON_DISABLE_YYJSON and --features=yyjson both enabled.")
+-        }
+-    } else {
++    // if env::var("ORJSON_DISABLE_YYJSON").is_ok() {
++    //     if env::var("CARGO_FEATURE_YYJSON").is_ok() {
++    //         panic!("ORJSON_DISABLE_YYJSON and --features=yyjson both enabled.")
++    //     }
++    // } else {
+         match cc::Build::new()
+             .file("include/yyjson/yyjson.c")
+             .include("include/yyjson")
+@@ -68,5 +69,5 @@ fn main() {
+                 }
+             }
+         }
+-    }
++    //}
+ }
 diff --git a/include/pyo3/pyo3-ffi/src/cpython/abstract_.rs b/include/pyo3/pyo3-ffi/src/cpython/abstract_.rs
 index 477ad02..0b649f3 100644
 --- a/include/pyo3/pyo3-ffi/src/cpython/abstract_.rs
@@ -484,6 +497,20 @@ index 505840e..e984191 100644
              match pyobject_to_obtype(value, self.state.opts()) {
                  ObType::Str => {
                      seq.serialize_element(&StrSerializer::new(value))?;
+diff --git a/src/serialize/per_type/numpy.rs b/src/serialize/per_type/numpy.rs
+index f888029..4a0fe0e 100644
+--- a/src/serialize/per_type/numpy.rs
++++ b/src/serialize/per_type/numpy.rs
+@@ -196,8 +196,7 @@ impl NumpyArray {
+     pub fn new(ptr: *mut PyObject, opts: Opt) -> Result<Self, PyArrayError> {
+         let capsule = ffi!(PyObject_GetAttr(ptr, ARRAY_STRUCT_STR));
+         let array = unsafe {
+-            (*capsule.cast::<PyCapsule>())
+-                .pointer
++            ffi!(PyCapsule_GetPointer(capsule, core::ptr::null_mut()))
+                 .cast::<PyArrayInterface>()
+         };
+         if unsafe { (*array).two != 2 } {
 diff --git a/src/serialize/serializer.rs b/src/serialize/serializer.rs
 index 7b9a5de..e291912 100644
 --- a/src/serialize/serializer.rs
@@ -769,7 +796,7 @@ index 7b1c2df..5ac8dec 100644
      }
  }
 diff --git a/src/str/scalar.rs b/src/str/scalar.rs
-index 12adb63..99fce8f 100644
+index 12adb63..e0cdd8b 100644
 --- a/src/str/scalar.rs
 +++ b/src/str/scalar.rs
 @@ -1,11 +1,17 @@
@@ -790,17 +817,6 @@ index 12adb63..99fce8f 100644
      let num_chars = bytecount::num_chars(buf.as_bytes());
      if buf.len() == num_chars {
          return pyunicode_ascii(buf.as_ptr(), num_chars);
-@@ -40,7 +46,9 @@ pub fn str_impl_kind_scalar(buf: &str) -> *mut pyo3_ffi::PyObject {
- #[inline(always)]
- pub fn unicode_from_str(buf: &str) -> *mut pyo3_ffi::PyObject {
-     if unlikely!(buf.is_empty()) {
--        return use_immortal!(crate::typeref::EMPTY_UNICODE);
-+        // Not immortal on GraalPy
-+        ffi!(Py_INCREF(crate::typeref::EMPTY_UNICODE));
-+        return unsafe { crate::typeref::EMPTY_UNICODE };
-     }
-     str_impl_kind_scalar(buf)
- }
 diff --git a/src/typeref.rs b/src/typeref.rs
 index bf925a4..388c9f4 100644
 --- a/src/typeref.rs
@@ -851,7 +867,7 @@ index bf925a4..388c9f4 100644
          ptr
      }
 diff --git a/src/util.rs b/src/util.rs
-index ccf425c..bc9268d 100644
+index ccf425c..ce99eaa 100644
 --- a/src/util.rs
 +++ b/src/util.rs
 @@ -10,7 +10,7 @@ macro_rules! is_type {
@@ -889,25 +905,35 @@ index ccf425c..bc9268d 100644
  #[cfg(all(Py_3_12, not(Py_3_13)))]
  macro_rules! pydict_contains {
      ($obj1:expr, $obj2:expr) => {
-@@ -222,6 +221,7 @@ macro_rules! pydict_contains {
+@@ -222,18 +221,20 @@ macro_rules! pydict_contains {
          unsafe { pyo3_ffi::PyDict_Contains((*$obj1).tp_dict, $obj2) == 1 }
      };
  }
 +*/
  
- #[cfg(Py_3_12)]
- macro_rules! use_immortal {
-@@ -234,6 +234,9 @@ macro_rules! use_immortal {
+-#[cfg(Py_3_12)]
+-macro_rules! use_immortal {
+-    ($op:expr) => {
+-        unsafe { $op }
+-    };
+-}
++// #[cfg(Py_3_12)]
++// macro_rules! use_immortal {
++//     ($op:expr) => {
++//         unsafe { $op }
++//     };
++// }
+ 
+-#[cfg(not(Py_3_12))]
++// #[cfg(not(Py_3_12))]
  macro_rules! use_immortal {
      ($op:expr) => {
          unsafe {
-+            // orjson makes assumption about something being immortal that is not immortal
-+            // on GraalPy: update the caller to do proper refcounting instead
-+            debug_assert!(ffi!(_Py_IsImmortal($op)) == 1);
++            // We let GraalPy's Py_INCREF decide what is immortal and what not
              ffi!(Py_INCREF($op));
              $op
          }
-@@ -256,20 +259,11 @@ macro_rules! pydict_next {
+@@ -256,20 +257,11 @@ macro_rules! pydict_next {
  
  macro_rules! pydict_setitem {
      ($dict:expr, $pykey:expr, $pyval:expr) => {
