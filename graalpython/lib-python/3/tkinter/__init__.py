@@ -34,16 +34,18 @@ import collections
 import enum
 import sys
 import types
+import os
+import subprocess
+import sys
+
 
 def _setup_tkinter():
-    import os
-    import subprocess
 
     print("GraalPy requires additional setup to enable Tkinter support on macOS.\n")
 
     print("Ensure pip and required packages are installed:")
-    print("    mx python -m ensurepip")
-    print("    mx python -m pip install cffi setuptools\n")
+    print(f"     {sys.executable} -m ensurepip")
+    print(f"     {sys.executable} -m pip install cffi setuptools\n")
 
     print("Install system dependencies:")
     print("    brew install tcl-tk@8")
@@ -52,8 +54,8 @@ def _setup_tkinter():
         resp = input("Would you like to run pip setup and build now? [Y/n]: ").strip().lower()
         if resp in ("", "y", "yes"):
             try:
-                subprocess.check_call(["mx", "python", "-m", "ensurepip"])
-                subprocess.check_call(["mx", "python", "-m", "pip", "install", "cffi", "setuptools"])
+                subprocess.check_call([sys.executable, "-m", "ensurepip"])
+                subprocess.check_call([sys.executable, "-m", "pip", "install", "cffi", "setuptools"])
                 subprocess.check_call(["brew", "install", "tcl-tk@8"])
                 current_dir = os.path.dirname(__file__)
                 tklib_build_path = os.path.abspath(os.path.join(
@@ -61,7 +63,7 @@ def _setup_tkinter():
                     "../../../../../darwin-aarch64/GRAALPY_JVM_STANDALONE/lib/python3.12/_tkinter/tklib_build.py"
                 ))
 
-                subprocess.check_call(["mx", "python", tklib_build_path])
+                subprocess.check_call([sys.executable, tklib_build_path])
             except Exception as build_err:
                     raise build_err
     else:
