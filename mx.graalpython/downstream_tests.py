@@ -65,10 +65,11 @@ def downstream_test(name):
 
 
 @downstream_test('hpy')
-def downstream_test_hpy(graalpy, args=None, env=None, check=True, timeout=None):
-    testdir = Path('upstream-tests').absolute()
-    shutil.rmtree(testdir, ignore_errors=True)
-    testdir.mkdir(exist_ok=True)
+def downstream_test_hpy(graalpy, testdir=None, args=None, env=None, check=True, timeout=None):
+    if not testdir:
+        testdir = Path('upstream-tests').absolute()
+        shutil.rmtree(testdir, ignore_errors=True)
+        testdir.mkdir(exist_ok=True)
     hpy_root = DIR / "graalpython" / "hpy"
     shutil.copytree(hpy_root, testdir / "hpy")
     hpy_root = testdir / "hpy"
@@ -101,10 +102,7 @@ def downstream_test_hpy(graalpy, args=None, env=None, check=True, timeout=None):
 
 
 @downstream_test('pybind11')
-def downstream_test_pybind11(graalpy):
-    testdir = Path('upstream-tests').absolute()
-    shutil.rmtree(testdir, ignore_errors=True)
-    testdir.mkdir(exist_ok=True)
+def downstream_test_pybind11(graalpy, testdir):
     run(['git', 'clone', 'https://github.com/pybind/pybind11.git'], cwd=testdir)
     src = testdir / 'pybind11'
     venv = src / 'venv'
@@ -120,10 +118,7 @@ def downstream_test_pybind11(graalpy):
 
 
 @downstream_test('virtualenv')
-def downstream_test_virtualenv(graalpy):
-    testdir = Path('upstream-tests').absolute()
-    shutil.rmtree(testdir, ignore_errors=True)
-    testdir.mkdir(exist_ok=True)
+def downstream_test_virtualenv(graalpy, testdir):
     run(['git', 'clone', 'https://github.com/pypa/virtualenv.git', '-b', 'main'], cwd=testdir)
     src = testdir / 'virtualenv'
     venv = src / 'venv'
@@ -142,10 +137,7 @@ def downstream_test_virtualenv(graalpy):
 
 
 @downstream_test('pyo3')
-def downstream_test_pyo3(graalpy):
-    testdir = Path('upstream-tests').absolute()
-    shutil.rmtree(testdir, ignore_errors=True)
-    testdir.mkdir(exist_ok=True)
+def downstream_test_pyo3(graalpy, testdir):
     run(['git', 'clone', 'https://github.com/PyO3/pyo3.git', '-b', 'main'], cwd=testdir)
     src = testdir / 'pyo3'
     venv = src / 'venv'
@@ -154,8 +146,24 @@ def downstream_test_pyo3(graalpy):
     run_in_venv(venv, ['nox', '-s', 'test-py'], cwd=src)
 
 
+@downstream_test('pydantic-core')
+def downstream_test_pydantic_core(graalpy, testdir):
+    run(['git', 'clone', 'https://github.com/pydantic/pydantic-core.git', '-b', 'main'], cwd=testdir)
+    src = testdir / 'pydantic-core'
+    run(['uv', 'sync', '--python', graalpy, '--group', 'testing'], cwd=src)
+    # XXX UNSAFE_PYO3_SKIP_VERSION_CHECK should not be necessary once pydantic-core updates to a newer pyo3 version
+    run(['uv', 'pip', 'install', '-e', '.'], cwd=src, env={**os.environ, 'UNSAFE_PYO3_SKIP_VERSION_CHECK': '1'})
+    # XXX remove after pydantic-core updates to hypothesis >= 6.136.7
+    run(['uv', 'pip', 'install', 'hypothesis==6.136.7'], cwd=src)
+    run(['uv', 'run', 'pytest', '-v', '--tb=short'], cwd=src)
+
+
 def run_downstream_test(python, project):
-    DOWNSTREAM_TESTS[project](python)
+    testdir = Path('upstream-tests').absolute()
+    shutil.rmtree(testdir, ignore_errors=True)
+    testdir.mkdir(exist_ok=True)
+    python = os.path.abspath(python)
+    DOWNSTREAM_TESTS[project](python, testdir)
 
 
 def main():

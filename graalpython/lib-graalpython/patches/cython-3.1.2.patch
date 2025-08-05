@@ -1,0 +1,241 @@
+diff --git a/Cython/Includes/cpython/array.pxd b/Cython/Includes/cpython/array.pxd
+index b5e8880..d420401 100644
+--- a/Cython/Includes/cpython/array.pxd
++++ b/Cython/Includes/cpython/array.pxd
+@@ -99,7 +99,10 @@ cdef extern from *:  # Hard-coded utility code hack.
+         cdef:
+             Py_ssize_t ob_size
+             arraydescr* ob_descr    # struct arraydescr *ob_descr;
+-            __data_union data
++
++        @property
++        cdef inline __data_union data(self) nogil:
++            return __Pyx_PyArray_Data(self)
+ 
+         def __getbuffer__(self, Py_buffer* info, int flags):
+             # This implementation of getbuffer is geared towards Cython
+@@ -131,6 +134,7 @@ cdef extern from *:  # Hard-coded utility code hack.
+ 
+     array newarrayobject(PyTypeObject* type, Py_ssize_t size, arraydescr *descr)
+ 
++    __data_union __Pyx_PyArray_Data(array self) nogil
+     # fast resize/realloc
+     # not suitable for small increments; reallocation 'to the point'
+     int resize(array self, Py_ssize_t n) except -1
+diff --git a/Cython/Includes/cpython/datetime.pxd b/Cython/Includes/cpython/datetime.pxd
+index da988dc..b8c822e 100644
+--- a/Cython/Includes/cpython/datetime.pxd
++++ b/Cython/Includes/cpython/datetime.pxd
+@@ -373,15 +373,15 @@ cdef inline int datetime_fold(object o) noexcept:
+ 
+ # Get days of timedelta
+ cdef inline int timedelta_days(object o) noexcept:
+-    return (<PyDateTime_Delta*>o).days
++    return PyDateTime_DELTA_GET_DAYS(o)
+ 
+ # Get seconds of timedelta
+ cdef inline int timedelta_seconds(object o) noexcept:
+-    return (<PyDateTime_Delta*>o).seconds
++    return PyDateTime_DELTA_GET_SECONDS(o)
+ 
+ # Get microseconds of timedelta
+ cdef inline int timedelta_microseconds(object o) noexcept:
+-    return (<PyDateTime_Delta*>o).microseconds
++    return PyDateTime_DELTA_GET_MICROSECONDS(o)
+ 
+ cdef inline double total_seconds(timedelta obj) noexcept:
+     # Mirrors the "timedelta.total_seconds()" method.
+diff --git a/Cython/Utility/Builtins.c b/Cython/Utility/Builtins.c
+index 15ba067..fdef8e5 100644
+--- a/Cython/Utility/Builtins.c
++++ b/Cython/Utility/Builtins.c
+@@ -764,8 +764,13 @@ static {{out_type}} __Pyx_PyMemoryView_Get_{{name}}(PyObject *obj) {
+ #define __Pyx_PySlice_Start(o) PyObject_GetAttr(o, PYIDENT("start"))
+ #define __Pyx_PySlice_Stop(o) PyObject_GetAttr(o, PYIDENT("stop"))
+ #define __Pyx_PySlice_Step(o) PyObject_GetAttr(o, PYIDENT("step"))
+-#elif CYTHON_COMPILING_IN_GRAAL
++#elif CYTHON_COMPILING_IN_GRAAL && defined(GRAALPY_VERSION_NUM) && GRAALPY_VERSION_NUM > 0x19000000
+ // Graal defines it's own accessor functions
++#define __Pyx_PySlice_Start(o) GraalPySlice_Start(o)
++#define __Pyx_PySlice_Stop(o) GraalPySlice_Stop(o)
++#define __Pyx_PySlice_Step(o) GraalPySlice_Step(o)
++#elif CYTHON_COMPILING_IN_GRAAL
++// Remove when GraalPy 24 goes EOL
+ #define __Pyx_PySlice_Start(o) __Pyx_NewRef(PySlice_Start((PySliceObject*)o))
+ #define __Pyx_PySlice_Stop(o) __Pyx_NewRef(PySlice_Stop((PySliceObject*)o))
+ #define __Pyx_PySlice_Step(o) __Pyx_NewRef(PySlice_Step((PySliceObject*)o))
+diff --git a/Cython/Utility/CythonFunction.c b/Cython/Utility/CythonFunction.c
+index 685d287..1b27dd5 100644
+--- a/Cython/Utility/CythonFunction.c
++++ b/Cython/Utility/CythonFunction.c
+@@ -1755,8 +1755,12 @@ static PyObject* __Pyx_Method_ClassMethod(PyObject *method) {
+             "This is most likely a classmethod in a cdef class method with binding=False. "
+             "Try setting 'binding' to True.",
+             method);
+-#elif CYTHON_COMPILING_IN_GRAAL
++#elif CYTHON_COMPILING_IN_GRAAL && defined(GRAALPY_VERSION_NUM) && GRAALPY_VERSION_NUM > 0x19000000
+         // cdef classes
++        PyTypeObject *d_type = GraalPyDescrObject_GetType(method);
++        return PyDescr_NewClassMethod(d_type, GraalPyMethodDescrObject_GetMethod(method));
++#elif CYTHON_COMPILING_IN_GRAAL
++        // Remove when GraalPy 24 goes EOL
+         PyTypeObject *d_type = PyDescrObject_GetType(method);
+         return PyDescr_NewClassMethod(d_type, PyMethodDescrObject_GetMethod(method));
+ #else
+diff --git a/Cython/Utility/Exceptions.c b/Cython/Utility/Exceptions.c
+index 165a7ef..d88e279 100644
+--- a/Cython/Utility/Exceptions.c
++++ b/Cython/Utility/Exceptions.c
+@@ -13,7 +13,7 @@ if (likely(__Pyx_init_assertions_enabled() == 0)); else
+ 
+ /////////////// AssertionsEnabled.proto ///////////////
+ 
+-#if CYTHON_COMPILING_IN_LIMITED_API  ||  (CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030C0000)
++#if CYTHON_COMPILING_IN_LIMITED_API  ||  PY_VERSION_HEX >= 0x030C0000
+   // Py_OptimizeFlag is deprecated in Py3.12+ and not available in the Limited API.
+   static int __pyx_assertions_enabled_flag;
+   #define __pyx_assertions_enabled() (__pyx_assertions_enabled_flag)
+diff --git a/Cython/Utility/ModuleSetupCode.c b/Cython/Utility/ModuleSetupCode.c
+index 6e29634..11f423e 100644
+--- a/Cython/Utility/ModuleSetupCode.c
++++ b/Cython/Utility/ModuleSetupCode.c
+@@ -81,7 +81,7 @@
+   #undef CYTHON_AVOID_BORROWED_REFS
+   #define CYTHON_AVOID_BORROWED_REFS 1
+   #undef CYTHON_AVOID_THREAD_UNSAFE_BORROWED_REFS
+-  #define CYTHON_AVOID_THREAD_UNSAFE_BORROWED_REFS 1
++  #define CYTHON_AVOID_THREAD_UNSAFE_BORROWED_REFS 0
+   #undef CYTHON_ASSUME_SAFE_MACROS
+   #define CYTHON_ASSUME_SAFE_MACROS 0
+   #undef CYTHON_ASSUME_SAFE_SIZE
+@@ -860,7 +860,11 @@ static CYTHON_INLINE int __Pyx__IsSameCFunction(PyObject *func, void (*cfunc)(vo
+ #if CYTHON_COMPILING_IN_LIMITED_API
+   // __Pyx_PyCode_HasFreeVars isn't easily emulated in the limited API (but isn't really necessary)
+   #define __Pyx_PyFrame_SetLineNumber(frame, lineno)
++#elif CYTHON_COMPILING_IN_GRAAL && defined(GRAALPY_VERSION_NUM) && GRAALPY_VERSION_NUM > 0x19000000
++  #define __Pyx_PyCode_HasFreeVars(co)  (PyCode_GetNumFree(co) > 0)
++  #define __Pyx_PyFrame_SetLineNumber(frame, lineno) GraalPyFrame_SetLineNumber((frame), (lineno))
+ #elif CYTHON_COMPILING_IN_GRAAL
++  // Remove when GraalPy 24 goes EOL
+   #define __Pyx_PyCode_HasFreeVars(co)  (PyCode_GetNumFree(co) > 0)
+   #define __Pyx_PyFrame_SetLineNumber(frame, lineno) _PyFrame_SetLineNumber((frame), (lineno))
+ #else
+@@ -1592,7 +1596,9 @@ static PY_INT64_T __Pyx_GetCurrentInterpreterId(void) {
+ #if !CYTHON_USE_MODULE_STATE
+ static CYTHON_SMALL_CODE int __Pyx_check_single_interpreter(void) {
+     static PY_INT64_T main_interpreter_id = -1;
+-#if CYTHON_COMPILING_IN_GRAAL
++#if CYTHON_COMPILING_IN_GRAAL && defined(GRAALPY_VERSION_NUM) && GRAALPY_VERSION_NUM > 0x19000000
++    PY_INT64_T current_id = GraalPyInterpreterState_GetIDFromThreadState(PyThreadState_Get());
++#elif CYTHON_COMPILING_IN_GRAAL
+     PY_INT64_T current_id = PyInterpreterState_GetIDFromThreadState(PyThreadState_Get());
+ #elif CYTHON_COMPILING_IN_LIMITED_API && __PYX_LIMITED_VERSION_HEX >= 0x03090000
+     PY_INT64_T current_id = PyInterpreterState_GetID(PyInterpreterState_Get());
+diff --git a/Cython/Utility/arrayarray.h b/Cython/Utility/arrayarray.h
+index d410e66..e006a20 100644
+--- a/Cython/Utility/arrayarray.h
++++ b/Cython/Utility/arrayarray.h
+@@ -30,33 +30,34 @@ typedef struct arraydescr {
+     char *formats;
+ } arraydescr;
+ 
++typedef union {
++    char *ob_item;
++    float *as_floats;
++    double *as_doubles;
++    int *as_ints;
++    unsigned int *as_uints;
++    unsigned char *as_uchars;
++    signed char *as_schars;
++    char *as_chars;
++    unsigned long *as_ulongs;
++    long *as_longs;
++    unsigned long long *as_ulonglongs;
++    long long *as_longlongs;
++    short *as_shorts;
++    unsigned short *as_ushorts;
++    // Don't use Py_UNICODE ourselves in the union. This avoids deprecation warnings 
++    // for anyone who uses array.array but doesn't use this field.
++    #if PY_VERSION_HEX >= 0x030d0000
++    Py_DEPRECATED(3.13) 
++    #endif
++        wchar_t *as_pyunicodes;
++    void *as_voidptr;
++} __data_union;
+ 
+ struct arrayobject {
+     PyObject_HEAD
+     Py_ssize_t ob_size;
+-    union {
+-        char *ob_item;
+-        float *as_floats;
+-        double *as_doubles;
+-        int *as_ints;
+-        unsigned int *as_uints;
+-        unsigned char *as_uchars;
+-        signed char *as_schars;
+-        char *as_chars;
+-        unsigned long *as_ulongs;
+-        long *as_longs;
+-        unsigned long long *as_ulonglongs;
+-        long long *as_longlongs;
+-        short *as_shorts;
+-        unsigned short *as_ushorts;
+-        // Don't use Py_UNICODE ourselves in the union. This avoids deprecation warnings 
+-        // for anyone who uses array.array but doesn't use this field.
+-        #if PY_VERSION_HEX >= 0x030d0000
+-        Py_DEPRECATED(3.13) 
+-        #endif
+-            wchar_t *as_pyunicodes;
+-        void *as_voidptr;
+-    } data;
++    __data_union data;
+     Py_ssize_t allocated;
+     struct arraydescr *ob_descr;
+     PyObject *weakreflist; /* List of weak references */
+@@ -105,9 +106,20 @@ PyObject* newarrayobject(PyTypeObject *type, Py_ssize_t size,
+     struct arraydescr *descr);
+ #endif /* ifndef NO_NEWARRAY_INLINE */
+ 
++static CYTHON_INLINE __data_union __Pyx_PyArray_Data(arrayobject *self) {
++#if !CYTHON_COMPILING_IN_GRAAL
++    return self->data;
++#else
++    __data_union data;
++    data.ob_item = GraalPyArray_Data((PyObject*)self);
++    return data;
++#endif
++}
++
+ // fast resize (reallocation to the point)
+ // not designed for filing small increments (but for fast opaque array apps)
+ static CYTHON_INLINE int resize(arrayobject *self, Py_ssize_t n) {
++#if !CYTHON_COMPILING_IN_GRAAL
+     void *items = (void*) self->data.ob_item;
+     PyMem_Resize(items, char, (size_t)(n * self->ob_descr->itemsize));
+     if (items == NULL) {
+@@ -118,10 +130,14 @@ static CYTHON_INLINE int resize(arrayobject *self, Py_ssize_t n) {
+     __Pyx_SET_SIZE(self, n);
+     self->allocated = n;
+     return 0;
++#else
++    return GraalPyArray_Resize((PyObject*)self, n);
++#endif
+ }
+ 
+ // suitable for small increments; over allocation 50% ;
+ static CYTHON_INLINE int resize_smart(arrayobject *self, Py_ssize_t n) {
++#if !CYTHON_COMPILING_IN_GRAAL
+     void *items = (void*) self->data.ob_item;
+     Py_ssize_t newsize;
+     if (n < self->allocated && n*4 > self->allocated) {
+@@ -142,6 +158,9 @@ static CYTHON_INLINE int resize_smart(arrayobject *self, Py_ssize_t n) {
+     __Pyx_SET_SIZE(self, n);
+     self->allocated = newsize;
+     return 0;
++#else
++    return GraalPyArray_Resize((PyObject*)self, n);
++#endif
+ }
+ 
+ #endif
