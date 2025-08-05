@@ -539,21 +539,20 @@ public final class TypeBuiltins extends PythonBuiltins {
                         @Cached GetObjectSlotsNode getValueSlotsNode,
                         @Cached LookupAttributeInMRONode.Dynamic lookup,
                         @Cached CastToTruffleStringChecked1Node castToString,
-                        @Cached InlinedBranchProfile hasDescProfile,
+                        @Cached InlinedConditionProfile hasDescProfile,
                         @Cached InlinedConditionProfile hasDescrGetProfile,
-                        @Cached InlinedBranchProfile hasValueProfile,
+                        @Cached InlinedConditionProfile hasValueProfile,
                         @Cached InlinedBranchProfile hasNonDescriptorValueProfile,
                         @Cached PRaiseNode raiseNode) {
             TruffleString key = castToString.cast(inliningTarget, keyObj, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
 
             Object type = getClassNode.execute(inliningTarget, object);
             Object descr = lookup.execute(type, key);
-            boolean hasDescr = descr != PNone.NO_VALUE;
+            boolean hasDescr = hasDescProfile.profile(inliningTarget, descr != PNone.NO_VALUE);
 
             TpSlot get = null;
             boolean hasDescrGet = false;
             if (hasDescr) {
-                hasDescProfile.enter(inliningTarget);
                 var descrSlots = getDescrSlotsNode.execute(inliningTarget, descr);
                 get = descrSlots.tp_descr_get();
                 hasDescrGet = hasDescrGetProfile.profile(inliningTarget, get != null);
@@ -564,8 +563,7 @@ public final class TypeBuiltins extends PythonBuiltins {
 
             // The only difference between all 3 nodes
             Object value = readAttributeOfClass(object, key);
-            if (value != PNone.NO_VALUE) {
-                hasValueProfile.enter(inliningTarget);
+            if (hasValueProfile.profile(inliningTarget, value != PNone.NO_VALUE)) {
                 var valueGet = getValueSlotsNode.execute(inliningTarget, value).tp_descr_get();
                 if (valueGet == null) {
                     hasNonDescriptorValueProfile.enter(inliningTarget);
@@ -576,7 +574,6 @@ public final class TypeBuiltins extends PythonBuiltins {
             }
 
             if (hasDescr) {
-                hasDescProfile.enter(inliningTarget);
                 if (!hasDescrGet) {
                     return descr;
                 } else {

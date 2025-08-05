@@ -86,6 +86,7 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.attributes.MergedObjectTypeModuleGetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromModuleNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
@@ -237,6 +238,9 @@ public final class ModuleBuiltins extends PythonBuiltins {
     @Slot(value = SlotKind.tp_getattro, isComplex = true)
     @GenerateNodeFactory
     public abstract static class ModuleGetattributeNode extends GetAttrBuiltinNode {
+        /**
+         * Keep in sync with {@link MergedObjectTypeModuleGetAttributeNode}
+         */
         @Specialization
         static Object getattribute(VirtualFrame frame, PythonModule self, Object keyObj,
                         @Bind Node inliningTarget,
