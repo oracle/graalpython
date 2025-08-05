@@ -36,45 +36,74 @@ import sys
 import types
 import os
 import subprocess
-import sys
+import importlib.util
+import shutil
+import platform
 
+def ensure_installed(name, *extra):
+    try:
+        return importlib.import_module(name)
+    except ImportError:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", name, *extra])
+        return importlib.import_module(name)
 
-def _setup_tkinter():
+def install_system_dependencies():
+    if sys.platform == "darwin":
+        if not shutil.which("brew"):
+            print("Homebrew not found.")
+            install_brew = input("Install Homebrew now? [Y/n]: ").strip().low()
+            if install_brew in ("", "y", "yes"):
+                subprocess.check_call([
+                    "/bin/bash", "-c",
+                    "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+                ])
+            else:
+                print("Cannot continue without Homebrew. Please install it and rerun.")
+                sys.exit(1)
 
-    print("GraalPy requires additional setup to enable Tkinter support on macOS.\n")
-
-    print("Ensure pip and required packages are installed:")
-    print(f"     {sys.executable} -m ensurepip")
-    print(f"     {sys.executable} -m pip install cffi setuptools\n")
-
-    print("Install system dependencies:")
-    print("    brew install tcl-tk@8")
-
-    if sys.stdin.isatty():
-        resp = input("Would you like to run pip setup and build now? [Y/n]: ").strip().lower()
-        if resp in ("", "y", "yes"):
-            try:
-                subprocess.check_call([sys.executable, "-m", "ensurepip"])
-                subprocess.check_call([sys.executable, "-m", "pip", "install", "cffi", "setuptools"])
-                subprocess.check_call(["brew", "install", "tcl-tk@8"])
-                current_dir = os.path.dirname(__file__)
-                tklib_build_path = os.path.abspath(os.path.join(
-                    current_dir,
-                    "../../../../../darwin-aarch64/GRAALPY_JVM_STANDALONE/lib/python3.12/_tkinter/tklib_build.py"
-                ))
-
-                subprocess.check_call([sys.executable, tklib_build_path])
-            except Exception as build_err:
-                    raise build_err
+        subprocess.check_call(["brew", "install", "tcl-tk@8"])
     else:
-        print("\n Run in an interactive terminal to auto-run pip setup and build.")
+        subprocess.check_call(["sudo", "apt", "install", "-y", "tcl8.6-dev", "tk8.6-dev"])
 
+def run_tkinter_build_script():
+    current_dir = os.path.dirname(__file__)
+    system = platform.system().lower()
+    machine = platform.machine().lower()
+    if machine == 'x86_64':
+        machine = 'x64'
+    elif machine == 'arm64' or machine == 'aarch64':
+        machine = 'aarch64'
 
+    platform_id = f"{system}-{machine}"
+
+    py_version = f"{sys.version_info.major}.{sys.version_info.minor}"
+    base_dir = os.path.abspath(os.path.join(current_dir, "..", "..", "..", "..", ".."))
+    script_path = os.path.join(
+        base_dir,
+        platform_id,
+        "GRAALPY_JVM_STANDALONE",
+        "lib",
+        f"python{py_version}",
+        "_tkinter",
+        "tklib_build.py"
+    )
+    if not os.path.exists(script_path):
+        raise FileNotFoundError(f"Build script not found: {script_path}")
+    subprocess.check_call([sys.executable, script_path])
+
+def setup_tkinter():
+
+    print("Checking required Python packages...")
+    for pkg in ( "cffi", "setuptools" ):
+         ensure_installed(pkg)
+
+    install_system_dependencies()
+    run_tkinter_build_script()
 
 try:
     import _tkinter
 except Exception:
-    _setup_tkinter()
+    setup_tkinter()
     import _tkinter
     TclError = _tkinter.TclError
 
