@@ -85,7 +85,7 @@ def validate_metadata(patches_dir):
                         for part in re.split(f'AND|OR', license_id):
                             part = part.strip()
                             if ' WITH ' in part:
-                                part, exception = re.split(r'\s+WITH\s+', part, 1)
+                                part, exception = re.split(r'\s+WITH\s+', part, maxsplit=1)
                                 assert exception in ALLOWED_WITH_CLAUSES, \
                                     f"License WITH clause {exception} not in allowed list of clauses: {', '.join(ALLOWED_WITH_CLAUSES)}"
                             assert part in ALLOWED_LICENSES, \
