@@ -173,6 +173,31 @@ class PosixTests(unittest.TestCase):
             os.close(fd1)
             os.close(fd2)
 
+    @unittest.skipIf(sys.platform != 'linux', 'mkfifo is a linux command')
+    def test_seek_pipe(self):
+        new_file_path = './myscript.sh'
+        with io.open(new_file_path, 'w') as script:
+            script.write("""#!/bin/sh
+            mkfifo testpipe
+            echo "4" > testpipe &
+            """)
+        try:
+            st = os.stat(new_file_path)
+            os.chmod(new_file_path, st.st_mode | stat.S_IEXEC)
+            os.system(new_file_path)
+            with io.open("testpipe", "rb") as r:
+                out = r.read(1)
+            assert out == b"4", out
+        finally:
+            try:
+                os.remove(new_file_path)
+            except:
+                pass
+            try:
+                os.remove("testpipe")
+            except:
+                pass
+
     def test_mkdir_rmdir(self):
         os.mkdir(TEST_FULL_PATH1)
         try:
