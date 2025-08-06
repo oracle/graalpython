@@ -58,8 +58,9 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
-import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -126,21 +127,27 @@ public final class MapBuiltins extends PythonBuiltins {
         @Specialization(guards = "self.getIterators().length == 1")
         static Object doOne(VirtualFrame frame, PMap self,
                         @Bind Node inliningTarget,
-                        @Shared @Cached CallNode callNode,
-                        @Shared @Cached PyIterNextNode nextNode) {
-            Object item = nextNode.execute(frame, inliningTarget, self.getIterators()[0]);
+                        @Shared @Cached TpSlots.GetObjectSlotsNode getSlots,
+                        @Shared @Cached TpSlotIterNext.CallSlotTpIterNextNode callTpIternext,
+                        @Shared @Cached CallNode callNode) {
+            Object iterator = self.getIterators()[0];
+            TpSlot iternext = getSlots.execute(inliningTarget, iterator).tp_iternext();
+            Object item = callTpIternext.execute(frame, inliningTarget, iternext, iterator);
             return callNode.execute(frame, self.getFunction(), item);
         }
 
         @Specialization(replaces = "doOne")
         static Object doNext(VirtualFrame frame, PMap self,
                         @Bind Node inliningTarget,
-                        @Shared @Cached CallNode callNode,
-                        @Shared @Cached PyIterNextNode nextNode) {
+                        @Shared @Cached TpSlots.GetObjectSlotsNode getSlots,
+                        @Shared @Cached TpSlotIterNext.CallSlotTpIterNextNode callTpIternext,
+                        @Shared @Cached CallNode callNode) {
             Object[] iterators = self.getIterators();
             Object[] arguments = new Object[iterators.length];
             for (int i = 0; i < iterators.length; i++) {
-                arguments[i] = nextNode.execute(frame, inliningTarget, iterators[i]);
+                Object iterator = iterators[i];
+                TpSlot iternext = getSlots.execute(inliningTarget, iterator).tp_iternext();
+                arguments[i] = callTpIternext.execute(frame, inliningTarget, iternext, iterator);
             }
             return callNode.execute(frame, self.getFunction(), arguments);
         }

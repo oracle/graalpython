@@ -59,8 +59,9 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
-import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -122,14 +123,17 @@ public final class FilterBuiltins extends PythonBuiltins {
         static Object doNext(VirtualFrame frame, PFilter self,
                         @Bind Node inliningTarget,
                         @Cached CallNode callNode,
+                        @Cached TpSlots.GetObjectSlotsNode getSlots,
+                        @Cached TpSlotIterNext.CallSlotTpIterNextNode callTpIternext,
                         @Cached InlinedConditionProfile hasFunctionProfile,
-                        @Cached PyIterNextNode nextNode,
                         @Cached PyObjectIsTrueNode isTrueNode) {
             Object iterator = self.getIterator();
             Object function = self.getFunction();
 
+            TpSlot iternext = getSlots.execute(inliningTarget, iterator).tp_iternext();
+
             while (true) {
-                Object item = nextNode.execute(frame, inliningTarget, iterator);
+                Object item = callTpIternext.execute(frame, inliningTarget, iternext, iterator);
                 Object result;
                 if (hasFunctionProfile.profile(inliningTarget, function != PNone.NONE)) {
                     result = callNode.execute(frame, function, item);
