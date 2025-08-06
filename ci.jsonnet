@@ -329,7 +329,7 @@
                     GPY_RELEASE[self.os].url,
                 ]
             ],
-            "logs"+: [
+            logs+: [
                 "wheelhouse/*.whl",
             ],
         }),

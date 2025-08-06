@@ -1,6 +1,6 @@
 (import "python-gate.libsonnet") +
 {
-    local common                = import "graal/ci/ci_common/common.jsonnet",
+    local common                = import "graal/ci/common.jsonnet",
     local common_util           = import "graal/ci/ci_common/common-utils.libsonnet",
     local run_spec              = import "graal/ci/ci_common/run-spec.libsonnet",
     local tools                 = import "graal/ci/ci_common/run-spec-tools.libsonnet",

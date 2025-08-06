@@ -1,5 +1,5 @@
 {
-    local common                = import "graal/ci/ci_common/common.jsonnet",
+    local common                = import "graal/ci/common.jsonnet",
     local common_util           = import "graal/ci/ci_common/common-utils.libsonnet",
     local run_spec              = import "graal/ci/ci_common/run-spec.libsonnet",
     local tools                 = import "graal/ci/ci_common/run-spec-tools.libsonnet",
@@ -26,10 +26,8 @@
     //
     // -----------------------------------------------------------------------------------------------------------------
     local jdk_name_to_dict = {[edition]: {
-        "jdk17"+: common.labsjdk17,
-        "jdk20"+: common.labsjdk20,
-        "jdk21"+: common.labsjdk21,
-        "jdk-latest"+: common.labsjdkLatest,
+        "jdk21"+: common.jdks["labsjdk-" + edition + "-21"],
+        "jdk-latest"+: common.jdks["labsjdk-" + edition + "-latest"],
     } for edition in ['ce', 'ee']},
 
     local jdk_name_to_devkit_suffix = function(name)
