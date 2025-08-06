@@ -38,16 +38,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.map;
+package com.oracle.graal.python.builtins.objects.filter;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.object.Shape;
 
-public final class PMap extends PythonBuiltinObject {
+public final class PFilter extends PythonBuiltinObject {
     private Object function;
-    private Object[] iterators;
+    private Object iterator;
 
-    public PMap(Object clazz, Shape instanceShape) {
+    public PFilter(Object clazz, Shape instanceShape) {
         super(clazz, instanceShape);
     }
 
@@ -59,11 +59,11 @@ public final class PMap extends PythonBuiltinObject {
         this.function = function;
     }
 
-    public Object[] getIterators() {
-        return iterators;
+    public Object getIterator() {
+        return iterator;
     }
 
-    public void setIterators(Object[] iterators) {
-        this.iterators = iterators;
+    public void setIterator(Object iterator) {
+        this.iterator = iterator;
     }
 }

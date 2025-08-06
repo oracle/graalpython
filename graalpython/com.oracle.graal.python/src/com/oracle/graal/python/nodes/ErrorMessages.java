@@ -165,6 +165,7 @@ public abstract class ErrorMessages {
     public static final TruffleString CAN_ONLY_JOIN_ITERABLE = tsLiteral("can only join an iterable");
     public static final TruffleString S_CANNOT_BE_NEGATIVE_INTEGER_D = tsLiteral("%s cannot be negative integer (%d)");
     public static final TruffleString S_CANNOT_HAVE_S = tsLiteral("%s cannot have %s");
+    public static final TruffleString S_EXPECTED_D_ARGUMENTS_GOT_D = tsLiteral("%s expected %d arguments, got %d");
 
     public static final TruffleString CANNOT_CONVERT_DICT_UPDATE_SEQ = tsLiteral("cannot convert dictionary update sequence element #%d to a sequence");
     public static final TruffleString CANNOT_CONVERT_P_OBJ_TO_S = tsLiteral("cannot convert '%p' object to %s");

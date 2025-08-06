@@ -131,6 +131,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictValuesView;
 import com.oracle.graal.python.builtins.objects.enumerate.PEnumerate;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.exception.PBaseExceptionGroup;
+import com.oracle.graal.python.builtins.objects.filter.PFilter;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -1108,6 +1109,10 @@ public final class PFactory {
 
     public static PMap createMap(PythonLanguage language, Object cls, Shape shape) {
         return trace(language, new PMap(cls, shape));
+    }
+
+    public static PFilter createFilter(PythonLanguage language, Object cls, Shape shape) {
+        return trace(language, new PFilter(cls, shape));
     }
 
     public static PZip createZip(PythonLanguage language, Object cls, Shape shape, Object[] iterables, boolean strict) {

@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -60,29 +60,3 @@ def input(module, prompt=None):
         raise EOFError('EOF when reading a line')
     else:
         return result if not result.endswith('\n') else result[:-1]
-
-
-class filter(object):
-    def __new__(cls, predicateOrNone, iterable, **kwargs):
-        if kwargs and cls.__init__ is object.__init__:
-            raise TypeError("filter takes no keyword arguments")
-        self = object.__new__(cls)
-        self.predicateOrNone = predicateOrNone
-        self.iterable = iter(iterable)
-        return self
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        while True:
-            item = next(self.iterable)
-            if self.predicateOrNone is None:
-                if item:
-                    return item
-            else:
-                if self.predicateOrNone(item):
-                    return item
-
-    def __reduce__(self):
-        return type(self), (self.predicateOrNone, self.iterable)
