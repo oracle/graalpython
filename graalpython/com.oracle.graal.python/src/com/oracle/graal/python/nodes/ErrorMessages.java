@@ -981,6 +981,9 @@ public abstract class ErrorMessages {
     public static final TruffleString GETTING_POLYGLOT_STORAGE_FOR_NATIVE_STORAGE_NOT_IMPLEMENTED = tsLiteral("Getting polyglot storage for native storage not implemented");
     public static final TruffleString P_OBJECT_DOESNT_SUPPORT_SLICE_ASSIGNMENT = tsLiteral("%p object doesn't support slice assignment");
     public static final TruffleString P_OBJECT_DOESNT_SUPPORT_SLICE_DELETION = tsLiteral("%p object doesn't support slice deletion");
+    public static final TruffleString INPUT_LOST_SYS_S = tsLiteral("input(): lost sys.%s");
+    public static final TruffleString EOF_WHEN_READING_A_LINE = tsLiteral("EOF when reading a line");
+    public static final TruffleString OBJECT_READLINE_RETURNED_NON_STRING = tsLiteral("object.readline() returned non-string");
 
     // SSL errors
     public static final TruffleString SSL_SESSION_CLOSED = tsLiteral("SSL/TLS session closed cleanly.");

@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.EOFError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SyntaxError;
@@ -75,6 +76,9 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T_BREAKPOINTHOOK;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_EVAL;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_EXEC;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_NOT_IMPLEMENTED;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_READLINE;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_STDERR;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_STDIN;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_STDOUT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___BUILTINS__;
@@ -125,6 +129,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
@@ -167,6 +172,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotUnaryFunc.CallS
 import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.compiler.ParserCallbacksImpl;
 import com.oracle.graal.python.lib.IteratorExhausted;
+import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyEvalGetGlobals;
 import com.oracle.graal.python.lib.PyEvalGetLocals;
@@ -196,6 +202,7 @@ import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
+import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.lib.PyUnicodeFSDecoderNode;
 import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.BuiltinNames;
@@ -287,6 +294,7 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -2591,6 +2599,91 @@ public final class BuiltinFunctions extends PythonBuiltins {
         static Object doGeneric(VirtualFrame frame, Object arg,
                         @Cached GetAIterNode aiter) {
             return aiter.execute(frame, arg);
+        }
+    }
+
+    // input([prompt])
+    @Builtin(name = "input", minNumOfPositionalArgs = 0, parameterNames = {"prompt"})
+    @GenerateNodeFactory
+    abstract static class InputNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        static Object input(VirtualFrame frame, Object prompt,
+                        @Bind Node inliningTarget,
+                        @Bind PythonContext context,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Cached PyObjectCallMethodObjArgs callMethod,
+                        @Cached PyObjectStrAsObjectNode strNode,
+                        @Cached PyObjectLookupAttr lookupAttr,
+                        @Cached PyBytesCheckNode bytesCheck,
+                        @Cached PyUnicodeCheckNode unicodeCheck,
+                        @Cached CastToTruffleStringNode castToTruffleStringNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Cached TruffleString.SubstringNode substringNode,
+                        @Cached BytesNodes.ToBytesNode toBytesNode,
+                        @Cached PRaiseNode raiseLostNode,
+                        @Cached PRaiseNode raiseEOFNode,
+                        @Cached PRaiseNode raiseWrongType) {
+            PythonModule sysModule = context.getSysModule();
+            Object stdin = lookupAttr.execute(frame, inliningTarget, sysModule, T_STDIN);
+            Object stdout = lookupAttr.execute(frame, inliningTarget, sysModule, T_STDOUT);
+            Object stderr = lookupAttr.execute(frame, inliningTarget, sysModule, T_STDERR);
+
+            if (stdin instanceof PNone) {
+                throw raiseLostNode.raise(inliningTarget, RuntimeError, ErrorMessages.INPUT_LOST_SYS_S, T_STDIN);
+            }
+            if (stdout instanceof PNone) {
+                throw raiseLostNode.raise(inliningTarget, RuntimeError, ErrorMessages.INPUT_LOST_SYS_S, T_STDOUT);
+            }
+            if (stderr instanceof PNone) {
+                throw raiseLostNode.raise(inliningTarget, RuntimeError, ErrorMessages.INPUT_LOST_SYS_S, T_STDERR);
+            }
+
+            auditNode.audit(inliningTarget, "builtins.input", prompt != NO_VALUE ? prompt : NONE);
+
+            try {
+                callMethod.execute(frame, inliningTarget, stderr, T_FLUSH);
+            } catch (AbstractTruffleException e) {
+                // Ignore
+            }
+
+            if (!(prompt instanceof PNone)) {
+                Object promptStr = strNode.execute(frame, inliningTarget, prompt);
+                callMethod.execute(frame, inliningTarget, stdout, T_WRITE, promptStr);
+                try {
+                    callMethod.execute(frame, inliningTarget, stdout, T_FLUSH);
+                } catch (AbstractTruffleException e) {
+                    // Ignore
+                }
+            }
+
+            Object line = callMethod.execute(frame, inliningTarget, stdin, T_READLINE);
+            if (unicodeCheck.execute(inliningTarget, line)) {
+                TruffleString strLine = castToTruffleStringNode.castKnownString(inliningTarget, line);
+                int len = codePointLengthNode.execute(strLine, TS_ENCODING);
+                if (len == 0) {
+                    throw raiseEOFNode.raise(inliningTarget, EOFError, ErrorMessages.EOF_WHEN_READING_A_LINE);
+                }
+                int lastChar = codePointAtIndexNode.execute(strLine, len - 1, TS_ENCODING);
+                if (lastChar == '\n') {
+                    strLine = substringNode.execute(strLine, 0, len - 1, TS_ENCODING, false);
+                }
+                return strLine;
+            } else if (bytesCheck.execute(inliningTarget, line)) {
+                byte[] bytesLine = toBytesNode.execute(frame, line);
+                if (bytesLine.length == 0) {
+                    throw raiseEOFNode.raise(inliningTarget, EOFError, ErrorMessages.EOF_WHEN_READING_A_LINE);
+                }
+                PythonLanguage language = context.getLanguage(inliningTarget);
+                if (bytesLine[bytesLine.length - 1] == '\n') {
+                    return PFactory.createBytes(language, bytesLine, bytesLine.length - 1);
+                } else {
+                    return PFactory.createBytes(language, bytesLine);
+                }
+            } else {
+                throw raiseWrongType.raise(inliningTarget, TypeError, ErrorMessages.OBJECT_READLINE_RETURNED_NON_STRING);
+            }
         }
     }
 }

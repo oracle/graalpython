@@ -1042,7 +1042,6 @@ public abstract class Python3Core {
     }
 
     private void initializePython3Core(TruffleString coreHome) {
-        loadFile(BuiltinNames.T_BUILTINS, coreHome);
         for (TruffleString s : coreFiles) {
             loadFile(s, coreHome);
         }
