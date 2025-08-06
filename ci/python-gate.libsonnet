@@ -1,5 +1,4 @@
 {
-    local graal_common          = import "graal/ci/common.jsonnet",
     local common                = import "graal/ci/ci_common/common.jsonnet",
     local common_util           = import "graal/ci/ci_common/common-utils.libsonnet",
     local run_spec              = import "graal/ci/ci_common/run-spec.libsonnet",
@@ -81,7 +80,7 @@
     //------------------------------------------------------------------------------------------------------------------
     local DOWNLOADS = {
         common: {
-            GRADLE_JAVA_HOME: graal_common.jdks_data["oraclejdk21"],
+            GRADLE_JAVA_HOME: common.jdks_data["oraclejdk21"],
         },
         linux: {
             common: {
@@ -442,13 +441,13 @@
 
     local jdk_spec = task_spec(evaluate_late({
         "select_graalvm_if_older_jdk": function (b)
-            if b.jdk_version < graal_common.jdks["labsjdk-ee-latest"].jdk_version then
+            if b.jdk_version < common.jdks["labsjdk-ee-latest"].jdk_version then
                 {
                     downloads+: {
-                        LATEST_JAVA_HOME: graal_common.jdks_data["labsjdk-ce-latest"],
+                        LATEST_JAVA_HOME: common.jdks_data["labsjdk-ce-latest"],
                     }
                 } +
-                graal_common.jdks["graalvm-ee-" + b.jdk_version] +
+                common.jdks["graalvm-ee-" + b.jdk_version] +
                 {
                     dynamic_imports+:: [],
                     environment+: {
@@ -566,7 +565,7 @@
     local base_style_gate = $.graalpy_eclipse_gate + task_spec({
         dynamic_imports:: ["/truffle"],
         downloads +: {
-            EXTRA_JAVA_HOMES: graal_common.jdks_data["labsjdk-ce-21"],
+            EXTRA_JAVA_HOMES: common.jdks_data["labsjdk-ce-21"],
         },
         packages +: {
           "pip:pylint": "==2.4.4",
