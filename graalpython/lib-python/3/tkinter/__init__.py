@@ -36,23 +36,61 @@ import sys
 import types
 import os
 import subprocess
-import importlib.util
+import importlib
 import shutil
 import platform
 
-def ensure_installed(name, *extra):
+GREEN = "\033[92m"
+RED = "\033[91m"
+RESET = "\033[0m"
+
+def check_package(name: str) -> bool:
     try:
-        return importlib.import_module(name)
+        importlib.import_module(name)
+        return True
     except ImportError:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", name, *extra])
-        return importlib.import_module(name)
+        return False
+
+def is_tcl_tk_installed( name: str ) -> bool:
+
+    if sys.platform == "darwin":
+        try:
+            subprocess.check_output(["brew", "list", "--versions", name])
+            return True
+        except subprocess.CalledProcessError:
+            return False
+    else:
+        try:
+            subprocess.check_output(
+                ["tclsh", "-c", "puts [info patchlevel]"],
+                stderr=subprocess.DEVNULL
+            )
+            return True
+        except subprocess.CalledProcessError:
+            return False
+
+def prompt_user_install(package_name: str) -> bool:
+
+    response = input(f"Would you like to install {package_name}? [Y/n]: ").strip().lower()
+    return response in ("", "y", "yes")
+
+def install_tcl_tk(name:str) -> bool:
+    if sys.platform == "darwin":
+        try:
+            subprocess.check_call(["brew", "install", name])
+            print(f"{GREEN}{name} installed successfully.{RESET}")
+        except subprocess.CalledProcessError:
+            print(f"{RED}Failed to install {name}.{RESET}")
+            sys.exit(1)
+
+    else:
+        subprocess.check_call(["sudo", "apt", "install", "-y", "tcl8.6-dev", "tk8.6-dev"])
 
 def install_system_dependencies():
+
     if sys.platform == "darwin":
         if not shutil.which("brew"):
-            print("Homebrew not found.")
-            install_brew = input("Install Homebrew now? [Y/n]: ").strip().low()
-            if install_brew in ("", "y", "yes"):
+            if prompt_user_install("Homebrew"):
                 subprocess.check_call([
                     "/bin/bash", "-c",
                     "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
@@ -61,11 +99,22 @@ def install_system_dependencies():
                 print("Cannot continue without Homebrew. Please install it and rerun.")
                 sys.exit(1)
 
-        subprocess.check_call(["brew", "install", "tcl-tk@8"])
+    tcl_tk = "tcl-tk@8"
+    sys.stdout.write(f"Checking {tcl_tk}... ")
+    sys.stdout.flush()
+    if is_tcl_tk_installed(tcl_tk):
+        sys.stdout.write(f"{GREEN}Installed{RESET}\n")
     else:
-        subprocess.check_call(["sudo", "apt", "install", "-y", "tcl8.6-dev", "tk8.6-dev"])
+        sys.stdout.write(f"{RED}Not installed{RESET}\n")
+        if prompt_user_install(tcl_tk):
+            install_tcl_tk(tcl_tk)
+        else:
+            print(f"{RED}Cannot continue without {tcl_tk}. Please install it and try again.{RESET}")
+            sys.exit(1)
+
 
 def run_tkinter_build_script():
+
     current_dir = os.path.dirname(__file__)
     system = platform.system().lower()
     machine = platform.machine().lower()
@@ -93,9 +142,23 @@ def run_tkinter_build_script():
 
 def setup_tkinter():
 
-    print("Checking required Python packages...")
-    for pkg in ( "cffi", "setuptools" ):
-         ensure_installed(pkg)
+    packages = ["cffi", "setuptools"]
+
+    for pkg in packages:
+        sys.stdout.write(f"Checking {pkg}...")
+        sys.stdout.flush()
+
+        if check_package(pkg):
+            sys.stdout.write(f"{GREEN}Installed{RESET}\n")
+        else:
+            sys.stdout.write(f"{RED}Not installed{RESET}\n")
+            if prompt_user_install(pkg):
+                subprocess.check_call([sys.executable, "-m", "pip", "install", pkg])
+                print(f"{GREEN}{pkg} installed successfully.{RESET}")
+
+            else:
+                print(f"Cannot continue without {pkg}. Please install using: \"pip install {pkg}\"")
+                sys.exit(1)
 
     install_system_dependencies()
     run_tkinter_build_script()
