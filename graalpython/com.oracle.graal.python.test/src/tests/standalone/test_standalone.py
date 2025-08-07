@@ -1,4 +1,4 @@
-# Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -44,15 +44,21 @@ import unittest
 from tests.standalone import util
 
 is_enabled = 'ENABLE_STANDALONE_UNITTESTS' in os.environ and os.environ['ENABLE_STANDALONE_UNITTESTS'] == "true"
+constraints_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'constraints.txt')
+
+def create_test_env():
+    env = os.environ.copy()
+    env["MVN_GRAALPY_VERSION"] = util.get_graalvm_version()
+    env["PIP_CONSTRAINT"] = constraints_file
+    return env
 
 @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
 def test_native_executable_one_file():
     graalpy = util.get_gp()
     if graalpy is None:
         return
-    env = os.environ.copy()
-    env["MVN_GRAALPY_VERSION"] = util.get_graalvm_version()
 
+    env = create_test_env()
     with tempfile.TemporaryDirectory() as tmpdir:
 
         source_file = os.path.join(tmpdir, "hello.py")
@@ -60,25 +66,28 @@ def test_native_executable_one_file():
             f.write("import sys\n")
             f.write("print('hello world, argv[1:]:', sys.argv[1:])")
 
+        log = util.Logger()
+
         target_file = os.path.join(tmpdir, "hello")
         cmd = [graalpy, "-m", "standalone", "--verbose", "native", "-ce", "-m", source_file, "-o", target_file]
 
-        out, return_code = util.run_cmd(cmd, env, print_out=True)
-        util.check_ouput("Bundling Python resources into", out)
-        util.check_ouput("Finished generating 'hello' in", out)
+        out, return_code = util.run_cmd(cmd, env, print_out=True, logger=log)
+        assert return_code == 0, log
+        util.check_ouput("Bundling Python resources into", out, logger=log)
+        util.check_ouput("Finished generating 'hello' in", out, logger=log)
 
         cmd = [target_file, "arg1", "arg2"]
-        out, return_code = util.run_cmd(cmd, env)
-        util.check_ouput("hello world, argv[1:]: " + str(cmd[1:]), out)
+        out, return_code = util.run_cmd(cmd, env, logger=log)
+        assert return_code == 0, log
+        util.check_ouput("hello world, argv[1:]: " + str(cmd[1:]), out, logger=log)
 
 @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
 def test_native_executable_venv_and_one_file():
     graalpy = util.get_gp()
     if graalpy is None:
         return
-    env = os.environ.copy()
-    env["MVN_GRAALPY_VERSION"] = util.get_graalvm_version()
 
+    env = create_test_env()
     with tempfile.TemporaryDirectory() as target_dir:
         source_file = os.path.join(target_dir, "hello.py")
         with open(source_file, 'w') as f:
@@ -89,33 +98,38 @@ def test_native_executable_venv_and_one_file():
             f.write('d = ujson.loads("""{"key": "value"}""")\n')
             f.write("print('key=' + d['key'])\n")
 
+        log = util.Logger()
+
         venv_dir = os.path.join(target_dir, "venv")
         cmd = [graalpy, "-m", "venv", venv_dir]
-        out, return_code = util.run_cmd(cmd, env)
+        out, return_code = util.run_cmd(cmd, env, logger=log)
+        assert return_code == 0, log
 
         venv_python = os.path.join(venv_dir, "Scripts", "python.exe") if os.name == "nt" else os.path.join(venv_dir, "bin", "python")
         cmd = [venv_python, "-m", "pip", "install", "termcolor", "ujson"]
-        out, return_code = util.run_cmd(cmd, env)
+        _, return_code = util.run_cmd(cmd, env, logger=log)
+        assert return_code == 0, log
 
         target_file = os.path.join(target_dir, "hello")
         cmd = [graalpy, "-m", "standalone", "--verbose", "native", "-ce", "-Os", "-m", source_file, "--venv", venv_dir, "-o", target_file]
-        out, return_code = util.run_cmd(cmd, env)
-        util.check_ouput("Bundling Python resources into", out)
-        util.check_ouput("Finished generating 'hello' in", out)
+        out, return_code = util.run_cmd(cmd, env, logger=log)
+        assert return_code == 0, log
+        util.check_ouput("Bundling Python resources into", out, logger=log)
+        util.check_ouput("Finished generating 'hello' in", out, logger=log)
 
         cmd = [target_file]
-        out, return_code = util.run_cmd(cmd, env)
-        util.check_ouput("hello standalone world", out)
-        util.check_ouput("key=value", out)
+        out, return_code = util.run_cmd(cmd, env, logger=log)
+        assert return_code == 0, log
+        util.check_ouput("hello standalone world", out, logger=log)
+        util.check_ouput("key=value", out, logger=log)
 
 @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
 def test_native_executable_module():
     graalpy = util.get_gp()
     if graalpy is None:
         return
-    env = os.environ.copy()
-    env["MVN_GRAALPY_VERSION"] = util.get_graalvm_version()
 
+    env = create_test_env()
     with tempfile.TemporaryDirectory() as tmp_dir:
 
         module_dir = os.path.join(tmp_dir, "hello_app")
@@ -131,12 +145,16 @@ def test_native_executable_module():
             f.write("import hello\n")
             f.write("hello.print_hello()\n")
 
+        log = util.Logger()
+
         target_file = os.path.join(tmp_dir, "hello")
         cmd = [graalpy, "-m", "standalone", "--verbose", "native", "-ce", "-Os", "-m", module_dir, "-o", target_file]
-        out, return_code = util.run_cmd(cmd, env)
-        util.check_ouput("Bundling Python resources into", out)
-        util.check_ouput("Finished generating 'hello' in", out)
+        out, return_code = util.run_cmd(cmd, env, logger=log)
+        assert return_code == 0, log
+        util.check_ouput("Bundling Python resources into", out, logger=log)
+        util.check_ouput("Finished generating 'hello' in", out, logger=log)
 
         cmd = [target_file]
-        out, return_code = util.run_cmd(cmd, env)
-        util.check_ouput("hello standalone world", out)
+        out, return_code = util.run_cmd(cmd, env, logger=log)
+        assert return_code == 0, log
+        util.check_ouput("hello standalone world", out, logger=log)
