@@ -1,0 +1,4 @@
+# constraints for the pkgs installed in test_standalone.txt
+setuptools==80.9.0
+setuptools-scm==8.3.1
+wheel==0.45.1

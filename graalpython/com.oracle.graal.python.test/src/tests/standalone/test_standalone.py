@@ -44,15 +44,21 @@ import unittest
 from tests.standalone import util
 
 is_enabled = 'ENABLE_STANDALONE_UNITTESTS' in os.environ and os.environ['ENABLE_STANDALONE_UNITTESTS'] == "true"
+constraints_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'constraints.txt')
+
+def create_test_env():
+    env = os.environ.copy()
+    env["MVN_GRAALPY_VERSION"] = util.get_graalvm_version()
+    env["PIP_CONSTRAINT"] = constraints_file
+    return env
 
 @unittest.skipUnless(is_enabled, "ENABLE_STANDALONE_UNITTESTS is not true")
 def test_native_executable_one_file():
     graalpy = util.get_gp()
     if graalpy is None:
         return
-    env = os.environ.copy()
-    env["MVN_GRAALPY_VERSION"] = util.get_graalvm_version()
 
+    env = create_test_env()
     with tempfile.TemporaryDirectory() as tmpdir:
 
         source_file = os.path.join(tmpdir, "hello.py")
@@ -80,9 +86,8 @@ def test_native_executable_venv_and_one_file():
     graalpy = util.get_gp()
     if graalpy is None:
         return
-    env = os.environ.copy()
-    env["MVN_GRAALPY_VERSION"] = util.get_graalvm_version()
 
+    env = create_test_env()
     with tempfile.TemporaryDirectory() as target_dir:
         source_file = os.path.join(target_dir, "hello.py")
         with open(source_file, 'w') as f:
@@ -123,9 +128,8 @@ def test_native_executable_module():
     graalpy = util.get_gp()
     if graalpy is None:
         return
-    env = os.environ.copy()
-    env["MVN_GRAALPY_VERSION"] = util.get_graalvm_version()
 
+    env = create_test_env()
     with tempfile.TemporaryDirectory() as tmp_dir:
 
         module_dir = os.path.join(tmp_dir, "hello_app")
