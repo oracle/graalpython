@@ -1,5 +1,5 @@
 local const = import 'constants.libsonnet';
-local graal_common = import "graal/ci/common.jsonnet";
+local common = import "graal/ci/common.jsonnet";
 
 {
     // add a graal option
@@ -36,7 +36,7 @@ local graal_common = import "graal/ci/common.jsonnet";
 
     ensure_no_mx_wrong_build(builds):: [
         b  + (
-            if std.objectHas(b, "setup") && b.jdk_version != graal_common.jdks["labsjdk-ee-latest"].jdk_version then
+            if std.objectHas(b, "setup") && b.jdk_version != common.jdks["labsjdk-ee-latest"].jdk_version then
                 assert (std.length([step for step in b.setup if std.length(std.find("build", step)) != 0 && std.length(std.find("mx", step)) != 0]) == 0) : b.name + " should not call build in " + b.setup;
                 {}
             else

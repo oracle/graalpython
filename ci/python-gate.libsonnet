@@ -1,6 +1,5 @@
 {
-    local graal_common          = import "graal/ci/common.jsonnet",
-    local common                = import "graal/ci/ci_common/common.jsonnet",
+    local common                = import "graal/ci/common.jsonnet",
     local common_util           = import "graal/ci/ci_common/common-utils.libsonnet",
     local run_spec              = import "graal/ci/ci_common/run-spec.libsonnet",
     local tools                 = import "graal/ci/ci_common/run-spec-tools.libsonnet",
@@ -27,10 +26,8 @@
     //
     // -----------------------------------------------------------------------------------------------------------------
     local jdk_name_to_dict = {[edition]: {
-        "jdk17"+: common.labsjdk17,
-        "jdk20"+: common.labsjdk20,
-        "jdk21"+: common.labsjdk21,
-        "jdk-latest"+: common.labsjdkLatest,
+        "jdk21"+: common.jdks["labsjdk-" + edition + "-21"],
+        "jdk-latest"+: common.jdks["labsjdk-" + edition + "-latest"],
     } for edition in ['ce', 'ee']},
 
     local jdk_name_to_devkit_suffix = function(name)
@@ -81,7 +78,7 @@
     //------------------------------------------------------------------------------------------------------------------
     local DOWNLOADS = {
         common: {
-            GRADLE_JAVA_HOME: graal_common.jdks_data["oraclejdk21"],
+            GRADLE_JAVA_HOME: common.jdks_data["oraclejdk21"],
         },
         linux: {
             common: {
@@ -253,10 +250,9 @@
     timelimit(limit):: task_spec({timelimit: limit}),
 
     local tierConfig = {
-      "tier1": graal_common.frequencies.gate.targets[0],
-      "tier2": graal_common.frequencies.gate.targets[0],
-      "tier3": graal_common.frequencies.gate.targets[0],
-      "tier4": graal_common.frequencies.post_merge.targets[0],
+      "tier1": "gate",
+      "tier2": "gate",
+      "tier3": "gate",
     },
     tierConfig: tierConfig,
     tier1:: $.target("tier1"),
@@ -264,11 +260,11 @@
     tier3:: $.target("tier3"),
     post_merge:: $.target("post-merge") + task_spec({name_target:: "post_merge"}),
 
-    bench:: $.target(graal_common.frequencies.bench.targets[0]),
-    on_demand:: $.target(graal_common.frequencies.on_demand.targets[0]) + task_spec({name_target:: "on_demand"}),
-    daily:: $.target(graal_common.frequencies.daily.targets[0]),
-    weekly:: $.target(graal_common.frequencies.weekly.targets[0]),
-    monthly:: $.target(graal_common.frequencies.monthly.targets[0]),
+    bench:: $.target("bench"),
+    on_demand:: $.target("ondemand") + task_spec({name_target:: "on_demand"}),
+    daily:: $.target("daily"),
+    weekly:: $.target("weekly"),
+    monthly:: $.target("monthly"),
 
     provide_graalpy_standalone_artifact(name):: task_spec(evaluate_late(
         // use 2 after _ to make sure we evaluate this right after _1 late eval keys like _1_os_arch_jdk
@@ -443,13 +439,13 @@
 
     local jdk_spec = task_spec(evaluate_late({
         "select_graalvm_if_older_jdk": function (b)
-            if b.jdk_version < graal_common.jdks["labsjdk-ee-latest"].jdk_version then
+            if b.jdk_version < common.jdks["labsjdk-ee-latest"].jdk_version then
                 {
                     downloads+: {
-                        LATEST_JAVA_HOME: graal_common.jdks_data["labsjdk-ce-latest"],
+                        LATEST_JAVA_HOME: common.jdks_data["labsjdk-ce-latest"],
                     }
                 } +
-                graal_common.jdks["graalvm-ee-" + b.jdk_version] +
+                common.jdks["graalvm-ee-" + b.jdk_version] +
                 {
                     dynamic_imports+:: [],
                     environment+: {
@@ -567,7 +563,7 @@
     local base_style_gate = $.graalpy_eclipse_gate + task_spec({
         dynamic_imports:: ["/truffle"],
         downloads +: {
-            EXTRA_JAVA_HOMES: graal_common.jdks_data["labsjdk-ce-21"],
+            EXTRA_JAVA_HOMES: common.jdks_data["labsjdk-ce-21"],
         },
         packages +: {
           "pip:pylint": "==2.4.4",

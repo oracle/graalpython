@@ -1,5 +1,5 @@
 {
-    local graal_common          = import "graal/ci/common.jsonnet",
+    local common = import "graal/ci/common.jsonnet",
 
     MX_VERSION:: "HEAD",
 
@@ -24,12 +24,12 @@
     },
 
     TARGET:: {
-        onDemand: graal_common.frequencies.on_demand.targets,
-        postMerge: graal_common.frequencies.post_merge.targets,
-        daily: graal_common.frequencies.daily.targets,
-        weekly: graal_common.frequencies.weekly.targets,
-        monthly: graal_common.frequencies.monthly.targets,
-        gate: graal_common.frequencies.gate.targets,
+        onDemand: common.frequencies.on_demand.targets,
+        postMerge: common.frequencies.post_merge.targets,
+        daily: common.frequencies.daily.targets,
+        weekly: common.frequencies.weekly.targets,
+        monthly: common.frequencies.monthly.targets,
+        gate: common.frequencies.gate.targets,
     },
 
     NOTIFY_GROUPS:: ["tim.felgentreff@oracle.com"],
