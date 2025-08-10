@@ -42,7 +42,9 @@ import platform
 
 GREEN = "\033[92m"
 RED = "\033[91m"
+YELLOW = "\033[93m"
 RESET = "\033[0m"
+
 
 def check_package(name: str) -> bool:
     try:
@@ -69,9 +71,10 @@ def is_tcl_tk_installed( name: str ) -> bool:
         except subprocess.CalledProcessError:
             return False
 
-def prompt_user_install(package_name: str) -> bool:
+def prompt_user_install(package_name: str, is_system_package: bool=False) -> bool:
 
-    response = input(f"Would you like to install {package_name}? [Y/n]: ").strip().lower()
+    package_type = "system" if is_system_package else "Python"
+    response = input(f"{YELLOW} Would you like to install the {package_type} package \'{package_name}\'? [Y/n]: {RESET}").strip().lower()
     return response in ("", "y", "yes")
 
 def install_tcl_tk(name:str) -> bool:
@@ -90,13 +93,14 @@ def install_system_dependencies():
 
     if sys.platform == "darwin":
         if not shutil.which("brew"):
-            if prompt_user_install("Homebrew"):
+            print(f"{YELLOW}Homebrew is a system package manager for macOS.{RESET}")
+            if prompt_user_install("Homebrew", True):
                 subprocess.check_call([
                     "/bin/bash", "-c",
                     "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
                 ])
             else:
-                print("Cannot continue without Homebrew. Please install it and rerun.")
+                print(f"{RED}Cannot continue without Homebrew. Please install it and rerun.{RESET}")
                 sys.exit(1)
 
     tcl_tk = "tcl-tk@8"
@@ -106,7 +110,7 @@ def install_system_dependencies():
         sys.stdout.write(f"{GREEN}Installed{RESET}\n")
     else:
         sys.stdout.write(f"{RED}Not installed{RESET}\n")
-        if prompt_user_install(tcl_tk):
+        if prompt_user_install(tcl_tk, True):
             install_tcl_tk(tcl_tk)
         else:
             print(f"{RED}Cannot continue without {tcl_tk}. Please install it and try again.{RESET}")
@@ -144,6 +148,7 @@ def setup_tkinter():
 
     packages = ["cffi", "setuptools"]
 
+    to_install = []
     for pkg in packages:
         sys.stdout.write(f"Checking {pkg}...")
         sys.stdout.flush()
@@ -152,13 +157,16 @@ def setup_tkinter():
             sys.stdout.write(f"{GREEN}Installed{RESET}\n")
         else:
             sys.stdout.write(f"{RED}Not installed{RESET}\n")
-            if prompt_user_install(pkg):
-                subprocess.check_call([sys.executable, "-m", "pip", "install", pkg])
-                print(f"{GREEN}{pkg} installed successfully.{RESET}")
+            to_install.append(pkg)
 
-            else:
-                print(f"Cannot continue without {pkg}. Please install using: \"pip install {pkg}\"")
-                sys.exit(1)
+    if to_install:
+        if prompt_user_install(', '.join(to_install)):
+            subprocess.check_call([sys.executable, "-m", "pip", "install", *to_install])
+            print(f"{GREEN}{', '.join(to_install)} installed successfully.{RESET}")
+        else:
+            print(f"{RED}Cannot continue without: {', '.join(to_install)}{RESET}")
+            print(f"Please install manually using: pip install {' '.join(to_install)}")
+            sys.exit(1)
 
     install_system_dependencies()
     run_tkinter_build_script()
