@@ -57,7 +57,7 @@
         // this starts with _ on purpose so that it will be evaluated first
         "_1_os_arch_jdk": function(b)
             local edition = if (std.objectHasAll(b, 'graalvm_edition')) then b.graalvm_edition else 'ce';
-            tools.delete_timelimit(jdk_name_to_dict[edition][b.jdk] + default_os_arch(b.jdk, edition)[b.os][b.arch])
+            tools.check_no_timelimit(jdk_name_to_dict[edition][b.jdk] + default_os_arch(b.jdk, edition)[b.os][b.arch])
     })),
 
     //------------------------------------------------------------------------------------------------------------------

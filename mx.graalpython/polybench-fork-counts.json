@@ -1,0 +1,9 @@
+{
+    "polybench:warmup/pyflate-fast.py": 3,
+    "polybench:warmup/raytracer.py": 3,
+    "polybench:interpreter/pyinit.py": 5,
+    "polybench:interpreter/deltablue.py": 3,
+    "polybench:interpreter/fibonacci.py": 0,
+    "polybench:interpreter/richards.py": 3,
+    "polybench:interpreter/sieve.py": 3
+}
