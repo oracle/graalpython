@@ -176,7 +176,7 @@ public abstract class SSLOperationNode extends PNodeWithContext {
                     @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                     @Cached(inline = false) GilNode gil,
                     @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                    @Cached(inline = false) TruffleString.FromJavaStringNode fromJavaStringNode,
+                    @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                     @Shared @Cached PRaiseNode raiseNode) {
         assert socket.getSocket() != null;
         prepare(socket);

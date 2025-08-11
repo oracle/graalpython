@@ -98,8 +98,8 @@ public abstract class PyObjectGetAttr extends Node {
                     @Cached GetObjectSlotsNode getSlotsNode,
                     @Cached CallSlotGetAttrNode callGetAttrNode,
                     @Cached AttributeErrorBuiltins.SetAttributeErrorContext setContext,
-                    @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
-                    @Cached(inline = false) TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+                    @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                    @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
         Object type = getClass.execute(inliningTarget, receiver);
         var slots = getSlotsNode.execute(inliningTarget, receiver);
         if (!codePointLengthNode.isAdoptable()) {

@@ -587,9 +587,9 @@ public final class CDataTypeBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isNone(keep)")
         static void KeepRef(VirtualFrame frame, Node inliningTarget, CDataObject target, int index, Object keep,
                         @Bind PythonLanguage language,
-                        @Cached(inline = false) TruffleStringBuilder.AppendStringNode appendStringNode,
-                        @Cached(inline = false) TruffleStringBuilder.ToStringNode toStringNode,
-                        @Cached(inline = false) TruffleString.FromJavaStringNode fromJavaStringNode,
+                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode,
+                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                         @Cached HashingStorageSetItem setItem,
                         @Cached PRaiseNode raiseNode) {
             CDataObject ob = PyCData_GetContainer(target, language);

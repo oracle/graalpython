@@ -146,7 +146,7 @@ public abstract class CExtCommonNodes {
 
         @Specialization
         static TruffleString doString(String s,
-                        @Cached(inline = false) TruffleString.FromJavaStringNode fromJavaStringNode) {
+                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
             return fromJavaStringNode.execute(s, TS_ENCODING);
         }
 

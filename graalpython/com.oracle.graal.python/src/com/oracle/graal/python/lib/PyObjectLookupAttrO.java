@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -79,8 +79,8 @@ public abstract class PyObjectLookupAttrO extends Node {
                     @Cached GetCachedTpSlotsNode getSlotsNode,
                     @Cached CallSlotGetAttrONode callGetattribute,
                     @Cached IsBuiltinObjectProfile errorProfile,
-                    @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
-                    @Cached(inline = false) TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+                    @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                    @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
         Object type = getClass.execute(inliningTarget, receiver);
         TpSlots slots = getSlotsNode.execute(inliningTarget, type);
         if (!codePointLengthNode.isAdoptable() && name instanceof TruffleString tsName) {

@@ -277,8 +277,8 @@ public abstract class TextIOWrapperNodes {
 
         @Specialization(guards = "self.isReadTranslate()")
         static int doTranslated(@SuppressWarnings("unused") PTextIOBase self, TruffleString line, int start, int[] consumed,
-                        @Shared @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Shared @Cached(inline = false) TruffleString.IndexOfCodePointNode indexOfCodePointNode) {
+                        @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Shared @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode) {
             /* Newlines are already translated, only search for \n */
             int len = codePointLengthNode.execute(line, TS_ENCODING);
             int pos = indexOfCodePointNode.execute(line, '\n', start, len, TS_ENCODING);
@@ -291,8 +291,8 @@ public abstract class TextIOWrapperNodes {
 
         @Specialization(guards = {"!self.isReadTranslate()", "self.isReadUniversal()"})
         static int doUniversal(@SuppressWarnings("unused") PTextIOBase self, TruffleString line, int start, int[] consumed,
-                        @Shared @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Shared @Cached(inline = false) TruffleString.IndexOfCodePointNode indexOfCodePointNode) {
+                        @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Shared @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode) {
             /*
              * Universal newline search. Find any of \r, \r\n, \n The decoder ensures that \r\n are
              * not split in two pieces
@@ -321,10 +321,10 @@ public abstract class TextIOWrapperNodes {
 
         @Specialization(guards = {"!self.isReadTranslate()", "!self.isReadUniversal()"})
         static int doNonUniversal(@SuppressWarnings("unused") PTextIOBase self, TruffleString line, int start, int[] consumed,
-                        @Shared @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached(inline = false) TruffleString.IndexOfStringNode indexOfStringNode,
-                        @Shared @Cached(inline = false) TruffleString.IndexOfCodePointNode indexOfCodePointNode,
-                        @Cached(inline = false) TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+                        @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.IndexOfStringNode indexOfStringNode,
+                        @Shared @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
+                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
             int len = codePointLengthNode.execute(line, TS_ENCODING);
             TruffleString readNl = self.getReadNewline();
             int nlLen = codePointLengthNode.execute(readNl, TS_ENCODING);
@@ -501,7 +501,7 @@ public abstract class TextIOWrapperNodes {
                         @Cached PyObjectCallMethodObjArgs callMethodGetState,
                         @Cached PyObjectCallMethodObjArgs callMethodRead,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached PRaiseNode raiseNode) {
@@ -811,10 +811,10 @@ public abstract class TextIOWrapperNodes {
                         @Cached PyObjectCallMethodObjArgs callMethodSeekable,
                         @Cached PyObjectLookupAttr lookup,
                         @Cached PyObjectIsTrueNode isTrueNode,
-                        @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached(inline = false) TruffleString.CodePointAtIndexNode codePointAtIndexNode,
-                        @Cached(inline = false) TruffleString.IndexOfCodePointNode indexOfCodePointNode,
-                        @Cached(inline = false) TruffleString.EqualNode equalNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
+                        @Cached TruffleString.EqualNode equalNode,
                         @Cached(inline = false) WarningsModuleBuiltins.WarnNode warnNode,
                         @Cached PRaiseNode raiseNode) {
             self.setOK(false);

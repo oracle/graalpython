@@ -102,7 +102,7 @@ public abstract class PyObjectHashNode extends PNodeWithContext {
     @Specialization
     @InliningCutoff
     public static long hash(TruffleString object,
-                    @Shared @Cached(inline = false) TruffleString.HashCodeNode hashCodeNode) {
+                    @Shared @Cached TruffleString.HashCodeNode hashCodeNode) {
         return avoidNegative1(hashCodeNode.execute(object, TS_ENCODING));
     }
 
@@ -110,7 +110,7 @@ public abstract class PyObjectHashNode extends PNodeWithContext {
     @InliningCutoff
     static long hash(Node inliningTarget, PString object,
                     @Cached CastToTruffleStringNode cast,
-                    @Shared @Cached(inline = false) TruffleString.HashCodeNode hashCodeNode) {
+                    @Shared @Cached TruffleString.HashCodeNode hashCodeNode) {
         return hash(cast.execute(inliningTarget, object), hashCodeNode);
     }
 

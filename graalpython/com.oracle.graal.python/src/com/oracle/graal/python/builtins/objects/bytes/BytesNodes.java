@@ -674,8 +674,8 @@ public abstract class BytesNodes {
 
         @Specialization(guards = "bytesPerSepGroup == 0")
         static TruffleString zero(byte[] argbuf, int arglen, @SuppressWarnings("unused") byte sep, @SuppressWarnings("unused") int bytesPerSepGroup,
-                        @Shared @Cached(inline = false) TruffleString.FromByteArrayNode fromByteArrayNode,
-                        @Shared @Cached(inline = false) TruffleString.SwitchEncodingNode switchEncodingNode) {
+                        @Shared @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                        @Shared @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
 
             int resultlen = arglen * 2;
             byte[] retbuf = new byte[resultlen];
@@ -692,8 +692,8 @@ public abstract class BytesNodes {
         @Specialization(guards = "bytesPerSepGroup < 0")
         static TruffleString negative(Node inliningTarget, byte[] argbuf, int arglen, byte sep, int bytesPerSepGroup,
                         @Shared @Cached InlinedConditionProfile earlyExit,
-                        @Shared @Cached(inline = false) TruffleString.FromByteArrayNode fromByteArrayNode,
-                        @Shared @Cached(inline = false) TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Shared @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                        @Shared @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Shared @Cached PRaiseNode raiseNode) {
             if (earlyExit.profile(inliningTarget, arglen == 0)) {
                 return T_EMPTY_STRING;
@@ -734,8 +734,8 @@ public abstract class BytesNodes {
         @Specialization(guards = "absBytesPerSepGroup > 0")
         static TruffleString positive(Node inliningTarget, byte[] argbuf, int arglen, byte sep, int absBytesPerSepGroup,
                         @Shared @Cached InlinedConditionProfile earlyExit,
-                        @Shared @Cached(inline = false) TruffleString.FromByteArrayNode fromByteArrayNode,
-                        @Shared @Cached(inline = false) TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Shared @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                        @Shared @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Shared @Cached PRaiseNode raiseNode) {
             if (earlyExit.profile(inliningTarget, arglen == 0)) {
                 return T_EMPTY_STRING;

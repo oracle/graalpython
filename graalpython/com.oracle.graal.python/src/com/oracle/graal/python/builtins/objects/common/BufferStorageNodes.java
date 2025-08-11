@@ -173,7 +173,7 @@ public abstract class BufferStorageNodes {
         static TruffleString unpackUnicode(Node inliningTarget, @SuppressWarnings("unused") BufferFormat format, Object buffer, int offset,
                         @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached PRaiseNode raiseNode,
-                        @Cached(inline = false) TruffleString.FromCodePointNode fromCodePointNode) {
+                        @Cached TruffleString.FromCodePointNode fromCodePointNode) {
             int codePoint = bufferLib.readInt(buffer, offset);
             if (!Character.isValidCodePoint(codePoint)) {
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.UNMAPPABLE_CHARACTER);
@@ -345,8 +345,8 @@ public abstract class BufferStorageNodes {
         static void packDouble(Node inliningTarget, @SuppressWarnings("unused") BufferFormat format, Object object, Object buffer, int offset,
                         @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached StringNodes.CastToTruffleStringChecked0Node cast,
-                        @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached(inline = false) TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             TruffleString str = cast.cast(inliningTarget, object, ErrorMessages.ARRAY_ITEM_MUST_BE_UNICODE);
             if (codePointLengthNode.execute(str, TS_ENCODING) == 1) {

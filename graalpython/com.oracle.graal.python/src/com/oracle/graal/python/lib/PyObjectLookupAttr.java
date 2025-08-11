@@ -206,8 +206,8 @@ public abstract class PyObjectLookupAttr extends Node {
                     @Exclusive @Cached InlinedConditionProfile noGetMethod,
                     @Exclusive @Cached CallSlotDescrGet callGetSlot,
                     /* GR-44836 @Shared */ @Exclusive @Cached IsBuiltinObjectProfile errorProfile,
-                    @Shared @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
-                    @Shared @Cached(inline = false) TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+                    @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                    @Shared @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
         Object value = readNode.execute(object, name);
         if (valueFound.profile(inliningTarget, value != PNone.NO_VALUE)) {
             var valueSlots = getSlotsNode.execute(inliningTarget, value);
@@ -269,8 +269,8 @@ public abstract class PyObjectLookupAttr extends Node {
                     @Exclusive @Cached GetCachedTpSlotsNode getSlotsNode,
                     @Exclusive @Cached CallSlotGetAttrNode callGetattribute,
                     /* GR-44836 @Shared */ @Exclusive @Cached IsBuiltinObjectProfile errorProfile,
-                    @Shared @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode,
-                    @Shared @Cached(inline = false) TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+                    @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                    @Shared @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
         Object type = getClass.execute(inliningTarget, receiver);
         TpSlots slots = getSlotsNode.execute(inliningTarget, type);
         if (!codePointLengthNode.isAdoptable()) {

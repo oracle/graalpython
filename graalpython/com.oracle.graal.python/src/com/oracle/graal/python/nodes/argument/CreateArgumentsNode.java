@@ -573,7 +573,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             static int cachedSingle(TruffleString[] parameters, TruffleString name,
                             @Cached("name") TruffleString cachedName,
                             @Cached(value = "parameters", dimensions = 0) TruffleString[] cachedParameters,
-                            @Shared @Cached(inline = false) TruffleString.EqualNode equalNode,
+                            @Shared @Cached TruffleString.EqualNode equalNode,
                             @Cached("uncached(parameters, name, equalNode)") int index) {
                 return index;
             }
@@ -582,7 +582,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             @ExplodeLoop
             static int cached(TruffleString[] parameters, TruffleString name,
                             @Cached("parameters.length") int cachedLen,
-                            @Shared @Cached(inline = false) TruffleString.EqualNode equalNode) {
+                            @Shared @Cached TruffleString.EqualNode equalNode) {
                 int idx = -1;
                 for (int i = 0; i < cachedLen; i++) {
                     if (equalNode.execute(parameters[i], name, TS_ENCODING)) {
@@ -594,7 +594,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
             @Specialization(replaces = "cached")
             static int uncached(TruffleString[] parameters, TruffleString name,
-                            @Shared @Cached(inline = false) TruffleString.EqualNode equalNode) {
+                            @Shared @Cached TruffleString.EqualNode equalNode) {
                 for (int i = 0; i < parameters.length; i++) {
                     if (equalNode.execute(parameters[i], name, TS_ENCODING)) {
                         return i;
@@ -829,7 +829,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
         static PKeyword doCached(PKeyword[] kwdefaults, TruffleString kwname,
                         @Cached("kwdefaults.length") int cachedLength,
-                        @Shared @Cached(inline = false) TruffleString.EqualNode equalNode) {
+                        @Shared @Cached TruffleString.EqualNode equalNode) {
             for (int j = 0; j < cachedLength; j++) {
                 if (equalNode.execute(kwdefaults[j].getName(), kwname, TS_ENCODING)) {
                     return kwdefaults[j];
@@ -840,7 +840,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
         @Specialization(replaces = "doCached")
         static PKeyword doUncached(PKeyword[] kwdefaults, TruffleString kwname,
-                        @Shared @Cached(inline = false) TruffleString.EqualNode equalNode) {
+                        @Shared @Cached TruffleString.EqualNode equalNode) {
             for (int j = 0; j < kwdefaults.length; j++) {
                 if (equalNode.execute(kwdefaults[j].getName(), kwname, TS_ENCODING)) {
                     return kwdefaults[j];

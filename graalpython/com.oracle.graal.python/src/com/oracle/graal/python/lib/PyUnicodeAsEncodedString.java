@@ -117,7 +117,7 @@ public abstract class PyUnicodeAsEncodedString extends PNodeWithContext {
     @Specialization(guards = {"isString(unicode)", "isCommon(encoding, toJavaStringNode)"})
     static Object doCommon(VirtualFrame frame, Object unicode, TruffleString encoding, TruffleString errors,
                     @Shared @Cached(inline = false) CodecsModuleBuiltins.CodecsEncodeNode encodeNode,
-                    @SuppressWarnings("unused") @Shared("ts2js") @Cached(inline = false) TruffleString.ToJavaStringNode toJavaStringNode) {
+                    @SuppressWarnings("unused") @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
         return encodeNode.execute(frame, unicode, encoding, errors);
     }
 
@@ -129,7 +129,7 @@ public abstract class PyUnicodeAsEncodedString extends PNodeWithContext {
                     @Cached SequenceStorageNodes.CopyNode copyNode,
                     @Cached(inline = false) WarningsModuleBuiltins.WarnNode warnNode,
                     @Exclusive @Cached PRaiseNode raiseNode,
-                    @SuppressWarnings("unused") @Shared("ts2js") @Cached(inline = false) TruffleString.ToJavaStringNode toJavaStringNode) {
+                    @SuppressWarnings("unused") @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
         final Object v = encodeNode.execute(frame, unicode, encoding, errors);
         // the normal path
         if (isBytesProfile.profile(inliningTarget, v instanceof PBytes)) {

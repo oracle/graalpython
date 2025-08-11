@@ -155,10 +155,10 @@ public class CharsetMapping {
 
         @Specialization
         static TruffleString normalize(TruffleString encoding,
-                        @Cached(inline = false) TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
-                        @Cached(inline = false) TruffleStringIterator.NextNode nextNode,
-                        @Cached(inline = false) TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
-                        @Cached(inline = false) TruffleStringBuilder.ToStringNode toStringNode) {
+                        @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
+                        @Cached TruffleStringIterator.NextNode nextNode,
+                        @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             TruffleStringBuilder str = TruffleStringBuilder.create(TS_ENCODING, encoding.byteLength(TS_ENCODING));
             boolean lastCharInvalid = false;
             TruffleStringIterator it = createCodePointIteratorNode.execute(encoding, TS_ENCODING);

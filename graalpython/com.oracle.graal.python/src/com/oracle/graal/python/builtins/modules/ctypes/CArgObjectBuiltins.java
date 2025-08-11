@@ -168,7 +168,7 @@ public final class CArgObjectBuiltins extends PythonBuiltins {
         @Specialization
         static PyCArgObject paramFunc(CDataObject self, StgDictObject stgDict,
                         @Bind PythonLanguage language,
-                        @Cached(inline = false) TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
             PyCArgObject parg = PFactory.createCArgObject(language);
             switch (stgDict.paramfunc) {
                 // Corresponds to PyCArrayType_paramfunc

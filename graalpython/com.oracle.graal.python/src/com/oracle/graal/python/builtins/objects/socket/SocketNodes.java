@@ -395,9 +395,9 @@ public abstract class SocketNodes {
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @CachedLibrary("addr") UniversalSockAddrLibrary addrLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached(inline = false) TruffleString.FromJavaStringNode fromJavaStringNode,
-                        @Cached(inline = false) TruffleString.FromByteArrayNode fromByteArrayNode,
-                        @Cached(inline = false) TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
+                        @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached PRaiseNode raiseNode) {
             try {
                 PythonContext context = PythonContext.get(inliningTarget);
@@ -456,7 +456,7 @@ public abstract class SocketNodes {
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @CachedLibrary("addr") UniversalSockAddrLibrary addrLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Cached(inline = false) TruffleString.FromJavaStringNode fromJavaStringNode,
+                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                         @Cached PRaiseNode raiseNode) {
             try {
                 PythonContext context = PythonContext.get(inliningTarget);

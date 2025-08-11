@@ -117,14 +117,14 @@ public class KeywordsStorage extends HashingStorage {
         @Specialization(guards = {"self.length() == cachedLen", "cachedLen < 6"}, limit = "1")
         static Object cached(KeywordsStorage self, TruffleString key, @SuppressWarnings("unused") long hash,
                         @SuppressWarnings("unused") @Exclusive @Cached(value = "self.length()") int cachedLen,
-                        @Shared("tsEqual") @Cached(inline = false) TruffleString.EqualNode equalNode) {
+                        @Shared("tsEqual") @Cached TruffleString.EqualNode equalNode) {
             final int idx = self.findCachedStringKey(key, cachedLen, equalNode);
             return idx != -1 ? self.keywords[idx].getValue() : null;
         }
 
         @Specialization(replaces = "cached")
         static Object string(KeywordsStorage self, TruffleString key, @SuppressWarnings("unused") long hash,
-                        @Shared("tsEqual") @Cached(inline = false) TruffleString.EqualNode equalNode) {
+                        @Shared("tsEqual") @Cached TruffleString.EqualNode equalNode) {
             final int idx = self.findStringKey(key, equalNode);
             return idx != -1 ? self.keywords[idx].getValue() : null;
         }
@@ -133,7 +133,7 @@ public class KeywordsStorage extends HashingStorage {
         static Object pstring(Node inliningTarget, KeywordsStorage self, PString key, @SuppressWarnings("unused") long hash,
                         @SuppressWarnings("unused") @Exclusive @Cached PyUnicodeCheckExactNode isBuiltinString,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
-                        @Shared("tsEqual") @Cached(inline = false) TruffleString.EqualNode equalNode) {
+                        @Shared("tsEqual") @Cached TruffleString.EqualNode equalNode) {
             return string(self, castToTruffleStringNode.execute(inliningTarget, key), -1, equalNode);
         }
 

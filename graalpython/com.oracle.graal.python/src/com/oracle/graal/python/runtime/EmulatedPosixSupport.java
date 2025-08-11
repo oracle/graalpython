@@ -1791,7 +1791,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         @Specialization(guards = "timespec == null")
         static void doCurrentTime(Node inliningTarget, TruffleFile file, long[] timespec, boolean followSymlinks,
                         @Shared("errorBranch") @Cached InlinedBranchProfile errBranch,
-                        @Shared("eq") @Cached(inline = false) TruffleString.EqualNode eqNode) throws PosixException {
+                        @Shared("eq") @Cached TruffleString.EqualNode eqNode) throws PosixException {
             FileTime time = currentFileTime();
             setFileTimes(inliningTarget, followSymlinks, file, time, time, errBranch, eqNode);
         }
@@ -1806,7 +1806,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         @Specialization(guards = {"timespec != null", "file != null"})
         static void doGivenTime(Node inliningTarget, TruffleFile file, long[] timespec, boolean followSymlinks,
                         @Shared("errorBranch") @Cached InlinedBranchProfile errBranch,
-                        @Shared("eq") @Cached(inline = false) TruffleString.EqualNode eqNode) throws PosixException {
+                        @Shared("eq") @Cached TruffleString.EqualNode eqNode) throws PosixException {
             FileTime atime = toFileTime(timespec[0], timespec[1]);
             FileTime mtime = toFileTime(timespec[2], timespec[3]);
             setFileTimes(inliningTarget, followSymlinks, file, mtime, atime, errBranch, eqNode);

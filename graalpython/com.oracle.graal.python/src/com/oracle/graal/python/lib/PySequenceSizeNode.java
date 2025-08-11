@@ -88,7 +88,7 @@ public abstract class PySequenceSizeNode extends Node {
 
     @Specialization
     static int doTruffleString(TruffleString str,
-                    @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode) {
+                    @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
         return codePointLengthNode.execute(str, TS_ENCODING);
     }
 

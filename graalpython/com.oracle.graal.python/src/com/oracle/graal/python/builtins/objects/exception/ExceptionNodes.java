@@ -389,7 +389,7 @@ public final class ExceptionNodes {
                         @Bind PythonLanguage language,
                         @Cached InlinedConditionProfile nullArgsProfile,
                         @Cached InlinedConditionProfile hasMessageFormat,
-                        @Cached(inline = false) TruffleString.FromJavaStringNode fromJavaStringNode) {
+                        @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
             PTuple args = self.getArgs();
             if (nullArgsProfile.profile(inliningTarget, args == null)) {
                 if (hasMessageFormat.profile(inliningTarget, !self.hasMessageFormat())) {
@@ -414,7 +414,7 @@ public final class ExceptionNodes {
         static PTuple doInterop(AbstractTruffleException exception,
                         @Bind PythonLanguage language,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interop,
-                        @Cached(inline = false) TruffleString.SwitchEncodingNode switchEncodingNode) {
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             assert IsForeignObjectNode.executeUncached(exception);
             try {
                 TruffleString message;

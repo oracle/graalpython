@@ -242,7 +242,7 @@ public final class UnicodeEncodeErrorBuiltins extends PythonBuiltins {
         static int doIt(Node inliningTarget, PBaseException exceptionObject,
                         @Cached PyUnicodeEncodeOrTranslateErrorGetObjectNode getObjectNode,
                         @Cached(inline = false) BaseExceptionAttrNode attrNode,
-                        @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode) {
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
             TruffleString ts = getObjectNode.execute(inliningTarget, exceptionObject);
             int size = codePointLengthNode.execute(ts, TS_ENCODING);
             int start = attrNode.getInt(exceptionObject, IDX_START, UNICODE_ERROR_ATTR_FACTORY);
@@ -270,7 +270,7 @@ public final class UnicodeEncodeErrorBuiltins extends PythonBuiltins {
         static int doIt(Node inliningTarget, PBaseException exceptionObject,
                         @Cached PyUnicodeEncodeOrTranslateErrorGetObjectNode getObjectNode,
                         @Cached(inline = false) BaseExceptionAttrNode attrNode,
-                        @Cached(inline = false) TruffleString.CodePointLengthNode codePointLengthNode) {
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
             TruffleString ts = getObjectNode.execute(inliningTarget, exceptionObject);
             int size = codePointLengthNode.execute(ts, TS_ENCODING);
             int end = attrNode.getInt(exceptionObject, IDX_END, UNICODE_ERROR_ATTR_FACTORY);
