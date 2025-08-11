@@ -493,7 +493,7 @@
     ) + [
         {
             name: "graalpy-website-build",
-            targets: ["gate"],
+            targets: ["tier1"],
             guard: {
                 includes: ["docs/user/**", "docs/site/**"],
             },
