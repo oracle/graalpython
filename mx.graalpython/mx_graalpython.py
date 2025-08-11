@@ -272,7 +272,7 @@ def libpythonvm_build_args():
     build_args += bytecode_dsl_build_args()
     if mx_sdk_vm_ng.is_nativeimage_ee() and mx.get_os() == 'linux' and 'NATIVE_IMAGE_AUXILIARY_ENGINE_CACHE' not in os.environ:
         build_args += ['--gc=G1', '-H:-ProtectionKeys']
-    if not os.environ.get("GRAALPY_PGO_PROFILE") and mx.suite('graalpython-enterprise', fatalIfMissing=False):
+    if not os.environ.get("GRAALPY_PGO_PROFILE") and mx.suite('graalpython-enterprise', fatalIfMissing=False) and mx_sdk_vm_ng.get_bootstrap_graalvm_version() >= mx.VersionSpec("25.0"):
         cmd = mx.command_function('python-get-latest-profile', fatalIfMissing=False)
         if cmd:
             profile = None
@@ -299,6 +299,9 @@ def graalpy_native_pgo_build_and_test(_):
     then builds a PGO-optimized GraalPy native standalone with the collected profile.
     The profile file will be named 'default.iprof' in native image build directory.
     """
+    if mx_sdk_vm_ng.get_bootstrap_graalvm_version() < mx.VersionSpec("25.0"):
+        mx.abort("python-native-pgo not supported on GraalVM < 25")
+
     with set_env(GRAALPY_PGO_PROFILE=""):
         mx.log(mx.colorize("[PGO] Building PGO-instrumented native image", color="yellow"))
         build_home = graalpy_standalone_home('native', enterprise=True, build=True)
