@@ -141,10 +141,12 @@ public final class MapBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Shared @Cached TpSlots.GetObjectSlotsNode getSlots,
                         @Shared @Cached TpSlotIterNext.CallSlotTpIterNextNode callTpIternext,
-                        @Shared @Cached CallNode callNode) {
+                        @Shared @Cached CallNode callNode,
+                        @Cached InlinedLoopConditionProfile loopProfile) {
             Object[] iterators = self.getIterators();
             Object[] arguments = new Object[iterators.length];
-            for (int i = 0; i < iterators.length; i++) {
+            loopProfile.profileCounted(inliningTarget, iterators.length);
+            for (int i = 0; loopProfile.inject(inliningTarget, i < iterators.length); i++) {
                 Object iterator = iterators[i];
                 TpSlot iternext = getSlots.execute(inliningTarget, iterator).tp_iternext();
                 arguments[i] = callTpIternext.execute(frame, inliningTarget, iternext, iterator);
