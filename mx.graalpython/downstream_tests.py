@@ -158,6 +158,19 @@ def downstream_test_pydantic_core(graalpy, testdir):
     run(['uv', 'run', 'pytest', '-v', '--tb=short'], cwd=src)
 
 
+@downstream_test('jiter')
+def downstream_test_jiter(graalpy, testdir):
+    run(['git', 'clone', 'https://github.com/pydantic/jiter.git', '-b', 'main'], cwd=testdir)
+    src = testdir / 'jiter'
+    venv = src / 'venv'
+    run([graalpy, '-m', 'venv', str(venv)])
+    run_in_venv(venv, ['pip', 'install', '-r', 'crates/jiter-python/tests/requirements.txt'], cwd=src)
+    run_in_venv(venv, ['pip', 'install', '-e', 'crates/jiter-python',
+                       '--config-settings=build-args=--profile dev'], cwd=src)
+    run_in_venv(venv, ['pytest', '-v', '--tb=short', 'crates/jiter-python/tests'], cwd=src)
+    run_in_venv(venv, ['python', 'crates/jiter-python/bench.py', 'jiter', 'jiter-cache', '--fast'], cwd=src)
+
+
 def run_downstream_test(python, project):
     testdir = Path('upstream-tests').absolute()
     shutil.rmtree(testdir, ignore_errors=True)
