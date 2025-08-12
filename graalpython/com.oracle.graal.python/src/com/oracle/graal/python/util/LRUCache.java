@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,9 +46,11 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleSafepoint;
+import com.oracle.truffle.api.nodes.Node;
 
-public class LRUCache<K, V> implements Cache<K, V> {
+public class LRUCache<K, V> {
     private final LRUHashMap<K, V> lruHashMap;
     private final ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
     private final Lock read = readWriteLock.readLock();
@@ -73,47 +75,33 @@ public class LRUCache<K, V> implements Cache<K, V> {
         }
     }
 
-    @Override
-    @CompilerDirectives.TruffleBoundary
-    public V get(K key) {
+    @TruffleBoundary
+    public V get(Node location, K key) {
         try {
-            read.lock();
+            TruffleSafepoint.setBlockedThreadInterruptible(location, Lock::lockInterruptibly, read);
             return lruHashMap.get(key);
         } finally {
             read.unlock();
         }
     }
 
-    @Override
-    @CompilerDirectives.TruffleBoundary
-    public V put(K key, V value) {
+    @TruffleBoundary
+    public V put(Node location, K key, V value) {
         try {
-            write.lock();
+            TruffleSafepoint.setBlockedThreadInterruptible(location, Lock::lockInterruptibly, write);
             return lruHashMap.putIfAbsent(key, value);
         } finally {
             write.unlock();
         }
     }
 
-    @Override
-    @CompilerDirectives.TruffleBoundary
-    public void clear() {
+    @TruffleBoundary
+    public void clear(Node location) {
         try {
-            write.lock();
+            TruffleSafepoint.setBlockedThreadInterruptible(location, Lock::lockInterruptibly, write);
             lruHashMap.clear();
         } finally {
             write.unlock();
-        }
-    }
-
-    @Override
-    @CompilerDirectives.TruffleBoundary
-    public int size() {
-        try {
-            read.lock();
-            return lruHashMap.size();
-        } finally {
-            read.unlock();
         }
     }
 }
