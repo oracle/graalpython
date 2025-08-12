@@ -596,6 +596,8 @@ def punittest(ars, report: Union[Task, bool, None] = False):
         reportConfig: Union[Task, bool, None] = report
         def __str__(self):
             return f"args={self.args!r}, useResources={self.useResources}, report={self.reportConfig}"
+        def __post_init__(self):
+            assert ' ' not in self.identifier
 
     configs = []
     skip_leak_tests = False
@@ -616,6 +618,11 @@ def punittest(ars, report: Union[Task, bool, None] = False):
     configs += [
         TestConfig("junit", vm_args + graalpy_tests + args, True),
         TestConfig("junit", vm_args + graalpy_tests + args, False),
+        # Tests that must run in their own process due to C extensions usage
+        TestConfig("multi-threaded-import-java", vm_args + ['com.oracle.graal.python.cext.test.MultithreadedImportTestNative'] + args, True),
+        TestConfig("multi-threaded-import-java", vm_args + ['com.oracle.graal.python.cext.test.MultithreadedImportTestNative'] + args, False),
+        TestConfig("multi-threaded-import-native", vm_args + ['com.oracle.graal.python.cext.test.MultithreadedImportTestJava'] + args, True),
+        TestConfig("multi-threaded-import-native", vm_args + ['com.oracle.graal.python.cext.test.MultithreadedImportTestJava'] + args, False),
     ]
 
     if '--regex' not in args:
@@ -1234,7 +1241,7 @@ def graalpython_gate_runner(_, tasks):
                         "--verbose",
                         "--no-leak-tests",
                         "--regex",
-                        r'((graal\.python\.test\.integration)|(graal\.python\.test\.(builtin|interop|util))|(org\.graalvm\.python\.embedding\.(test|test\.integration)))'
+                        r'((graal\.python\.test\.integration)|(graal\.python\.test\.(builtin|interop|util))|(graal\.python\.cext\.test))'
                     ],
                     report=True
                 )
