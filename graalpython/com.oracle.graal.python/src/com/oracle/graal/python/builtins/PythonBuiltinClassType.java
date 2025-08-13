@@ -182,6 +182,7 @@ import com.oracle.graal.python.builtins.objects.exception.SystemExitBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.UnicodeDecodeErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.UnicodeEncodeErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.UnicodeTranslateErrorBuiltins;
+import com.oracle.graal.python.builtins.objects.filter.FilterBuiltins;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignBooleanBuiltins;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignExecutableBuiltins;
@@ -441,6 +442,12 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
                     Make an iterator that computes the function using arguments from
                     each of the iterables.  Stops when the shortest iterable is exhausted.""")),
+    PFilter("filter", PythonObject, newBuilder().publishInModule(J_BUILTINS).basetype().slots(FilterBuiltins.SLOTS).doc("""
+                    filter(function or None, iterable) --> filter object
+
+                    Return an iterator yielding those items of iterable for which function(item)
+                    is true. If function is None, return the items that are true.
+                    """)),
     PFloat(
                     "float",
                     PythonObject,

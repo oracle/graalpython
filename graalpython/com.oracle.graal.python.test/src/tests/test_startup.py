@@ -47,7 +47,6 @@ import platform
 expected_nosite_startup_modules = [
     '_frozen_importlib',
     '_frozen_importlib_external',
-    'builtins',
     '__graalpython__',
     '_weakref',
     'unicodedata',

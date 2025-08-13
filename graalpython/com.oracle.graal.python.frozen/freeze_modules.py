@@ -122,7 +122,6 @@ def add_graalpython_core():
         "_sre",
         "_sysconfig",
         "_weakref",
-        "builtins",
         "java",
         "pip_hook",
         "unicodedata",

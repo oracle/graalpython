@@ -302,6 +302,8 @@ public abstract class BuiltinNames {
 
     public static final String J_MAP = "map";
 
+    public static final String J_FILTER = "filter";
+
     public static final String J_REVERSED = "reversed";
 
     public static final TruffleString T___IMPORT__ = tsLiteral("__import__");

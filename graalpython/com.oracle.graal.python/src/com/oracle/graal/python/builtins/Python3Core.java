@@ -260,6 +260,7 @@ import com.oracle.graal.python.builtins.objects.exception.UnicodeDecodeErrorBuil
 import com.oracle.graal.python.builtins.objects.exception.UnicodeEncodeErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.UnicodeTranslateErrorBuiltins;
+import com.oracle.graal.python.builtins.objects.filter.FilterBuiltins;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignAbstractClassBuiltins;
@@ -525,6 +526,7 @@ public abstract class Python3Core {
                         new ZipBuiltins(),
                         new EnumerateBuiltins(),
                         new MapBuiltins(),
+                        new FilterBuiltins(),
                         new NotImplementedBuiltins(),
                         new NoneBuiltins(),
                         new EllipsisBuiltins(),
@@ -1040,7 +1042,6 @@ public abstract class Python3Core {
     }
 
     private void initializePython3Core(TruffleString coreHome) {
-        loadFile(BuiltinNames.T_BUILTINS, coreHome);
         for (TruffleString s : coreFiles) {
             loadFile(s, coreHome);
         }

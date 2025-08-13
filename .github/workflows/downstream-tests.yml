@@ -44,9 +44,7 @@ jobs:
     - name: Install uv
       if: ${{ matrix.name == 'pydantic-core' }}
       run: |
-        # XXX: Using my fork of uv until https://github.com/astral-sh/uv/pull/15013 is merged and released
-        # curl -LsSf https://astral.sh/uv/install.sh | sh
-        cargo install --git https://github.com/msimacek/uv --branch msimacek/graalpy uv
+        curl -LsSf https://astral.sh/uv/install.sh | sh
         echo "$HOME/.local/bin" >> $GITHUB_PATH
 
     - name: Checkout main repository
