@@ -110,8 +110,8 @@ abstract class MergedObjectTypeModuleGetAttributeInnerNode extends PNodeWithCont
 
     /**
      * Keep in sync with {@link ObjectBuiltins.GetAttributeNode} and
-     * {@link TypeBuiltins.GetattributeNode} and {@link ModuleBuiltins.ModuleGetattributeNode} and
-     * {@link ThreadLocalBuiltins.GetAttributeNode}
+     * {@link TypeBuiltins.GetattributeNode} and {@link ThreadLocalBuiltins.GetAttributeNode} and
+     * {@link ModuleBuiltins.ModuleGetattributeNode}
      */
     @Specialization(guards = {"slots.tp_getattro() == cachedSlot", "isObjectTypeModuleGetAttribute(cachedSlot)"}, limit = "1")
     static Object doIt(VirtualFrame frame, Node inliningTarget, Object object, TruffleString key, Object type, @SuppressWarnings("unused") TpSlots slots,
@@ -119,9 +119,9 @@ abstract class MergedObjectTypeModuleGetAttributeInnerNode extends PNodeWithCont
                     // Common
                     @Cached GetObjectSlotsNode getDescrSlotsNode,
                     @Cached LookupAttributeInMRONode.Dynamic lookup,
-                    @Cached InlinedBranchProfile hasDescProfile,
+                    @Cached InlinedConditionProfile hasDescProfile,
                     @Cached InlinedConditionProfile hasDescrGetProfile,
-                    @Cached InlinedBranchProfile hasValueProfile,
+                    @Cached InlinedConditionProfile hasValueProfile,
                     @Cached PRaiseNode raiseNode,
                     @Cached CallSlotDescrGet.Lazy callSlotDescrGet,
                     // Specific to a given tp_getattro, some should probably be lazy
@@ -134,12 +134,11 @@ abstract class MergedObjectTypeModuleGetAttributeInnerNode extends PNodeWithCont
         assert hasNoGetAttr(object);
         try {
             Object descr = lookup.execute(type, key);
-            boolean hasDescr = descr != PNone.NO_VALUE;
+            boolean hasDescr = hasDescProfile.profile(inliningTarget, descr != PNone.NO_VALUE);
 
             TpSlot get = null;
             boolean hasDescrGet = false;
             if (hasDescr) {
-                hasDescProfile.enter(inliningTarget);
                 var descrSlots = getDescrSlotsNode.execute(inliningTarget, descr);
                 get = descrSlots.tp_descr_get();
                 hasDescrGet = hasDescrGetProfile.profile(inliningTarget, get != null);
@@ -153,15 +152,13 @@ abstract class MergedObjectTypeModuleGetAttributeInnerNode extends PNodeWithCont
             if (cachedSlot != TypeBuiltins.SLOTS.tp_getattro()) {
                 // ObjectBuiltins.SLOTS.tp_getattro() || ModuleBuiltins.SLOTS.tp_getattro()
                 value = readAttributeOfObjectNode.execute(object, key);
-                if (value != PNone.NO_VALUE) {
-                    hasValueProfile.enter(inliningTarget);
+                if (hasValueProfile.profile(inliningTarget, value != PNone.NO_VALUE)) {
                     return value;
                 }
             } else {
                 // TypeBuiltins.SLOTS.tp_getattro()
                 value = readAttributeOfClassNode.execute(object, key);
-                if (value != PNone.NO_VALUE) {
-                    hasValueProfile.enter(inliningTarget);
+                if (hasValueProfile.profile(inliningTarget, value != PNone.NO_VALUE)) {
                     var valueGet = getValueSlotsNode.execute(inliningTarget, value).tp_descr_get();
                     if (valueGet == null) {
                         hasNonDescriptorValueProfile.enter(inliningTarget);
@@ -173,7 +170,6 @@ abstract class MergedObjectTypeModuleGetAttributeInnerNode extends PNodeWithCont
             }
 
             if (hasDescr) {
-                hasDescProfile.enter(inliningTarget);
                 if (!hasDescrGet) {
                     return descr;
                 } else {
