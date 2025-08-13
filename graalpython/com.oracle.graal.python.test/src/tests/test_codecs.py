@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2024, Oracle and/or its affiliates.
+# Copyright (c) 2019, 2025, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -27,6 +27,16 @@ def test_import():
     except ImportError:
         imported = False
     assert imported
+
+def test_no_aliases_to_missing_codecs():
+    from encodings.aliases import aliases
+
+    # This is how charset-normalizer discovers all encodings, we need to make sure they are importable
+    for a in set(aliases.values()) - {"rot_13", "tactis", "mbcs"}:
+        try:
+            exec(f"import encodings.{a}")
+        except Exception:
+            raise AssertionError(f"Cannot import encodings.{a}, it should be fixed or removed from encodings.aliases")
 
 
 def test_decode():
