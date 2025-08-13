@@ -2450,14 +2450,10 @@ public final class PythonContext extends Python3Core {
     @TruffleBoundary
     void acquireGil() throws InterruptedException {
         assert !ownsGil() : dumpStackOnAssertionHelper("trying to acquire the GIL more than once");
-        boolean wasInterrupted = Thread.interrupted();
         globalInterpreterLock.lockInterruptibly();
-        if (wasInterrupted) {
-            Thread.currentThread().interrupt();
-        }
     }
 
-    static final String dumpStackOnAssertionHelper(String msg) {
+    static String dumpStackOnAssertionHelper(String msg) {
         Thread.dumpStack();
         return msg;
     }
