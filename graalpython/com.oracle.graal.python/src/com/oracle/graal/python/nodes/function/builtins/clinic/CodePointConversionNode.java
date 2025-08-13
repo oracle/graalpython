@@ -96,7 +96,7 @@ public abstract class CodePointConversionNode extends ArgumentCastNode {
         } catch (CannotCastException ex) {
             // handled below
         }
-        throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_BRACKETS_ARG_MUST_BE_S_NOT_P, builtinName, "unicode character", value);
+        throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_BRACKETS_ARG_MUST_BE_S_NOT_P, builtinName, "a unicode character", value);
     }
 
     @ClinicConverterFactory
