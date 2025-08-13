@@ -174,17 +174,10 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         TruffleString noDaylightSavingZone = toTruffleStringUncached(defaultTimeZone.getDisplayName(false, TimeZone.SHORT));
         TruffleString daylightSavingZone = toTruffleStringUncached(defaultTimeZone.getDisplayName(true, TimeZone.SHORT));
 
-        boolean hasDaylightSaving = !noDaylightSavingZone.equalsUncached(daylightSavingZone, TS_ENCODING);
-        if (hasDaylightSaving) {
-            timeModule.setAttribute(T_TZNAME, PFactory.createTuple(core.getLanguage(), new Object[]{noDaylightSavingZone, daylightSavingZone}));
-        } else {
-            timeModule.setAttribute(T_TZNAME, PFactory.createTuple(core.getLanguage(), new Object[]{noDaylightSavingZone}));
-        }
-
-        timeModule.setAttribute(T_DAYLIGHT, PInt.intValue(hasDaylightSaving));
-        int rawOffsetSeconds = defaultTimeZone.getRawOffset() / -1000;
-        timeModule.setAttribute(T_TIMEZONE, rawOffsetSeconds);
-        timeModule.setAttribute(T_ALTZONE, rawOffsetSeconds - 3600);
+        timeModule.setAttribute(T_TZNAME, PFactory.createTuple(core.getLanguage(), new Object[]{noDaylightSavingZone, daylightSavingZone}));
+        timeModule.setAttribute(T_DAYLIGHT, PInt.intValue(defaultTimeZone.getDSTSavings() != 0));
+        timeModule.setAttribute(T_TIMEZONE, defaultTimeZone.getRawOffset() / -1000);
+        timeModule.setAttribute(T_ALTZONE, (defaultTimeZone.getRawOffset() + defaultTimeZone.getDSTSavings()) / -1000);
 
         // register_interop_behavior() for time.struct_time
         AbstractImportNode.importModule(T_POLYGLOT_TIME);
