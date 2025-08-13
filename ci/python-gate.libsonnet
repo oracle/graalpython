@@ -262,7 +262,7 @@
     tier1:: $.target("tier1"),
     tier2:: $.target("tier2"),
     tier3:: $.target("tier3"),
-    post_merge:: $.target("tier4") + task_spec({name_target:: "post_merge"}),
+    post_merge:: $.target("post-merge") + task_spec({name_target:: "post_merge"}),
 
     bench:: $.target(graal_common.frequencies.bench.targets[0]),
     on_demand:: $.target(graal_common.frequencies.on_demand.targets[0]) + task_spec({name_target:: "on_demand"}),
