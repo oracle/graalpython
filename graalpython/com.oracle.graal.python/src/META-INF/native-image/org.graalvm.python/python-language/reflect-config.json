@@ -27,6 +27,45 @@
     ]
   },
   {
+    "name": "org.graalvm.shadowed.com.ibm.icu.charset.CharsetHZ",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "java.lang.String",
+          "java.lang.String",
+          "java.lang.String[]"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "org.graalvm.shadowed.com.ibm.icu.charset.CharsetMBCS",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "java.lang.String",
+          "java.lang.String",
+          "java.lang.String[]"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "org.graalvm.shadowed.com.ibm.icu.charset.CharsetUTF7",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "java.lang.String",
+          "java.lang.String",
+          "java.lang.String[]"
+        ]
+      }
+    ]
+  },
+  {
     "name": "com.sun.crypto.provider.AESCipher$General",
     "methods": [
       {
