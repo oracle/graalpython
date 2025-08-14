@@ -66,6 +66,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 
 import org.graalvm.collections.Pair;
@@ -113,6 +114,7 @@ import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -905,106 +907,133 @@ public final class CApiContext extends CExtContext {
     }
 
     @TruffleBoundary
+    @SuppressWarnings("try")
     public static CApiContext ensureCapiWasLoaded(Node node, PythonContext context, TruffleString name, TruffleString path, String reason) throws IOException, ImportException, ApiInitException {
         assert PythonContext.get(null).ownsGil(); // unsafe lazy initialization
-        if (!context.hasCApiContext()) {
-            Env env = context.getEnv();
-            InteropLibrary U = InteropLibrary.getUncached();
+        // The initialization may run Python code (e.g., module import in
+        // GraalPyPrivate_InitBuiltinTypesAndStructs), so just holding the GIL is not enough
+        if (!context.isCApiInitialized()) {
 
-            TruffleFile homePath = env.getInternalTruffleFile(context.getCAPIHome().toJavaStringUncached());
-            // e.g. "libpython-native.so"
-            String libName = PythonContext.getSupportLibName("python-native");
-            final TruffleFile capiFile = homePath.resolve(libName).getCanonicalFile();
+            // We import those modules ahead of the initialization without the initialization lock
+            // to avoid deadlocks. We would have imported them in the initialization anyway, this
+            // way we can just simply look up already imported modules during the initialization
+            // without running the complex import machinery and risking a deadlock
+            AbstractImportNode.importModule(toTruffleStringUncached("datetime"));
+            AbstractImportNode.importModule(toTruffleStringUncached("types"));
+
+            ReentrantLock initLock = context.getcApiInitializationLock();
+            try (var ignored = GilNode.uncachedAcquire()) {
+                TruffleSafepoint.setBlockedThreadInterruptible(node, ReentrantLock::lockInterruptibly, initLock);
+            }
             try {
-                SourceBuilder capiSrcBuilder;
-                boolean useNative = true;
-                boolean isolateNative = PythonOptions.IsolateNativeModules.getValue(env.getOptions());
-                final NativeLibraryLocator loc;
-                if (!isolateNative) {
-                    useNative = nativeCAPILoaded.compareAndSet(NO_NATIVE_CONTEXT, GLOBAL_NATIVE_CONTEXT);
-                } else {
-                    useNative = nativeCAPILoaded.compareAndSet(NO_NATIVE_CONTEXT, ISOLATED_NATIVE_CONTEXT) || nativeCAPILoaded.get() == ISOLATED_NATIVE_CONTEXT;
+                if (!context.isCApiInitialized()) {
+                    // loadCApi must set C API context half-way through its execution so that it can
+                    // run code that needs C API context
+                    loadCApi(node, context, name, path, reason);
+                    context.setCApiInitialized(); // volatile write
                 }
-                if (!useNative) {
-                    String actualReason = "initialize native extensions support";
-                    if (reason != null) {
-                        actualReason = reason;
-                    } else if (name != null && path != null) {
-                        actualReason = String.format("load a native module '%s' from path '%s'", name.toJavaStringUncached(), path.toJavaStringUncached());
-                    }
-                    throw new ApiInitException(toTruffleStringUncached(
-                                    String.format("Option python.IsolateNativeModules is set to 'false' and a second GraalPy context attempted to %s. " +
-                                                    "At least one context in this process runs with 'IsolateNativeModules' set to false. " +
-                                                    "Depending on the order of context creation, this means some contexts in the process " +
-                                                    "cannot use native module.", actualReason)));
-                }
-                loc = new NativeLibraryLocator(context, capiFile, isolateNative);
-                context.ensureNFILanguage(node, "allowNativeAccess", "true");
-                String dlopenFlags = isolateNative ? "RTLD_LOCAL" : "RTLD_GLOBAL";
-                capiSrcBuilder = Source.newBuilder(J_NFI_LANGUAGE, String.format("load(%s) \"%s\"", dlopenFlags, loc.getCapiLibrary()), "<libpython>");
-                LOGGER.config(() -> "loading CAPI from " + loc.getCapiLibrary() + " as native");
-                if (!context.getLanguage().getEngineOption(PythonOptions.ExposeInternalSources)) {
-                    capiSrcBuilder.internal(true);
-                }
-                CallTarget capiLibraryCallTarget = context.getEnv().parseInternal(capiSrcBuilder.build());
-
-                Object capiLibrary = capiLibraryCallTarget.call();
-                Object initFunction = U.readMember(capiLibrary, "initialize_graal_capi");
-                CApiContext cApiContext = new CApiContext(context, capiLibrary, loc);
-                context.setCApiContext(cApiContext);
-
-                try (BuiltinArrayWrapper builtinArrayWrapper = new BuiltinArrayWrapper()) {
-                    /*
-                     * The GC state needs to be created before the first managed object is sent to
-                     * native. This is because the native object stub could take part in GC and will
-                     * then already require the GC state.
-                     */
-                    Object gcState = cApiContext.createGCState();
-                    Object signature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "(ENV,POINTER,POINTER):VOID", "exec").build()).call();
-                    initFunction = SignatureLibrary.getUncached().bind(signature, initFunction);
-                    U.execute(initFunction, builtinArrayWrapper, gcState);
-                }
-
-                assert PythonCApiAssertions.assertBuiltins(capiLibrary);
-                cApiContext.pyDateTimeCAPICapsule = PyDateTimeCAPIWrapper.initWrapper(context, cApiContext);
-                context.runCApiHooks();
-
-                /*
-                 * C++ libraries sometimes declare global objects that have destructors that call
-                 * Py_DECREF. Those destructors are then called during native shutdown, which is
-                 * after the JVM/SVM shut down and the upcall would segfault. This finalizer code
-                 * rebinds reference operations to native no-ops that don't upcall. In normal
-                 * scenarios we call it during context exit, but when the VM is terminated by a
-                 * signal, the context exit is skipped. For that case we set up the shutdown hook.
-                 */
-                Object finalizeFunction = U.readMember(capiLibrary, "GraalPyPrivate_GetFinalizeCApiPointer");
-                Object finalizeSignature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "():POINTER", "exec").build()).call();
-                Object finalizingPointer = SignatureLibrary.getUncached().call(finalizeSignature, finalizeFunction);
-                try {
-                    cApiContext.addNativeFinalizer(context, finalizingPointer);
-                    cApiContext.runBackgroundGCTask(context);
-                } catch (RuntimeException e) {
-                    // This can happen when other languages restrict multithreading
-                    LOGGER.warning(() -> "didn't register a native finalizer due to: " + e.getMessage());
-                }
-
-                return cApiContext;
-            } catch (PException e) {
-                /*
-                 * Python exceptions that occur during the C API initialization are just passed
-                 * through
-                 */
-                throw e;
-            } catch (RuntimeException | UnsupportedMessageException | ArityException | UnknownIdentifierException | UnsupportedTypeException e) {
-                // we cannot really check if we truly need native access, so
-                // when the abi contains "managed" we assume we do not
-                if (!libName.contains("managed") && !context.isNativeAccessAllowed()) {
-                    throw new ImportException(null, name, path, ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED);
-                }
-                throw new ApiInitException(e);
+            } finally {
+                initLock.unlock();
             }
         }
         return context.getCApiContext();
+    }
+
+    private static CApiContext loadCApi(Node node, PythonContext context, TruffleString name, TruffleString path, String reason) throws IOException, ImportException, ApiInitException {
+        Env env = context.getEnv();
+        InteropLibrary U = InteropLibrary.getUncached();
+
+        TruffleFile homePath = env.getInternalTruffleFile(context.getCAPIHome().toJavaStringUncached());
+        // e.g. "libpython-native.so"
+        String libName = PythonContext.getSupportLibName("python-native");
+        final TruffleFile capiFile = homePath.resolve(libName).getCanonicalFile();
+        try {
+            SourceBuilder capiSrcBuilder;
+            boolean useNative = true;
+            boolean isolateNative = PythonOptions.IsolateNativeModules.getValue(env.getOptions());
+            final NativeLibraryLocator loc;
+            if (!isolateNative) {
+                useNative = nativeCAPILoaded.compareAndSet(NO_NATIVE_CONTEXT, GLOBAL_NATIVE_CONTEXT);
+            } else {
+                useNative = nativeCAPILoaded.compareAndSet(NO_NATIVE_CONTEXT, ISOLATED_NATIVE_CONTEXT) || nativeCAPILoaded.get() == ISOLATED_NATIVE_CONTEXT;
+            }
+            if (!useNative) {
+                String actualReason = "initialize native extensions support";
+                if (reason != null) {
+                    actualReason = reason;
+                } else if (name != null && path != null) {
+                    actualReason = String.format("load a native module '%s' from path '%s'", name.toJavaStringUncached(), path.toJavaStringUncached());
+                }
+                throw new ApiInitException(toTruffleStringUncached(
+                                String.format("Option python.IsolateNativeModules is set to 'false' and a second GraalPy context attempted to %s. " +
+                                                "At least one context in this process runs with 'IsolateNativeModules' set to false. " +
+                                                "Depending on the order of context creation, this means some contexts in the process " +
+                                                "cannot use native module.", actualReason)));
+            }
+            loc = new NativeLibraryLocator(context, capiFile, isolateNative);
+            context.ensureNFILanguage(node, "allowNativeAccess", "true");
+            String dlopenFlags = isolateNative ? "RTLD_LOCAL" : "RTLD_GLOBAL";
+            capiSrcBuilder = Source.newBuilder(J_NFI_LANGUAGE, String.format("load(%s) \"%s\"", dlopenFlags, loc.getCapiLibrary()), "<libpython>");
+            LOGGER.config(() -> "loading CAPI from " + loc.getCapiLibrary() + " as native");
+            if (!context.getLanguage().getEngineOption(PythonOptions.ExposeInternalSources)) {
+                capiSrcBuilder.internal(true);
+            }
+            CallTarget capiLibraryCallTarget = context.getEnv().parseInternal(capiSrcBuilder.build());
+
+            Object capiLibrary = capiLibraryCallTarget.call();
+            Object initFunction = U.readMember(capiLibrary, "initialize_graal_capi");
+            CApiContext cApiContext = new CApiContext(context, capiLibrary, loc);
+            context.setCApiContext(cApiContext);
+
+            try (BuiltinArrayWrapper builtinArrayWrapper = new BuiltinArrayWrapper()) {
+                /*
+                 * The GC state needs to be created before the first managed object is sent to
+                 * native. This is because the native object stub could take part in GC and will
+                 * then already require the GC state.
+                 */
+                Object gcState = cApiContext.createGCState();
+                Object signature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "(ENV,POINTER,POINTER):VOID", "exec").build()).call();
+                initFunction = SignatureLibrary.getUncached().bind(signature, initFunction);
+                U.execute(initFunction, builtinArrayWrapper, gcState);
+            }
+
+            assert PythonCApiAssertions.assertBuiltins(capiLibrary);
+            cApiContext.pyDateTimeCAPICapsule = PyDateTimeCAPIWrapper.initWrapper(context, cApiContext);
+            context.runCApiHooks();
+
+            /*
+             * C++ libraries sometimes declare global objects that have destructors that call
+             * Py_DECREF. Those destructors are then called during native shutdown, which is after
+             * the JVM/SVM shut down and the upcall would segfault. This finalizer code rebinds
+             * reference operations to native no-ops that don't upcall. In normal scenarios we call
+             * it during context exit, but when the VM is terminated by a signal, the context exit
+             * is skipped. For that case we set up the shutdown hook.
+             */
+            Object finalizeFunction = U.readMember(capiLibrary, "GraalPyPrivate_GetFinalizeCApiPointer");
+            Object finalizeSignature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "():POINTER", "exec").build()).call();
+            Object finalizingPointer = SignatureLibrary.getUncached().call(finalizeSignature, finalizeFunction);
+            try {
+                cApiContext.addNativeFinalizer(context, finalizingPointer);
+                cApiContext.runBackgroundGCTask(context);
+            } catch (RuntimeException e) {
+                // This can happen when other languages restrict multithreading
+                LOGGER.warning(() -> "didn't register a native finalizer due to: " + e.getMessage());
+            }
+
+            return cApiContext;
+        } catch (PException e) {
+            /*
+             * Python exceptions that occur during the C API initialization are just passed through
+             */
+            throw e;
+        } catch (RuntimeException | UnsupportedMessageException | ArityException | UnknownIdentifierException | UnsupportedTypeException e) {
+            // we cannot really check if we truly need native access, so
+            // when the abi contains "managed" we assume we do not
+            if (!libName.contains("managed") && !context.isNativeAccessAllowed()) {
+                throw new ImportException(null, name, path, ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED);
+            }
+            throw new ApiInitException(e);
+        }
     }
 
     private static final Set<String> C_EXT_SUPPORTED_LIST = Set.of(
