@@ -93,6 +93,12 @@ import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteStreamReaderB
 import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteStreamWriterBuiltins;
 import com.oracle.graal.python.builtins.modules.csv.CSVDialectBuiltins;
 import com.oracle.graal.python.builtins.modules.csv.CSVReaderBuiltins;
+import com.oracle.graal.python.builtins.modules.datetime.DateBuiltins;
+import com.oracle.graal.python.builtins.modules.datetime.DateTimeBuiltins;
+import com.oracle.graal.python.builtins.modules.datetime.TimeBuiltins;
+import com.oracle.graal.python.builtins.modules.datetime.TimeDeltaBuiltins;
+import com.oracle.graal.python.builtins.modules.datetime.TimeZoneBuiltins;
+import com.oracle.graal.python.builtins.modules.datetime.TzInfoBuiltins;
 import com.oracle.graal.python.builtins.modules.functools.KeyWrapperBuiltins;
 import com.oracle.graal.python.builtins.modules.functools.LruCacheWrapperBuiltins;
 import com.oracle.graal.python.builtins.modules.functools.PartialBuiltins;
@@ -1158,6 +1164,57 @@ public enum PythonBuiltinClassType implements TruffleObject {
                     PythonObject,
                     newBuilder().publishInModule("_json").basetype().slots(JSONEncoderBuiltins.SLOTS).doc("""
                                     _iterencode(obj, _current_indent_level) -> iterable""")),
+
+    // datetime
+    PDate(
+                    "date",
+                    PythonObject,
+                    newBuilder().moduleName("datetime").publishInModule("_datetime").basetype().slots(DateBuiltins.SLOTS).doc("")),
+
+    PTime(
+                    "time",
+                    PythonObject,
+                    newBuilder().moduleName("datetime").publishInModule("_datetime").basetype().slots(TimeBuiltins.SLOTS).doc("""
+                                    time([hour[, minute[, second[, microsecond[, tzinfo]]]]]) --> a time object\n
+                                    All arguments are optional. tzinfo may be None, or an instance of
+                                    a tzinfo subclass. The remaining arguments may be ints.
+                                    """)),
+
+    PDateTime(
+                    "datetime",
+                    PDate,
+                    newBuilder().moduleName("datetime").publishInModule("_datetime").basetype().slots(DateTimeBuiltins.SLOTS).doc("""
+                                    datetime(year, month, day[, hour[, minute[, second[, microsecond[,tzinfo]]]]])\n
+                                    The year, month and day arguments are required. tzinfo may be None, or an
+                                    instance of a tzinfo subclass. The remaining arguments may be ints.
+                                    """)),
+
+    PIsoCalendarDate(
+                    "IsoCalendarDate",
+                    PTuple,
+                    newBuilder().moduleName("datetime").publishInModule("_datetime").slots(StructSequenceBuiltins.SLOTS).doc("""
+                                    The result of date.isocalendar() or datetime.isocalendar()\n
+                                    This object may be accessed either as a tuple of
+                                      ((year, week, weekday)
+                                    or via the object attributes as named in the above tuple.""")),
+
+    PTimeDelta(
+                    "timedelta",
+                    PythonObject,
+                    newBuilder().moduleName("datetime").publishInModule("_datetime").basetype().slots(TimeDeltaBuiltins.SLOTS).doc("""
+                                    Difference between two datetime values.\n
+                                    timedelta(days=0, seconds=0, microseconds=0, milliseconds=0, minutes=0, hours=0, weeks=0)\n
+                                    All arguments are optional and default to 0.
+                                    Arguments may be integers or floats, and may be positive or negative.""")),
+    PTzInfo(
+                    "tzinfo",
+                    PythonObject,
+                    newBuilder().moduleName("datetime").publishInModule("_datetime").basetype().slots(TzInfoBuiltins.SLOTS).doc("Abstract base class for time zone info objects.")),
+
+    PTimezone(
+                    "timezone",
+                    PTzInfo,
+                    newBuilder().moduleName("datetime").publishInModule("_datetime").slots(TimeZoneBuiltins.SLOTS).doc("Fixed offset from UTC implementation of tzinfo.")),
 
     // csv
     CSVDialect("Dialect", PythonObject, newBuilder().publishInModule("_csv").basetype().slots(CSVDialectBuiltins.SLOTS)),

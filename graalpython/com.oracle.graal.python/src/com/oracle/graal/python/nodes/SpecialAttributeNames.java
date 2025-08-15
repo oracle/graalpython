@@ -153,7 +153,8 @@ public abstract class SpecialAttributeNames {
 
     public static final TruffleString T___WEAKREF__ = tsLiteral("__weakref__");
 
-    public static final TruffleString T___ALL__ = tsLiteral("__all__");
+    public static final String J___ALL__ = "__all__";
+    public static final TruffleString T___ALL__ = tsLiteral(J___ALL__);
 
     public static final String J___FLAGS__ = "__flags__";
 

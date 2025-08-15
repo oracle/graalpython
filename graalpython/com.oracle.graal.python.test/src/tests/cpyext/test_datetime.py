@@ -1,4 +1,4 @@
-# Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,9 @@ import datetime
 import unittest
 
 from . import CPyExtType, CPyExtTestCase, CPyExtFunction, unhandled_error_compare, is_native_object
+import sys
+
+GRAALPYTHON = sys.implementation.name == "graalpy"
 
 
 def create_datetime_subclass(typename):
@@ -617,24 +620,60 @@ class TestNativeSubclasses(unittest.TestCase):
     def test_time(self):
         for t in (NativeTimeSubclass, ManagedNativeTimeSubclass):
             x = t(hour=6)
-            assert is_native_object(x)
             assert x.hour == 6
+
+        if GRAALPYTHON:
+            x = NativeTimeSubclass()
+            assert not is_native_object(x)
+            assert is_native_object(type(x))
+
+            x = ManagedNativeTimeSubclass()
+            assert not is_native_object(x)
+            assert not is_native_object(type(x))
+            assert is_native_object(type(x).__bases__[0])
 
     def test_date(self):
         for t in (NativeDateSubclass, ManagedNativeDateSubclass):
             x = t(1992, 4, 11)
-            assert is_native_object(x)
             assert x.day == 11
+
+        if GRAALPYTHON:
+            x = NativeDateSubclass(1992, 4, 11)
+            assert not is_native_object(x)
+            assert is_native_object(type(x))
+
+            x = ManagedNativeDateSubclass(1992, 4, 11)
+            assert not is_native_object(x)
+            assert not is_native_object(type(x))
+            assert is_native_object(type(x).__bases__[0])
 
     def test_datetime(self):
         for t in (NativeDateTimeSubclass, ManagedNativeDateTimeSubclass):
             x = t(1992, 4, 11, hour=13)
-            assert is_native_object(x)
             assert x.day == 11
             assert x.hour == 13
+
+        if GRAALPYTHON:
+            x = NativeDateTimeSubclass(1992, 4, 11)
+            assert not is_native_object(x)
+            assert is_native_object(type(x))
+
+            x = ManagedNativeDateTimeSubclass(1992, 4, 11)
+            assert not is_native_object(x)
+            assert not is_native_object(type(x))
+            assert is_native_object(type(x).__bases__[0])
 
     def test_timedelta(self):
         for t in (NativeDeltaSubclass, ManagedNativeDeltaSubclass):
             x = t(hours=6)
-            assert is_native_object(x)
             assert x.seconds == 21600
+
+        if GRAALPYTHON:
+            x = NativeDeltaSubclass()
+            assert not is_native_object(x)
+            assert is_native_object(type(x))
+
+            x = ManagedNativeDeltaSubclass()
+            assert not is_native_object(x)
+            assert not is_native_object(type(x))
+            assert is_native_object(type(x).__bases__[0])

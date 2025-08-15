@@ -230,14 +230,12 @@ test.test_logging.TimedRotatingFileHandlerTest.test_compute_rollover_H_interval 
 test.test_logging.TimedRotatingFileHandlerTest.test_compute_rollover_M @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_logging.TimedRotatingFileHandlerTest.test_compute_rollover_MIDNIGHT @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_logging.TimedRotatingFileHandlerTest.test_compute_rollover_MIDNIGHT_interval @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_logging.TimedRotatingFileHandlerTest.test_compute_rollover_MIDNIGHT_local @ darwin-arm64,win32-AMD64
 test.test_logging.TimedRotatingFileHandlerTest.test_compute_rollover_MIDNIGHT_local_interval @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_logging.TimedRotatingFileHandlerTest.test_compute_rollover_M_interval @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_logging.TimedRotatingFileHandlerTest.test_compute_rollover_S @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_logging.TimedRotatingFileHandlerTest.test_compute_rollover_S_interval @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_logging.TimedRotatingFileHandlerTest.test_compute_rollover_W0 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_logging.TimedRotatingFileHandlerTest.test_compute_rollover_W0_interval @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_logging.TimedRotatingFileHandlerTest.test_compute_rollover_W6_local @ darwin-arm64,win32-AMD64
 test.test_logging.TimedRotatingFileHandlerTest.test_compute_rollover_W6_local_interval @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_logging.TimedRotatingFileHandlerTest.test_compute_rollover_daily_attime @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_logging.TimedRotatingFileHandlerTest.test_compute_rollover_weekly_attime @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64

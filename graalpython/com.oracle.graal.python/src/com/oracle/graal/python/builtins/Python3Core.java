@@ -144,6 +144,14 @@ import com.oracle.graal.python.builtins.modules.csv.CSVDialectBuiltins;
 import com.oracle.graal.python.builtins.modules.csv.CSVModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.csv.CSVReaderBuiltins;
 import com.oracle.graal.python.builtins.modules.csv.CSVWriterBuiltins;
+import com.oracle.graal.python.builtins.modules.datetime.DateBuiltins;
+import com.oracle.graal.python.builtins.modules.datetime.DateTimeBuiltins;
+import com.oracle.graal.python.builtins.modules.datetime.DatetimeModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.datetime.IsoCalendarBuiltins;
+import com.oracle.graal.python.builtins.modules.datetime.TimeBuiltins;
+import com.oracle.graal.python.builtins.modules.datetime.TimeDeltaBuiltins;
+import com.oracle.graal.python.builtins.modules.datetime.TimeZoneBuiltins;
+import com.oracle.graal.python.builtins.modules.datetime.TzInfoBuiltins;
 import com.oracle.graal.python.builtins.modules.functools.FunctoolsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.functools.KeyWrapperBuiltins;
 import com.oracle.graal.python.builtins.modules.functools.LruCacheWrapperBuiltins;
@@ -764,6 +772,16 @@ public abstract class Python3Core {
                         new StructModuleBuiltins(),
                         new StructBuiltins(),
                         new StructUnpackIteratorBuiltins(),
+
+                        // datetime
+                        new DateBuiltins(),
+                        new TimeDeltaBuiltins(),
+                        new DateTimeBuiltins(),
+                        new IsoCalendarBuiltins(),
+                        new TimeBuiltins(),
+                        new TzInfoBuiltins(),
+                        new TimeZoneBuiltins(),
+                        new DatetimeModuleBuiltins(),
 
                         // _asyncio
                         new AsyncioModuleBuiltins(),

@@ -497,6 +497,20 @@ public abstract class PGuards {
         return isBuiltinList(sequence) || isBuiltinTuple(sequence) || isBuiltinBytesLike(sequence);
     }
 
+    public static boolean isBuiltinClass(Object cls, PythonBuiltinClassType type) {
+        // either a builtin class type
+        if (cls == type) {
+            return true;
+        }
+
+        // or a builtin class itself
+        if (cls instanceof PythonBuiltinClass builtinClass) {
+            return builtinClass.getType() == type;
+        } else {
+            return false;
+        }
+    }
+
     public static boolean isKindOfBuiltinClass(Object clazz) {
         return clazz instanceof PythonBuiltinClassType || clazz instanceof PythonBuiltinClass;
     }

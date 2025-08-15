@@ -123,7 +123,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     private static final ZoneId GMT = ZoneId.of("GMT");
     private static final TruffleString T_TZ = tsLiteral("TZ");
 
-    private static final StructSequence.BuiltinTypeDescriptor STRUCT_TIME_DESC = new StructSequence.BuiltinTypeDescriptor(
+    public static final StructSequence.BuiltinTypeDescriptor STRUCT_TIME_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PStructTime,
                     9,
                     new String[]{
@@ -217,6 +217,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
      * Return current time zone (that can be changed with time.tzset()). The only correct way to get
      * it.
      */
+    @TruffleBoundary
     public static TimeZone getGlobalTimeZone(PythonContext context) {
         PythonModule timeModule = context.lookupBuiltinModule(T_TIME);
 
@@ -746,7 +747,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         // This taken from JPython + some switches were corrected to provide the
         // same result as CPython
         @TruffleBoundary
-        private static TruffleString format(String format, int[] date, TruffleString.FromJavaStringNode fromJavaStringNode) {
+        public static TruffleString format(String format, int[] date, TruffleString.FromJavaStringNode fromJavaStringNode) {
             String s = "";
             int lastc = 0;
             int j;
@@ -970,9 +971,6 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                         @Shared("ts2js") @Cached ToJavaStringNode toJavaStringNode,
                         @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
-            if (byteIndexOfCodePointNode.execute(format, 0, 0, format.byteLength(TS_ENCODING), TS_ENCODING) >= 0) {
-                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.EMBEDDED_NULL_CHARACTER);
-            }
             ModuleState moduleState = module.getModuleState(ModuleState.class);
             return format(toJavaStringNode.execute(format), getIntLocalTimeStruct(moduleState.currentZoneId, (long) timeSeconds()), fromJavaStringNode);
         }
@@ -986,9 +984,6 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                         @Shared("ts2js") @Cached ToJavaStringNode toJavaStringNode,
                         @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
-            if (byteIndexOfCodePointNode.execute(format, 0, 0, format.byteLength(TS_ENCODING), TS_ENCODING) >= 0) {
-                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.EMBEDDED_NULL_CHARACTER);
-            }
             int[] date = checkStructtime(frame, inliningTarget, time, getArray, asSizeNode, raiseNode);
             return format(toJavaStringNode.execute(format), date, fromJavaStringNode);
         }

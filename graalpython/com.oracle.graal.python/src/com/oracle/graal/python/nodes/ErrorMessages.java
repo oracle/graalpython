@@ -48,6 +48,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.truffle.api.strings.TruffleString;
 
+// Custom formatters are described in {@link com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter}
 public abstract class ErrorMessages {
     public static final TruffleString A_SINGLE_CONSTRAINT_IS_NOT_ALLOWED = tsLiteral("A single constraint is not allowed");
     public static final TruffleString ABC_FLAGS_CANNOT_BE_SEQUENCE_AND_MAPPING = tsLiteral("\"__abc_tpflags__ cannot be both Py_TPFLAGS_SEQUENCE and Py_TPFLAGS_MAPPING\"");
@@ -1624,4 +1625,66 @@ public abstract class ErrorMessages {
     public static final TruffleString DIM_MEMORY_HAS_NO_LENGTH = tsLiteral("0-dim memory has no length");
     public static final TruffleString NOT_A_DIGIT = tsLiteral("not a digit");
     public static final TruffleString NOT_A_DECIMAL = tsLiteral("not a decimal");
+
+    // datetime
+    public static final TruffleString YEAR_D_IS_OUT_OF_RANGE = tsLiteral("year %d is out of range");
+    public static final TruffleString MONTH_MUST_BE_IN = tsLiteral("month must be in 1..12");
+    public static final TruffleString DAY_IS_OUT_OF_RANGE_FOR_MONTH = tsLiteral("day is out of range for month");
+    public static final TruffleString ORDINAL_MUST_BE_GREATER_THAN_ONE = tsLiteral("ordinal must be >= 1");
+    public static final TruffleString YEAR_IS_OUT_OF_RANGE_D = tsLiteral("Year is out of range: %d");
+    public static final TruffleString INVALID_WEEK_D = tsLiteral("Invalid week: %d");
+    public static final TruffleString INVALID_DAY_D_RANGE_IS = tsLiteral("Invalid day: %d (range is [1, 7])");
+    public static final TruffleString FROMISOFORMAT_ARGUMENT_MUST_BE_STR = tsLiteral("fromisoformat: argument must be str");
+    public static final TruffleString INVALID_ISOFORMAT_STRING_S = tsLiteral("Invalid isoformat string: '%s'");
+    public static final TruffleString DAYS_D_MUST_HAVE_MAGNITUDE_LESS_THAN_D = tsLiteral("days=%d; must have magnitude <= %d");
+    public static final TruffleString UNSUPPORTED_TYPE_FOR_TIMEDELTA_S_COMPONENT_P = tsLiteral("unsupported type for timedelta %s component: %p");
+    public static final TruffleString PYTHON_INT_TOO_LARGE_TO_CONVERT_TO_C_INT = tsLiteral("Python int too large to convert to C int");
+    public static final TruffleString INTEGER_DIVISION_OR_MODULE_BY_ZERO = tsLiteral("integer division or modulo by zero");
+    public static final TruffleString INTEGER_MODULE_BY_ZERO = tsLiteral("integer modulo by zero");
+    public static final TruffleString DATE_VALUE_OUT_OF_RANGE = tsLiteral("date value out of range");
+    public static final TruffleString FAILED_TO_ENCODE_LATIN1_STRING_WHEN_UNPICKLING_A_DATE_OBJECT = tsLiteral(
+                    "Failed to encode latin1 string when unpickling a date object. pickle.load(data, encoding='latin1') is assumed");
+    public static final TruffleString HOUR_MUST_BE_IN = tsLiteral("hour must be in 0..23");
+    public static final TruffleString MINUTE_MUST_BE_IN = tsLiteral("minute must be in 0..59");
+    public static final TruffleString SECOND_MUST_BE_IN = tsLiteral("second must be in 0..59");
+    public static final TruffleString MICROSECOND_MUST_BE_IN = tsLiteral("microsecond must be in 0..999999");
+    public static final TruffleString FOLD_MUST_BE_EITHER_0_OR_1 = tsLiteral("fold must be either 0 or 1");
+    public static final TruffleString A_TZINFO_SUBCLASS_MUST_IMPLEMENT_S = tsLiteral("a tzinfo subclass must implement %s()");
+    public static final TruffleString OFFSET_MUST_BE_A_TIMEDELTA_STRICTLY_BETWEEN_NOT_S = tsLiteral("offset must be a timedelta strictly between -timedelta(hours=24) and timedelta(hours=24), not %s");
+    public static final TruffleString TZINFO_ARGUMENT_MUST_BE_NONE_OR_OF_A_TZINFO_SUBCLASS_NOT_TYPE_P = tsLiteral("tzinfo argument must be None or of a tzinfo subclass, not type '%p'");
+    public static final TruffleString S_MUST_RETURN_NONE_OR_TIMEDELTA_NOT_P = tsLiteral("%s must return None or timedelta, not '%p'");
+    public static final TruffleString UNKNOWN_TIMESPEC_VALUE = tsLiteral("Unknown timespec value");
+    public static final TruffleString TZINFO_TZNAME_MUST_RETURN_NONE_OR_A_STRING_NOT_P = tsLiteral("tzinfo.tzname() must return None or a string, not '%p'");
+    public static final TruffleString CANT_COMPARE_OFFSET_NAIVE_AND_OFFSET_AWARE_TIMES = tsLiteral("can't compare offset-naive and offset-aware times");
+    public static final TruffleString BAD_TZINFO_STATE_ARG = tsLiteral("bad tzinfo state arg");
+    public static final TruffleString S_ARGUMENT_MUST_BE_A_S_INSTANCE_OR_NONE_NOT_P = tsLiteral("%s argument must be a %s instance or None, not %p");
+    public static final TruffleString CANT_COMPARE_OFFSET_NAIVE_AND_OFFSET_AWARE_DATETIMES = tsLiteral("can't compare offset-naive and offset-aware datetimes");
+    public static final TruffleString FROMUTC_ARGUMENT_MUST_BE_A_DATETIME = tsLiteral("fromutc: argument must be a datetime");
+    public static final TruffleString FROMUTC_DT_TZINFO_IS_NOT_SELF = tsLiteral("fromutc: dt.tzinfo is not self");
+    public static final TruffleString FROMUTC_NON_NONE_UTCOFFSET_RESULT_REQUIRED = tsLiteral("fromutc: non-None utcoffset() result required");
+    public static final TruffleString FROMUTC_NON_NONE_DST_RESULT_REQUIRED = tsLiteral("fromutc: non-None dst() result required");
+    public static final TruffleString FROMUTC_TZ_DST_GAVE_INCONSISTENT_RESULT_CANNOT_CONVERT = tsLiteral("fromutc: tz.dst() gave inconsistent results; cannot convert");
+    public static final TruffleString CANNOT_SUBTRACT_OFFSET_NAIVE_AND_OFFSET_AWARE_DATETIMES = tsLiteral("can't subtract offset-naive and offset-aware datetimes");
+    public static final TruffleString WARN_DEPRECATED_UTCFROMTIMESTAMP = tsLiteral(
+                    "datetime.datetime.utcfromtimestamp() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.fromtimestamp(timestamp, datetime.UTC).");
+    public static final TruffleString WARN_DEPRECATED_UTCNOW = tsLiteral(
+                    "datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).");
+    public static final TruffleString FAILED_TO_ENCODE_LATIN1_STRING_WHEN_UNPICKLING_A_DATETIME_OBJECT = tsLiteral(
+                    "Failed to encode latin1 string when unpickling a datetime object. pickle.load(data, encoding='latin1') is assumed");
+    public static final TruffleString FAILED_TO_ENCODE_LATIN1_STRING_WHEN_UNPICKLING_A_TIME_OBJECT = tsLiteral(
+                    "Failed to encode latin1 string when unpickling a time object. pickle.load(data, encoding='latin1') is assumed");
+    public static final TruffleString UNEXPECTED_RETURN_TYPE_FROM_AS_INTEGER_RATION_EXPECTED_TUPLE_GOT_P = tsLiteral("unexpected return type from as_integer_ratio(): expected tuple, got '%p'");
+    public static final TruffleString AS_INTEGER_RATION_MUST_RETURN_A_2_TUPLE = tsLiteral("as_integer_ratio() must return a 2-tuple");
+    public static final TruffleString DIVMOD_RETURNED_NON_TUPLE_P = tsLiteral("divmod() returned non-tuple (type %.200s)");
+    public static final TruffleString DIVMOD_RETURNED_A_TUPLE_OF_SIZE_D = tsLiteral("divmod() returned a tuple of size %zd");
+    public static final TruffleString S_IS_A_BAD_DIRECTIVE_IN_FORMAT_S = tsLiteral("'%s' is a bad directive in format '%s'");
+    public static final TruffleString UNCONVERTED_DATA_REMAINS_S = tsLiteral("unconverted data remains: %s");
+    public static final TruffleString TIME_DATA_S_DOES_NOT_MATCH_FORMAT_S = tsLiteral("time data '%s' does not match format '%s'");
+    public static final TruffleString DAY_OF_THE_YEAR_DIRECTIVE_IS_NOT_COMPATIBLE_WITH = tsLiteral("Day of the year directive '%j' is not compatible with ISO year directive '%G'. Use '%Y' instead.");
+    public static final TruffleString ISO_YEAR_DIRECTIVE_MUST_BE_USED_WITH = tsLiteral(
+                    "ISO year directive '%G' must be used with the ISO week directive '%V' and a weekday directive ('%A', '%a', '%w', or '%u').");
+    public static final TruffleString ISO_WEEK_DIRECTIVE_MUST_BE_USED_WITH = tsLiteral(
+                    "ISO week directive '%V' must be used with the ISO year directive '%G' and a weekday directive ('%A', '%a', '%w', or '%u').");
+    public static final TruffleString ISO_WEEK_DIRECTIVE_IS_INCOMPATIBLE_WITH = tsLiteral("ISO week directive '%V' is incompatible with the year directive '%Y'. Use the ISO year '%G' instead.");
+    public static final TruffleString INCONSISTENT_USE_OF_COLON_IN_S = tsLiteral("Inconsistent use of : in %s");
 }

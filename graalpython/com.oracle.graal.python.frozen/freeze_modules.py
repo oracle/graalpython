@@ -113,7 +113,6 @@ def add_graalpython_core():
     for name in [
         "modules/_sysconfigdata",
         "modules/_polyglot",
-        "modules/_polyglot_datetime",
         "modules/_polyglot_time",
     ]:
         modname = os.path.basename(name)
