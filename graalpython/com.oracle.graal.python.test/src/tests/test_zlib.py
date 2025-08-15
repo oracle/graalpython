@@ -14,11 +14,12 @@ except:
             return None
     __graalpython__ = GP()
 
+import binascii
 import os
+import random
+import sys
 import unittest
 import zlib
-import binascii
-import sys
 
 pintNumber = 98765432109876543210
 longNumber = 9876543210
@@ -267,6 +268,38 @@ def test_GR65704():
         out = decompressor.decompress(bytes([b]))
         decompressed += out
     decompressed += decompressor.flush()
+
+    __graalpython__._disable_native_zlib(False)
+
+    assert decompressed == contents
+
+def test_large_chunk():
+    contents = random.randbytes(5000)
+    wbits = 31
+
+    __graalpython__._disable_native_zlib(True)
+
+    compressed = zlib.compress(contents, wbits=wbits)
+    decompressor = zlib.decompressobj(wbits=wbits)
+
+    decompressed = decompressor.decompress(compressed)
+
+    __graalpython__._disable_native_zlib(False)
+
+    assert decompressed == contents
+
+def test_various_chunks():
+    contents = random.randbytes(5000)
+    wbits = 31
+
+    __graalpython__._disable_native_zlib(True)
+
+    compressed = zlib.compress(contents, wbits=wbits)
+    decompressor = zlib.decompressobj(wbits=wbits)
+
+    decompressed = decompressor.decompress(compressed[:10])
+    decompressed += decompressor.decompress(compressed[10:200])
+    decompressed += decompressor.decompress(compressed[200:])
 
     __graalpython__._disable_native_zlib(False)
 
