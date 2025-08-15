@@ -81,12 +81,19 @@ def repair_wheels(wheelhouse):
             )
         elif sys.platform == "linux":
             ensure_installed("auditwheel", "patchelf")
+            arch = platform.machine().lower()
+            if arch == "x86_64":
+                plat_arg = "manylinux_2_28_x86_64"
+            elif arch == "aarch64":
+                plat_arg = "manylinux_2_28_aarch64"
+            else:
+                raise RuntimeError(f"Unsupported architecture on Linux: {arch}")
             p = subprocess.run(
                 [
                     join(dirname(sys.executable), "auditwheel"),
                     "repair",
                     "--plat",
-                    "manylinux_2_28_x86_64" if platform.processor() == "x86_64" else "manylinux_2_28_aarch64",
+                    plat_arg,
                     "-w",
                     wheelhouse,
                     whl,
@@ -95,13 +102,20 @@ def repair_wheels(wheelhouse):
             )
         elif sys.platform == "darwin":
             ensure_installed("delocate")
+            arch = platform.machine().lower()
+            if arch == "arm64":
+                require_arch = "arm64"
+            elif arch == "x86_64":
+                require_arch = "x86_64"
+            else:
+                raise RuntimeError(f"Unsupported architecture on macOS: {arch}")
             p = subprocess.run(
                 [
                     join(dirname(sys.executable), "delocate-wheel"),
                     "-v",
                     "--ignore-missing-dependencies",
                     "--require-archs",
-                    "arm64" if platform.processor() == "arm" else "x86_64",
+                    require_arch,
                     "-w",
                     wheelhouse,
                     whl,
