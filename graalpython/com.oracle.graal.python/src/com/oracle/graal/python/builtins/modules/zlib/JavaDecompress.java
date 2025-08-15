@@ -243,7 +243,7 @@ public class JavaDecompress extends JavaZlibCompObject {
             return EMPTY_BYTE_ARRAY;
         }
 
-        int maxLen = maxLength == 0 ? Integer.MAX_VALUE : maxLength;
+        int maxLen = maxLength <= 0 ? Integer.MAX_VALUE : maxLength;
         byte[] result = new byte[Math.min(maxLen, bufSize)];
 
         int bytesWritten = result.length;
