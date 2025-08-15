@@ -73,6 +73,7 @@ import org.graalvm.shadowed.com.ibm.icu.impl.Punycode;
 import org.graalvm.shadowed.com.ibm.icu.text.StringPrepParseException;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCApiAssertions;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinRegistry;
@@ -1078,7 +1079,11 @@ public final class CApiContext extends CExtContext {
             }
             dlopenFlags |= PosixConstants.RTLD_LOCAL.value;
         }
-        String loadExpr = String.format("load(%s) \"%s\"", dlopenFlagsToString(dlopenFlags), loadPath);
+        String dlopenFlagsString = dlopenFlagsToString(dlopenFlags);
+        if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+            dlopenFlagsString += "| LOAD_LIBRARY_SEARCH_DEFAULT_DIRS | LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR";
+        }
+        String loadExpr = String.format("load(%s) \"%s\"", dlopenFlagsString, loadPath);
         if (PythonOptions.UsePanama.getValue(context.getEnv().getOptions())) {
             loadExpr = "with panama " + loadExpr;
         }
