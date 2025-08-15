@@ -59,6 +59,7 @@ class TestWheelBuildAndRun(unittest.TestCase):
             tmp_testwheel = tmpdir / "testwheel"
             tmp_answerlib = tmpdir / "answerlib"
             venv_dir = tmpdir / "venv"
+            repair_venv_dir = tmpdir / "repair_venv"
             wheel_dir = tmpdir / "wheels"
             repaired_dir = tmpdir / "repaired"
 
@@ -100,6 +101,20 @@ class TestWheelBuildAndRun(unittest.TestCase):
             built_wheels = list(wheel_dir.glob("testwheel-*.whl"))
             self.assertTrue(built_wheels, "Wheel was not built!")
 
+            # Create repair venv with system python because:
+            # a) That's how the wheelbuilder is normally run
+            # b) GraalPy on Windows can't run delvewheel
+            sys_py = shutil.which("python")
+            if not sys_py:
+                raise RuntimeError("Could not find system python to create repair venv")
+            cmd = [sys_py, "-m", "venv", str(repair_venv_dir)]
+            print("Running:", shlex.join(cmd))
+            subprocess.check_call(cmd)
+            if sys.platform != 'win32':
+                python_repair = repair_venv_dir / "bin" / "python"
+            else:
+                python_repair = repair_venv_dir / "Scripts" / "python.exe"
+
             repair_env = os.environ.copy()
             if sys.platform.startswith("linux"):
                 repair_env["LD_LIBRARY_PATH"] = str(answerlib_build)
@@ -108,7 +123,7 @@ class TestWheelBuildAndRun(unittest.TestCase):
             elif sys.platform == "win32":
                 repair_env["PATH"] = str(answerlib_build) + os.pathsep + repair_env.get("PATH", "")
             cmd = [
-                str(python),
+                str(python_repair),
                 str((Path(
                     __file__).parent.parent.parent.parent.parent / "scripts" / "wheelbuilder" / "repair_wheels.py").resolve()),
                 "--wheelhouse",
