@@ -220,12 +220,14 @@ aliases = {
     'ms950'              : 'cp950',
 
     # euc_jis_2004 codec
-    'jisx0213'           : 'euc_jis_2004',
-    'eucjis2004'         : 'euc_jis_2004',
-    'euc_jis2004'        : 'euc_jis_2004',
+    # GraalPy change: Java doesn't have this codec
+    # 'jisx0213'           : 'euc_jis_2004',
+    # 'eucjis2004'         : 'euc_jis_2004',
+    # 'euc_jis2004'        : 'euc_jis_2004',
 
     # euc_jisx0213 codec
-    'eucjisx0213'        : 'euc_jisx0213',
+    # GraalPy change: Java doesn't have this codec
+    # 'eucjisx0213'        : 'euc_jisx0213',
 
     # euc_jp codec
     'eucjp'              : 'euc_jp',
@@ -280,24 +282,28 @@ aliases = {
     'iso_2022_jp'        : 'iso2022_jp',
 
     # iso2022_jp_1 codec
-    'iso2022jp_1'        : 'iso2022_jp_1',
-    'iso_2022_jp_1'      : 'iso2022_jp_1',
+    # GraalPy change: Java doesn't have this codec
+    # 'iso2022jp_1'        : 'iso2022_jp_1',
+    # 'iso_2022_jp_1'      : 'iso2022_jp_1',
 
     # iso2022_jp_2 codec
     'iso2022jp_2'        : 'iso2022_jp_2',
     'iso_2022_jp_2'      : 'iso2022_jp_2',
 
     # iso2022_jp_2004 codec
-    'iso_2022_jp_2004'   : 'iso2022_jp_2004',
-    'iso2022jp_2004'     : 'iso2022_jp_2004',
+    # GraalPy change: Java doesn't have this codec
+    # 'iso_2022_jp_2004'   : 'iso2022_jp_2004',
+    # 'iso2022jp_2004'     : 'iso2022_jp_2004',
 
     # iso2022_jp_3 codec
-    'iso2022jp_3'        : 'iso2022_jp_3',
-    'iso_2022_jp_3'      : 'iso2022_jp_3',
+    # GraalPy change: Java doesn't have this codec
+    # 'iso2022jp_3'        : 'iso2022_jp_3',
+    # 'iso_2022_jp_3'      : 'iso2022_jp_3',
 
     # iso2022_jp_ext codec
-    'iso2022jp_ext'      : 'iso2022_jp_ext',
-    'iso_2022_jp_ext'    : 'iso2022_jp_ext',
+    # GraalPy change: Java doesn't have this codec
+    # 'iso2022jp_ext'      : 'iso2022_jp_ext',
+    # 'iso_2022_jp_ext'    : 'iso2022_jp_ext',
 
     # iso2022_kr codec
     'csiso2022kr'        : 'iso2022_kr',
@@ -485,9 +491,10 @@ aliases = {
     's_jis'              : 'shift_jis',
 
     # shift_jis_2004 codec
-    'shiftjis2004'       : 'shift_jis_2004',
-    'sjis_2004'          : 'shift_jis_2004',
-    's_jis_2004'         : 'shift_jis_2004',
+    # GraalPy change: Java doesn't have this codec
+    # 'shiftjis2004'       : 'shift_jis_2004',
+    # 'sjis_2004'          : 'shift_jis_2004',
+    # 's_jis_2004'         : 'shift_jis_2004',
 
     # shift_jisx0213 codec
     'shiftjisx0213'      : 'shift_jisx0213',
