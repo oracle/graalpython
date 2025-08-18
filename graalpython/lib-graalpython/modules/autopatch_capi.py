@@ -65,8 +65,13 @@ def replace_field_access(contents, match, replacement, assignment):
     start, end = match.span(1)
     level = 0
 
-    def consume_whitespace_backwards(idx):
-        while idx >= 0 and contents[idx].isspace():
+    def consume_whitespace_backwards(idx, newlines=True):
+        while idx >= 0 and contents[idx].isspace() and (not newlines or contents[idx] != '\n'):
+            idx -= 1
+        return idx
+
+    def consume_line_backwards(idx):
+        while idx >= 0 and contents[idx] != '\n':
             idx -= 1
         return idx
 
@@ -124,6 +129,13 @@ def replace_field_access(contents, match, replacement, assignment):
         else:
             idx += 1
             break
+        idx = consume_whitespace_backwards(idx, newlines=False)
+        if contents[idx + 1] == '\n':
+            # Get previous line. If it's a comment or a preprocessor directive, stop
+            line_start = consume_whitespace_forward(consume_line_backwards(idx))
+            if contents[line_start: line_start + 2].startswith(('#', '//')):
+                idx += 1
+                break
         idx = consume_whitespace_backwards(idx)
 
     receiver_start = consume_whitespace_forward(idx)

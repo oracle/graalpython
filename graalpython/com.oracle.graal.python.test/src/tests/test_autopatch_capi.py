@@ -1,4 +1,4 @@
-# Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -54,7 +54,7 @@ if sys.implementation.name == 'graalpy':
             autopatch_capi.auto_patch(f.name, False)
             f.seek(0)
             actual = f.read()
-            assert actual == expected, f"Autopatch didn't make expected changes. Expected:\n{expected}\nActual:{actual}"
+            assert actual == expected, f"Autopatch didn't make expected changes. Expected:\n{expected}\nActual:\n{actual}"
 
 
     def test_replace_field_access():
@@ -104,5 +104,31 @@ if sys.implementation.name == 'graalpy':
             #else
             Py_TYPE(obj)->tp_free(self);
             #endif
+            ''',
+        )
+        check_autopatched(
+            '''
+             #if SOME_MACRO
+                         ((PyCFunctionObject *) func)->m_ml,
+             #else
+                         ((PyCFunctionObject *) func)->m_ml,
+             #endif
+             ''',
+            '''
+             #if SOME_MACRO
+                         GraalPyCFunction_GetMethodDef((PyObject*)(((PyCFunctionObject *) func))),
+             #else
+                         GraalPyCFunction_GetMethodDef((PyObject*)(((PyCFunctionObject *) func))),
+             #endif
+             ''',
+        )
+        check_autopatched(
+            '''
+            // PyList_SET_ITEM().
+            L->ob_item[len] = x;
+            ''',
+            '''
+            // PyList_SET_ITEM().
+            PySequence_Fast_ITEMS((PyObject*)L)[len] = x;
             ''',
         )
