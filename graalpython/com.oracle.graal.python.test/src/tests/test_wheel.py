@@ -46,37 +46,26 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from tests.testlib_helper import build_testlib
+
 
 class TestWheelBuildAndRun(unittest.TestCase):
     def test_build_install_and_run(self):
         # Build a C library and a wheel that depends on it. Then run it through repair_wheel to vendor the library in and verify that it can be imported
-        orig_root = (Path(__file__).parent / "example_wheel").resolve()
-        orig_testwheel = orig_root / "testwheel"
-        orig_answerlib = orig_root / "answerlib"
+        orig_root = Path(__file__).parent.resolve()
+        orig_test_wheel = orig_root / "testwheel"
+        orig_testlib = orig_root / "testlib"
 
         with tempfile.TemporaryDirectory(prefix="testwheel_tmp_") as tmpdir:
             tmpdir = Path(tmpdir)
-            tmp_testwheel = tmpdir / "testwheel"
-            tmp_answerlib = tmpdir / "answerlib"
+            tmp_test_wheel = tmpdir / "testwheel"
             venv_dir = tmpdir / "venv"
             repair_venv_dir = tmpdir / "repair_venv"
             wheel_dir = tmpdir / "wheels"
             repaired_dir = tmpdir / "repaired"
 
-            shutil.copytree(orig_testwheel, tmp_testwheel)
-            shutil.copytree(orig_answerlib, tmp_answerlib)
-
-            answerlib_build = tmp_answerlib / "build"
-            if answerlib_build.exists():
-                shutil.rmtree(answerlib_build)
-            answerlib_build.mkdir(parents=True, exist_ok=True)
-
-            cmd = ["cmake", "-DCMAKE_BUILD_TYPE=Release", ".."]
-            print("Running:", shlex.join(cmd))
-            subprocess.check_call(cmd, cwd=str(answerlib_build))
-            cmd = ["cmake", "--build", ".", "--config", "Release"]
-            print("Running:", shlex.join(cmd))
-            subprocess.check_call(cmd, cwd=str(answerlib_build))
+            shutil.copytree(orig_test_wheel, tmp_test_wheel)
+            testlib_build = build_testlib(tmpdir, orig_testlib)
 
             cmd = [sys.executable, "-m", "venv", str(venv_dir)]
             print("Running:", shlex.join(cmd))
@@ -96,7 +85,7 @@ class TestWheelBuildAndRun(unittest.TestCase):
             wheel_dir.mkdir(parents=True, exist_ok=True)
             cmd = [str(python), "-m", "build", "--wheel", "--outdir", str(wheel_dir)]
             print("Running:", shlex.join(cmd))
-            subprocess.check_call(cmd, cwd=str(tmp_testwheel))
+            subprocess.check_call(cmd, cwd=str(tmp_test_wheel))
 
             built_wheels = list(wheel_dir.glob("testwheel-*.whl"))
             self.assertTrue(built_wheels, "Wheel was not built!")
@@ -117,11 +106,11 @@ class TestWheelBuildAndRun(unittest.TestCase):
 
             repair_env = os.environ.copy()
             if sys.platform.startswith("linux"):
-                repair_env["LD_LIBRARY_PATH"] = str(answerlib_build)
+                repair_env["LD_LIBRARY_PATH"] = str(testlib_build)
             elif sys.platform == "darwin":
-                repair_env["DYLD_LIBRARY_PATH"] = str(answerlib_build)
+                repair_env["DYLD_LIBRARY_PATH"] = str(testlib_build)
             elif sys.platform == "win32":
-                repair_env["PATH"] = str(answerlib_build) + os.pathsep + repair_env.get("PATH", "")
+                repair_env["PATH"] = str(testlib_build) + os.pathsep + repair_env.get("PATH", "")
             cmd = [
                 str(python_repair),
                 str((Path(
