@@ -460,7 +460,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     protected PythonContext createContext(Env env) {
         final PythonContext context = new PythonContext(this, env);
-        context.initializeHomeAndPrefixPaths(env, getLanguageHome());
 
         Object[] engineOptionsUnroll = this.engineOptionsStorage;
         if (engineOptionsUnroll == null) {
@@ -474,13 +473,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             this.engineOptions = PythonOptions.createEngineOptions(env);
         } else {
             assert areOptionsCompatible(options, PythonOptions.createEngineOptions(env)) : "invalid engine options";
-        }
-
-        if (allocationReporter == null) {
-            allocationReporter = env.lookup(AllocationReporter.class);
-        } else {
-            // GR-61960
-            // assert allocationReporter == env.lookup(AllocationReporter.class);
         }
 
         return context;
@@ -509,8 +501,15 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     protected void initializeContext(PythonContext context) {
         if (!isLanguageInitialized) {
+            if (allocationReporter == null) {
+                allocationReporter = context.getEnv().lookup(AllocationReporter.class);
+            } else {
+                // GR-61960
+                // assert allocationReporter == env.lookup(AllocationReporter.class);
+            }
             initializeLanguage();
         }
+        context.initializeHomeAndPrefixPaths(context.getEnv(), getLanguageHome());
         context.initialize();
     }
 

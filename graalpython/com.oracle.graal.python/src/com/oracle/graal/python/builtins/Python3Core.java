@@ -430,9 +430,8 @@ public abstract class Python3Core {
     private static final TruffleString T__FROZEN_IMPORTLIB_EXTERNAL = tsLiteral("_frozen_importlib_external");
     private static final TruffleString T__FROZEN_IMPORTLIB = tsLiteral("_frozen_importlib");
     private static final TruffleString T_IMPORTLIB_BOOTSTRAP = tsLiteral("importlib._bootstrap");
-    private final TruffleString[] coreFiles;
 
-    private static TruffleString[] initializeCoreFiles() {
+    private static TruffleString[] getCoreFiles() {
         // Order matters!
         List<TruffleString> coreFiles = List.of(
                         T___GRAALPYTHON__,
@@ -450,7 +449,7 @@ public abstract class Python3Core {
         return coreFiles.toArray(new TruffleString[0]);
     }
 
-    private final PythonBuiltins[] builtins;
+    private PythonBuiltins[] builtins;
 
     public static final boolean HAS_PROFILER_TOOL;
     static {
@@ -865,8 +864,6 @@ public abstract class Python3Core {
 
     public Python3Core(PythonLanguage language, TruffleLanguage.Env env) {
         this.language = language;
-        this.builtins = initializeBuiltins(env);
-        this.coreFiles = initializeCoreFiles();
     }
 
     @CompilerDirectives.ValueType
@@ -944,6 +941,8 @@ public abstract class Python3Core {
      * Load the core library and prepare all builtin classes and modules.
      */
     public final void initialize(PythonContext context) {
+        assert this.builtins == null;
+        this.builtins = initializeBuiltins(context.getEnv());
         initializeJavaCore();
         initializeImportlib();
         context.applyModuleOptions();
@@ -1042,7 +1041,7 @@ public abstract class Python3Core {
     }
 
     private void initializePython3Core(TruffleString coreHome) {
-        for (TruffleString s : coreFiles) {
+        for (TruffleString s : getCoreFiles()) {
             loadFile(s, coreHome);
         }
         initialized = true;
