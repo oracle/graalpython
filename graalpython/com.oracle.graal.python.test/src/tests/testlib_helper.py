@@ -40,6 +40,7 @@
 import shlex
 import shutil
 import subprocess
+import sys
 
 
 def build_testlib(tmpdir, orig_testlib):
@@ -56,4 +57,15 @@ def build_testlib(tmpdir, orig_testlib):
     cmd = ["cmake", "--build", ".", "--config", "Release"]
     print("Running:", shlex.join(cmd))
     subprocess.check_call(cmd, cwd=str(testlib_build))
-    return testlib_build
+
+    if sys.platform == 'win32':
+        lib_name = "answer.dll"
+    elif sys.platform == 'darwin':
+        lib_name = "libanswer.dylib"
+    else:
+        lib_name = 'libanswer.so'
+    lib_path = testlib_build / lib_name
+    if not lib_path.exists():
+        raise FileNotFoundError(f"Failed to locate built library at: {lib_path}")
+
+    return lib_path
