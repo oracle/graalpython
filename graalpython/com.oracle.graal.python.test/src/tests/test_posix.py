@@ -912,14 +912,18 @@ class SysconfTests(unittest.TestCase):
         else:
             assert False
 
+        def sysconf_max(name):
+            value = os.sysconf(name)
+            return sys.maxsize - value if value < 0 else value
+
         # constants taken from POSIX where defined
-        self.assertGreaterEqual(os.sysconf('SC_ARG_MAX'), 4096)
-        self.assertGreaterEqual(os.sysconf('SC_CHILD_MAX'), 25)
-        self.assertGreaterEqual(os.sysconf('SC_LOGIN_NAME_MAX'), 9)
+        self.assertGreaterEqual(sysconf_max('SC_ARG_MAX'), 4096)
+        self.assertGreaterEqual(sysconf_max('SC_CHILD_MAX'), 25)
+        self.assertGreaterEqual(sysconf_max('SC_LOGIN_NAME_MAX'), 9)
         self.assertGreaterEqual(os.sysconf('SC_CLK_TCK'), 0)
-        self.assertGreaterEqual(os.sysconf('SC_OPEN_MAX'), 20)
+        self.assertGreaterEqual(sysconf_max('SC_OPEN_MAX'), 20)
         self.assertGreaterEqual(os.sysconf('SC_PAGESIZE'), 1)
-        os.sysconf('SC_SEM_NSEMS_MAX') # returns -1 on my linux box, just check it's there
+        self.assertGreaterEqual(sysconf_max('SC_SEM_NSEMS_MAX'), 32)
         self.assertGreaterEqual(os.sysconf('SC_PHYS_PAGES'), 1)
         self.assertGreaterEqual(os.sysconf('SC_NPROCESSORS_CONF'), 1)
 
