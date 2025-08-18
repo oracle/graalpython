@@ -79,6 +79,10 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "nt", isEager = true)
 public final class NtModuleBuiltins extends PythonBuiltins {
+
+    public static final int LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR = 0x100;
+    public static final int LOAD_LIBRARY_SEARCH_DEFAULT_DIRS = 0x1000;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return NtModuleBuiltinsFactory.getFactories();
@@ -88,8 +92,8 @@ public final class NtModuleBuiltins extends PythonBuiltins {
     public void initialize(Python3Core core) {
         super.initialize(core);
         if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) {
-            addBuiltinConstant("_LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR", 0x100);
-            addBuiltinConstant("_LOAD_LIBRARY_SEARCH_DEFAULT_DIRS", 0x1000);
+            addBuiltinConstant("_LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR", LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR);
+            addBuiltinConstant("_LOAD_LIBRARY_SEARCH_DEFAULT_DIRS", LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
             core.removeBuiltinModule(T_POSIX);
         } else {
             core.removeBuiltinModule(T_NT);
