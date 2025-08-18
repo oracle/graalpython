@@ -261,7 +261,7 @@ test.test_zipfile.test_core.StoredTestsWithRandomBinaryFiles.test_open @ darwin-
 test.test_zipfile.test_core.StoredTestsWithRandomBinaryFiles.test_random_open @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_zipfile.test_core.StoredTestsWithRandomBinaryFiles.test_read @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_zipfile.test_core.StoredTestsWithSourceFile.test_absolute_arcnames @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_zipfile.test_core.StoredTestsWithSourceFile.test_add_file_after_2107 @ darwin-arm64,darwin-x86_64,win32-AMD64
+test.test_zipfile.test_core.StoredTestsWithSourceFile.test_add_file_after_2107 @ darwin-arm64,darwin-x86_64,linux-aarch64,win32-AMD64
 test.test_zipfile.test_core.StoredTestsWithSourceFile.test_add_file_before_1980 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_zipfile.test_core.StoredTestsWithSourceFile.test_append_to_concatenated_zip_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_zipfile.test_core.StoredTestsWithSourceFile.test_append_to_non_zip_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
