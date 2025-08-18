@@ -116,6 +116,7 @@ SANDBOXED_OPTIONS = [
     '--experimental-options',
     '--python.PosixModuleBackend=java',
     '--python.Sha3ModuleBackend=java',
+    '--python.CompressionModulesBackend=java'
 ]
 
 
