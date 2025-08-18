@@ -37,21 +37,23 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from setuptools import setup, Extension
+import shlex
+import shutil
+import subprocess
 
-ext_modules = [
-    Extension(
-        "testwheel.answer",
-        sources=["testwheel/module.c"],
-        include_dirs=["../answerlib"],
-        libraries=["answer"],
-        library_dirs=["../answerlib/build"],
-    )
-]
 
-setup(
-    name="testwheel",
-    version="0.1",
-    packages=["testwheel"],
-    ext_modules=ext_modules,
-)
+def build_testlib(tmpdir, orig_testlib):
+    tmp_testlib = tmpdir / "testlib"
+    shutil.copytree(orig_testlib, tmp_testlib)
+    testlib_build = tmp_testlib / "build"
+    if testlib_build.exists():
+        shutil.rmtree(testlib_build)
+    testlib_build.mkdir(parents=True, exist_ok=True)
+
+    cmd = ["cmake", "-DCMAKE_BUILD_TYPE=Release", ".."]
+    print("Running:", shlex.join(cmd))
+    subprocess.check_call(cmd, cwd=str(testlib_build))
+    cmd = ["cmake", "--build", ".", "--config", "Release"]
+    print("Running:", shlex.join(cmd))
+    subprocess.check_call(cmd, cwd=str(testlib_build))
+    return testlib_build
