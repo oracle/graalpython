@@ -65,7 +65,7 @@ class TestWheelBuildAndRun(unittest.TestCase):
             repaired_dir = tmpdir / "repaired"
 
             shutil.copytree(orig_test_wheel, tmp_test_wheel)
-            testlib_build = build_testlib(tmpdir, orig_testlib)
+            testlib_build = build_testlib(tmpdir, orig_testlib).parent
 
             cmd = [sys.executable, "-m", "venv", str(venv_dir)]
             print("Running:", shlex.join(cmd))
