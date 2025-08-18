@@ -182,6 +182,7 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
         origArgs = new ArrayList<>();
         boolean posixBackendSpecified = false;
         boolean sha3BackendSpecified = false;
+        boolean compressionBackendSpecified = false;
         boolean installSignalHandlersSpecified = false;
         boolean isolateNativeModulesSpecified = false;
         for (Iterator<String> argumentIterator = arguments.iterator(); argumentIterator.hasNext();) {
@@ -271,7 +272,8 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                                             matchesPythonOption(arg, "StdLibHome") ||
                                             matchesPythonOption(arg, "CAPI") ||
                                             matchesPythonOption(arg, "PosixModuleBackend") ||
-                                            matchesPythonOption(arg, "Sha3ModuleBackend")) {
+                                            matchesPythonOption(arg, "Sha3ModuleBackend") ||
+                                            matchesPythonOption(arg, "CompressionModulesBackend")) {
                                 addRelaunchArg(arg);
                             }
                             if (matchesPythonOption(arg, "PosixModuleBackend")) {
@@ -279,6 +281,9 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                             }
                             if (matchesPythonOption(arg, "Sha3ModuleBackend")) {
                                 sha3BackendSpecified = true;
+                            }
+                            if (matchesPythonOption(arg, "CompressionModulesBackend")) {
+                                compressionBackendSpecified = true;
                             }
                             if (matchesPythonOption(arg, "InstallSignalHandlers")) {
                                 installSignalHandlersSpecified = true;
@@ -443,6 +448,9 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
         }
         if (!sha3BackendSpecified) {
             polyglotOptions.put("python.Sha3ModuleBackend", "native");
+        }
+        if (!compressionBackendSpecified) {
+            polyglotOptions.put("python.CompressionModulesBackend", "native");
         }
         if (!installSignalHandlersSpecified) {
             polyglotOptions.put("python.InstallSignalHandlers", "true");
