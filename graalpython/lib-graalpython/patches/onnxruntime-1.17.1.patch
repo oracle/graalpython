@@ -1,19 +1,42 @@
 diff --git a/cmake/CMakeLists.txt b/cmake/CMakeLists.txt
-index 94d650f..175a6b8 100644
+index 94d650f..31dc0bc 100644
 --- a/cmake/CMakeLists.txt
 +++ b/cmake/CMakeLists.txt
-@@ -54,6 +54,8 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+@@ -54,6 +54,16 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
  enable_testing()
  include(Dart)
  
-+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=array-bounds -Wno-error=maybe-uninitialized -Wno-error=uninitialized -Wno-error=restrict -Wno-error=unused-but-set-variable -Wno-error=overloaded-virtual")
++# For Linux
++if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
++  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error=array-bounds -Wno-error=maybe-uninitialized -Wno-error=uninitialized -Wno-error=restrict -Wno-error=unused-but-set-variable -Wno-error=overloaded-virtual")
++endif()
++
++# For macOS
++if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
++  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated")
++endif()
 +
  if (NOT CMAKE_BUILD_TYPE)
    message(STATUS "Build type not set - using RelWithDebInfo")
    set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "Choose build type: Debug Release RelWithDebInfo MinSizeRel." FORCE)
+diff --git a/cmake/deps.txt b/cmake/deps.txt
+index ba9c2bb..c2813aa 100644
+--- a/cmake/deps.txt
++++ b/cmake/deps.txt
+@@ -21,7 +21,9 @@ dlpack;https://github.com/dmlc/dlpack/archive/refs/tags/v0.6.zip;4d565dd2e5b3132
+ # it contains changes on top of 3.4.0 which are required to fix build issues.
+ # Until the 3.4.1 release this is the best option we have.
+ # Issue link: https://gitlab.com/libeigen/eigen/-/issues/2744
+-eigen;https://gitlab.com/libeigen/eigen/-/archive/e7248b26a1ed53fa030c5c459f7ea095dfd276ac/eigen-e7248b26a1ed53fa030c5c459f7ea095dfd276ac.zip;be8be39fdbc6e60e94fa7870b280707069b5b81a
++# Moved to github mirror to avoid gitlab issues.
++# Issue link: https://github.com/bazelbuild/bazel-central-registry/issues/4355
++eigen;https://github.com/eigen-mirror/eigen/archive/1d8b82b0740839c0de7f1242a3585e3390ff5f33/eigen-1d8b82b0740839c0de7f1242a3585e3390ff5f33.zip;05b19b49e6fbb91246be711d801160528c135e34
+ flatbuffers;https://github.com/google/flatbuffers/archive/refs/tags/v1.12.0.zip;ba0a75fd12dbef8f6557a74e611b7a3d0c5fe7bf
+ fp16;https://github.com/Maratyszcza/FP16/archive/0a92994d729ff76a58f692d3028ca1b64b145d91.zip;b985f6985a05a1c03ff1bb71190f66d8f98a1494
+ fxdiv;https://github.com/Maratyszcza/FXdiv/archive/63058eff77e11aa15bf531df5dd34395ec3017c8.zip;a5658f4036402dbca7cebee32be57fb8149811e1
 diff --git a/onnxruntime_build_backend.py b/onnxruntime_build_backend.py
 new file mode 100644
-index 0000000..33fc235
+index 0000000..156e70a
 --- /dev/null
 +++ b/onnxruntime_build_backend.py
 @@ -0,0 +1,59 @@
