@@ -813,6 +813,7 @@ suite = {
                  '--enable-native-access=org.graalvm.shadowed.jline',
                 "-Dpolyglot.python.PosixModuleBackend=native",
                 "-Dpolyglot.python.Sha3ModuleBackend=native",
+                "-Dpolyglot.python.CompressionModulesBackend=native",
             ],
             "dynamicBuildArgs": "libpythonvm_build_args",
         },
