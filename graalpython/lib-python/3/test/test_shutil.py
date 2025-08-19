@@ -1701,8 +1701,17 @@ class TestArchives(BaseTest, unittest.TestCase):
             import platform
             if int(platform.mac_ver()[0].split('.')[0]) >= 11:
                 tar_cmd.insert(1, '--no-mac-metadata')
-        subprocess.check_call(tar_cmd, cwd=root_dir,
-                              stdout=subprocess.DEVNULL)
+        # GraalPy change: retry without --no-mac-metadata, it's not available on all CI machines
+        try:
+            subprocess.check_call(tar_cmd, cwd=root_dir,
+                                  stdout=subprocess.DEVNULL)
+        except subprocess.CalledProcessError:
+            if '--no-mac-metadata' in tar_cmd:
+                tar_cmd.remove('--no-mac-metadata')
+                subprocess.check_call(tar_cmd, cwd=root_dir,
+                                      stdout=subprocess.DEVNULL)
+            else:
+                raise
 
         self.assertTrue(os.path.isfile(tarball2))
         # let's compare both tarballs
