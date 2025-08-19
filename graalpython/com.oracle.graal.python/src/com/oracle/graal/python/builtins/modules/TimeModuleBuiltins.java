@@ -39,11 +39,13 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import java.lang.management.ManagementFactory;
 import java.text.DateFormatSymbols;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.time.Year;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.temporal.IsoFields;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.List;
@@ -761,6 +763,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                     // there's a bare % at the end of the string. Python lets
                     // this go by just sticking a % at the end of the result
                     // string
+                    s = s + format.substring(lastc, i);
                     s = s + "%";
                     break;
                 }
@@ -807,6 +810,12 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                         // day of month (01-31)
                         s = s + (pad ? format("%02d", date[TM_MDAY]) : format("%d", date[TM_MDAY]));
                         break;
+                    case 'G': {
+                        LocalDate localDate = LocalDate.of(date[TM_YEAR], date[TM_MON], date[TM_MDAY]);
+                        j = localDate.get(IsoFields.WEEK_BASED_YEAR);
+                        s = s + format("%04d", j);
+                        break;
+                    }
                     case 'H':
                         // hour (00-23)
                         s = s + (pad ? format("%02d", date[TM_HOUR]) : format("%d", date[TM_HOUR]));
@@ -845,6 +854,12 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                         // seconds (00-61)
                         s = s + (pad ? format("%02d", date[TM_SEC]) : format("%d", date[TM_SEC]));
                         break;
+                    case 'u': {
+                        LocalDate localDate = LocalDate.of(date[TM_YEAR], date[TM_MON], date[TM_MDAY]);
+                        j = localDate.getDayOfWeek().getValue();
+                        s = s + format("%d", j);
+                        break;
+                    }
                     case 'U':
                         // week of year (sunday is first day) (00-53). all days in
                         // new year preceding first sunday are considered to be in
@@ -864,6 +879,12 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                         }
                         s = s + (pad ? format("%02d", j) : format("%d", j));
                         break;
+                    case 'V': {
+                        LocalDate localDate = LocalDate.of(date[TM_YEAR], date[TM_MON], date[TM_MDAY]);
+                        j = localDate.get(IsoFields.WEEK_OF_WEEK_BASED_YEAR);
+                        s = s + format("%02d", j);
+                        break;
+                    }
                     case 'w':
                         // weekday as decimal (0=Sunday-6)
                         j = (date[TM_WDAY] + 1) % 7;
@@ -934,9 +955,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                         s = s + "%";
                         break;
                     default:
-                        // TBD: should this raise a ValueError?
                         s = s + "%" + format.charAt(i);
-                        i++;
                         break;
                 }
                 lastc = i + 1;
