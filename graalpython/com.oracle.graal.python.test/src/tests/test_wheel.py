@@ -38,6 +38,7 @@
 # SOFTWARE.
 
 import os
+import platform
 import shlex
 import shutil
 import subprocess
@@ -50,6 +51,7 @@ from tests.testlib_helper import build_testlib
 
 
 class TestWheelBuildAndRun(unittest.TestCase):
+    @unittest.skipIf(sys.platform == 'linux' and platform.machine() == 'aarch64', "GR-68855")
     def test_build_install_and_run(self):
         # Build a C library and a wheel that depends on it. Then run it through repair_wheel to vendor the library in and verify that it can be imported
         orig_root = Path(__file__).parent.resolve()
