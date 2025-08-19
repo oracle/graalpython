@@ -52,6 +52,8 @@ def build_testlib(tmpdir, orig_testlib):
     testlib_build.mkdir(parents=True, exist_ok=True)
 
     cmd = ["cmake", "-DCMAKE_BUILD_TYPE=Release", ".."]
+    if sys.platform == 'win32':
+        cmd += ["-G", "Ninja"]
     print("Running:", shlex.join(cmd))
     subprocess.check_call(cmd, cwd=str(testlib_build))
     cmd = ["cmake", "--build", ".", "--config", "Release"]
