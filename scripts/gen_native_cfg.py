@@ -54,7 +54,6 @@ docker run -i ol6_python3 python3 -u - <gen_native_cfg.py >../graalpython/com.or
 ssh darwin 'cd /tmp && /usr/local/bin/python3 -u -' <gen_native_cfg.py >../graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/PosixConstantsDarwin.java
 """
 
-import argparse
 import datetime
 import os
 import subprocess
@@ -550,7 +549,8 @@ class PosixConstants{platform} {{
     static void getConstants(PosixConstants.Registry constants) {{
 {output}
     }}
-}}'''
+}}
+'''
 
 Constant = namedtuple('Constant', ['name', 'optional', 'type', 'format'])
 Struct = namedtuple('Struct', ['name', 'members', 'unix_only'])
@@ -576,11 +576,8 @@ def parse_defs():
             current_group = []
             groups[m.group(1)] = current_group
         else:
-            d = type_defs[m.group(3)]
-            optional = m.group(2) == '*' or (m.group(2) and sys.platform.capitalize() == 'Win32')
-            if sys.platform.capitalize() == 'Win32':
-                optional = m.group(2)
-            c = Constant(m.group(4), optional, *d)
+            c_type, c_format = type_defs[m.group(3)]
+            c = Constant(name=m.group(4), optional=m.group(2), type=c_type, format=c_format)
             current_group.append(c)
             constants.append(c)
 
@@ -646,7 +643,7 @@ def generate_platform():
                 f.write(f'#ifdef {c.name}\n')
             f.write(f'    printf("        constants.put(\\"{c.name}\\", {c.format});\\n", {c.name});\n')
             if c.optional:
-                if c.optional not in ["*", True]:
+                if c.optional != '*':
                     f.write('#else\n')
                     if c.optional == "u":
                         f.write(f'    printf("        constants.put(\\"{c.name}\\", {c.format});\\n", _{c.name});\n')
@@ -666,7 +663,10 @@ def generate_platform():
     output = subprocess.run(f'./{c_executable_file}', shell=False, check=True, stdout=subprocess.PIPE, universal_newlines=True).stdout[:-1]
     uname = " ".join(tuple(plat.uname()))
 
-    print(platform_template.format(java_copyright=java_copyright, script_name=script_name, timestamp=datetime.datetime.now(), uname=uname, platform=platform, output=output))
+    out_path = DIR / f'graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/PosixConstants{platform}.java'
+
+    with open(out_path, 'w') as f:
+      f.write(platform_template.format(java_copyright=java_copyright, script_name=script_name, timestamp=datetime.datetime.now(), uname=uname, platform=platform, output=output))
 
 
 def load_existing_parts(path):
@@ -714,7 +714,7 @@ def generate_posix_constants(constants, groups):
     defs = []
 
     def add_constant(opt, typ, name):
-        prefix = 'Optional' if opt else 'Mandatory'
+        prefix = 'Optional' if opt == '*' else 'Mandatory'
         decls.append(f'    public static final {prefix}{typ}Constant {name};\n')
         defs.append(f'        {name} = reg.create{prefix}{typ}("{name}");\n')
 
@@ -771,13 +771,8 @@ def generate_native_constants(layouts):
 
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--common', action='store_true')
-    args = parser.parse_args()
-    if args.common:
-        generate_common()
-        return
     try:
+        generate_common()
         generate_platform()
     finally:
         delete_if_exists(c_source_file)
