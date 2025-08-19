@@ -153,7 +153,7 @@ public class NFIBz2Support {
     @CompilerDirectives.CompilationFinal private boolean available;
 
     private NFIBz2Support(PythonContext context, NativeLibrary.NFIBackend backend, String noNativeAccessHelp) {
-        if (context.isNativeAccessAllowed()) {
+        if (context.useNativeCompressionModules()) {
             this.pythonContext = context;
             this.typedNativeLib = NativeLibrary.create(PythonContext.getSupportLibName(SUPPORTING_NATIVE_LIB_NAME), Bz2NativeFunctions.values(),
                             backend, noNativeAccessHelp, false);

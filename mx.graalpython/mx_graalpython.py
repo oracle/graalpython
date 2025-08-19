@@ -116,6 +116,7 @@ SANDBOXED_OPTIONS = [
     '--experimental-options',
     '--python.PosixModuleBackend=java',
     '--python.Sha3ModuleBackend=java',
+    '--python.CompressionModulesBackend=java'
 ]
 
 
@@ -2031,6 +2032,7 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
                 '--enable-native-access=org.graalvm.shadowed.jline',
                 '-Dpolyglot.python.PosixModuleBackend=native',
                 '-Dpolyglot.python.Sha3ModuleBackend=native',
+                '-Dpolyglot.python.CompressionModulesBackend=native',
             ] + bytecode_dsl_build_args(),
             language='python',
             default_vm_args=[

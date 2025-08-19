@@ -47,6 +47,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ZLibErro
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.zip.DataFormatException;
@@ -112,7 +113,7 @@ public class JavaDecompress extends JavaZlibCompObject {
             return inf;
         }
 
-        public void setInput() throws IOException {
+        public void fillInput() throws IOException {
             fill();
         }
     }
@@ -162,7 +163,7 @@ public class JavaDecompress extends JavaZlibCompObject {
                 // GZIPInputStream will read the header during initialization
                 stream.stream = new GZIPDecompressStream(stream.in);
                 stream.inflater = stream.stream.getInflater();
-                stream.stream.setInput();
+                stream.stream.fillInput();
                 return true;
             }
         } catch (ZipException ze) {
@@ -178,7 +179,7 @@ public class JavaDecompress extends JavaZlibCompObject {
             stream.in.append(data, 0, length);
             try {
                 if (stream.in.length() >= HEADER_TRAILER_SIZE) {
-                    stream.stream.setInput();
+                    stream.stream.fillInput();
                     // this should trigger reading trailer
                     stream.stream.read();
                     stream.stream = null;
@@ -243,13 +244,25 @@ public class JavaDecompress extends JavaZlibCompObject {
             return EMPTY_BYTE_ARRAY;
         }
 
-        int maxLen = maxLength == 0 ? Integer.MAX_VALUE : maxLength;
+        int maxLen = maxLength <= 0 ? Integer.MAX_VALUE : maxLength;
         byte[] result = new byte[Math.min(maxLen, bufSize)];
 
-        int bytesWritten = result.length;
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         boolean zdictIsSet = false;
-        while (baos.size() < maxLen && bytesWritten == result.length) {
+        while (baos.size() < maxLen && !stream.inflater.finished()) {
+            if (stream.inflater.needsInput()) {
+                if (stream.stream == null) {
+                    break;
+                }
+                try {
+                    stream.stream.fillInput();
+                } catch (EOFException e) {
+                    break;
+                } catch (IOException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                }
+            }
+            int bytesWritten;
             try {
                 int len = Math.min(maxLen - baos.size(), result.length);
                 bytesWritten = stream.inflater.inflate(result, 0, len);
@@ -257,8 +270,7 @@ public class JavaDecompress extends JavaZlibCompObject {
                     if (getZdict().length > 0) {
                         setDictionary();
                         zdictIsSet = true;
-                        // we inflate again with a dictionary
-                        bytesWritten = stream.inflater.inflate(result, 0, len);
+                        continue;
                     } else {
                         throw PRaiseNode.raiseStatic(nodeForRaise, ZLibError, WHILE_SETTING_ZDICT);
                     }
@@ -320,7 +332,7 @@ public class JavaDecompress extends JavaZlibCompObject {
     private void saveUnconsumedInput(byte[] data, int length,
                     byte[] unusedDataBytes, int unconsumedTailLen, Node inliningTarget) {
         int unusedLen = getRemaining();
-        byte[] tail = PythonUtils.arrayCopyOfRange(data, length - unusedLen, length);
+        byte[] tail = PythonUtils.arrayCopyOfRange(data, Math.max(0, length - unusedLen), length);
         PythonLanguage language = PythonLanguage.get(inliningTarget);
         if (isEof()) {
             if (unconsumedTailLen > 0) {

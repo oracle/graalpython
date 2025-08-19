@@ -2,23 +2,12 @@
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
-
-try:
-    __graalpython__.zlib_module_backend()
-except:
-    class GP:
-        def zlib_module_backend(self):
-            return 'cpython'
-
-        def _disable_native_zlib(self, flag):
-            return None
-    __graalpython__ = GP()
-
+import binascii
 import os
+import random
+import sys
 import unittest
 import zlib
-import binascii
-import sys
 
 pintNumber = 98765432109876543210
 longNumber = 9876543210
@@ -257,8 +246,6 @@ def test_GR65704():
     contents = b"The quick brown fox jumped over the lazy dog"
     wbits = 27
 
-    __graalpython__._disable_native_zlib(True)
-
     compressed = zlib.compress(contents, wbits=wbits)
     decompressor = zlib.decompressobj(wbits=wbits)
 
@@ -268,6 +255,28 @@ def test_GR65704():
         decompressed += out
     decompressed += decompressor.flush()
 
-    __graalpython__._disable_native_zlib(False)
+    assert decompressed == contents
+
+def test_large_chunk():
+    contents = random.randbytes(5000)
+    wbits = 31
+
+    compressed = zlib.compress(contents, wbits=wbits)
+    decompressor = zlib.decompressobj(wbits=wbits)
+
+    decompressed = decompressor.decompress(compressed)
+
+    assert decompressed == contents
+
+def test_various_chunks():
+    contents = random.randbytes(5000)
+    wbits = 31
+
+    compressed = zlib.compress(contents, wbits=wbits)
+    decompressor = zlib.decompressobj(wbits=wbits)
+
+    decompressed = decompressor.decompress(compressed[:10])
+    decompressed += decompressor.decompress(compressed[10:200])
+    decompressed += decompressor.decompress(compressed[200:])
 
     assert decompressed == contents

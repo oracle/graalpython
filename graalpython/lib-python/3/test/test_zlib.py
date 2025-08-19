@@ -15,9 +15,6 @@ except:
     class GP:
         def zlib_module_backend(self):
             return 'cpython'
-
-        def _disable_native_zlib(self):
-            return None
     __graalpython__ = GP()
 
 zlib = import_helper.import_module('zlib')

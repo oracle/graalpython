@@ -1263,18 +1263,4 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             return objectNode.execute(frame, cls, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
         }
     }
-
-    @Builtin(name = "_disable_native_zlib", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class DisableNativeZlibNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        Object disableNativeZlib(boolean disable) {
-            if (disable) {
-                getContext().getNFIZlibSupport().notAvailable();
-            } else {
-                getContext().getNFIZlibSupport().setAvailable();
-            }
-            return PNone.NONE;
-        }
-    }
 }

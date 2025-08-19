@@ -2337,6 +2337,15 @@ public final class PythonContext extends Python3Core {
         return getEnv().isHostLookupAllowed() || isNativeAccessAllowed();
     }
 
+    public boolean useNativeCompressionModules() {
+        if (isNativeAccessAllowed()) {
+            TruffleString option = getLanguage().getEngineOption(PythonOptions.CompressionModulesBackend);
+            TruffleString.EqualNode eqNode = TruffleString.EqualNode.getUncached();
+            return !eqNode.execute(T_JAVA, option, TS_ENCODING);
+        }
+        return false;
+    }
+
     /**
      * Trigger any pending asynchronous actions
      */
