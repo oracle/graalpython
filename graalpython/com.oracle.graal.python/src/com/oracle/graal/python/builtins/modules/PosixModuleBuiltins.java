@@ -212,6 +212,11 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         addConstants(PosixConstants.accessMode);
         addConstants(PosixConstants.exitStatus);
         addConstants(PosixConstants.rtld);
+        for (IntConstant c : PosixConstants.winapiLoadLibraryFlags) {
+            if (c.defined) {
+                addBuiltinConstant('_' + c.name, c.getValueIfDefined());
+            }
+        }
 
         addConstant(PosixConstants.SEEK_DATA);
         addConstant(PosixConstants.SEEK_HOLE);

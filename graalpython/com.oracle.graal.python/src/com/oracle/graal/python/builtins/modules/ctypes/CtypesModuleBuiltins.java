@@ -98,7 +98,6 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.PythonOS;
-import com.oracle.graal.python.builtins.modules.NtModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.FsConverterNode;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.AuditNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CFieldBuiltins.GetFuncNode;
@@ -161,6 +160,7 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -629,15 +629,15 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         protected static String flagsToString(int flag) {
             StringBuilder sb = new StringBuilder("RTLD_NOW");
             if ((flag & RTLD_LOCAL.getValueIfDefined()) != 0) {
-                sb.append("| RTLD_LOCAL");
+                sb.append("|RTLD_LOCAL");
             } else {
-                sb.append("| RTLD_GLOBAL");
+                sb.append("|RTLD_GLOBAL");
             }
-            if ((flag & NtModuleBuiltins.LOAD_LIBRARY_SEARCH_DEFAULT_DIRS) != 0) {
-                sb.append("| LOAD_LIBRARY_SEARCH_DEFAULT_DIRS");
-            }
-            if ((flag & NtModuleBuiltins.LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR) != 0) {
-                sb.append("| LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR");
+            for (PosixConstants.IntConstant constant : PosixConstants.winapiLoadLibraryFlags) {
+                if (constant.defined && (flag & constant.getValueIfDefined()) != 0) {
+                    sb.append('|');
+                    sb.append(constant.name);
+                }
             }
             return sb.toString();
         }
