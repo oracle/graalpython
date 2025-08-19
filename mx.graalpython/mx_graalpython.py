@@ -760,8 +760,6 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
 
     mx_args = ['-p', SUITE.dir, *(['--env', env_file] if env_file else [])]
     mx_args.append("--extra-image-builder-argument=-g")
-    if BUILD_NATIVE_IMAGE_WITH_ASSERTIONS:
-        mx_args.append("--extra-image-builder-argument=-ea")
 
     pgo_profile = os.environ.get("GRAALPY_PGO_PROFILE")
     if pgo_profile is not None:
@@ -775,6 +773,8 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
             mx_args.append(f"--extra-image-builder-argument=--pgo-instrument")
             mx_args.append(f"--extra-image-builder-argument=-H:+UnlockExperimentalVMOptions")
             mx_args.append(f"--extra-image-builder-argument=-H:+ProfilingLCOV")
+    elif BUILD_NATIVE_IMAGE_WITH_ASSERTIONS:
+        mx_args.append("--extra-image-builder-argument=-ea")
 
     if mx_gate.get_jacoco_agent_args() or (build and not DISABLE_REBUILD):
         mx_build_args = mx_args
