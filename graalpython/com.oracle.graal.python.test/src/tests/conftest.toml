@@ -22,7 +22,6 @@ partial_splits_individual_tests = true
 exclude_on = ['win32']
 selector = [
     "test_multiprocessing_graalpy.py", # import _winapi
-    "test_patched_pip.py",
     "test_pathlib.py",
     "test_posix.py", # import posix
     "test_pyio.py", # pyio imports msvcrt

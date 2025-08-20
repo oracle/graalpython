@@ -36,6 +36,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import io
 import os
 import re
 import shutil
@@ -87,7 +88,10 @@ if sys.implementation.name == "graalpy":
         def setUpClass(cls):
             cls.venv_dir = Path(tempfile.mkdtemp()).resolve()
             subprocess.check_output([sys.executable, "-m", "venv", str(cls.venv_dir)])
-            cls.venv_python = str(cls.venv_dir / 'bin' / 'python')
+            if sys.platform != 'win32':
+                cls.venv_python = str(cls.venv_dir / 'bin' / 'python')
+            else:
+                cls.venv_python = str(cls.venv_dir / 'Scripts' / 'python.exe')
             subprocess.check_output([cls.venv_python, '-m', 'pip', 'install', 'wheel', 'setuptools'])
             cls.venv_template_dir = f'{cls.venv_dir}.template'
             cls.venv_dir.rename(cls.venv_template_dir)
@@ -157,11 +161,12 @@ if sys.implementation.name == "graalpy":
                 env.update(extra_env)
             proc = subprocess.run(
                 [
-                    str(self.venv_dir / 'bin' / 'pip'),
+                    str(self.venv_python),
+                    '-m', 'pip',
                     '--isolated',
                     'install',
                     '--force-reinstall',
-                    '--find-links', self.index_dir,
+                    '--find-links', str(self.index_dir),
                     '--no-index',
                     '--no-cache-dir',
                     package,
@@ -171,6 +176,7 @@ if sys.implementation.name == "graalpy":
                 env=env,
                 universal_newlines=True,
             )
+            print(proc.stdout)
             print(proc.stderr)
             assert 'Applying GraalPy patch failed for' not in proc.stderr
             if assert_stderr_matches:
@@ -423,10 +429,6 @@ if sys.implementation.name == "graalpy":
         def test_patches_file_url(self):
             self.check_installing_with_patch_repo(urljoin('file:', pathname2url(str(self.patch_dir.absolute()))))
 
-        @unittest.skipIf(
-            __graalpython__.posix_module_backend() == 'java',
-            "Server doesn't work properly under Java posix backend"
-        )
         def test_patches_http_url(self):
             patch_dir = self.patch_dir
 
@@ -434,8 +436,24 @@ if sys.implementation.name == "graalpy":
                 def __init__(self, *args, **kwargs):
                     super().__init__(*args, directory=str(patch_dir), **kwargs)
 
+                def do_GET(self):
+                    f = self.send_head()
+                    if f:
+                        try:
+                            input_file = io.TextIOWrapper(f)
+                            # Always serve UTF-8 with unix line endings regardless of platform
+                            # to emulate what GitHub would serve from a patch branch
+                            output_file = io.TextIOWrapper(self.wfile, encoding='utf-8', newline='\n')
+                            shutil.copyfileobj(input_file, output_file)
+                            output_file.flush()
+                        finally:
+                            f.close()
+
             try:
                 with HTTPServer(('localhost', 0), Handler) as server:
+                    if not server.server_port:
+                        # Workaround for java posix backend limitation
+                        server.server_port = server.socket.getsockname()[1]
                     thread = threading.Thread(target=server.serve_forever)
                     thread.start()
                     try:
