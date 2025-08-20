@@ -243,7 +243,7 @@ public abstract class PConstructAndRaiseNode extends Node {
     }
 
     public final PException raiseOSErrorUnsupported(VirtualFrame frame, UnsupportedPosixFeatureException e) {
-        return raiseOSError(frame, OSErrorEnum.EINVAL, createUnsupportedErrorMessage(e));
+        return executeWithArgsOnly(frame, PythonBuiltinClassType.IOUnsupportedOperation, new Object[]{createUnsupportedErrorMessage(e)});
     }
 
     @TruffleBoundary
