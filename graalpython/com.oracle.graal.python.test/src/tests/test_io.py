@@ -36,9 +36,11 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
-import unittest
 import _io
+import os
+import sys
+import tempfile
+import unittest
 
 
 class IOBaseTests(unittest.TestCase):
@@ -311,6 +313,17 @@ class IOBaseTests(unittest.TestCase):
 
         t = _io.TextIOWrapper(MockRawIO(), newline="\r\n")
         self.assertEqual(["ab\r\n", "cd"], t.readlines())
+
+    @unittest.skipIf(sys.platform != "win32", "Windows-only test")
+    def test_crlf_default_on_win32(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "tmp")
+            with open(path, 'w') as f:
+                f.write("hello\nworld\n")
+            with open(path, 'rb') as f:
+                self.assertEqual(f.read(), b"hello\r\nworld\r\n")
+            with open(path, 'r') as f:
+                self.assertEqual(f.read(), "hello\nworld\n")
 
 
 if __name__ == '__main__':

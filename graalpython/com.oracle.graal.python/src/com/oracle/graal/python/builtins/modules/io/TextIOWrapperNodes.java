@@ -67,6 +67,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.NOT_READABLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_SHOULD_HAVE_RETURNED_A_BYTES_LIKE_OBJECT_NOT_P;
 import static com.oracle.graal.python.nodes.PGuards.isPNone;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_DECODE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_CRLF;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NEWLINE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
@@ -77,6 +78,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.modules.CodecsTruffleModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CodecsTruffleModuleBuiltins.MakeIncrementalcodecNode;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
@@ -153,7 +155,11 @@ public abstract class TextIOWrapperNodes {
                 self.setWriteNewline(self.getReadNewline());
             }
         } else {
-            self.setWriteNewline(null);
+            if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+                self.setWriteNewline(T_CRLF);
+            } else {
+                self.setWriteNewline(null);
+            }
         }
     }
 
