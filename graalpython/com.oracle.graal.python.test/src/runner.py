@@ -899,7 +899,7 @@ class Config:
             if config_tags_dir := settings.get('tags_dir'):
                 tags_dir = (config_path.parent / config_tags_dir).resolve()
             # Temporary hack for Bytecode DSL development in master branch:
-            if IS_GRAALPY and __graalpython__.is_bytecode_dsl_interpreter and tags_dir:
+            if IS_GRAALPY and getattr(__graalpython__, 'is_bytecode_dsl_interpreter', False) and tags_dir:
                 new_tags_dir = (config_path.parent / (config_tags_dir + '_bytecode_dsl')).resolve()
                 if new_tags_dir.exists():
                     tags_dir = new_tags_dir
