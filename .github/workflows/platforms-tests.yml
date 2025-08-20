@@ -10,12 +10,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '21'
-          cache: 'maven'
-
       - name: Build maven artifacts
         run: |
           sudo apt-get update
@@ -29,26 +23,24 @@ jobs:
           mx --dy /vm build
           mx --dy /vm maven-deploy --validate none --all-suites --suppress-javadoc --all-distribution-types --licenses UPL,MIT,GPLv2-CPE,BSD-new,PSF-License,ICU python-local-snapshots file://$(pwd)/m2repo
 
-      - uses: docker/setup-qemu-action@v3
-
-      - name: Test on ubi8 (RHEL 8 ppc64le) via QEMU
-        uses: addnab/docker-run-action@v3
+      - uses: uraimo/run-on-arch-action@v3
         with:
-          image: ppc64le/ubi8:latest
-          options: >-
-            --platform=linux/ppc64le
-            -v ${{ github.workspace }}:/workspace
-          shell: bash
+          arch: ppc64le
+          distro: ubuntu_latest
+          dockerRunArgs: |
+            --volume "${GITHUB_WORKSPACE}:/workspace"
           run: |
-            microdnf install -y python3 git wget tar gzip cmake gcc gcc-c++ maven
+            apt-get update
+            apt-get install -y python3 git wget tar gzip cmake build-essential maven
 
             # Install IBM Semeru OpenJ9 Java 21 (ppc64le)
             wget https://github.com/ibmruntimes/semeru21-binaries/releases/download/jdk-21.0.8%2B9_openj9-0.53.0/ibm-semeru-open-jdk_ppc64le_linux_21.0.8_9_openj9-0.53.0.tar.gz
             mkdir -p /opt/java/openjdk-21-openj9
-            tar -C /opt/java/openjdk-21-openj9 --strip-components=1 -xzf ibm-semeru-open-jdk_ppc64le_linux_21.0.0_35_openj9-0.41.0.tar.gz
+            tar -C /opt/java/openjdk-21-openj9 --strip-components=1 -xzf ibm-semeru*.tar.gz
             export JAVA_HOME=/opt/java/openjdk-21-openj9
             export PATH=$JAVA_HOME/bin:$PATH
 
             # Run some basic smoke tests
             cd /workspace
-            mvn -f graalpython/com.oracle.graal.python.test.integration/pom.xml -Dcom.oracle.graal.python.test.polyglot.version=26.0.0-SNAPSHOT -Dcom.oracle.graal.python.test.polyglot_repo=file:///$(pwd)/m2repo --batch-mode -U -Dpolyglot.python.UnsupportedPlatformEmulates=linux test -Dtest=HelloWorldTests,AttributeTests,BuiltinSubclassTest,ComplexTexts,CreateClassTest,AsyncActionThreadingTest,JavaInteropTest
+            mkdir /user_resource_cache
+            mvn -f graalpython/com.oracle.graal.python.test.integration/pom.xml -Dcom.oracle.graal.python.test.polyglot.version=26.0.0-SNAPSHOT -Dcom.oracle.graal.python.test.polyglot_repo=file:///$(pwd)/m2repo --batch-mode -U -Dtruffle.UseFallbackRuntime=true -Dpolyglot.engine.allowUnsupportedPlatform=true -Dpolyglot.engine.userResourceCache=/user_resource_cache -Dpolyglot.python.UnsupportedPlatformEmulates=linux -Dorg.graalvm.python.resources.exclude=native.files test -Dtest=HelloWorldTests,AttributeTests,BuiltinSubclassTest,ComplexTexts,CreateClassTest,AsyncActionThreadingTest,JavaInteropTest
