@@ -2119,12 +2119,14 @@ class TarFile(object):
         if pwd:
             try:
                 tarinfo.uname = pwd.getpwuid(tarinfo.uid)[0]
-            except KeyError:
+                # GraalPy change: catch io.UnsupportedOperation to allow this to fail on java posix backend
+            except (KeyError, io.UnsupportedOperation):
                 pass
         if grp:
             try:
                 tarinfo.gname = grp.getgrgid(tarinfo.gid)[0]
-            except KeyError:
+                # GraalPy change: catch io.UnsupportedOperation to allow this to fail on java posix backend
+            except (KeyError, io.UnsupportedOperation):
                 pass
 
         if type in (CHRTYPE, BLKTYPE):
