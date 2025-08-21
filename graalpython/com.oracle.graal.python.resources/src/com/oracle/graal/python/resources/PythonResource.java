@@ -227,7 +227,14 @@ public final class PythonResource implements InternalResource {
     @Override
     public String versionHash(Env env) {
         StringBuilder sb = new StringBuilder();
-        for (var s : List.of(LIBGRAALPY_SHA256, LIBPYTHON_SHA256, NI_SHA256, INCLUDE_SHA256, Path.of(env.getOS().toString()).resolve(env.getCPUArchitecture().toString()).resolve(NATIVE_SHA256))) {
+        List<Path> al = List.of(LIBGRAALPY_SHA256, LIBPYTHON_SHA256, NI_SHA256, INCLUDE_SHA256);
+        OS os = env.getOS();
+        CPUArchitecture cpuArchitecture = env.getCPUArchitecture();
+        if (!os.equals(OS.UNSUPPORTED) && !cpuArchitecture.equals(CPUArchitecture.UNSUPPORTED)) {
+            al = new ArrayList<>(al);
+            al.add(Path.of(os.toString()).resolve(cpuArchitecture.toString()).resolve(NATIVE_SHA256));
+        }
+        for (var s : al) {
             try {
                 sb.append(env.readResourceLines(BASE_PATH.resolve(s)).get(0).substring(0, 8));
             } catch (IOException | IndexOutOfBoundsException | InvalidPathException e) {
