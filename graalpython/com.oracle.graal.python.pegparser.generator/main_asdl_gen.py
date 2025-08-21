@@ -65,7 +65,7 @@ def main():
 
     old_contents = stamp(args.sst_path, args.ast_path)
     generate(args.input_file, args.sst_path, args.ast_path)
-    if old_contents != stamp(args.sst_path, args.ast_path):
+    if old_contents != stamp(args.sst_path, args.ast_path) or not args.stamp.exists():
         args.stamp.touch()
     else:
         print(f"{args.sst_path} and {args.ast_path} not modified")

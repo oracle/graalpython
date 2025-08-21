@@ -41,6 +41,7 @@ import argparse
 import os
 import sys
 import tokenize
+import io
 
 from pegen.build import generate_token_definitions
 from pegen.grammar_parser import GeneratedParser as GrammarParser
@@ -71,34 +72,29 @@ def main():
 
     # Determine which line separator to use
     if os.path.exists(args.output_file):
-        stat_result = os.stat(args.output_file)
-        atime, mtime = stat_result.st_atime, stat_result.st_mtime
-        with open(args.output_file, "r", encoding="utf-8", newline=os.linesep) as f:
-            content = f.read()
-        if os.linesep != "\n":
-            unix_content = content.replace(os.linesep, "\n")
-            if unix_content == content:
-                # Windows file has Unix line endings
-                linesep = "\n"
-                content = unix_content
+        with open(args.output_file, "rb") as f:
+            raw_old_content = f.read()
+            if b'\r\n' in raw_old_content:
+                linesep = '\r\n'
             else:
-                linesep = os.linesep
-        else:
-            linesep = "\n"
+                linesep = '\n'
+        with open(args.output_file, "r", encoding="utf-8") as f:
+            old_content = f.read()
     else:
-        content = None
+        old_content = None
         linesep = os.linesep
 
-    with open(args.output_file, "w", encoding="utf-8", newline=linesep) as file:
-        gen = JavaParserGenerator(grammar, all_tokens, exact_tokens, non_exact_tokens, file, debug=args.debug)
-        gen.generate(os.path.basename(args.grammar_file))
+    out = io.StringIO()
+    class_name = os.path.splitext(os.path.basename(args.output_file))[0]
+    gen = JavaParserGenerator(grammar, all_tokens, exact_tokens, non_exact_tokens, out, class_name, debug=args.debug)
+    gen.generate(os.path.basename(args.grammar_file))
 
-    with open(args.output_file, "r", encoding="utf-8", newline=linesep) as file:
-        new_content = file.read()
-
-    if content == new_content:
+    if out.getvalue() != old_content:
+        print(f"Writing new {args.output_file}")
+        with open(args.output_file, "w", encoding="utf-8", newline=linesep) as f:
+            f.write(out.getvalue())
+    else:
         print(f"{args.output_file} not modified")
-        os.utime(args.output_file, (atime, mtime))
 
 
 if __name__ == '__main__':
