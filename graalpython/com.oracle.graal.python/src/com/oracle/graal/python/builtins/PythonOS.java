@@ -114,7 +114,7 @@ public enum PythonOS {
                                 "If you are running on a different platform and accept that any functionality that interacts with the system may be " +
                                 "incorrect and Python native extensions will not work, you can specify the system property \"UnsupportedPlatformEmulates\" " +
                                 "with a value of either \"linux\", \"macos\", or \"windows\" to continue further and have GraalPy behave as if it were running on " +
-                                "the OS specified. Loading native libraries will not work and should be disabled using the context options. " +
+                                "the OS specified. Loading native libraries will not work and must be disabled using the context options. " +
                                 "See https://www.graalvm.org/python/docs/ for details on GraalPy modules with both native and Java backends, " +
                                 "and https://www.graalvm.org/truffle/javadoc/org/graalvm/polyglot/Context.Builder.html to learn about disallowing native access.");
             }
@@ -123,10 +123,14 @@ public enum PythonOS {
     }
 
     public static void throwIfUnsupported(String msg) {
-        if (current == PLATFORM_ANY) {
+        if (isUnsupported()) {
             throw new UnsupportedPlatform(msg +
                             "\nThis point was reached as earlier platform checks were overridden using the system property UnsupportedPlatformEmulates");
         }
+    }
+
+    public static boolean isUnsupported() {
+        return current == PLATFORM_ANY;
     }
 
     public static final class UnsupportedPlatform extends AbstractTruffleException {

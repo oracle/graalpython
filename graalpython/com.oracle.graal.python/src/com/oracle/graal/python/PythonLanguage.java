@@ -59,6 +59,7 @@ import org.graalvm.polyglot.SandboxPolicy;
 
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.PythonOS;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SignalModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -508,6 +509,13 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 // assert allocationReporter == env.lookup(AllocationReporter.class);
             }
             initializeLanguage();
+        }
+        if (PythonOS.isUnsupported() && context.getEnv().isNativeAccessAllowed()) {
+            LOGGER.log(Level.WARNING, "Loading native libraries into GraalPy on unsupported platforms. " +
+                            "You can ensure that native access is disallowed for this context and configure GraalPy to use Java backends where possible. " +
+                            "Refer to https://www.graalvm.org/python/docs/ for more information on native and Java module backends. " +
+                            "This is not fatal, because other languages may allow native libraries to run on this platform in the same context, " +
+                            "but attempting to load a native library on GraalPy will fail.");
         }
         context.initializeHomeAndPrefixPaths(context.getEnv(), getLanguageHome());
         context.initialize();
