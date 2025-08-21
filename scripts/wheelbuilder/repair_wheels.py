@@ -55,6 +55,7 @@ def ensure_installed(name, *extra):
         subprocess.check_call([sys.executable, "-m", "pip", "install", name, *extra])
         return importlib.import_module(name)
 
+
 def repair_wheels(wheelhouse):
     whls = glob("*.whl")
     env = os.environ.copy()
@@ -81,19 +82,10 @@ def repair_wheels(wheelhouse):
             )
         elif sys.platform == "linux":
             ensure_installed("auditwheel", "patchelf")
-            arch = platform.machine().lower()
-            if arch == "x86_64":
-                plat_arg = "manylinux_2_28_x86_64"
-            elif arch == "aarch64":
-                plat_arg = "manylinux_2_28_aarch64"
-            else:
-                raise RuntimeError(f"Unsupported architecture on Linux: {arch}")
             p = subprocess.run(
                 [
                     join(dirname(sys.executable), "auditwheel"),
                     "repair",
-                    "--plat",
-                    plat_arg,
                     "-w",
                     wheelhouse,
                     whl,
@@ -131,6 +123,7 @@ def repair_wheels(wheelhouse):
                 shutil.copy(whl, wheelhouse)
             except Exception as e:
                 print("Copy failed:", e, file=sys.stderr)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Repair wheels using platform-specific tools.")
