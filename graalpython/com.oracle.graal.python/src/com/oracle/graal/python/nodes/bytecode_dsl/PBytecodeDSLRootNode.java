@@ -291,7 +291,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.DynamicObject;
-import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
@@ -3550,43 +3549,29 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @ConstantOperand(type = LocalAccessor.class)
     @ConstantOperand(type = int.class)
     public static final class CheckAndLoadLocal {
-        @Specialization(rewriteOn = UnexpectedResultException.class)
+
+        @Specialization(rewriteOn = UnexpectedResultException.class, guards = "!accessor.isCleared(bytecodeNode, frame)")
         public static int doInt(VirtualFrame frame, LocalAccessor accessor, int index,
-                        @Bind PBytecodeDSLRootNode rootNode,
-                        @Bind BytecodeNode bytecodeNode,
-                        @Bind Node inliningTarget,
-                        @Shared @Cached InlinedBranchProfile localUnboundProfile) throws UnexpectedResultException {
-            if (accessor.isCleared(bytecodeNode, frame)) {
-                localUnboundProfile.enter(inliningTarget);
-                throw raiseUnbound(rootNode, inliningTarget, index);
-            }
+                        @Bind BytecodeNode bytecodeNode) throws UnexpectedResultException {
             return accessor.getInt(bytecodeNode, frame);
         }
 
-        @Specialization(rewriteOn = UnexpectedResultException.class)
+        @Specialization(rewriteOn = UnexpectedResultException.class, guards = "!accessor.isCleared(bytecodeNode, frame)")
         public static boolean doBoolean(VirtualFrame frame, LocalAccessor accessor, int index,
-                        @Bind PBytecodeDSLRootNode rootNode,
-                        @Bind BytecodeNode bytecodeNode,
-                        @Bind Node inliningTarget,
-                        @Shared @Cached InlinedBranchProfile localUnboundProfile) throws UnexpectedResultException {
-            if (accessor.isCleared(bytecodeNode, frame)) {
-                localUnboundProfile.enter(inliningTarget);
-                throw raiseUnbound(rootNode, inliningTarget, index);
-            }
+                        @Bind BytecodeNode bytecodeNode) throws UnexpectedResultException {
             return accessor.getBoolean(bytecodeNode, frame);
         }
 
-        @Specialization(replaces = {"doInt", "doBoolean"})
+        @Specialization(replaces = {"doInt", "doBoolean"}, guards = "!accessor.isCleared(bytecodeNode, frame)")
         public static Object doObject(VirtualFrame frame, LocalAccessor accessor, int index,
-                        @Bind PBytecodeDSLRootNode rootNode,
-                        @Bind BytecodeNode bytecodeNode,
-                        @Bind Node inliningTarget,
-                        @Shared @Cached InlinedBranchProfile localUnboundProfile) {
-            if (accessor.isCleared(bytecodeNode, frame)) {
-                localUnboundProfile.enter(inliningTarget);
-                throw raiseUnbound(rootNode, inliningTarget, index);
-            }
+                        @Bind BytecodeNode bytecodeNode) {
             return accessor.getObject(bytecodeNode, frame);
+        }
+
+        @Fallback
+        public static Object doFallback(VirtualFrame frame, LocalAccessor accessor, int index,
+                        @Bind BytecodeNode bytecodeNode, @Bind Node inliningTarget) {
+            throw raiseUnbound(bytecodeNode, inliningTarget, index);
         }
     }
 
@@ -3594,23 +3579,24 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @ConstantOperand(type = LocalAccessor.class)
     @ConstantOperand(type = int.class)
     public static final class DeleteLocal {
-        @Specialization
+
+        @Specialization(guards = "!accessor.isCleared(bytecodeNode, frame)")
         public static void doObject(VirtualFrame frame, LocalAccessor accessor, int index,
-                        @Bind PBytecodeDSLRootNode rootNode,
                         @Bind BytecodeNode bytecodeNode,
-                        @Bind Node inliningTarget,
-                        @Cached InlinedBranchProfile localUnboundProfile) {
-            if (accessor.isCleared(bytecodeNode, frame)) {
-                localUnboundProfile.enter(inliningTarget);
-                throw raiseUnbound(rootNode, inliningTarget, index);
-            }
+                        @Bind Node inliningTarget) {
             accessor.clear(bytecodeNode, frame);
+        }
+
+        @Fallback
+        public static void doFallback(VirtualFrame frame, LocalAccessor accessor, int index,
+                        @Bind BytecodeNode bytecodeNode, @Bind Node inliningTarget) {
+            throw raiseUnbound(bytecodeNode, inliningTarget, index);
         }
     }
 
     @TruffleBoundary
-    private static PException raiseUnbound(PBytecodeDSLRootNode rootNode, Node inliningTarget, int index) {
-        TruffleString localName = rootNode.getCodeUnit().varnames[index];
+    private static PException raiseUnbound(BytecodeNode bytecodeNode, Node inliningTarget, int index) {
+        TruffleString localName = ((PBytecodeDSLRootNode) bytecodeNode.getRootNode()).getCodeUnit().varnames[index];
         throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, localName);
     }
 
