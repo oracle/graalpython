@@ -105,7 +105,8 @@ public final class PythonResource implements InternalResource {
     @Override
     public void unpackFiles(Env env, Path targetDirectory) throws IOException {
         OS os = env.getOS();
-        Path osArch = Path.of(os.toString()).resolve(env.getCPUArchitecture().toString());
+        CPUArchitecture cpuArchitecture = env.getCPUArchitecture();
+        Path osArch = Path.of(os.toString()).resolve(cpuArchitecture.toString());
         ResourcesFilter filter = new ResourcesFilter();
         if (os.equals(OS.WINDOWS)) {
             env.unpackResourceFiles(BASE_PATH.resolve(LIBPYTHON_FILES), targetDirectory.resolve("Lib"), BASE_PATH.resolve(LIBPYTHON), filter);
@@ -121,7 +122,23 @@ public final class PythonResource implements InternalResource {
         // ni files are in the same place on all platforms
         env.unpackResourceFiles(BASE_PATH.resolve(NI_FILES), targetDirectory, BASE_PATH, filter);
         // native files already have the correct structure
-        env.unpackResourceFiles(BASE_PATH.resolve(osArch).resolve(NATIVE_FILES), targetDirectory, BASE_PATH.resolve(osArch), filter);
+        if (!os.equals(OS.UNSUPPORTED) && !cpuArchitecture.equals(CPUArchitecture.UNSUPPORTED)) {
+            env.unpackResourceFiles(BASE_PATH.resolve(osArch).resolve(NATIVE_FILES), targetDirectory, BASE_PATH.resolve(osArch), filter);
+        } else {
+            // Native resources are not available for unsupported operating systems.
+            if (!filter.test(Path.of(NATIVE_FILES))) {
+                throw new IOException("Extracting native resources failed for " +
+                                osArch.toString() +
+                                ". This means that GraalPy cannot use native extensions and some built-in features that rely on native code will be unavailable. " +
+                                "Currently supported platforms are linux/amd64, linux/aarch64, macos/amd64, macos/aarch64, and windows/amd64. " +
+                                "If you are running on one of these platforms and are receiving this error, that indicates a bug in this build of GraalPy. " +
+                                "If you are running on a different platform and want to keep going with this unsupported configuration, you can specify the system property \"" +
+                                ResourcesFilter.EXCLUDE_PROP +
+                                "\" with a pattern to exclude \"" +
+                                NATIVE_FILES +
+                                "\" to continue past this point. ");
+            }
+        }
 
         if (filter.log) {
             System.out.println("unpacked python resources:");
@@ -153,8 +170,7 @@ public final class PythonResource implements InternalResource {
         private final List<String> included;
         private static final String INCLUDE_PROP = "org.graalvm.python.resources.include";
         private static final String EXCLUDE_PROP = "org.graalvm.python.resources.exclude";
-
-        private static final String LOG_PROP = "org.graalvm.python.resources.exclude";
+        private static final String LOG_PROP = "org.graalvm.python.resources.log";
 
         private ResourcesFilter() {
             include = getProperty(INCLUDE_PROP);
@@ -211,7 +227,14 @@ public final class PythonResource implements InternalResource {
     @Override
     public String versionHash(Env env) {
         StringBuilder sb = new StringBuilder();
-        for (var s : List.of(LIBGRAALPY_SHA256, LIBPYTHON_SHA256, NI_SHA256, INCLUDE_SHA256, Path.of(env.getOS().toString()).resolve(env.getCPUArchitecture().toString()).resolve(NATIVE_SHA256))) {
+        List<Path> al = List.of(LIBGRAALPY_SHA256, LIBPYTHON_SHA256, NI_SHA256, INCLUDE_SHA256);
+        OS os = env.getOS();
+        CPUArchitecture cpuArchitecture = env.getCPUArchitecture();
+        if (!os.equals(OS.UNSUPPORTED) && !cpuArchitecture.equals(CPUArchitecture.UNSUPPORTED)) {
+            al = new ArrayList<>(al);
+            al.add(Path.of(os.toString()).resolve(cpuArchitecture.toString()).resolve(NATIVE_SHA256));
+        }
+        for (var s : al) {
             try {
                 sb.append(env.readResourceLines(BASE_PATH.resolve(s)).get(0).substring(0, 8));
             } catch (IOException | IndexOutOfBoundsException | InvalidPathException e) {

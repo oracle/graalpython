@@ -3,6 +3,9 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
+## Version 25.0.1
+* Allow users to keep going on unsupported JDK/OS/ARCH combinations at their own risk by opting out of early failure using `-Dtruffle.UseFallbackRuntime=true`, `-Dpolyglot.engine.userResourceCache=/set/to/a/writeable/dir`, `-Dpolyglot.engine.allowUnsupportedPlatform=true`, and `-Dpolyglot.python.UnsupportedPlatformEmulates=[linux|macos|windows]` and `-Dorg.graalvm.python.resources.exclude=native.files`.
+
 ## Version 25.0.0
 * `sys.implementation.version` now returns the GraalPy version instead of the Python version it implements. Also available as `sys.graalpy_version_info` for better discoverability by people already familiar with PyPy and its `sys.pypy_version_info`.
 * `GRAALPY_VERSION_NUM` C macro now inlcudes the release level and serial number at the end to conform to the `hexversion` format. This shouldn't break any existing comparisons.

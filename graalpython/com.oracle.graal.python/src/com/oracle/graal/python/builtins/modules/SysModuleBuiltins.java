@@ -481,7 +481,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     public void initialize(Python3Core core) {
         PythonLanguage language = core.getLanguage();
         StructSequence.initType(core, VERSION_INFO_DESC);
-        if (PythonOS.getPythonOS() == PLATFORM_WIN32) {
+        if (getPythonOS() == PLATFORM_WIN32) {
             StructSequence.initType(core, WINDOWS_VER_DESC);
         }
         StructSequence.initType(core, FLAGS_DESC);
@@ -569,7 +569,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         // tarballs, not git
         addBuiltinConstant("_git", PFactory.createTuple(language, new Object[]{T_GRAALPYTHON_ID, T_EMPTY_STRING, T_EMPTY_STRING}));
 
-        if (PythonOS.getPythonOS() == PLATFORM_WIN32) {
+        if (os == PLATFORM_WIN32) {
             addBuiltinConstant("_vpath", "");
         }
 
