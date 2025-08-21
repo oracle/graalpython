@@ -3550,13 +3550,13 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @ConstantOperand(type = int.class)
     public static final class CheckAndLoadLocal {
 
-        @Specialization(rewriteOn = UnexpectedResultException.class, guards = "!accessor.isCleared(bytecodeNode, frame)")
+        @Specialization(rewriteOn = UnexpectedResultException.class)
         public static int doInt(VirtualFrame frame, LocalAccessor accessor, int index,
                         @Bind BytecodeNode bytecodeNode) throws UnexpectedResultException {
             return accessor.getInt(bytecodeNode, frame);
         }
 
-        @Specialization(rewriteOn = UnexpectedResultException.class, guards = "!accessor.isCleared(bytecodeNode, frame)")
+        @Specialization(rewriteOn = UnexpectedResultException.class)
         public static boolean doBoolean(VirtualFrame frame, LocalAccessor accessor, int index,
                         @Bind BytecodeNode bytecodeNode) throws UnexpectedResultException {
             return accessor.getBoolean(bytecodeNode, frame);
