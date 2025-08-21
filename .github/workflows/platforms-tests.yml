@@ -1,4 +1,4 @@
-name: Test on CentOS ppc64le
+name: Test on exotic platforms
 on:
   schedule:
     - cron: '0 0 * * 1'
@@ -20,27 +20,42 @@ jobs:
           mx sforceimport
           mx -p ../graal/vm fetch-jdk -A --jdk-id labsjdk-ce-latest
           export JAVA_HOME="$HOME/.mx/jdks/labsjdk-ce-latest/"
-          mx --dy /vm build
-          mx --dy /vm maven-deploy --validate none --all-suites --suppress-javadoc --all-distribution-types --licenses UPL,MIT,GPLv2-CPE,BSD-new,PSF-License,ICU python-local-snapshots file://$(pwd)/m2repo
+          mx deploy-local-maven-repo
+          mv mxbuild/jdk*/mx.graalpython/public-maven-repo m2repo
 
-      - uses: uraimo/run-on-arch-action@v3
+      - name: Test on OpenJ9
+        run: |
+          # Install IBM Semeru OpenJ9 Java 21
+          wget https://github.com/ibmruntimes/semeru21-binaries/releases/download/jdk-21.0.8%2B9_openj9-0.53.0/ibm-semeru-open-jdk_x64_linux_21.0.8_9_openj9-0.53.0.tar.gz
+          mkdir -p /opt/java/openjdk-21-openj9
+          tar -C /opt/java/openjdk-21-openj9 --strip-components=1 -xzf ibm-semeru*.tar.gz
+          export JAVA_HOME=/opt/java/openjdk-21-openj9
+
+          export PATH=$JAVA_HOME/bin:$PATH
+          mkdir $(pwd)/user_resource_cache
+          mvn -f graalpython/com.oracle.graal.python.test.integration/pom.xml -Dcom.oracle.graal.python.test.polyglot.version=26.0.0 -Dcom.oracle.graal.python.test.polyglot_repo=file:///$(pwd)/m2repo --batch-mode -U -Dtruffle.UseFallbackRuntime=true -Dpolyglot.engine.allowUnsupportedPlatform=true -Dpolyglot.engine.userResourceCache=/$(pwd)/user_resource_cache -Dpolyglot.python.UnsupportedPlatformEmulates=linux -Dorg.graalvm.python.resources.exclude=native.files test -Dtest=HelloWorldTests,AttributeTests,BuiltinSubclassTest,ComplexTexts,CreateClassTest,AsyncActionThreadingTest,JavaInteropTest
+          rm -rf $(pwd)/user_resource_cache
+
+      - name: Test on ppc64le
+        uses: uraimo/run-on-arch-action@v3
         with:
           arch: ppc64le
           distro: ubuntu_latest
           dockerRunArgs: |
             --volume "${GITHUB_WORKSPACE}:/workspace"
+            --memory-reservation 6G
           run: |
             apt-get update
-            apt-get install -y python3 git wget tar gzip cmake build-essential maven
+            apt-get install -y python3 git wget tar gzip cmake build-essential maven openjdk-21-jdk
 
-            # Install IBM Semeru OpenJ9 Java 21 (ppc64le)
-            wget https://github.com/ibmruntimes/semeru21-binaries/releases/download/jdk-21.0.8%2B9_openj9-0.53.0/ibm-semeru-open-jdk_ppc64le_linux_21.0.8_9_openj9-0.53.0.tar.gz
-            mkdir -p /opt/java/openjdk-21-openj9
-            tar -C /opt/java/openjdk-21-openj9 --strip-components=1 -xzf ibm-semeru*.tar.gz
-            export JAVA_HOME=/opt/java/openjdk-21-openj9
+            export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-ppc64el
             export PATH=$JAVA_HOME/bin:$PATH
+
+            echo "Using $JAVA_HOME"
+            $JAVA_HOME/bin/java -version
 
             # Run some basic smoke tests
             cd /workspace
-            mkdir /user_resource_cache
-            mvn -f graalpython/com.oracle.graal.python.test.integration/pom.xml -Dcom.oracle.graal.python.test.polyglot.version=26.0.0-SNAPSHOT -Dcom.oracle.graal.python.test.polyglot_repo=file:///$(pwd)/m2repo --batch-mode -U -Dtruffle.UseFallbackRuntime=true -Dpolyglot.engine.allowUnsupportedPlatform=true -Dpolyglot.engine.userResourceCache=/user_resource_cache -Dpolyglot.python.UnsupportedPlatformEmulates=linux -Dorg.graalvm.python.resources.exclude=native.files test -Dtest=HelloWorldTests,AttributeTests,BuiltinSubclassTest,ComplexTexts,CreateClassTest,AsyncActionThreadingTest,JavaInteropTest
+            mkdir $(pwd)/user_resource_cache
+            mvn -f graalpython/com.oracle.graal.python.test.integration/pom.xml -Dcom.oracle.graal.python.test.polyglot.version=26.0.0 -Dcom.oracle.graal.python.test.polyglot_repo=file:///$(pwd)/m2repo --batch-mode -U -Dtruffle.UseFallbackRuntime=true -Dpolyglot.engine.allowUnsupportedPlatform=true -Dpolyglot.engine.userResourceCache=/$(pwd)/user_resource_cache -Dpolyglot.python.UnsupportedPlatformEmulates=linux -Dorg.graalvm.python.resources.exclude=native.files test -Dtest=HelloWorldTests,AttributeTests,BuiltinSubclassTest,ComplexTexts,CreateClassTest,AsyncActionThreadingTest,JavaInteropTest
+            rm -rf $(pwd)/user_resource_cache
