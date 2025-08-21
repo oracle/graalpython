@@ -874,10 +874,12 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         exact_tokens: Dict[str, int],
         non_exact_tokens: Set[str],
         file: Optional[IO[Text]],
+        class_name: str,
         debug: bool = True,
         skip_actions: bool = False,
     ):
         super().__init__(grammar, set(tokens.values()), file)
+        self.class_name = class_name
         self.typingvisitor = TypingVisitor(self) # Java type hack
         self.callmakervisitor = JavaCallMakerVisitor(self, exact_tokens, non_exact_tokens, self.print)
         self.lookahead_functions: Dict[str, FunctionCall] = {}
@@ -930,10 +932,9 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
         self.print(f"// Generated from {filename} by pegen")
         self.print("package com.oracle.graal.python.pegparser;")
         self.print(IMPORTS)
-        className = os.path.splitext(os.path.basename(self.file.name))[0]
         self.print('@SuppressWarnings({"all", "cast"})')
         self.print('@SuppressFBWarnings')
-        self.print("public final class %s extends AbstractParser {" % className)
+        self.print("public final class %s extends AbstractParser {" % self.class_name)
         # Java needs a few fields declarations. Also, we're now in a class
         self.level += 1
         self.print()
@@ -945,12 +946,12 @@ class JavaParserGenerator(ParserGenerator, GrammarVisitor):
             self.print(f"private static final int {rulename.upper()}_ID = {i};{comment}")
         self.print()
         # Java needs a constructor
-        self.print("public %s(String source, SourceRange sourceRange, ParserCallbacks parserCb, InputType startRule, EnumSet<Flags> flags, int featureVersion) {" % className)
+        self.print("public %s(String source, SourceRange sourceRange, ParserCallbacks parserCb, InputType startRule, EnumSet<Flags> flags, int featureVersion) {" % self.class_name)
         with self.indent():
             self.print("super(source, sourceRange, parserCb, startRule, flags, featureVersion);")
         self.print("}")
         self.print()
-        self.print("public %s(String source, ParserCallbacks parserCb, InputType startRule, EnumSet<Flags> flags, int featureVersion) {" % className)
+        self.print("public %s(String source, ParserCallbacks parserCb, InputType startRule, EnumSet<Flags> flags, int featureVersion) {" % self.class_name)
         with self.indent():
             self.print("super(source, null, parserCb, startRule, flags, featureVersion);")
         self.print("}")

@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -36,7 +36,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
+import io
 import mmap
 import sys
 import tempfile
@@ -55,12 +55,11 @@ def create_and_map_file():
 def _reference_buffer(args):
     if sys.implementation.name == 'graalpy' and __graalpython__.posix_module_backend() == 'java':
         # Cannot get mmap pointer under emulated backend
-        raise OSError
+        raise io.UnsupportedOperation
     return b"hello, world"
 
 
 class TestPyMmap(CPyExtTestCase):
-
     test_buffer = CPyExtFunction(
         _reference_buffer,
         lambda: (
@@ -79,7 +78,7 @@ class TestPyMmap(CPyExtTestCase):
             for (i=0; i < buf.len; i++) {
                 data[i] = ((char *) buf.buf)[i];
             }
-            return PyBytes_FromStringAndSize(data, len); 
+            return PyBytes_FromStringAndSize(data, len);
         }
         """,
         resultspec="O",
