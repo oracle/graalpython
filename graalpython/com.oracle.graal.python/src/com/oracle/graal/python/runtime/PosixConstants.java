@@ -43,7 +43,8 @@ package com.oracle.graal.python.runtime;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.oracle.graal.python.builtins.PythonOS;
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.truffle.api.CompilerDirectives;
 
 public final class PosixConstants {
@@ -57,16 +58,16 @@ public final class PosixConstants {
     public static final boolean IS_WIN32;
 
     static {
-        if (PythonOS.getPythonOS() == PythonOS.PLATFORM_LINUX) {
+        if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_LINUX) {
             IS_LINUX = true;
             IS_DARWIN = false;
             IS_WIN32 = false;
-        } else if (PythonOS.getPythonOS() == PythonOS.PLATFORM_DARWIN) {
+        } else if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_DARWIN) {
             IS_LINUX = false;
             IS_DARWIN = true;
             IS_WIN32 = false;
         } else {
-            assert PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32;
+            assert PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32;
             IS_LINUX = false;
             IS_DARWIN = false;
             IS_WIN32 = true;

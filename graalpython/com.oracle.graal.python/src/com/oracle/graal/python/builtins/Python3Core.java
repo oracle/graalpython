@@ -64,6 +64,7 @@ import java.util.Map.Entry;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.modules.AbcModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ArrayModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.AsyncioModuleBuiltins;
@@ -441,7 +442,7 @@ public abstract class Python3Core {
                         T__SYSCONFIG,
                         T_JAVA,
                         toTruffleStringUncached("pip_hook"));
-        if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+        if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) {
             coreFiles = new ArrayList<>(coreFiles);
             coreFiles.add(toTruffleStringUncached("_nt"));
         }
@@ -463,7 +464,7 @@ public abstract class Python3Core {
     }
 
     private static void filterBuiltins(List<PythonBuiltins> builtins) {
-        PythonOS currentOs = PythonOS.getPythonOS();
+        PythonOS currentOs = PythonLanguage.getPythonOS();
         List<PythonBuiltins> toRemove = new ArrayList<>();
         for (PythonBuiltins builtin : builtins) {
             if (builtin == null) {

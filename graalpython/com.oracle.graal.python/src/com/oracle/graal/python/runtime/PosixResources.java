@@ -58,7 +58,8 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-import com.oracle.graal.python.builtins.PythonOS;
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.util.SuppressFBWarnings;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
@@ -227,7 +228,7 @@ abstract class PosixResources extends PosixSupport {
         files.put(FD_STDIN, ChannelWrapper.createForStandardStream());
         files.put(FD_STDOUT, ChannelWrapper.createForStandardStream());
         files.put(FD_STDERR, ChannelWrapper.createForStandardStream());
-        if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+        if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) {
             filePaths.put(FD_STDIN, "STDIN");
             filePaths.put(FD_STDOUT, "STDOUT");
             filePaths.put(FD_STDERR, "STDERR");

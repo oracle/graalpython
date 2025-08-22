@@ -82,9 +82,9 @@ import com.oracle.graal.python.processor.CodeWriter.Block;
 
 public class ArgumentClinicProcessor extends AbstractProcessor {
     private static final boolean LOGGING = false;
-    private static final String BuiltinAnnotationClass = "com.oracle.graal.python.builtins.Builtin";
+    private static final String BuiltinAnnotationClass = "com.oracle.graal.python.annotations.Builtin";
     private static final String SlotSignatureAnnotationClass = "com.oracle.graal.python.annotations.Slot.SlotSignature";
-    private static final String BuiltinsAnnotationClass = "com.oracle.graal.python.builtins.Builtins";
+    private static final String BuiltinsAnnotationClass = "com.oracle.graal.python.annotations.Builtins";
     private static final String BUILTINS_BASE_CLASSES_PACKAGE = "com.oracle.graal.python.nodes.function.builtins";
 
     private Element[] clinicBuiltinBaseClasses;

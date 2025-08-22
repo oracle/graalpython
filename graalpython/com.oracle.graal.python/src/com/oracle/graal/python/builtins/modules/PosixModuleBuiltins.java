@@ -58,12 +58,12 @@ import com.oracle.graal.python.annotations.ArgumentClinic.PrimitiveType;
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.ArgumentName;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.BuiltinName;
-import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.PythonOS;
+import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.AuditNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
@@ -233,7 +233,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
     public void initialize(Python3Core core) {
         super.initialize(core);
         ArrayList<TruffleString> haveFunctions = new ArrayList<>();
-        if (PythonOS.getPythonOS() != PythonOS.PLATFORM_WIN32) {
+        if (PythonLanguage.getPythonOS() != PythonOS.PLATFORM_WIN32) {
             Collections.addAll(haveFunctions, tsLiteral("HAVE_FACCESSAT"), tsLiteral("HAVE_FCHDIR"), tsLiteral("HAVE_FCHMOD"), tsLiteral("HAVE_FCHMODAT"), tsLiteral("HAVE_FDOPENDIR"),
                             tsLiteral("HAVE_FSTATAT"), tsLiteral("HAVE_FTRUNCATE"), tsLiteral("HAVE_FUTIMES"), tsLiteral("HAVE_LUTIMES"),
                             tsLiteral("HAVE_MKDIRAT"), tsLiteral("HAVE_OPENAT"), tsLiteral("HAVE_READLINKAT"), tsLiteral("HAVE_RENAMEAT"), tsLiteral("HAVE_SYMLINKAT"), tsLiteral("HAVE_UNLINKAT"));
@@ -283,7 +283,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         // them directly in the 'os' module, and expose them in the `posix` module as well.
         // Note that the classes are still re-imported by os.py.
         PythonModule posix;
-        if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+        if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) {
             posix = core.lookupBuiltinModule(T_NT);
         } else {
             posix = core.lookupBuiltinModule(T_POSIX);
@@ -314,7 +314,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                 // we don't want subprocesses to pick it up
                 continue;
             }
-            if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32 && entry.getKey().startsWith("=")) {
+            if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32 && entry.getKey().startsWith("=")) {
                 // Hidden variable, shouldn't be visible to python
                 continue;
             }
@@ -335,7 +335,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             }
             environ.setItem(key, val);
         }
-        if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+        if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) {
             // XXX: Until we fix pip
             environ.setItem(toEnv(language, "PIP_NO_CACHE_DIR"), toEnv(language, "0"));
         }
@@ -343,7 +343,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         // CPython gets widespread
         environ.setItem(toEnv(language, "UNSAFE_PYO3_SKIP_VERSION_CHECK"), toEnv(language, "1"));
         PythonModule posix;
-        if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+        if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) {
             posix = core.lookupBuiltinModule(T_NT);
             posix.setAttribute(toTruffleStringUncached("chown"), PNone.NO_VALUE);
             posix.setAttribute(toTruffleStringUncached("fchown"), PNone.NO_VALUE);
@@ -363,7 +363,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     private static Object toEnv(PythonLanguage language, String value) {
-        if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+        if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) {
             return toTruffleStringUncached(value);
         } else {
             return PFactory.createBytes(language, value.getBytes());
@@ -371,7 +371,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     private static Object toEnv(PythonLanguage language, TruffleString value) {
-        if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+        if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) {
             return value;
         } else {
             return PFactory.createBytes(language, value.toJavaStringUncached().getBytes());

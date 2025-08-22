@@ -40,9 +40,9 @@
  */
 package com.oracle.graal.python.runtime;
 
-import static com.oracle.graal.python.builtins.PythonOS.PLATFORM_LINUX;
-import static com.oracle.graal.python.builtins.PythonOS.PLATFORM_WIN32;
-import static com.oracle.graal.python.builtins.PythonOS.getPythonOS;
+import static com.oracle.graal.python.annotations.PythonOS.PLATFORM_LINUX;
+import static com.oracle.graal.python.annotations.PythonOS.PLATFORM_WIN32;
+import static com.oracle.graal.python.PythonLanguage.getPythonOS;
 import static com.oracle.graal.python.builtins.modules.SignalModuleBuiltins.signalFromName;
 import static com.oracle.graal.python.builtins.objects.thread.PThread.getThreadId;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
@@ -217,7 +217,7 @@ import org.graalvm.nativeimage.ProcessProperties;
 import org.graalvm.polyglot.io.ProcessHandler.Redirect;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.PythonOS;
+import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ErrorAndMessagePair;
@@ -1378,8 +1378,13 @@ public final class EmulatedPosixSupport extends PosixResources {
     @SuppressWarnings("static-method")
     public Object[] uname(
                     @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
-        return new Object[]{getPythonOS().getUname(), fromJavaStringNode.execute(getHostName(withoutIOSocket), TS_ENCODING),
-                        fromJavaStringNode.execute(getOsVersion(), TS_ENCODING), T_EMPTY_STRING, PythonUtils.getPythonArch()};
+        return new Object[]{
+                        fromJavaStringNode.execute(getPythonOS().getUname(), TS_ENCODING),
+                        fromJavaStringNode.execute(getHostName(withoutIOSocket), TS_ENCODING),
+                        fromJavaStringNode.execute(getOsVersion(), TS_ENCODING),
+                        T_EMPTY_STRING,
+                        PythonUtils.getPythonArch()
+        };
     }
 
     @TruffleBoundary
@@ -2093,7 +2098,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @TruffleBoundary
     public long getuid() {
         if (!PythonImageBuildOptions.WITHOUT_PLATFORM_ACCESS) {
-            switch (PythonOS.getPythonOS()) {
+            switch (PythonLanguage.getPythonOS()) {
                 case PLATFORM_LINUX:
                 case PLATFORM_DARWIN:
                     return new UnixSystem().getUid();
@@ -2116,7 +2121,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @TruffleBoundary
     public long getgid() {
         if (!PythonImageBuildOptions.WITHOUT_PLATFORM_ACCESS) {
-            switch (PythonOS.getPythonOS()) {
+            switch (PythonLanguage.getPythonOS()) {
                 case PLATFORM_LINUX:
                 case PLATFORM_DARWIN:
                     return new UnixSystem().getGid();
@@ -2174,7 +2179,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @TruffleBoundary
     public long[] getgroups() {
         if (!PythonImageBuildOptions.WITHOUT_PLATFORM_ACCESS) {
-            switch (PythonOS.getPythonOS()) {
+            switch (PythonLanguage.getPythonOS()) {
                 case PLATFORM_LINUX, PLATFORM_DARWIN -> {
                     return new UnixSystem().getGroups();
                 }
@@ -2239,7 +2244,7 @@ public final class EmulatedPosixSupport extends PosixResources {
             throw posixException(OSErrorEnum.EINVAL);
         }
 
-        if (PythonOS.getPythonOS() == PLATFORM_LINUX) {
+        if (PythonLanguage.getPythonOS() == PLATFORM_LINUX) {
             // peak memory usage (kilobytes on Linux)
             ru_maxrss /= 1024;
         }
@@ -2503,7 +2508,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         LOGGER.fine(() -> "os.system: " + cmd);
 
         String[] command;
-        if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+        if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) {
             command = new String[]{"cmd.exe", "/c", cmd};
         } else {
             command = new String[]{(environ.getOrDefault("SHELL", "sh")), "-c", cmd};
@@ -2934,7 +2939,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @SuppressWarnings("static-method")
     public PwdResult getpwuid(long uid) throws PosixException {
         if (!PythonImageBuildOptions.WITHOUT_PLATFORM_ACCESS) {
-            switch (PythonOS.getPythonOS()) {
+            switch (PythonLanguage.getPythonOS()) {
                 case PLATFORM_LINUX:
                 case PLATFORM_DARWIN:
                     UnixSystem unix = new UnixSystem();
@@ -2955,7 +2960,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @SuppressWarnings("static-method")
     public PwdResult getpwnam(Object name) {
         if (!PythonImageBuildOptions.WITHOUT_PLATFORM_ACCESS) {
-            switch (PythonOS.getPythonOS()) {
+            switch (PythonLanguage.getPythonOS()) {
                 case PLATFORM_LINUX:
                 case PLATFORM_DARWIN:
                     UnixSystem unix = new UnixSystem();

@@ -25,10 +25,10 @@
  */
 package com.oracle.graal.python.runtime;
 
-import static com.oracle.graal.python.builtins.PythonOS.PLATFORM_DARWIN;
-import static com.oracle.graal.python.builtins.PythonOS.PLATFORM_WIN32;
-import static com.oracle.graal.python.builtins.PythonOS.getPythonOS;
-import static com.oracle.graal.python.builtins.PythonOS.throwIfUnsupported;
+import static com.oracle.graal.python.annotations.PythonOS.PLATFORM_DARWIN;
+import static com.oracle.graal.python.annotations.PythonOS.PLATFORM_WIN32;
+import static com.oracle.graal.python.PythonLanguage.getPythonOS;
+import static com.oracle.graal.python.PythonLanguage.throwIfUnsupported;
 import static com.oracle.graal.python.builtins.modules.SysModuleBuiltins.T_CACHE_TAG;
 import static com.oracle.graal.python.builtins.modules.SysModuleBuiltins.T__MULTIARCH;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_CLOSED;
@@ -104,7 +104,7 @@ import org.graalvm.options.OptionKey;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.PythonOS;
+import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.CtypesThreadState;
 import com.oracle.graal.python.builtins.objects.PNone;

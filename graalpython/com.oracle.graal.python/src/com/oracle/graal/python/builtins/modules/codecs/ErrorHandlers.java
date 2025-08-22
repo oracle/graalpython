@@ -61,7 +61,7 @@ import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 import java.nio.ByteOrder;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.codecs.CodecsRegistry.PyCodecLookupErrorNode;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;

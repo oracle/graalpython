@@ -25,8 +25,7 @@
  */
 package com.oracle.graal.python;
 
-import static com.oracle.graal.python.builtins.PythonOS.PLATFORM_WIN32;
-import static com.oracle.graal.python.builtins.PythonOS.getPythonOS;
+import static com.oracle.graal.python.annotations.PythonOS.PLATFORM_WIN32;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__SIGNAL;
 import static com.oracle.graal.python.nodes.StringLiterals.J_PY_EXTENSION;
 import static com.oracle.graal.python.nodes.StringLiterals.T_PY_EXTENSION;
@@ -51,7 +50,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.logging.Level;
 
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import org.graalvm.home.Version;
+import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.options.OptionDescriptors;
 import org.graalvm.options.OptionKey;
 import org.graalvm.options.OptionValues;
@@ -59,7 +60,7 @@ import org.graalvm.polyglot.SandboxPolicy;
 
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.PythonOS;
+import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SignalModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -1224,5 +1225,52 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public Source getOrCreateSource(Function<Object, Source> rootNodeFunction, Object key) {
         CompilerAsserts.neverPartOfCompilation();
         return sourceCache.computeIfAbsent(key, rootNodeFunction);
+    }
+
+    public static PythonOS getPythonOS() {
+        if (PythonOS.internalCurrent == PythonOS.PLATFORM_ANY) {
+            if (ImageInfo.inImageBuildtimeCode()) {
+                throw new RuntimeException("Native images with GraalPy are only supported on " + PythonOS.SUPPORTED_PLATFORMS + ".");
+            }
+            String emulated = get(null).getEngineOption(PythonOptions.UnsupportedPlatformEmulates);
+            if (!emulated.isEmpty()) {
+                switch (emulated) {
+                    case "linux":
+                        return PythonOS.PLATFORM_LINUX;
+                    case "macos":
+                        return PythonOS.PLATFORM_DARWIN;
+                    case "windows":
+                        return PLATFORM_WIN32;
+                    default:
+                        throw new UnsupportedPlatform("UnsupportedPlatformEmulates must be exactly one of \"linux\", \"macos\", or \"windows\"");
+                }
+            } else {
+                throw new UnsupportedPlatform("This platform is not currently supported. " +
+                                "Currently supported platforms are " + PythonOS.SUPPORTED_PLATFORMS + ". " +
+                                "If you are running on one of these platforms and are receiving this error, that indicates a bug in this build of GraalPy. " +
+                                "If you are running on a different platform and accept that any functionality that interacts with the system may be " +
+                                "incorrect and Python native extensions will not work, you can specify the system property \"UnsupportedPlatformEmulates\" " +
+                                "with a value of either \"linux\", \"macos\", or \"windows\" to continue further and have GraalPy behave as if it were running on " +
+                                "the OS specified. Loading native libraries will not work and must be disabled using the context options. " +
+                                "See https://www.graalvm.org/python/docs/ for details on GraalPy modules with both native and Java backends, " +
+                                "and https://www.graalvm.org/truffle/javadoc/org/graalvm/polyglot/Context.Builder.html to learn about disallowing native access.");
+            }
+        }
+        return PythonOS.internalCurrent;
+    }
+
+    public static void throwIfUnsupported(String msg) {
+        if (PythonOS.isUnsupported()) {
+            throw new UnsupportedPlatform(msg +
+                            "\nThis point was reached as earlier platform checks were overridden using the system property UnsupportedPlatformEmulates");
+        }
+    }
+
+    public static final class UnsupportedPlatform extends AbstractTruffleException {
+        public UnsupportedPlatform(String msg) {
+            super(msg);
+        }
+
+        private static final long serialVersionUID = 1L;
     }
 }

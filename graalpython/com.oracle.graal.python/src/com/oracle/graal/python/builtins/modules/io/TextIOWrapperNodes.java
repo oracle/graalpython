@@ -78,7 +78,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.PythonOS;
+import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.modules.CodecsTruffleModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CodecsTruffleModuleBuiltins.MakeIncrementalcodecNode;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
@@ -155,7 +155,7 @@ public abstract class TextIOWrapperNodes {
                 self.setWriteNewline(self.getReadNewline());
             }
         } else {
-            if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+            if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) {
                 self.setWriteNewline(T_CRLF);
             } else {
                 self.setWriteNewline(null);

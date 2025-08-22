@@ -90,7 +90,7 @@ import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.PythonOS;
+import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -1927,7 +1927,7 @@ public final class NFIPosixSupport extends PosixSupport {
          */
         if (injectBranchProbability(SLOWPATH_PROBABILITY, cryptLibrary == null)) {
             try {
-                cryptLibrary = InvokeNativeFunction.loadLibrary(this, PythonOS.getPythonOS() != PythonOS.PLATFORM_DARWIN ? "libcrypt.so" : null);
+                cryptLibrary = InvokeNativeFunction.loadLibrary(this, PythonLanguage.getPythonOS() != PythonOS.PLATFORM_DARWIN ? "libcrypt.so" : null);
             } catch (Throwable e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw PRaiseNode.raiseStatic(invokeNode, PythonBuiltinClassType.SystemError, ErrorMessages.UNABLE_TO_LOAD_LIBCRYPT);
@@ -2343,7 +2343,7 @@ public final class NFIPosixSupport extends PosixSupport {
          * msimacek: It works on Linux, and it doesn't work on Darwin. It might work on some other
          * Unix-likes, but it's hard to check, so let's assume it only works on Linux for now
          */
-        if (PythonOS.getPythonOS() != PythonOS.PLATFORM_LINUX) {
+        if (PythonLanguage.getPythonOS() != PythonOS.PLATFORM_LINUX) {
             throw NO_SEM_GETVALUE_EXCEPTION;
         }
         int[] value = new int[1];
@@ -2391,7 +2391,7 @@ public final class NFIPosixSupport extends PosixSupport {
                     @Bind Node node,
                     @CachedLibrary("this") PosixSupportLibrary thisLib,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        if (PythonOS.getPythonOS() == PythonOS.PLATFORM_LINUX) {
+        if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_LINUX) {
             int res = invokeNode.callInt(this, PosixNativeFunction.call_sem_timedwait, handle, deadlineNs);
             if (res < 0) {
                 int errno = getErrno(invokeNode);

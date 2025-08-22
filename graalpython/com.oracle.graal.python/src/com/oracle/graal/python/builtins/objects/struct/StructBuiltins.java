@@ -75,11 +75,11 @@ import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.PythonOS;
+import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.modules.StructModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
@@ -209,12 +209,12 @@ public class StructBuiltins extends PythonBuiltins {
             setFormatDefEntry(FMT_TABLE_NATIVE, FMT_INT, T_LBL_INT, Integer.BYTES, INT_ALIGN, numBytes);
             setFormatDefEntry(FMT_TABLE_NATIVE, FMT_UNSIGNED_INT, T_LBL_UNSIGNED_INT, Integer.BYTES, INT_ALIGN, numBytes);
             setFormatDefEntry(FMT_TABLE_NATIVE, FMT_LONG, T_LBL_LONG,
-                            PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32 ? Integer.BYTES : Long.BYTES,
-                            PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32 ? INT_ALIGN : LONG_ALIGN,
+                            PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32 ? Integer.BYTES : Long.BYTES,
+                            PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32 ? INT_ALIGN : LONG_ALIGN,
                             numBytes);
             setFormatDefEntry(FMT_TABLE_NATIVE, FMT_UNSIGNED_LONG, T_LBL_UNSIGNED_LONG,
-                            PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32 ? Integer.BYTES : Long.BYTES,
-                            PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32 ? INT_ALIGN : LONG_ALIGN,
+                            PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32 ? Integer.BYTES : Long.BYTES,
+                            PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32 ? INT_ALIGN : LONG_ALIGN,
                             numBytes);
             setFormatDefEntry(FMT_TABLE_NATIVE, FMT_SIZE_T, T_LBL_SIZE_T, Long.BYTES, LONG_ALIGN, numBytes);
             setFormatDefEntry(FMT_TABLE_NATIVE, FMT_UNSIGNED_SIZE_T, T_LBL_UNSIGNED_SIZE_T, Long.BYTES, LONG_ALIGN, numBytes);

@@ -92,12 +92,12 @@ import java.util.logging.Level;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
-import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.PythonOS;
+import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.FsConverterNode;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.AuditNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CFieldBuiltins.GetFuncNode;
@@ -209,7 +209,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
     private static final TruffleString T_WINDOWS_ERROR = tsLiteral("Windows Error");
 
-    private static final String J_DEFAULT_LIBRARY = PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32 ? "msvcrt.dll" : J_EMPTY_STRING;
+    private static final String J_DEFAULT_LIBRARY = PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32 ? "msvcrt.dll" : J_EMPTY_STRING;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -235,7 +235,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
     public void initialize(Python3Core core) {
         super.initialize(core);
         addBuiltinConstant("_pointer_type_cache", PFactory.createDict(core.getLanguage()));
-        if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+        if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) {
             addBuiltinConstant("FUNCFLAG_STDCALL", FUNCFLAG_STDCALL);
         }
         addBuiltinConstant("FUNCFLAG_CDECL", FUNCFLAG_CDECL);
@@ -267,7 +267,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         // We use directly native if available
         if (context.getEnv().isNativeAccessAllowed()) {
             handle = DlOpenNode.loadNFILibrary(context, NFIBackend.NATIVE, J_DEFAULT_LIBRARY, rtldLocal);
-            if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
+            if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) {
                 PythonModule sysModule = context.getSysModule();
                 Object loadLibraryMethod = ReadAttributeFromModuleNode.getUncached().execute(ctypesModule, toTruffleStringUncached("LoadLibrary"));
                 Object pythonLib = CallNode.executeUncached(loadLibraryMethod, toTruffleStringUncached(PythonContext.getSupportLibName("python-native")), 0);

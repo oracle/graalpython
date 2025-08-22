@@ -59,7 +59,7 @@ import static com.oracle.truffle.api.strings.TruffleString.Encoding.US_ASCII;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.PythonOS;
+import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.modules.ctypes.FFIType.FFI_TYPES;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer;
 import com.oracle.graal.python.builtins.modules.ctypes.memory.PointerNodes;
@@ -90,7 +90,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public class CtypesNodes {
 
-    public static final int WCHAR_T_SIZE = PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32 ? 2 : 4;
+    public static final int WCHAR_T_SIZE = PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32 ? 2 : 4;
     public static final TruffleString.Encoding WCHAR_T_ENCODING = WCHAR_T_SIZE == 2 ? TruffleString.Encoding.UTF_16 : TruffleString.Encoding.UTF_32;
 
     @GenerateInline

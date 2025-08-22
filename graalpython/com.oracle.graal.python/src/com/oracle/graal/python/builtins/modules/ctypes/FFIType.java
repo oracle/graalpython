@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,7 +46,8 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_LPAREN;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
-import com.oracle.graal.python.builtins.PythonOS;
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
@@ -310,17 +311,17 @@ public final class FFIType {
         i('i', FieldSet.i_set, FieldGet.i_get, ffi_type_sint, FieldSet.i_set_sw, FieldGet.i_get_sw), // int
         I('I', FieldSet.I_set, FieldGet.I_get, ffi_type_uint, FieldSet.I_set_sw, FieldGet.I_get_sw), // unsigned int
         l('l',
-                PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32 ? FieldSet.i_set : FieldSet.l_set,
-                PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32 ? FieldGet.i_get : FieldGet.l_get,
-                PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32 ? ffi_type_sint32 : ffi_type_sint64,
-                PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32 ? FieldSet.i_set_sw : FieldSet.l_set_sw,
-                PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32 ? FieldGet.i_get_sw : FieldGet.l_get_sw), // long
+                PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32 ? FieldSet.i_set : FieldSet.l_set,
+                PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32 ? FieldGet.i_get : FieldGet.l_get,
+                PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32 ? ffi_type_sint32 : ffi_type_sint64,
+                PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32 ? FieldSet.i_set_sw : FieldSet.l_set_sw,
+                PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32 ? FieldGet.i_get_sw : FieldGet.l_get_sw), // long
         L('L',
-                PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32 ? FieldSet.I_set : FieldSet.L_set,
-                PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32 ? FieldGet.I_get : FieldGet.L_get,
-                PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32 ? ffi_type_uint32 : ffi_type_uint64,
-                PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32 ? FieldSet.I_set_sw : FieldSet.L_set_sw,
-                PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32 ? FieldGet.I_get_sw : FieldGet.L_get_sw), // unsigned long
+                PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32 ? FieldSet.I_set : FieldSet.L_set,
+                PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32 ? FieldGet.I_get : FieldGet.L_get,
+                PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32 ? ffi_type_uint32 : ffi_type_uint64,
+                PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32 ? FieldSet.I_set_sw : FieldSet.L_set_sw,
+                PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32 ? FieldGet.I_get_sw : FieldGet.L_get_sw), // unsigned long
         q('q', FieldSet.q_set, FieldGet.q_get, ffi_type_sint64, FieldSet.q_set_sw, FieldGet.q_get_sw), // long long
         Q('Q', FieldSet.Q_set, FieldGet.Q_get, ffi_type_uint64, FieldSet.Q_set_sw, FieldGet.Q_get_sw), // long long
         P('P', FieldSet.P_set, FieldGet.P_get, ffi_type_pointer), // Pointer

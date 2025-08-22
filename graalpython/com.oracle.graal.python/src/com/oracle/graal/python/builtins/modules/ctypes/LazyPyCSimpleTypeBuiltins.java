@@ -52,7 +52,7 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.IsInstanceNode;
 import com.oracle.graal.python.builtins.modules.ctypes.CFieldBuiltins.SetFuncNode;

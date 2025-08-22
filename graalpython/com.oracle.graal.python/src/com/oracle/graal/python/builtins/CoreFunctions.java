@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.builtins;
 
+import com.oracle.graal.python.annotations.PythonOS;
+
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 

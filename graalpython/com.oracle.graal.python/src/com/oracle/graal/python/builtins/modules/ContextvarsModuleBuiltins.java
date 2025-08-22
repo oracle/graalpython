@@ -44,7 +44,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J__CONTEXTVARS;
 
 import java.util.List;
 
-import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.contextvars.PContextVarsContext;
