@@ -138,6 +138,14 @@ public final class Signature {
         return keywordOnlyNames.length > 0 || takesVarKeywordArgs;
     }
 
+    public int varArgsPArgumentsIndex() {
+        return getMaxNumOfPositionalArgs() + getNumOfRequiredKeywords();
+    }
+
+    public int varKeywordsPArgumentsIndex() {
+        return getMaxNumOfPositionalArgs() + getNumOfRequiredKeywords() + (takesVarArgs() ? 1 : 0);
+    }
+
     public boolean takesPositionalOnly() {
         return !takesVarArgs() && !takesVarKeywordArgs && keywordOnlyNames.length == 0;
     }

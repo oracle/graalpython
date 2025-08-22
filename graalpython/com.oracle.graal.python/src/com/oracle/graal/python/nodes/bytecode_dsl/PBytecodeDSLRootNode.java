@@ -1046,7 +1046,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @Specialization
         public static Object perform(VirtualFrame frame,
                         @Bind PBytecodeDSLRootNode rootNode) {
-            return PFactory.createTuple(rootNode.getLanguage(), PArguments.getVariableArguments(frame));
+            int index = rootNode.co.getRegularArgCount();
+            return PFactory.createTuple(rootNode.getLanguage(), (Object[]) PArguments.getArgument(frame, index));
         }
     }
 
@@ -1055,7 +1056,11 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @Specialization
         public static Object perform(VirtualFrame frame,
                         @Bind PBytecodeDSLRootNode rootNode) {
-            return PFactory.createDict(rootNode.getLanguage(), PArguments.getKeywordArguments(frame));
+            int index = rootNode.co.getRegularArgCount();
+            if (rootNode.co.takesVarArgs()) {
+                index++;
+            }
+            return PFactory.createDict(rootNode.getLanguage(), (PKeyword[]) PArguments.getArgument(frame, index));
         }
     }
 

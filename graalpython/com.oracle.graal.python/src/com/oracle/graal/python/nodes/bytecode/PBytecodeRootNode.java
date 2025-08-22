@@ -1076,10 +1076,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         copyArgs(arguments, localFrame);
         int varIdx = co.getRegularArgCount();
         if (co.takesVarArgs()) {
-            localFrame.setObject(varIdx++, PFactory.createTuple(getLanguage(), PArguments.getVariableArguments(arguments)));
+            int varargsIndex = varIdx++;
+            localFrame.setObject(varargsIndex, PFactory.createTuple(getLanguage(), (Object[]) PArguments.getArgument(arguments, varargsIndex)));
         }
         if (co.takesVarKeywordArgs()) {
-            localFrame.setObject(varIdx, PFactory.createDict(getLanguage(), PArguments.getKeywordArguments(arguments)));
+            localFrame.setObject(varIdx, PFactory.createDict(getLanguage(), (PKeyword[]) PArguments.getArgument(arguments, varIdx)));
         }
         initCellVars(localFrame);
         initFreeVars(localFrame, arguments);

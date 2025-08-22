@@ -244,6 +244,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
 
         // if we don't declare the explicit self, we just ignore it
         int skip = needsExplicitSelf ? 0 : 1;
+        int keywordCount = builtin.keywordOnlyNames().length;
 
         // read those arguments that only come positionally
         for (int i = 0; i < maxNumPosArgs; i++) {
@@ -251,17 +252,17 @@ public final class BuiltinFunctionRootNode extends PRootNode {
         }
 
         // read splat args if any
+        int varArgsIndex = skip + maxNumPosArgs + keywordCount;
         if (builtin.takesVarArgs()) {
-            args.add(ReadVarArgsNode.create(true));
+            args.add(ReadVarArgsNode.create(varArgsIndex++));
         }
 
-        int keywordCount = builtin.keywordOnlyNames().length;
         for (int i = 0; i < keywordCount; i++) {
             args.add(ReadIndexedArgumentNode.create(i + maxNumPosArgs + skip));
         }
 
         if (builtin.takesVarKeywordArgs()) {
-            args.add(ReadVarKeywordsNode.create());
+            args.add(ReadVarKeywordsNode.create(varArgsIndex));
         }
 
         return args.toArray(new ReadArgumentNode[args.size()]);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -111,11 +111,11 @@ public class InteropBehavior {
 
     public Object[] createArguments(InteropBehaviorMethod method, PythonAbstractObject receiver, Object[] extraArguments) {
         assert method.checkArity(extraArguments);
-        Object[] pArguments = PArguments.create(1 + (method.takesVarArgs ? 0 : method.extraArguments));
+        Object[] pArguments = PArguments.create(1 + (method.takesVarArgs ? 1 : method.extraArguments));
         PArguments.setGlobals(pArguments, getGlobals(method));
         PArguments.setArgument(pArguments, 0, receiver);
         if (method.takesVarArgs) {
-            PArguments.setVariableArguments(pArguments, extraArguments);
+            PArguments.setArgument(pArguments, 1, extraArguments);
         } else {
             for (int i = 0; i < extraArguments.length; i++) {
                 PArguments.setArgument(pArguments, i + 1, extraArguments[i]);
