@@ -62,6 +62,7 @@ import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
 
+import com.oracle.truffle.api.Assumption;
 import org.graalvm.nativeimage.VMRuntime;
 import org.graalvm.polyglot.io.ByteSequence;
 
@@ -145,6 +146,7 @@ public final class PythonUtils {
     public static final long[] EMPTY_LONG_ARRAY = new long[0];
     public static final double[] EMPTY_DOUBLE_ARRAY = new double[0];
     public static final char[] EMPTY_CHAR_ARRAY = new char[0];
+    public static final Assumption[] EMPTY_ASSUMPTION_ARRAY = new Assumption[0];
     public static final ByteSequence EMPTY_BYTE_SEQUENCE = ByteSequence.create(EMPTY_BYTE_ARRAY);
 
     /**

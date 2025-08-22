@@ -48,6 +48,7 @@ import static com.oracle.graal.python.builtins.objects.type.TypeFlags.SEQUENCE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___BUILD_CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASS__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NameError;
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_ASSUMPTION_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
@@ -175,9 +176,9 @@ import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.ListNodesFactory;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.builtins.TupleNodesFactory;
-import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNodeFactory.ObjHashMapPutNodeGen;
 import com.oracle.graal.python.nodes.bytecode.SequenceFromStackNode.ListFromStackNode;
 import com.oracle.graal.python.nodes.bytecode.SequenceFromStackNode.TupleFromStackNode;
+import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNodeFactory.ObjHashMapPutNodeGen;
 import com.oracle.graal.python.nodes.bytecode.SequenceFromStackNodeFactory.ListFromStackNodeGen;
 import com.oracle.graal.python.nodes.bytecode.SequenceFromStackNodeFactory.TupleFromStackNodeGen;
 import com.oracle.graal.python.nodes.bytecode.instrumentation.InstrumentationRoot;
@@ -700,9 +701,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         this.exceptionHandlerRanges = co.exceptionHandlerRanges;
         this.co = co;
         assert co.stacksize < Math.pow(2, 12) : "stacksize cannot be larger than 12-bit range";
-        cellEffectivelyFinalAssumptions = new Assumption[cellvars.length];
-        for (int i = 0; i < cellvars.length; i++) {
-            cellEffectivelyFinalAssumptions[i] = Truffle.getRuntime().createAssumption("cell is effectively final");
+        if (cellvars.length == 0) {
+            cellEffectivelyFinalAssumptions = EMPTY_ASSUMPTION_ARRAY;
+        } else {
+            cellEffectivelyFinalAssumptions = new Assumption[cellvars.length];
+            for (int i = 0; i < cellvars.length; i++) {
+                cellEffectivelyFinalAssumptions[i] = Truffle.getRuntime().createAssumption("cell is effectively final");
+            }
         }
         int classcellIndexValue = -1;
         for (int i = 0; i < this.freevars.length; i++) {
