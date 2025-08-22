@@ -84,7 +84,7 @@ public final class PArguments {
     }
 
     public static boolean isPythonFrame(Object[] frameArgs) {
-        return frameArgs.length >= USER_ARGUMENTS_OFFSET && frameArgs[INDEX_KEYWORD_ARGUMENTS] instanceof PKeyword[];
+        return frameArgs.length >= USER_ARGUMENTS_OFFSET && frameArgs[INDEX_CURRENT_FRAME_INFO] instanceof PFrame.Reference;
     }
 
     public static Object[] withGlobals(PythonObject globals) {
