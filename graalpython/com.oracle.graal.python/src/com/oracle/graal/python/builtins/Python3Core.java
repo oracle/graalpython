@@ -848,7 +848,7 @@ public abstract class Python3Core {
     @CompilationFinal private PInt pyFalse;
     @CompilationFinal private PFloat pyNaN;
 
-    @CompilationFinal(dimensions = 1) public final PythonManagedClass[] polyglotForeignClasses = new PythonManagedClass[GetForeignObjectClassNode.Trait.COMBINATIONS];
+    @CompilationFinal(dimensions = 1) private PythonManagedClass[] polyglotForeignClasses = null;
 
     private final SysModuleState sysModuleState = new SysModuleState();
 
@@ -1361,5 +1361,20 @@ public abstract class Python3Core {
 
     public static void writeInfo(Supplier<String> messageSupplier) {
         PythonLanguage.getLogger(Python3Core.class).fine(messageSupplier);
+    }
+
+    public PythonManagedClass getPolyglotForeignClasses(int traits) {
+        assert getContext().ownsGil(); // if not it would need its own synchronization
+        PythonManagedClass[] classes = polyglotForeignClasses;
+        return classes == null ? null : classes[traits];
+    }
+
+    public void setPolyglotForeignClasses(int traits, PythonManagedClass pythonClass) {
+        assert getContext().ownsGil(); // if not it would need its own synchronization
+        if (polyglotForeignClasses == null) {
+            polyglotForeignClasses = new PythonManagedClass[GetForeignObjectClassNode.Trait.COMBINATIONS];
+        }
+
+        polyglotForeignClasses[traits] = pythonClass;
     }
 }
