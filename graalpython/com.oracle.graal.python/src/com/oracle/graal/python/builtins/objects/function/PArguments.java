@@ -30,11 +30,9 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.MaterializedFrame;
-import com.oracle.truffle.api.frame.VirtualFrame;
 
 //@formatter:off
 /**
@@ -218,24 +216,11 @@ public final class PArguments {
     }
 
     public static Object getArgument(Object[] arguments, int index) {
-        int argIdx = USER_ARGUMENTS_OFFSET + index;
-        if (argIdx < arguments.length) {
-            return arguments[argIdx];
-        } else {
-            return null;
-        }
+        return arguments[USER_ARGUMENTS_OFFSET + index];
     }
 
     public static Object getArgument(Frame frame, int index) {
         return getArgument(frame.getArguments(), index);
-    }
-
-    public static int getUserArgumentLength(VirtualFrame frame) {
-        return frame.getArguments().length - USER_ARGUMENTS_OFFSET;
-    }
-
-    public static int getUserArgumentLength(Object[] arguments) {
-        return arguments.length - USER_ARGUMENTS_OFFSET;
     }
 
     public static MaterializedFrame getGeneratorFrame(Object[] arguments) {
@@ -287,9 +272,6 @@ public final class PArguments {
         setSpecialArgument(copiedArgs, getSpecialArgument(arguments));
         setGlobals(copiedArgs, getGlobals(arguments));
         setClosure(copiedArgs, getClosure(arguments));
-
-        // copy all user arguments
-        PythonUtils.arraycopy(arguments, USER_ARGUMENTS_OFFSET, copiedArgs, USER_ARGUMENTS_OFFSET, getUserArgumentLength(arguments));
 
         escapedFrame.setArguments(copiedArgs);
     }

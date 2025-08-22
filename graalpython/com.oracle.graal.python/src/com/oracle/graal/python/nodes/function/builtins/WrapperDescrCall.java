@@ -71,12 +71,7 @@ public final class WrapperDescrCall extends SlotWrapper {
 
     @Override
     public Object execute(VirtualFrame frame) {
-        Object[] args = frame.getArguments();
-        if (PArguments.getUserArgumentLength(args) <= 0) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.TypeError, ErrorMessages.DESCRIPTOR_NEED_OBJ, name, "_");
-        }
-        Object self = PArguments.getArgument(args, 0);
+        Object self = PArguments.getArgument(frame, 0);
         Object selfClass = getClassNode.executeCached(self);
         if (selfClass != type && !isSubtypeNode.execute(selfClass, type)) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
