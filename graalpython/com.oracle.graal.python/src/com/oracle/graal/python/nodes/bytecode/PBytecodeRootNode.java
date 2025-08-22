@@ -57,6 +57,8 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 
+import org.graalvm.collections.Pair;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.FormatNode;
@@ -176,9 +178,9 @@ import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.ListNodesFactory;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.builtins.TupleNodesFactory;
+import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNodeFactory.ObjHashMapPutNodeGen;
 import com.oracle.graal.python.nodes.bytecode.SequenceFromStackNode.ListFromStackNode;
 import com.oracle.graal.python.nodes.bytecode.SequenceFromStackNode.TupleFromStackNode;
-import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNodeFactory.ObjHashMapPutNodeGen;
 import com.oracle.graal.python.nodes.bytecode.SequenceFromStackNodeFactory.ListFromStackNodeGen;
 import com.oracle.graal.python.nodes.bytecode.SequenceFromStackNodeFactory.TupleFromStackNodeGen;
 import com.oracle.graal.python.nodes.bytecode.instrumentation.InstrumentationRoot;
@@ -1100,16 +1102,22 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
+    // Doesn't matter which PArguments slot we use as long as it exists
+    private static final int OSR_FRAME_INDEX = 0;
+
     @Override
     public Object[] storeParentFrameInArguments(VirtualFrame parentFrame) {
         Object[] arguments = parentFrame.getArguments();
-        PArguments.setOSRFrame(arguments, parentFrame);
+        arguments[0] = Pair.create(arguments[OSR_FRAME_INDEX], parentFrame);
         return arguments;
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public Frame restoreParentFrameFromArguments(Object[] arguments) {
-        return PArguments.getOSRFrame(arguments);
+        Pair<Object, Frame> pair = (Pair<Object, Frame>) arguments[OSR_FRAME_INDEX];
+        arguments[0] = pair.getLeft();
+        return pair.getRight();
     }
 
     @Override
