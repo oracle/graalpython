@@ -184,11 +184,6 @@ public abstract class ExternalFunctionNodes {
         return new PKeyword[]{new PKeyword(KW_CALLABLE, callable), new PKeyword(KW_CLOSURE, closure)};
     }
 
-    public abstract static class FinishArgNode extends PNodeWithContext {
-
-        public abstract void execute(Object value);
-    }
-
     /**
      * On Windows, "long" is 32 bits, so that we might need to convert int to long for consistency.
      */
