@@ -271,7 +271,13 @@ def graalpy_standalone_deps():
 def libpythonvm_build_args():
     build_args = []
     build_args += bytecode_dsl_build_args()
-    if mx_sdk_vm_ng.is_nativeimage_ee() and mx.get_os() == 'linux' and 'NATIVE_IMAGE_AUXILIARY_ENGINE_CACHE' not in os.environ:
+    extras = mx.get_opts().extra_image_builder_argument
+    if (
+            mx_sdk_vm_ng.is_nativeimage_ee() and
+            mx.get_os() == 'linux' and
+            'NATIVE_IMAGE_AUXILIARY_ENGINE_CACHE' not in os.environ and
+            not any(arg.startswith("--gc") for arg in extras)
+    ):
         build_args += ['--gc=G1', '-H:-ProtectionKeys']
     if not os.environ.get("GRAALPY_PGO_PROFILE") and mx.suite('graalpython-enterprise', fatalIfMissing=False) and mx_sdk_vm_ng.get_bootstrap_graalvm_version() >= mx.VersionSpec("25.0"):
         cmd = mx.command_function('python-get-latest-profile', fatalIfMissing=False)
