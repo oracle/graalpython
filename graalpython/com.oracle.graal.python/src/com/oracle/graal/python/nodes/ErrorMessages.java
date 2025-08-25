@@ -1624,4 +1624,6 @@ public abstract class ErrorMessages {
     public static final TruffleString TYPE_EXC_TB_OF_THROW_IS_DEPRECATED = tsLiteral("the (type, exc, tb) signature of throw() is deprecated, use the single-arg signature instead.");
     public static final TruffleString PRECISION_TOO_LARGE = tsLiteral("precision too large");
     public static final TruffleString DIM_MEMORY_HAS_NO_LENGTH = tsLiteral("0-dim memory has no length");
+    public static final TruffleString NOT_A_DIGIT = tsLiteral("not a digit");
+    public static final TruffleString NOT_A_DECIMAL = tsLiteral("not a decimal");
 }
