@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -61,7 +61,6 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
@@ -211,15 +210,15 @@ public class ClinicTests {
                         new ReadArgumentNode[]{
                                         ReadIndexedArgumentNode.create(0),
                                         ReadIndexedArgumentNode.create(1),
-                                        ReadVarArgsNode.create(true),
+                                        ReadVarArgsNode.create(3),
                                         ReadIndexedArgumentNode.create(2)
                         }));
-        Object[] scope_w = PArguments.create(2);
-        scope_w[PArguments.USER_ARGUMENTS_OFFSET] = "abc";
-        scope_w[PArguments.USER_ARGUMENTS_OFFSET + 1] = 42;
-        PArguments.setVariableArguments(scope_w, 666);
-        PArguments.setKeywordArguments(scope_w, new PKeyword[]{new PKeyword(tsLiteral("b"), PNone.NO_VALUE)});
-        assertEquals(666, callTarget.call(scope_w));
+        Object[] pArguments = PArguments.create(4);
+        PArguments.setArgument(pArguments, 0, "abc");
+        PArguments.setArgument(pArguments, 1, 42);
+        PArguments.setArgument(pArguments, 2, PNone.NO_VALUE);
+        PArguments.setArgument(pArguments, 3, new Object[]{666});
+        assertEquals(666, callTarget.call(pArguments));
     }
 
     private static CallTarget createCallTarget(PythonBinaryClinicBuiltinNode node) {

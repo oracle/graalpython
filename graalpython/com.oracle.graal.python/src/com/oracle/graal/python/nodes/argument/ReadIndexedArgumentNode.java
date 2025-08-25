@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -25,11 +25,9 @@
  */
 package com.oracle.graal.python.nodes.argument;
 
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.InvalidAssumptionException;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
 public abstract class ReadIndexedArgumentNode extends ReadArgumentNode {
@@ -44,22 +42,9 @@ public abstract class ReadIndexedArgumentNode extends ReadArgumentNode {
         return ReadIndexedArgumentNodeGen.create(idx);
     }
 
-    @Specialization(rewriteOn = InvalidAssumptionException.class)
-    Object readArg(VirtualFrame frame) throws InvalidAssumptionException {
-        Object argumentAt = PArguments.getArgument(frame, index);
-        if (argumentAt == null) {
-            throw new InvalidAssumptionException();
-        }
-        return profile.profile(argumentAt);
-    }
-
-    @Specialization(replaces = "readArg")
-    Object readArgOffBounds(VirtualFrame frame) {
-        Object argumentAt = PArguments.getArgument(frame, index);
-        if (argumentAt == null) {
-            return PNone.NO_VALUE;
-        }
-        return profile.profile(argumentAt);
+    @Specialization
+    Object readArg(VirtualFrame frame) {
+        return profile.profile(PArguments.getArgument(frame, index));
     }
 
     public int getIndex() {

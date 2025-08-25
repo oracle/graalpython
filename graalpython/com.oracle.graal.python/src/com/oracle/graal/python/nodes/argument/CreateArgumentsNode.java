@@ -43,6 +43,7 @@ package com.oracle.graal.python.nodes.argument;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.joinUncached;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SELF;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
@@ -140,46 +141,55 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         // see PyPy's Argument#_match_signature method
 
         // expected formal arguments, without * and **
-        boolean too_many_args = false;
+        boolean tooManyArgs = false;
 
         // positional args, kwd only args, varargs, var kwds
-        Object[] scope_w = PArguments.create(cachedMaxPos + cachedNumKwds);
+        int pArgumentsLength = cachedMaxPos + cachedNumKwds;
+        if (signature.takesVarArgs()) {
+            pArgumentsLength++;
+        }
+        if (signature.takesKeywordArgs()) {
+            pArgumentsLength++;
+        }
+        Object[] pArguments = PArguments.create(pArgumentsLength);
 
         int upfront = 0;
         // put the special w_firstarg into the scope, if it exists
         if (self != null) {
             upfront++;
             if (cachedMaxPos > 0) {
-                PArguments.setArgument(scope_w, 0, self);
+                PArguments.setArgument(pArguments, 0, self);
             }
             if (classObject != null) {
                 upfront++;
-                PArguments.setArgument(scope_w, 1, classObject);
+                PArguments.setArgument(pArguments, 1, classObject);
             }
         }
 
         int avail = cachedLen + upfront;
 
         // put as many positional input arguments into place as available
-        int input_argcount = applyPositional.execute(inliningTarget, userArguments, scope_w, upfront, cachedMaxPos, cachedLen);
+        int input_argcount = applyPositional.execute(inliningTarget, userArguments, pArguments, upfront, cachedMaxPos, cachedLen);
 
+        int nextIndex = cachedMaxPos + cachedNumKwds;
         // collect extra positional arguments into the *vararg
         if (signature.takesVarArgs()) {
             int args_left = cachedMaxPos - upfront;
+            Object[] varargs;
             if (args_left < 0) {
                 // everything goes to starargs, including any magic self
                 assert upfront == 1;
-                Object[] varargs = new Object[cachedLen + 1];
+                varargs = new Object[cachedLen + 1];
                 varargs[0] = self;
                 PythonUtils.arraycopy(userArguments, 0, varargs, 1, cachedLen);
-                PArguments.setVariableArguments(scope_w, varargs);
             } else if (cachedLen > args_left) {
-                PArguments.setVariableArguments(scope_w, Arrays.copyOfRange(userArguments, args_left, userArguments.length));
+                varargs = Arrays.copyOfRange(userArguments, args_left, userArguments.length);
             } else {
-                // no varargs
+                varargs = EMPTY_OBJECT_ARRAY;
             }
+            PArguments.setArgument(pArguments, nextIndex++, varargs);
         } else if (avail > cachedMaxPos) {
-            too_many_args = true;
+            tooManyArgs = true;
         }
 
         // handle keyword arguments
@@ -187,31 +197,33 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         // the called node takes and collect the rest in the keywords.
         if (keywords.length > 0) {
             // the lazy node acts as a profile
-            applyKeywords.get(inliningTarget).execute(callableOrName, signature, scope_w, keywords);
+            applyKeywords.get(inliningTarget).execute(callableOrName, signature, pArguments, keywords, nextIndex);
+        } else if (signature.takesKeywordArgs()) {
+            PArguments.setArgument(pArguments, nextIndex, PKeyword.EMPTY_KEYWORDS);
         }
 
-        if (too_many_args) {
+        if (tooManyArgs) {
             // the node acts as a profile
             int adjustCount = self instanceof PythonModule ? 1 : 0;
-            throw handleTooManyArgumentsNode.get(inliningTarget).execute(scope_w, callableOrName, signature, cachedMaxPos, cachedNumKwds, defaults.length, avail, methodcall, adjustCount);
+            throw handleTooManyArgumentsNode.get(inliningTarget).execute(pArguments, callableOrName, signature, cachedMaxPos, cachedNumKwds, defaults.length, avail, methodcall, adjustCount);
         }
 
         boolean more_filling = input_argcount < cachedMaxPos + cachedNumKwds;
         if (more_filling) {
 
             // then, fill the normal arguments with defaults_w (if needed)
-            fillDefaultsNode.get(inliningTarget).execute(callableOrName, signature, scope_w, defaults, input_argcount, cachedMaxPos);
+            fillDefaultsNode.get(inliningTarget).execute(callableOrName, signature, pArguments, defaults, input_argcount, cachedMaxPos);
 
             // finally, fill kwonly arguments with w_kw_defs (if needed)
-            fillKwDefaultsNode.get(inliningTarget).execute(callableOrName, scope_w, signature, kwdefaults, cachedMaxPos, cachedNumKwds);
+            fillKwDefaultsNode.get(inliningTarget).execute(callableOrName, pArguments, signature, kwdefaults, cachedMaxPos, cachedNumKwds);
         }
 
         // Now we know that everything is fine, so check compatibility of the enclosing type.
         // If we are calling a built-in method, and it's function has an enclosing type, we
         // need to check if 'self' is a subtype of the function's enclosing type.
-        checkEnclosingTypeNode.execute(inliningTarget, signature, callableOrName, scope_w);
+        checkEnclosingTypeNode.execute(inliningTarget, signature, callableOrName, pArguments);
 
-        return scope_w;
+        return pArguments;
     }
 
     @GenerateInline
@@ -234,12 +246,12 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
     @GenerateInline(false) // Error handler that we explicitly do not want to inline
     protected abstract static class HandleTooManyArgumentsNode extends PNodeWithContext {
 
-        public abstract PException execute(Object[] scope_w, Object callable, Signature signature, int co_argcount, int co_kwonlyargcount, int ndefaults, int avail, boolean methodcall,
+        public abstract PException execute(Object[] pArguments, Object callable, Signature signature, int co_argcount, int co_kwonlyargcount, int ndefaults, int avail, boolean methodcall,
                         int adjustCount);
 
         @Specialization(guards = {"co_kwonlyargcount == cachedKwOnlyArgCount", "cachedKwOnlyArgCount <= 32"}, limit = "3")
         @ExplodeLoop
-        static PException doCached(Object[] scope_w, Object callable, Signature signature, int co_argcount, @SuppressWarnings("unused") int co_kwonlyargcount, int ndefaults, int avail,
+        static PException doCached(Object[] pArguments, Object callable, Signature signature, int co_argcount, @SuppressWarnings("unused") int co_kwonlyargcount, int ndefaults, int avail,
                         boolean methodcall, int adjustCount,
                         @Bind Node inliningTarget,
                         @Shared @Cached PRaiseNode raise,
@@ -247,7 +259,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                         @Cached("co_kwonlyargcount") int cachedKwOnlyArgCount) {
             int kwonly_given = 0;
             for (int i = 0; i < cachedKwOnlyArgCount; i++) {
-                if (PArguments.getArgument(scope_w, co_argcount + i) != null) {
+                if (PArguments.getArgument(pArguments, co_argcount + i) != null) {
                     kwonly_given += 1;
                 }
             }
@@ -257,13 +269,13 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         }
 
         @Specialization(replaces = "doCached")
-        static PException doUncached(Object[] scope_w, Object callable, Signature signature, int co_argcount, int co_kwonlyargcount, int ndefaults, int avail, boolean methodcall, int adjustCount,
+        static PException doUncached(Object[] pArguments, Object callable, Signature signature, int co_argcount, int co_kwonlyargcount, int ndefaults, int avail, boolean methodcall, int adjustCount,
                         @Bind Node inliningTarget,
                         @Shared @Cached PRaiseNode raise,
                         @Shared @Cached TruffleString.EqualNode equalNode) {
             int kwonly_given = 0;
             for (int i = 0; i < co_kwonlyargcount; i++) {
-                if (PArguments.getArgument(scope_w, co_argcount + i) != null) {
+                if (PArguments.getArgument(pArguments, co_argcount + i) != null) {
                     kwonly_given += 1;
                 }
             }
@@ -330,11 +342,11 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
     @ImportStatic(PythonOptions.class)
     abstract static class CheckEnclosingTypeNode extends Node {
 
-        public abstract void execute(Node inliningTarget, Signature signature, Object callable, Object[] scope_w);
+        public abstract void execute(Node inliningTarget, Signature signature, Object callable, Object[] pArguments);
 
         @Specialization(guards = "checkEnclosingType(signature, callable)")
-        static void doEnclosingTypeCheck(Node inliningTarget, @SuppressWarnings("unused") Signature signature, PBuiltinFunction callable, @SuppressWarnings("unused") Object[] scope_w,
-                        @Bind("getSelf(scope_w)") Object self,
+        static void doEnclosingTypeCheck(Node inliningTarget, @SuppressWarnings("unused") Signature signature, PBuiltinFunction callable, @SuppressWarnings("unused") Object[] pArguments,
+                        @Bind("getSelf(pArguments)") Object self,
                         @Cached GetClassNode getClassNode,
                         @Cached(inline = false) IsSubtypeNode isSubtypeMRONode,
                         @Cached PRaiseNode raiseNode) {
@@ -347,7 +359,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
         @Specialization(guards = "!checkEnclosingType(signature, callable)")
         @SuppressWarnings("unused")
-        static void doNothing(Signature signature, Object callable, Object[] scope_w) {
+        static void doNothing(Signature signature, Object callable, Object[] pArguments) {
             // do nothing
         }
 
@@ -355,8 +367,8 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             return signature.checkEnclosingType() && function instanceof PBuiltinFunction && ((PBuiltinFunction) function).getEnclosingType() != null;
         }
 
-        static Object getSelf(Object[] scope_w) {
-            return PArguments.getArgument(scope_w, 0);
+        static Object getSelf(Object[] pArguments) {
+            return PArguments.getArgument(pArguments, 0);
         }
     }
 
@@ -365,18 +377,18 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
     @GenerateCached(false)
     protected abstract static class ApplyPositionalArguments extends Node {
 
-        public abstract int execute(Node inliningTarget, Object[] args_w, Object[] scope_w, int upfront, int co_argcount, int num_args);
+        public abstract int execute(Node inliningTarget, Object[] args_w, Object[] pArguments, int upfront, int co_argcount, int num_args);
 
         @Specialization(guards = "upfront < co_argcount")
-        static int doIt(Object[] args_w, Object[] scope_w, int upfront, int co_argcount, int num_args) {
+        static int doIt(Object[] args_w, Object[] pArguments, int upfront, int co_argcount, int num_args) {
             int take = Math.min(num_args, co_argcount - upfront);
-            PythonUtils.arraycopy(args_w, 0, scope_w, PArguments.USER_ARGUMENTS_OFFSET + upfront, take);
+            PythonUtils.arraycopy(args_w, 0, pArguments, PArguments.USER_ARGUMENTS_OFFSET + upfront, take);
             return upfront + take;
         }
 
         @Specialization(guards = "upfront >= co_argcount")
         @SuppressWarnings("unused")
-        static int doNothing(Object[] args_w, Object[] scope_w, int upfront, int co_argcount, int num_args) {
+        static int doNothing(Object[] args_w, Object[] pArguments, int upfront, int co_argcount, int num_args) {
             return 0;
         }
 
@@ -412,11 +424,11 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
     @com.oracle.truffle.api.dsl.GenerateUncached
     @GenerateInline(false) // Intentionally lazy
     protected abstract static class ApplyKeywordsNode extends PNodeWithContext {
-        public abstract Object[] execute(Object callee, Signature calleeSignature, Object[] arguments, PKeyword[] keywords);
+        public abstract void execute(Object callee, Signature calleeSignature, Object[] pArguments, PKeyword[] keywords, int kwargsIndex);
 
         @Specialization(guards = {"kwLen == keywords.length", "calleeSignature == cachedSignature", "kwLen <= 32"}, limit = "3")
         @ExplodeLoop
-        static Object[] applyCached(Object callee, @SuppressWarnings("unused") Signature calleeSignature, Object[] arguments, PKeyword[] keywords,
+        static void applyCached(Object callee, @SuppressWarnings("unused") Signature calleeSignature, Object[] pArguments, PKeyword[] keywords, int kwargsIndex,
                         @Bind Node inliningTarget,
                         @Exclusive @Cached PRaiseNode raise,
                         @Cached("keywords.length") int kwLen,
@@ -457,10 +469,10 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                             posArgOnlyPassedAsKeywordNames = addPosArgOnlyPassedAsKeyword(posArgOnlyPassedAsKeywordNames, name);
                         }
                     } else {
-                        if (PArguments.getArgument(arguments, kwIdx) != null) {
+                        if (PArguments.getArgument(pArguments, kwIdx) != null) {
                             throw raise.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.S_PAREN_GOT_MULTIPLE_VALUES_FOR_ARG, getName(callee, cachedSignature), name);
                         }
-                        PArguments.setArgument(arguments, kwIdx, kwArg.getValue());
+                        PArguments.setArgument(pArguments, kwIdx, kwArg.getValue());
                     }
                 } else if (unusedKeywords != null) {
                     unusedKeywords[k++] = kwArg;
@@ -469,13 +481,12 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                     lastWrongKeyword = name;
                 }
             }
-            storeKeywordsOrRaise(callee, arguments, unusedKeywords, k, additionalKwds, lastWrongKeyword, posArgOnlyPassedAsKeywordNames, inliningTarget, posArgOnlyPassedAsKeywordProfile, raise,
-                            cachedSignature);
-            return arguments;
+            storeKeywordsOrRaise(callee, pArguments, kwargsIndex, unusedKeywords, k, additionalKwds, lastWrongKeyword, posArgOnlyPassedAsKeywordNames, inliningTarget, posArgOnlyPassedAsKeywordProfile,
+                            raise, cachedSignature);
         }
 
         @Specialization(replaces = "applyCached")
-        static Object[] applyUncached(Object callee, Signature calleeSignature, Object[] arguments, PKeyword[] keywords,
+        static void applyUncached(Object callee, Signature calleeSignature, Object[] pArguments, PKeyword[] keywords, int kwargsIndex,
                         @Bind Node inliningTarget,
                         @Exclusive @Cached PRaiseNode raise,
                         @Exclusive @Cached InlinedBranchProfile posArgOnlyPassedAsKeywordProfile,
@@ -514,10 +525,10 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                             posArgOnlyPassedAsKeywordNames = addPosArgOnlyPassedAsKeyword(posArgOnlyPassedAsKeywordNames, name);
                         }
                     } else {
-                        if (PArguments.getArgument(arguments, kwIdx) != null) {
+                        if (PArguments.getArgument(pArguments, kwIdx) != null) {
                             throw raise.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.S_PAREN_GOT_MULTIPLE_VALUES_FOR_ARG, getName(callee, calleeSignature), name);
                         }
-                        PArguments.setArgument(arguments, kwIdx, kwArg.getValue());
+                        PArguments.setArgument(pArguments, kwIdx, kwArg.getValue());
                     }
                 } else if (unusedKeywords != null) {
                     unusedKeywords[k++] = kwArg;
@@ -526,9 +537,8 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                     lastWrongKeyword = name;
                 }
             }
-            storeKeywordsOrRaise(callee, arguments, unusedKeywords, k, additionalKwds, lastWrongKeyword,
+            storeKeywordsOrRaise(callee, pArguments, kwargsIndex, unusedKeywords, k, additionalKwds, lastWrongKeyword,
                             posArgOnlyPassedAsKeywordNames, inliningTarget, posArgOnlyPassedAsKeywordProfile, raise, calleeSignature);
-            return arguments;
         }
 
         @TruffleBoundary
@@ -542,8 +552,9 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             return names;
         }
 
-        private static void storeKeywordsOrRaise(Object callee, Object[] arguments, PKeyword[] unusedKeywords, int unusedKeywordCount, int tooManyKeywords, TruffleString lastWrongKeyword,
-                        List<TruffleString> posArgOnlyPassedAsKeywordNames, Node inliningTarget, InlinedBranchProfile posArgOnlyPassedAsKeywordProfile, PRaiseNode raise, Signature signature) {
+        private static void storeKeywordsOrRaise(Object callee, Object[] pArguments, int kwargsIndex, PKeyword[] unusedKeywords, int unusedKeywordCount, int tooManyKeywords,
+                        TruffleString lastWrongKeyword, List<TruffleString> posArgOnlyPassedAsKeywordNames, Node inliningTarget, InlinedBranchProfile posArgOnlyPassedAsKeywordProfile,
+                        PRaiseNode raise, Signature signature) {
             if (tooManyKeywords == 1) {
                 throw raise.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.GOT_UNEXPECTED_KEYWORD_ARG, getName(callee, signature), lastWrongKeyword);
             } else if (tooManyKeywords > 1) {
@@ -553,7 +564,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                 TruffleString names = joinUncached(T_COMMA_SPACE, posArgOnlyPassedAsKeywordNames);
                 throw raise.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.GOT_SOME_POS_ONLY_ARGS_PASSED_AS_KEYWORD, getName(callee, signature), names);
             } else if (unusedKeywords != null) {
-                PArguments.setKeywordArguments(arguments, Arrays.copyOf(unusedKeywords, unusedKeywordCount));
+                PArguments.setArgument(pArguments, kwargsIndex, Arrays.copyOf(unusedKeywords, unusedKeywordCount));
             }
         }
 
@@ -660,11 +671,11 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
     @GenerateInline(false) // Intentionally lazy
     protected abstract static class FillDefaultsNode extends FillBaseNode {
 
-        public abstract void execute(Object callable, Signature signature, Object[] scope_w, Object[] defaults, int input_argcount, int co_argcount);
+        public abstract void execute(Object callable, Signature signature, Object[] pArguments, Object[] defaults, int input_argcount, int co_argcount);
 
         @Specialization(guards = {"input_argcount == cachedInputArgcount", "co_argcount == cachedArgcount", "checkIterations(input_argcount, co_argcount)"}, limit = "3")
         @ExplodeLoop
-        static void doCached(Object callable, Signature signature, Object[] scope_w, Object[] defaults, @SuppressWarnings("unused") int input_argcount, @SuppressWarnings("unused") int co_argcount,
+        static void doCached(Object callable, Signature signature, Object[] pArguments, Object[] defaults, @SuppressWarnings("unused") int input_argcount, @SuppressWarnings("unused") int co_argcount,
                         @Bind Node inliningTarget,
                         @Shared @Cached PRaiseNode raise,
                         @Cached("input_argcount") int cachedInputArgcount,
@@ -674,12 +685,12 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             int firstDefaultArgIdx = cachedArgcount - defaults.length;
             int missingCnt = 0;
             for (int i = cachedInputArgcount; i < cachedArgcount; i++) {
-                if (PArguments.getArgument(scope_w, i) != null) {
+                if (PArguments.getArgument(pArguments, i) != null) {
                     continue;
                 }
                 int defnum = i - firstDefaultArgIdx;
                 if (defnum >= 0) {
-                    PArguments.setArgument(scope_w, i, defaults[defnum]);
+                    PArguments.setArgument(pArguments, i, defaults[defnum]);
                 } else {
                     missingNames[missingCnt++] = signature.getParameterIds()[i];
                 }
@@ -690,7 +701,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         }
 
         @Specialization(replaces = "doCached")
-        static void doUncached(Object callable, Signature signature, Object[] scope_w, Object[] defaults, int input_argcount, int co_argcount,
+        static void doUncached(Object callable, Signature signature, Object[] pArguments, Object[] defaults, int input_argcount, int co_argcount,
                         @Bind Node inliningTarget,
                         @Shared @Cached PRaiseNode raise,
                         @Shared @Cached InlinedConditionProfile missingProfile) {
@@ -698,12 +709,12 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             int firstDefaultArgIdx = co_argcount - defaults.length;
             int missingCnt = 0;
             for (int i = input_argcount; i < co_argcount; i++) {
-                if (PArguments.getArgument(scope_w, i) != null) {
+                if (PArguments.getArgument(pArguments, i) != null) {
                     continue;
                 }
                 int defnum = i - firstDefaultArgIdx;
                 if (defnum >= 0) {
-                    PArguments.setArgument(scope_w, i, defaults[defnum]);
+                    PArguments.setArgument(pArguments, i, defaults[defnum]);
                 } else {
                     missingNames[missingCnt++] = signature.getParameterIds()[i];
                 }
@@ -733,11 +744,11 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
     @GenerateUncached
     @GenerateInline(false) // Intentionally lazy
     protected abstract static class FillKwDefaultsNode extends FillBaseNode {
-        public abstract void execute(Object callable, Object[] scope_w, Signature signature, PKeyword[] kwdefaults, int co_argcount, int co_kwonlyargcount);
+        public abstract void execute(Object callable, Object[] pArguments, Signature signature, PKeyword[] kwdefaults, int co_argcount, int co_kwonlyargcount);
 
         @Specialization(guards = {"co_argcount == cachedArgcount", "co_kwonlyargcount == cachedKwOnlyArgcount", "checkIterations(co_argcount, co_kwonlyargcount)"}, limit = "2")
         @ExplodeLoop
-        static void doCached(Object callable, Object[] scope_w, Signature signature, PKeyword[] kwdefaults, @SuppressWarnings("unused") int co_argcount,
+        static void doCached(Object callable, Object[] pArguments, Signature signature, PKeyword[] kwdefaults, @SuppressWarnings("unused") int co_argcount,
                         @SuppressWarnings("unused") int co_kwonlyargcount,
                         @Bind Node inliningTarget,
                         @Exclusive @Cached PRaiseNode raise,
@@ -748,14 +759,14 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             TruffleString[] missingNames = new TruffleString[cachedKwOnlyArgcount];
             int missingCnt = 0;
             for (int i = cachedArgcount; i < cachedArgcount + cachedKwOnlyArgcount; i++) {
-                if (PArguments.getArgument(scope_w, i) != null) {
+                if (PArguments.getArgument(pArguments, i) != null) {
                     continue;
                 }
 
                 TruffleString kwname = signature.getKeywordNames()[i - cachedArgcount];
                 PKeyword kwdefault = findKwDefaultNode.execute(inliningTarget, kwdefaults, kwname);
                 if (kwdefault != null) {
-                    PArguments.setArgument(scope_w, i, kwdefault.getValue());
+                    PArguments.setArgument(pArguments, i, kwdefault.getValue());
                 } else {
                     missingNames[missingCnt++] = kwname;
                 }
@@ -766,7 +777,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         }
 
         @Specialization(replaces = "doCached")
-        static void doUncached(Object callable, Object[] scope_w, Signature signature, PKeyword[] kwdefaults, int co_argcount, int co_kwonlyargcount,
+        static void doUncached(Object callable, Object[] pArguments, Signature signature, PKeyword[] kwdefaults, int co_argcount, int co_kwonlyargcount,
                         @Bind Node inliningTarget,
                         @Exclusive @Cached PRaiseNode raise,
                         @Exclusive @Cached FindKwDefaultNode findKwDefaultNode,
@@ -774,14 +785,14 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             TruffleString[] missingNames = new TruffleString[co_kwonlyargcount];
             int missingCnt = 0;
             for (int i = co_argcount; i < co_argcount + co_kwonlyargcount; i++) {
-                if (PArguments.getArgument(scope_w, i) != null) {
+                if (PArguments.getArgument(pArguments, i) != null) {
                     continue;
                 }
 
                 TruffleString kwname = signature.getKeywordNames()[i - co_argcount];
                 PKeyword kwdefault = findKwDefaultNode.execute(inliningTarget, kwdefaults, kwname);
                 if (kwdefault != null) {
-                    PArguments.setArgument(scope_w, i, kwdefault.getValue());
+                    PArguments.setArgument(pArguments, i, kwdefault.getValue());
                 } else {
                     missingNames[missingCnt++] = kwname;
                 }

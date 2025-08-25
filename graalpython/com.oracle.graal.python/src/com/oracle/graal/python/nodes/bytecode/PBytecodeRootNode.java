@@ -48,6 +48,7 @@ import static com.oracle.graal.python.builtins.objects.type.TypeFlags.SEQUENCE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___BUILD_CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___CLASS__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NameError;
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_ASSUMPTION_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
@@ -55,6 +56,8 @@ import java.math.BigInteger;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
+
+import org.graalvm.collections.Pair;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -700,9 +703,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         this.exceptionHandlerRanges = co.exceptionHandlerRanges;
         this.co = co;
         assert co.stacksize < Math.pow(2, 12) : "stacksize cannot be larger than 12-bit range";
-        cellEffectivelyFinalAssumptions = new Assumption[cellvars.length];
-        for (int i = 0; i < cellvars.length; i++) {
-            cellEffectivelyFinalAssumptions[i] = Truffle.getRuntime().createAssumption("cell is effectively final");
+        if (cellvars.length == 0) {
+            cellEffectivelyFinalAssumptions = EMPTY_ASSUMPTION_ARRAY;
+        } else {
+            cellEffectivelyFinalAssumptions = new Assumption[cellvars.length];
+            for (int i = 0; i < cellvars.length; i++) {
+                cellEffectivelyFinalAssumptions[i] = Truffle.getRuntime().createAssumption("cell is effectively final");
+            }
         }
         int classcellIndexValue = -1;
         for (int i = 0; i < this.freevars.length; i++) {
@@ -1069,10 +1076,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         copyArgs(arguments, localFrame);
         int varIdx = co.getRegularArgCount();
         if (co.takesVarArgs()) {
-            localFrame.setObject(varIdx++, PFactory.createTuple(getLanguage(), PArguments.getVariableArguments(arguments)));
+            int varargsIndex = varIdx++;
+            localFrame.setObject(varargsIndex, PFactory.createTuple(getLanguage(), (Object[]) PArguments.getArgument(arguments, varargsIndex)));
         }
         if (co.takesVarKeywordArgs()) {
-            localFrame.setObject(varIdx, PFactory.createDict(getLanguage(), PArguments.getKeywordArguments(arguments)));
+            localFrame.setObject(varIdx, PFactory.createDict(getLanguage(), (PKeyword[]) PArguments.getArgument(arguments, varIdx)));
         }
         initCellVars(localFrame);
         initFreeVars(localFrame, arguments);
@@ -1095,16 +1103,22 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
+    // Doesn't matter which PArguments slot we use as long as it exists
+    private static final int OSR_FRAME_INDEX = 0;
+
     @Override
     public Object[] storeParentFrameInArguments(VirtualFrame parentFrame) {
         Object[] arguments = parentFrame.getArguments();
-        PArguments.setOSRFrame(arguments, parentFrame);
+        arguments[0] = Pair.create(arguments[OSR_FRAME_INDEX], parentFrame);
         return arguments;
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public Frame restoreParentFrameFromArguments(Object[] arguments) {
-        return PArguments.getOSRFrame(arguments);
+        Pair<Object, Frame> pair = (Pair<Object, Frame>) arguments[OSR_FRAME_INDEX];
+        arguments[0] = pair.getLeft();
+        return pair.getRight();
     }
 
     @Override

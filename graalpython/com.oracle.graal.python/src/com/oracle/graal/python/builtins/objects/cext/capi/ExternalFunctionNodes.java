@@ -699,7 +699,7 @@ public abstract class ExternalFunctionNodes {
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
             // return a copy of the args array since it will be modified
-            Object[] varargs = PArguments.getVariableArguments(frame);
+            Object[] varargs = (Object[]) PArguments.getArgument(frame, SIGNATURE.varArgsPArgumentsIndex());
             return PythonUtils.arrayCopyOf(varargs, varargs.length);
         }
 
@@ -971,8 +971,8 @@ public abstract class ExternalFunctionNodes {
 
         public MethKeywordsRoot(PythonLanguage language, TruffleString name, boolean isStatic, PExternalFunctionWrapper provider) {
             super(language, name, isStatic, provider);
-            this.readVarargsNode = ReadVarArgsNode.create(true);
-            this.readKwargsNode = ReadVarKeywordsNode.create(PythonUtils.EMPTY_TRUFFLESTRING_ARRAY);
+            this.readVarargsNode = ReadVarArgsNode.create(SIGNATURE.varArgsPArgumentsIndex());
+            this.readKwargsNode = ReadVarKeywordsNode.create(SIGNATURE.varKeywordsPArgumentsIndex());
             this.createArgsTupleNode = CreateArgsTupleNodeGen.create();
             this.freeNode = ReleaseNativeSequenceStorageNodeGen.create();
         }
@@ -980,8 +980,8 @@ public abstract class ExternalFunctionNodes {
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
             Object self = readSelf(frame);
-            Object[] args = readVarargsNode.executeObjectArray(frame);
-            PKeyword[] kwargs = readKwargsNode.executePKeyword(frame);
+            Object[] args = readVarargsNode.execute(frame);
+            PKeyword[] kwargs = readKwargsNode.execute(frame);
             PythonLanguage language = getLanguage(PythonLanguage.class);
             return new Object[]{self, createArgsTupleNode.execute(language, args, seenNativeArgsTupleStorage), kwargs.length > 0 ? PFactory.createDict(language, kwargs) : PNone.NO_VALUE};
         }
@@ -1013,7 +1013,7 @@ public abstract class ExternalFunctionNodes {
 
         public MethVarargsRoot(PythonLanguage language, TruffleString name, boolean isStatic, PExternalFunctionWrapper provider) {
             super(language, name, isStatic, provider);
-            this.readVarargsNode = ReadVarArgsNode.create(true);
+            this.readVarargsNode = ReadVarArgsNode.create(SIGNATURE.varArgsPArgumentsIndex());
             this.createArgsTupleNode = CreateArgsTupleNodeGen.create();
             this.freeNode = ReleaseNativeSequenceStorageNodeGen.create();
         }
@@ -1021,7 +1021,7 @@ public abstract class ExternalFunctionNodes {
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
             Object self = readSelf(frame);
-            Object[] args = readVarargsNode.executeObjectArray(frame);
+            Object[] args = readVarargsNode.execute(frame);
             return new Object[]{self, createArgsTupleNode.execute(getLanguage(PythonLanguage.class), args, seenNativeArgsTupleStorage)};
         }
 
@@ -1100,11 +1100,11 @@ public abstract class ExternalFunctionNodes {
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
             Object methodSelf = readSelf(frame);
-            Object[] args = readVarargsNode.executeObjectArray(frame);
+            Object[] args = readVarargsNode.execute(frame);
             // TODO checks
             Object self = args[0];
             args = PythonUtils.arrayCopyOfRange(args, 1, args.length);
-            PKeyword[] kwargs = readKwargsNode.executePKeyword(frame);
+            PKeyword[] kwargs = readKwargsNode.execute(frame);
             PythonLanguage language = getLanguage(PythonLanguage.class);
             return new Object[]{self, createArgsTupleNode.execute(language, args, seenNativeArgsTupleStorage), kwargs.length > 0 ? PFactory.createDict(language, kwargs) : PNone.NO_VALUE};
         }
@@ -1192,15 +1192,15 @@ public abstract class ExternalFunctionNodes {
 
         public MethFastcallWithKeywordsRoot(PythonLanguage language, TruffleString name, boolean isStatic, PExternalFunctionWrapper provider) {
             super(language, name, isStatic, provider);
-            this.readVarargsNode = ReadVarArgsNode.create(true);
-            this.readKwargsNode = ReadVarKeywordsNode.create(PythonUtils.EMPTY_TRUFFLESTRING_ARRAY);
+            this.readVarargsNode = ReadVarArgsNode.create(SIGNATURE.varArgsPArgumentsIndex());
+            this.readKwargsNode = ReadVarKeywordsNode.create(SIGNATURE.varKeywordsPArgumentsIndex());
         }
 
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
             Object self = readSelf(frame);
-            Object[] args = readVarargsNode.executeObjectArray(frame);
-            PKeyword[] kwargs = readKwargsNode.executePKeyword(frame);
+            Object[] args = readVarargsNode.execute(frame);
+            PKeyword[] kwargs = readKwargsNode.execute(frame);
             Object[] fastcallArgs = new Object[args.length + kwargs.length];
             Object kwnamesTuple = PNone.NO_VALUE;
             PythonUtils.arraycopy(args, 0, fastcallArgs, 0, args.length);
@@ -1240,16 +1240,16 @@ public abstract class ExternalFunctionNodes {
         public MethMethodRoot(PythonLanguage language, TruffleString name, boolean isStatic, PExternalFunctionWrapper provider) {
             super(language, name, isStatic, provider);
             this.readClsNode = ReadIndexedArgumentNode.create(1);
-            this.readVarargsNode = ReadVarArgsNode.create(true);
-            this.readKwargsNode = ReadVarKeywordsNode.create(PythonUtils.EMPTY_TRUFFLESTRING_ARRAY);
+            this.readVarargsNode = ReadVarArgsNode.create(SIGNATURE.varArgsPArgumentsIndex());
+            this.readKwargsNode = ReadVarKeywordsNode.create(SIGNATURE.varKeywordsPArgumentsIndex());
         }
 
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
             Object self = readSelf(frame);
             Object cls = readClsNode.execute(frame);
-            Object[] args = readVarargsNode.executeObjectArray(frame);
-            PKeyword[] kwargs = readKwargsNode.executePKeyword(frame);
+            Object[] args = readVarargsNode.execute(frame);
+            PKeyword[] kwargs = readKwargsNode.execute(frame);
             Object[] fastcallArgs = new Object[args.length + kwargs.length];
             Object[] fastcallKwnames = new Object[kwargs.length];
             PythonUtils.arraycopy(args, 0, fastcallArgs, 0, args.length);
@@ -1282,13 +1282,13 @@ public abstract class ExternalFunctionNodes {
 
         public MethFastcallRoot(PythonLanguage language, TruffleString name, boolean isStatic, PExternalFunctionWrapper provider) {
             super(language, name, isStatic, provider);
-            this.readVarargsNode = ReadVarArgsNode.create(true);
+            this.readVarargsNode = ReadVarArgsNode.create(SIGNATURE.varArgsPArgumentsIndex());
         }
 
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
             Object self = readSelf(frame);
-            Object[] args = readVarargsNode.executeObjectArray(frame);
+            Object[] args = readVarargsNode.execute(frame);
             return new Object[]{self, new CPyObjectArrayWrapper(args), args.length};
         }
 
@@ -1713,14 +1713,14 @@ public abstract class ExternalFunctionNodes {
 
         MethPowRootNode(PythonLanguage language, TruffleString name, PExternalFunctionWrapper provider) {
             super(language, name, false, provider);
-            this.readVarargsNode = ReadVarArgsNode.create(true);
+            this.readVarargsNode = ReadVarArgsNode.create(SIGNATURE.varArgsPArgumentsIndex());
             this.profile = ConditionProfile.create();
         }
 
         @Override
         protected final Object[] prepareCArguments(VirtualFrame frame) {
             Object self = readSelf(frame);
-            Object[] varargs = readVarargsNode.executeObjectArray(frame);
+            Object[] varargs = readVarargsNode.execute(frame);
             Object arg0 = varargs[0];
             Object arg1 = profile.profile(varargs.length > 1) ? varargs[1] : PNone.NONE;
             return getArguments(self, arg0, arg1);

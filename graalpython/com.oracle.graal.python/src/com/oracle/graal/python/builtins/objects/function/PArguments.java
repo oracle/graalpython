@@ -30,21 +30,14 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.MaterializedFrame;
-import com.oracle.truffle.api.frame.VirtualFrame;
 
 //@formatter:off
 /**
  * The layout of an argument array for a Python frame.
  *
- *                                         +-------------------+
- * INDEX_VARIABLE_ARGUMENTS             -> | Object[]          |  This slot is also used to pass parent frame reference in bytecode OSR compilation.
- *                                         +-------------------+
- * INDEX_KEYWORD_ARGUMENTS              -> | PKeyword[]        |
  *                                         +-------------------+
  * INDEX_GENERATOR_FRAME                -> | MaterializedFrame |
  *                                         +-------------------+
@@ -68,24 +61,21 @@ import com.oracle.truffle.api.frame.VirtualFrame;
  */
 //@formatter:on
 public final class PArguments {
-
-    private static final int INDEX_VARIABLE_ARGUMENTS = 0;
-    private static final int INDEX_KEYWORD_ARGUMENTS = 1;
-    private static final int INDEX_GENERATOR_FRAME = 2;
-    private static final int INDEX_SPECIAL_ARGUMENT = 3;
-    private static final int INDEX_GLOBALS_ARGUMENT = 4;
-    private static final int INDEX_CLOSURE = 5;
-    private static final int INDEX_CALLER_FRAME_INFO = 6;
-    private static final int INDEX_CURRENT_FRAME_INFO = 7;
-    private static final int INDEX_CURRENT_EXCEPTION = 8;
-    public static final int USER_ARGUMENTS_OFFSET = 9;
+    private static final int INDEX_GENERATOR_FRAME = 0;
+    private static final int INDEX_SPECIAL_ARGUMENT = 1;
+    private static final int INDEX_GLOBALS_ARGUMENT = 2;
+    private static final int INDEX_CLOSURE = 3;
+    private static final int INDEX_CALLER_FRAME_INFO = 4;
+    private static final int INDEX_CURRENT_FRAME_INFO = 5;
+    private static final int INDEX_CURRENT_EXCEPTION = 6;
+    public static final int USER_ARGUMENTS_OFFSET = 7;
 
     public static boolean isPythonFrame(Frame frame) {
         return frame != null && isPythonFrame(frame.getArguments());
     }
 
     public static boolean isPythonFrame(Object[] frameArgs) {
-        return frameArgs.length >= USER_ARGUMENTS_OFFSET && frameArgs[INDEX_KEYWORD_ARGUMENTS] instanceof PKeyword[];
+        return frameArgs.length >= USER_ARGUMENTS_OFFSET && frameArgs[INDEX_CURRENT_FRAME_INFO] instanceof PFrame.Reference;
     }
 
     public static Object[] withGlobals(PythonObject globals) {
@@ -99,34 +89,7 @@ public final class PArguments {
     }
 
     public static Object[] create(int userArgumentLength) {
-        Object[] initialArguments = new Object[USER_ARGUMENTS_OFFSET + userArgumentLength];
-        initialArguments[INDEX_VARIABLE_ARGUMENTS] = PythonUtils.EMPTY_OBJECT_ARRAY;
-        initialArguments[INDEX_KEYWORD_ARGUMENTS] = PKeyword.EMPTY_KEYWORDS;
-        return initialArguments;
-    }
-
-    public static void setVariableArguments(Object[] arguments, Object... variableArguments) {
-        arguments[INDEX_VARIABLE_ARGUMENTS] = variableArguments;
-    }
-
-    public static Object[] getVariableArguments(Frame frame) {
-        return getVariableArguments(frame.getArguments());
-    }
-
-    public static Object[] getVariableArguments(Object[] frame) {
-        return (Object[]) frame[INDEX_VARIABLE_ARGUMENTS];
-    }
-
-    public static void setKeywordArguments(Object[] arguments, PKeyword[] keywordArguments) {
-        arguments[INDEX_KEYWORD_ARGUMENTS] = keywordArguments;
-    }
-
-    public static PKeyword[] getKeywordArguments(Frame frame) {
-        return getKeywordArguments(frame.getArguments());
-    }
-
-    public static PKeyword[] getKeywordArguments(Object[] frame) {
-        return (PKeyword[]) frame[INDEX_KEYWORD_ARGUMENTS];
+        return new Object[USER_ARGUMENTS_OFFSET + userArgumentLength];
     }
 
     /**
@@ -244,19 +207,6 @@ public final class PArguments {
         return (PCell[]) arguments[INDEX_CLOSURE];
     }
 
-    /*
-     * We repurpose the varargs slot for storing the OSR frame. In the bytecode interpreter, varargs
-     * should only be read once at the beginning of execute which is before OSR.
-     */
-    public static void setOSRFrame(Object[] arguments, VirtualFrame parentFrame) {
-        CompilerAsserts.neverPartOfCompilation();
-        arguments[INDEX_VARIABLE_ARGUMENTS] = parentFrame;
-    }
-
-    public static Frame getOSRFrame(Object[] arguments) {
-        return (Frame) arguments[INDEX_VARIABLE_ARGUMENTS];
-    }
-
     public static PCell[] getClosure(Frame frame) {
         return getClosure(frame.getArguments());
     }
@@ -266,24 +216,11 @@ public final class PArguments {
     }
 
     public static Object getArgument(Object[] arguments, int index) {
-        int argIdx = USER_ARGUMENTS_OFFSET + index;
-        if (argIdx < arguments.length) {
-            return arguments[argIdx];
-        } else {
-            return null;
-        }
+        return arguments[USER_ARGUMENTS_OFFSET + index];
     }
 
     public static Object getArgument(Frame frame, int index) {
         return getArgument(frame.getArguments(), index);
-    }
-
-    public static int getUserArgumentLength(VirtualFrame frame) {
-        return frame.getArguments().length - USER_ARGUMENTS_OFFSET;
-    }
-
-    public static int getUserArgumentLength(Object[] arguments) {
-        return arguments.length - USER_ARGUMENTS_OFFSET;
     }
 
     public static MaterializedFrame getGeneratorFrame(Object[] arguments) {
@@ -335,9 +272,6 @@ public final class PArguments {
         setSpecialArgument(copiedArgs, getSpecialArgument(arguments));
         setGlobals(copiedArgs, getGlobals(arguments));
         setClosure(copiedArgs, getClosure(arguments));
-
-        // copy all user arguments
-        PythonUtils.arraycopy(arguments, USER_ARGUMENTS_OFFSET, copiedArgs, USER_ARGUMENTS_OFFSET, getUserArgumentLength(arguments));
 
         escapedFrame.setArguments(copiedArgs);
     }

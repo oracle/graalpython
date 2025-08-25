@@ -41,6 +41,10 @@
 package com.oracle.graal.python.compiler;
 
 import static com.oracle.graal.python.compiler.CompilationScope.Class;
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_INT_ARRAY;
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_LONG_ARRAY;
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.io.ByteArrayOutputStream;
@@ -62,7 +66,6 @@ import com.oracle.graal.python.pegparser.FutureFeature;
 import com.oracle.graal.python.pegparser.scope.Scope;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.strings.TruffleString;
 
 public final class CompilationUnit {
     final String name;
@@ -259,12 +262,17 @@ public final class CompilationUnit {
         }
 
         final int rangeElements = 4;
-        int[] exceptionHandlerRanges = new int[finishedExceptionHandlerRanges.size() * rangeElements];
-        int rangeIndex = 0;
-        for (int[] range : finishedExceptionHandlerRanges) {
-            assert range.length == rangeElements;
-            System.arraycopy(range, 0, exceptionHandlerRanges, rangeIndex, rangeElements);
-            rangeIndex += rangeElements;
+        int[] exceptionHandlerRanges;
+        if (finishedExceptionHandlerRanges.isEmpty()) {
+            exceptionHandlerRanges = EMPTY_INT_ARRAY;
+        } else {
+            exceptionHandlerRanges = new int[finishedExceptionHandlerRanges.size() * rangeElements];
+            int rangeIndex = 0;
+            for (int[] range : finishedExceptionHandlerRanges) {
+                assert range.length == rangeElements;
+                System.arraycopy(range, 0, exceptionHandlerRanges, rangeIndex, rangeElements);
+                rangeIndex += rangeElements;
+            }
         }
 
         byte[] finishedCanQuickenOutput = new byte[buf.size()];
@@ -300,9 +308,13 @@ public final class CompilationUnit {
              */
             for (int i = 0; i < varCount; i++) {
                 List<Instruction> stores = variableStores.get(i);
-                finishedGeneralizeVarsMap[i] = new int[stores.size()];
-                for (int j = 0; j < stores.size(); j++) {
-                    finishedGeneralizeVarsMap[i][j] = stores.get(j).bodyBci();
+                if (!stores.isEmpty()) {
+                    finishedGeneralizeVarsMap[i] = new int[stores.size()];
+                    for (int j = 0; j < stores.size(); j++) {
+                        finishedGeneralizeVarsMap[i][j] = stores.get(j).bodyBci();
+                    }
+                } else {
+                    finishedGeneralizeVarsMap[i] = EMPTY_INT_ARRAY;
                 }
                 if (boxingMetric[i] <= 0) {
                     shouldUnboxVariable[i] = 0;
@@ -311,11 +323,11 @@ public final class CompilationUnit {
         }
         return new BytecodeCodeUnit(toTruffleStringUncached(name), toTruffleStringUncached(qualName),
                         argCount, kwOnlyArgCount, positionalOnlyArgCount, flags,
-                        orderedKeys(names, new TruffleString[0], PythonUtils::toTruffleStringUncached), orderedKeys(varnames, new TruffleString[0], PythonUtils::toTruffleStringUncached),
-                        orderedKeys(cellvars, new TruffleString[0], PythonUtils::toTruffleStringUncached),
-                        orderedKeys(freevars, new TruffleString[0], cellvars.size(), PythonUtils::toTruffleStringUncached),
+                        orderedKeys(names, EMPTY_TRUFFLESTRING_ARRAY, PythonUtils::toTruffleStringUncached), orderedKeys(varnames, EMPTY_TRUFFLESTRING_ARRAY, PythonUtils::toTruffleStringUncached),
+                        orderedKeys(cellvars, EMPTY_TRUFFLESTRING_ARRAY, PythonUtils::toTruffleStringUncached),
+                        orderedKeys(freevars, EMPTY_TRUFFLESTRING_ARRAY, cellvars.size(), PythonUtils::toTruffleStringUncached),
                         cell2arg,
-                        orderedKeys(constants, new Object[0]),
+                        orderedKeys(constants, EMPTY_OBJECT_ARRAY),
                         startLocation.startLine,
                         startLocation.startColumn,
                         startLocation.endLine,
@@ -459,23 +471,29 @@ public final class CompilationUnit {
         }
     }
 
-    private static <T, U> U[] orderedKeys(HashMap<T, Integer> map, U[] template, int offset, com.oracle.graal.python.util.Function<T, U> convertor) {
-        U[] ary = Arrays.copyOf(template, map.size());
+    private static <T, U> U[] orderedKeys(HashMap<T, Integer> map, U[] empty, int offset, com.oracle.graal.python.util.Function<T, U> convertor) {
+        if (map.isEmpty()) {
+            return empty;
+        }
+        U[] ary = Arrays.copyOf(empty, map.size());
         for (Map.Entry<T, Integer> e : map.entrySet()) {
             ary[e.getValue() - offset] = convertor.apply(e.getKey());
         }
         return ary;
     }
 
-    private static <T> T[] orderedKeys(HashMap<T, Integer> map, T[] template) {
-        return orderedKeys(map, template, 0, i -> i);
+    private static <T> T[] orderedKeys(HashMap<T, Integer> map, T[] empty) {
+        return orderedKeys(map, empty, 0, i -> i);
     }
 
-    private static <T, U> U[] orderedKeys(HashMap<T, Integer> map, U[] template, com.oracle.graal.python.util.Function<T, U> convertor) {
-        return orderedKeys(map, template, 0, convertor);
+    private static <T, U> U[] orderedKeys(HashMap<T, Integer> map, U[] empty, com.oracle.graal.python.util.Function<T, U> convertor) {
+        return orderedKeys(map, empty, 0, convertor);
     }
 
     private static long[] orderedLong(HashMap<Long, Integer> map) {
+        if (map.isEmpty()) {
+            return EMPTY_LONG_ARRAY;
+        }
         long[] ary = new long[map.size()];
         for (Map.Entry<Long, Integer> e : map.entrySet()) {
             ary[e.getValue()] = e.getKey();

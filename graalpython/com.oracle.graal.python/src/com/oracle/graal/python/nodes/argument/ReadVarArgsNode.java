@@ -25,43 +25,25 @@
  */
 package com.oracle.graal.python.nodes.argument;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public abstract class ReadVarArgsNode extends ReadArgumentNode {
-    private final boolean isBuiltin;
+    private final int index;
 
-    ReadVarArgsNode(boolean isBuiltin) {
-        this.isBuiltin = isBuiltin;
+    ReadVarArgsNode(int index) {
+        this.index = index;
     }
 
-    public static ReadVarArgsNode create() {
-        return create(false);
+    public static ReadVarArgsNode create(int index) {
+        return ReadVarArgsNodeGen.create(index);
     }
 
-    public static ReadVarArgsNode create(boolean isBuiltin) {
-        return ReadVarArgsNodeGen.create(isBuiltin);
-    }
-
-    public abstract Object[] executeObjectArray(VirtualFrame frame);
+    public abstract Object[] execute(VirtualFrame frame);
 
     @Specialization
-    Object extractVariableVarargs(VirtualFrame frame) {
-        return output(PArguments.getVariableArguments(frame));
-    }
-
-    private Object output(Object[] varArgs) {
-        if (isBuiltin()) {
-            return varArgs;
-        } else {
-            return PFactory.createTuple(PythonLanguage.get(this), varArgs);
-        }
-    }
-
-    public boolean isBuiltin() {
-        return isBuiltin;
+    Object[] read(VirtualFrame frame) {
+        return (Object[]) PArguments.getArgument(frame, index);
     }
 }

@@ -83,6 +83,7 @@ import com.oracle.graal.python.pegparser.sst.ConstantValue;
 import com.oracle.graal.python.pegparser.tokenizer.CodePoints;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -143,8 +144,11 @@ public final class PythonUtils {
     public static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
     public static final int[] EMPTY_INT_ARRAY = new int[0];
     public static final long[] EMPTY_LONG_ARRAY = new long[0];
+    public static final short[] EMPTY_SHORT_ARRAY = new short[0];
+    public static final boolean[] EMPTY_BOOLEAN_ARRAY = new boolean[0];
     public static final double[] EMPTY_DOUBLE_ARRAY = new double[0];
     public static final char[] EMPTY_CHAR_ARRAY = new char[0];
+    public static final Assumption[] EMPTY_ASSUMPTION_ARRAY = new Assumption[0];
     public static final ByteSequence EMPTY_BYTE_SEQUENCE = ByteSequence.create(EMPTY_BYTE_ARRAY);
 
     /**

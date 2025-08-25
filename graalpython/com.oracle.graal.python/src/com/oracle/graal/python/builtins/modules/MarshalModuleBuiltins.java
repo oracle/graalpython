@@ -31,6 +31,13 @@ import static com.oracle.graal.python.builtins.modules.io.IONodes.T_READINTO;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_VERSION;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_BOOLEAN_ARRAY;
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_DOUBLE_ARRAY;
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_INT_ARRAY;
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_LONG_ARRAY;
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_SHORT_ARRAY;
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.io.ByteArrayInputStream;
@@ -1234,6 +1241,9 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         private int[] readIntArray() {
             int length = readInt();
+            if (length == 0) {
+                return EMPTY_INT_ARRAY;
+            }
             int[] a = new int[length];
             for (int i = 0; i < length; i++) {
                 a[i] = readInt();
@@ -1243,6 +1253,9 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         private long[] readLongArray() {
             int length = readInt();
+            if (length == 0) {
+                return EMPTY_LONG_ARRAY;
+            }
             long[] a = new long[length];
             for (int i = 0; i < length; i++) {
                 a[i] = readLong();
@@ -1252,6 +1265,9 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         private double[] readDoubleArray() {
             int length = readInt();
+            if (length == 0) {
+                return EMPTY_DOUBLE_ARRAY;
+            }
             double[] a = new double[length];
             for (int i = 0; i < length; i++) {
                 a[i] = readDouble();
@@ -1261,6 +1277,9 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         private short[] readShortArray() {
             int length = readInt();
+            if (length == 0) {
+                return EMPTY_SHORT_ARRAY;
+            }
             short[] a = new short[length];
             for (int i = 0; i < length; i++) {
                 a[i] = readShort();
@@ -1270,6 +1289,9 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         private boolean[] readBooleanArray() {
             int length = readInt();
+            if (length == 0) {
+                return EMPTY_BOOLEAN_ARRAY;
+            }
             boolean[] a = new boolean[length];
             for (int i = 0; i < length; i++) {
                 a[i] = readByte() != 0;
@@ -1279,6 +1301,9 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         private TruffleString[] readStringArray() {
             int length = readInt();
+            if (length == 0) {
+                return EMPTY_TRUFFLESTRING_ARRAY;
+            }
             TruffleString[] a = new TruffleString[length];
             for (int i = 0; i < length; i++) {
                 a[i] = readString();
@@ -1288,6 +1313,9 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         private Object[] readObjectArray() {
             int length = readInt();
+            if (length == 0) {
+                return EMPTY_OBJECT_ARRAY;
+            }
             Object[] a = new Object[length];
             for (int i = 0; i < length; i++) {
                 a[i] = readObject();

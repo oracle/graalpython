@@ -223,11 +223,8 @@ public enum OSErrorEnum {
 
     OSErrorEnum(int number, TruffleString message, TruffleString... alternativeMessages) {
         this.number = number;
-        this.message = message != null ? message : null;
-        this.alternativeMessages = new TruffleString[alternativeMessages.length];
-        for (int i = 0; i < alternativeMessages.length; i++) {
-            this.alternativeMessages[i] = alternativeMessages[i];
-        }
+        this.message = message;
+        this.alternativeMessages = alternativeMessages;
     }
 
     OSErrorEnum(int number, TruffleString message) {
