@@ -53,6 +53,7 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.HiddenAttrFactory.ReadNodeGen;
 import com.oracle.graal.python.nodes.HiddenAttrFactory.WriteNodeGen;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -60,9 +61,8 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.HiddenKey;
 
 public final class HiddenAttr {
@@ -135,8 +135,8 @@ public final class HiddenAttr {
 
         @Specialization
         static Object doGeneric(PythonAbstractObject self, HiddenAttr attr, Object defaultValue,
-                        @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
-            return dylib.getOrDefault(self, attr.key, defaultValue);
+                        @Cached DynamicObject.GetNode getNode) {
+            return getNode.execute(self, attr.key, defaultValue);
         }
 
         @NeverDefault
@@ -167,15 +167,17 @@ public final class HiddenAttr {
 
         @Specialization(guards = "attr == DICT")
         static void doPythonObjectDict(PythonObject self, HiddenAttr attr, Object value,
-                        @Shared @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
-            dylib.setShapeFlags(self, dylib.getShapeFlags(self) | HAS_MATERIALIZED_DICT);
-            dylib.put(self, DICT.key, value);
+                        @Cached DynamicObject.GetShapeFlagsNode getShapeFlagsNode,
+                        @Cached DynamicObject.SetShapeFlagsNode setShapeFlagsNode,
+                        @Shared @Cached DynamicObject.PutNode putNode) {
+            self.addShapeFlag(HAS_MATERIALIZED_DICT, getShapeFlagsNode, setShapeFlagsNode);
+            putNode.execute(self, DICT.key, value);
         }
 
         @Specialization(guards = "attr != DICT || !isPythonObject(self)")
         static void doGeneric(PythonAbstractObject self, HiddenAttr attr, Object value,
-                        @Shared @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
-            dylib.put(self, attr.key, value);
+                        @Shared @Cached DynamicObject.PutNode putNode) {
+            putNode.execute(self, attr.key, value);
         }
 
         protected static boolean isPythonObject(Object object) {

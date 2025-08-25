@@ -234,7 +234,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -1752,7 +1752,7 @@ public record TpSlots(TpSlot nb_bool, //
             TpSlotMeta slotMeta = slotDefGroup.getKey();
             TpSlot slotValue = slotMeta.getter.get(slots);
             if (slotMeta == TpSlotMeta.TP_HASH && slotValue == TpSlotHashFun.HASH_NOT_IMPLEMENTED) {
-                DynamicObjectLibrary.getUncached().put(pythonBuiltinClass, T___HASH__, PNone.NONE);
+                DynamicObject.PutNode.getUncached().execute(pythonBuiltinClass, T___HASH__, PNone.NONE);
                 continue;
             }
             if (!(slotValue instanceof TpSlotBuiltin<?> builtinSlot)) {
