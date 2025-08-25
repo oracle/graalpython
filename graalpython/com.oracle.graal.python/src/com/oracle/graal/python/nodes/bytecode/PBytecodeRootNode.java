@@ -5677,7 +5677,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @ExplodeLoop
     private void initFreeVars(Frame localFrame, Object[] originalArgs) {
         if (freevars.length > 0) {
-            PCell[] closure = PArguments.getClosure(originalArgs);
+            PCell[] closure = PArguments.getFunctionObject(originalArgs).getClosure();
             for (int i = 0; i < freevars.length; i++) {
                 localFrame.setObject(freeoffset + i, closure[i]);
             }

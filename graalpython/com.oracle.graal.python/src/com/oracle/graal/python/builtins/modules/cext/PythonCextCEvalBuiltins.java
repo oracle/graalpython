@@ -52,6 +52,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadState;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi11BuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiNullaryBuiltinNode;
@@ -66,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -81,6 +83,7 @@ import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
@@ -151,10 +154,11 @@ public final class PythonCextCEvalBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject, PyObjectConstPtr, Int, PyObjectConstPtr, Int, PyObjectConstPtr, Int, PyObject, PyObject}, call = Ignored)
     abstract static class GraalPyPrivate_Eval_EvalCodeEx extends CApi11BuiltinNode {
         @Specialization
-        static Object doGeneric(PCode code, Object globals, Object locals,
+        static Object doGeneric(PCode code, PythonObject globals, Object locals,
                         Object argumentArrayPtr, int argumentCount, Object kwsPtr, int kwsCount, Object defaultValueArrayPtr, int defaultValueCount,
                         Object kwdefaultsWrapper, Object closureObj,
                         @Bind Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Cached PRaiseNode raiseNode,
                         @Cached CStructAccess.ReadObjectNode readNode,
                         @Cached PythonCextBuiltins.CastKwargsNode castKwargsNode,
@@ -185,21 +189,18 @@ public final class PythonCextCEvalBuiltins {
             // prepare Python frame arguments
             Object[] userArguments = readNode.readPyObjectArray(argumentArrayPtr, argumentCount);
             Signature signature = getSignatureNode.execute(inliningTarget, code);
+            PFunction function = PFactory.createFunction(language, code.getName(), code, globals, closure);
             Object[] pArguments = createArgumentsNode.execute(inliningTarget, code, userArguments, keywords, signature, null, null, defaults, kwdefaults, false);
 
             // set custom locals
             if (!(locals instanceof PNone)) {
                 PArguments.setSpecialArgument(pArguments, locals);
             }
-            PArguments.setClosure(pArguments, closure);
+            PArguments.setFunctionObject(pArguments, function);
             // TODO(fa): set builtins in globals
             // PythonModule builtins = getContext().getBuiltins();
             // setBuiltinsInGlobals(globals, setBuiltins, builtins, lib);
-            if (globals instanceof PythonObject) {
-                PArguments.setGlobals(pArguments, (PythonObject) globals);
-            } else {
-                // TODO(fa): raise appropriate exception
-            }
+            PArguments.setGlobals(pArguments, globals);
 
             RootCallTarget rootCallTarget = getCallTargetNode.execute(inliningTarget, code);
             return invoke.execute(null, inliningTarget, rootCallTarget, pArguments);

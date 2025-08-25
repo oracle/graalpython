@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.function;
 
-import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -45,7 +44,7 @@ import com.oracle.truffle.api.frame.MaterializedFrame;
  *                                         +-------------------+
  * INDEX_GLOBALS_ARGUMENT               -> | PythonObject      |
  *                                         +-------------------+
- * INDEX_CLOSURE                        -> | PCell[]           |
+ * INDEX_FUNCTION_OBJECT                -> | PFunction         |
  *                                         +-------------------+
  * INDEX_CALLER_FRAME_INFO              -> | PFrame.Reference  |
  *                                         +-------------------+
@@ -64,7 +63,7 @@ public final class PArguments {
     private static final int INDEX_GENERATOR_FRAME = 0;
     private static final int INDEX_SPECIAL_ARGUMENT = 1;
     private static final int INDEX_GLOBALS_ARGUMENT = 2;
-    private static final int INDEX_CLOSURE = 3;
+    private static final int INDEX_FUNCTION_OBJECT = 3;
     private static final int INDEX_CALLER_FRAME_INFO = 4;
     private static final int INDEX_CURRENT_FRAME_INFO = 5;
     private static final int INDEX_CURRENT_EXCEPTION = 6;
@@ -199,16 +198,12 @@ public final class PArguments {
         arguments[INDEX_CURRENT_EXCEPTION] = exc;
     }
 
-    public static void setClosure(Object[] arguments, PCell[] closure) {
-        arguments[INDEX_CLOSURE] = closure;
+    public static PFunction getFunctionObject(Object[] arguments) {
+        return (PFunction) arguments[INDEX_FUNCTION_OBJECT];
     }
 
-    public static PCell[] getClosure(Object[] arguments) {
-        return (PCell[]) arguments[INDEX_CLOSURE];
-    }
-
-    public static PCell[] getClosure(Frame frame) {
-        return getClosure(frame.getArguments());
+    public static void setFunctionObject(Object[] arguments, PFunction function) {
+        arguments[INDEX_FUNCTION_OBJECT] = function;
     }
 
     public static void setArgument(Object[] arguments, int index, Object value) {
@@ -249,18 +244,6 @@ public final class PArguments {
     }
 
     /**
-     * This should be used only in GeneratorFunctionRootNode, later the slot is overwritten with
-     * generator frame
-     */
-    public static PFunction getGeneratorFunction(Object[] arguments) {
-        return (PFunction) arguments[INDEX_GENERATOR_FRAME];
-    }
-
-    public static void setGeneratorFunction(Object[] arguments, PFunction generatorFunction) {
-        arguments[INDEX_GENERATOR_FRAME] = generatorFunction;
-    }
-
-    /**
      * Synchronizes the arguments array of a Truffle frame with a {@link PFrame}. Copies only those
      * arguments that are necessary to be synchronized between the two.
      */
@@ -271,7 +254,7 @@ public final class PArguments {
         // copy only some carefully picked internal arguments
         setSpecialArgument(copiedArgs, getSpecialArgument(arguments));
         setGlobals(copiedArgs, getGlobals(arguments));
-        setClosure(copiedArgs, getClosure(arguments));
+        setFunctionObject(copiedArgs, getFunctionObject(arguments));
 
         escapedFrame.setArguments(copiedArgs);
     }

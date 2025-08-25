@@ -2490,7 +2490,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class LoadClosure {
         @Specialization
         public static PCell[] doLoadClosure(VirtualFrame frame) {
-            return PArguments.getClosure(frame);
+            return PArguments.getFunctionObject(frame.getArguments()).getClosure();
         }
     }
 

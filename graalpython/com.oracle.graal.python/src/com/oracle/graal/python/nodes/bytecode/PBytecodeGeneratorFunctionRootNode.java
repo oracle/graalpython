@@ -80,8 +80,7 @@ public class PBytecodeGeneratorFunctionRootNode extends PRootNode {
         Object[] arguments = frame.getArguments();
 
         PythonLanguage language = PythonLanguage.get(this);
-        // This is passed from the dispatch node
-        PFunction generatorFunction = PArguments.getGeneratorFunction(arguments);
+        PFunction generatorFunction = PArguments.getFunctionObject(arguments);
         assert generatorFunction != null;
         if (rootNode.getCodeUnit().isGenerator()) {
             // if CO_ITERABLE_COROUTINE was explicitly set (likely by types.coroutine), we have to
