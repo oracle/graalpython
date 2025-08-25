@@ -280,23 +280,53 @@ def libpythonvm_build_args():
     ):
         build_args += ['--gc=G1', '-H:-ProtectionKeys']
     if not os.environ.get("GRAALPY_PGO_PROFILE") and mx.suite('graalpython-enterprise', fatalIfMissing=False) and mx_sdk_vm_ng.get_bootstrap_graalvm_version() >= mx.VersionSpec("25.0"):
-        cmd = mx.command_function('python-get-latest-profile', fatalIfMissing=False)
-        if cmd:
-            profile = None
-            try:
-                profile = cmd([])
-            except BaseException:
-                pass
-            if profile and os.path.exists(profile):
-                mx.log(f"Using PGO profile {profile}")
-                build_args += [
-                    f"--pgo={profile}",
-                    "-H:+UnlockExperimentalVMOptions",
-                    "-H:+PGOPrintProfileQuality",
-                    "-H:-UnlockExperimentalVMOptions",
-                ]
-            else:
-                mx.log(f"Not using any PGO profile")
+        profile = None
+        vc = mx.VC.get_vc(SUITE.dir)
+        commit = str(vc.tip(SUITE.dir)).strip()
+        branch = str(vc.active_branch(SUITE.dir)).strip()
+        if shutil.which("artifact_download"):
+            # This is always available in the GraalPy CI
+            profile = "cached_profile.iprof.gz"
+            run(
+                [
+                    "artifact_download",
+                    f"graalpy/{commit}",
+                    profile,
+                ],
+                nonZeroIsFatal=False
+            )
+        else:
+            # Locally, we try to get a reasonable profile
+            get_profile = mx.command_function('python-get-latest-profile', fatalIfMissing=False)
+            if get_profile:
+                for b in set([branch, "master"]):
+                    if not profile:
+                        try:
+                            profile = get_profile(["--branch", b])
+                        except BaseException:
+                            pass
+        if (not profile or not os.path.exists(profile)) and (
+                # When running on a release branch, make sure use a PGO profile
+                branch.startswith("release/")
+                # When attempting to merge into a release branch, make sure we
+                # can produce a PGO profile before merging
+                or os.environ.get("TO_BRANCH", "").startswith("release/")
+                # When running in the CI on a bench runner, use a PGO profile
+                or (os.environ.get("CI") == "true" and ",bench," in os.environ.get("LABELS", ""))
+        ):
+            mx.warn("PGO profile must exist for benchmarking and release, creating one now...")
+            profile = graalpy_native_pgo_build_and_test([])
+
+        if profile and os.path.exists(profile):
+            mx.log(f"Using PGO profile {profile}")
+            build_args += [
+                f"--pgo={profile}",
+                "-H:+UnlockExperimentalVMOptions",
+                "-H:+PGOPrintProfileQuality",
+                "-H:-UnlockExperimentalVMOptions",
+            ]
+        else:
+            mx.log(f"Not using any PGO profile")
     return build_args
 
 
@@ -378,6 +408,20 @@ def graalpy_native_pgo_build_and_test(_):
     with open(iprof_path, 'rb') as f_in, gzip.open(iprof_gz_path, 'wb') as f_out:
         shutil.copyfileobj(f_in, f_out)
     mx.log(mx.colorize(f"[PGO] Gzipped profile at: {iprof_gz_path}", color="yellow"))
+
+    if shutil.which("artifact_uploader"):
+        run([
+            "artifact_uploader",
+            iprof_gz_path,
+            str(mx.VC.get_vc(SUITE.dir).tip(SUITE.dir)).strip(),
+            "graalpy",
+            "--lifecycle",
+            "cache",
+            "--artifact-repo-key",
+            os.environ.get("ARTIFACT_REPO_KEY_LOCATION"),
+        ])
+
+    return iprof_gz_path
 
 
 def full_python(args, env=None):
