@@ -53,9 +53,7 @@ import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NonIdempotent;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.DynamicObject;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Location;
 import com.oracle.truffle.api.object.Property;
 import com.oracle.truffle.api.object.Shape;
@@ -92,7 +90,7 @@ public abstract class ReadAttributeFromPythonObjectNode extends PNodeWithContext
     public abstract Object execute(DynamicObject object, TruffleString key, Object defaultValue);
 
     protected static Object getAttribute(DynamicObject object, TruffleString key, Object defaultValue) {
-        return DynamicObjectLibrary.getUncached().getOrDefault(object, key, defaultValue);
+        return DynamicObject.GetNode.getUncached().execute(object, key, defaultValue);
     }
 
     @Idempotent
@@ -158,9 +156,9 @@ public abstract class ReadAttributeFromPythonObjectNode extends PNodeWithContext
         return value;
     }
 
-    @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", replaces = {"readFinalAttr", "readFinalPrimitiveAttr"})
+    @Specialization(replaces = {"readFinalAttr", "readFinalPrimitiveAttr"})
     protected static Object readDirect(DynamicObject dynamicObject, TruffleString key, Object defaultValue,
-                    @CachedLibrary("dynamicObject") DynamicObjectLibrary dylib) {
-        return dylib.getOrDefault(dynamicObject, key, defaultValue);
+                    @Cached DynamicObject.GetNode getNode) {
+        return getNode.execute(dynamicObject, key, defaultValue);
     }
 }

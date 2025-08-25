@@ -90,7 +90,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextStructSeqBuiltins {
@@ -139,7 +139,8 @@ public final class PythonCextStructSeqBuiltins {
         Object doGeneric(TruffleString typeName, TruffleString typeDoc, Object fields, int nInSequence,
                         @Cached GraalPyPrivate_StructSequence_InitType2 initNode,
                         @Cached ReadAttributeFromModuleNode readTypeBuiltinNode,
-                        @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
+                        @Cached DynamicObject.GetShapeFlagsNode getShapeFlagsNode,
+                        @Cached DynamicObject.SetShapeFlagsNode setShapeFlagsNode,
                         @Cached CallNode callTypeNewNode,
                         @Bind PythonLanguage language) {
             Object typeBuiltin = readTypeBuiltinNode.execute(getCore().getBuiltins(), BuiltinNames.T_TYPE);
@@ -147,8 +148,8 @@ public final class PythonCextStructSeqBuiltins {
             PDict namespace = PFactory.createDict(language, new PKeyword[]{new PKeyword(SpecialAttributeNames.T___DOC__, typeDoc)});
             Object cls = callTypeNewNode.executeWithoutFrame(typeBuiltin, typeName, bases, namespace);
             initNode.execute(cls, fields, nInSequence);
-            if (cls instanceof PythonClass) {
-                ((PythonClass) cls).makeStaticBase(dylib);
+            if (cls instanceof PythonClass pythonClass) {
+                pythonClass.makeStaticBase(getShapeFlagsNode, setShapeFlagsNode);
             }
             return cls;
         }
