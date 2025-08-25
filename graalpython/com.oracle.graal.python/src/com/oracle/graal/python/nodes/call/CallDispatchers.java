@@ -97,13 +97,9 @@ public class CallDispatchers {
 
     @NeverDefault
     public static DirectCallNode createDirectCallNodeFor(PFunction callee) {
-        boolean isGenerator = isGeneratorFunction(callee.getCallTarget());
         DirectCallNode callNode = Truffle.getRuntime().createDirectCallNode(callee.getCallTarget());
         if (callee.forceSplitDirectCalls()) {
             callNode.cloneCallTarget();
-        }
-        if (isGenerator && PythonLanguage.get(null).getEngineOption(PythonOptions.ForceInlineGeneratorCalls)) {
-            callNode.forceInlining();
         }
         return callNode;
     }
