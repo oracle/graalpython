@@ -79,8 +79,8 @@ public final class Signature {
         this.positionalOnlyArgIndex = positionOnlyArgIndex;
         this.takesVarKeywordArgs = takesVarKeywordArgs;
         this.varArgIndex = takesVarArgs;
-        this.positionalParameterNames = (parameterIds != null) ? parameterIds : PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
-        this.keywordOnlyNames = (keywordNames != null) ? keywordNames : PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
+        this.positionalParameterNames = (parameterIds != null && parameterIds.length > 0) ? parameterIds : PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
+        this.keywordOnlyNames = (keywordNames != null && keywordNames.length > 0) ? keywordNames : PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
         this.checkEnclosingType = checkEnclosingType;
         this.raiseErrorName = raiseErrorName;
         this.hidden = hidden;
