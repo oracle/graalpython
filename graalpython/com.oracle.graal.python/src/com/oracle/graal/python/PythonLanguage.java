@@ -50,7 +50,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.logging.Level;
 
-import com.oracle.truffle.api.exception.AbstractTruffleException;
 import org.graalvm.home.Version;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.options.OptionDescriptors;
@@ -58,9 +57,9 @@ import org.graalvm.options.OptionKey;
 import org.graalvm.options.OptionValues;
 import org.graalvm.polyglot.SandboxPolicy;
 
+import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SignalModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -127,6 +126,7 @@ import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.debug.DebuggerTags;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Idempotent;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.AllocationReporter;
 import com.oracle.truffle.api.instrumentation.ProvidedTags;
@@ -1016,6 +1016,22 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         } else {
             return createCode.get();
         }
+    }
+
+    private static final Source LINEBREAK_REGEX_SOURCE = Source.newBuilder("regex", "/\r\n|[\n\u000B\u000C\r\u0085\u2028\u2029]/", "re_linebreak") //
+                    .option("regex.Flavor", "Python") //
+                    .option("regex.Encoding", "UTF-32") //
+                    .mimeType("application/tregex") //
+                    .internal(true) //
+                    .build();
+    @CompilationFinal private Object cachedTRegexLineBreakRegex;
+
+    public Object getCachedTRegexLineBreakRegex(PythonContext context) {
+        if (cachedTRegexLineBreakRegex == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            cachedTRegexLineBreakRegex = context.getEnv().parseInternal(LINEBREAK_REGEX_SOURCE).call();
+        }
+        return cachedTRegexLineBreakRegex;
     }
 
     @Override

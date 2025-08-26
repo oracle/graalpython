@@ -150,6 +150,7 @@ import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.InternalByteArray;
+import com.oracle.truffle.api.strings.TranscodingErrorHandler;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
 
@@ -1156,30 +1157,14 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         private void writeString(TruffleString v) {
-            /*
-             * Ugly workaround for GR-39571 - TruffleString UTF-8 doesn't support surrogate
-             * passthrough. If the string contains surrogates, we mark it and emit it as UTF-32.
-             */
-            Encoding encoding;
-            if (v.isValidUncached(TS_ENCODING)) {
-                encoding = Encoding.UTF_8;
-            } else {
-                encoding = Encoding.UTF_32LE;
-                writeInt(-1);
-            }
-            InternalByteArray ba = v.switchEncodingUncached(encoding).getInternalByteArrayUncached(encoding);
+            InternalByteArray ba = v.switchEncodingUncached(Encoding.UTF_8, TranscodingErrorHandler.DEFAULT_KEEP_SURROGATES_IN_UTF8).getInternalByteArrayUncached(Encoding.UTF_8);
             writeSize(ba.getLength());
             writeBytes(ba.getArray(), ba.getOffset(), ba.getLength());
         }
 
         private TruffleString readString() {
-            Encoding encoding = Encoding.UTF_8;
             int sz = readInt();
-            if (sz < 0) {
-                encoding = Encoding.UTF_32LE;
-                sz = readSize();
-            }
-            return TruffleString.fromByteArrayUncached(readNBytes(sz), 0, sz, encoding, true).switchEncodingUncached(TS_ENCODING);
+            return TruffleString.fromByteArrayUncached(readNBytes(sz), 0, sz, Encoding.UTF_8, true).switchEncodingUncached(TS_ENCODING, TranscodingErrorHandler.DEFAULT_KEEP_SURROGATES_IN_UTF8);
         }
 
         private void writeShortString(String v) throws IOException {

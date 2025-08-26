@@ -109,7 +109,7 @@ public final class PythonCextArrayBuiltins {
                         @Cached CStructAccess.WritePointerNode writePointerNode,
                         @Cached CStructAccess.WriteLongNode writeLongNode,
                         @Cached CStructAccess.WriteIntNode writeIntNode,
-                        @Cached CStructAccess.WriteByteNode writeByteNode,
+                        @Cached CStructAccess.WriteTruffleStringNode writeTruffleStringNode,
                         @Cached CStructAccess.AllocateNode allocateNode) {
             Object bufPtr = ensureNativeStorageNode.execute(inliningTarget, array).getPtr();
             Object nativeNull = PythonContext.get(inliningTarget).getNativeNull();
@@ -139,10 +139,8 @@ public final class PythonCextArrayBuiltins {
                 TruffleString.Encoding formatEncoding = TruffleString.Encoding.US_ASCII;
                 format = switchEncodingNode.execute(format, formatEncoding);
                 int formatLen = format.byteLength(formatEncoding);
-                byte[] bytes = new byte[formatLen + 1];
-                copyToByteArrayNode.execute(format, 0, bytes, 0, formatLen, formatEncoding);
-                formatPtr = allocateNode.alloc(bytes.length);
-                writeByteNode.writeByteArray(formatPtr, bytes);
+                formatPtr = allocateNode.alloc(formatLen + 1);
+                writeTruffleStringNode.write(formatPtr, format, formatEncoding);
             }
             writePointerNode.write(pyBufferPtr, CFields.Py_buffer__format, formatPtr);
             writePointerNode.write(pyBufferPtr, CFields.Py_buffer__internal, nativeNull);

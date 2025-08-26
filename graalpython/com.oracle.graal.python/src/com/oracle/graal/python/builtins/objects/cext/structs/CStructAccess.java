@@ -1178,6 +1178,45 @@ public class CStructAccess {
 
     @ImportStatic(PGuards.class)
     @GenerateUncached
+    public abstract static class WriteTruffleStringNode extends Node implements CStructAccessNode {
+
+        abstract void execute(Object dstPointer, int dstOffset, TruffleString src, int srcOffset, int length, TruffleString.Encoding encoding);
+
+        public final void write(Object dstPointer, TruffleString src, TruffleString.Encoding encoding) {
+            execute(dstPointer, 0, src, 0, src.byteLength(encoding), encoding);
+        }
+
+        public final boolean accepts(ArgDescriptor desc) {
+            return desc.isI8();
+        }
+
+        @Specialization
+        static void writeLong(long dstPointer, int dstOffset, TruffleString src, int srcOffset, int length, TruffleString.Encoding encoding,
+                        @Cached @Shared TruffleString.CopyToNativeMemoryNode copyToNativeMemoryNode) {
+            copyToNativeMemoryNode.execute(src, srcOffset, new NativePointer(dstPointer), dstOffset, length, encoding);
+        }
+
+        @Specialization(guards = {"!isLong(dstPointer)", "lib.isPointer(dstPointer)"}, limit = "3")
+        static void writePointer(Object dstPointer, int dstOffset, TruffleString src, int srcOffset, int length, TruffleString.Encoding encoding,
+                        @SuppressWarnings("unused") @CachedLibrary("dstPointer") InteropLibrary lib,
+                        @Cached @Shared TruffleString.CopyToNativeMemoryNode copyToNativeMemoryNode) {
+            copyToNativeMemoryNode.execute(src, srcOffset, dstPointer, dstOffset, length, encoding);
+        }
+
+        @Specialization(guards = {"!isLong(dstPointer)", "!lib.isPointer(dstPointer)"})
+        static void writeManaged(Object dstPointer, int dstOffset, TruffleString src, int srcOffset, int length, TruffleString.Encoding encoding,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Cached PCallCapiFunction call,
+                        @Cached TruffleString.ReadByteNode readByteNode) {
+            assert validPointer(dstPointer);
+            for (int i = 0; i < length; i++) {
+                call.call(NativeCAPISymbol.FUN_WRITE_CHAR_MEMBER, dstPointer, dstOffset + i, readByteNode.execute(src, srcOffset + i, encoding));
+            }
+        }
+    }
+
+    @ImportStatic(PGuards.class)
+    @GenerateUncached
     public abstract static class WritePointerNode extends Node implements CStructAccessNode {
 
         public static void writeUncached(Object pointer, CFields field, Object value) {

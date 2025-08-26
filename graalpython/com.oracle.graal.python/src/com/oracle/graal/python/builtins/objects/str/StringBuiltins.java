@@ -59,14 +59,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsbCapacity;
 
 import java.util.List;
 import java.util.Locale;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked0Node;
-import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked1Node;
-import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked2Node;
-import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked3Node;
-import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked4Node;
 import org.graalvm.shadowed.com.ibm.icu.lang.UCharacter;
 import org.graalvm.shadowed.com.ibm.icu.lang.UProperty;
 import org.graalvm.shadowed.com.ibm.icu.text.CaseMap;
@@ -74,10 +67,10 @@ import org.graalvm.shadowed.com.ibm.icu.text.CaseMap;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -115,6 +108,11 @@ import com.oracle.graal.python.builtins.objects.slice.SliceNodes.ComputeIndices;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltinsClinicProviders.FormatNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltinsClinicProviders.SplitNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToJavaStringCheckedNode;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked0Node;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked1Node;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked2Node;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked3Node;
+import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked4Node;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.JoinInternalNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.SpliceNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringLenNode;
@@ -178,6 +176,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -185,12 +184,16 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
-import com.oracle.truffle.api.strings.InternalByteArray;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.CodePointLengthNode;
 import com.oracle.truffle.api.strings.TruffleString.CodeRange;
@@ -880,15 +883,17 @@ public final class StringBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class LowerNode extends PythonUnaryBuiltinNode {
 
+        private static final TruffleString.CodePointSet ASCII_UPPER = TruffleString.CodePointSet.fromRanges(new int[]{'A', 'Z'}, Encoding.US_ASCII);
+
         @Specialization(guards = "isAscii(self, getCodeRangeNode)")
         static TruffleString lowerAscii(TruffleString self,
                         @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Cached TruffleString.GetInternalByteArrayNode getInternalByteArrayNode,
+                        @Cached TruffleString.ByteIndexOfCodePointSetNode indexOfCodePointSetNode,
                         @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode) {
             TruffleString ascii = switchEncodingNode.execute(self, Encoding.US_ASCII);
-            int i = findFirstUpperCase(ascii, getInternalByteArrayNode);
+            int i = indexOfCodePointSetNode.execute(ascii, 0, ascii.byteLength(Encoding.US_ASCII), ASCII_UPPER);
             if (i < 0) {
                 return self;
             }
@@ -918,17 +923,6 @@ public final class StringBuiltins extends PythonBuiltins {
             return lowerNode.execute(frame, castToStringNode.cast(inliningTarget, self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "lower", self));
         }
 
-        private static int findFirstUpperCase(TruffleString s, TruffleString.GetInternalByteArrayNode getInternalByteArrayNode) {
-            InternalByteArray iba = getInternalByteArrayNode.execute(s, Encoding.US_ASCII);
-            byte[] bytes = iba.getArray();
-            int end = iba.getEnd();
-            for (int i = iba.getOffset(); i < end; ++i) {
-                if (bytes[i] >= 'A' && bytes[i] <= 'Z') {
-                    return i;
-                }
-            }
-            return -1;
-        }
     }
 
     // str.upper()
@@ -936,15 +930,17 @@ public final class StringBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class UpperNode extends PythonUnaryBuiltinNode {
 
+        private static final TruffleString.CodePointSet ASCII_LOWER = TruffleString.CodePointSet.fromRanges(new int[]{'a', 'z'}, Encoding.US_ASCII);
+
         @Specialization(guards = "isAscii(self, getCodeRangeNode)")
         static TruffleString upperAscii(TruffleString self,
                         @Shared("getCodeRange") @Cached @SuppressWarnings("unused") TruffleString.GetCodeRangeNode getCodeRangeNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Cached TruffleString.GetInternalByteArrayNode getInternalByteArrayNode,
+                        @Cached TruffleString.ByteIndexOfCodePointSetNode indexOfCodePointSetNode,
                         @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode) {
             TruffleString ascii = switchEncodingNode.execute(self, Encoding.US_ASCII);
-            int i = findFirstLowerCase(ascii, getInternalByteArrayNode);
+            int i = indexOfCodePointSetNode.execute(ascii, 0, ascii.byteLength(Encoding.US_ASCII), ASCII_LOWER);
             if (i < 0) {
                 return self;
             }
@@ -974,17 +970,6 @@ public final class StringBuiltins extends PythonBuiltins {
             return upperNode.execute(frame, castToStringNode.cast(inliningTarget, self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "upper", self));
         }
 
-        private static int findFirstLowerCase(TruffleString s, TruffleString.GetInternalByteArrayNode getInternalByteArrayNode) {
-            InternalByteArray iba = getInternalByteArrayNode.execute(s, Encoding.US_ASCII);
-            byte[] bytes = iba.getArray();
-            int end = iba.getEnd();
-            for (int i = iba.getOffset(); i < end; ++i) {
-                if (bytes[i] >= 'a' && bytes[i] <= 'z') {
-                    return i;
-                }
-            }
-            return -1;
-        }
     }
 
     // str.maketrans()
@@ -1476,72 +1461,19 @@ public final class StringBuiltins extends PythonBuiltins {
     @Builtin(name = "splitlines", minNumOfPositionalArgs = 1, parameterNames = {"self", "keepends"})
     @GenerateNodeFactory
     public abstract static class SplitLinesNode extends PythonBinaryBuiltinNode {
-        private static final Pattern LINEBREAK_PATTERN = Pattern.compile("\\R");
 
         @Specialization
         static PList doString(TruffleString self, @SuppressWarnings("unused") PNone keepends,
-                        @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode,
-                        @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                        @Shared @Cached AppendNode appendNode) {
-            return doStringKeepends(self, false, toJavaStringNode, fromJavaStringNode, appendNode);
+                        @Bind Node inliningTarget,
+                        @Cached @Shared SplitLinesInnerNode innerNode) {
+            return innerNode.execute(inliningTarget, self, false);
         }
 
         @Specialization
         static PList doStringKeepends(TruffleString selfTs, boolean keepends,
-                        @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode,
-                        @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                        @Shared @Cached AppendNode appendNode) {
-            // TODO GR-37218: use TRegex or codepoint iterator + hand-written state machine
-            PList list = PFactory.createList(PythonLanguage.get(appendNode));
-            int lastEnd = 0;
-            String self = toJavaStringNode.execute(selfTs);
-            Matcher matcher = getMatcher(self);
-            while (matcherFind(matcher)) {
-                int end = matcherEnd(matcher);
-                String line;
-                if (keepends) {
-                    line = substring(self, lastEnd, end);
-                } else {
-                    line = substring(self, lastEnd, matcherStart(matcher));
-                }
-                appendNode.execute(list, fromJavaStringNode.execute(line, TS_ENCODING));
-                lastEnd = end;
-            }
-            String remainder = substring(self, lastEnd);
-            if (!remainder.isEmpty()) {
-                appendNode.execute(list, fromJavaStringNode.execute(remainder, TS_ENCODING));
-            }
-            return list;
-        }
-
-        @TruffleBoundary(allowInlining = true)
-        private static String substring(String str, int start, int end) {
-            return str.substring(start, end);
-        }
-
-        @TruffleBoundary(allowInlining = true)
-        private static String substring(String str, int start) {
-            return str.substring(start);
-        }
-
-        @TruffleBoundary
-        private static int matcherStart(Matcher matcher) {
-            return matcher.start();
-        }
-
-        @TruffleBoundary
-        private static int matcherEnd(Matcher matcher) {
-            return matcher.end();
-        }
-
-        @TruffleBoundary
-        private static boolean matcherFind(Matcher matcher) {
-            return matcher.find();
-        }
-
-        @TruffleBoundary
-        private static Matcher getMatcher(String self) {
-            return LINEBREAK_PATTERN.matcher(self);
+                        @Bind Node inliningTarget,
+                        @Cached @Shared SplitLinesInnerNode innerNode) {
+            return innerNode.execute(inliningTarget, selfTs, keepends);
         }
 
         @Specialization(replaces = {"doString", "doStringKeepends"})
@@ -1549,12 +1481,121 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached CastToTruffleStringChecked2Node castSelfNode,
                         @Cached CastToJavaIntExactNode castToJavaIntNode,
-                        @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode,
-                        @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
-                        @Shared @Cached AppendNode appendNode) {
+                        @Cached @Exclusive SplitLinesInnerNode innerNode) {
             TruffleString selfStr = castSelfNode.cast(inliningTarget, self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "splitlines", self);
             boolean bKeepends = !PGuards.isPNone(keepends) && castToJavaIntNode.execute(inliningTarget, keepends) != 0;
-            return doStringKeepends(selfStr, bKeepends, toJavaStringNode, fromJavaStringNode, appendNode);
+            return innerNode.execute(inliningTarget, selfStr, bKeepends);
+        }
+
+        @GenerateCached(false)
+        @GenerateInline
+        @GenerateUncached
+        public abstract static class InvokeExecMethodNode extends Node {
+            static final String EXEC = "exec";
+
+            public abstract Object execute(Node inliningTarget, Object compiledRegex, TruffleString input, int fromIndex);
+
+            @Specialization(guards = "objs.isMemberInvocable(compiledRegex, EXEC)", limit = "3")
+            static Object exec(Object compiledRegex, TruffleString input, int fromIndex,
+                            @CachedLibrary("compiledRegex") InteropLibrary objs) {
+                try {
+                    return objs.invokeMember(compiledRegex, EXEC, input, fromIndex);
+                } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException | UnknownIdentifierException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                }
+            }
+        }
+
+        @GenerateCached(false)
+        @GenerateInline
+        @GenerateUncached
+        public abstract static class ReadIsMatchNode extends Node {
+            static final String IS_MATCH = "isMatch";
+
+            public abstract boolean execute(Node inliningTarget, Object regexResult);
+
+            @Specialization(guards = "objs.isMemberReadable(regexResult, IS_MATCH)", limit = "3")
+            static boolean read(Object regexResult, @CachedLibrary("regexResult") InteropLibrary objs) {
+                try {
+                    return (boolean) objs.readMember(regexResult, IS_MATCH);
+                } catch (UnsupportedMessageException | UnknownIdentifierException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                }
+            }
+        }
+
+        @GenerateCached(false)
+        @GenerateInline
+        @GenerateUncached
+        public abstract static class InvokeGetGroupBoundariesMethodNode extends Node {
+            static final String GET_START = "getStart";
+            static final String GET_END = "getEnd";
+
+            public abstract int execute(Node inliningTarget, Object regexResult, Object method, int groupNumber);
+
+            @Specialization(guards = "objs.isMemberInvocable(regexResult, method)", limit = "3")
+            static int exec(Object regexResult, String method, int groupNumber,
+                            @CachedLibrary("regexResult") InteropLibrary objs) {
+                try {
+                    return (int) objs.invokeMember(regexResult, method, groupNumber);
+                } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException | UnknownIdentifierException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                }
+            }
+        }
+
+        @GenerateCached(false)
+        @GenerateInline
+        @GenerateUncached
+        abstract static class SplitLinesInnerNode extends Node {
+
+            abstract PList execute(Node inliningTarget, TruffleString selfTs, boolean keepends);
+
+            @Specialization
+            static PList doStringKeepends(Node inliningTarget, TruffleString self, boolean keepends,
+                            @Cached InvokeExecMethodNode invokeExecMethodNode,
+                            @Cached ReadIsMatchNode readIsMatchNode,
+                            @Cached InvokeGetGroupBoundariesMethodNode getStartNode,
+                            @Cached InvokeGetGroupBoundariesMethodNode getEndNode,
+                            @Cached TruffleString.SubstringByteIndexNode substringNode,
+                            @Cached AppendNode appendNode) {
+                Object lineBreakRegex = PythonLanguage.get(inliningTarget).getCachedTRegexLineBreakRegex(PythonContext.get(inliningTarget));
+                CompilerAsserts.partialEvaluationConstant(lineBreakRegex);
+                PList list = PFactory.createList(PythonLanguage.get(inliningTarget));
+                int lastEnd = 0;
+                boolean matchFound;
+                do {
+                    Object regexResult = invokeExecMethodNode.execute(inliningTarget, lineBreakRegex, self, lastEnd);
+                    matchFound = readIsMatchNode.execute(inliningTarget, regexResult);
+                    // TRegex reports UTF-32 matches as int indices
+                    final int substringStartByteIndex = asByteIndex(lastEnd);
+                    final int substringByteLength;
+                    if (matchFound) {
+                        int end = getEndNode.execute(inliningTarget, regexResult, InvokeGetGroupBoundariesMethodNode.GET_END, 0);
+                        if (keepends) {
+                            substringByteLength = asByteIndex(end - lastEnd);
+                        } else {
+                            int start = getStartNode.execute(inliningTarget, regexResult, InvokeGetGroupBoundariesMethodNode.GET_START, 0);
+                            substringByteLength = asByteIndex(start - lastEnd);
+                        }
+                        assert end > lastEnd : String.format("end: %d, lastEnd: %d", end, lastEnd);
+                        lastEnd = end;
+                    } else {
+                        substringByteLength = self.byteLength(TS_ENCODING) - asByteIndex(lastEnd);
+                        if (substringByteLength == 0) {
+                            break;
+                        }
+                    }
+                    TruffleString line = substringNode.execute(self, substringStartByteIndex, substringByteLength, TS_ENCODING, false);
+                    appendNode.execute(list, line);
+                } while (matchFound);
+                return list;
+            }
+
+            private static int asByteIndex(int tregexResultIndex) {
+                assert TS_ENCODING == Encoding.UTF_32 : "byte index must be adapted when changing the language string encoding";
+                return tregexResultIndex << 2;
+            }
         }
     }
 

@@ -135,7 +135,6 @@ import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
-import com.oracle.truffle.api.strings.InternalByteArray;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextSlotBuiltins {
@@ -676,9 +675,8 @@ public final class PythonCextSlotBuiltins {
                         @Bind Node inliningTarget,
                         @Cached TruffleString.GetCodeRangeNode getCodeRangeNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Cached TruffleString.GetInternalByteArrayNode getInternalByteArrayNode,
                         @Cached CStructAccess.AllocateNode allocateNode,
-                        @Cached CStructAccess.WriteByteNode writeByteNode,
+                        @Cached CStructAccess.WriteTruffleStringNode writeTruffleStringNode,
                         @Cached HiddenAttr.WriteNode writeAttribute) {
             if (object.isNativeCharSequence()) {
                 // in this case, we can just return the pointer
@@ -704,14 +702,13 @@ public final class PythonCextSlotBuiltins {
                 encoding = TruffleString.Encoding.UTF_32;
             }
             string = switchEncodingNode.execute(string, encoding);
-            InternalByteArray byteArray = getInternalByteArrayNode.execute(string, encoding);
-            int byteLength = byteArray.getLength() + /* null terminator */ charSize;
+            int byteLength = string.byteLength(encoding) + /* null terminator */ charSize;
             Object ptr = allocateNode.alloc(byteLength);
-            writeByteNode.writeByteArray(ptr, byteArray.getArray(), byteArray.getLength(), byteArray.getOffset(), 0);
+            writeTruffleStringNode.write(ptr, string, encoding);
             /*
              * Set native char sequence, so we can just return the pointer the next time.
              */
-            NativeCharSequence nativeSequence = new NativeCharSequence(ptr, byteArray.getLength() / charSize, charSize, isAscii);
+            NativeCharSequence nativeSequence = new NativeCharSequence(ptr, string.byteLength(encoding) / charSize, charSize, isAscii);
             object.setNativeCharSequence(nativeSequence);
             /*
              * Create a native sequence storage to manage the lifetime of the native memory.

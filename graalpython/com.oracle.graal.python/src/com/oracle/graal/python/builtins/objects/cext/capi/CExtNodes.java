@@ -105,9 +105,9 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.ResolveHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateStrongRefNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.GetNativeWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.GetNativeWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
@@ -461,26 +461,24 @@ public abstract class CExtNodes {
         static Object doPString(PString str, boolean allocatePyMem,
                         @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode castToStringNode,
-                        @Shared @Cached TruffleString.CopyToByteArrayNode toBytes,
                         @Shared @Cached TruffleString.SwitchEncodingNode switchEncoding,
                         @Shared @Cached CStructAccess.AllocateNode alloc,
-                        @Shared @Cached CStructAccess.WriteByteNode write) {
+                        @Shared @Cached CStructAccess.WriteTruffleStringNode writeTruffleString) {
             TruffleString value = castToStringNode.execute(inliningTarget, str);
-            byte[] bytes = toBytes.execute(switchEncoding.execute(value, Encoding.UTF_8), Encoding.UTF_8);
-            Object mem = alloc.alloc(bytes.length + 1, allocatePyMem);
-            write.writeByteArray(mem, bytes);
+            TruffleString utf8Str = switchEncoding.execute(value, Encoding.UTF_8);
+            Object mem = alloc.alloc(utf8Str.byteLength(Encoding.UTF_8) + 1, allocatePyMem);
+            writeTruffleString.write(mem, utf8Str, Encoding.UTF_8);
             return mem;
         }
 
         @Specialization
         static Object doString(TruffleString str, boolean allocatePyMem,
-                        @Shared @Cached TruffleString.CopyToByteArrayNode toBytes,
                         @Shared @Cached TruffleString.SwitchEncodingNode switchEncoding,
                         @Shared @Cached CStructAccess.AllocateNode alloc,
-                        @Shared @Cached CStructAccess.WriteByteNode write) {
-            byte[] bytes = toBytes.execute(switchEncoding.execute(str, Encoding.UTF_8), Encoding.UTF_8);
-            Object mem = alloc.alloc(bytes.length + 1, allocatePyMem);
-            write.writeByteArray(mem, bytes);
+                        @Shared @Cached CStructAccess.WriteTruffleStringNode writeTruffleString) {
+            TruffleString utf8Str = switchEncoding.execute(str, Encoding.UTF_8);
+            Object mem = alloc.alloc(utf8Str.byteLength(Encoding.UTF_8) + 1, allocatePyMem);
+            writeTruffleString.write(mem, utf8Str, Encoding.UTF_8);
             return mem;
         }
 

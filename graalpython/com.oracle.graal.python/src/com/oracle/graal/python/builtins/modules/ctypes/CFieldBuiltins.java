@@ -113,7 +113,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
-import com.oracle.truffle.api.strings.InternalByteArray;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.CField)
@@ -595,19 +594,25 @@ public final class CFieldBuiltins extends PythonBuiltins {
         static Object u_set(@SuppressWarnings("unused") FieldSet setfunc, Pointer ptr, Object value, @SuppressWarnings("unused") int size,
                         @Bind Node inliningTarget,
                         @Exclusive @Cached CastToTruffleStringNode toString,
-                        @Shared @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Shared @Cached TruffleString.GetInternalByteArrayNode getInternalByteArrayNode,
-                        @Exclusive @Cached PointerNodes.WriteBytesNode writeBytesNode,
+                        @Cached TruffleString.CodePointAtByteIndexNode codePointAtByteIndexNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Exclusive @Cached PointerNodes.WriteShortNode writeShortNode,
+                        @Exclusive @Cached PointerNodes.WriteIntNode writeIntNode,
                         @Exclusive @Cached PRaiseNode raiseNode) { // CTYPES_UNICODE
             if (!PGuards.isString(value)) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.UNICODE_STRING_EXPECTED_INSTEAD_OF_P_INSTANCE, value);
             }
-            TruffleString str = switchEncodingNode.execute(toString.execute(inliningTarget, value), WCHAR_T_ENCODING);
-            InternalByteArray bytes = getInternalByteArrayNode.execute(str, WCHAR_T_ENCODING);
-            if (bytes.getLength() != WCHAR_T_SIZE) {
+            TruffleString str = toString.execute(inliningTarget, value);
+            if (codePointLengthNode.execute(str, TS_ENCODING) != 1) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.ONE_CHARACTER_UNICODE_EXPECTED);
             }
-            writeBytesNode.execute(inliningTarget, ptr, bytes.getArray(), bytes.getOffset(), bytes.getLength());
+            int codepoint = codePointAtByteIndexNode.execute(str, 0, TS_ENCODING);
+            if (WCHAR_T_SIZE == 4) {
+                writeIntNode.execute(inliningTarget, ptr, codepoint);
+            } else {
+                assert WCHAR_T_SIZE == 2;
+                writeShortNode.execute(inliningTarget, ptr, (short) codepoint);
+            }
             return PNone.NONE;
         }
 
@@ -616,19 +621,17 @@ public final class CFieldBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Exclusive @Cached CastToTruffleStringNode toString,
                         @Shared @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Shared @Cached TruffleString.GetInternalByteArrayNode getInternalByteArrayNode,
-                        @Exclusive @Cached PointerNodes.WriteBytesNode writeBytesNode,
+                        @Exclusive @Cached PointerNodes.WriteTruffleStringNode writeTruffleStringNode,
                         @Exclusive @Cached PRaiseNode raiseNode) { // CTYPES_UNICODE
             if (!PGuards.isString(value)) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.UNICODE_STRING_EXPECTED_INSTEAD_OF_P_INSTANCE, value);
             }
 
             TruffleString str = switchEncodingNode.execute(toString.execute(inliningTarget, value), WCHAR_T_ENCODING);
-            InternalByteArray bytes = getInternalByteArrayNode.execute(str, WCHAR_T_ENCODING);
-            if (bytes.getLength() > size) {
-                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.STR_TOO_LONG, bytes.getLength(), size);
+            if (str.byteLength(WCHAR_T_ENCODING) > size) {
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.STR_TOO_LONG, str.byteLength(WCHAR_T_ENCODING), size);
             }
-            writeBytesNode.execute(inliningTarget, ptr, bytes.getArray(), bytes.getOffset(), bytes.getLength());
+            writeTruffleStringNode.execute(inliningTarget, ptr, str, WCHAR_T_ENCODING);
             return value;
         }
 

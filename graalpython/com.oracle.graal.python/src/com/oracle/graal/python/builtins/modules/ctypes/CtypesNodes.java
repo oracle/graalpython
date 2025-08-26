@@ -85,7 +85,6 @@ import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.strings.InternalByteArray;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public class CtypesNodes {
@@ -403,8 +402,8 @@ public class CtypesNodes {
                         @Cached PyObjectTypeCheck typeCheck,
                         @Cached StgDictBuiltins.PyTypeStgDictNode stgDictNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Cached TruffleString.GetInternalByteArrayNode getInternalByteArrayNode,
                         @Cached(inline = false) CStructAccess.AllocateNode allocateNode,
+                        @Cached(inline = false) CStructAccess.WriteTruffleStringNode writeTruffleStringNode,
                         @Cached(inline = false) CStructAccess.WriteByteNode writeByteNode,
                         @Cached(inline = false) CStructAccess.WritePointerNode writePointerNode,
                         @Cached(inline = false) CStructAccess.WriteObjectNewRefNode writeObjectNewRefNode,
@@ -427,9 +426,9 @@ public class CtypesNodes {
 
             Object formatPtr;
             if (dict.format != null) {
-                InternalByteArray formatArray = getInternalByteArrayNode.execute(switchEncodingNode.execute(dict.format, US_ASCII), US_ASCII);
-                formatPtr = allocateNode.alloc(formatArray.getLength() + 1);
-                writeByteNode.writeByteArray(formatPtr, formatArray.getArray(), formatArray.getLength(), formatArray.getOffset(), 0);
+                TruffleString formatStr = switchEncodingNode.execute(dict.format, US_ASCII);
+                formatPtr = allocateNode.alloc(formatStr.byteLength(US_ASCII) + 1);
+                writeTruffleStringNode.write(formatPtr, formatStr, US_ASCII);
             } else {
                 formatPtr = allocateNode.alloc(2);
                 writeByteNode.write(formatPtr, (byte) 'B');

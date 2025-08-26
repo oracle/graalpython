@@ -216,7 +216,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.COMPARING_STRINGS_WITH_NON_ASCII);
             }
             byte[] bytesA = getByteArrayNode.execute(tsA, TS_ENCODING);
-            byte[] bytesB = getByteArrayNode.execute(castB.execute(inliningTarget, b), TS_ENCODING);
+            byte[] bytesB = getByteArrayNode.execute(tsB, TS_ENCODING);
             return cmp(bytesA, bytesB);
         }
 

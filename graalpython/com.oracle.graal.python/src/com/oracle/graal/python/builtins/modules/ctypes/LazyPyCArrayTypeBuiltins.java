@@ -91,7 +91,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.strings.InternalByteArray;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
@@ -230,16 +229,14 @@ public final class LazyPyCArrayTypeBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode toTruffleStringNode,
                         @Shared @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Cached TruffleString.GetInternalByteArrayNode getInternalByteArrayNode,
-                        @Cached PointerNodes.WriteBytesNode writeBytesNode,
+                        @Cached PointerNodes.WriteTruffleStringNode writeTruffleStringNode,
                         @Cached PRaiseNode raiseNode) {
             TruffleString str = switchEncodingNode.execute(toTruffleStringNode.execute(inliningTarget, value), WCHAR_T_ENCODING);
             int len = str.byteLength(WCHAR_T_ENCODING);
             if (len > self.b_size) {
                 throw raiseNode.raise(inliningTarget, ValueError, STRING_TOO_LONG);
             }
-            InternalByteArray bytes = getInternalByteArrayNode.execute(str, WCHAR_T_ENCODING);
-            writeBytesNode.execute(inliningTarget, self.b_ptr, bytes.getArray(), bytes.getOffset(), bytes.getLength());
+            writeTruffleStringNode.execute(inliningTarget, self.b_ptr, str, WCHAR_T_ENCODING);
             return PNone.NONE;
         }
 

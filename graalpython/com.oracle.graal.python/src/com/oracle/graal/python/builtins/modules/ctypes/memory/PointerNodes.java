@@ -61,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -71,6 +72,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -81,6 +83,8 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.InternalByteArray;
+import com.oracle.truffle.api.strings.TruffleString;
 
 import sun.misc.Unsafe;
 
@@ -338,6 +342,56 @@ public abstract class PointerNodes {
                         @Cached PointerArrayToBytesNode toBytesNode) {
             ByteArrayStorage newStorage = toBytesNode.execute(inliningTarget, dstMemory, dst);
             doBytes(dstMemory, newStorage, dstOffset, src, srcOffset, size);
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class WriteTruffleStringNode extends Node {
+        public final void execute(Node inliningTarget, Pointer dst, TruffleString src, TruffleString.Encoding encoding) {
+            execute(inliningTarget, dst, src, 0, src.byteLength(encoding), encoding);
+        }
+
+        public final void execute(Node inliningTarget, Pointer dst, TruffleString src, int srcOffset, int size, TruffleString.Encoding encoding) {
+            execute(inliningTarget, dst.memory, dst.memory.storage, dst.offset, src, srcOffset, size, encoding);
+        }
+
+        protected abstract void execute(Node inliningTarget, MemoryBlock dstMemory, Storage dst, int dstOffset, TruffleString src, int srcOffset, int size, TruffleString.Encoding encoding);
+
+        @Specialization
+        static void doBytes(@SuppressWarnings("unused") MemoryBlock dstMemory, ByteArrayStorage dst, int dstOffset, TruffleString src, int srcOffset, int size, TruffleString.Encoding encoding,
+                        @Cached @Shared TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
+            copyToByteArrayNode.execute(src, srcOffset, dst.bytes, dstOffset, size, encoding);
+        }
+
+        @Specialization
+        static void doZero(MemoryBlock dstMemory, ZeroStorage dst, int dstOffset, TruffleString src, int srcOffset, int size, TruffleString.Encoding encoding,
+                        @Cached @Shared TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
+            doBytes(dstMemory, dst.allocateBytes(dstMemory), dstOffset, src, srcOffset, size, encoding, copyToByteArrayNode);
+        }
+
+        @Specialization(limit = "1")
+        static void doMemoryView(@SuppressWarnings("unused") MemoryBlock dstMemory, MemoryViewStorage dst, int dstOffset, TruffleString src, int srcOffset, int size, TruffleString.Encoding encoding,
+                        @Cached TruffleString.GetInternalByteArrayNode getInternalByteArrayNode,
+                        @CachedLibrary("dst.memoryView") PythonBufferAccessLibrary bufferLib) {
+            InternalByteArray internalByteArray = getInternalByteArrayNode.execute(src, encoding);
+            bufferLib.writeFromByteArray(dst.memoryView, dstOffset, internalByteArray.getArray(), internalByteArray.getOffset() + srcOffset, size);
+        }
+
+        @Specialization
+        static void doNativeMemory(@SuppressWarnings("unused") MemoryBlock dstMemory, LongPointerStorage dst, int dstOffset, TruffleString src, int srcOffset, int size,
+                        TruffleString.Encoding encoding,
+                        @Cached TruffleString.CopyToNativeMemoryNode copyToNativeMemoryNode) {
+            copyToNativeMemoryNode.execute(src, srcOffset, new NativePointer(dst.pointer + dstOffset), 0, size, encoding);
+        }
+
+        @Specialization
+        static void doPointerArray(Node inliningTarget, MemoryBlock dstMemory, PointerArrayStorage dst, int dstOffset, TruffleString src, int srcOffset, int size, TruffleString.Encoding encoding,
+                        @Cached @Shared TruffleString.CopyToByteArrayNode copyToByteArrayNode,
+                        @Cached PointerArrayToBytesNode toBytesNode) {
+            ByteArrayStorage newStorage = toBytesNode.execute(inliningTarget, dstMemory, dst);
+            doBytes(dstMemory, newStorage, dstOffset, src, srcOffset, size, encoding, copyToByteArrayNode);
         }
     }
 
