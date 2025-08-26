@@ -42,23 +42,24 @@ package com.oracle.graal.python.builtins.objects.asyncio;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.frame.MaterializedFrame;
 
 public final class PAsyncGen extends PGenerator {
     private boolean closed = false;
     private boolean hookCalled = false;
     private boolean runningAsync = false;
 
-    public static PAsyncGen create(PythonLanguage lang, TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
-        rootNode.createGeneratorFrame(arguments);
-        return new PAsyncGen(lang, name, qualname, rootNode, callTargets, arguments);
+    public static PAsyncGen create(PythonLanguage lang, PFunction function, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
+        MaterializedFrame generatorFrame = rootNode.createGeneratorFrame(arguments);
+        return new PAsyncGen(lang, function, generatorFrame, rootNode, callTargets, arguments);
     }
 
-    private PAsyncGen(PythonLanguage lang, TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
-        super(lang, name, qualname, arguments, PythonBuiltinClassType.PAsyncGenerator, false, new BytecodeState(rootNode, callTargets));
+    private PAsyncGen(PythonLanguage lang, PFunction function, MaterializedFrame generatorFrame, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
+        super(lang, function, generatorFrame, PythonBuiltinClassType.PAsyncGenerator, false, new BytecodeState(rootNode, callTargets));
     }
 
     public boolean isClosed() {

@@ -79,12 +79,12 @@ public final class PBytecodeDSLGeneratorFunctionRootNode extends PRootNode {
             // pass the information to the generator
             // .gi_code.co_flags will still be wrong, but at least await will work correctly
             if (isIterableCoroutine.profile((generatorFunction.getCode().getFlags() & 0x100) != 0)) {
-                return PFactory.createIterableCoroutine(rootNode.getLanguage(), generatorFunction.getName(), generatorFunction.getQualname(), rootNode, arguments);
+                return PFactory.createIterableCoroutine(rootNode.getLanguage(), generatorFunction, rootNode, arguments);
             } else {
-                return PFactory.createGenerator(rootNode.getLanguage(), generatorFunction.getName(), generatorFunction.getQualname(), rootNode, arguments);
+                return PFactory.createGenerator(rootNode.getLanguage(), generatorFunction, rootNode, arguments);
             }
         } else if (rootNode.getCodeUnit().isCoroutine()) {
-            return PFactory.createCoroutine(rootNode.getLanguage(), generatorFunction.getName(), generatorFunction.getQualname(), rootNode, arguments);
+            return PFactory.createCoroutine(rootNode.getLanguage(), generatorFunction, rootNode, arguments);
         } else if (rootNode.getCodeUnit().isAsyncGenerator()) {
             /*
              * TODO: Support async generators.

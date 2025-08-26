@@ -81,7 +81,6 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.bytecode.ContinuationResult;
 import com.oracle.truffle.api.dsl.Bind;
@@ -103,36 +102,6 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PCoroutine, PythonBuiltinClassType.PGenerator})
 public final class CommonGeneratorBuiltins extends PythonBuiltins {
-    /**
-     * Creates a fresh copy of the generator arguments to be used for the next invocation of the
-     * generator. This is necessary to avoid persisting caller state. For example: If the generator
-     * is invoked using {@code next(g)} outside of any {@code except} handler but the generator
-     * requests the exception state, then the exception state will be written into the arguments. If
-     * we now use the same arguments array every time, the next invocation would think that there is
-     * not an exception but in fact, a subsequent call to {@code next} may have a different
-     * exception state.
-     *
-     * <pre>
-     *     g = my_generator()
-     *
-     *     # invoke without any exception context
-     *     next(g)
-     *
-     *     try:
-     *         raise ValueError
-     *     except ValueError:
-     *         # invoke with exception context
-     *         next(g)
-     * </pre>
-     *
-     * This is necessary for correct chaining of exceptions.
-     */
-    private static Object[] prepareArguments(PGenerator self) {
-        Object[] generatorArguments = self.getArguments();
-        Object[] arguments = new Object[generatorArguments.length];
-        PythonUtils.arraycopy(generatorArguments, 0, arguments, 0, arguments.length);
-        return arguments;
-    }
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -168,10 +137,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                         @Exclusive @Cached IsBuiltinObjectProfile errorProfile,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             self.setRunning(true);
-            Object[] arguments = prepareArguments(self);
-            if (sendValue != null) {
-                PArguments.setSpecialArgument(arguments, sendValue);
-            }
+            Object[] arguments = self.getCallArguments(sendValue);
             GeneratorYieldResult result;
             try {
                 result = (GeneratorYieldResult) invoke.execute(frame, inliningTarget, callNode, arguments);
@@ -221,7 +187,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
 
                 if (firstCall) {
                     // First invocation: call the regular root node.
-                    arguments = prepareArguments(self);
+                    arguments = self.getCallArguments(sendValue);
                 } else {
                     // Subsequent invocations: call a continuation root node.
                     arguments = new Object[]{continuation.getFrame(), sendValue};
@@ -249,10 +215,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                         @Exclusive @Cached IsBuiltinObjectProfile errorProfile,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             self.setRunning(true);
-            Object[] arguments = prepareArguments(self);
-            if (sendValue != null) {
-                PArguments.setSpecialArgument(arguments, sendValue);
-            }
+            Object[] arguments = self.getCallArguments(sendValue);
             GeneratorYieldResult result;
             try {
                 result = (GeneratorYieldResult) invoke.execute(frame, inliningTarget, self.getCurrentCallTarget(), arguments);
@@ -282,7 +245,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                 Object[] arguments;
                 if (firstInvocationProfile.profile(inliningTarget, continuation == null)) {
                     // First invocation: call the regular root node.
-                    arguments = prepareArguments(self);
+                    arguments = self.getCallArguments(sendValue);
                 } else {
                     // Subsequent invocations: call a continuation root node.
                     arguments = new Object[]{continuation.getFrame(), sendValue};
@@ -418,7 +381,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                 if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
                     generatorFrame = Truffle.getRuntime().createMaterializedFrame(PArguments.create(), self.getRootNode().getFrameDescriptor());
                 } else {
-                    generatorFrame = PArguments.getGeneratorFrame(self.getArguments());
+                    generatorFrame = self.getGeneratorFrame();
                 }
                 PFrame pFrame = MaterializeFrameNode.materializeGeneratorFrame(location, generatorFrame, PFrame.Reference.EMPTY);
                 FrameInfo info = (FrameInfo) generatorFrame.getFrameDescriptor().getInfo();

@@ -43,6 +43,7 @@ package com.oracle.graal.python.nodes.frame;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.nodes.bytecode.BytecodeFrameInfo;
 import com.oracle.graal.python.nodes.bytecode.FrameInfo;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLFrameInfo;
@@ -104,7 +105,7 @@ public abstract class MaterializeFrameNode extends Node {
     @Specialization(guards = {
                     "cachedFD == frameToMaterialize.getFrameDescriptor()", //
                     "getPFrame(frameToMaterialize) == null", //
-                    "!hasGeneratorFrame(frameToMaterialize)", //
+                    "!isGeneratorFrame(frameToMaterialize)", //
                     "!hasCustomLocals(frameToMaterialize)"}, limit = "1")
     static PFrame freshPFrameCachedFD(Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize,
                     @Cached(value = "frameToMaterialize.getFrameDescriptor()") FrameDescriptor cachedFD,
@@ -115,7 +116,7 @@ public abstract class MaterializeFrameNode extends Node {
         return doEscapeFrame(frameToMaterialize, escapedFrame, markAsEscaped, forceSync, location, syncValuesNode);
     }
 
-    @Specialization(guards = {"getPFrame(frameToMaterialize) == null", "!hasGeneratorFrame(frameToMaterialize)", "!hasCustomLocals(frameToMaterialize)"}, replaces = "freshPFrameCachedFD")
+    @Specialization(guards = {"getPFrame(frameToMaterialize) == null", "!isGeneratorFrame(frameToMaterialize)", "!hasCustomLocals(frameToMaterialize)"}, replaces = "freshPFrameCachedFD")
     static PFrame freshPFrame(Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize,
                     @Bind PythonLanguage language,
                     @Shared("syncValuesNode") @Cached SyncFrameValuesNode syncValuesNode) {
@@ -124,7 +125,7 @@ public abstract class MaterializeFrameNode extends Node {
         return doEscapeFrame(frameToMaterialize, escapedFrame, markAsEscaped, forceSync, location, syncValuesNode);
     }
 
-    @Specialization(guards = {"getPFrame(frameToMaterialize) == null", "!hasGeneratorFrame(frameToMaterialize)", "hasCustomLocals(frameToMaterialize)"})
+    @Specialization(guards = {"getPFrame(frameToMaterialize) == null", "!isGeneratorFrame(frameToMaterialize)", "hasCustomLocals(frameToMaterialize)"})
     static PFrame freshPFrameCusstomLocals(Node location, boolean markAsEscaped, @SuppressWarnings("unused") boolean forceSync,
                     Frame frameToMaterialize,
                     @Bind PythonLanguage language) {
@@ -133,9 +134,9 @@ public abstract class MaterializeFrameNode extends Node {
         return doEscapeFrame(frameToMaterialize, escapedFrame, markAsEscaped, false, location, null);
     }
 
-    @Specialization(guards = {"getPFrame(frameToMaterialize) == null", "hasGeneratorFrame(frameToMaterialize)"})
+    @Specialization(guards = {"getPFrame(frameToMaterialize) == null", "isGeneratorFrame(frameToMaterialize)"})
     static PFrame freshPFrameForGenerator(Node location, @SuppressWarnings("unused") boolean markAsEscaped, @SuppressWarnings("unused") boolean forceSync, Frame frameToMaterialize) {
-        MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(frameToMaterialize);
+        MaterializedFrame generatorFrame = PGenerator.getGeneratorFrame(frameToMaterialize);
         PFrame.Reference frameRef = PArguments.getCurrentFrameInfo(frameToMaterialize);
         PFrame escapedFrame = materializeGeneratorFrame(location, generatorFrame, frameRef);
         frameRef.setPyFrame(escapedFrame);
@@ -148,7 +149,7 @@ public abstract class MaterializeFrameNode extends Node {
                     @Shared("syncValuesNode") @Cached SyncFrameValuesNode syncValuesNode,
                     @Cached InlinedConditionProfile syncProfile) {
         PFrame pyFrame = getPFrame(frameToMaterialize);
-        if (syncProfile.profile(inliningTarget, forceSync && !hasGeneratorFrame(frameToMaterialize))) {
+        if (syncProfile.profile(inliningTarget, forceSync && !isGeneratorFrame(frameToMaterialize))) {
             syncValuesNode.execute(pyFrame, frameToMaterialize);
         }
         if (markAsEscaped) {
@@ -210,9 +211,15 @@ public abstract class MaterializeFrameNode extends Node {
         return escapedFrame;
     }
 
-    protected static boolean hasGeneratorFrame(Frame frame) {
-        return !PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER &&
-                        PArguments.getGeneratorFrame(frame) != null;
+    protected static boolean isGeneratorFrame(Frame frame) {
+        if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+            return false;
+        }
+        Object frameInfo = frame.getFrameDescriptor().getInfo();
+        if (frameInfo instanceof BytecodeFrameInfo bytecodeFrameInfo) {
+            return bytecodeFrameInfo.getCodeUnit().isGeneratorOrCoroutine();
+        }
+        return false;
     }
 
     protected static boolean hasCustomLocals(Frame frame) {

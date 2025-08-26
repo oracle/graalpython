@@ -27,18 +27,14 @@ package com.oracle.graal.python.builtins.objects.function;
 
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.MaterializedFrame;
 
 //@formatter:off
 /**
  * The layout of an argument array for a Python frame.
  *
- *                                         +-------------------+
- * INDEX_GENERATOR_FRAME                -> | MaterializedFrame |
  *                                         +-------------------+
  * SPECIAL_ARGUMENT                     -> | Object            |
  *                                         +-------------------+
@@ -60,14 +56,13 @@ import com.oracle.truffle.api.frame.MaterializedFrame;
  */
 //@formatter:on
 public final class PArguments {
-    private static final int INDEX_GENERATOR_FRAME = 0;
-    private static final int INDEX_SPECIAL_ARGUMENT = 1;
-    private static final int INDEX_GLOBALS_ARGUMENT = 2;
-    private static final int INDEX_FUNCTION_OBJECT = 3;
-    private static final int INDEX_CALLER_FRAME_INFO = 4;
-    private static final int INDEX_CURRENT_FRAME_INFO = 5;
-    private static final int INDEX_CURRENT_EXCEPTION = 6;
-    public static final int USER_ARGUMENTS_OFFSET = 7;
+    private static final int INDEX_SPECIAL_ARGUMENT = 0;
+    private static final int INDEX_GLOBALS_ARGUMENT = 1;
+    private static final int INDEX_FUNCTION_OBJECT = 2;
+    private static final int INDEX_CALLER_FRAME_INFO = 3;
+    private static final int INDEX_CURRENT_FRAME_INFO = 4;
+    private static final int INDEX_CURRENT_EXCEPTION = 5;
+    public static final int USER_ARGUMENTS_OFFSET = 6;
 
     public static boolean isPythonFrame(Frame frame) {
         return frame != null && isPythonFrame(frame.getArguments());
@@ -104,8 +99,6 @@ public final class PArguments {
     /**
      * The special argument is used for various purposes, none of which can occur at the same time:
      * <ul>
-     * <li>The value sent to a generator via <code>send</code></li>
-     * <li>An exception thrown through a generator via <code>throw</code></li>
      * <li>The custom locals in a module or class scope when called through <code>exec</code> or
      * <code>__build_class__</code></li>
      * </ul>
@@ -216,31 +209,6 @@ public final class PArguments {
 
     public static Object getArgument(Frame frame, int index) {
         return getArgument(frame.getArguments(), index);
-    }
-
-    public static MaterializedFrame getGeneratorFrame(Object[] arguments) {
-        assert !PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER;
-        return (MaterializedFrame) arguments[INDEX_GENERATOR_FRAME];
-    }
-
-    public static MaterializedFrame getGeneratorFrame(Frame frame) {
-        return getGeneratorFrame(frame.getArguments());
-    }
-
-    public static MaterializedFrame getGeneratorFrameSafe(Frame frame) {
-        return getGeneratorFrameSafe(frame.getArguments());
-    }
-
-    public static MaterializedFrame getGeneratorFrameSafe(Object[] arguments) {
-        if (arguments[INDEX_GENERATOR_FRAME] instanceof MaterializedFrame) {
-            return getGeneratorFrame(arguments);
-        } else {
-            return null;
-        }
-    }
-
-    public static void setGeneratorFrame(Object[] arguments, MaterializedFrame generatorFrame) {
-        arguments[INDEX_GENERATOR_FRAME] = generatorFrame;
     }
 
     /**

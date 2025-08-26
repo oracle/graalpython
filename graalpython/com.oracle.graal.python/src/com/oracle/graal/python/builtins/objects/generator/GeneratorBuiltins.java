@@ -36,16 +36,15 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -227,7 +226,7 @@ public final class GeneratorBuiltins extends PythonBuiltins {
                 if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
                     return getBytecodeDSLMateriazedFrame(self);
                 } else {
-                    MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(self.getArguments());
+                    MaterializedFrame generatorFrame = self.getGeneratorFrame();
                     BytecodeFrameInfo info = (BytecodeFrameInfo) generatorFrame.getFrameDescriptor().getInfo();
                     PFrame frame = MaterializeFrameNode.materializeGeneratorFrame(info.getRootNode(), generatorFrame, PFrame.Reference.EMPTY);
                     int bci = self.getBci();
