@@ -192,16 +192,17 @@
             else
                 super.vm_config_name,
         setup+: [
+            // NOTE: logic shared with ci/python-gate.libsonnet, keep in sync
             // ensure we get graal-enterprise as a hostvm
             ["git", "clone", $.overlay_imports.GRAAL_ENTERPRISE_GIT, "${BUILD_DIR}/graal-enterprise"],
-            // force imports the main repository, so we get the relevant suites cloned
-            ["mx"] + self.vm_info.dy + ["sforceimports"],
-            // force imports with the env, which may use another suite as the primary and potentially clone other things
+            // force imports the main repository to get the right graal commit
+            ["mx", "sforceimports"],
+            // checkout the matching revision of graal-enterprise repository based on the graal/compiler checkout
+            ["mx", "--quiet", "--dy", "/graal-enterprise", "checkout-downstream", "compiler", "graal-enterprise", "--no-fetch"],
+            // force imports with the env, which may clone other things (e.g. substratevm-enterprise-gcs)
             ["mx"] + self.vm_info.env + self.vm_info.dy + ["sforceimports"],
-            // force imports the main repository, so we get their versions where it is relevant
-            ["mx"] + self.vm_info.dy + ["sforceimports"],
-            // checkout the desired revision of graal-enterprise repository based on the main repositories compiler checkout
-            ["mx", "--quiet", "-p", "${BUILD_DIR}/graal-enterprise/vm-enterprise", "checkout-downstream", "vm", "vm-enterprise", "--no-fetch"],
+            // force imports the main repository to get the right graal commit
+            ["mx", "sforceimports"],
             // logging
             ["mx"] + self.vm_info.env + self.vm_info.dy + ["sversions"],
             // build main repository
