@@ -36,6 +36,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Builtin;
+import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.ExecBuiltin;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -129,7 +131,7 @@ public abstract class PythonBuiltins {
     private void initializeEachFactoryWith(BiConsumer<NodeFactory<? extends PythonBuiltinBaseNode>, Builtin> func) {
         List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> factories = getNodeFactories();
         assert factories != null : "No factories found. Override getFactories() to resolve this.";
-        PythonOS currentOs = PythonOS.getPythonOS();
+        PythonOS currentOs = PythonLanguage.getPythonOS();
         for (NodeFactory<? extends PythonBuiltinBaseNode> factory : factories) {
             Boolean needsFrame = null;
             boolean initialized = false;

@@ -44,7 +44,8 @@ import static com.oracle.graal.python.builtins.objects.str.StringUtils.cat;
 import static com.oracle.graal.python.nodes.StringLiterals.J_MAX_CAPI_COPIES;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
-import com.oracle.graal.python.builtins.PythonOS;
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class ErrorMessages {
@@ -187,7 +188,7 @@ public abstract class ErrorMessages {
     public static final TruffleString CANNOT_IMPORT_NAME_CIRCULAR = tsLiteral("cannot import name '%s' from partially initialized module '%s' (most likely due to a circular import)");
     public static final TruffleString CANNOT_INITIALIZE_WITH = tsLiteral("cannot initialize %s with %s%s");
     public static final TruffleString CANNOT_LOAD = tsLiteral("cannot load %s: %s");
-    public static final TruffleString CANNOT_LOAD_M = (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) ? tsLiteral(
+    public static final TruffleString CANNOT_LOAD_M = (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) ? tsLiteral(
                     "cannot load %s: %m. Error 126 indicates missing DLLs, please make sure you have the latest Microsoft Visual C++ Redistributable from https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist.")
                     : tsLiteral("cannot load %s: %m");
     public static final TruffleString CANNOT_RELEASE_UNAQUIRED_LOCK = tsLiteral("cannot release un-acquired lock");

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,12 +38,51 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins;
+package com.oracle.graal.python.annotations;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
+import java.util.Locale;
 
-@Retention(RetentionPolicy.RUNTIME)
-public @interface Builtins {
-    Builtin[] value();
+public enum PythonOS {
+    PLATFORM_LINUX("linux", "Linux"),
+    PLATFORM_DARWIN("darwin", "Darwin"),
+    PLATFORM_WIN32("win32", "Windows"),
+    PLATFORM_ANY(null, null);
+
+    public static final String SUPPORTED_PLATFORMS = "linux/amd64, linux/aarch64, macos/amd64, macos/aarch64, and windows/amd64";
+
+    private final String name;
+    private final String uname;
+
+    PythonOS(String name, String uname) {
+        this.name = name;
+        this.uname = uname;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getUname() {
+        return uname;
+    }
+
+    public static final PythonOS internalCurrent;
+
+    static {
+        String property = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
+        if (property.contains("linux")) {
+            internalCurrent = PLATFORM_LINUX;
+        } else if (property.contains("mac") || property.contains("darwin")) {
+            internalCurrent = PLATFORM_DARWIN;
+        } else if (property.contains("windows")) {
+            internalCurrent = PLATFORM_WIN32;
+        } else {
+            internalCurrent = PLATFORM_ANY;
+        }
+    }
+
+    public static boolean isUnsupported() {
+        return internalCurrent == PLATFORM_ANY;
+    }
+
 }

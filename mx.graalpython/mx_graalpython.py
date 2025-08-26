@@ -1752,7 +1752,7 @@ def graalpy_ext(*args, **kwargs):
         arch = 'x86_64'
 
     # 'pyos' also needs to be compatible with CPython's designation.
-    # See class 'com.oracle.graal.python.builtins.PythonOS'
+    # See class 'com.oracle.graal.python.annotations.PythonOS'
     # In this case, we can just use 'sys.platform' of the Python running MX.
     pyos = sys.platform
 

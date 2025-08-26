@@ -56,7 +56,7 @@ import org.graalvm.shadowed.com.ibm.icu.text.Normalizer2;
 import org.graalvm.shadowed.com.ibm.icu.util.VersionInfo;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
-import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;

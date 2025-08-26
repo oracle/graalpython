@@ -43,8 +43,8 @@ package com.oracle.graal.python.builtins.objects.type.slots;
 import java.lang.annotation.Annotation;
 
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.builtins.Builtin;
-import com.oracle.graal.python.builtins.PythonOS;
+import com.oracle.graal.python.annotations.Builtin;
+import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.util.PythonUtils;
 
 /**

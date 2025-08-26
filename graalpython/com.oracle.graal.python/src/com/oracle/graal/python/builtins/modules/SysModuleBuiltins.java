@@ -52,9 +52,9 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeWar
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.UnicodeEncodeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.builtins.PythonOS.PLATFORM_DARWIN;
-import static com.oracle.graal.python.builtins.PythonOS.PLATFORM_WIN32;
-import static com.oracle.graal.python.builtins.PythonOS.getPythonOS;
+import static com.oracle.graal.python.annotations.PythonOS.PLATFORM_DARWIN;
+import static com.oracle.graal.python.annotations.PythonOS.PLATFORM_WIN32;
+import static com.oracle.graal.python.PythonLanguage.getPythonOS;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_BUFFER;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_ENCODING;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_MODE;
@@ -148,12 +148,12 @@ import java.util.Set;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
-import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.PythonOS;
+import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltinsClinicProviders.GetFrameNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltinsClinicProviders.SetDlopenFlagsClinicProviderGen;
 import com.oracle.graal.python.builtins.modules.io.BufferedReaderBuiltins;
@@ -534,11 +534,12 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant("maxunicode", IntegerFormatter.LIMIT_UNICODE.intValue() - 1);
 
         PythonOS os = getPythonOS();
-        addBuiltinConstant("platform", os.getName());
+        TruffleString osName = toTruffleStringUncached(os.getName());
+        addBuiltinConstant("platform", osName);
         if (os == PLATFORM_DARWIN) {
             addBuiltinConstant("_framework", FRAMEWORK);
         }
-        final TruffleString gmultiarch = cat(PythonUtils.getPythonArch(), T_DASH, os.getName());
+        final TruffleString gmultiarch = cat(PythonUtils.getPythonArch(), T_DASH, osName);
         addBuiltinConstant("__gmultiarch", gmultiarch);
 
         // Initialized later in postInitialize

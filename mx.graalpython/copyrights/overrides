@@ -1,3 +1,4 @@
+graalpython/com.oracle.graal.python.annotations/src/com/oracle/graal/python/annotations/Builtin.java,zippy.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/host_interop/euler_java.py,benchmarks.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/host_interop/image-magix-java.py,pypy-image-demo.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/host_interop/image-magix.py,pypy-image-demo.copyright
@@ -543,7 +544,6 @@ graalpython/com.oracle.graal.python.test/src/tox/leftpad/tests/test_leftpad.py,n
 graalpython/com.oracle.graal.python.test/src/tox/leftpad/setup.py,no.copyright
 graalpython/com.oracle.graal.python.test/src/tox/leftpad/setup.py,no.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/PythonLanguage.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/Builtin.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/CoreFunctions.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/Python3Core.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/PythonBuiltinClassType.java,zippy.copyright

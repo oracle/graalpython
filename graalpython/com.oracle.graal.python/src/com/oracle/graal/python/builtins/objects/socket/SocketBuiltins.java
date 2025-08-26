@@ -63,11 +63,11 @@ import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.PythonOS;
+import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
@@ -140,7 +140,7 @@ public final class SocketBuiltins extends PythonBuiltins {
     private static boolean isSelectable(PSocket socket) {
         // See posix.c - on Unix systems we use poll() instead of select() which does not have the
         // limitation of select()
-        return PythonOS.getPythonOS() != PythonOS.PLATFORM_WIN32 || socket.getTimeoutNs() <= 0 || socket.getFd() < PosixConstants.FD_SETSIZE.value;
+        return PythonLanguage.getPythonOS() != PythonOS.PLATFORM_WIN32 || socket.getTimeoutNs() <= 0 || socket.getFd() < PosixConstants.FD_SETSIZE.value;
     }
 
     // socket(family=AF_INET, type=SOCK_STREAM, proto=0, fileno=None)

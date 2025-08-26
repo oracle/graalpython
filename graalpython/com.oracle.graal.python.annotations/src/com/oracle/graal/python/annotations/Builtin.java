@@ -23,13 +23,11 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package com.oracle.graal.python.builtins;
+package com.oracle.graal.python.annotations;
 
 import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
-
-import com.oracle.graal.python.nodes.StringLiterals;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Repeatable(value = Builtins.class)
@@ -89,17 +87,17 @@ public @interface Builtin {
      */
     boolean declaresExplicitSelf() default false;
 
-    String raiseErrorName() default StringLiterals.J_EMPTY_STRING;
+    String raiseErrorName() default "";
 
     boolean forceSplitDirectCalls() default false;
 
     /**
      * If set to {@code true}, then this builtin will be initialized and registered in
-     * {@link PythonBuiltins#initialize(Python3Core)}. Otherwise, it will be ignored even when it
-     * has a generated node factory. This is useful when we want to initialize the builtin manually
-     * in different way (e.g., wrap it in method, descriptor, ...). By convention set this to
-     * {@code false} also for builtins declared outside of {@link PythonBuiltins} subclass to
-     * document the intent to not initialize them automatically.
+     * PythonBuiltins#initialize. Otherwise, it will be ignored even when it has a generated node
+     * factory. This is useful when we want to initialize the builtin manually in different way
+     * (e.g., wrap it in method, descriptor, ...). By convention set this to {@code false} also for
+     * builtins declared outside of PythonBuiltins subclass to document the intent to not initialize
+     * them automatically.
      */
     boolean autoRegister() default true;
 }
