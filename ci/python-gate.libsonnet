@@ -423,6 +423,7 @@
                 "--strict-compliance", "--primary", "gate", "--tags", self.tags, "-B=--force-deprecation-as-warning",
             ] + self.all_suites + self.gate_parameters,
         ],
+        deploysArtifacts: true,
     }),
 
     cpython_gate:: base_gate + test_reports + task_spec({
