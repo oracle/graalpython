@@ -1,8 +1,15 @@
 # Getting Started with GraalPy on the JVM
 
 You can use GraalPy with GraalVM JDK, Oracle JDK, or OpenJDK.
-You can easily add GraalPy to your Java application using Maven or Gradle build tools as shown below.
-Other build systems (Ant, Make, CMake, and so on) can also be used with a bit more manual work.
+To add GraalPy to your Java application, use Maven or Gradle as shown below.
+For other build systems (like Ant, Make, CMake, etc.), manual configuration may be required.
+
+### Platform support
+
+GraalPy is mostly written in Java and Python, but the Python package ecosystem is rich in native packages that need platform specific support via native libraries that expose platform-specific APIs.
+Our main operating system is Oracle Linux, the CPU architectures we focus on are AMD64 and ARM, and the main JDK we test is Oracle GraalVM.
+Windows and macOS with GraalVM JDK are less well tested, and outside of those combinations we target only basic test coverage.
+See [below](Test-Tiers.md) for a detailed breakdown.
 
 ## Maven
 
@@ -76,7 +83,7 @@ In order to distribute the resulting application for other systems, follow these
                 └── resources
     ```
 
-2. Open your project configuration file, _app/build.gradle_, and modify it as follows. 
+2. Open your project configuration file, _app/build.gradle_, and modify it as follows.
     - Include the GraalPy support and the [GraalVM Polyglot API](https://www.graalvm.org/sdk/javadoc/org/graalvm/polyglot/package-summary.html) in the `dependencies` section:
         ```bash
         implementation("org.graalvm.polyglot:polyglot:24.2.0")
@@ -114,18 +121,18 @@ In order to distribute the resulting application for other systems, follow these
    id "org.graalvm.python" version "24.2.0"
    ```
 
-   - configure the GraalPy Gradle plugin:  
+   - configure the GraalPy Gradle plugin:
    ```bash
-   graalPy { 
+   graalPy {
       packages = ["termcolor==2.2"]
    }
    ```
-   
+
    5.2. In _settings.gradle_, add the following `pluginManagement` configuration.
    ```bash
    pluginManagement {
       repositories {
-         gradlePluginPortal()        
+         gradlePluginPortal()
       }
    }
    ```
@@ -133,10 +140,10 @@ In order to distribute the resulting application for other systems, follow these
    5.3. Update the file named _App.java_ as follows:
       ```java
       package interop;
-   
+
       import org.graalvm.polyglot.*;
       import org.graalvm.python.embedding.GraalPyResources;
-   
+
       class App {
       ...
       public static void main(String[] args) {
@@ -150,7 +157,7 @@ In order to distribute the resulting application for other systems, follow these
           }
       }
       ```
-   
+
 See also [Embedding Build Tools](Embedding-Build-Tools.md) for more information about the GraalPy Gradle Plugin.
 
 ## Ant, CMake, Makefile or Other Build Systems Without Direct Support for Maven Dependencies
