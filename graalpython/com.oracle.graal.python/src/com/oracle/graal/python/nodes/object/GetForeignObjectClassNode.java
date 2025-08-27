@@ -170,7 +170,7 @@ public abstract class GetForeignObjectClassNode extends PNodeWithContext {
     }
 
     private PythonManagedClass classForTraits(PythonContext context, int traits) {
-        PythonManagedClass pythonClass = context.polyglotForeignClasses[traits];
+        PythonManagedClass pythonClass = context.getPolyglotForeignClasses(traits);
         if (pythonClass == null) {
             if (isSingleContext(this)) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -183,7 +183,7 @@ public abstract class GetForeignObjectClassNode extends PNodeWithContext {
     @TruffleBoundary
     private PythonManagedClass resolvePolyglotForeignClassAndSetInCache(PythonContext context, int traits) {
         PythonManagedClass pythonClass = resolvePolyglotForeignClass(context, traits);
-        context.polyglotForeignClasses[traits] = pythonClass;
+        context.setPolyglotForeignClasses(traits, pythonClass);
         return pythonClass;
     }
 
