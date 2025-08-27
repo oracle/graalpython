@@ -41,7 +41,6 @@ import concurrent.futures
 import enum
 import fnmatch
 import json
-import math
 import os
 import pickle
 import platform
@@ -60,6 +59,7 @@ import traceback
 import typing
 import unittest
 import unittest.loader
+import urllib.request
 from abc import abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -550,10 +550,36 @@ class ParallelTestRunner(TestRunner):
                 lambda suite: suite.test_file.config.new_worker_per_file,
             )
         partitions = [suite.collected_tests for suite in per_file_suites]
-        per_partition = int(math.ceil(len(unpartitioned) / max(1, self.num_processes)))
-        while unpartitioned:
-            partitions.append([test for suite in unpartitioned[:per_partition] for test in suite.collected_tests])
-            unpartitioned = unpartitioned[per_partition:]
+
+        # Use timings if available to partition unpartitioned optimally
+        timings = {}
+        if unpartitioned and self.num_processes:
+            configdir = unpartitioned[0].test_file.config.configdir if unpartitioned else None
+            if configdir:
+                timing_path = configdir / f"timings-{sys.platform.lower()}.json"
+                if timing_path.exists():
+                    with open(timing_path, "r", encoding="utf-8") as f:
+                        timings = json.load(f)
+
+        timed_files = []
+        for suite in unpartitioned:
+            file_path = str(suite.test_file.path).replace("\\", "/")
+            total = timings.get(file_path, 20.0)
+            timed_files.append((total, suite))
+
+        # Sort descending by expected time
+        timed_files.sort(reverse=True, key=lambda x: x[0])
+
+        # Greedily assign to balance by timing sum
+        process_loads = [[] for _ in range(self.num_processes)]
+        process_times = [0.0] * self.num_processes
+        for t, suite in timed_files:
+            i = process_times.index(min(process_times))
+            process_loads[i].append(suite)
+            process_times[i] += t
+        for group in process_loads:
+            partitions.append([test for suite in group for test in suite.collected_tests])
+
         return partitions
 
     def run_tests(self, tests: list['TestSuite']):
@@ -1299,6 +1325,31 @@ def get_bool_env(name: str):
     return os.environ.get(name, '').lower() in ('true', '1')
 
 
+def main_extract_test_timings(args):
+    """
+    Fetches a test log from the given URL, extracts per-file test timings, and writes the output as JSON.
+    """
+
+    # Download the log file
+    with urllib.request.urlopen(args.url) as response:
+        log = response.read().decode("utf-8", errors="replace")
+
+    pattern = re.compile(
+        r"^(?P<path>[^\s:]+)::\S+ +\.\.\. (?:ok|FAIL|ERROR|SKIPPED|expected failure|unexpected success|\S+) \((?P<time>[\d.]+)s\)",
+        re.MULTILINE,
+    )
+
+    timings = {}
+    for match in pattern.finditer(log):
+        raw_path = match.group("path").replace("\\", "/")
+        t = float(match.group("time"))
+        timings.setdefault(raw_path, 0.0)
+        timings[raw_path] += t
+
+    with open(args.output, "w", encoding="utf-8") as f:
+        json.dump(timings, f, indent=2, sort_keys=True)
+
+
 def main():
     is_mx_graalpytest = get_bool_env('MX_GRAALPYTEST')
     parent_parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
@@ -1428,6 +1479,20 @@ def main():
     merge_tags_parser.add_argument('report_path')
 
     # run the appropriate command
+
+    # extract-test-timings command declaration
+    extract_parser = subparsers.add_parser(
+        "extract-test-timings",
+        help="Extract per-file test timings from a test log URL and write them as JSON"
+    )
+    extract_parser.add_argument(
+        "url", help="URL of the test log file"
+    )
+    extract_parser.add_argument(
+        "output", help="Output JSON file for per-file timings"
+    )
+    extract_parser.set_defaults(main=main_extract_test_timings)
+
     args = parent_parser.parse_args()
     args.main(args)
 
