@@ -258,19 +258,30 @@ def graalpy_standalone_deps():
     return deps
 
 
+def _is_overridden_native_image_arg(prefix):
+    extras = mx.get_opts().extra_image_builder_argument
+    return any(arg.startswith(prefix) for arg in extras)
+
+
 def libpythonvm_build_args():
     build_args = []
     build_args += bytecode_dsl_build_args()
-    extras = mx.get_opts().extra_image_builder_argument
+
     if (
-            mx_sdk_vm_ng.is_nativeimage_ee() and
-            mx.get_os() == 'linux' and
-            'NATIVE_IMAGE_AUXILIARY_ENGINE_CACHE' not in os.environ and
-            not any(arg.startswith("--gc") for arg in extras)
+            mx_sdk_vm_ng.is_nativeimage_ee()
+            and mx.is_linux()
+            and not os.environ.get('NATIVE_IMAGE_AUXILIARY_ENGINE_CACHE')
+            and not _is_overridden_native_image_arg("--gc")
     ):
         build_args += ['--gc=G1', '-H:-ProtectionKeys']
-    if not os.environ.get("GRAALPY_PGO_PROFILE") and mx.suite('graalpython-enterprise', fatalIfMissing=False) and mx_sdk_vm_ng.get_bootstrap_graalvm_version() >= mx.VersionSpec("25.0"):
-        profile = None
+
+    profile = None
+    if (
+            "GRAALPY_PGO_PROFILE" not in os.environ
+            and mx.suite('graalpython-enterprise', fatalIfMissing=False)
+            and mx_sdk_vm_ng.get_bootstrap_graalvm_version() >= mx.VersionSpec("25.0")
+            and not _is_overridden_native_image_arg("--pgo")
+    ):
         vc = SUITE.vc
         commit = str(vc.tip(SUITE.dir)).strip()
         branch = str(vc.active_branch(SUITE.dir)).strip()
@@ -305,16 +316,16 @@ def libpythonvm_build_args():
             mx.warn("PGO profile must exist for benchmarking and release, creating one now...")
             profile = graalpy_native_pgo_build_and_test([])
 
-        if os.path.isfile(profile or ""):
-            mx.log(f"Using PGO profile {profile}")
-            build_args += [
-                f"--pgo={profile}",
-                "-H:+UnlockExperimentalVMOptions",
-                "-H:+PGOPrintProfileQuality",
-                "-H:-UnlockExperimentalVMOptions",
-            ]
-        else:
-            mx.log(f"Not using any PGO profile")
+    if os.path.isfile(profile or ""):
+        print(invert(f"Automatically chose PGO profile {profile}. To disable this, set GRAALPY_PGO_PROFILE to an empty string'", blinking=True), file=sys.stderr)
+        build_args += [
+            f"--pgo={profile}",
+            "-H:+UnlockExperimentalVMOptions",
+            "-H:+PGOPrintProfileQuality",
+            "-H:-UnlockExperimentalVMOptions",
+        ]
+    else:
+        print(invert("Not using an automatically selected PGO profile"), file=sys.stderr)
     return build_args
 
 
@@ -2502,6 +2513,16 @@ def no_return(fn):
     def inner(*args, **kwargs):
         fn(*args, **kwargs)
     return inner
+
+
+def invert(msg, blinking=False, file=sys.stderr):
+    if getattr(file, "isatty", lambda: False)():
+        if blinking:
+            extra = "\033[5;7m"
+        else:
+            extra = "\033[7m"
+        return f"{extra}{msg}\033[0m"
+    return msg
 
 
 def run(args, *splat, **kwargs):
