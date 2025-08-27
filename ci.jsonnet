@@ -199,6 +199,9 @@
         }),
         "python-svm-build": gpgate + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest"     : tier2                     + provide(GPY_NATIVE_STANDALONE),
+            "linux:aarch64:jdk-latest"   : tier3                     + provide(GPY_NATIVE_STANDALONE),
+            "darwin:aarch64:jdk-latest"  : tier3                     + provide(GPY_NATIVE_STANDALONE),
+            "windows:amd64:jdk-latest"   : tier3                     + provide(GPY_NATIVE_STANDALONE),
         }),
         "python-pgo-profile": gpgate_ee + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest"     : post_merge + t("01:30:00") + task_spec({
@@ -211,10 +214,10 @@
         }),
         "python-svm-unittest": gpgate + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest"     : tier2                     + require(GPY_NATIVE_STANDALONE),
-            "linux:aarch64:jdk-latest"   : tier3                     + provide(GPY_NATIVE_STANDALONE),
+            "linux:aarch64:jdk-latest"   : tier3                     + require(GPY_NATIVE_STANDALONE),
             "darwin:amd64:jdk-latest"    : daily     + t("01:30:00") + provide(GPY_NATIVE_STANDALONE),
-            "darwin:aarch64:jdk-latest"  : tier3                     + provide(GPY_NATIVE_STANDALONE),
-            "windows:amd64:jdk-latest"   : tier3                     + provide(GPY_NATIVE_STANDALONE),
+            "darwin:aarch64:jdk-latest"  : tier3                     + require(GPY_NATIVE_STANDALONE),
+            "windows:amd64:jdk-latest"   : tier3                     + require(GPY_NATIVE_STANDALONE) + batches(2),
         }),
         "python-svm-unittest-bytecode-dsl": gpgate + platform_spec(no_jobs) + bytecode_dsl_gate("python-svm-unittest") + platform_spec({
             "linux:amd64:jdk-latest"     : tier2                     + provide(GPY_NATIVE_BYTECODE_DSL_STANDALONE),
