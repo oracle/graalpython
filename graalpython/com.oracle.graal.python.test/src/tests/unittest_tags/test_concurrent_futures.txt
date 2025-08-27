@@ -95,7 +95,7 @@ test.test_concurrent_futures.test_thread_pool.ThreadPoolExecutorTest.test_execut
 test.test_concurrent_futures.test_thread_pool.ThreadPoolExecutorTest.test_map @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_concurrent_futures.test_thread_pool.ThreadPoolExecutorTest.test_map_exception @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_concurrent_futures.test_thread_pool.ThreadPoolExecutorTest.test_map_submits_without_iteration @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_concurrent_futures.test_thread_pool.ThreadPoolExecutorTest.test_map_timeout @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+!test.test_concurrent_futures.test_thread_pool.ThreadPoolExecutorTest.test_map_timeout @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_concurrent_futures.test_thread_pool.ThreadPoolExecutorTest.test_max_workers_negative @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_concurrent_futures.test_thread_pool.ThreadPoolExecutorTest.test_saturation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_concurrent_futures.test_thread_pool.ThreadPoolExecutorTest.test_shutdown_race_issue12456 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

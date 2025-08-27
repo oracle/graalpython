@@ -461,16 +461,25 @@
             excludes+: ["**.md", "docs/**", "3rd_party_licenses.txt", "scripts/**"],
         },
         setup+: [
+            // force imports the main repository to get the right graal commit
             ["mx"] + self.mx_parameters + ["sforceimports"],
+            // logging
             ["mx"] + self.mx_parameters + self.dy + ["sversions"],
         ],
     }),
 
     graalpy_ee_gate:: $.graalpy_gate + task_spec({
         setup+: [
+            // NOTE: logic shared with ci/python-bench.libsonnet, keep in sync
             ["git", "clone", $.overlay_imports.GRAAL_ENTERPRISE_GIT, "../graal-enterprise"],
-            ['mx', '-p', '../graal-enterprise/vm-enterprise', 'checkout-downstream', 'vm', 'vm-enterprise'],
-            ['mx', '--dynamicimports', '/graal-enterprise', 'sversions'],
+            // checkout the matching revision of graal-enterprise repository based on the graal/compiler checkout
+            ["mx", "--quiet", "--dy", "/graal-enterprise", "checkout-downstream", "compiler", "graal-enterprise", "--no-fetch"],
+            // force imports with the env, which may clone other things (e.g. substratevm-enterprise-gcs)
+            ["mx", "--env", "native-ee", "sforceimports"],
+            // force imports the main repository to get the right graal commit
+            ["mx", "sforceimports"],
+            // logging
+            ["mx", "--env", "native-ee", "sversions"],
         ],
     }),
 
@@ -511,6 +520,7 @@
             ["git", "clone", $.overlay_imports.GRAAL_ENTERPRISE_GIT, "../graal-enterprise"],
             ['git', '-C', '../graal', 'checkout', '${GRAAL_COMMIT}'],
             ['mx', '-p', '../graal/vm', '--dynamicimports', 'graalpython', 'sforceimports'],
+            // NOTE: jvm-only, so not need to handle substratevm-enterprise-gcs
             ['mx', '-p', '../graal-enterprise/vm-enterprise', 'checkout-downstream', 'vm', 'vm-enterprise'],
             ['git', 'checkout', '${MAIN_REVISION}'],
         ],
