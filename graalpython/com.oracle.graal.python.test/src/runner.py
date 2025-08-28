@@ -335,16 +335,16 @@ class TestRunner:
         self.total_duration = 0.0
 
     @staticmethod
-    def report_start(test_id: TestId):
-        log(f"{test_id} ... ", incomplete=True)
+    def report_start(test_id: TestId, prefix=''):
+        log(f"{prefix}{test_id} ... ", incomplete=True)
 
-    def report_result(self, result: TestResult):
+    def report_result(self, result: TestResult, prefix=''):
         self.results.append(result)
         message = f"{result.test_id} ... {result.status}"
         if result.status == TestStatus.SKIPPED and result.param:
-            message = f"{message} {result.param!r}"
+            message = f"{prefix}{message} {result.param!r}"
         else:
-            message = f"{message} ({result.duration:.2f}s)"
+            message = f"{prefix}{message} ({result.duration:.2f}s)"
         log(message)
 
     def tests_failed(self):
@@ -532,10 +532,10 @@ class ParallelTestRunner(TestRunner):
         self.crashes = []
         self.default_test_timeout = 600
 
-    def report_result(self, result: TestResult):
+    def report_result(self, result: TestResult, prefix=''):
         if self.failfast and result.status in FAILED_STATES:
             self.stop_event.set()
-        super().report_result(result)
+        super().report_result(result, prefix=prefix)
 
     def tests_failed(self):
         return super().tests_failed() or bool(self.crashes)
@@ -608,7 +608,7 @@ class ParallelTestRunner(TestRunner):
                 log(crash)
 
     def run_partitions_in_subprocesses(self, executor, partitions: list[list['Test']]):
-        workers = [SubprocessWorker(self, partition) for i, partition in enumerate(partitions)]
+        workers = [SubprocessWorker(i, self, partition) for i, partition in enumerate(partitions)]
         futures = [executor.submit(worker.run_in_subprocess_and_watch) for worker in workers]
 
         def dump_worker_status():
@@ -652,7 +652,8 @@ class ParallelTestRunner(TestRunner):
 
 
 class SubprocessWorker:
-    def __init__(self, runner: ParallelTestRunner, tests: list['Test']):
+    def __init__(self, worker_id: int, runner: ParallelTestRunner, tests: list['Test']):
+        self.prefix = f'[worker-{worker_id + 1}] '
         self.runner = runner
         self.stop_event = runner.stop_event
         self.lock = threading.RLock()
@@ -675,7 +676,7 @@ class SubprocessWorker:
                 except ValueError:
                     # It executed something we didn't ask for. Not sure why this happens
                     log(f'WARNING: unexpected test started {test_id}')
-                self.runner.report_start(test_id)
+                self.runner.report_start(test_id, prefix=self.prefix)
                 with self.lock:
                     self.last_started_test_id = test_id
                     self.last_started_time = time.time()
@@ -694,7 +695,7 @@ class SubprocessWorker:
                     output=test_output,
                     duration=event.get('duration'),
                 )
-                self.runner.report_result(result)
+                self.runner.report_result(result, prefix=self.prefix)
                 with self.lock:
                     self.last_started_test_id = None
                     self.last_started_time = time.time()  # Starts timeout for the following teardown/setup
@@ -846,7 +847,7 @@ class SubprocessWorker:
                             param=message,
                             output=output,
                             duration=(time.time() - self.last_started_time),
-                        ))
+                        ), prefix=self.prefix)
                         if blame_id is not self.last_started_test_id:
                             # If we're here, it means we didn't know exactly which test we were executing, we were
                             # somewhere in between
@@ -1332,7 +1333,7 @@ def main_extract_test_timings(args):
 
     # Download the log file
     with urllib.request.urlopen(args.url) as response:
-        log = response.read().decode("utf-8", errors="replace")
+        log_content = response.read().decode("utf-8", errors="replace")
 
     pattern = re.compile(
         r"^(?P<path>[^\s:]+)::\S+ +\.\.\. (?:ok|FAIL|ERROR|SKIPPED|expected failure|unexpected success|\S+) \((?P<time>[\d.]+)s\)",
@@ -1340,7 +1341,7 @@ def main_extract_test_timings(args):
     )
 
     timings = {}
-    for match in pattern.finditer(log):
+    for match in pattern.finditer(log_content):
         raw_path = match.group("path").replace("\\", "/")
         t = float(match.group("time"))
         timings.setdefault(raw_path, 0.0)
