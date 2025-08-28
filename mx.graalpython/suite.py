@@ -843,7 +843,6 @@ suite = {
             ],
             "build_args": [
                 # From mx.graalpython/native-image.properties
-                "-Dpolyglot.image-build-time.PreinitializeContexts=python",
                 "--add-exports", "org.graalvm.nativeimage/org.graalvm.nativeimage.impl=ALL-UNNAMED",
                 "-R:StackSize=16777216",
                 "-H:+AddAllCharsets",
