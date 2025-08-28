@@ -90,36 +90,6 @@
 
     // -----------------------------------------------------------------------------------------------------------------
     //
-    // extra wheel builder configs.
-    //
-    // these are definitions to build wheels for releases which aren't build as
-    // part of the normal (MCD) wheel builder infrastructure. the urls to the
-    // release binaries and which wheels to build are just updated manually
-    // here as needed. Wheels in particular simply have to be tested (at least
-    // superficially) by someone and then be added to the list.
-    //
-    // -----------------------------------------------------------------------------------------------------------------
-    local WHEELS_COMMON = [
-        "numpy",
-        "httptools",
-        "kiwisolver",
-        "psutil",
-        "ujson",
-        "xxhash",
-    ],
-    local GPY_RELEASE = {
-        windows: {
-            url: $.overlay_imports.RELEASES_BASE_URL + "python-native-standalone-svm-svmee-java23-windows-amd64/24.1.1/python-native-standalone-svm-svmee-java23-windows-amd64-24.1.1-signed.zip",
-            wheels: WHEELS_COMMON,
-        },
-        darwin: {
-            url: $.overlay_imports.RELEASES_BASE_URL + "python-native-standalone-svm-svmee-java23-darwin-aarch64/24.1.1/python-native-standalone-svm-svmee-java23-darwin-aarch64-24.1.1-signed.tar.gz",
-            wheels: WHEELS_COMMON,
-        },
-    },
-
-    // -----------------------------------------------------------------------------------------------------------------
-    //
     // main build definition (matrix)
     //
     // -----------------------------------------------------------------------------------------------------------------
@@ -229,9 +199,12 @@
         }),
         "python-svm-build": gpgate + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest"     : tier2                     + provide(GPY_NATIVE_STANDALONE),
+            "linux:aarch64:jdk-latest"   : tier3                     + provide(GPY_NATIVE_STANDALONE),
+            "darwin:aarch64:jdk-latest"  : tier3                     + provide(GPY_NATIVE_STANDALONE),
+            "windows:amd64:jdk-latest"   : tier3                     + provide(GPY_NATIVE_STANDALONE),
         }),
         "python-pgo-profile": gpgate_ee + platform_spec(no_jobs) + platform_spec({
-            "linux:amd64:jdk-latest"     : weekly + t("01:30:00") + task_spec({
+            "linux:amd64:jdk-latest"     : post_merge + t("01:30:00") + task_spec({
                 run: [["mx", "python-native-pgo"]],
                 logs+: [
                     "default.iprof.gz",
@@ -241,10 +214,10 @@
         }),
         "python-svm-unittest": gpgate + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest"     : tier2                     + require(GPY_NATIVE_STANDALONE),
-            "linux:aarch64:jdk-latest"   : tier3                     + provide(GPY_NATIVE_STANDALONE),
+            "linux:aarch64:jdk-latest"   : tier3                     + require(GPY_NATIVE_STANDALONE),
             "darwin:amd64:jdk-latest"    : daily     + t("01:30:00") + provide(GPY_NATIVE_STANDALONE),
-            "darwin:aarch64:jdk-latest"  : tier3                     + provide(GPY_NATIVE_STANDALONE),
-            "windows:amd64:jdk-latest"   : tier3                     + provide(GPY_NATIVE_STANDALONE),
+            "darwin:aarch64:jdk-latest"  : tier3                     + require(GPY_NATIVE_STANDALONE),
+            "windows:amd64:jdk-latest"   : tier3                     + require(GPY_NATIVE_STANDALONE) + batches(2),
         }),
         "python-svm-unittest-bytecode-dsl": gpgate + platform_spec(no_jobs) + bytecode_dsl_gate("python-svm-unittest") + platform_spec({
             "linux:amd64:jdk-latest"     : tier2                     + provide(GPY_NATIVE_BYTECODE_DSL_STANDALONE),
@@ -313,25 +286,6 @@
         }),
         "tox-example": gpgate_ee + require(GPYEE_NATIVE_STANDALONE) + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest"     : tier3,
-        }),
-        "build-wheels": base_gate + platform_spec(no_jobs) + platform_spec({
-            "windows:amd64:jdk-latest"    : on_demand   + t("01:00:00"),
-            "darwin:aarch64:jdk-latest"   : on_demand   + t("01:00:00"),
-        }) + task_spec({
-            setup: [
-                ["python", "-m", "venv", ".venv"],
-                ["set-export", "PACKAGES_TO_BUILD", std.join(",", GPY_RELEASE[self.os].wheels)],
-            ],
-            run: [
-                [
-                    if self.os == "windows" then ".venv/Scripts/python.exe" else ".venv/bin/python",
-                    "scripts/wheelbuilder/build_wheels.py",
-                    GPY_RELEASE[self.os].url,
-                ]
-            ],
-            logs+: [
-                "wheelhouse/*.whl",
-            ],
         }),
     },
 

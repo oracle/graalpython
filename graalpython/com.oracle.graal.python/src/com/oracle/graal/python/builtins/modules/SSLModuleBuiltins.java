@@ -223,9 +223,9 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
         loadDefaults(core.getContext());
         PythonModule module = core.lookupBuiltinModule(T__SSL);
         module.setAttribute(tsLiteral("OPENSSL_VERSION_NUMBER"), 0);
-        PTuple versionInfo = PFactory.createTuple(core.getLanguage(), new int[]{0, 0, 0, 0, 0});
+        PTuple versionInfo = PFactory.createTuple(core.getLanguage(), new int[]{9, 9, 9, 9, 9});
         module.setAttribute(tsLiteral("OPENSSL_VERSION_INFO"), versionInfo);
-        module.setAttribute(tsLiteral("OPENSSL_VERSION"), toTruffleStringUncached("GraalVM JSSE"));
+        module.setAttribute(tsLiteral("OPENSSL_VERSION"), toTruffleStringUncached("OpenSSL compatible GraalVM JSSE"));
         module.setAttribute(tsLiteral("_DEFAULT_CIPHERS"), T_DEFAULT_CIPHER_STRING);
         module.setAttribute(tsLiteral("_OPENSSL_API_VERSION"), versionInfo);
 

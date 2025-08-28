@@ -147,6 +147,7 @@
         vm:: [],
 
         // public
+        deploysArtifacts: true,
         capabilities+: capabilities(self.os, self.arch),
         downloads: downloads(self.os, self.arch),
         targets: [self.target] + if self.target == 'bench' then [] else ['bench'],

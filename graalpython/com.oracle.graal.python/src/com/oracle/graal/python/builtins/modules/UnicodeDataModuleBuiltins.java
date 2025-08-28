@@ -442,4 +442,61 @@ public final class UnicodeDataModuleBuiltins extends PythonBuiltins {
             return UnicodeDataModuleBuiltinsClinicProviders.EastAsianWidthNodeClinicProviderGen.INSTANCE;
         }
     }
+
+    @Builtin(name = "digit", minNumOfPositionalArgs = 1, parameterNames = {"chr", "default"})
+    @ArgumentClinic(name = "chr", conversion = ArgumentClinic.ClinicConversion.CodePoint)
+    @GenerateNodeFactory
+    abstract static class DigitNode extends PythonBinaryClinicBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        static Object digit(int codepoint, Object def,
+                        @Bind Node inliningTarget) {
+            int numericProperty = UCharacter.getIntPropertyValue(codepoint, UProperty.NUMERIC_TYPE);
+            if (numericProperty != 0 && (numericProperty & (UCharacter.NumericType.DIGIT | UCharacter.NumericType.DECIMAL)) != 0) {
+                int value = UCharacter.getNumericValue(codepoint);
+                if (value >= 0) {
+                    return value;
+                }
+            }
+            if (def != PNone.NO_VALUE) {
+                return def;
+            } else {
+                throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.NOT_A_DIGIT);
+            }
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return UnicodeDataModuleBuiltinsClinicProviders.DigitNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @Builtin(name = "decimal", minNumOfPositionalArgs = 1, parameterNames = {"chr", "default"})
+    @ArgumentClinic(name = "chr", conversion = ArgumentClinic.ClinicConversion.CodePoint)
+    @GenerateNodeFactory
+    abstract static class DecimalNode extends PythonBinaryClinicBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        static Object decimal(int codepoint, Object def,
+                        @Bind Node inliningTarget) {
+            int numericProperty = UCharacter.getIntPropertyValue(codepoint, UProperty.NUMERIC_TYPE);
+            if (numericProperty != 0 && (numericProperty & UCharacter.NumericType.DECIMAL) != 0) {
+                int value = UCharacter.getNumericValue(codepoint);
+                if (value >= 0) {
+                    return value;
+                }
+            }
+            if (def != PNone.NO_VALUE) {
+                return def;
+            } else {
+                throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.NOT_A_DECIMAL);
+            }
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return UnicodeDataModuleBuiltinsClinicProviders.DecimalNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
 }
