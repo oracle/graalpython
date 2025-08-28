@@ -81,6 +81,18 @@ if IS_GRAALPY:
 CURRENT_PLATFORM = f'{sys.platform}-{platform.machine()}'
 CURRENT_PLATFORM_KEYS = frozenset({CURRENT_PLATFORM})
 
+RUNNER_ENV = {}
+DISABLE_JIT_ENV = {'GRAAL_PYTHON_VM_ARGS': '--experimental-options --engine.Compilation=false'}
+
+# We leave the JIT enabled for the tests themselves, but disable it for subprocesses
+# noinspection PyUnresolvedReferences
+if IS_GRAALPY and __graalpython__.is_native and 'GRAAL_PYTHON_VM_ARGS' not in os.environ:
+    try:
+        subprocess.check_output([sys.executable, '--version'], env={**os.environ, **DISABLE_JIT_ENV})
+        RUNNER_ENV = DISABLE_JIT_ENV
+    except subprocess.CalledProcessError:
+        pass
+
 
 class Logger:
     report_incomplete = sys.stdout.isatty()
@@ -926,6 +938,7 @@ class Config:
             if config_tags_dir := settings.get('tags_dir'):
                 tags_dir = (config_path.parent / config_tags_dir).resolve()
             # Temporary hack for Bytecode DSL development in master branch:
+            # noinspection PyUnresolvedReferences
             if IS_GRAALPY and getattr(__graalpython__, 'is_bytecode_dsl_interpreter', False) and tags_dir:
                 new_tags_dir = (config_path.parent / (config_tags_dir + '_bytecode_dsl')).resolve()
                 if new_tags_dir.exists():
@@ -999,6 +1012,7 @@ class TestSuite:
     collected_tests: list['Test']
 
     def run(self, result):
+        os.environ.update(RUNNER_ENV)
         saved_path = sys.path[:]
         sys.path[:] = self.pythonpath
         try:
