@@ -496,7 +496,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None
 
     if minimal:
         x = [x for x in SUITE.dists if x.name == "GRAALPYTHON"][0]
-        dists = [dep for dep in x.deps if dep.isJavaProject() or dep.isJARDistribution()]
+        dists = [dep for dep in x.deps if dep.isJavaProject() or dep.isJARDistribution() and dep.exists()]
         # Hack: what we should just do is + ['GRAALPYTHON_VERSIONS_MAIN'] and let MX figure out
         # the class-path and other VM arguments necessary for it. However, due to a bug in MX,
         # LayoutDirDistribution causes an exception if passed to mx.get_runtime_jvm_args,
