@@ -45,20 +45,11 @@ import static com.oracle.graal.python.nodes.ErrorMessages.SEP_MUST_BE_ASCII;
 import static com.oracle.graal.python.nodes.ErrorMessages.SEP_MUST_BE_LENGTH_1;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETNEWARGS__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
-import static com.oracle.graal.python.nodes.StringLiterals.T_IGNORE;
-import static com.oracle.graal.python.nodes.StringLiterals.T_REPLACE;
-import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
-import java.nio.charset.CharacterCodingException;
-import java.nio.charset.Charset;
-import java.nio.charset.CharsetEncoder;
-import java.nio.charset.CodingErrorAction;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -153,6 +144,8 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.strings.AbstractTruffleString;
+import com.oracle.truffle.api.strings.TranscodingErrorHandler;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PByteArray, PythonBuiltinClassType.PBytes})
@@ -181,39 +174,12 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                                         "  - an integer");
     }
 
-    public static CodingErrorAction toCodingErrorAction(TruffleString errors, TruffleString.EqualNode eqNode) {
-        // TODO: replace CodingErrorAction with TruffleString api [GR-38105]
-        if (eqNode.execute(T_STRICT, errors, TS_ENCODING)) {
-            return CodingErrorAction.REPORT;
-        } else if (eqNode.execute(T_IGNORE, errors, TS_ENCODING)) {
-            return CodingErrorAction.IGNORE;
-        } else if (eqNode.execute(T_REPLACE, errors, TS_ENCODING)) {
-            return CodingErrorAction.REPLACE;
+    public static final TranscodingErrorHandler TS_TRANSCODE_ERROR_HANDLER_IGNORE = new TranscodingErrorHandler() {
+        @Override
+        public ReplacementString apply(AbstractTruffleString sourceString, int byteIndex, int estimatedByteLength, TruffleString.Encoding sourceEncoding, TruffleString.Encoding targetEncoding) {
+            return new ReplacementString(T_EMPTY_STRING, -1);
         }
-        return null;
-    }
-
-    public static CodingErrorAction toCodingErrorAction(Node inliningTarget, TruffleString errors, PRaiseNode raiseNode, TruffleString.EqualNode eqNode) {
-        CodingErrorAction action = toCodingErrorAction(errors, eqNode);
-        if (action != null) {
-            return action;
-        }
-        throw raiseNode.raise(inliningTarget, PythonErrorType.LookupError, ErrorMessages.UNKNOWN_ERROR_HANDLER, errors);
-    }
-
-    @TruffleBoundary
-    public static byte[] doEncode(Charset charset, TruffleString s, CodingErrorAction action) throws CharacterCodingException {
-        String string = s.toJavaStringUncached();
-        CharsetEncoder encoder = charset.newEncoder();
-        encoder.onMalformedInput(action).onUnmappableCharacter(action);
-        CharBuffer buf = CharBuffer.allocate(string.length());
-        buf.put(string);
-        buf.flip();
-        ByteBuffer encoded = encoder.encode(buf);
-        byte[] barr = new byte[encoded.remaining()];
-        encoded.get(barr);
-        return barr;
-    }
+    };
 
     @Builtin(name = J_DECODE, minNumOfPositionalArgs = 1, parameterNames = {"$self", "encoding", "errors"}, doc = "Decode the bytes using the codec registered for encoding.\n\n" +
                     "encoding\n" +
@@ -1042,7 +1008,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                 for (int i = 0; i < len; i++) {
                     byte ch = b[i];
                     if (!BytesUtils.isLower(ch)) {
-                        if (toLower(ch) == toUpper(ch)) {
+                        if (!BytesUtils.isUpper(ch)) {
                             uncased++;
                         } else {
                             return false;
@@ -1081,7 +1047,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                 for (int i = 0; i < len; i++) {
                     byte ch = b[i];
                     if (!BytesUtils.isUpper(ch)) {
-                        if (toLower(ch) == toUpper(ch)) {
+                        if (!BytesUtils.isLower(ch)) {
                             uncased++;
                         } else {
                             return false;

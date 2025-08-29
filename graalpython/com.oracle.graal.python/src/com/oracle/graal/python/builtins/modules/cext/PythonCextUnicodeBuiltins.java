@@ -55,6 +55,8 @@ import static com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.T_UT
 import static com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.T_UTF_32_LE;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
+import static com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.WCHAR_T_ENCODING;
+import static com.oracle.graal.python.builtins.modules.ctypes.CtypesNodes.WCHAR_T_SIZE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_WCHAR_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
@@ -75,7 +77,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.PRECISION_TOO_LARGE;
 import static com.oracle.graal.python.nodes.ErrorMessages.SEPARATOR_EXPECTED_STR_INSTANCE_P_FOUND;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
-import static com.oracle.graal.python.nodes.StringLiterals.T_REPLACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_SPACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_UTF8;
@@ -86,9 +87,6 @@ import static com.oracle.truffle.api.strings.TruffleString.Encoding.UTF_16;
 import static com.oracle.truffle.api.strings.TruffleString.Encoding.UTF_16LE;
 import static com.oracle.truffle.api.strings.TruffleString.Encoding.UTF_32LE;
 import static com.oracle.truffle.api.strings.TruffleString.Encoding.UTF_8;
-
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -109,7 +107,6 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTern
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.codecs.ErrorHandlers;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
@@ -1072,9 +1069,10 @@ public final class PythonCextUnicodeBuiltins {
         static PBytes fromObject(Object s,
                         @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode castStr,
-                        @Cached EncodeNativeStringNode encode) {
-            byte[] array = encode.execute(StandardCharsets.UTF_8, castStr.execute(inliningTarget, s), T_REPLACE);
-            return PFactory.createBytes(PythonLanguage.get(inliningTarget), array);
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
+            TruffleString utf8Str = switchEncodingNode.execute(castStr.execute(inliningTarget, s), TruffleString.Encoding.UTF_8);
+            return PFactory.createBytes(PythonLanguage.get(inliningTarget), copyToByteArrayNode.execute(utf8Str, TruffleString.Encoding.UTF_8));
         }
     }
 
@@ -1103,22 +1101,24 @@ public final class PythonCextUnicodeBuiltins {
     }
 
     abstract static class NativeEncoderNode extends CApiBinaryBuiltinNode {
-        private final Charset charset;
+        private final TruffleString.Encoding encoding;
 
-        protected NativeEncoderNode(Charset charset) {
-            this.charset = charset;
+        protected NativeEncoderNode(TruffleString.Encoding encoding) {
+            this.encoding = encoding;
         }
 
         @Specialization(guards = "isNoValue(errors)")
         Object doUnicode(Object s, @SuppressWarnings("unused") PNone errors,
-                        @Shared("encodeNode") @Cached EncodeNativeStringNode encodeNativeStringNode) {
-            return doUnicode(s, T_STRICT, encodeNativeStringNode);
+                        @Shared("encodeNode") @Cached EncodeNativeStringNode encodeNativeStringNode,
+                        @Shared("copyNode") @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
+            return doUnicode(s, T_STRICT, encodeNativeStringNode, copyToByteArrayNode);
         }
 
         @Specialization
         Object doUnicode(Object s, TruffleString errors,
-                        @Shared("encodeNode") @Cached EncodeNativeStringNode encodeNativeStringNode) {
-            return PFactory.createBytes(PythonLanguage.get(this), encodeNativeStringNode.execute(charset, s, errors));
+                        @Shared("encodeNode") @Cached EncodeNativeStringNode encodeNativeStringNode,
+                        @Shared("copyNode") @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
+            return PFactory.createBytes(PythonLanguage.get(this), copyToByteArrayNode.execute(encodeNativeStringNode.execute(encoding, s, errors), encoding));
         }
 
         @Fallback
@@ -1131,14 +1131,14 @@ public final class PythonCextUnicodeBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, ConstCharPtrAsTruffleString}, call = Direct)
     abstract static class _PyUnicode_AsLatin1String extends NativeEncoderNode {
         protected _PyUnicode_AsLatin1String() {
-            super(StandardCharsets.ISO_8859_1);
+            super(TruffleString.Encoding.ISO_8859_1);
         }
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, ConstCharPtrAsTruffleString}, call = Direct)
     abstract static class _PyUnicode_AsASCIIString extends NativeEncoderNode {
         protected _PyUnicode_AsASCIIString() {
-            super(StandardCharsets.US_ASCII);
+            super(TruffleString.Encoding.US_ASCII);
         }
     }
 
@@ -1146,7 +1146,7 @@ public final class PythonCextUnicodeBuiltins {
     abstract static class _PyUnicode_AsUTF8String extends NativeEncoderNode {
 
         protected _PyUnicode_AsUTF8String() {
-            super(StandardCharsets.UTF_8);
+            super(TruffleString.Encoding.UTF_8);
         }
 
         @NeverDefault
@@ -1190,15 +1190,14 @@ public final class PythonCextUnicodeBuiltins {
         @Specialization
         static Object doNative(PythonAbstractNativeObject s,
                         @Cached CStructAccess.WriteLongNode writeLongNode,
-                        @Cached _PyUnicode_AsUTF8String asUTF8String,
-                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @Cached EncodeNativeStringNode encodeNativeStringNode,
                         @Cached CStructAccess.WritePointerNode writePointerNode,
                         @Cached CStructAccess.AllocateNode allocateNode,
-                        @Cached CStructAccess.WriteByteNode writeByteNode) {
-            PBytes bytes = (PBytes) asUTF8String.execute(s, T_STRICT);
-            int len = bufferLib.getBufferLength(bytes);
+                        @Cached CStructAccess.WriteTruffleStringNode writeTruffleStringNode) {
+            TruffleString utf8Str = encodeNativeStringNode.execute(UTF_8, s, T_STRICT);
+            int len = utf8Str.byteLength(UTF_8);
             Object mem = allocateNode.alloc(len + 1, true);
-            writeByteNode.writeByteArray(mem, bufferLib.getInternalOrCopiedByteArray(bytes), len, 0, 0);
+            writeTruffleStringNode.write(mem, utf8Str, UTF_8);
             writePointerNode.writeToObj(s, CFields.PyCompactUnicodeObject__utf8, mem);
             writeLongNode.writeToObject(s, CFields.PyCompactUnicodeObject__utf8_length, len);
             return 0;
@@ -1259,15 +1258,13 @@ public final class PythonCextUnicodeBuiltins {
         static Object doNative(PythonAbstractNativeObject s,
                         @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode cast,
-                        @Cached UnicodeAsWideCharNode asWideCharNode,
-                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached CStructAccess.AllocateNode allocateNode,
-                        @Cached CStructAccess.WriteByteNode writeByteNode) {
-            int wcharSize = CStructs.wchar_t.size();
-            PBytes bytes = asWideCharNode.executeNativeOrder(inliningTarget, cast.castKnownString(inliningTarget, s), wcharSize);
-            int len = bufferLib.getBufferLength(bytes);
-            Object mem = allocateNode.alloc(len + wcharSize, true);
-            writeByteNode.writeByteArray(mem, bufferLib.getInternalOrCopiedByteArray(bytes), len, 0, 0);
+                        @Cached CStructAccess.WriteTruffleStringNode writeTruffleStringNode) {
+            TruffleString str = switchEncodingNode.execute(cast.castKnownString(inliningTarget, s), WCHAR_T_ENCODING);
+            int len = str.byteLength(WCHAR_T_ENCODING);
+            Object mem = allocateNode.alloc(len + WCHAR_T_SIZE, true);
+            writeTruffleStringNode.write(mem, str, WCHAR_T_ENCODING);
             return 0;
         }
     }

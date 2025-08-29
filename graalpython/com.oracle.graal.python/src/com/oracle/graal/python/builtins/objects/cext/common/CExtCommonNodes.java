@@ -44,6 +44,8 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowEr
 import static com.oracle.graal.python.nodes.ErrorMessages.RETURNED_NULL_WO_SETTING_EXCEPTION;
 import static com.oracle.graal.python.nodes.ErrorMessages.RETURNED_RESULT_WITH_EXCEPTION_SET;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_IGNORE;
+import static com.oracle.graal.python.nodes.StringLiterals.T_REPLACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -51,10 +53,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeE
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
-import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
-import java.nio.charset.CodingErrorAction;
-import java.nio.charset.StandardCharsets;
 import java.util.logging.Level;
 
 import org.graalvm.collections.Pair;
@@ -160,25 +159,57 @@ public abstract class CExtCommonNodes {
     @GenerateUncached
     public abstract static class EncodeNativeStringNode extends PNodeWithContext {
 
-        public abstract byte[] execute(Charset charset, Object unicodeObject, TruffleString errors);
+        public abstract TruffleString execute(TruffleString.Encoding encoding, Object unicodeObject, TruffleString errors);
 
         @Specialization
-        static byte[] doGeneric(Charset charset, Object unicodeObject, TruffleString errors,
+        static TruffleString doGeneric(TruffleString.Encoding encoding, Object unicodeObject, TruffleString errors,
                         @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached TruffleString.EqualNode eqNode,
+                        @Cached TruffleString.IsValidNode isValidNode,
+                        @Cached TruffleString.GetCodeRangeNode getCodeRangeNode,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached InlinedConditionProfile strictProfile,
+                        @Cached InlinedConditionProfile ignoreProfile,
+                        @Cached InlinedConditionProfile replaceProfile,
                         @Cached PRaiseNode raiseNode) {
+            assert encoding == TruffleString.Encoding.US_ASCII ||
+                            encoding == TruffleString.Encoding.ISO_8859_1 ||
+                            encoding == TruffleString.Encoding.UTF_8 ||
+                            encoding == TruffleString.Encoding.UTF_16LE ||
+                            encoding == TruffleString.Encoding.UTF_16BE ||
+                            encoding == TruffleString.Encoding.UTF_32LE ||
+                            encoding == TruffleString.Encoding.UTF_32BE : encoding;
             TruffleString str;
             try {
                 str = castToTruffleStringNode.execute(inliningTarget, unicodeObject);
             } catch (CannotCastException e) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_MUST_BE_S_NOT_P, "argument", "a string", unicodeObject);
             }
-            try {
-                CodingErrorAction action = BytesCommonBuiltins.toCodingErrorAction(inliningTarget, errors, raiseNode, eqNode);
-                return BytesCommonBuiltins.doEncode(charset, str, action);
-            } catch (CharacterCodingException e) {
-                throw raiseNode.raise(inliningTarget, UnicodeEncodeError, ErrorMessages.M, e);
+            // deliberate individual branches to ensure the error handlers are partial
+            // evaluation constant
+            if (ignoreProfile.profile(inliningTarget, eqNode.execute(T_IGNORE, errors, TS_ENCODING))) {
+                return switchEncodingNode.execute(str, encoding, BytesCommonBuiltins.TS_TRANSCODE_ERROR_HANDLER_IGNORE);
+            } else {
+                if (strictProfile.profile(inliningTarget, eqNode.execute(T_STRICT, errors, TS_ENCODING))) {
+                    if (!isValidNode.execute(str, TS_ENCODING)) {
+                        // any invalid string will trigger an exception when strict mode is used, so
+                        // we don't even need to try
+                        throw raiseNode.raise(inliningTarget, UnicodeEncodeError, ErrorMessages.M);
+                    }
+                    if (encoding == TruffleString.Encoding.ISO_8859_1 || encoding == TruffleString.Encoding.US_ASCII) {
+                        // if the target encoding is ASCII or LATIN-1, transcoding will still fail
+                        // if the source string is in any UTF-* encoding and contains characters
+                        // outside the target encoding's value range
+                        TruffleString.CodeRange codeRange = getCodeRangeNode.execute(str, TS_ENCODING);
+                        if (!codeRange.isSubsetOf(encoding == TruffleString.Encoding.ISO_8859_1 ? TruffleString.CodeRange.LATIN_1 : TruffleString.CodeRange.ASCII)) {
+                            throw raiseNode.raise(inliningTarget, UnicodeEncodeError, ErrorMessages.M);
+                        }
+                    }
+                } else if (replaceProfile.profile(inliningTarget, !eqNode.execute(T_REPLACE, errors, TS_ENCODING))) {
+                    throw raiseNode.raise(inliningTarget, PythonErrorType.LookupError, ErrorMessages.UNKNOWN_ERROR_HANDLER, errors);
+                }
+                return switchEncodingNode.execute(str, encoding);
             }
         }
     }
@@ -1147,12 +1178,13 @@ public abstract class CExtCommonNodes {
         static byte doGeneric(Object value,
                         @Bind Node inliningTarget,
                         @Cached EncodeNativeStringNode encodeNativeStringNode,
+                        @Cached TruffleString.ReadByteNode readByteNode,
                         @Cached PRaiseNode raiseNode) {
-            byte[] encoded = encodeNativeStringNode.execute(StandardCharsets.UTF_8, value, T_STRICT);
-            if (encoded.length != 1) {
+            TruffleString encoded = encodeNativeStringNode.execute(TruffleString.Encoding.UTF_8, value, T_STRICT);
+            if (encoded.byteLength(TruffleString.Encoding.UTF_8) != 1) {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
             }
-            return encoded[0];
+            return (byte) readByteNode.execute(encoded, 0, TruffleString.Encoding.UTF_8);
         }
     }
 

@@ -72,9 +72,9 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.modules.io.BufferedIONodes.CheckIsClosedNode;
 import com.oracle.graal.python.builtins.modules.io.BufferedIONodes.EnterBufferedNode;
@@ -83,7 +83,6 @@ import com.oracle.graal.python.builtins.modules.io.BufferedIONodesFactory.CheckI
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
-import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -102,6 +101,7 @@ import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.ArrayUtils;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -678,7 +678,7 @@ public final class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltin
             if (limit >= 0 && n > limit) {
                 n = limit;
             }
-            int idx = BytesUtils.memchr(self.getBuffer(), self.getPos(), (byte) '\n', n);
+            int idx = ArrayUtils.indexOf(self.getBuffer(), self.getPos(), self.getPos() + n, (byte) '\n');
             if (notFound.profile(inliningTarget, idx != -1)) {
                 byte[] res = PythonUtils.arrayCopyOfRange(self.getBuffer(), self.getPos(), idx + 1);
                 self.incPos(idx - self.getPos() + 1);
