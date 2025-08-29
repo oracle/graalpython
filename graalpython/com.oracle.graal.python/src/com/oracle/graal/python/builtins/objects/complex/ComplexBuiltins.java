@@ -58,10 +58,10 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -1291,7 +1291,7 @@ public final class ComplexBuiltins extends PythonBuiltins {
             return FormatNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization
+        @Specialization(guards = "!formatString.isEmpty()")
         @InliningCutoff
         static TruffleString format(Object self, TruffleString formatString,
                         @Bind Node inliningTarget,

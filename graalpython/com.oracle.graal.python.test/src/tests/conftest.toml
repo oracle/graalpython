@@ -47,6 +47,7 @@ exclude_on = ['jvm']
 selector = [
     # These test would work on JVM too, but they are prohibitively slow due to a large amount of subprocesses
     "test_patched_pip.py",
+    "test_wheel.py",
 ]
 
 [[test_rules]]

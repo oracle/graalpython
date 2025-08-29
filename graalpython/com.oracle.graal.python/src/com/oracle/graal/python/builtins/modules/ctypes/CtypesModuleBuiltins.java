@@ -160,6 +160,7 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -623,13 +624,22 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         private static final TruffleString MACOS_Security_LIB = tsLiteral("/System/Library/Frameworks/Security.framework/Security");
         private static final TruffleString MACOS_CoreFoundation_LIB = tsLiteral("/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation");
 
-        private static final String T_RTLD_LOCAL = "RTLD_LOCAL|RTLD_NOW";
-        private static final String T_RTLD_GLOBAL = "RTLD_GLOBAL|RTLD_NOW";
-
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger(DlOpenNode.class);
 
         protected static String flagsToString(int flag) {
-            return (flag & RTLD_LOCAL.getValueIfDefined()) != 0 ? T_RTLD_LOCAL : T_RTLD_GLOBAL;
+            StringBuilder sb = new StringBuilder("RTLD_NOW");
+            if ((flag & RTLD_LOCAL.getValueIfDefined()) != 0) {
+                sb.append("|RTLD_LOCAL");
+            } else {
+                sb.append("|RTLD_GLOBAL");
+            }
+            for (PosixConstants.IntConstant constant : PosixConstants.winapiLoadLibraryFlags) {
+                if (constant.defined && (flag & constant.getValueIfDefined()) != 0) {
+                    sb.append('|');
+                    sb.append(constant.name);
+                }
+            }
+            return sb.toString();
         }
 
         @Override

@@ -41,7 +41,6 @@ import concurrent.futures
 import enum
 import fnmatch
 import json
-import math
 import os
 import pickle
 import platform
@@ -60,6 +59,7 @@ import traceback
 import typing
 import unittest
 import unittest.loader
+import urllib.request
 from abc import abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -80,6 +80,18 @@ if IS_GRAALPY:
 
 CURRENT_PLATFORM = f'{sys.platform}-{platform.machine()}'
 CURRENT_PLATFORM_KEYS = frozenset({CURRENT_PLATFORM})
+
+RUNNER_ENV = {}
+DISABLE_JIT_ENV = {'GRAAL_PYTHON_VM_ARGS': '--experimental-options --engine.Compilation=false'}
+
+# We leave the JIT enabled for the tests themselves, but disable it for subprocesses
+# noinspection PyUnresolvedReferences
+if IS_GRAALPY and __graalpython__.is_native and 'GRAAL_PYTHON_VM_ARGS' not in os.environ:
+    try:
+        subprocess.check_output([sys.executable, '--version'], env={**os.environ, **DISABLE_JIT_ENV})
+        RUNNER_ENV = DISABLE_JIT_ENV
+    except subprocess.CalledProcessError:
+        pass
 
 
 class Logger:
@@ -335,16 +347,16 @@ class TestRunner:
         self.total_duration = 0.0
 
     @staticmethod
-    def report_start(test_id: TestId):
-        log(f"{test_id} ... ", incomplete=True)
+    def report_start(test_id: TestId, prefix=''):
+        log(f"{prefix}{test_id} ... ", incomplete=True)
 
-    def report_result(self, result: TestResult):
+    def report_result(self, result: TestResult, prefix=''):
         self.results.append(result)
         message = f"{result.test_id} ... {result.status}"
         if result.status == TestStatus.SKIPPED and result.param:
-            message = f"{message} {result.param!r}"
+            message = f"{prefix}{message} {result.param!r}"
         else:
-            message = f"{message} ({result.duration:.2f}s)"
+            message = f"{prefix}{message} ({result.duration:.2f}s)"
         log(message)
 
     def tests_failed(self):
@@ -532,10 +544,10 @@ class ParallelTestRunner(TestRunner):
         self.crashes = []
         self.default_test_timeout = 600
 
-    def report_result(self, result: TestResult):
+    def report_result(self, result: TestResult, prefix=''):
         if self.failfast and result.status in FAILED_STATES:
             self.stop_event.set()
-        super().report_result(result)
+        super().report_result(result, prefix=prefix)
 
     def tests_failed(self):
         return super().tests_failed() or bool(self.crashes)
@@ -550,10 +562,36 @@ class ParallelTestRunner(TestRunner):
                 lambda suite: suite.test_file.config.new_worker_per_file,
             )
         partitions = [suite.collected_tests for suite in per_file_suites]
-        per_partition = int(math.ceil(len(unpartitioned) / max(1, self.num_processes)))
-        while unpartitioned:
-            partitions.append([test for suite in unpartitioned[:per_partition] for test in suite.collected_tests])
-            unpartitioned = unpartitioned[per_partition:]
+
+        # Use timings if available to partition unpartitioned optimally
+        timings = {}
+        if unpartitioned and self.num_processes:
+            configdir = unpartitioned[0].test_file.config.configdir if unpartitioned else None
+            if configdir:
+                timing_path = configdir / f"timings-{sys.platform.lower()}.json"
+                if timing_path.exists():
+                    with open(timing_path, "r", encoding="utf-8") as f:
+                        timings = json.load(f)
+
+        timed_files = []
+        for suite in unpartitioned:
+            file_path = str(suite.test_file.path).replace("\\", "/")
+            total = timings.get(file_path, 20.0)
+            timed_files.append((total, suite))
+
+        # Sort descending by expected time
+        timed_files.sort(reverse=True, key=lambda x: x[0])
+
+        # Greedily assign to balance by timing sum
+        process_loads = [[] for _ in range(self.num_processes)]
+        process_times = [0.0] * self.num_processes
+        for t, suite in timed_files:
+            i = process_times.index(min(process_times))
+            process_loads[i].append(suite)
+            process_times[i] += t
+        for group in process_loads:
+            partitions.append([test for suite in group for test in suite.collected_tests])
+
         return partitions
 
     def run_tests(self, tests: list['TestSuite']):
@@ -582,7 +620,7 @@ class ParallelTestRunner(TestRunner):
                 log(crash)
 
     def run_partitions_in_subprocesses(self, executor, partitions: list[list['Test']]):
-        workers = [SubprocessWorker(self, partition) for i, partition in enumerate(partitions)]
+        workers = [SubprocessWorker(i, self, partition) for i, partition in enumerate(partitions)]
         futures = [executor.submit(worker.run_in_subprocess_and_watch) for worker in workers]
 
         def dump_worker_status():
@@ -626,7 +664,8 @@ class ParallelTestRunner(TestRunner):
 
 
 class SubprocessWorker:
-    def __init__(self, runner: ParallelTestRunner, tests: list['Test']):
+    def __init__(self, worker_id: int, runner: ParallelTestRunner, tests: list['Test']):
+        self.prefix = f'[worker-{worker_id + 1}] '
         self.runner = runner
         self.stop_event = runner.stop_event
         self.lock = threading.RLock()
@@ -649,7 +688,7 @@ class SubprocessWorker:
                 except ValueError:
                     # It executed something we didn't ask for. Not sure why this happens
                     log(f'WARNING: unexpected test started {test_id}')
-                self.runner.report_start(test_id)
+                self.runner.report_start(test_id, prefix=self.prefix)
                 with self.lock:
                     self.last_started_test_id = test_id
                     self.last_started_time = time.time()
@@ -668,7 +707,7 @@ class SubprocessWorker:
                     output=test_output,
                     duration=event.get('duration'),
                 )
-                self.runner.report_result(result)
+                self.runner.report_result(result, prefix=self.prefix)
                 with self.lock:
                     self.last_started_test_id = None
                     self.last_started_time = time.time()  # Starts timeout for the following teardown/setup
@@ -820,7 +859,7 @@ class SubprocessWorker:
                             param=message,
                             output=output,
                             duration=(time.time() - self.last_started_time),
-                        ))
+                        ), prefix=self.prefix)
                         if blame_id is not self.last_started_test_id:
                             # If we're here, it means we didn't know exactly which test we were executing, we were
                             # somewhere in between
@@ -899,6 +938,7 @@ class Config:
             if config_tags_dir := settings.get('tags_dir'):
                 tags_dir = (config_path.parent / config_tags_dir).resolve()
             # Temporary hack for Bytecode DSL development in master branch:
+            # noinspection PyUnresolvedReferences
             if IS_GRAALPY and getattr(__graalpython__, 'is_bytecode_dsl_interpreter', False) and tags_dir:
                 new_tags_dir = (config_path.parent / (config_tags_dir + '_bytecode_dsl')).resolve()
                 if new_tags_dir.exists():
@@ -972,6 +1012,7 @@ class TestSuite:
     collected_tests: list['Test']
 
     def run(self, result):
+        os.environ.update(RUNNER_ENV)
         saved_path = sys.path[:]
         sys.path[:] = self.pythonpath
         try:
@@ -1299,6 +1340,31 @@ def get_bool_env(name: str):
     return os.environ.get(name, '').lower() in ('true', '1')
 
 
+def main_extract_test_timings(args):
+    """
+    Fetches a test log from the given URL, extracts per-file test timings, and writes the output as JSON.
+    """
+
+    # Download the log file
+    with urllib.request.urlopen(args.url) as response:
+        log_content = response.read().decode("utf-8", errors="replace")
+
+    pattern = re.compile(
+        r"^(?P<path>[^\s:]+)::\S+ +\.\.\. (?:ok|FAIL|ERROR|SKIPPED|expected failure|unexpected success|\S+) \((?P<time>[\d.]+)s\)",
+        re.MULTILINE,
+    )
+
+    timings = {}
+    for match in pattern.finditer(log_content):
+        raw_path = match.group("path").replace("\\", "/")
+        t = float(match.group("time"))
+        timings.setdefault(raw_path, 0.0)
+        timings[raw_path] += t
+
+    with open(args.output, "w", encoding="utf-8") as f:
+        json.dump(timings, f, indent=2, sort_keys=True)
+
+
 def main():
     is_mx_graalpytest = get_bool_env('MX_GRAALPYTEST')
     parent_parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
@@ -1428,6 +1494,20 @@ def main():
     merge_tags_parser.add_argument('report_path')
 
     # run the appropriate command
+
+    # extract-test-timings command declaration
+    extract_parser = subparsers.add_parser(
+        "extract-test-timings",
+        help="Extract per-file test timings from a test log URL and write them as JSON"
+    )
+    extract_parser.add_argument(
+        "url", help="URL of the test log file"
+    )
+    extract_parser.add_argument(
+        "output", help="Output JSON file for per-file timings"
+    )
+    extract_parser.set_defaults(main=main_extract_test_timings)
+
     args = parent_parser.parse_args()
     args.main(args)
 

@@ -190,6 +190,11 @@ public final class PosixConstants {
     public static final MandatoryIntConstant RTLD_NOW;
     public static final MandatoryIntConstant RTLD_GLOBAL;
     public static final MandatoryIntConstant RTLD_LOCAL;
+    public static final OptionalIntConstant LOAD_LIBRARY_SEARCH_DEFAULT_DIRS;
+    public static final OptionalIntConstant LOAD_LIBRARY_SEARCH_APPLICATION_DIR;
+    public static final OptionalIntConstant LOAD_LIBRARY_SEARCH_SYSTEM32;
+    public static final OptionalIntConstant LOAD_LIBRARY_SEARCH_USER_DIRS;
+    public static final OptionalIntConstant LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR;
     public static final MandatoryIntConstant AF_UNSPEC;
     public static final MandatoryIntConstant AF_INET;
     public static final MandatoryIntConstant AF_INET6;
@@ -377,6 +382,7 @@ public final class PosixConstants {
     public static final IntConstant[] accessMode;
     public static final IntConstant[] exitStatus;
     public static final IntConstant[] rtld;
+    public static final IntConstant[] winapiLoadLibraryFlags;
     public static final IntConstant[] socketFamily;
     public static final IntConstant[] socketType;
     public static final IntConstant[] ip4Address;
@@ -506,6 +512,11 @@ public final class PosixConstants {
         RTLD_NOW = reg.createMandatoryInt("RTLD_NOW");
         RTLD_GLOBAL = reg.createMandatoryInt("RTLD_GLOBAL");
         RTLD_LOCAL = reg.createMandatoryInt("RTLD_LOCAL");
+        LOAD_LIBRARY_SEARCH_DEFAULT_DIRS = reg.createOptionalInt("LOAD_LIBRARY_SEARCH_DEFAULT_DIRS");
+        LOAD_LIBRARY_SEARCH_APPLICATION_DIR = reg.createOptionalInt("LOAD_LIBRARY_SEARCH_APPLICATION_DIR");
+        LOAD_LIBRARY_SEARCH_SYSTEM32 = reg.createOptionalInt("LOAD_LIBRARY_SEARCH_SYSTEM32");
+        LOAD_LIBRARY_SEARCH_USER_DIRS = reg.createOptionalInt("LOAD_LIBRARY_SEARCH_USER_DIRS");
+        LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR = reg.createOptionalInt("LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR");
         AF_UNSPEC = reg.createMandatoryInt("AF_UNSPEC");
         AF_INET = reg.createMandatoryInt("AF_INET");
         AF_INET6 = reg.createMandatoryInt("AF_INET6");
@@ -695,6 +706,8 @@ public final class PosixConstants {
         exitStatus = new IntConstant[]{EX_OK, EX_USAGE, EX_DATAERR, EX_NOINPUT, EX_NOUSER, EX_NOHOST, EX_UNAVAILABLE, EX_SOFTWARE, EX_OSERR, EX_OSFILE, EX_CANTCREAT, EX_IOERR, EX_TEMPFAIL,
                         EX_PROTOCOL, EX_NOPERM, EX_CONFIG, EX_NOTFOUND};
         rtld = new IntConstant[]{RTLD_LAZY, RTLD_NOW, RTLD_GLOBAL, RTLD_LOCAL};
+        winapiLoadLibraryFlags = new IntConstant[]{LOAD_LIBRARY_SEARCH_DEFAULT_DIRS, LOAD_LIBRARY_SEARCH_APPLICATION_DIR, LOAD_LIBRARY_SEARCH_SYSTEM32, LOAD_LIBRARY_SEARCH_USER_DIRS,
+                        LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR};
         socketFamily = new IntConstant[]{AF_UNSPEC, AF_INET, AF_INET6, AF_PACKET, AF_UNIX};
         socketType = new IntConstant[]{SOCK_DGRAM, SOCK_STREAM};
         ip4Address = new IntConstant[]{INADDR_ANY, INADDR_BROADCAST, INADDR_NONE, INADDR_LOOPBACK, INADDR_ALLHOSTS_GROUP, INADDR_MAX_LOCAL_GROUP, INADDR_UNSPEC_GROUP};

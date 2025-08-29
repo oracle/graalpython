@@ -51,10 +51,10 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.annotations.Builtin;
+import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PathConversionNode;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixPath;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -79,6 +79,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "nt", isEager = true)
 public final class NtModuleBuiltins extends PythonBuiltins {
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return NtModuleBuiltinsFactory.getFactories();
@@ -88,8 +89,6 @@ public final class NtModuleBuiltins extends PythonBuiltins {
     public void initialize(Python3Core core) {
         super.initialize(core);
         if (PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32) {
-            addBuiltinConstant("_LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR", 0x100);
-            addBuiltinConstant("_LOAD_LIBRARY_SEARCH_DEFAULT_DIRS", 0x1000);
             core.removeBuiltinModule(T_POSIX);
         } else {
             core.removeBuiltinModule(T_NT);
