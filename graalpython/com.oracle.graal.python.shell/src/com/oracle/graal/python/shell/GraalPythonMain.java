@@ -1168,11 +1168,6 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
     }
 
     @Override
-    protected String[] getDefaultLanguages() {
-        return new String[]{getLanguageId(), "llvm", "regex"};
-    }
-
-    @Override
     protected void collectArguments(Set<String> options) {
         // This list of arguments is used when we are launched through the Polyglot
         // launcher
