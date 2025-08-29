@@ -293,6 +293,12 @@ public final class PythonCextListBuiltins {
             reverseNode.execute(null, self);
             return 0;
         }
+
+        @Fallback
+        static int error(@SuppressWarnings("unused") Object self,
+                        @Bind Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
+        }
     }
 
     @CApiBuiltin(ret = INT64_T, args = {PyObject, Pointer}, call = Ignored)
