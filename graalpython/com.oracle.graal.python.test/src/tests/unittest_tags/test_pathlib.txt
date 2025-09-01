@@ -69,7 +69,7 @@ test.test_pathlib.PathSubclassTest.test_unlink @ darwin-arm64,darwin-x86_64,linu
 test.test_pathlib.PathSubclassTest.test_unlink_missing_ok @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_pathlib.PathSubclassTest.test_with @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_pathlib.PathSubclassTest.test_with_segments @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_pathlib.PathSubclassTest.test_write_text_with_newlines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pathlib.PathSubclassTest.test_write_text_with_newlines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_pathlib.PathTest.test_absolute_common @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_pathlib.PathTest.test_chmod @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pathlib.PathTest.test_chmod_follow_symlinks_true @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -142,7 +142,7 @@ test.test_pathlib.PathTest.test_unlink_missing_ok @ darwin-arm64,darwin-x86_64,l
 test.test_pathlib.PathTest.test_unsupported_flavour @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_pathlib.PathTest.test_with @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_pathlib.PathTest.test_with_segments @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_pathlib.PathTest.test_write_text_with_newlines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pathlib.PathTest.test_write_text_with_newlines @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_pathlib.PosixPathAsPureTest.test_anchor_common @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pathlib.PosixPathAsPureTest.test_as_bytes_common @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_pathlib.PosixPathAsPureTest.test_as_posix_common @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -568,3 +568,4 @@ test.test_pathlib.WindowsPathTest.test_unlink @ win32-AMD64
 test.test_pathlib.WindowsPathTest.test_unlink_missing_ok @ win32-AMD64
 test.test_pathlib.WindowsPathTest.test_with @ win32-AMD64
 test.test_pathlib.WindowsPathTest.test_with_segments @ win32-AMD64
+test.test_pathlib.WindowsPathTest.test_write_text_with_newlines @ win32-AMD64

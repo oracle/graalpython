@@ -109,11 +109,11 @@ test.test_lzma.MiscellaneousTestCase.test_filter_properties_roundtrip @ darwin-a
 test.test_lzma.MiscellaneousTestCase.test_is_check_supported @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_lzma.OpenTestCase.test_bad_params @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_lzma.OpenTestCase.test_binary_modes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_lzma.OpenTestCase.test_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_lzma.OpenTestCase.test_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_lzma.OpenTestCase.test_encoding_error_handler @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_lzma.OpenTestCase.test_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_lzma.OpenTestCase.test_format_and_filters @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_lzma.OpenTestCase.test_newline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_lzma.OpenTestCase.test_text_modes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_lzma.OpenTestCase.test_text_modes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_lzma.OpenTestCase.test_with_pathlike_filename @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_lzma.OpenTestCase.test_x_mode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

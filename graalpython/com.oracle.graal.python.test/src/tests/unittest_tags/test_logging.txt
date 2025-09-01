@@ -196,7 +196,7 @@ test.test_logging.RotatingFileHandlerTest.test_max_bytes @ darwin-arm64,darwin-x
 test.test_logging.RotatingFileHandlerTest.test_max_bytes_delay @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_logging.RotatingFileHandlerTest.test_namer_rotator_inheritance @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_logging.RotatingFileHandlerTest.test_rollover_filenames @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_logging.RotatingFileHandlerTest.test_rotator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_logging.RotatingFileHandlerTest.test_rotator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_logging.RotatingFileHandlerTest.test_should_not_rollover @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_logging.RotatingFileHandlerTest.test_should_not_rollover_non_file @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_logging.RotatingFileHandlerTest.test_should_rollover @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

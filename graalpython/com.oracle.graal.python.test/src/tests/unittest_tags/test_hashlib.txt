@@ -54,7 +54,7 @@ test.test_hashlib.HashLibTestCase.test_no_unicode_blake2 @ darwin-arm64,darwin-x
 test.test_hashlib.HashLibTestCase.test_no_unicode_sha3 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_hashlib.HashLibTestCase.test_readonly_types @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_hashlib.HashLibTestCase.test_sha256_update_over_4gb @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_hashlib.HashLibTestCase.test_sha3_256_update_over_4gb @ win32-AMD64
+test.test_hashlib.HashLibTestCase.test_sha3_256_update_over_4gb @ darwin-arm64,win32-AMD64
 test.test_hashlib.HashLibTestCase.test_threaded_hashing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_hashlib.HashLibTestCase.test_unknown_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_hashlib.HashLibTestCase.test_usedforsecurity_false @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

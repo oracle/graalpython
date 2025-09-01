@@ -11,7 +11,7 @@ test.test_pydoc.test_pydoc.PydocDocTest.test_fail_showtopic @ darwin-arm64,darwi
 test.test_pydoc.test_pydoc.PydocDocTest.test_fail_showtopic_output_redirect @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_pydoc.test_pydoc.PydocDocTest.test_getpager_with_stdin_none @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_pydoc.test_pydoc.PydocDocTest.test_help_output_redirect_various_requests @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_pydoc.test_pydoc.PydocDocTest.test_input_strip @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.test_pydoc.PydocDocTest.test_input_strip @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_pydoc.test_pydoc.PydocDocTest.test_is_package_when_is_package @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_pydoc.test_pydoc.PydocDocTest.test_is_package_when_not_package @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_pydoc.test_pydoc.PydocDocTest.test_issue8225 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -23,7 +23,7 @@ test.test_pydoc.test_pydoc.PydocDocTest.test_namedtuple_fields @ darwin-arm64,da
 test.test_pydoc.test_pydoc.PydocDocTest.test_namedtuple_public_underscore @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_pydoc.test_pydoc.PydocDocTest.test_non_str_name @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_pydoc.test_pydoc.PydocDocTest.test_not_ascii @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_pydoc.test_pydoc.PydocDocTest.test_not_here @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_pydoc.test_pydoc.PydocDocTest.test_not_here @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_pydoc.test_pydoc.PydocDocTest.test_showtopic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_pydoc.test_pydoc.PydocDocTest.test_showtopic_output_redirect @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_pydoc.test_pydoc.PydocDocTest.test_splitdoc_with_description @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
