@@ -1216,6 +1216,11 @@ public abstract class CExtNodes {
                 return lookup;
             }
             if (HandlePointerConverter.pointsToPyHandleSpace(pointer)) {
+                if (HandlePointerConverter.pointsToPyIntHandle(pointer)) {
+                    return HandlePointerConverter.pointerToLong(pointer);
+                } else if (HandlePointerConverter.pointsToPyFloatHandle(pointer)) {
+                    return HandlePointerConverter.pointerToDouble(pointer);
+                }
                 return resolveHandleNode.execute(inliningTarget, pointer);
             }
             return pointer;
@@ -1237,6 +1242,11 @@ public abstract class CExtNodes {
                 lookup = CApiTransitions.lookupNative(pointer);
                 if (lookup != null) {
                     if (lookup instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
+                        if (HandlePointerConverter.pointsToPyIntHandle(pointer)) {
+                            return HandlePointerConverter.pointerToLong(pointer);
+                        } else if (HandlePointerConverter.pointsToPyFloatHandle(pointer)) {
+                            return HandlePointerConverter.pointerToDouble(pointer);
+                        }
                         updateRefNode.execute(inliningTarget, objectNativeWrapper, objectNativeWrapper.incRef());
                     }
                     return lookup;

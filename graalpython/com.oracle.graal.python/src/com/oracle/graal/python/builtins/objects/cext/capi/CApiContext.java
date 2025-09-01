@@ -100,7 +100,6 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.FreeNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ReadPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
@@ -532,7 +531,7 @@ public final class CApiContext extends CExtContext {
             assert CConstants._PY_NSMALLPOSINTS.intValue() == PY_NSMALLPOSINTS;
             Object smallInts = CStructAccess.AllocateNode.callocUncached(PY_NSMALLNEGINTS + PY_NSMALLPOSINTS, CStructAccess.POINTER_SIZE);
             for (int i = 0; i < PY_NSMALLNEGINTS + PY_NSMALLPOSINTS; i++) {
-                CStructAccessFactory.WriteObjectNewRefNodeGen.getUncached().writeArrayElement(smallInts, i, i - PY_NSMALLNEGINTS);
+                CStructAccess.WritePointerNode.writeUncached(smallInts, i, CApiTransitions.HandlePointerConverter.intToPointer(i - PY_NSMALLNEGINTS));
             }
             nativeSmallIntsArray = smallInts;
         }
@@ -561,7 +560,6 @@ public final class CApiContext extends CExtContext {
             if (wrapper.ref != null) {
                 CApiTransitions.nativeStubLookupRemove(handleContext, wrapper.ref);
             }
-            CApiTransitions.releaseNativeWrapperUncached(wrapper);
         }
     }
 

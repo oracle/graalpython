@@ -294,6 +294,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyEval_MergeCompilerFlags", ret = Int, args = {PY_COMPILER_FLAGS}, call = CImpl)
     @CApiBuiltin(name = "PyEval_ThreadsInitialized", ret = Int, args = {}, call = CImpl)
     @CApiBuiltin(name = "PyFile_WriteString", ret = Int, args = {ConstCharPtrAsTruffleString, PyObject}, call = CImpl)
+    @CApiBuiltin(name = "PyFloat_FromDouble", ret = PyObjectTransfer, args = {ArgDescriptor.Double}, call = CImpl)
     @CApiBuiltin(name = "PyFloat_AsDouble", ret = ArgDescriptor.Double, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyFloat_Pack2", ret = Int, args = {Double, CHAR_PTR, Int}, call = CImpl)
     @CApiBuiltin(name = "PyFloat_Pack4", ret = Int, args = {Double, CHAR_PTR, Int}, call = CImpl)

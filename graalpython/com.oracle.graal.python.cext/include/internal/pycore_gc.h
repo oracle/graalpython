@@ -33,7 +33,7 @@ static inline PyGC_Head* _Py_AS_GC(PyObject *op) {
 #define _PyGC_Head_UNUSED PyGC_Head
 
 // GraalPy change
-#define _PyGCHead_UNTAG(PTR) ((PyGC_Head *)(((uintptr_t) (PTR)) & ~HANDLE_BASE))
+#define _PyGCHead_UNTAG(PTR) ((PyGC_Head *)(((uintptr_t) (PTR)) & ~HANDLE_TAG_BIT))
 
 /* True if the object is currently tracked by the GC. */
 static inline int _PyObject_GC_IS_TRACKED(PyObject *op) {

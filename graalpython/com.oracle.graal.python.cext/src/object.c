@@ -309,7 +309,7 @@ _Py_IncRef(PyObject *o)
 {
     // GraalPy change: different implementation
     const Py_ssize_t refcnt = Py_REFCNT(o);
-    if (refcnt != IMMORTAL_REFCNT)
+    if (refcnt != _Py_IMMORTAL_REFCNT)
     {
         Py_SET_REFCNT(o, refcnt + 1);
         if (refcnt == MANAGED_REFCNT) {
@@ -337,7 +337,7 @@ _Py_DecRef(PyObject *o)
         return;
     }
     const Py_ssize_t refcnt = Py_REFCNT(o);
-    if (refcnt != IMMORTAL_REFCNT) {
+    if (refcnt != _Py_IMMORTAL_REFCNT) {
         const Py_ssize_t updated_refcnt = refcnt - 1;
         Py_SET_REFCNT(o, updated_refcnt);
         if (updated_refcnt != 0) {
@@ -531,6 +531,9 @@ int
 _PyObject_IsFreed(PyObject *op)
 {
     if (points_to_py_handle_space(op)) {
+        if (points_to_py_float_handle(op) || points_to_py_int_handle(op)) {
+            return 0;
+        }
         return GraalPyPrivate_Object_IsFreed(op);
     }
 #if 0 // GraalPy change
@@ -2847,6 +2850,9 @@ Py_ssize_t Py_REFCNT(PyObject *obj) {
     Py_ssize_t res;
     if (points_to_py_handle_space(obj))
     {
+        if (points_to_py_int_handle(obj) || points_to_py_float_handle(obj)) {
+            return _Py_IMMORTAL_REFCNT;
+        }
         res = pointer_to_stub(obj)->ob_refcnt;
 #ifndef NDEBUG
         if (GraalPyPrivate_Debug_CAPI() && GraalPyPrivate_GET_PyObject_ob_refcnt(obj) != res)
@@ -2897,6 +2903,12 @@ PyTypeObject* GraalPy_TYPE(PyObject *a) {
     PyTypeObject *res;
     if (points_to_py_handle_space(a))
     {
+        if (points_to_py_float_handle(a)) {
+            return &PyFloat_Type;
+        }
+        if (points_to_py_int_handle(a)) {
+            return &PyLong_Type;
+        }
         res = pointer_to_stub(a)->ob_type;
 #ifndef NDEBUG
         if (GraalPyPrivate_Debug_CAPI() && GraalPyPrivate_GET_PyObject_ob_type(a) != res)

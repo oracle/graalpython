@@ -5418,7 +5418,7 @@ type_is_gc(PyTypeObject *type)
      * just test for 'points_to_py_handle_space' but this is not applicable for
      * 'PyTypeObject' because there we really allocate and fill a native
      * mirror. */
-    return type->tp_flags & Py_TPFLAGS_HEAPTYPE && Py_REFCNT(type) != IMMORTAL_REFCNT;
+    return type->tp_flags & Py_TPFLAGS_HEAPTYPE && Py_REFCNT(type) != _Py_IMMORTAL_REFCNT;
 }
 
 

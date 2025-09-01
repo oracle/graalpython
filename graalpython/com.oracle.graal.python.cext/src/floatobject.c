@@ -145,11 +145,20 @@ PyFloat_GetInfo(void)
 
     return floatinfo;
 }
+#endif
 
 PyObject *
 PyFloat_FromDouble(double fval)
 {
     PyFloatObject *op;
+    // GraalPy: different implementation
+    if (fval == (float)fval) {
+        return float_to_pointer(fval);
+    } else {
+        return GraalPyPrivate_Float_FromDouble(fval);
+    }
+}
+#if 0 // GraalPy change
 #if PyFloat_MAXFREELIST > 0
     struct _Py_float_state *state = get_float_state();
     op = state->free_list;
@@ -323,6 +332,9 @@ PyFloat_AsDouble(PyObject *op)
 
     // GraalPy change: upcall for managed
     if (points_to_py_handle_space(op)) {
+        if (points_to_py_int_handle(op)) {
+            return (double)pointer_to_long(op);
+        }
         return GraalPyPrivate_Float_AsDouble(op);
     }
 
@@ -2661,6 +2673,9 @@ PyFloat_Unpack8(const char *data, int le)
 
 double GraalPyFloat_AS_DOUBLE(PyObject *op) {
     if (points_to_py_handle_space(op)) {
+        if (points_to_py_float_handle(op)) {
+            return pointer_to_double(op);
+        }
         return ((GraalPyFloatObject*) pointer_to_stub(op))->ob_fval;
     } else {
         return _PyFloat_CAST(op)->ob_fval;
