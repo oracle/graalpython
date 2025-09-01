@@ -828,8 +828,9 @@ suite = {
                 '--vm.-enable-native-access=org.graalvm.shadowed.jline',
             ],
             "multitarget": [
-                {"libc": ["glibc", "default"], "compiler": ["llvm-toolchain", "host", "*"]},
-                {"libc": ["musl"], "variant": ["swcfi"]},
+                {"os": ["linux"], "libc": ["glibc", "default"], "compiler": ["llvm-toolchain", "host", "*"]},
+                {"os": ["linux"], "libc": ["musl"], "variant": ["swcfi"]},
+                {"os": ["windows", "darwin"], "libc": ["default"]},
             ],
         },
 
