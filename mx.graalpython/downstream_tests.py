@@ -76,7 +76,7 @@ def downstream_test_hpy(graalpy, testdir=None, args=None, env=None, check=True, 
     hpy_test_root = hpy_root / "test"
     venv = testdir / 'hpy_venv'
     run([graalpy, "-m", "venv", str(venv)])
-    run_in_venv(venv, ["pip", "install", "pytest", "pytest-xdist", "pytest-rerunfailures", "filelock"])
+    run_in_venv(venv, ["pip", "install", "pytest", "pytest-xdist", "pytest-rerunfailures!=16.0", "filelock"])
     env = env or os.environ.copy()
     env["SETUPTOOLS_SCM_PRETEND_VERSION"] = "0.9.0"
     run_in_venv(venv, ["pip", "install", "-e", "."], cwd=str(hpy_root), env=env)
