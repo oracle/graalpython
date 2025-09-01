@@ -74,7 +74,7 @@ test.test_tempfile.TestSpooledTemporaryFile.test_multiple_close_before_rollover 
 test.test_tempfile.TestSpooledTemporaryFile.test_properties @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_tempfile.TestSpooledTemporaryFile.test_rewrite_small @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_tempfile.TestSpooledTemporaryFile.test_sparse @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_tempfile.TestSpooledTemporaryFile.test_text_mode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_tempfile.TestSpooledTemporaryFile.test_text_mode @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_tempfile.TestSpooledTemporaryFile.test_text_newline_and_encoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_tempfile.TestSpooledTemporaryFile.test_truncate_with_size_parameter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_tempfile.TestSpooledTemporaryFile.test_write_sequential @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

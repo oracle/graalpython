@@ -23,7 +23,7 @@ test.test_sys.SysModuleTest.test_getrecursionlimit @ darwin-arm64,darwin-x86_64,
 test.test_sys.SysModuleTest.test_getwindowsversion @ win32-AMD64
 test.test_sys.SysModuleTest.test_implementation @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sys.SysModuleTest.test_intern @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_sys.SysModuleTest.test_ioencoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_sys.SysModuleTest.test_ioencoding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sys.SysModuleTest.test_module_names @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sys.SysModuleTest.test_no_duplicates_in_meta_path @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sys.SysModuleTest.test_orig_argv @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

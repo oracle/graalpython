@@ -10,7 +10,7 @@ test.test_cmd_line.CmdLineTest.test_large_PYTHONPATH @ darwin-arm64,darwin-x86_6
 test.test_cmd_line.CmdLineTest.test_non_ascii @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_cmd_line.CmdLineTest.test_optimize @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_cmd_line.CmdLineTest.test_osx_android_utf8 @ darwin-arm64,darwin-x86_64
-test.test_cmd_line.CmdLineTest.test_output_newline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_cmd_line.CmdLineTest.test_output_newline @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_cmd_line.CmdLineTest.test_run_code @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_cmd_line.CmdLineTest.test_run_module @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_cmd_line.CmdLineTest.test_run_module_bug1764407 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
