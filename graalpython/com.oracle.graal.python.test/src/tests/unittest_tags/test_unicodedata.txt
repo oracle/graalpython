@@ -11,7 +11,6 @@ test.test_unicodedata.UnicodeFunctionsTest.test_east_asian_width_9_0_changes @ d
 test.test_unicodedata.UnicodeFunctionsTest.test_east_asian_width_unassigned @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_unicodedata.UnicodeFunctionsTest.test_issue10254 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_unicodedata.UnicodeFunctionsTest.test_issue29456 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_unicodedata.UnicodeFunctionsTest.test_mirrored @ darwin-x86_64
 test.test_unicodedata.UnicodeFunctionsTest.test_name_inverse_lookup @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_unicodedata.UnicodeFunctionsTest.test_numeric @ darwin-x86_64
 test.test_unicodedata.UnicodeFunctionsTest.test_pr29 @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
