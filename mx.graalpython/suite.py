@@ -520,6 +520,24 @@ suite = {
             },
         },
 
+        "python-macos-launcher": {
+            "subDir": "graalpython",
+            "native":  "executable",
+            "deliverable": "macos-venvlauncher",
+            "os_arch": {
+                "darwin": {
+                    "<others>": {
+                        "defaultBuild": True,
+                    },
+                },
+                "<others>": {
+                    "<others>": {
+                        "defaultBuild": False,
+                    },
+                },
+            },
+        },
+
         "python-libbz2": {
             "subDir": "graalpython",
             "class": "CMakeNinjaProject",
@@ -1206,6 +1224,16 @@ suite = {
                             "./META-INF/resources/<os>/<arch>/Lib/venv/scripts/nt/python.exe": "dependency:python-venvlauncher",
                         },
                     },
+                },
+                "darwin": {
+                    "<others>": {
+                        "layout": {
+                            "./META-INF/resources/<os>/<arch>/lib/graalpy<graal_ver:major_minor>/": [
+                                "dependency:GRAALPYTHON_NATIVE_LIBS/<os>/<arch>/*",
+                            ],
+                            "./META-INF/resources/<os>/<arch>/lib/venv/scripts/macos/graalpy": "dependency:python-macos-launcher",
+                        }
+                    }
                 },
                 "<others>": {
                     "<others>": {

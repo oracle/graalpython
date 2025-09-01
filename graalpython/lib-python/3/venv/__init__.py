@@ -252,7 +252,7 @@ class EnvBuilder:
             args = ' '.join(args)
             f.write(f'command = {sys.executable} -m venv {args}\n')
             # Truffle change: setup our a launcher by adding the path to the creating executable
-            if os.name == 'nt':
+            if (os.name == 'nt' or sys.platform == 'darwin'):
                 f.write('venvlauncher_command = %s\n' % (__graalpython__.venvlauncher_command or sys.executable))
             # End of Truffle change
 
