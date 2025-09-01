@@ -928,9 +928,15 @@ public final class CApiContext extends CExtContext {
             try {
                 if (!context.isCApiInitialized()) {
                     // loadCApi must set C API context half-way through its execution so that it can
-                    // run code that needs C API context
-                    loadCApi(node, context, name, path, reason);
-                    context.setCApiInitialized(); // volatile write
+                    // run internal Java code that needs C API context
+                    TruffleSafepoint safepoint = TruffleSafepoint.getCurrent();
+                    boolean prevAllowSideEffects = safepoint.setAllowSideEffects(false);
+                    try {
+                        loadCApi(node, context, name, path, reason);
+                        context.setCApiInitialized(); // volatile write
+                    } finally {
+                        safepoint.setAllowSideEffects(prevAllowSideEffects);
+                    }
                 }
             } finally {
                 initLock.unlock();
