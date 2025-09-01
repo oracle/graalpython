@@ -165,31 +165,12 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
             try {
                 ContinuationResult continuation = self.getContinuation();
                 Object[] arguments;
-                // TODO: GR-62196, Bytecode DSL does not have the same shape of arguments array for
-                // continuation calls:
-
-                // 1) in the manual interpreter, we always pass an array of the same length (with
-                // slots defined in PArguments), this argument array is used for callee context
-                // enter/exit in PBytecodeGeneratorRootNode as opposed to the original arguments
-                // array taken from the PGenerator object. Moreover, this array is a copy of
-                // PGenerator arguments, and the comment above prepareArguments seems to indicate
-                // that we indeed need a fresh copy, because we do not want to share the state
-                // stored in the arguments between invocations
-
-                // 2) Bytecode DSL doesn't do callee context enter/exit for individual calls,
-                // but for the whole coroutine
-
-                // 3) when walking the stack, e.g., in MaterializeFrameNode, we must take care of
-                // this additional arguments shape and unwrap the materialized frame from the
-                // continuation frame to access its arguments array that will have the desired
-                // "PArguments shape", however this will be a shared arguments array, so it is a
-                // question if this unwrapping would be correct, see 1).
-
                 if (firstCall) {
                     // First invocation: call the regular root node.
                     arguments = self.getCallArguments(sendValue);
                 } else {
                     // Subsequent invocations: call a continuation root node.
+                    self.prepareResume();
                     arguments = new Object[]{continuation.getFrame(), sendValue};
                 }
                 generatorResult = invoke.execute(frame, inliningTarget, callNode, arguments);
@@ -248,6 +229,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                     arguments = self.getCallArguments(sendValue);
                 } else {
                     // Subsequent invocations: call a continuation root node.
+                    self.prepareResume();
                     arguments = new Object[]{continuation.getFrame(), sendValue};
                 }
 

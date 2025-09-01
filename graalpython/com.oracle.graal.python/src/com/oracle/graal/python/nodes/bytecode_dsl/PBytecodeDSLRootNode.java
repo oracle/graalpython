@@ -2356,8 +2356,25 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class SetCurrentException {
         @Specialization
         @InliningCutoff
-        public static void doPException(VirtualFrame frame, AbstractTruffleException ex) {
-            PArguments.setException(frame, ex);
+        public static void doPException(VirtualFrame frame, Object ex) {
+            PArguments.setException(frame, (AbstractTruffleException) ex);
+        }
+    }
+
+    @Operation
+    @ConstantOperand(type = LocalAccessor.class)
+    @ConstantOperand(type = boolean.class)
+    public static final class SetCurrentGeneratorException {
+        @Specialization
+        @InliningCutoff
+        public static void doPException(VirtualFrame frame, LocalAccessor currentGeneratorException, boolean clearGeneratorEx, Object ex,
+                        @Bind BytecodeNode bytecode) {
+            if (clearGeneratorEx) {
+                currentGeneratorException.clear(bytecode, frame);
+            } else {
+                currentGeneratorException.setObject(bytecode, frame, ex);
+            }
+            PArguments.setException(frame, (AbstractTruffleException) ex);
         }
     }
 
@@ -3131,15 +3148,33 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
      * Performs some clean-up steps before suspending execution.
      */
     @Operation
+    @ConstantOperand(type = LocalAccessor.class)
     public static final class PreYield {
         @Specialization
-        public static Object doObject(VirtualFrame frame, Object value,
+        public static Object doObject(VirtualFrame frame, LocalAccessor currentGeneratorException, Object value,
                         @Bind Node location,
-                        @Bind PBytecodeDSLRootNode root) {
+                        @Bind PBytecodeDSLRootNode root,
+                        @Bind BytecodeNode bytecode,
+                        @Cached CalleeContext calleeContext) {
             if (root.needsTraceAndProfileInstrumentation()) {
                 root.traceOrProfileReturn(frame, location, value);
                 root.getThreadState().popInstrumentationData(root);
             }
+
+            if (!currentGeneratorException.isCleared(bytecode, frame)) {
+                Object genEx = currentGeneratorException.getObject(bytecode, frame);
+                if (genEx instanceof PException pe) {
+                    /*
+                     * The frame reference is only valid for this particular resumption of the
+                     * generator, so we need to materialize the frame to make sure the traceback
+                     * will still be valid in the next resumption.
+                     */
+                    pe.markEscaped();
+                }
+            }
+
+            // we may need to synchronize the generator's frame locals to the PFrame if it escaped
+            calleeContext.exit(frame, root, location);
             return value;
         }
     }
@@ -3148,14 +3183,41 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
      * Resumes execution after yield.
      */
     @Operation
+    @ConstantOperand(type = LocalAccessor.class)
+    @ConstantOperand(type = LocalAccessor.class)
     public static final class ResumeYield {
         @Specialization
-        public static Object doObject(VirtualFrame frame, Object sendValue,
+        public static Object doObject(VirtualFrame frame, LocalAccessor currentGeneratorException, LocalAccessor savedException, Object sendValue,
                         @Bind Node location,
                         @Bind PBytecodeDSLRootNode root,
                         @Bind BytecodeNode bytecode,
                         @Bind("$bytecodeIndex") int bci,
+                        @Cached CalleeContext calleeContext,
                         @Cached GetSendValueNode getSendValue) {
+            calleeContext.enter(frame);
+            if (savedException != currentGeneratorException) {
+                // We cannot pass `null` as savedException, so savedException ==
+                // currentGeneratorException means "no saveException"
+                //
+                // If we are passed savedException local, it means we are in an except block and the
+                // saved exception was fetched from the caller, so what we do is that we override it
+                // to the new caller passed exception state (possibly null meaning we need to fetch
+                // it via stack-walking if needed).
+                AbstractTruffleException callerExceptionState = PArguments.getException(frame.getArguments());
+                savedException.setObject(bytecode, frame, callerExceptionState);
+            }
+
+            // The generator's exception overrides the exception state passed from the caller
+            // GraalPy AST nodes assume that current frame's arguments contain the current exception
+            // (or null meaning that stack-walk is required to get it).
+            // see also RootNodeCompiler#generatorExceptionStateLocal
+            if (!currentGeneratorException.isCleared(bytecode, frame)) {
+                Object currentGenEx = currentGeneratorException.getObject(bytecode, frame);
+                if (currentGenEx != null) {
+                    PArguments.setException(frame, (PException) currentGenEx);
+                }
+            }
+
             if (root.needsTraceAndProfileInstrumentation()) {
                 // We may not have reparsed the root with instrumentation yet.
                 root.ensureTraceAndProfileEnabled();

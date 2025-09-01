@@ -188,6 +188,7 @@ public class PGenerator extends PythonBuiltinObject {
 
     public Object[] getCallArguments(Object sendValue) {
         if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+            prepareResume();
             return getBytecodeDSLState().arguments;
         } else {
             Object[] arguments = PArguments.create(2);
@@ -197,6 +198,11 @@ public class PGenerator extends PythonBuiltinObject {
             PArguments.setArgument(arguments, 1, sendValue);
             return arguments;
         }
+    }
+
+    public void prepareResume() {
+        assert PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER; // not needed for manual interpreter
+        PArguments.setException(getBytecodeDSLState().arguments, null);
     }
 
     public static boolean isGeneratorFrame(Frame frame) {

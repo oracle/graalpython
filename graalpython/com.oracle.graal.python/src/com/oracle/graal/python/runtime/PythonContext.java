@@ -525,6 +525,8 @@ public final class PythonContext extends Python3Core {
 
             // Ensure tracing + profiling are enabled for each method on the stack.
             Truffle.getRuntime().iterateFrames((frameInstance) -> {
+                // TODO: do we need to enable this for PBytecodeDSLRootNode wrapped in
+                // ContinuationRoot
                 if (frameInstance.getCallTarget() instanceof RootCallTarget c && c.getRootNode() instanceof PBytecodeDSLRootNode r) {
                     if (r.needsTraceAndProfileInstrumentation()) {
                         r.ensureTraceAndProfileEnabled();

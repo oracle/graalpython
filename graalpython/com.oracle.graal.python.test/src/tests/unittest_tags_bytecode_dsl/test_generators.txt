@@ -6,7 +6,13 @@ DocTestCase.test.test_generators.__test__.refleaks @ linux-x86_64
 DocTestCase.test.test_generators.__test__.syntax @ linux-x86_64
 DocTestCase.test.test_generators.__test__.tut @ linux-x86_64
 DocTestCase.test.test_generators.__test__.weakref @ linux-x86_64
+test.test_generators.ExceptionTest.test_except_gen_except @ linux-x86_64
+test.test_generators.ExceptionTest.test_except_next @ linux-x86_64
+test.test_generators.ExceptionTest.test_except_throw @ linux-x86_64
 test.test_generators.ExceptionTest.test_except_throw_bad_exception @ linux-x86_64
+test.test_generators.ExceptionTest.test_except_throw_exception_context @ linux-x86_64
+test.test_generators.ExceptionTest.test_gen_3_arg_deprecation_warning @ linux-x86_64
+test.test_generators.ExceptionTest.test_nested_gen_except_loop @ linux-x86_64
 test.test_generators.ExceptionTest.test_return_stopiteration @ linux-x86_64
 test.test_generators.ExceptionTest.test_return_tuple @ linux-x86_64
 test.test_generators.ExceptionTest.test_stopiteration_error @ linux-x86_64
@@ -14,6 +20,12 @@ test.test_generators.ExceptionTest.test_tutorial_stopiteration @ linux-x86_64
 test.test_generators.GeneratorStackTraceTest.test_send_with_yield_from @ linux-x86_64
 test.test_generators.GeneratorStackTraceTest.test_throw_with_yield_from @ linux-x86_64
 test.test_generators.GeneratorTest.test_copy @ linux-x86_64
+test.test_generators.GeneratorTest.test_issue103488 @ linux-x86_64
+test.test_generators.GeneratorTest.test_name @ linux-x86_64
 test.test_generators.GeneratorTest.test_pickle @ linux-x86_64
 test.test_generators.GeneratorTest.test_send_non_none_to_new_gen @ linux-x86_64
+test.test_generators.GeneratorThrowTest.test_exception_context_with_yield @ linux-x86_64
+test.test_generators.GeneratorThrowTest.test_exception_context_with_yield_from @ linux-x86_64
+test.test_generators.GeneratorThrowTest.test_exception_context_with_yield_from_with_context_cycle @ linux-x86_64
+test.test_generators.GeneratorThrowTest.test_exception_context_with_yield_inside_generator @ linux-x86_64
 test.test_generators.GeneratorThrowTest.test_throw_after_none_exc_type @ linux-x86_64

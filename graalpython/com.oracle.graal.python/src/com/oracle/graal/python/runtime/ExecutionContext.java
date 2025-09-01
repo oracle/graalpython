@@ -88,6 +88,18 @@ public abstract class ExecutionContext {
     @GenerateInline(false) // 28 -> 10
     @GenerateUncached
     public abstract static class CallContext extends Node {
+
+        /*
+         * Bytecode DSL note: When resuming a generator/coroutine, the call target is a
+         * ContinuationRoot with a different calling convention from regular PRootNodes. The first
+         * argument is a materialized frame, which will be used for the execution itself. We will,
+         * e.g., lookup the exception state in that frame's arguments.
+         *
+         * So for Bytecode DSL generators, we update the arguments array of that materialized frame
+         * instead of the arguments array that will be used for the actual Truffle call to the
+         * ContinuationRoot, which is not accessible to us in the generator root.
+         */
+
         /**
          * Prepare an indirect call from a Python frame to a Python function.
          */
@@ -96,12 +108,7 @@ public abstract class ExecutionContext {
         }
 
         private static Object[] getActualCallArguments(Object[] callArguments) {
-            /**
-             * Bytecode DSL note: When resuming a generator/coroutine, the call target is a
-             * ContinuationRoot with a different calling convention from regular PRootNodes. The
-             * first argument is a materialized frame containing the arguments used for argument
-             * reads.
-             */
+            // See Bytecode DSL note at the top
             if (callArguments.length == 2 && callArguments[0] instanceof MaterializedFrame materialized) {
                 return materialized.getArguments();
             }
@@ -118,11 +125,11 @@ public abstract class ExecutionContext {
             Object[] actualCallArguments;
             boolean needsExceptionState;
             if (rootNode instanceof ContinuationRootNode continuationRoot) {
+                // See Bytecode DSL note at the top
                 calleeRootNode = (PRootNode) continuationRoot.getSourceRootNode();
                 assert callArguments.length == 2;
                 actualCallArguments = ((MaterializedFrame) callArguments[0]).getArguments();
-                // Local exception state takes precedence over any exception in the caller's context
-                needsExceptionState = calleeRootNode.needsExceptionState() && !PArguments.hasException(actualCallArguments);
+                needsExceptionState = calleeRootNode.needsExceptionState();
             } else {
                 // n.b.: The class cast should always be correct, since this context
                 // must only be used when calling from Python to Python
@@ -157,7 +164,7 @@ public abstract class ExecutionContext {
                             @Cached(inline = false) MaterializeFrameNode materialize) {
                 PFrame.Reference thisInfo = PArguments.getCurrentFrameInfo(frame);
                 // We are handing the PFrame of the current frame to the caller, i.e., it does
-                // not 'escape' since it is still on the stack.Also, force synchronization of
+                // not 'escape' since it is still on the stack. Also, force synchronization of
                 // values
                 PFrame pyFrame = materialize.execute(frame, callNode, false, true);
                 assert thisInfo.getPyFrame() == pyFrame;
@@ -269,6 +276,24 @@ public abstract class ExecutionContext {
         }
     }
 
+    /**
+     * Execution of a Python function should be wrapped with {@link #enter(VirtualFrame)} and
+     * {@link #exit(VirtualFrame, PRootNode)}.
+     * <p>
+     * When entering the function we create the {@link PFrame.Reference} that represents the current
+     * (possibly not yet materialized virtual frame). From then on, at any point we can refer to the
+     * current {@link PFrame.Reference} instance if we have the current virtual frame at hand.
+     * <p>
+     * When leaving the function, we check if the current frame needs to outlive the function
+     * execution, i.e., needs to escape. In such case, the frame is materialized to a {@link PFrame}
+     * instance, and we copy local variables and some arguments into a new {@link MaterializedFrame}
+     * stored in the {@link PFrame} (see {@link MaterializeFrameNode}). The {@link PFrame} is stored
+     * into {@link PFrame.Reference}.
+     * <p>
+     * The frame may have been matarialized already during the function execution, in such case we
+     * just synchronize the existing {@link PFrame} with the virtual frame when leaving the
+     * function.
+     */
     public static final class CalleeContext extends Node {
 
         @Child private MaterializeFrameNode materializeNode;
@@ -371,7 +396,8 @@ public abstract class ExecutionContext {
         /**
          * Prepare a call from a Python frame to a callable without frame. This transfers the
          * exception state from the frame to the context and also puts the current frame info (which
-         * represents the last Python caller) in the context.
+         * represents the last Python caller) in the context. Normally, when calling from Python
+         * frame to Python frame, we can pass down those values in the arguments array.
          *
          * This is mostly useful when calling methods annotated with {@code @TruffleBoundary} that
          * again use nodes that would require a frame. Use following pattern to call such methods
