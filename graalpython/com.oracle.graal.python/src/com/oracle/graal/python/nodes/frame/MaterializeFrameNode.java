@@ -236,10 +236,9 @@ public abstract class MaterializeFrameNode extends Node {
         public abstract void execute(PFrame pyFrame, Frame frameToSync);
 
         @Specialization(guards = {"!pyFrame.hasCustomLocals()",
-                        "frameToSync.getFrameDescriptor() == cachedFd",
-                        "variableSlotCount(cachedFd) < 32"}, limit = "1")
+                        "frameToSync.getFrameDescriptor() == cachedFd"}, limit = "1")
         @ExplodeLoop
-        static void doSyncExploded(PFrame pyFrame, Frame frameToSync,
+        static void doSyncCached(PFrame pyFrame, Frame frameToSync,
                         @Cached(value = "frameToSync.getFrameDescriptor()") FrameDescriptor cachedFd) {
             MaterializedFrame target = pyFrame.getLocals();
             assert cachedFd == target.getFrameDescriptor();
@@ -252,30 +251,14 @@ public abstract class MaterializeFrameNode extends Node {
                     rootNode.getBytecodeNode().copyLocalValues(0, frameToSync, target, 0, slotCount);
                 }
             } else {
-                for (int i = 0; i < slotCount; i++) {
-                    PythonUtils.copyFrameSlot(frameToSync, target, i);
-                }
+                frameToSync.copyTo(0, target, 0, slotCount);
             }
         }
 
-        @Specialization(guards = "!pyFrame.hasCustomLocals()", replaces = "doSyncExploded")
+        @Specialization(guards = "!pyFrame.hasCustomLocals()", replaces = "doSyncCached")
         @ExplodeLoop
         static void doSync(PFrame pyFrame, Frame frameToSync) {
-            MaterializedFrame target = pyFrame.getLocals();
-            FrameDescriptor fd = target.getFrameDescriptor();
-            int slotCount = variableSlotCount(fd);
-
-            if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                FrameInfo info = (FrameInfo) fd.getInfo();
-                if (info instanceof BytecodeDSLFrameInfo bytecodeDSLFrameInfo) {
-                    PBytecodeDSLRootNode rootNode = bytecodeDSLFrameInfo.getRootNode();
-                    rootNode.getBytecodeNode().copyLocalValues(0, frameToSync, target, 0, slotCount);
-                }
-            } else {
-                for (int i = 0; i < slotCount; i++) {
-                    PythonUtils.copyFrameSlot(frameToSync, target, i);
-                }
-            }
+            doSyncCached(pyFrame, frameToSync, frameToSync.getFrameDescriptor());
         }
 
         @Specialization(guards = "pyFrame.hasCustomLocals()")
