@@ -1,0 +1,6 @@
+test.test_asyncgen.AsyncGenAsyncioTest.test_aiter_bad_args @ linux-x86_64
+test.test_asyncgen.AsyncGenAsyncioTest.test_anext_bad_args @ linux-x86_64
+test.test_asyncgen.AsyncGenAsyncioTest.test_anext_return_generator @ linux-x86_64
+test.test_asyncgen.AsyncGenAsyncioTest.test_anext_return_iterator @ linux-x86_64
+test.test_asyncgen.AsyncGenSyntaxTest.test_async_gen_syntax_01 @ linux-x86_64
+test.test_asyncgen.AsyncGenSyntaxTest.test_async_gen_syntax_02 @ linux-x86_64

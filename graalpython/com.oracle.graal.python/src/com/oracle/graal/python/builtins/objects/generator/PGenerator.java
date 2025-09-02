@@ -201,7 +201,11 @@ public class PGenerator extends PythonBuiltinObject {
         }
 
         if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-            throw new UnsupportedOperationException("not implemented"); // TODO: GR-64250
+            PBytecodeDSLRootNode rootNode = getBytecodeDSLState().rootNode;
+            if (rootNode.yieldFromGeneratorIndex == -1 || this.getContinuation() == null) {
+                return null;
+            }
+            return rootNode.getBytecodeNode().getLocalValue(0, getBytecodeDSLState().yieldResult.getFrame(), rootNode.yieldFromGeneratorIndex);
         } else {
             return frameInfo.getYieldFrom(PArguments.getGeneratorFrame(arguments), getBci(), getBytecodeState().getCurrentRootNode().getResumeStackTop());
         }

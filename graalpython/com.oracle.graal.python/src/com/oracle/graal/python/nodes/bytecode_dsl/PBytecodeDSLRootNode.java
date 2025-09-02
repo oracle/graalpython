@@ -344,6 +344,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @CompilationFinal protected transient Signature signature;
     @CompilationFinal protected transient int selfIndex;
     @CompilationFinal protected transient int classcellIndex;
+    @CompilationFinal public int yieldFromGeneratorIndex = -1;
 
     private transient boolean pythonInternal;
     @CompilationFinal private transient boolean internal;
