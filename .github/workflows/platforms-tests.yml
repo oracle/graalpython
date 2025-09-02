@@ -36,23 +36,23 @@ jobs:
           mvn -f graalpython/com.oracle.graal.python.test.integration/pom.xml -Dcom.oracle.graal.python.test.polyglot.version=26.0.0 -Dcom.oracle.graal.python.test.polyglot_repo=file:///$(pwd)/m2repo --batch-mode -U -Dtruffle.UseFallbackRuntime=true -Dpolyglot.engine.allowUnsupportedPlatform=true -Dpolyglot.engine.userResourceCache=/$(pwd)/user_resource_cache -Dpolyglot.python.UnsupportedPlatformEmulates=linux -Dorg.graalvm.python.resources.exclude=native.files test -Dtest=HelloWorldTests,AttributeTests,BuiltinSubclassTest,ComplexTexts,CreateClassTest,AsyncActionThreadingTest,JavaInteropTest
           rm -rf $(pwd)/user_resource_cache
 
-      - name: Test on ppc64le
-        uses: uraimo/run-on-arch-action@v3
+      - uses: docker/setup-qemu-action@v3
         with:
-          arch: ppc64le
-          distro: ubuntu_latest
-          dockerRunArgs: |
-            --volume "${GITHUB_WORKSPACE}:/workspace"
-            --memory-reservation 6G
-          run: |
+          platforms: ppc64le
+
+      - uses: docker/setup-docker-action@v4
+
+      - name: Test on ppc64le using Docker
+        run: |
+          docker run --rm --platform=linux/ppc64le -v "${GITHUB_WORKSPACE}:/workspace" -w /workspace ubuntu:24.04 bash -c "
             apt-get update
             apt-get install -y python3 git wget tar gzip cmake build-essential maven openjdk-17-jdk
             export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-ppc64el
-            export PATH=$JAVA_HOME/bin:$PATH
+            export PATH=\$JAVA_HOME/bin:\$PATH
 
-            echo "Using $JAVA_HOME"
-            $JAVA_HOME/bin/java -version
-            cd /workspace
-            mkdir $(pwd)/user_resource_cache
-            mvn -f graalpython/com.oracle.graal.python.test.integration/pom.xml -Dcom.oracle.graal.python.test.polyglot.version=26.0.0 -Dcom.oracle.graal.python.test.polyglot_repo=file:///$(pwd)/m2repo --batch-mode -U -Dtruffle.UseFallbackRuntime=true -Dpolyglot.engine.allowUnsupportedPlatform=true -Dpolyglot.engine.userResourceCache=/$(pwd)/user_resource_cache -Dpolyglot.python.UnsupportedPlatformEmulates=linux -Dorg.graalvm.python.resources.exclude=native.files test -Dtest=HelloWorldTests,AttributeTests,BuiltinSubclassTest,ComplexTexts,CreateClassTest,AsyncActionThreadingTest,JavaInteropTest
-            rm -rf $(pwd)/user_resource_cache
+            echo 'Using \$JAVA_HOME'
+            \$JAVA_HOME/bin/java -version
+            mkdir \$(pwd)/user_resource_cache
+            mvn -f graalpython/com.oracle.graal.python.test.integration/pom.xml -Dcom.oracle.graal.python.test.polyglot.version=26.0.0 -Dcom.oracle.graal.python.test.polyglot_repo=file:///\$(pwd)/m2repo --batch-mode -U -Dtruffle.UseFallbackRuntime=true -Dpolyglot.engine.allowUnsupportedPlatform=true -Dpolyglot.engine.userResourceCache=/\$(pwd)/user_resource_cache -Dpolyglot.python.UnsupportedPlatformEmulates=linux -Dorg.graalvm.python.resources.exclude=native.files test -Dtest=HelloWorldTests,AttributeTests,BuiltinSubclassTest,ComplexTexts,CreateClassTest,AsyncActionThreadingTest,JavaInteropTest
+            rm -rf \$(pwd)/user_resource_cache
+          "

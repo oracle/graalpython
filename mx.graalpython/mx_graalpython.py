@@ -300,7 +300,8 @@ def libpythonvm_build_args():
                     f"graalpy/{commit}",
                     profile,
                 ],
-                nonZeroIsFatal=False
+                nonZeroIsFatal=False,
+                env={"UPLOADER_PYTHON": sys.executable, **os.environ},
             )
         else:
             # Locally, we try to get a reasonable profile
@@ -320,7 +321,7 @@ def libpythonvm_build_args():
                 or ",bench," in os.environ.get("LABELS", "")
         ):
             mx.warn("PGO profile must exist for benchmarking and release, creating one now...")
-            profile = graalpy_native_pgo_build_and_test([])
+            profile = graalpy_native_pgo_build_and_test()
 
     if os.path.isfile(profile or ""):
         print(invert(f"Automatically chose PGO profile {profile}. To disable this, set GRAALPY_PGO_PROFILE to an empty string'", blinking=True), file=sys.stderr)
@@ -335,7 +336,7 @@ def libpythonvm_build_args():
     return build_args
 
 
-def graalpy_native_pgo_build_and_test(_):
+def graalpy_native_pgo_build_and_test(args=None):
     """
     Builds a PGO-instrumented GraalPy native standalone, runs the unittests to generate a profile,
     then builds a PGO-optimized GraalPy native standalone with the collected profile.
@@ -415,18 +416,22 @@ def graalpy_native_pgo_build_and_test(_):
     mx.log(mx.colorize(f"[PGO] Gzipped profile at: {iprof_gz_path}", color="yellow"))
 
     if shutil.which("artifact_uploader"):
-        run([
-            "artifact_uploader",
-            iprof_gz_path,
-            str(SUITE.vc.tip(SUITE.dir)).strip(),
-            "graalpy",
-            "--lifecycle",
-            "cache",
-            "--artifact-repo-key",
-            os.environ.get("ARTIFACT_REPO_KEY_LOCATION"),
-        ])
+        run(
+            [
+                "artifact_uploader",
+                iprof_gz_path,
+                str(SUITE.vc.tip(SUITE.dir)).strip(),
+                "graalpy",
+                "--lifecycle",
+                "cache",
+                "--artifact-repo-key",
+                os.environ.get("ARTIFACT_REPO_KEY_LOCATION"),
+            ],
+            env={"UPLOADER_PYTHON": sys.executable, **os.environ},
+        )
 
-    return iprof_gz_path
+    if args is None:
+        return iprof_gz_path
 
 
 def full_python(args, env=None):
@@ -1123,6 +1128,11 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
 
     if mx.primary_suite() != SUITE:
         env.setdefault("GRAALPYTEST_ALLOW_NO_JAVA_ASSERTIONS", "true")
+
+    if (pip_index := env.get("PIP_INDEX_URL")) and "PIP_EXTRA_INDEX_URL" not in env:
+        # the user was overriding the index, don't sneak our default extra
+        # index in in that case
+        env["PIP_EXTRA_INDEX_URL"] = pip_index
 
     if BYTECODE_DSL_INTERPRETER:
         args += ['--vm.Dpython.EnableBytecodeDSLInterpreter=true']
