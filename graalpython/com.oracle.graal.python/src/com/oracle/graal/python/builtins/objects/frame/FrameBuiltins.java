@@ -306,7 +306,9 @@ public final class FrameBuiltins extends PythonBuiltins {
                 PFrame pyFrame = materializeNode.executeOnStack(false, true, frame);
                 assert pyFrame == self;
             }
-            return getFrameLocalsNode.execute(inliningTarget, self);
+            Object locals = getFrameLocalsNode.execute(inliningTarget, self);
+            self.setLocalsAccessed(true);
+            return locals;
         }
     }
 

@@ -615,6 +615,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final byte TRACE_PROFILE_LINE = 1;
     private static final byte TRACE_PROFILE_NEW_FRAME = 1 << 1;
     private static final byte TRACE_PROFILE_EXISTING_FRAME = 1 << 2;
+    private static final byte TRACE_PROFILE_SYNC_LOCALS_BACK = 1 << 3;
     @CompilationFinal(dimensions = 1) byte[] traceProfileData;
 
     @CompilationFinal private Object osrMetadata;
@@ -3254,7 +3255,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 pyFrame.setLineLock(line);
             }
             Object result = doInvokeTraceFunction(event, pyFrame, traceFn, nonNullArg);
-            syncLocalsBackToFrame(virtualFrame, pyFrame);
+            syncLocalsBackToFrame(virtualFrame, pyFrame, bci);
             // https://github.com/python/cpython/issues/104232
             if (useLocalFn) {
                 Object realResult = result == PNone.NONE ? traceFn : result;
@@ -3279,15 +3280,19 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static Object doInvokeTraceFunction(PythonContext.TraceEvent event, PFrame pyFrame, Object traceFn, Object nonNullArg) {
         // Force locals dict sync, so that we can sync them back later
         GetFrameLocalsNode.executeUncached(pyFrame);
+        pyFrame.setLocalsAccessed(false);
         return CallTernaryMethodNode.getUncached().execute(null, traceFn, pyFrame, event.pythonName, nonNullArg);
     }
 
-    private void syncLocalsBackToFrame(VirtualFrame virtualFrame, PFrame pyFrame) {
+    private void syncLocalsBackToFrame(VirtualFrame virtualFrame, PFrame pyFrame, int bci) {
         Frame localFrame = virtualFrame;
         if (co.isGeneratorOrCoroutine()) {
             localFrame = PArguments.getGeneratorFrame(virtualFrame);
         }
-        GetFrameLocalsNode.syncLocalsBackToFrame(co, this, pyFrame, localFrame);
+        if (pyFrame.localsAccessed()) {
+            enterTraceProfile(bci, TRACE_PROFILE_SYNC_LOCALS_BACK);
+            GetFrameLocalsNode.syncLocalsBackToFrame(co, this, pyFrame, localFrame);
+        }
     }
 
     private void profileCEvent(VirtualFrame virtualFrame, Object callable, PythonContext.ProfileEvent event, MutableLoopData mutableData, byte tracingOrProfilingEnabled, int bci) {
@@ -3327,7 +3332,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
         try {
             Object result = doInvokeProfileFunction(arg, event, pyFrame, profileFun);
-            syncLocalsBackToFrame(virtualFrame, pyFrame);
+            syncLocalsBackToFrame(virtualFrame, pyFrame, bci);
             Object realResult = result == PNone.NONE ? null : result;
             pyFrame.setLocalTraceFun(realResult);
         } catch (Throwable e) {
@@ -3342,6 +3347,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static Object doInvokeProfileFunction(Object arg, PythonContext.ProfileEvent event, PFrame pyFrame, Object profileFun) {
         // Force locals dict sync, so that we can sync them back later
         GetFrameLocalsNode.executeUncached(pyFrame);
+        pyFrame.setLocalsAccessed(false);
         return CallTernaryMethodNode.getUncached().execute(null, profileFun, pyFrame, event.name, arg == null ? PNone.NONE : arg);
     }
 
