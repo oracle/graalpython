@@ -1126,6 +1126,11 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
     if mx.primary_suite() != SUITE:
         env.setdefault("GRAALPYTEST_ALLOW_NO_JAVA_ASSERTIONS", "true")
 
+    if (pip_index := env.get("PIP_INDEX_URL")) and "PIP_EXTRA_INDEX_URL" not in env:
+        # the user was overriding the index, don't sneak our default extra
+        # index in in that case
+        env["PIP_EXTRA_INDEX_URL"] = pip_index
+
     if BYTECODE_DSL_INTERPRETER:
         args += ['--vm.Dpython.EnableBytecodeDSLInterpreter=true']
     args += [_python_test_runner(), "run", "--durations", "10", "-n", parallelism, f"--subprocess-args={shlex.join(args)}"]
