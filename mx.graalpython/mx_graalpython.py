@@ -267,17 +267,19 @@ def libpythonvm_build_args():
     build_args = []
     build_args += bytecode_dsl_build_args()
 
-    if mx.is_linux():
-        if "musl" in mx_subst.path_substitutions.substitute("<multitarget_libc_selection>"):
-            build_args += ['-H:+GraalOS']
-        else:
-            build_args += ["-Dpolyglot.image-build-time.PreinitializeContexts=python"]
-            if (
-                    mx_sdk_vm_ng.is_nativeimage_ee()
-                    and not os.environ.get('NATIVE_IMAGE_AUXILIARY_ENGINE_CACHE')
-                    and not _is_overridden_native_image_arg("--gc")
-            ):
-                build_args += ['--gc=G1', '-H:-ProtectionKeys']
+    if graalos := ("musl" in mx_subst.path_substitutions.substitute("<multitarget_libc_selection>")):
+        build_args += ['-H:+GraalOS']
+    else:
+        build_args += ["-Dpolyglot.image-build-time.PreinitializeContexts=python"]
+
+    if (
+            mx.is_linux()
+            and not graalos
+            and mx_sdk_vm_ng.is_nativeimage_ee()
+            and not os.environ.get('NATIVE_IMAGE_AUXILIARY_ENGINE_CACHE')
+            and not _is_overridden_native_image_arg("--gc")
+    ):
+        build_args += ['--gc=G1', '-H:-ProtectionKeys']
 
     profile = None
     if (
