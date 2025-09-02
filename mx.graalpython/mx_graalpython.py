@@ -267,9 +267,15 @@ def libpythonvm_build_args():
     build_args = []
     build_args += bytecode_dsl_build_args()
 
+    if graalos := ("musl" in mx_subst.path_substitutions.substitute("<multitarget_libc_selection>")):
+        build_args += ['-H:+GraalOS']
+    else:
+        build_args += ["-Dpolyglot.image-build-time.PreinitializeContexts=python"]
+
     if (
-            mx_sdk_vm_ng.is_nativeimage_ee()
-            and mx.is_linux()
+            mx.is_linux()
+            and not graalos
+            and mx_sdk_vm_ng.is_nativeimage_ee()
             and not os.environ.get('NATIVE_IMAGE_AUXILIARY_ENGINE_CACHE')
             and not _is_overridden_native_image_arg("--gc")
     ):
@@ -430,8 +436,7 @@ def full_python(args, env=None):
         args.insert(0, '--python.WithJavaStacktrace=1')
 
     if "--hosted" in args[:2]:
-        args.remove("--hosted")
-        return python(args)
+        return do_run_python(args)
 
     if '--vm.da' not in args:
         args.insert(0, '--vm.ea')
@@ -467,15 +472,13 @@ def handle_debug_arg(args):
                     f"--vm.agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=127.0.0.1:{mx._opts.java_dbg_port}")
 
 
-def python(args, **kwargs):
-    """run a Python program or shell"""
-    if not any(arg.startswith('--python.WithJavaStacktrace') for arg in args):
-        args.insert(0, '--python.WithJavaStacktrace=1')
-
-    do_run_python(args, **kwargs)
-
-
 def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None, cp_prefix=None, cp_suffix=None, main_class=GRAALPYTHON_MAIN_CLASS, minimal=False, **kwargs):
+
+    if "--hosted" in args[:2]:
+        args.remove("--hosted")
+        if not any(arg.startswith('--python.WithJavaStacktrace') for arg in args):
+            args.insert(0, '--python.WithJavaStacktrace=1')
+
     if not any(arg.startswith("--python.CAPI") for arg in args):
         capi_home = _get_capi_home()
         args.insert(0, "--python.CAPI=%s" % capi_home)
@@ -495,7 +498,7 @@ def do_run_python(args, extra_vm_args=None, env=None, jdk=None, extra_dists=None
 
     if minimal:
         x = [x for x in SUITE.dists if x.name == "GRAALPYTHON"][0]
-        dists = [dep for dep in x.deps if dep.isJavaProject() or dep.isJARDistribution()]
+        dists = [dep for dep in x.deps if dep.isJavaProject() or dep.isJARDistribution() and dep.exists()]
         # Hack: what we should just do is + ['GRAALPYTHON_VERSIONS_MAIN'] and let MX figure out
         # the class-path and other VM arguments necessary for it. However, due to a bug in MX,
         # LayoutDirDistribution causes an exception if passed to mx.get_runtime_jvm_args,
@@ -2322,8 +2325,10 @@ class GraalpythonBuildTask(mx.ProjectBuildTask):
             args.insert(0, "-q")
 
         args[:0] = [
-            f"--python.PyCachePrefix={pycache_dir}",
-            "--python.DisableFrozenModules",
+            "--PosixModuleBackend=java",
+            "--CompressionModulesBackend=java",
+            f"--PyCachePrefix={pycache_dir}",
+            "--DisableFrozenModules",
             "-B",
             "-S"
         ]
@@ -2331,7 +2336,6 @@ class GraalpythonBuildTask(mx.ProjectBuildTask):
 
         env = env.copy() if env else os.environ.copy()
         env.update(cast(GraalpythonProject, self.subject).getBuildEnv())
-        args.insert(0, '--PosixModuleBackend=java')
         jdk = mx.get_jdk()  # Don't get JVMCI, it might not have finished building by this point
         rc = do_run_python(args, jdk=jdk, env=env, cwd=cwd, minimal=True, out=self.PrefixingOutput(self.subject.name, mx.log), err=self.PrefixingOutput(self.subject.name, mx.log_error), **kwargs)
 

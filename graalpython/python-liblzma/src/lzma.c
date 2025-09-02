@@ -50,7 +50,7 @@
 #include <limits.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <sys/types.h>
 
 #include <lzma.h>
 
@@ -196,7 +196,7 @@ enum {
     FORMAT_RAW,
 };
 
-// The ref_count is important for `copy` as we 
+// The ref_count is important for `copy` as we
 // share off heap storage between native objects.
 typedef struct
 {
@@ -239,7 +239,7 @@ void get_macros(int* formats, int* checks, uint64_t* filters, int* mfs, int* mod
     checks[CHECK_SHA256_INDEX] = LZMA_CHECK_SHA256;
     checks[CHECK_ID_MAX_INDEX] = LZMA_CHECK_ID_MAX;
     checks[CHECK_UNKNOWN_INDEX] = LZMA_CHECK_UNKNOWN;
-    
+
     filters[FILTER_LZMA1_INDEX] = LZMA_FILTER_LZMA1;
     filters[FILTER_LZMA2_INDEX] = LZMA_FILTER_LZMA2;
     filters[FILTER_DELTA_INDEX] = LZMA_FILTER_DELTA;
@@ -249,7 +249,7 @@ void get_macros(int* formats, int* checks, uint64_t* filters, int* mfs, int* mod
     filters[FILTER_ARM_INDEX] = LZMA_FILTER_ARM;
     filters[FILTER_ARMTHUMB_INDEX] = LZMA_FILTER_ARMTHUMB;
     filters[FILTER_SPARC_INDEX] = LZMA_FILTER_SPARC;
-    
+
     mfs[MF_HC3_INDEX] = LZMA_MF_HC3;
     mfs[MF_HC4_INDEX] = LZMA_MF_HC4;
     mfs[MF_BT2_INDEX] = LZMA_MF_BT2;
@@ -258,7 +258,7 @@ void get_macros(int* formats, int* checks, uint64_t* filters, int* mfs, int* mod
 
     modes[MODE_FAST_INDEX] = LZMA_MODE_FAST;
     modes[MODE_NORMAL_INDEX] = LZMA_MODE_NORMAL;
-    
+
     preset[PRESET_DEFAULT_INDEX] = LZMA_PRESET_DEFAULT;
     preset[PRESET_EXTREME_INDEX] = LZMA_PRESET_EXTREME;
 }
@@ -267,7 +267,7 @@ static void* LZMA_Malloc(void* ctx, size_t items, size_t size)
 {
     void *m = malloc((size_t)items * (size_t)size);
     LOG_FINER("malloc(address: %p, items: %u, size: %u)\n", m, items, size);
-    return m; 
+    return m;
 }
 
 static void LZMA_Free(void* ctx, void *ptr)
@@ -524,7 +524,7 @@ int lzma_set_filter_spec_lzma(lzmast_stream *lzmast, int fidx, int64_t* opts) {
     initFilters(lzmast);
     lzma_options_lzma *options;
     lzmast->filters[fidx].id = (uint64_t) opts[ID_INDEX];
-    
+
     options = (lzma_options_lzma *)calloc(1, sizeof *options);
     if (options == NULL) {
         return LZMA_MEM_ERROR;
@@ -538,31 +538,31 @@ int lzma_set_filter_spec_lzma(lzmast_stream *lzmast, int fidx, int64_t* opts) {
     }
 
     if (opts[LC_INDEX] != -1) {
-        options->lc = (uint32_t) opts[LC_INDEX]; 
+        options->lc = (uint32_t) opts[LC_INDEX];
     }
 
     if (opts[LP_INDEX] != -1) {
-        options->lp = (uint32_t) opts[LP_INDEX]; 
+        options->lp = (uint32_t) opts[LP_INDEX];
     }
 
     if (opts[PB_INDEX] != -1) {
-        options->pb = (uint32_t) opts[PB_INDEX]; 
+        options->pb = (uint32_t) opts[PB_INDEX];
     }
 
     if (opts[MODE_INDEX] != -1) {
-        options->mode = (lzma_mode) opts[MODE_INDEX]; 
+        options->mode = (lzma_mode) opts[MODE_INDEX];
     }
 
     if (opts[NICE_LEN_INDEX] != -1) {
-        options->nice_len = (uint32_t) opts[NICE_LEN_INDEX]; 
+        options->nice_len = (uint32_t) opts[NICE_LEN_INDEX];
     }
 
     if (opts[MF_INDEX] != -1) {
-        options->mf = (lzma_match_finder) opts[MF_INDEX]; 
+        options->mf = (lzma_match_finder) opts[MF_INDEX];
     }
 
     if (opts[DEPTH_INDEX] != -1) {
-        options->depth = (uint32_t) opts[DEPTH_INDEX]; 
+        options->depth = (uint32_t) opts[DEPTH_INDEX];
     }
 
     lzmast->filters[fidx].options = options;
@@ -662,7 +662,7 @@ int lzma_decode_filter_spec(int64_t filter_id, Byte* encoded_props, int len, int
     lzma_filter filter;
 
     filter.id = (lzma_vli) filter_id;
-    
+
     lzret = lzma_properties_decode(&filter, NULL, encoded_props, len);
     if (!isOK(lzret)) {
         return lzret;
@@ -879,8 +879,8 @@ int lzma_lzma_alone_decoder(lzmast_stream *lzmast, uint64_t memlimit) {
    d->lzs.avail_in are updated to reflect the consumed input. */
 
 // nfi_function: name('decompress') map('lzmast_stream*', 'POINTER')
-int lzma_decompress(lzmast_stream *lzmast, 
-                Byte *input_buffer, ssize_t offset, 
+int lzma_decompress(lzmast_stream *lzmast,
+                Byte *input_buffer, ssize_t offset,
                 ssize_t max_length,
                 ssize_t bufsize, size_t lzs_avail_in) {
     LOG_INFO("lzma_decompress(%p, %p, %zd, %zd, %zd, %zd)\n", lzmast, input_buffer, offset, bufsize, lzs_avail_in);
@@ -919,11 +919,11 @@ int lzma_decompress(lzmast_stream *lzmast,
         if (!isOK(lzret)) {
             clear_output(lzmast);
             return lzret;
-        } 
+        }
         if (lzret == LZMA_GET_CHECK || lzret == LZMA_NO_CHECK) {
             lzmast->check = lzma_get_check(&lzmast->lzs);
             lzret = LZMA_OK;
-        } 
+        }
         if (lzret == LZMA_STREAM_END) {
             // lzmast->eof = 1;
             // we'll return LZMA_STREAM_END to the java side and process EOF.

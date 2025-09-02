@@ -333,7 +333,6 @@ suite = {
                 "com.oracle.graal.python",
                 "GRAALPYTHON-LAUNCHER",
                 "regex:TREGEX",
-                "truffle:TRUFFLE_NFI_LIBFFI",
             ],
         },
 
@@ -348,7 +347,7 @@ suite = {
                 "--out",
                 "<output_root:hpy>",
                 "--cflags",
-                "-I<output_root:com.oracle.graal.python>/jni_gen -I<output_root:graalpy-pyconfig>/<arch> -I<path:com.oracle.graal.python.cext>/include",
+                "-I<output_root:com.oracle.graal.python>/jni_gen -I<output_root:graalpy-pyconfig>/<os>-<arch>/<multitarget_libc_selection>/ -I<path:com.oracle.graal.python.cext>/include",
             ],
             "platformDependent": True,
             "buildDependencies": [
@@ -541,11 +540,18 @@ suite = {
                 "windows": {
                     "<others>": {
                         "defaultBuild": False,
+                        "multitarget": {
+                            "libc": ["default"],
+                        },
                     },
                 },
                 "<others>": {
                     "<others>": {
                         "defaultBuild": True,
+                        "multitarget": [
+                            {"libc": ["glibc", "default"]},
+                            {"libc": ["musl"], "variant": ["swcfi"]},
+                        ],
                     },
                 },
             },
@@ -578,11 +584,18 @@ suite = {
                 "windows": {
                     "<others>": {
                         "defaultBuild": False,
+                        "multitarget": {
+                            "libc": ["default"],
+                        },
                     },
                 },
                 "<others>": {
                     "<others>": {
                         "defaultBuild": True,
+                        "multitarget": [
+                            {"libc": ["glibc", "default"]},
+                            {"libc": ["musl"], "variant": ["swcfi"]},
+                        ],
                     },
                 },
             },
@@ -607,6 +620,10 @@ suite = {
         "graalpy-pyconfig": {
             "subDir": "graalpython",
             "class": "CMakeNinjaProject",
+            "multitarget": [
+                {"libc": ["glibc", "default"]},
+                {"libc": ["musl"], "variant": ["swcfi"]},
+            ],
             "max_jobs": "1",
             "ninja_targets": ["all"],
             "cmakeConfig": {
@@ -629,9 +646,12 @@ suite = {
             "os_arch": {
                 "windows": {
                     "<others>": {
+                        "multitarget": {
+                            "libc": ["default"],
+                        },
                         "cmakeConfig": {
                             "CAPI_INC_DIR": "<output_root:com.oracle.graal.python>/jni_gen",
-                            "PYCONFIG_INCLUDE_DIR": "<output_root:graalpy-pyconfig>/<arch>",
+                            "PYCONFIG_INCLUDE_DIR": "<output_root:graalpy-pyconfig>/<os>-<arch>/<multitarget_libc_selection>",
                             "TRUFFLE_NFI_H_INC": "<path:com.oracle.truffle.nfi.native>/include",
                             "GRAALPY_PARENT_DIR": "<suite_parent:graalpython>",
                             "GRAALPY_EXT": "<graalpy_ext>",
@@ -654,9 +674,13 @@ suite = {
                 },
                 "<others>": {
                     "<others>": {
+                        "multitarget": [
+                            {"libc": ["glibc", "default"]},
+                            {"libc": ["musl"], "variant": ["swcfi"]},
+                        ],
                         "cmakeConfig": {
                             "CAPI_INC_DIR": "<output_root:com.oracle.graal.python>/jni_gen",
-                            "PYCONFIG_INCLUDE_DIR": "<output_root:graalpy-pyconfig>/<arch>",
+                            "PYCONFIG_INCLUDE_DIR": "<output_root:graalpy-pyconfig>/<os>-<arch>/<multitarget_libc_selection>/",
                             "TRUFFLE_NFI_H_INC": "<path:com.oracle.truffle.nfi.native>/include",
                             "GRAALPY_PARENT_DIR": "<suite_parent:graalpython>",
                             "GRAALPY_EXT": "<graalpy_ext>",
@@ -696,13 +720,19 @@ suite = {
             "os_arch": {
                 "windows": {
                     "<others>": {
-                        # "/O2", "/WX", # cflags to replace -O3 -Werror
                         "defaultBuild": False,
+                        "multitarget": {
+                            "libc": ["default"],
+                        },
                     },
                 },
                 "<others>": {
                     "<others>": {
                         "defaultBuild": True,
+                        "multitarget": [
+                            {"libc": ["glibc", "default"]},
+                            {"libc": ["musl"], "variant": ["swcfi"]},
+                        ],
                     },
                 },
             },
@@ -719,19 +749,28 @@ suite = {
             "os_arch": {
                 "windows": {
                     "<others>": {
-                        # "/O2", "/WX", # cflags to replace -O3 -Werror
                         "defaultBuild": False,
+                        "multitarget": {
+                            "libc": ["default"],
+                        },
                     },
                 },
                 "darwin": {
                     "<others>": {
                         "defaultBuild": True,
+                        "multitarget": {
+                            "libc": ["default"],
+                        },
                     },
                 },
                 "<others>": {
                     "<others>": {
                         "ldlibs": ["-lutil"],
                         "defaultBuild": True,
+                        "multitarget": [
+                            {"libc": ["glibc", "default"]},
+                            {"libc": ["musl"], "variant": ["swcfi"]},
+                        ],
                     },
                 },
             },
@@ -788,6 +827,11 @@ suite = {
                 "--vm.Xss16777216", # request 16M of stack
                 '--vm.-enable-native-access=org.graalvm.shadowed.jline',
             ],
+            "multitarget": [
+                {"os": ["linux"], "libc": ["glibc", "default"], "compiler": ["llvm-toolchain", "host", "*"]},
+                {"os": ["linux"], "libc": ["musl"], "variant": ["swcfi"]},
+                {"os": ["windows", "darwin"], "libc": ["default"]},
+            ],
         },
 
         "libpythonvm": {
@@ -800,7 +844,6 @@ suite = {
             ],
             "build_args": [
                 # From mx.graalpython/native-image.properties
-                "-Dpolyglot.image-build-time.PreinitializeContexts=python",
                 "--add-exports", "org.graalvm.nativeimage/org.graalvm.nativeimage.impl=ALL-UNNAMED",
                 "-R:StackSize=16777216",
                 "-H:+AddAllCharsets",
@@ -887,8 +930,8 @@ suite = {
                     "<others>": {
                         "layout": {
                             "<os>/<arch>/": [
-                                "dependency:com.oracle.graal.python.cext/bin/*",
-                                "dependency:python-libbz2/bin/*",
+                                "dependency:com.oracle.graal.python.cext/<os>-<arch>/<multitarget_libc_selection>/bin/*",
+                                "dependency:python-libbz2/<os>-<arch>/<multitarget_libc_selection>/bin/*",
                             ]
                         },
                     },
@@ -897,11 +940,11 @@ suite = {
                     "<others>": {
                         "layout": {
                             "<os>/<arch>/": [
-                                "dependency:com.oracle.graal.python.cext/bin/*",
-                                "dependency:python-libzsupport/*",
-                                "dependency:python-libposix/*",
-                                "dependency:python-libbz2/bin/*",
-                                "dependency:python-liblzma/bin/*",
+                                "dependency:com.oracle.graal.python.cext/<os>-<arch>/<multitarget_libc_selection>/bin/*",
+                                "dependency:python-libzsupport/<os>-<arch>/<multitarget_libc_selection>/*",
+                                "dependency:python-libposix/<os>-<arch>/<multitarget_libc_selection>/*",
+                                "dependency:python-libbz2/<os>-<arch>/<multitarget_libc_selection>/bin/*",
+                                "dependency:python-liblzma/<os>-<arch>/<multitarget_libc_selection>/bin/*",
                             ]
                         },
                     },
@@ -1172,7 +1215,7 @@ suite = {
             "description": "GraalVM Python header resources",
             "layout": {
                 "./META-INF/resources/include/": [
-                    "dependency:graalpy-pyconfig/pyconfig.h",
+                    "dependency:graalpy-pyconfig/<os>-<arch>/<multitarget_libc_selection>/pyconfig.h",
                     "file:graalpython/com.oracle.graal.python.cext/include/*",
                 ],
             },
@@ -1355,11 +1398,11 @@ suite = {
                     "extracted-dependency:GRAALPY_VIRTUALENV_SEEDER",
                     "dependency:graalpy_licenses/*",
                 ],
-                "bin/<exe:graalpy>": "dependency:graalpy_thin_launcher",
-                "bin/<exe:python>": "dependency:graalpy_thin_launcher",
-                "bin/<exe:python3>": "dependency:graalpy_thin_launcher",
-                "bin/<exe:graalpy-config>": "dependency:graalpy_thin_launcher",
-                "libexec/<exe:graalpy-polyglot-get>": "dependency:graalpy_thin_launcher",
+                "bin/<exe:graalpy>": "dependency:graalpy_thin_launcher/<os>-<arch>/<multitarget_libc_selection>/<exe:graalpy_thin_launcher>",
+                "bin/<exe:python>": "dependency:graalpy_thin_launcher/<os>-<arch>/<multitarget_libc_selection>/<exe:graalpy_thin_launcher>",
+                "bin/<exe:python3>": "dependency:graalpy_thin_launcher/<os>-<arch>/<multitarget_libc_selection>/<exe:graalpy_thin_launcher>",
+                "bin/<exe:graalpy-config>": "dependency:graalpy_thin_launcher/<os>-<arch>/<multitarget_libc_selection>/<exe:graalpy_thin_launcher>",
+                "libexec/<exe:graalpy-polyglot-get>": "dependency:graalpy_thin_launcher/<os>-<arch>/<multitarget_libc_selection>/<exe:graalpy_thin_launcher>",
                 "release": "dependency:sdk:STANDALONE_JAVA_HOME/release",
             },
         },
