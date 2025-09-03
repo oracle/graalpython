@@ -347,6 +347,7 @@
             "vm_name:graalpython_enterprise_interpreter"                : {"linux:amd64:jdk-latest" : weekly     + t("02:00:00")},
             "vm_name:graalpython_core_interpreter_multi"                : {"linux:amd64:jdk-latest" : on_demand  + t("02:00:00")},
             "vm_name:graalpython_core_native_interpreter_multi"         : {"linux:amd64:jdk-latest" : on_demand  + t("02:00:00")},
+            "vm_name:cpython"                                           : {"linux:amd64:jdk-latest" : weekly     + t("02:00:00")},
         }),
         for bench in ["micro_small", "meso_small"]
     } + {

@@ -4112,14 +4112,6 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             b.endBlock();
         }
 
-        private void emitPatternNotImplemented(String kind) {
-            b.beginBlock();
-            emitNotImplemented(kind + " pattern matching", b);
-            // we need a value producing operation
-            b.emitLoadConstant(false);
-            b.endBlock();
-        }
-
         /**
          * Saves subject of the pattern context into BytecodeLocal variable, to be restored
          * eventually.
