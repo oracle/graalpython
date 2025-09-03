@@ -922,7 +922,7 @@ public final class CApiContext extends CExtContext {
             AbstractImportNode.importModule(toTruffleStringUncached("types"));
 
             ReentrantLock initLock = context.getcApiInitializationLock();
-            try (var ignored = GilNode.uncachedAcquire()) {
+            try (GilNode.UncachedRelease ignored = GilNode.uncachedRelease()) {
                 TruffleSafepoint.setBlockedThreadInterruptible(node, ReentrantLock::lockInterruptibly, initLock);
             }
             try {
