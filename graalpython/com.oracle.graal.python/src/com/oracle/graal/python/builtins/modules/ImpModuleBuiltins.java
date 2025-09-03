@@ -213,7 +213,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         public Object run(@Cached GilNode gil) {
             gil.release(true);
             try {
-                TruffleSafepoint.setBlockedThreadInterruptible(this, ReentrantLock::lock, getContext().getImportLock());
+                TruffleSafepoint.setBlockedThreadInterruptible(this, ReentrantLock::lockInterruptibly, getContext().getImportLock());
             } finally {
                 gil.acquire();
             }

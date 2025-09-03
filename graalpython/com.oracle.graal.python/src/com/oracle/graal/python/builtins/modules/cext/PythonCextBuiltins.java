@@ -1887,10 +1887,18 @@ public final class PythonCextBuiltins {
             } else {
                 String module = name.substring(0, index);
                 name = name.substring(index + 1);
-                Object moduleObject = core.lookupBuiltinModule(toTruffleStringUncached(module));
+                TruffleString tsModule = toTruffleStringUncached(module);
+                Object moduleObject = core.lookupBuiltinModule(tsModule);
                 if (moduleObject == null) {
-                    moduleObject = AbstractImportNode.importModule(toTruffleStringUncached(module));
+                    moduleObject = AbstractImportNode.lookupImportedModule(context, tsModule);
+                    if (moduleObject == null) {
+                        throw CompilerDirectives.shouldNotReachHere(String.format(
+                                        "Module '%s' is needed during C API initialization, but was not imported prior to the initialization in ensureCapiWasLoaded. This is an internal error in GraalPy.",
+                                        module));
+                    }
                 }
+                // Assumption: builtin modules' tp_getattro is well-behaved and just reads the
+                // attribute, there is no locking or blocking inside
                 Object attribute = PyObjectGetAttr.getUncached().execute(null, moduleObject, toTruffleStringUncached(name));
                 if (attribute != PNone.NO_VALUE) {
                     if (attribute instanceof PythonBuiltinClassType builtinType) {

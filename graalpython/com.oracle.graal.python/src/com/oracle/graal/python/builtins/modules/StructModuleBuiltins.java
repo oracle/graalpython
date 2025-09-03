@@ -78,12 +78,12 @@ public class StructModuleBuiltins extends PythonBuiltins {
         structModule.setModuleState(cache);
     }
 
-    protected static PStruct getStruct(PythonModule structModule, Object format, StructBuiltins.ConstructStructNode constructStructNode) {
+    protected static PStruct getStruct(Node location, PythonModule structModule, Object format, StructBuiltins.ConstructStructNode constructStructNode) {
         LRUStructCache cache = structModule.getModuleState(LRUStructCache.class);
-        PStruct pStruct = cache.get(format);
+        PStruct pStruct = cache.get(location, format);
         if (pStruct == null) {
             pStruct = constructStructNode.execute(format);
-            cache.put(format, pStruct);
+            cache.put(location, format, pStruct);
         }
         return pStruct;
     }
@@ -94,8 +94,8 @@ public class StructModuleBuiltins extends PythonBuiltins {
     abstract static class GetStructNode extends PNodeWithContext {
         abstract PStruct execute(Node inliningTarget, PythonModule module, Object format, StructBuiltins.ConstructStructNode constructStructNode);
 
-        protected PStruct getStructInternal(PythonModule module, Object format, StructBuiltins.ConstructStructNode constructStructNode) {
-            return getStruct(module, format, constructStructNode);
+        protected PStruct getStructInternal(Node location, PythonModule module, Object format, StructBuiltins.ConstructStructNode constructStructNode) {
+            return getStruct(location, module, format, constructStructNode);
         }
 
         protected boolean eq(TruffleString s1, TruffleString s2, TruffleString.EqualNode eqNode) {
@@ -107,7 +107,7 @@ public class StructModuleBuiltins extends PythonBuiltins {
         static PStruct doCachedString(PythonModule module, TruffleString format, StructBuiltins.ConstructStructNode constructStructNode,
                         @Cached("format") TruffleString cachedFormat,
                         @Cached TruffleString.EqualNode eqNode,
-                        @Cached(value = "getStructInternal(module, format, constructStructNode)", weak = true) PStruct cachedStruct) {
+                        @Cached(value = "getStructInternal($node, module, format, constructStructNode)", weak = true) PStruct cachedStruct) {
             return cachedStruct;
         }
 
@@ -116,13 +116,14 @@ public class StructModuleBuiltins extends PythonBuiltins {
         static PStruct doCachedBytes(PythonModule module, PBytes format, StructBuiltins.ConstructStructNode constructStructNode,
                         @CachedLibrary("format") PythonBufferAccessLibrary bufferLib,
                         @Cached(value = "bufferLib.getCopiedByteArray(format)", dimensions = 1) byte[] cachedFormat,
-                        @Cached(value = "getStructInternal(module, format, constructStructNode)", weak = true) PStruct cachedStruct) {
+                        @Cached(value = "getStructInternal($node, module, format, constructStructNode)", weak = true) PStruct cachedStruct) {
             return cachedStruct;
         }
 
         @Specialization(replaces = {"doCachedString", "doCachedBytes"})
-        static PStruct doGeneric(PythonModule module, Object format, StructBuiltins.ConstructStructNode constructStructNode) {
-            return getStruct(module, format, constructStructNode);
+        static PStruct doGeneric(PythonModule module, Object format, StructBuiltins.ConstructStructNode constructStructNode,
+                        @Bind Node location) {
+            return getStruct(location, module, format, constructStructNode);
         }
     }
 
@@ -241,7 +242,7 @@ public class StructModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object clearCache(PythonModule self) {
             LRUStructCache cache = self.getModuleState(LRUStructCache.class);
-            cache.clear();
+            cache.clear(this);
             return PNone.NONE;
         }
     }

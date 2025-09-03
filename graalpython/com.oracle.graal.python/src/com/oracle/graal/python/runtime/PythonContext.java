@@ -98,7 +98,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromModuleNode;
 import org.graalvm.options.OptionKey;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -146,6 +145,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.WriteUnraisableNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromModuleNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -769,6 +769,8 @@ public final class PythonContext extends Python3Core {
     private OutputStream out;
     private OutputStream err;
     private InputStream in;
+    private final ReentrantLock cApiInitializationLock = new ReentrantLock(false);
+    private volatile boolean cApiWasInitialized = false;
     @CompilationFinal private CApiContext cApiContext;
     @CompilationFinal private boolean nativeAccessAllowed;
 
@@ -2450,14 +2452,10 @@ public final class PythonContext extends Python3Core {
     @TruffleBoundary
     void acquireGil() throws InterruptedException {
         assert !ownsGil() : dumpStackOnAssertionHelper("trying to acquire the GIL more than once");
-        boolean wasInterrupted = Thread.interrupted();
         globalInterpreterLock.lockInterruptibly();
-        if (wasInterrupted) {
-            Thread.currentThread().interrupt();
-        }
     }
 
-    static final String dumpStackOnAssertionHelper(String msg) {
+    static String dumpStackOnAssertionHelper(String msg) {
         Thread.dumpStack();
         return msg;
     }
@@ -2644,11 +2642,29 @@ public final class PythonContext extends Python3Core {
     }
 
     public boolean hasCApiContext() {
+        // This may be called during C API initialization, we have a context so that we can finish
+        // the initialization, but the C API is not fully initialized yet
+        assert (cApiContext != null) || !cApiWasInitialized;
         return cApiContext != null;
     }
 
+    public boolean isCApiInitialized() {
+        assert (cApiContext != null) || !cApiWasInitialized;
+        return cApiWasInitialized;
+    }
+
+    public void setCApiInitialized() {
+        assert cApiContext != null;
+        cApiWasInitialized = true;
+    }
+
     public CApiContext getCApiContext() {
+        assert (cApiContext != null) || !cApiWasInitialized;
         return cApiContext;
+    }
+
+    public ReentrantLock getcApiInitializationLock() {
+        return cApiInitializationLock;
     }
 
     public void setCApiContext(CApiContext capiContext) {

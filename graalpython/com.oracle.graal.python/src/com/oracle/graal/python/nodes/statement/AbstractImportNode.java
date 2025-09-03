@@ -118,6 +118,11 @@ public abstract class AbstractImportNode extends PNodeWithContext {
         }
         Object fromList = PFactory.createTuple(context.getLanguage(), PythonUtils.EMPTY_TRUFFLESTRING_ARRAY);
         CallNode.executeUncached(builtinImport, name, PNone.NONE, PNone.NONE, fromList, 0);
+        return lookupImportedModule(context, name);
+    }
+
+    @TruffleBoundary
+    public static PythonModule lookupImportedModule(PythonContext context, TruffleString name) {
         PythonModule sysModule = context.lookupBuiltinModule(T_SYS);
         Object modules = sysModule.getAttribute(T_MODULES);
         if (modules == PNone.NO_VALUE) {

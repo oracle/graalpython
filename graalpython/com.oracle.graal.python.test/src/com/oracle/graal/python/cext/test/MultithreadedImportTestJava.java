@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,14 +38,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.util;
+package com.oracle.graal.python.cext.test;
 
-public interface Cache<K, V> {
-    V get(K key);
+import static com.oracle.graal.python.cext.test.MultithreadedImportTestBase.multithreadedImportTest;
 
-    V put(K key, V value);
+import org.graalvm.polyglot.Context;
+import org.junit.Test;
 
-    void clear();
-
-    int size();
+public class MultithreadedImportTestJava {
+    @Test
+    public void testImportOnMultipleThreads() {
+        Context context = Context.newBuilder().allowAllAccess(true).option("python.PosixModuleBackend", "java").build();
+        multithreadedImportTest(8, context);
+    }
 }
