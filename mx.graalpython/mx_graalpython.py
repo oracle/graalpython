@@ -617,13 +617,16 @@ def punittest(ars, report: Union[Task, bool, None] = False):
     graalpy_tests = ['com.oracle.graal.python.test', 'com.oracle.graal.python.pegparser.test', 'org.graalvm.python.embedding.test']
     configs += [
         TestConfig("junit", vm_args + graalpy_tests + args, True),
-        TestConfig("junit", vm_args + graalpy_tests + args, False),
-        # Tests that must run in their own process due to C extensions usage
-        TestConfig("multi-threaded-import-java", vm_args + ['com.oracle.graal.python.cext.test.MultithreadedImportTestNative'] + args, True),
-        TestConfig("multi-threaded-import-java", vm_args + ['com.oracle.graal.python.cext.test.MultithreadedImportTestNative'] + args, False),
-        TestConfig("multi-threaded-import-native", vm_args + ['com.oracle.graal.python.cext.test.MultithreadedImportTestJava'] + args, True),
-        TestConfig("multi-threaded-import-native", vm_args + ['com.oracle.graal.python.cext.test.MultithreadedImportTestJava'] + args, False),
-    ]
+        TestConfig("junit", vm_args + graalpy_tests + args, False)]
+
+    if not mx.is_windows():
+        configs += [
+            # Tests that must run in their own process due to C extensions usage, for now ignored on Windows
+            TestConfig("multi-threaded-import-java", vm_args + ['com.oracle.graal.python.cext.test.MultithreadedImportTestNative'] + args, True),
+            TestConfig("multi-threaded-import-java", vm_args + ['com.oracle.graal.python.cext.test.MultithreadedImportTestNative'] + args, False),
+            TestConfig("multi-threaded-import-native", vm_args + ['com.oracle.graal.python.cext.test.MultithreadedImportTestJava'] + args, True),
+            TestConfig("multi-threaded-import-native", vm_args + ['com.oracle.graal.python.cext.test.MultithreadedImportTestJava'] + args, False),
+        ]
 
     if '--regex' not in args:
         async_regex = ['--regex', r'com\.oracle\.graal\.python\.test\.integration\.advanced\.AsyncActionThreadingTest']
