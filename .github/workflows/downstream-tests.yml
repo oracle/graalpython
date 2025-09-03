@@ -34,7 +34,12 @@ jobs:
 
     - name: Install CMake (Darwin)
       if: ${{ matrix.os.platform == 'darwin' && matrix.name == 'pybind11' }}
-      run: brew install cmake
+      run: |
+        if brew list cmake >/dev/null 2>&1; then
+          echo "cmake already installed"
+        else
+          brew install cmake
+        fi
 
     - name: Install Rust toolchain
       if: ${{ matrix.name == 'pyo3' || matrix.name == 'pydantic-core' || matrix.name == 'jiter' }}
