@@ -606,18 +606,26 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
      */
     @Children private Node[] adoptedNodes;
     @Child private CalleeContext calleeContext = CalleeContext.create();
-    // TODO: make some of those lazy?
     @Child private ExceptionStateNodes.GetCaughtExceptionNode getCaughtExceptionNode;
     @Child private ChainExceptionsNode chainExceptionsNode;
 
-    @Child private MaterializeFrameNode traceMaterializeFrameNewNode;
-    @Child private MaterializeFrameNode traceMaterializeFrameExistingNode;
     private static final byte TRACE_PROFILE_LINE = 1;
     private static final byte TRACE_PROFILE_NEW_FRAME = 1 << 1;
     private static final byte TRACE_PROFILE_EXISTING_FRAME = 1 << 2;
     private static final byte TRACE_PROFILE_SYNC_LOCALS_BACK = 1 << 3;
     private static final byte TRACE_PROFILE_DID_JUMP = 1 << 4;
-    @CompilationFinal(dimensions = 1) byte[] traceProfileData;
+
+    private static final class TracingNodes extends Node {
+        @Child MaterializeFrameNode traceMaterializeFrameNewNode = MaterializeFrameNode.create();
+        @Child MaterializeFrameNode traceMaterializeFrameExistingNode = MaterializeFrameNode.create();
+        @CompilationFinal(dimensions = 1) byte[] traceProfileData;
+
+        public TracingNodes(int bytecodeLength) {
+            traceProfileData = new byte[bytecodeLength];
+        }
+    }
+
+    @Child private TracingNodes tracingNodes;
 
     @CompilationFinal private Object osrMetadata;
 
@@ -3210,33 +3218,30 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return bytecodeBinarySubscrOO(virtualFrame, stackTop, bci, localNodes, bcioffset);
     }
 
-    private void enterTraceProfile(int bci, byte profileBits) {
-        if (traceProfileData == null) {
+    private TracingNodes getTracingNodes() {
+        if (tracingNodes == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            traceProfileData = new byte[bytecode.length];
+            tracingNodes = insert(new TracingNodes(bytecode.length));
         }
-        if ((traceProfileData[bci] & profileBits) == 0) {
+        return tracingNodes;
+    }
+
+    private void enterTraceProfile(int bci, byte profileBits) {
+        byte[] profile = getTracingNodes().traceProfileData;
+        if ((profile[bci] & profileBits) == 0) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            traceProfileData[bci] |= profileBits;
+            profile[bci] |= profileBits;
         }
     }
 
     private PFrame ensurePyFrame(VirtualFrame virtualFrame, int bci) {
         PFrame pyFrame = PArguments.getCurrentFrameInfo(virtualFrame).getPyFrame();
         if (pyFrame == null) {
-            if (traceMaterializeFrameNewNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                traceMaterializeFrameNewNode = insert(MaterializeFrameNode.create());
-            }
             enterTraceProfile(bci, TRACE_PROFILE_NEW_FRAME);
-            return traceMaterializeFrameNewNode.execute(virtualFrame, this, true, true);
+            return getTracingNodes().traceMaterializeFrameNewNode.execute(virtualFrame, this, true, true);
         } else {
-            if (traceMaterializeFrameExistingNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                traceMaterializeFrameExistingNode = insert(MaterializeFrameNode.create());
-            }
             enterTraceProfile(bci, TRACE_PROFILE_EXISTING_FRAME);
-            return traceMaterializeFrameExistingNode.execute(virtualFrame, this, true, true);
+            return getTracingNodes().traceMaterializeFrameExistingNode.execute(virtualFrame, this, true, true);
         }
     }
 
