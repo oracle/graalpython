@@ -23,8 +23,8 @@
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 from __future__ import print_function
 
-import itertools
 import functools
+import shutil
 import statistics
 import sys
 import os
@@ -200,23 +200,19 @@ class CPythonVm(AbstractPythonIterationsControlVm):
 
     @property
     def interpreter(self):
-        candidates_pre = [
-            self._virtualenv,
-            mx.get_env("VIRTUAL_ENV"),
-            mx.get_env("PYTHON3_HOME"),
-        ]
-        candidates_suf = [
-            join("bin", "python3"),
-            join("bin", "python"),
-            "python3",
-            "python",
-            sys.executable,
-        ]
-        for p, s in itertools.product(candidates_pre, candidates_suf):
-            if os.path.exists(exe := os.path.join(p or "", s)):
-                mx.log(f"CPython VM {exe=}")
-                return exe
-        assert False, "sys.executable should really exist"
+        if venv := self._virtualenv:
+            path = os.path.join(venv, 'bin', 'python')
+            mx.log(f"Using CPython from virtualenv: {path}")
+        elif python3_home := mx.get_env('PYTHON3_HOME'):
+            path = os.path.join(python3_home, 'python')
+            mx.log(f"Using CPython from PYTHON3_HOME: {path}")
+        elif path := shutil.which('python'):
+            mx.log(f"Using CPython from PATH: {path}")
+        else:
+            assert sys.implementation.name == 'cpython', "Cannot find CPython"
+            path = sys.executable
+            mx.log(f"Using CPython from sys.executable: {path}")
+        return path
 
     def run_vm(self, args, *splat, **kwargs):
         for idx, arg in enumerate(args):
