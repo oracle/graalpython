@@ -1449,12 +1449,8 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         copyArguments(args, b);
 
         if (cellVariableLocals.length > 0) {
-            List<BytecodeLocal> toClear = new ArrayList<>();
-
-            b.beginStoreRange(cellVariableLocals);
-            b.beginCollectToObjectArray();
+            b.emitCreateCells(cellVariableLocals);
             for (int i = 0; i < cellVariableLocals.length; i++) {
-                b.beginCreateCell(i);
                 if (scope.getUseOfName(cellVariables[i]).contains(DefUse.DefParam)) {
                     /*
                      * To simplify the argument copying performed above, we copy cell params into
@@ -1462,18 +1458,12 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                      * into a cell and clear the regular local.
                      */
                     BytecodeLocal param = getLocal(cellVariables[i]);
+                    b.beginStoreCell();
+                    b.emitLoadLocal(cellVariableLocals[i]);
                     b.emitLoadLocal(param);
-                    toClear.add(param);
-                } else {
-                    b.emitLoadNull();
+                    b.endStoreCell();
+                    b.emitClearLocal(param);
                 }
-                b.endCreateCell();
-            }
-            b.endCollectToObjectArray();
-            b.endStoreRange();
-
-            for (BytecodeLocal local : toClear) {
-                b.emitClearLocal(local);
             }
         }
 
