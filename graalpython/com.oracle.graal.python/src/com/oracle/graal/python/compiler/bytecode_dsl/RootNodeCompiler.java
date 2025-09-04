@@ -1524,7 +1524,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             BytecodeLocal local = getLocal(args.varArg.arg);
             assert local != null;
             b.beginStoreLocal(local);
-            b.emitLoadVariableArguments();
+            b.emitLoadVariableArguments(argIdx++);
             b.endStoreLocal();
         }
 
@@ -1532,7 +1532,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             BytecodeLocal local = getLocal(args.kwArg.arg);
             assert local != null;
             b.beginStoreLocal(local);
-            b.emitLoadKeywordArguments();
+            b.emitLoadKeywordArguments(argIdx);
             b.endStoreLocal();
         }
     }

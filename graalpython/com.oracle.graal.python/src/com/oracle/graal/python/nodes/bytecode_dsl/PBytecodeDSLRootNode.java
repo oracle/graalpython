@@ -1051,25 +1051,22 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @ConstantOperand(type = int.class)
     public static final class LoadVariableArguments {
         @Specialization
-        public static Object perform(VirtualFrame frame,
+        public static Object perform(VirtualFrame frame, int index,
                         @Bind PBytecodeDSLRootNode rootNode) {
-            int index = rootNode.co.getRegularArgCount();
-            return PFactory.createTuple(rootNode.getLanguage(), (Object[]) PArguments.getArgument(frame, index));
+            return PFactory.createTuple(rootNode.getLanguage(), (Object[]) frame.getArguments()[index]);
         }
     }
 
     @Operation
+    @ConstantOperand(type = int.class)
     public static final class LoadKeywordArguments {
         @Specialization
-        public static Object perform(VirtualFrame frame,
+        public static Object perform(VirtualFrame frame, int index,
                         @Bind PBytecodeDSLRootNode rootNode) {
-            int index = rootNode.co.getRegularArgCount();
-            if (rootNode.co.takesVarArgs()) {
-                index++;
-            }
-            return PFactory.createDict(rootNode.getLanguage(), (PKeyword[]) PArguments.getArgument(frame, index));
+            return PFactory.createDict(rootNode.getLanguage(), (PKeyword[]) frame.getArguments()[index]);
         }
     }
 
