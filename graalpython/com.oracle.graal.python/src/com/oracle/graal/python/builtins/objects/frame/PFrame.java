@@ -86,6 +86,7 @@ public final class PFrame extends PythonBuiltinObject {
     public static final int NO_JUMP = -2;
     private int jumpDestLine = DISALLOW_JUMPS;
     private Object localTraceFun = null;
+    private boolean localsAccessed;
 
     private boolean traceLine = true;
 
@@ -117,6 +118,14 @@ public final class PFrame extends PythonBuiltinObject {
 
     public void setJumpDestLine(int jumpDestLine) {
         this.jumpDestLine = jumpDestLine;
+    }
+
+    public boolean localsAccessed() {
+        return localsAccessed;
+    }
+
+    public void setLocalsAccessed(boolean localsAccessed) {
+        this.localsAccessed = localsAccessed;
     }
 
     // TODO: frames: this is a large object, think about how to make this

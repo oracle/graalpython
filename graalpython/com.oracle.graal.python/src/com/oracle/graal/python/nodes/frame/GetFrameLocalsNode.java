@@ -55,6 +55,7 @@ import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLFrameInfo;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.bytecode.BytecodeNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -206,7 +207,7 @@ public abstract class GetFrameLocalsNode extends Node {
             BytecodeNode bytecodeNode = bytecodeDSLRootNode.getBytecodeNode();
             for (int i = 0; i < namesArray.length; i++) {
                 TruffleString varname = namesArray[i];
-                Object value = PyDictGetItem.executeUncached(localsDict, varname);
+                Object value = getDictItemUncached(localsDict, varname);
                 if (deref) {
                     PCell cell = (PCell) bytecodeNode.getLocalValue(0, localFrame, offset + i);
                     cell.setRef(value);
@@ -217,7 +218,7 @@ public abstract class GetFrameLocalsNode extends Node {
         } else {
             for (int i = 0; i < namesArray.length; i++) {
                 TruffleString varname = namesArray[i];
-                Object value = PyDictGetItem.executeUncached(localsDict, varname);
+                Object value = getDictItemUncached(localsDict, varname);
                 if (deref) {
                     PCell cell = (PCell) localFrame.getObject(offset + i);
                     cell.setRef(value);
@@ -226,6 +227,11 @@ public abstract class GetFrameLocalsNode extends Node {
                 }
             }
         }
+    }
+
+    @TruffleBoundary
+    private static Object getDictItemUncached(PDict localsDict, TruffleString varname) {
+        return PyDictGetItem.executeUncached(localsDict, varname);
     }
 
     @NeverDefault
