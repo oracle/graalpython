@@ -198,6 +198,7 @@ MICRO_NATIVE_BENCHMARKS = {
     'c-issubtype-polymorphic': ITER_5 + ['50000000'],
     'c-issubtype-monorphic': ITER_5 + ['50000000'],
     'c-call-method': ITER_5 + ['5000000'],
+    'c-call-method-int-float': ITER_5 + ['5000000'],
     'c-instantiate-large': ITER_5 + ['1000'],
 }
 
