@@ -1851,9 +1851,13 @@ public final class PythonContext extends Python3Core {
                         () -> {
                             try {
                                 TruffleFile internalResource = newEnv.getInternalResource("python-home");
-                                return internalResource == null ? null : internalResource.getAbsoluteFile();
+                                if (internalResource == null) {
+                                    PythonLanguage.getLogger(Python3Core.class).fine("Couldn't load python internal resources");
+                                    return null;
+                                }
+                                return internalResource.getAbsoluteFile();
                             } catch (IOException e) {
-                                // fall through
+                                PythonLanguage.getLogger(Python3Core.class).log(Level.INFO, "Internal resources loading error", e);
                             }
                             return null;
                         }
