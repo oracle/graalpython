@@ -926,10 +926,10 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
     @Override
     public BytecodeDSLCompilerResult visit(ExprTy.Lambda node) {
         return compileRootNode("<lambda>", ArgumentInfo.fromArguments(node.args), node.getSourceRange(),
-                        b -> emitFunctionDefBody(node, node.args, new SSTNode[]{node.body}, b, null, !scope.isGenerator()));
+                        b -> emitFunctionDefBody(node, node.args, new SSTNode[]{node.body}, b, null, true));
     }
 
-    private void emitFunctionDefBody(SSTNode node, ArgumentsTy args, SSTNode[] body, Builder b, Object docstring, boolean isRegularLambda) {
+    private void emitFunctionDefBody(SSTNode node, ArgumentsTy args, SSTNode[] body, Builder b, Object docstring, boolean isLambda) {
         beginRootNode(node, args, b);
 
         int i = 0;
@@ -946,7 +946,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         StatementCompiler statementCompiler = new StatementCompiler(b);
 
-        if (isRegularLambda) {
+        if (isLambda) {
             assert i == 0;
             assert body[0] instanceof ExprTy;
             beginReturn(b);
