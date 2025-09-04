@@ -1429,28 +1429,19 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             }
         }
 
-        String[] cellVariables = orderedKeys(cellvars, new String[0]);
-        BytecodeLocal[] cellVariableLocals = new BytecodeLocal[cellVariables.length];
-        for (int i = 0; i < cellVariables.length; i++) {
-            BytecodeLocal local = b.createLocal();
-            cellLocals.put(cellVariables[i], local);
-            cellVariableLocals[i] = local;
-        }
-
-        String[] freeVariables = orderedKeys(freevars, new String[0]);
-        BytecodeLocal[] freeVariableLocals = new BytecodeLocal[freeVariables.length];
-        for (int i = 0; i < freeVariables.length; i++) {
-            BytecodeLocal local = b.createLocal();
-            freeLocals.put(freeVariables[i], local);
-            freeVariableLocals[i] = local;
-        }
-
         // 2. Copy arguments, initialize cells, and copy free variables.
         copyArguments(args, b);
 
-        if (cellVariableLocals.length > 0) {
+        if (!cellvars.isEmpty()) {
+            String[] cellVariables = orderedKeys(cellvars, new String[0]);
+            BytecodeLocal[] cellVariableLocals = new BytecodeLocal[cellVariables.length];
+            for (int i = 0; i < cellVariables.length; i++) {
+                BytecodeLocal local = b.createLocal();
+                cellLocals.put(cellVariables[i], local);
+                cellVariableLocals[i] = local;
+            }
             b.emitCreateCells(cellVariableLocals);
-            for (int i = 0; i < cellVariableLocals.length; i++) {
+            for (int i = 0; i < cellVariables.length; i++) {
                 if (scope.getUseOfName(cellVariables[i]).contains(DefUse.DefParam)) {
                     /*
                      * To simplify the argument copying performed above, we copy cell params into
@@ -1467,10 +1458,15 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             }
         }
 
-        if (freeVariableLocals.length > 0) {
-            b.beginStoreRange(freeVariableLocals);
-            b.emitLoadClosure();
-            b.endStoreRange();
+        if (!freevars.isEmpty()) {
+            String[] freeVariables = orderedKeys(freevars, new String[0]);
+            BytecodeLocal[] freeVariableLocals = new BytecodeLocal[freeVariables.length];
+            for (int i = 0; i < freeVariables.length; i++) {
+                BytecodeLocal local = b.createLocal();
+                freeLocals.put(freeVariables[i], local);
+                freeVariableLocals[i] = local;
+            }
+            b.emitInitFreeVars(freeVariableLocals);
         }
     }
 
@@ -1479,42 +1475,34 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             return;
         }
 
-        int argIdx = PArguments.USER_ARGUMENTS_OFFSET;
-        if (args.posOnlyArgs != null) {
-            for (int i = 0; i < args.posOnlyArgs.length; i++) {
-                BytecodeLocal local = getLocal(args.posOnlyArgs[i].arg);
-                assert local != null;
-                b.beginStoreLocal(local);
-                b.emitLoadArgument(argIdx++);
-                b.endStoreLocal();
-            }
-        }
+        int idx = 0;
+        int posOnlyArgsCount = args.posOnlyArgs != null ? args.posOnlyArgs.length : 0;
+        int argsCount = args.args != null ? args.args.length : 0;
+        int kwOnlyArgsLength = args.kwOnlyArgs != null ? args.kwOnlyArgs.length : 0;
+        int totalLocals = posOnlyArgsCount + argsCount + kwOnlyArgsLength;
+        if (totalLocals > 0) {
+            BytecodeLocal[] locals = new BytecodeLocal[totalLocals];
 
-        if (args.args != null) {
-            for (int i = 0; i < args.args.length; i++) {
-                BytecodeLocal local = getLocal(args.args[i].arg);
-                assert local != null;
-                b.beginStoreLocal(local);
-                b.emitLoadArgument(argIdx++);
-                b.endStoreLocal();
+            for (int i = 0; i < posOnlyArgsCount; i++) {
+                locals[idx++] = getLocal(args.posOnlyArgs[i].arg);
             }
-        }
 
-        if (args.kwOnlyArgs != null) {
-            for (int i = 0; i < args.kwOnlyArgs.length; i++) {
-                BytecodeLocal local = getLocal(args.kwOnlyArgs[i].arg);
-                assert local != null;
-                b.beginStoreLocal(local);
-                b.emitLoadArgument(argIdx++);
-                b.endStoreLocal();
+            for (int i = 0; i < argsCount; i++) {
+                locals[idx++] = getLocal(args.args[i].arg);
             }
+
+            for (int i = 0; i < kwOnlyArgsLength; i++) {
+                locals[idx++] = getLocal(args.kwOnlyArgs[i].arg);
+            }
+
+            b.emitCopyArguments(locals);
         }
 
         if (args.varArg != null) {
             BytecodeLocal local = getLocal(args.varArg.arg);
             assert local != null;
             b.beginStoreLocal(local);
-            b.emitLoadVariableArguments(argIdx++);
+            b.emitLoadVariableArguments(idx++);
             b.endStoreLocal();
         }
 
@@ -1522,7 +1510,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             BytecodeLocal local = getLocal(args.kwArg.arg);
             assert local != null;
             b.beginStoreLocal(local);
-            b.emitLoadKeywordArguments(argIdx);
+            b.emitLoadKeywordArguments(idx);
             b.endStoreLocal();
         }
     }
