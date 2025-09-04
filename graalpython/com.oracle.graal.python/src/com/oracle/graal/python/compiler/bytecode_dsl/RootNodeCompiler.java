@@ -210,6 +210,8 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
     // Mutable (must be reset)
     private SourceRange currentLocation;
+    boolean savedYieldFromGenerator;
+    BytecodeLocal yieldFromGenerator;
 
     public RootNodeCompiler(BytecodeDSLCompilerContext ctx, RootNodeCompiler parent, SSTNode rootNode, EnumSet<FutureFeature> futureFeatures) {
         this(ctx, parent, null, rootNode, rootNode, futureFeatures);
@@ -407,6 +409,10 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                         null,
                         nodes);
         rootNode.setMetadata(codeUnit, ctx.errorCallback);
+        if (codeUnit.isGenerator() && savedYieldFromGenerator) {
+            rootNode.yieldFromGeneratorIndex = yieldFromGenerator.getLocalIndex();
+        }
+
         return new BytecodeDSLCompilerResult(rootNode, codeUnit);
     }
 
@@ -544,6 +550,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
     public void reset() {
         this.currentLocation = null;
+        this.savedYieldFromGenerator = false;
     }
 
     // -------------- helpers --------------
@@ -2579,6 +2586,14 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             b.beginStoreLocal(generator);
             generatorOrCoroutineProducer.run();
             b.endStoreLocal();
+
+            if (!savedYieldFromGenerator) {
+                savedYieldFromGenerator = true;
+                yieldFromGenerator = b.createLocal();
+                b.beginStoreLocal(yieldFromGenerator);
+                b.emitLoadLocal(generator);
+                b.endStoreLocal();
+            }
 
             b.beginStoreLocal(returnValue);
             b.emitLoadConstant(PNone.NONE);
