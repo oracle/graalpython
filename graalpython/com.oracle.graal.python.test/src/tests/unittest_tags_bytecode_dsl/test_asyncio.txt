@@ -886,7 +886,6 @@ test.test_asyncio.test_tasks.PyTask_PyFuture_SubclassTests.test_wait_with_except
 test.test_asyncio.test_tasks.PyTask_PyFuture_SubclassTests.test_wait_with_iterator_of_tasks @ linux-x86_64
 test.test_asyncio.test_tasks.PyTask_PyFuture_SubclassTests.test_wait_with_timeout @ linux-x86_64
 test.test_asyncio.test_tasks.PyTask_PyFuture_SubclassTests.test_yield_future_passes_cancel @ linux-x86_64
-test.test_asyncio.test_tasks.PyTask_PyFuture_SubclassTests.test_yield_wait_does_not_shield_cancel @ linux-x86_64
 test.test_asyncio.test_tasks.PyTask_PyFuture_Tests.test_as_completed @ linux-x86_64
 test.test_asyncio.test_tasks.PyTask_PyFuture_Tests.test_as_completed_concurrent @ linux-x86_64
 test.test_asyncio.test_tasks.PyTask_PyFuture_Tests.test_as_completed_coroutine_use_running_loop @ linux-x86_64
