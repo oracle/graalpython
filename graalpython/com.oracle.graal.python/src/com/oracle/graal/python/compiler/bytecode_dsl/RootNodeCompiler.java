@@ -1454,7 +1454,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             b.beginStoreRange(cellVariableLocals);
             b.beginCollectToObjectArray();
             for (int i = 0; i < cellVariableLocals.length; i++) {
-                b.beginCreateCell();
+                b.beginCreateCell(i);
                 if (scope.getUseOfName(cellVariables[i]).contains(DefUse.DefParam)) {
                     /*
                      * To simplify the argument copying performed above, we copy cell params into

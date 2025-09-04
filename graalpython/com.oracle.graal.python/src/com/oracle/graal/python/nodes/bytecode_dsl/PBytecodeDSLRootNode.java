@@ -228,6 +228,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.bytecode.BytecodeConfig;
 import com.oracle.truffle.api.bytecode.BytecodeLocation;
 import com.oracle.truffle.api.bytecode.BytecodeNode;
@@ -345,6 +346,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @CompilationFinal protected transient int selfIndex;
     @CompilationFinal protected transient int classcellIndex;
     @CompilationFinal public int yieldFromGeneratorIndex = -1;
+    @CompilationFinal(dimensions = 1) protected transient Assumption[] cellEffectivelyFinalAssumptions;
 
     private transient boolean pythonInternal;
     @CompilationFinal private transient boolean internal;
@@ -370,6 +372,12 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         this.selfIndex = co.selfIndex;
         this.internal = getSource().isInternal();
         this.parserErrorCallback = parserErrorCallback;
+        if (co.cellvars.length > 0) {
+            this.cellEffectivelyFinalAssumptions = new Assumption[co.cellvars.length];
+            for (int i = 0; i < co.cellvars.length; i++) {
+                cellEffectivelyFinalAssumptions[i] = Truffle.getRuntime().createAssumption("cell is effectively final");
+            }
+        }
     }
 
     @Override
@@ -2454,10 +2462,12 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @ConstantOperand(type = int.class)
     public static final class CreateCell {
         @Specialization
-        public static PCell doCreateCell(Object value) {
-            PCell cell = new PCell(Assumption.create());
+        public static PCell doCreateCell(int index, Object value,
+                        @Bind PBytecodeDSLRootNode rootNode) {
+            PCell cell = new PCell(rootNode.cellEffectivelyFinalAssumptions[index]);
             cell.setRef(value);
             return cell;
         }
