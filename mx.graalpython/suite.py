@@ -9,7 +9,7 @@ suite = {
     "name": "graalpython",
     "versionConflictResolution": "latest",
 
-    "version": "25.0.0",
+    "version": "25.0.1",
     "graalpython:pythonVersion": "3.12.8",
     "release": False,
     "groupId": "org.graalvm.python",
@@ -53,7 +53,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "f8196f0bf0b98e14d1abeea2a806aff4a507d99f",
+                "version": "4391e7b150f764258d4a15ffb48b46a8c19ed71a",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
@@ -61,7 +61,7 @@ suite = {
             },
             {
                 "name": "regex",
-                "version": "f8196f0bf0b98e14d1abeea2a806aff4a507d99f",
+                "version": "4391e7b150f764258d4a15ffb48b46a8c19ed71a",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
