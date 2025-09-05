@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,8 +41,8 @@
 package com.oracle.graal.python.nodes.bytecode;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.compiler.QuickeningTypes;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.runtime.ExecutionContext;
@@ -139,19 +139,19 @@ public final class PBytecodeGeneratorRootNode extends PRootNode implements Bytec
     @Override
     public Object executeOSR(VirtualFrame osrFrame, int target, Object interpreterStateObject) {
         OSRInterpreterState interpreterState = (OSRInterpreterState) interpreterStateObject;
-        MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(osrFrame);
+        MaterializedFrame generatorFrame = PGenerator.getGeneratorFrame(osrFrame);
         return rootNode.executeFromBci(osrFrame, generatorFrame, this, target, interpreterState.stackTop);
     }
 
     @Override
     public Object execute(VirtualFrame frame) {
         calleeContext.enter(frame);
-        MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(frame);
+        MaterializedFrame generatorFrame = PGenerator.getGeneratorFrame(frame);
         /*
          * Using the materialized frame as stack would be bad for compiled performance, so we copy
          * the stack slots back to the virtual frame and use that as the stack. The values are
          * copied back in yield node.
-         * 
+         *
          * TODO we could try to re-virtualize the locals too, but we would need to profile the loads
          * and stores to only copy what is actually used, otherwise copying everything makes things
          * worse.

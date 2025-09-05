@@ -43,6 +43,7 @@ package com.oracle.graal.python.runtime.interop;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Bind;
@@ -91,7 +92,10 @@ public final class PythonScopes implements TruffleObject {
         Object[] scopes;
         if (frame != null) {
             PythonObject globals = PArguments.getGlobalsSafe(frame);
-            MaterializedFrame generatorFrame = PArguments.getGeneratorFrameSafe(frame);
+            MaterializedFrame generatorFrame = null;
+            if (PGenerator.isGeneratorFrame(frame)) {
+                generatorFrame = PGenerator.getGeneratorFrame(frame);
+            }
             Object globalsScope = null;
             if (globals != null) {
                 globalsScope = new PythonMapScope(new Object[]{scopeFromObject(globals)}, new String[]{"globals()"});

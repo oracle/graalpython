@@ -50,8 +50,6 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
-import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorFunctionRootNode;
-import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLGeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.runtime.ExecutionContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
@@ -81,10 +79,6 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 public class CallDispatchers {
 
-    private static boolean isGeneratorFunction(RootCallTarget callTarget) {
-        return callTarget.getRootNode() instanceof PBytecodeGeneratorFunctionRootNode || callTarget.getRootNode() instanceof PBytecodeDSLGeneratorFunctionRootNode;
-    }
-
     @NeverDefault
     public static DirectCallNode createDirectCallNodeFor(PBuiltinFunction callee) {
         DirectCallNode callNode = Truffle.getRuntime().createDirectCallNode(callee.getCallTarget());
@@ -97,13 +91,9 @@ public class CallDispatchers {
 
     @NeverDefault
     public static DirectCallNode createDirectCallNodeFor(PFunction callee) {
-        boolean isGenerator = isGeneratorFunction(callee.getCallTarget());
         DirectCallNode callNode = Truffle.getRuntime().createDirectCallNode(callee.getCallTarget());
         if (callee.forceSplitDirectCalls()) {
             callNode.cloneCallTarget();
-        }
-        if (isGenerator && PythonLanguage.get(null).getEngineOption(PythonOptions.ForceInlineGeneratorCalls)) {
-            callNode.forceInlining();
         }
         return callNode;
     }
@@ -356,11 +346,7 @@ public class CallDispatchers {
                         @Cached SimpleDirectInvokeNode invoke) {
             assert callee.getCallTarget() == callNode.getCallTarget();
             PArguments.setGlobals(arguments, callee.getGlobals());
-            PArguments.setClosure(arguments, callee.getClosure());
-            RootCallTarget callTarget = (RootCallTarget) callNode.getCurrentCallTarget();
-            if (isGeneratorFunction(callTarget)) {
-                PArguments.setGeneratorFunction(arguments, callee);
-            }
+            PArguments.setFunctionObject(arguments, callee);
             return invoke.execute(frame, inliningTarget, callNode, arguments);
         }
     }
@@ -377,15 +363,10 @@ public class CallDispatchers {
 
         @Specialization
         static Object doDirect(VirtualFrame frame, Node inliningTarget, PFunction callee, Object[] arguments,
-                        @Cached SimpleIndirectInvokeNode invoke,
-                        @Cached InlinedConditionProfile generatorProfile) {
+                        @Cached SimpleIndirectInvokeNode invoke) {
             PArguments.setGlobals(arguments, callee.getGlobals());
-            PArguments.setClosure(arguments, callee.getClosure());
-            RootCallTarget callTarget = callee.getCallTarget();
-            if (generatorProfile.profile(inliningTarget, isGeneratorFunction(callTarget))) {
-                PArguments.setGeneratorFunction(arguments, callee);
-            }
-            return invoke.execute(frame, inliningTarget, callTarget, arguments);
+            PArguments.setFunctionObject(arguments, callee);
+            return invoke.execute(frame, inliningTarget, callee.getCallTarget(), arguments);
         }
     }
 

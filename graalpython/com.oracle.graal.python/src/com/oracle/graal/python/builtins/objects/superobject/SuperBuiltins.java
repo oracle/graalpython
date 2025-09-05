@@ -51,10 +51,10 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -63,7 +63,6 @@ import com.oracle.graal.python.builtins.objects.cell.CellBuiltins;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.foreign.ForeignObjectBuiltins.ForeignGetattrNode;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
@@ -282,11 +281,7 @@ public final class SuperBuiltins extends PythonBuiltins {
                 return initFromLocalFrame(frame, inliningTarget, self, rootNode, frame, getRefNode, raiseNode);
             } else {
                 PBytecodeRootNode rootNode = (PBytecodeRootNode) getRootNode();
-                Frame localFrame = frame;
-                if (rootNode.getCodeUnit().isGeneratorOrCoroutine()) {
-                    localFrame = PArguments.getGeneratorFrame(frame);
-                }
-                return initFromLocalFrame(frame, inliningTarget, self, rootNode, localFrame, getRefNode, raiseNode);
+                return initFromLocalFrame(frame, inliningTarget, self, rootNode, rootNode.getLocalFrame(frame), getRefNode, raiseNode);
             }
         }
 

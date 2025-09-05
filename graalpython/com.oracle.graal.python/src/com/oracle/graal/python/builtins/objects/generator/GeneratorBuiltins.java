@@ -36,16 +36,15 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -60,9 +59,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.bytecode.BytecodeLocation;
 import com.oracle.truffle.api.bytecode.ContinuationResult;
 import com.oracle.truffle.api.dsl.Bind;
@@ -78,15 +74,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PGenerator)
 public final class GeneratorBuiltins extends PythonBuiltins {
-
-    private static void checkResumable(Node inliningTarget, PGenerator self, PRaiseNode raiseNode) {
-        if (self.isFinished()) {
-            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.StopIteration);
-        }
-        if (self.isRunning()) {
-            throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
-        }
-    }
 
     public static final TpSlots SLOTS = GeneratorBuiltinsSlotsGen.SLOTS;
 
@@ -196,28 +183,6 @@ public final class GeneratorBuiltins extends PythonBuiltins {
     @Builtin(name = "gi_frame", minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class GetFrameNode extends PythonUnaryBuiltinNode {
-        @CompilerDirectives.TruffleBoundary
-        private static PFrame getBytecodeDSLMateriazedFrame(PGenerator self) {
-            ContinuationResult continuation = self.getContinuation();
-            if (continuation == null) {
-                // TODO: GR-67147: implement properly, frame needs to be retrieved before
-                // first use for coroutines
-                Object[] args = new Object[self.getArguments().length];
-                PythonUtils.arraycopy(self.getArguments(), 0, args, 0, self.getArguments().length);
-                MaterializedFrame mframe = Truffle.getRuntime().createMaterializedFrame(args);
-                PFrame frame = MaterializeFrameNode.materializeGeneratorFrame(null, mframe, PFrame.Reference.EMPTY);
-                frame.setBci(0);
-                return frame;
-            }
-            BytecodeLocation location = continuation.getBytecodeLocation();
-            MaterializedFrame generatorFrame = continuation.getFrame();
-            BytecodeDSLFrameInfo info = (BytecodeDSLFrameInfo) generatorFrame.getFrameDescriptor().getInfo();
-            PFrame frame = MaterializeFrameNode.materializeGeneratorFrame(location.getBytecodeNode(), generatorFrame, PFrame.Reference.EMPTY);
-            int bci = location.getBytecodeIndex();
-            frame.setBci(bci);
-            frame.setLine(info.getRootNode().bciToLine(bci, location.getBytecodeNode()));
-            return frame;
-        }
 
         @Specialization
         static Object getFrame(PGenerator self) {
@@ -225,9 +190,21 @@ public final class GeneratorBuiltins extends PythonBuiltins {
                 return PNone.NONE;
             } else {
                 if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                    return getBytecodeDSLMateriazedFrame(self);
+                    ContinuationResult continuation = self.getContinuation();
+                    BytecodeLocation location = continuation != null ? continuation.getBytecodeLocation() : null;
+                    MaterializedFrame generatorFrame = self.getGeneratorFrame();
+                    BytecodeDSLFrameInfo info = (BytecodeDSLFrameInfo) generatorFrame.getFrameDescriptor().getInfo();
+                    PFrame frame = MaterializeFrameNode.materializeGeneratorFrame(location != null ? location.getBytecodeNode() : null, generatorFrame, PFrame.Reference.EMPTY);
+                    if (location != null) {
+                        int bci = location.getBytecodeIndex();
+                        frame.setBci(bci);
+                        frame.setLine(info.getRootNode().bciToLine(bci, location.getBytecodeNode()));
+                    } else {
+                        frame.setBci(0);
+                    }
+                    return frame;
                 } else {
-                    MaterializedFrame generatorFrame = PArguments.getGeneratorFrame(self.getArguments());
+                    MaterializedFrame generatorFrame = self.getGeneratorFrame();
                     BytecodeFrameInfo info = (BytecodeFrameInfo) generatorFrame.getFrameDescriptor().getInfo();
                     PFrame frame = MaterializeFrameNode.materializeGeneratorFrame(info.getRootNode(), generatorFrame, PFrame.Reference.EMPTY);
                     int bci = self.getBci();

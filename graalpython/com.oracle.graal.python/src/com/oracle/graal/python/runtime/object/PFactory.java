@@ -828,38 +828,38 @@ public final class PFactory {
      * Special objects: generators, proxies, references, cells
      */
 
-    public static PGenerator createGenerator(PythonLanguage language, TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
-        return trace(language, PGenerator.create(language, name, qualname, rootNode, callTargets, arguments, PythonBuiltinClassType.PGenerator));
+    public static PGenerator createGenerator(PythonLanguage language, PFunction function, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
+        return trace(language, PGenerator.create(language, function, rootNode, callTargets, arguments, PythonBuiltinClassType.PGenerator));
     }
 
-    public static PGenerator createGenerator(PythonLanguage language, TruffleString name, TruffleString qualname, PBytecodeDSLRootNode rootNode, Object[] arguments) {
-        return trace(language, PGenerator.create(language, name, qualname, rootNode, arguments, PythonBuiltinClassType.PGenerator));
+    public static PGenerator createGenerator(PythonLanguage language, PFunction function, PBytecodeDSLRootNode rootNode, Object[] arguments) {
+        return trace(language, PGenerator.create(language, function, rootNode, arguments, PythonBuiltinClassType.PGenerator));
     }
 
-    public static PGenerator createIterableCoroutine(PythonLanguage language, TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets,
+    public static PGenerator createIterableCoroutine(PythonLanguage language, PFunction function, PBytecodeRootNode rootNode, RootCallTarget[] callTargets,
                     Object[] arguments) {
-        return trace(language, PGenerator.create(language, name, qualname, rootNode, callTargets, arguments, PythonBuiltinClassType.PGenerator, true));
+        return trace(language, PGenerator.create(language, function, rootNode, callTargets, arguments, PythonBuiltinClassType.PGenerator, true));
     }
 
-    public static PGenerator createIterableCoroutine(PythonLanguage language, TruffleString name, TruffleString qualname, PBytecodeDSLRootNode rootNode,
+    public static PGenerator createIterableCoroutine(PythonLanguage language, PFunction function, PBytecodeDSLRootNode rootNode,
                     Object[] arguments) {
-        return trace(language, PGenerator.create(language, name, qualname, rootNode, arguments, PythonBuiltinClassType.PGenerator, true));
+        return trace(language, PGenerator.create(language, function, rootNode, arguments, PythonBuiltinClassType.PGenerator, true));
     }
 
-    public static PGenerator createCoroutine(PythonLanguage language, TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
-        return trace(language, PGenerator.create(language, name, qualname, rootNode, callTargets, arguments, PythonBuiltinClassType.PCoroutine));
+    public static PGenerator createCoroutine(PythonLanguage language, PFunction function, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
+        return trace(language, PGenerator.create(language, function, rootNode, callTargets, arguments, PythonBuiltinClassType.PCoroutine));
     }
 
-    public static PGenerator createCoroutine(PythonLanguage language, TruffleString name, TruffleString qualname, PBytecodeDSLRootNode rootNode, Object[] arguments) {
-        return trace(language, PGenerator.create(language, name, qualname, rootNode, arguments, PythonBuiltinClassType.PCoroutine));
+    public static PGenerator createCoroutine(PythonLanguage language, PFunction function, PBytecodeDSLRootNode rootNode, Object[] arguments) {
+        return trace(language, PGenerator.create(language, function, rootNode, arguments, PythonBuiltinClassType.PCoroutine));
     }
 
     public static PCoroutineWrapper createCoroutineWrapper(PythonLanguage language, PGenerator generator) {
         return trace(language, new PCoroutineWrapper(language, generator));
     }
 
-    public static PAsyncGen createAsyncGenerator(PythonLanguage language, TruffleString name, TruffleString qualname, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
-        return trace(language, PAsyncGen.create(language, name, qualname, rootNode, callTargets, arguments));
+    public static PAsyncGen createAsyncGenerator(PythonLanguage language, PFunction function, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
+        return trace(language, PAsyncGen.create(language, function, rootNode, callTargets, arguments));
     }
 
     public static PANextAwaitable createANextAwaitable(PythonLanguage language, Object wrapped, Object defaultValue) {

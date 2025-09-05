@@ -90,6 +90,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
@@ -1076,16 +1077,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
-    public void createGeneratorFrame(Object[] arguments) {
-        Object[] generatorFrameArguments = PArguments.create();
-        MaterializedFrame generatorFrame = Truffle.getRuntime().createMaterializedFrame(generatorFrameArguments, getFrameDescriptor());
-        PArguments.setGeneratorFrame(arguments, generatorFrame);
-        PArguments.setCurrentFrameInfo(generatorFrameArguments, new PFrame.Reference(getRootNode(), null));
-        // The invoking node will set these two to the correct value only when the callee requests
-        // it, otherwise they stay at the initial value, which we must set to null here
-        PArguments.setException(arguments, null);
-        PArguments.setCallerFrameInfo(arguments, null);
+    public MaterializedFrame createGeneratorFrame(Object[] arguments) {
+        MaterializedFrame generatorFrame = Truffle.getRuntime().createMaterializedFrame(PArguments.create(), getFrameDescriptor());
         copyArgsAndCells(generatorFrame, arguments);
+        return generatorFrame;
     }
 
     private void copyArgsAndCells(Frame localFrame, Object[] arguments) {
@@ -2718,12 +2713,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @BytecodeInterpreterSwitch
     private void bytecodeResumeYield(VirtualFrame virtualFrame, boolean useCachedNodes, Object[] arguments, MutableLoopData mutableData, int stackTop, int bci, Node[] localNodes) {
-        mutableData.localException = PArguments.getException(PArguments.getGeneratorFrame(arguments));
+        mutableData.localException = PArguments.getException(PGenerator.getGeneratorFrame(arguments));
         if (mutableData.localException != null) {
             PArguments.setException(arguments, mutableData.localException);
         }
         GetSendValueNode node = insertChildNode(localNodes, bci, UNCACHED_GET_SEND_VALUE, GetSendValueNodeGen.class, NODE_GET_SEND_VALUE, useCachedNodes);
-        virtualFrame.setObject(stackTop, node.execute(PArguments.getSpecialArgument(arguments)));
+        virtualFrame.setObject(stackTop, node.execute(PGenerator.getSendValue(arguments)));
     }
 
     @BytecodeInterpreterSwitch
@@ -2747,7 +2742,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
         Object value = virtualFrame.getObject(stackTop);
         virtualFrame.clear(stackTop--);
-        PArguments.setException(PArguments.getGeneratorFrame(arguments), mutableData.localException);
+        PArguments.setException(PGenerator.getGeneratorFrame(arguments), mutableData.localException);
         if (mutableData.localException instanceof PException pe) {
             /*
              * The frame reference is only valid for this particular resumption of the generator, so
@@ -3286,6 +3281,14 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
+    public Frame getLocalFrame(VirtualFrame frame) {
+        if (co.isGeneratorOrCoroutine()) {
+            return PGenerator.getGeneratorFrame(frame);
+        } else {
+            return frame;
+        }
+    }
+
     @TruffleBoundary
     private static Object doInvokeTraceFunction(PythonContext.TraceEvent event, PFrame pyFrame, Object traceFn, Object nonNullArg) {
         // Force locals dict sync, so that we can sync them back later
@@ -3295,10 +3298,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     private void syncLocalsBackToFrame(VirtualFrame virtualFrame, PFrame pyFrame, int bci) {
-        Frame localFrame = virtualFrame;
-        if (co.isGeneratorOrCoroutine()) {
-            localFrame = PArguments.getGeneratorFrame(virtualFrame);
-        }
+        Frame localFrame = getLocalFrame(virtualFrame);
         if (pyFrame.localsAccessed()) {
             enterTraceProfile(bci, TRACE_PROFILE_SYNC_LOCALS_BACK);
             GetFrameLocalsNode.syncLocalsBackToFrame(co, this, pyFrame, localFrame);
@@ -5677,7 +5677,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @ExplodeLoop
     private void initFreeVars(Frame localFrame, Object[] originalArgs) {
         if (freevars.length > 0) {
-            PCell[] closure = PArguments.getClosure(originalArgs);
+            PCell[] closure = PArguments.getFunctionObject(originalArgs).getClosure();
             for (int i = 0; i < freevars.length; i++) {
                 localFrame.setObject(freeoffset + i, closure[i]);
             }
