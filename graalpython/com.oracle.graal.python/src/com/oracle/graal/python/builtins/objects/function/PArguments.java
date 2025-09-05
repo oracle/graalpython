@@ -27,34 +27,32 @@ package com.oracle.graal.python.builtins.objects.function;
 
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
 
-//@formatter:off
 /**
  * The layout of an argument array for a Python frame.
- *
- *                                         +-------------------+
- * SPECIAL_ARGUMENT                     -> | Object            |
- *                                         +-------------------+
- * INDEX_GLOBALS_ARGUMENT               -> | PythonObject      |
- *                                         +-------------------+
- * INDEX_FUNCTION_OBJECT                -> | PFunction         |
- *                                         +-------------------+
- * INDEX_CALLER_FRAME_INFO              -> | PFrame.Reference  |
- *                                         +-------------------+
- * INDEX_CURRENT_FRAME_INFO             -> | PFrame.Reference  |
- *                                         +-------------------+
- * INDEX_CURRENT_EXCEPTION              -> | PException        |
- *                                         +-------------------+
- * USER_ARGUMENTS                       -> | arg_0             |
- *                                         | arg_1             |
- *                                         | ...               |
- *                                         | arg_(nArgs-1)     |
- *                                         +-------------------+
+ * <ul>
+ * <li>{@code SPECIAL_ARGUMENT (Object)}</li>
+ * <li>{@code INDEX_GLOBALS_ARGUMENT (PythonObject)}</li>
+ * <li>{@code INDEX_FUNCTION_OBJECT (PFunction)}</li>
+ * <li>{@code INDEX_CALLER_FRAME_INFO (PFrame.Reference)}</li>
+ * <li>{@code INDEX_CURRENT_FRAME_INFO (PFrame.Reference)}</li>
+ * <li>{@code INDEX_CURRENT_EXCEPTION (PException)}</li>
+ * <li>{@code USER_ARGUMENTS (Object...)}; Further defined by a particular call convention:
+ * <ul>
+ * <li>Function calls: non-variadic arguments as individual items in order of {@code co_varnames},
+ * then varargs as {@code Object[]} iff the function takes them, then variadic keywords as
+ * {@code PKeyword[]} iff the function takes them. Implemented by {@link CreateArgumentsNode}</li>
+ * <li>Generator resumes (non-DSL): generator frame ({@code MaterializedFrame}), then the send value
+ * or null</li>
+ * <li>Generator resumes (DSL): doesn't use PArguments to call the continuation root</li>
+ * </ul>
+ * </li>
+ * </ul>
  */
-//@formatter:on
 public final class PArguments {
     private static final int INDEX_SPECIAL_ARGUMENT = 0;
     private static final int INDEX_GLOBALS_ARGUMENT = 1;

@@ -59,6 +59,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Idempotent;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -76,6 +77,7 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 @ReportPolymorphism
 @GenerateUncached
 @GenerateInline(false)       // footprint reduction 36 -> 17
+@ImportStatic(PGenerator.class)
 public abstract class MaterializeFrameNode extends Node {
 
     @NeverDefault
@@ -149,7 +151,7 @@ public abstract class MaterializeFrameNode extends Node {
                     @Shared("syncValuesNode") @Cached SyncFrameValuesNode syncValuesNode,
                     @Cached InlinedConditionProfile syncProfile) {
         PFrame pyFrame = getPFrame(frameToMaterialize);
-        if (syncProfile.profile(inliningTarget, forceSync && !isGeneratorFrame(frameToMaterialize))) {
+        if (syncProfile.profile(inliningTarget, forceSync && !PGenerator.isGeneratorFrame(frameToMaterialize))) {
             syncValuesNode.execute(pyFrame, frameToMaterialize);
         }
         if (markAsEscaped) {
@@ -209,17 +211,6 @@ public abstract class MaterializeFrameNode extends Node {
         }
         processBytecodeFrame(frameToMaterialize, escapedFrame, location);
         return escapedFrame;
-    }
-
-    protected static boolean isGeneratorFrame(Frame frame) {
-        if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-            return false;
-        }
-        Object frameInfo = frame.getFrameDescriptor().getInfo();
-        if (frameInfo instanceof BytecodeFrameInfo bytecodeFrameInfo) {
-            return bytecodeFrameInfo.getCodeUnit().isGeneratorOrCoroutine();
-        }
-        return false;
     }
 
     protected static boolean hasCustomLocals(Frame frame) {

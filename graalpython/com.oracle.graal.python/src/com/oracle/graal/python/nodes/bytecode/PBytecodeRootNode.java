@@ -3298,10 +3298,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     private void syncLocalsBackToFrame(VirtualFrame virtualFrame, PFrame pyFrame, int bci) {
-        Frame localFrame = virtualFrame;
-        if (co.isGeneratorOrCoroutine()) {
-            localFrame = PArguments.getGeneratorFrame(virtualFrame);
-        }
+        Frame localFrame = getLocalFrame(virtualFrame);
         if (pyFrame.localsAccessed()) {
             enterTraceProfile(bci, TRACE_PROFILE_SYNC_LOCALS_BACK);
             GetFrameLocalsNode.syncLocalsBackToFrame(co, this, pyFrame, localFrame);

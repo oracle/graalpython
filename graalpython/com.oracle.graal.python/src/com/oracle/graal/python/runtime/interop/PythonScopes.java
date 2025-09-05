@@ -45,7 +45,6 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.nodes.bytecode.BytecodeFrameInfo;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -94,7 +93,7 @@ public final class PythonScopes implements TruffleObject {
         if (frame != null) {
             PythonObject globals = PArguments.getGlobalsSafe(frame);
             MaterializedFrame generatorFrame = null;
-            if (frame.getFrameDescriptor().getInfo() instanceof BytecodeFrameInfo frameInfo && frameInfo.getCodeUnit().isGeneratorOrCoroutine()) {
+            if (PGenerator.isGeneratorFrame(frame)) {
                 generatorFrame = PGenerator.getGeneratorFrame(frame);
             }
             Object globalsScope = null;

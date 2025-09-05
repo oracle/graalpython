@@ -42,9 +42,12 @@ import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLFrameInfo;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.bytecode.ContinuationResult;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.MaterializedFrame;
@@ -196,16 +199,47 @@ public class PGenerator extends PythonBuiltinObject {
         }
     }
 
+    public static boolean isGeneratorFrame(Frame frame) {
+        if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+            return false;
+        }
+        Object frameInfo = frame.getFrameDescriptor().getInfo();
+        if (frameInfo instanceof BytecodeFrameInfo bytecodeFrameInfo) {
+            return bytecodeFrameInfo.getCodeUnit().isGeneratorOrCoroutine();
+        }
+        return false;
+    }
+
     public static MaterializedFrame getGeneratorFrame(Object[] arguments) {
+        assert !PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER;
         return (MaterializedFrame) PArguments.getArgument(arguments, 0);
     }
 
     public static MaterializedFrame getGeneratorFrame(Frame frame) {
+        assert isGeneratorFrame(frame);
         return getGeneratorFrame(frame.getArguments());
     }
 
     public MaterializedFrame getGeneratorFrame() {
-        return frame;
+        if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+            ContinuationResult continuation = getContinuation();
+            if (continuation == null) {
+                return fakeNonstartedFrame();
+            }
+            return continuation.getFrame();
+        } else {
+            return frame;
+        }
+    }
+
+    @TruffleBoundary
+    private MaterializedFrame fakeNonstartedFrame() {
+        // TODO: GR-67147: implement properly, frame needs to be retrieved before
+        // first use for coroutines
+        Object[] arguments = getBytecodeDSLState().arguments;
+        Object[] args = new Object[arguments.length];
+        PythonUtils.arraycopy(arguments, 0, args, 0, arguments.length);
+        return Truffle.getRuntime().createMaterializedFrame(args);
     }
 
     public static Object getSendValue(Object[] arguments) {
