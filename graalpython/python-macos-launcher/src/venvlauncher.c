@@ -1,3 +1,43 @@
+/*
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ *
+ * The Universal Permissive License (UPL), Version 1.0
+ *
+ * Subject to the condition set forth below, permission is hereby granted to any
+ * person obtaining a copy of this software, associated documentation and/or
+ * data (collectively the "Software"), free of charge and under any and all
+ * copyright rights in the Software, and any and all patent rights owned or
+ * freely licensable by each licensor hereunder covering either (i) the
+ * unmodified Software as contributed to or provided by such licensor, or (ii)
+ * the Larger Works (as defined below), to deal in both
+ *
+ * (a) the Software, and
+ *
+ * (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
+ * one is included with the Software each a "Larger Work" to which the Software
+ * is contributed by such licensors),
+ *
+ * without restriction, including without limitation the rights to copy, create
+ * derivative works of, display, perform, and distribute the Software and make,
+ * use, sell, offer for sale, import, export, have made, and have sold the
+ * Software and the Larger Work(s), and to sublicense the foregoing rights on
+ * either these or other terms.
+ *
+ * This license is subject to the following condition:
+ *
+ * The above copyright notice and either this complete permission notice or at a
+ * minimum a reference to the UPL must be included in all copies or substantial
+ * portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,17 +58,18 @@
  * Returns a newly allocated string. Caller must free() it.
  */
 char *get_pyenvcfg_command(const char *pyenv_cfg_path) {
-    const FILE *fp = fopen(pyenv_cfg_path, "r");
+    FILE *fp = fopen(pyenv_cfg_path, "r");
     if (fp == NULL) {
         fprintf(stderr, "Failed to open pyenv.cfg file!\n");
         exit(1);
     }
 
-    char current_line[MAX_LINE];
-    const char *key = "venvlauncher_command";
-    size_t key_len = strlen(key);
+    char *current_line = NULL;
+    size_t current_line_size = 0;
+    const char key[] = "venvlauncher_command";
+    size_t key_len = sizeof(key) - 1;
 
-    while (fgets(current_line, sizeof(current_line), fp)) {
+    while (getline(&current_line, &current_line_size, fp) != -1) {
         char *p = current_line;
 
         while (isspace((unsigned char) *p)) p++;
@@ -38,25 +79,40 @@ char *get_pyenvcfg_command(const char *pyenv_cfg_path) {
 
             // Skip spaces and '='
             while (isspace((unsigned char) *p)) p++;
-            if (*p == '=') p++;
+            if (*p == '=') {
+                p++;
+            } else {
+                fprintf(stderr, "venv command is not in correct format. Expected '=' after the venvlauncher_command");
+                free(current_line);
+                fclose(fp);
+                exit(1);
+            }
             while (isspace((unsigned char) *p)) p++;
             if (*p == '\"') {
                 char *end = p + strlen(p);
-                while (isspace((unsigned char) end[-1]) || end[-1] == '\n') {
+                while (end > p && (isspace((unsigned char) end[-1]) || end[-1] == '\n')) {
                     *--end = '\0';
                 }
-                if (end[-1] != '\"') {
-                    fprintf(stderr, "venv command is not in correct format!");
+                if (end <= p + 1 || end[-1] != '\"') {
+                    fprintf(stderr, "venv command is not in correct format");
+                    free(current_line);
+                    fclose(fp);
                     exit(1);
                 }
                 p++;
                 end[-1] = '\0';
             }
 
+            char *result = strdup(p);
+            free(current_line);
             fclose(fp);
-            return strdup(p);
+            return result;
+
         }
     }
+    free(current_line);
+    fprintf(stderr, "venvlauncher_command not found in pyenv.cfg file");
+    exit(1);
 }
 
 void split_venv_command_into_args(char *venv_command, char *result[]) {
@@ -144,3 +200,4 @@ int main(int argc, char *argv[]) {
     perror("execv failed"); // only runs if execv fails
     return 1;
 }
+
