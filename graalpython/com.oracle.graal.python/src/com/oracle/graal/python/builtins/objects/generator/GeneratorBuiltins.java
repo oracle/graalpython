@@ -60,7 +60,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.bytecode.BytecodeLocation;
-import com.oracle.truffle.api.bytecode.ContinuationResult;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -190,8 +189,7 @@ public final class GeneratorBuiltins extends PythonBuiltins {
                 return PNone.NONE;
             } else {
                 if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                    ContinuationResult continuation = self.getContinuation();
-                    BytecodeLocation location = continuation != null ? continuation.getBytecodeLocation() : null;
+                    BytecodeLocation location = self.getCurrentRootNode().getLocation();
                     MaterializedFrame generatorFrame = self.getGeneratorFrame();
                     BytecodeDSLFrameInfo info = (BytecodeDSLFrameInfo) generatorFrame.getFrameDescriptor().getInfo();
                     PFrame frame = MaterializeFrameNode.materializeGeneratorFrame(location != null ? location.getBytecodeNode() : null, generatorFrame, PFrame.Reference.EMPTY);

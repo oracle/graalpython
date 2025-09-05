@@ -73,6 +73,15 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 /**
  * This node makes sure that the current frame has a filled-in PFrame object with a backref
  * container that will be filled in by the caller.
+ * <p>
+ * In the case of Bytecode DSL generators, the caller of this node must ensure that the
+ * {@code frameToMaterialize} argument is the generator materialized frame and not the virtual frame
+ * of the Bytecode DSL continuation root node, i.e., the caller is responsible, if necessary, to
+ * unwrap the continuation materialized frame from such frames.
+ * <p>
+ * A virtual frame of the Bytecode DSL continuation root node may appear during Truffle stack walk,
+ * otherwise the current frame used for execution of GraalPy AST nodes inside a generator is always
+ * the materialized generator frame.
  **/
 @ReportPolymorphism
 @GenerateUncached
@@ -102,7 +111,12 @@ public abstract class MaterializeFrameNode extends Node {
         return execute(location, markAsEscaped, forceSync, frameToMaterialize);
     }
 
-    public abstract PFrame execute(Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize);
+    public final PFrame execute(Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize) {
+        assert !PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER || frameToMaterialize.getArguments().length != 2 : "caller forgot to unwrap continuation frame";
+        return executeImpl(location, markAsEscaped, forceSync, frameToMaterialize);
+    }
+
+    public abstract PFrame executeImpl(Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize);
 
     @Specialization(guards = {
                     "cachedFD == frameToMaterialize.getFrameDescriptor()", //
@@ -177,7 +191,12 @@ public abstract class MaterializeFrameNode extends Node {
             return;
         }
         if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-            BytecodeNode bytecodeNode = BytecodeNode.get(location);
+            BytecodeNode bytecodeNode;
+            if (location instanceof PBytecodeDSLRootNode dslRootNode) {
+                bytecodeNode = dslRootNode.getBytecodeNode();
+            } else {
+                bytecodeNode = BytecodeNode.get(location);
+            }
             if (bytecodeNode == null) {
                 /*
                  * Sometimes we don't have a precise location (see {@link

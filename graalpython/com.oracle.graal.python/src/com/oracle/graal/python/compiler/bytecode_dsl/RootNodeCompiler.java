@@ -944,6 +944,12 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             addConstant(PNone.NONE);
         }
 
+        if (scope.isGenerator() || scope.isCoroutine()) {
+            b.beginResumeYieldGenerator();
+            b.emitYieldGenerator();
+            b.endResumeYieldGenerator();
+        }
+
         StatementCompiler statementCompiler = new StatementCompiler(b);
 
         if (isLambda) {
@@ -1106,6 +1112,12 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         return compileRootNode(name, new ArgumentInfo(1, 0, 0, false, false), node.getSourceRange(), b -> {
             beginRootNode(node, null, b);
 
+            if (node instanceof GeneratorExp) {
+                b.beginResumeYieldGenerator();
+                b.emitYieldGenerator();
+                b.endResumeYieldGenerator();
+            }
+
             StatementCompiler statementCompiler = new StatementCompiler(b);
             boolean isGenerator = emptyCollectionProducer == null;
             BytecodeLocal collectionLocal = null;
@@ -1127,6 +1139,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
             beginReturn(b);
             if (isGenerator) {
+                // TODO: what if someone sends us some value?
                 b.emitLoadConstant(PNone.NONE);
             } else {
                 b.emitLoadLocal(collectionLocal);
@@ -1265,11 +1278,9 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         }
 
         statementCompiler.b.beginResumeYield(generatorExceptionStateLocal, savedExLocal);
-        statementCompiler.b.beginYield();
-        statementCompiler.b.beginPreYield(generatorExceptionStateLocal);
+        statementCompiler.b.beginYieldFromGenerator(generatorExceptionStateLocal);
         yieldValueProducer.accept(statementCompiler);
-        statementCompiler.b.endPreYield();
-        statementCompiler.b.endYield();
+        statementCompiler.b.endYieldFromGenerator();
         statementCompiler.b.endResumeYield();
     }
 

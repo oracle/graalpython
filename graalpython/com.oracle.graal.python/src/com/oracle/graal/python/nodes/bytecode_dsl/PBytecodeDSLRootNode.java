@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TypingModuleBuiltins.CallTypingFuncObjectNode;
 import com.oracle.graal.python.builtins.modules.TypingModuleBuiltins.UnpackTypeVarTuplesNode;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.asyncio.GetAwaitableNode;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
@@ -234,6 +235,8 @@ import com.oracle.truffle.api.bytecode.BytecodeLocation;
 import com.oracle.truffle.api.bytecode.BytecodeNode;
 import com.oracle.truffle.api.bytecode.BytecodeRootNode;
 import com.oracle.truffle.api.bytecode.ConstantOperand;
+import com.oracle.truffle.api.bytecode.ContinuationResult;
+import com.oracle.truffle.api.bytecode.ContinuationRootNode;
 import com.oracle.truffle.api.bytecode.EpilogExceptional;
 import com.oracle.truffle.api.bytecode.EpilogReturn;
 import com.oracle.truffle.api.bytecode.GenerateBytecode;
@@ -247,6 +250,7 @@ import com.oracle.truffle.api.bytecode.Prolog;
 import com.oracle.truffle.api.bytecode.ShortCircuitOperation;
 import com.oracle.truffle.api.bytecode.ShortCircuitOperation.Operator;
 import com.oracle.truffle.api.bytecode.Variadic;
+import com.oracle.truffle.api.bytecode.Yield;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -260,6 +264,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
+import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
@@ -812,9 +817,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         return ex;
     }
 
-    // TODO: ContinuationRootNodeImpl does not provide this, nor it is PRootNode, do we need to
-    // handle it in ReadCallerFrame#getFrame, and other places that iterate frames and/or check if a
-    // root node is PRootNode?
     @Override
     public boolean setsUpCalleeContext() {
         return true;
@@ -984,6 +986,126 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             // Let interop exceptions be
             assert ex instanceof AbstractTruffleException;
             return ex;
+        }
+    }
+
+    /**
+     * This yield is always the first instruction executed in a generator function after the usual
+     * function prolog.
+     * <p>
+     * This allows us to have the same root node calling convention and type for generator functions
+     * and for regular functions and don't make any distinction between them on the caller side.
+     * <p>
+     * Moreover, we can share the same root node for the generator function, and the generator
+     * function body, which follows after this first "internal" yield. At this point when we are
+     * creating the {@link PGenerator} object, we already have what will be the generator frame with
+     * all the prolog executed (so arguments shuffled into the right locals, etc.). Note: Python
+     * provides access to the generator frame even before the generator was started.
+     */
+    @Yield
+    public static final class YieldGenerator {
+        @Specialization
+        public static Object doYield(
+                        @Bind MaterializedFrame continuationFrame,
+                        @Bind Node inliningTarget,
+                        @Bind ContinuationRootNode continuationRootNode,
+                        @Bind PBytecodeDSLRootNode innerRoot,
+                        @Cached InlinedConditionProfile isIterableCoroutine) {
+            Object result = createGenerator(continuationFrame, inliningTarget, continuationRootNode, innerRoot, isIterableCoroutine);
+            if (innerRoot.needsTraceAndProfileInstrumentation()) {
+                innerRoot.getThreadState().popInstrumentationData(innerRoot);
+            }
+            innerRoot.calleeContext.exit(continuationFrame, innerRoot);
+            return result;
+        }
+
+        private static PythonAbstractObject createGenerator(MaterializedFrame continuationFrame, Node inliningTarget,
+                        ContinuationRootNode continuationRootNode, PBytecodeDSLRootNode innerRoot,
+                        InlinedConditionProfile isIterableCoroutine) {
+            Object[] arguments = continuationFrame.getArguments();
+            PFunction generatorFunction = PArguments.getFunctionObject(arguments);
+            assert generatorFunction != null;
+            PythonLanguage language = PythonLanguage.get(inliningTarget);
+            if (innerRoot.getCodeUnit().isGenerator()) {
+                // if CO_ITERABLE_COROUTINE was explicitly set (likely by types.coroutine), we have
+                // to pass the information to the generator .gi_code.co_flags will still be wrong,
+                // but at least await will work correctly
+                if (isIterableCoroutine.profile(inliningTarget, (generatorFunction.getCode().getFlags() & 0x100) != 0)) {
+                    return PFactory.createIterableCoroutine(language, generatorFunction, innerRoot, arguments, continuationRootNode, continuationFrame);
+                } else {
+                    return PFactory.createGenerator(language, generatorFunction, innerRoot, arguments, continuationRootNode, continuationFrame);
+                }
+            } else if (innerRoot.getCodeUnit().isCoroutine()) {
+                return PFactory.createCoroutine(language, generatorFunction, innerRoot, arguments, continuationRootNode, continuationFrame);
+            } else if (innerRoot.getCodeUnit().isAsyncGenerator()) {
+                /*
+                 * TODO: Support async generators in Bytecode DSL.
+                 *
+                 * We need to produce something instead of failing here because async generators are
+                 * instantiated in frozen module code.
+                 */
+                return PNone.NONE;
+            }
+            throw CompilerDirectives.shouldNotReachHere("Unknown generator/coroutine type");
+        }
+    }
+
+    /**
+     * Resumes execution after the artificial yield of the generator object
+     * ({@link YieldGenerator}).
+     */
+    @Operation
+    public static final class ResumeYieldGenerator {
+        @Specialization
+        public static void doObject(VirtualFrame frame, Object generator,
+                        @Bind Node location,
+                        @Bind PBytecodeDSLRootNode root,
+                        @Bind BytecodeNode bytecode,
+                        @Bind("$bytecodeIndex") int bci,
+                        @Cached GetSendValueNode getSendValue) {
+            root.calleeContext.enter(frame);
+            if (root.needsTraceAndProfileInstrumentation()) {
+                // We may not have reparsed the root with instrumentation yet.
+                root.ensureTraceAndProfileEnabled();
+                root.getThreadState().pushInstrumentationData(root);
+                root.traceOrProfileCall(frame, location, bytecode, bci);
+            }
+        }
+    }
+
+    /**
+     * Performs some clean-up steps before suspending execution, and updates the generator state.
+     */
+    @Yield
+    @ConstantOperand(type = LocalAccessor.class)
+    public static final class YieldFromGenerator {
+        @Specialization
+        public static Object doObject(LocalAccessor currentGeneratorException, Object value,
+                        @Bind ContinuationRootNode continuationRootNode,
+                        @Bind MaterializedFrame frame,
+                        @Bind Node location,
+                        @Bind PBytecodeDSLRootNode root,
+                        @Bind BytecodeNode bytecode) {
+            if (root.needsTraceAndProfileInstrumentation()) {
+                root.traceOrProfileReturn(frame, location, value);
+                root.getThreadState().popInstrumentationData(root);
+            }
+
+            if (!currentGeneratorException.isCleared(bytecode, frame)) {
+                Object genEx = currentGeneratorException.getObject(bytecode, frame);
+                if (genEx instanceof PException pe) {
+                    /*
+                     * The frame reference is only valid for this particular resumption of the
+                     * generator, so we need to materialize the frame to make sure the traceback
+                     * will still be valid in the next resumption.
+                     */
+                    pe.markEscaped();
+                }
+            }
+
+            // we may need to synchronize the generator's frame locals to the PFrame if it escaped
+            root.calleeContext.exit(frame, root, location);
+            return ContinuationResult.create(continuationRootNode, frame, value);
         }
     }
 
@@ -1236,8 +1358,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         Object annotations,
                         @Bind PBytecodeDSLRootNode rootNode,
                         @Cached(value = "createFunctionRootNode(rootNode, codeUnit)", adopt = false) PBytecodeDSLRootNode functionRootNode,
-                        @Cached(value = "createGeneratorRootNode(rootNode, functionRootNode, codeUnit)", adopt = false) PBytecodeDSLGeneratorFunctionRootNode generatorRootNode,
-                        @Cached("createCode(rootNode, codeUnit, generatorRootNode)") PCode cachedCode,
+                        @Cached("createCode(rootNode, codeUnit, functionRootNode)") PCode cachedCode,
                         @Shared @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
             return createFunction(frame, name, qualifiedName, codeUnit.getDocstring(), cachedCode, defaults, kwDefaultsObject, closure, annotations, rootNode, dylib);
         }
@@ -1253,9 +1374,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         Object annotations,
                         @Bind PBytecodeDSLRootNode rootNode,
                         @Cached(value = "createFunctionRootNode(rootNode, codeUnit)", adopt = false) PBytecodeDSLRootNode functionRootNode,
-                        @Cached(value = "createGeneratorRootNode(rootNode, functionRootNode, codeUnit)", adopt = false) PBytecodeDSLGeneratorFunctionRootNode generatorRootNode,
                         @Shared @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
-            PCode code = createCode(rootNode, codeUnit, generatorRootNode);
+            PCode code = createCode(rootNode, codeUnit, functionRootNode);
             return createFunction(frame, name, qualifiedName, codeUnit.getDocstring(), code, defaults, kwDefaultsObject, closure, annotations, rootNode, dylib);
         }
 
@@ -1267,12 +1387,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @NeverDefault
         protected static PBytecodeDSLRootNode createFunctionRootNode(PBytecodeDSLRootNode outerRootNode, BytecodeDSLCodeUnit codeUnit) {
             return codeUnit.createRootNode(PythonContext.get(outerRootNode), outerRootNode.getSource());
-        }
-
-        @NeverDefault
-        protected static PBytecodeDSLGeneratorFunctionRootNode createGeneratorRootNode(PBytecodeDSLRootNode outerRootNode, PBytecodeDSLRootNode functionRootNode,
-                        BytecodeDSLCodeUnit codeUnit) {
-            return new PBytecodeDSLGeneratorFunctionRootNode(PythonLanguage.get(outerRootNode), functionRootNode.getFrameDescriptor(), functionRootNode, codeUnit.name);
         }
 
         @NeverDefault
@@ -3145,41 +3259,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     /**
-     * Performs some clean-up steps before suspending execution.
-     */
-    @Operation
-    @ConstantOperand(type = LocalAccessor.class)
-    public static final class PreYield {
-        @Specialization
-        public static Object doObject(VirtualFrame frame, LocalAccessor currentGeneratorException, Object value,
-                        @Bind Node location,
-                        @Bind PBytecodeDSLRootNode root,
-                        @Bind BytecodeNode bytecode,
-                        @Cached CalleeContext calleeContext) {
-            if (root.needsTraceAndProfileInstrumentation()) {
-                root.traceOrProfileReturn(frame, location, value);
-                root.getThreadState().popInstrumentationData(root);
-            }
-
-            if (!currentGeneratorException.isCleared(bytecode, frame)) {
-                Object genEx = currentGeneratorException.getObject(bytecode, frame);
-                if (genEx instanceof PException pe) {
-                    /*
-                     * The frame reference is only valid for this particular resumption of the
-                     * generator, so we need to materialize the frame to make sure the traceback
-                     * will still be valid in the next resumption.
-                     */
-                    pe.markEscaped();
-                }
-            }
-
-            // we may need to synchronize the generator's frame locals to the PFrame if it escaped
-            calleeContext.exit(frame, root, location);
-            return value;
-        }
-    }
-
-    /**
      * Resumes execution after yield.
      */
     @Operation
@@ -3192,9 +3271,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind PBytecodeDSLRootNode root,
                         @Bind BytecodeNode bytecode,
                         @Bind("$bytecodeIndex") int bci,
-                        @Cached CalleeContext calleeContext,
                         @Cached GetSendValueNode getSendValue) {
-            calleeContext.enter(frame);
+            root.calleeContext.enter(frame);
             if (savedException != currentGeneratorException) {
                 // We cannot pass `null` as savedException, so savedException ==
                 // currentGeneratorException means "no saveException"

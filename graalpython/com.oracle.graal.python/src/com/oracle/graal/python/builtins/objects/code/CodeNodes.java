@@ -56,8 +56,6 @@ import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
-import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLGeneratorFunctionRootNode;
-import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.util.BadOPCodeNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData;
@@ -163,9 +161,6 @@ public abstract class CodeNodes {
             if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
                 BytecodeDSLCodeUnit code = (BytecodeDSLCodeUnit) codeUnit;
                 rootNode = code.createRootNode(context, PythonUtils.createFakeSource());
-                if (code.isGeneratorOrCoroutine()) {
-                    rootNode = new PBytecodeDSLGeneratorFunctionRootNode(language, rootNode.getFrameDescriptor(), (PBytecodeDSLRootNode) rootNode, code.name);
-                }
             } else {
                 BytecodeCodeUnit code = (BytecodeCodeUnit) codeUnit;
                 if (cellvars != null && !Arrays.equals(code.cellvars, cellvars) || freevars != null && !Arrays.equals(code.freevars, freevars)) {
