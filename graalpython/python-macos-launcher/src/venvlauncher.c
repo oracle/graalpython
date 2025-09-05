@@ -115,16 +115,43 @@ char *get_pyenvcfg_command(const char *pyenv_cfg_path) {
     exit(1);
 }
 
-void split_venv_command_into_args(char *venv_command, char *result[]) {
-    char *current_token = strtok(venv_command, " ");
-    for (int i = 0; i < 5; i++) {
-        result[i] = current_token;
-        current_token = strtok(NULL, " ");
-    }
-    if (current_token != NULL) {
-        fprintf(stderr, "Unexpected venv_command size!\n");
+char **split_venv_command_into_args(char *venv_command, int *argc_out) {
+
+    char *copy = strdup(venv_command);
+    size_t capacity = 5;
+    char **args = malloc(capacity * sizeof(char *));
+    if (!args) {
+        fprintf(stderr, "allocation failed failed\n");
+        free(copy);
         exit(1);
     }
+
+    size_t count = 0;
+    char *current_token = strtok(venv_command, " ");
+    while (current_token) {
+        if (count >= capacity) {
+            capacity *= 2;
+            char **tmp = realloc(args, capacity * sizeof(char *));
+            if (!tmp) {
+                // allocation failed
+                fprintf(stderr, "reallocation failed\n");
+                for (size_t i = 0; i < count; i++) {
+                    free(args[i]);
+                }
+                free(args);
+                free(copy);
+                exit(1);
+            }
+            args = tmp;
+        }
+
+        args[count++] = strdup(current_token);
+        current_token = strtok(NULL, " ");
+    }
+
+    free(copy);
+    *argc_out = (int) count;
+    return args;
 }
 
 void find_pyvenv(char *pyvenv_cfg_path, size_t path_size) {
@@ -157,10 +184,9 @@ int main(int argc, char *argv[]) {
     find_pyvenv(pyvenv_cfg_path, sizeof(pyvenv_cfg_path));
 
     char *venv_command = get_pyenvcfg_command(pyvenv_cfg_path);
-    char *venv_command_dup = strdup(venv_command);
 
-    char *venv_args[5];
-    split_venv_command_into_args(venv_command_dup, venv_args);
+    int venv_argc = 0;
+    char **venv_args = split_venv_command_into_args(venv_command, &venv_argc);
 
     // Adds "--python.VenvlauncherCommand="
     size_t python_base_exec_size = strlen(venv_command) + strlen(GRAAL_PYTHON_BASE_EXE_ARG) + 2 + 1;
@@ -176,13 +202,13 @@ int main(int argc, char *argv[]) {
              GRAAL_PYTHON_EXE_ARG,
              argv[0]);
 
-    // venv_args (5) + "--python.VenvlauncherCommand=" + Adds "--python.Executable=" + rest of argc + NULL
-    size_t args_size = 5 + 2 + (argc - 1) + 1;
+    // venv_args + "--python.VenvlauncherCommand=" + Adds "--python.Executable=" + rest of argc (-1 because we are not interested in argv[0]) + NULL
+    size_t args_size = venv_argc + 2 + (argc - 1) + 1;
     char *args[args_size];
 
     // copy venv_args
     int k = 0;
-    for (k = 0; k < 5; k++) {
+    for (k = 0; k < venv_argc; k++) {
         args[k] = venv_args[k];
     }
 
@@ -200,4 +226,3 @@ int main(int argc, char *argv[]) {
     perror("execv failed"); // only runs if execv fails
     return 1;
 }
-
