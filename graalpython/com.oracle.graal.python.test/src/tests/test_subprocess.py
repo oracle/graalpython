@@ -2,9 +2,16 @@
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
+import os
+import shlex
+import tempfile
+import textwrap
 import unittest
 import sys
+from subprocess import CalledProcessError
+from tempfile import mkdtemp
 
+POSIX_BACKEND_IS_JAVA = sys.implementation.name == "graalpy" and __graalpython__.posix_module_backend != 'java'
 
 def test_os_pipe():
     import os
@@ -100,48 +107,77 @@ class TestSubprocess(unittest.TestCase):
             p.kill()
             p.wait()
 
-    # @unittest.skipIf(sys.platform == 'win32', "Posix-specific")
-    # Skipped because of transient: GR-66709
-    @unittest.skip
+    def _run_in_new_group(self, code):
+        def safe_decode(x):
+            return '' if not x else x.decode().strip()
+        filename = None
+        try:
+            with tempfile.NamedTemporaryFile(delete=False) as f:
+                f.write(textwrap.dedent(code.strip(' ').strip('\n')).encode('ascii'))
+                filename = f.name
+            subprocess.check_output([sys.executable, filename], start_new_session=True)
+        except CalledProcessError as e:
+            print(f"ERROR running {code}. Stdout:")
+            print(safe_decode(e.stdout))
+            print("===== stderr:")
+            print(safe_decode(e.stderr))
+            print("=============")
+        finally:
+            if filename:
+               os.remove(filename)
+            pass
+
+    @unittest.skipIf(sys.platform == 'win32' or POSIX_BACKEND_IS_JAVA, "Posix-specific")
     def test_waitpid_group_child(self):
-        import os
-        p = subprocess.Popen([sys.executable, "-c", "import time; print('before'); time.sleep(0.1); print('after'); 42"],
-                             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
-        ps_list = 'not available'
-        if sys.implementation.name == "graalpy" and \
-                __graalpython__.posix_module_backend != 'java' \
-                and sys.platform.startswith("linux"):
-            ps_list = subprocess.check_output("ps", shell=True, text=True)
-        res = os.waitpid(0, 0)
-        msg = f"Spawned {p.pid=}, os.waitpid result={res}, output of ps:\n{ps_list}"
-        try:
-            stdout, stderr = p.communicate(timeout=5)
-        except subprocess.TimeoutExpired:
-            p.kill()
-            stdout, stderr = p.communicate()
-        msg += f"\n{stdout.decode().strip()=}, {stderr.decode().strip()=}"
-        assert res[1] == 0, msg
+        code = '''
+            import os
+            import sys
+            import subprocess
+            p = subprocess.Popen([sys.executable, "-c", "import time; print('before'); time.sleep(0.1); print('after'); 42"],
+                                 stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE)
+            ps_list = 'not available'
+            if sys.implementation.name == "graalpy" and \\
+                    and sys.platform.startswith("linux"):
+                ps_list = subprocess.check_output("ps", shell=True, text=True)
+            res = os.waitpid(0, 0)
+            msg = f"Spawned {p.pid=}, os.waitpid result={res}, output of ps:\\n{ps_list}"
+            try:
+                stdout, stderr = p.communicate(timeout=5)
+            except subprocess.TimeoutExpired:
+                p.kill()
+                stdout, stderr = p.communicate()
+            msg += f"\\n{stdout.decode().strip()=}, {stderr.decode().strip()=}"
+            assert res[1] == 0, msg
+        '''
+        self._run_in_new_group(code)
 
-    # @unittest.skipIf(sys.platform == 'win32', "Posix-specific")
-    # Skipped because of transient: https://jira.oci.oraclecorp.com/browse/GR-65714
-    @unittest.skip
+    @unittest.skipIf(sys.platform == 'win32' or POSIX_BACKEND_IS_JAVA, "Posix-specific")
     def test_waitpid_any_child(self):
-        import os
-        p = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(0.1); 42"])
-        res = os.waitpid(-1, 0)
-        assert res[1] == 0, res
+        code = '''
+            import os
+            import sys
+            import subprocess
+            p = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(0.1); 42"])
+            res = os.waitpid(-1, 0)
+            assert res[1] == 0, res
+        '''
+        self._run_in_new_group(code)
 
     # Skipped because of transient: GR-66709
-    @unittest.skip
+    @unittest.skipIf(sys.platform == 'win32', "Posix-specific")
     def test_waitpid_no_child(self):
-        import os
-        try:
-            os.waitpid(-1, 0)
-        except ChildProcessError:
-            assert True
-        else:
-            assert False
+        code = '''
+            import os
+            try:
+                os.waitpid(-1, 0)
+            except ChildProcessError:
+                assert True
+            else:
+                assert False
+        '''
+        self._run_in_new_group(code)
+
 
     def test_kill(self):
         import os
