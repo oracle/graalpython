@@ -115,7 +115,7 @@ char *get_pyenvcfg_command(const char *pyenv_cfg_path) {
     exit(1);
 }
 
-char **split_venv_command_into_args(char *venv_command, int *argc_out) {
+char **split_venv_command_into_args(const char *venv_command, int *argc_out) {
 
     char *copy = strdup(venv_command);
     size_t capacity = 5;
@@ -127,7 +127,7 @@ char **split_venv_command_into_args(char *venv_command, int *argc_out) {
     }
 
     size_t count = 0;
-    char *current_token = strtok(venv_command, " ");
+    char *current_token = strtok(copy, " ");
     while (current_token) {
         if (count >= capacity) {
             capacity *= 2;
@@ -189,6 +189,8 @@ int main(int argc, char *argv[]) {
     char **venv_args = split_venv_command_into_args(venv_command, &venv_argc);
 
     // Adds "--python.VenvlauncherCommand="
+    // + 2 for quotes
+    // + 1 for '\0'
     size_t python_base_exec_size = strlen(venv_command) + strlen(GRAAL_PYTHON_BASE_EXE_ARG) + 2 + 1;
     char python_base_exec_command[python_base_exec_size];
     snprintf(python_base_exec_command, python_base_exec_size, "%s\"%s\"", GRAAL_PYTHON_BASE_EXE_ARG, venv_command);
