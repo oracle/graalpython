@@ -41,8 +41,8 @@
 package com.oracle.graal.python.builtins.objects.ints;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
-import static com.oracle.graal.python.nodes.ErrorMessages.BITWISE_INVERSION_OF_THE_UNDERLYING_INT;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_INT;
+import static com.oracle.graal.python.nodes.ErrorMessages.BITWISE_INVERSION_OF_THE_UNDERLYING_INT;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CEIL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FLOOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FORMAT__;
@@ -65,10 +65,10 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -813,7 +813,7 @@ public final class IntBuiltins extends PythonBuiltins {
                 }
                 return Math.floorDiv(left, rightValue);
             } catch (OverflowException e) {
-                return left < 0 == right.isNegative() ? 0 : -1;
+                return left == 0 || left < 0 == right.isNegative() ? 0 : -1;
             }
         }
 
@@ -831,7 +831,7 @@ public final class IntBuiltins extends PythonBuiltins {
                 }
                 return Math.floorDiv(left, rightValue);
             } catch (OverflowException e) {
-                return left < 0 == right.isNegative() ? 0 : -1;
+                return left == 0 || left < 0 == right.isNegative() ? 0 : -1;
             }
         }
 
