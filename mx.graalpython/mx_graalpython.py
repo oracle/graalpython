@@ -290,7 +290,11 @@ def libpythonvm_build_args():
     ):
         vc = SUITE.vc
         commit = str(vc.tip(SUITE.dir)).strip()
-        branch = str(vc.active_branch(SUITE.dir)).strip()
+        try:
+            branch = str(vc.active_branch(SUITE.dir)).strip()
+        except Exception:
+            branch = "master"
+
         if shutil.which("artifact_download"):
             # This is always available in the GraalPy CI
             profile = "cached_profile.iprof.gz"
