@@ -295,17 +295,17 @@ def libpythonvm_build_args():
         except Exception:
             branch = "master"
 
-        if shutil.which("artifact_download"):
+        if script := os.environ.get("ARTIFACT_DOWNLOAD_SCRIPT"):
             # This is always available in the GraalPy CI
             profile = "cached_profile.iprof.gz"
             run(
                 [
-                    "artifact_download",
+                    sys.executable,
+                    script,
                     f"graalpy/{commit}",
                     profile,
                 ],
                 nonZeroIsFatal=False,
-                env={"UPLOADER_PYTHON": sys.executable, **os.environ},
             )
         else:
             # Locally, we try to get a reasonable profile
@@ -419,10 +419,11 @@ def graalpy_native_pgo_build_and_test(args=None):
         shutil.copyfileobj(f_in, f_out)
     mx.log(mx.colorize(f"[PGO] Gzipped profile at: {iprof_gz_path}", color="yellow"))
 
-    if shutil.which("artifact_uploader"):
+    if script := os.environ.get("ARTIFACT_UPLOADER_SCRIPT"):
         run(
             [
-                "artifact_uploader",
+                sys.executable,
+                script,
                 iprof_gz_path,
                 str(SUITE.vc.tip(SUITE.dir)).strip(),
                 "graalpy",
@@ -431,7 +432,6 @@ def graalpy_native_pgo_build_and_test(args=None):
                 "--artifact-repo-key",
                 os.environ.get("ARTIFACT_REPO_KEY_LOCATION"),
             ],
-            env={"UPLOADER_PYTHON": sys.executable, **os.environ},
         )
 
     if args is None:
