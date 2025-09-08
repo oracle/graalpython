@@ -292,7 +292,7 @@ class GraalPythonVm(AbstractPythonIterationsControlVm):
     def post_process_command_line_args(self, args):
         if os.environ.get('BYTECODE_DSL_INTERPRETER', '').lower() == 'true' and not self.is_bytecode_dsl_config():
             print("Found environment variable BYTECODE_DSL_INTERPRETER, but the guest vm config is not Bytecode DSL config.")
-            print("Did you want to use, e.g., `mx benchmark ... -- --host-vm-config=default-bc-dsl`?")
+            print("Did you want to use, e.g., `mx benchmark ... -- --python-vm-config=default-bc-dsl`?")
             sys.exit(1)
         return self.get_extra_polyglot_args() + args
 

@@ -228,6 +228,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.bytecode.BytecodeConfig;
 import com.oracle.truffle.api.bytecode.BytecodeLocation;
 import com.oracle.truffle.api.bytecode.BytecodeNode;
@@ -262,6 +263,7 @@ import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
@@ -345,6 +347,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @CompilationFinal protected transient int selfIndex;
     @CompilationFinal protected transient int classcellIndex;
     @CompilationFinal public int yieldFromGeneratorIndex = -1;
+    @CompilationFinal(dimensions = 1) protected transient Assumption[] cellEffectivelyFinalAssumptions;
 
     private transient boolean pythonInternal;
     @CompilationFinal private transient boolean internal;
@@ -370,6 +373,12 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         this.selfIndex = co.selfIndex;
         this.internal = getSource().isInternal();
         this.parserErrorCallback = parserErrorCallback;
+        if (co.cellvars.length > 0) {
+            this.cellEffectivelyFinalAssumptions = new Assumption[co.cellvars.length];
+            for (int i = 0; i < co.cellvars.length; i++) {
+                cellEffectivelyFinalAssumptions[i] = Truffle.getRuntime().createAssumption("cell is effectively final");
+            }
+        }
     }
 
     @Override
@@ -1043,24 +1052,34 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
+    @ConstantOperand(type = LocalRangeAccessor.class)
+    public static final class CopyArguments {
+        @Specialization
+        @ExplodeLoop
+        public static void perform(VirtualFrame frame, LocalRangeAccessor locals,
+                        @Bind BytecodeNode bytecodeNode) {
+            for (int i = 0; i < locals.getLength(); i++) {
+                locals.setObject(bytecodeNode, frame, i, PArguments.getArgument(frame, i));
+            }
+        }
+    }
+
+    @Operation
+    @ConstantOperand(type = int.class)
     public static final class LoadVariableArguments {
         @Specialization
-        public static Object perform(VirtualFrame frame,
+        public static Object perform(VirtualFrame frame, int index,
                         @Bind PBytecodeDSLRootNode rootNode) {
-            int index = rootNode.co.getRegularArgCount();
             return PFactory.createTuple(rootNode.getLanguage(), (Object[]) PArguments.getArgument(frame, index));
         }
     }
 
     @Operation
+    @ConstantOperand(type = int.class)
     public static final class LoadKeywordArguments {
         @Specialization
-        public static Object perform(VirtualFrame frame,
+        public static Object perform(VirtualFrame frame, int index,
                         @Bind PBytecodeDSLRootNode rootNode) {
-            int index = rootNode.co.getRegularArgCount();
-            if (rootNode.co.takesVarArgs()) {
-                index++;
-            }
             return PFactory.createDict(rootNode.getLanguage(), (PKeyword[]) PArguments.getArgument(frame, index));
         }
     }
@@ -2454,12 +2473,16 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
-    public static final class CreateCell {
+    @ConstantOperand(type = LocalRangeAccessor.class)
+    public static final class CreateCells {
         @Specialization
-        public static PCell doCreateCell(Object value) {
-            PCell cell = new PCell(Assumption.create());
-            cell.setRef(value);
-            return cell;
+        @ExplodeLoop
+        public static void doCreateCells(VirtualFrame frame, LocalRangeAccessor locals,
+                        @Bind PBytecodeDSLRootNode rootNode) {
+            for (int i = 0; i < locals.getLength(); i++) {
+                PCell cell = new PCell(rootNode.cellEffectivelyFinalAssumptions[i]);
+                locals.setObject(rootNode.getBytecodeNode(), frame, i, cell);
+            }
         }
     }
 
@@ -2487,23 +2510,15 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation
-    public static final class LoadClosure {
-        @Specialization
-        public static PCell[] doLoadClosure(VirtualFrame frame) {
-            return PArguments.getFunctionObject(frame.getArguments()).getClosure();
-        }
-    }
-
-    @Operation
     @ConstantOperand(type = LocalRangeAccessor.class)
-    public static final class StoreRange {
+    public static final class InitFreeVars {
         @Specialization
-        public static void perform(VirtualFrame frame, LocalRangeAccessor locals, Object[] values,
+        @ExplodeLoop
+        public static void doLoadClosure(VirtualFrame frame, LocalRangeAccessor locals,
                         @Bind BytecodeNode bytecode) {
-            CompilerAsserts.partialEvaluationConstant(locals.getLength());
-            assert values.length == locals.getLength();
+            PCell[] closure = PArguments.getFunctionObject(frame.getArguments()).getClosure();
             for (int i = 0; i < locals.getLength(); i++) {
-                locals.setObject(bytecode, frame, i, values[i]);
+                locals.setObject(bytecode, frame, i, closure[i]);
             }
         }
     }

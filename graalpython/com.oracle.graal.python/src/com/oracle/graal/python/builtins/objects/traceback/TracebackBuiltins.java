@@ -37,10 +37,10 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -61,12 +61,14 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleStackTrace;
 import com.oracle.truffle.api.TruffleStackTraceElement;
+import com.oracle.truffle.api.bytecode.ContinuationRootNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -165,6 +167,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization(guards = "!tb.isMaterialized()")
         static void doMaterialize(Node inliningTarget, PTraceback tb,
+                        @Bind PythonLanguage language,
                         @Cached(inline = false) MaterializeFrameNode materializeFrameNode,
                         @Cached MaterializeLazyTracebackNode materializeLazyTracebackNode) {
             /*
@@ -192,8 +195,12 @@ public final class TracebackBuiltins extends PythonBuiltins {
                     TruffleStackTraceElement element = stackTrace.get(truffleIndex);
                     if (LazyTraceback.elementWantedForTraceback(element)) {
                         PFrame pFrame = materializeFrame(element, materializeFrameNode);
-                        next = PFactory.createTraceback(PythonLanguage.get(null), pFrame, pFrame.getLine(), next);
+                        next = PFactory.createTraceback(language, pFrame, pFrame.getLine(), next);
                         next.setLocation(pFrame.getBci(), pFrame.getBytecodeNode());
+                        pyIndex++;
+                    }
+                    // XXX workaround for DSL continuations not capturing frames
+                    if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER && element.getTarget().getRootNode() instanceof ContinuationRootNode && element.getFrame() == null) {
                         pyIndex++;
                     }
                 }
