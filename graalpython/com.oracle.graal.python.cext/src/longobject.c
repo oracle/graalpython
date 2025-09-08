@@ -54,9 +54,9 @@ class int "PyObject *" "&PyLong_Type"
 
 #define medium_value(x) ((stwodigits)_PyLong_CompactValue(x))
 
-#endif // GraalPy change
 #define IS_SMALL_INT(ival) (-_PY_NSMALLNEGINTS <= (ival) && (ival) < _PY_NSMALLPOSINTS)
 #define IS_SMALL_UINT(ival) ((ival) < _PY_NSMALLPOSINTS)
+#endif // GraalPy change
 
 #define _MAX_STR_DIGITS_ERROR_FMT_TO_INT "Exceeds the limit (%d digits) for integer string conversion: value has %zd digits; use sys.set_int_max_str_digits() to increase the limit"
 #define _MAX_STR_DIGITS_ERROR_FMT_TO_STR "Exceeds the limit (%d digits) for integer string conversion; use sys.set_int_max_str_digits() to increase the limit"
@@ -85,10 +85,8 @@ is_medium_int(stwodigits x)
 static PyObject *
 get_small_int(sdigit ival)
 {
-    assert(IS_SMALL_INT(ival));
-    // GraalPy change: use our array of pointers
-    PyObject *v = _PyLong_SMALL_INT_PTRS[_PY_NSMALLNEGINTS + ival];
-    return v;
+    // GraalPy change - we tag 32-bit integers
+    return int_to_pointer(ival);
 }
 
 #if 0 // GraalPy change
@@ -334,9 +332,6 @@ PyObject *
 PyLong_FromLong(long ival)
 {
     // GraalPy change: different implementation
-    if (IS_SMALL_INT(ival)) {
-        return get_small_int((sdigit)ival);
-    }
     return PyLong_FromLongLong((long long) ival);
 }
 
@@ -983,9 +978,6 @@ PyObject *
 PyLong_FromLongLong(long long ival)
 {
     // GraalPy change: different implementation
-    if (IS_SMALL_INT(ival)) {
-        return get_small_int((sdigit)ival);
-    }
     if ((int)ival == ival) {
         return int_to_pointer(ival);
     } else {
@@ -999,9 +991,6 @@ PyObject *
 PyLong_FromSsize_t(Py_ssize_t ival)
 {
     // GraalPy change: different implementation
-    if (IS_SMALL_INT(ival)) {
-        return get_small_int((sdigit)ival);
-    }
     return PyLong_FromLongLong((long long) ival);
 }
 

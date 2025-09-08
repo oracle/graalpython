@@ -1416,9 +1416,12 @@ public abstract class CApiTransitions {
             CompilerAsserts.partialEvaluationConstant(needsTransfer);
             assert PythonContext.get(inliningTarget).ownsGil();
             pollReferenceQueue();
-            PythonNativeWrapper wrapper = getWrapper.execute(obj);
+            Object wrapper = getWrapper.execute(obj);
+            if (wrapper instanceof Long l) {
+                return new NativePointer(l);
+            }
 
-            Object replacement = getReplacementNode.execute(inliningTarget, wrapper);
+            Object replacement = getReplacementNode.execute(inliningTarget, (PythonNativeWrapper) wrapper);
             if (replacement != null) {
                 return replacement;
             }
@@ -1437,7 +1440,7 @@ public abstract class CApiTransitions {
                  * interpreter will be notified by an upcall as soon as the object's refcount goes
                  * down to MANAGED_RECOUNT again.
                  */
-                assert wrapper.ref != null;
+                assert objectNativeWrapper.ref != null;
                 assert refCnt != MANAGED_REFCNT;
                 updateRefNode.execute(inliningTarget, objectNativeWrapper, refCnt);
             }

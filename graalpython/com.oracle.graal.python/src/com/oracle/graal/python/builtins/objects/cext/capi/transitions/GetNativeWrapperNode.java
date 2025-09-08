@@ -50,9 +50,9 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PrimitiveNativeWrapper
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.TruffleObjectNativeWrapper;
-import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
@@ -80,11 +80,11 @@ import com.oracle.truffle.api.strings.TruffleString;
 @ImportStatic({PGuards.class, CApiGuards.class})
 public abstract class GetNativeWrapperNode extends PNodeWithContext {
 
-    public static PythonNativeWrapper executeUncached(Object value) {
+    public static Object executeUncached(Object value) {
         return GetNativeWrapperNodeGen.getUncached().execute(value);
     }
 
-    public abstract PythonNativeWrapper execute(Object value);
+    public abstract Object execute(Object value);
 
     @Specialization
     static PythonAbstractObjectNativeWrapper doString(TruffleString str,
@@ -109,58 +109,26 @@ public abstract class GetNativeWrapperNode extends PNodeWithContext {
         return nativeWrapper;
     }
 
-    @Specialization(guards = "isSmallInteger(i)")
-    static PrimitiveNativeWrapper doIntegerSmall(int i,
-                    @Bind Node inliningTarget) {
-        PythonContext context = PythonContext.get(inliningTarget);
-        if (context.getCApiContext() != null) {
-            return context.getCApiContext().getCachedPrimitiveNativeWrapper(i);
-        }
-        return PrimitiveNativeWrapper.createInt(i);
+    @Specialization
+    static Object doInt(int l) {
+        return HandlePointerConverter.intToPointer(l);
     }
 
-    @Specialization(guards = "!isSmallInteger(i)")
-    static PrimitiveNativeWrapper doInteger(int i) {
-        return PrimitiveNativeWrapper.createInt(i);
-    }
-
-    public static PrimitiveNativeWrapper doLongSmall(long l, PythonContext context) {
-        if (context.getCApiContext() != null) {
-            return context.getCApiContext().getCachedPrimitiveNativeWrapper(l);
+    @Specialization
+    static Object doLong(long l) {
+        if (l == (int) l) {
+            return HandlePointerConverter.intToPointer(l);
         }
         return PrimitiveNativeWrapper.createLong(l);
     }
 
-    @Specialization(guards = "isSmallLong(l)")
-    static PrimitiveNativeWrapper doLongSmall(long l,
-                    @Bind Node inliningTarget) {
-        return doLongSmall(l, PythonContext.get(inliningTarget));
-    }
-
-    @Specialization(guards = "!isSmallLong(l)")
-    static PrimitiveNativeWrapper doLong(long l) {
-        return PrimitiveNativeWrapper.createLong(l);
-    }
-
-    @Specialization(guards = "!isNaN(d)")
-    static PrimitiveNativeWrapper doDouble(double d) {
+    @Specialization
+    static Object doDouble(double d) {
+        float f = (float) d;
+        if (!Double.isFinite(d) || f == d) {
+            return HandlePointerConverter.floatToPointer(d);
+        }
         return PrimitiveNativeWrapper.createDouble(d);
-    }
-
-    @Specialization(guards = "isNaN(d)")
-    static PythonNativeWrapper doDoubleNaN(@SuppressWarnings("unused") double d,
-                    @Bind Node inliningTarget) {
-        PFloat boxed = PythonContext.get(inliningTarget).getNaN();
-        PythonAbstractObjectNativeWrapper nativeWrapper = boxed.getNativeWrapper();
-        // Use a counting profile since we should enter the branch just once per context.
-        if (nativeWrapper == null) {
-            // This deliberately uses 'CompilerDirectives.transferToInterpreter()' because this
-            // code will happen just once per context.
-            CompilerDirectives.transferToInterpreter();
-            nativeWrapper = PrimitiveNativeWrapper.createDouble(Double.NaN);
-            boxed.setNativeWrapper(nativeWrapper);
-        }
-        return nativeWrapper;
     }
 
     @Specialization(guards = "isSpecialSingleton(object)")

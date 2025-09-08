@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonStructNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
@@ -65,6 +66,12 @@ import com.oracle.truffle.api.interop.InteropLibrary;
  * </p>
  */
 public final class PThreadState extends PythonStructNativeWrapper {
+
+    /** Same as _PY_NSMALLNEGINTS */
+    public static final int PY_NSMALLNEGINTS = 5;
+
+    /** Same as _PY_NSMALLPOSINTS */
+    public static final int PY_NSMALLPOSINTS = 257;
 
     @TruffleBoundary
     private PThreadState(PythonThreadState threadState) {
@@ -112,7 +119,11 @@ public final class PThreadState extends PythonStructNativeWrapper {
         }
         writePtrNode.write(ptr, CFields.PyThreadState__dict, toNative.execute(threadStateDict));
         CApiContext cApiContext = pythonContext.getCApiContext();
-        writePtrNode.write(ptr, CFields.PyThreadState__small_ints, cApiContext.getOrCreateSmallInts());
+        Object smallInts = CStructAccess.AllocateNode.allocUncached((PY_NSMALLNEGINTS + PY_NSMALLPOSINTS) * CStructAccess.POINTER_SIZE);
+        writePtrNode.write(ptr, CFields.PyThreadState__small_ints, smallInts);
+        for (int i = -PY_NSMALLNEGINTS; i < PY_NSMALLPOSINTS; i++) {
+            writePtrNode.writeArrayElement(smallInts, i + PY_NSMALLNEGINTS, CApiTransitions.HandlePointerConverter.intToPointer(i));
+        }
         writePtrNode.write(ptr, CFields.PyThreadState__gc, cApiContext.getGCState());
         CStructAccess.WriteIntNode writeIntNode = CStructAccess.WriteIntNode.getUncached();
         // py_recursion_limit = Py_DEFAULT_RECURSION_LIMIT (1000)
