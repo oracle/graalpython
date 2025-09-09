@@ -1122,6 +1122,9 @@ public abstract class CExtNodes {
             if (pointer == 0) {
                 return;
             }
+            if (HandlePointerConverter.pointsToPyFloatHandle(pointer) || HandlePointerConverter.pointsToPyIntHandle(pointer)) {
+                return;
+            }
             PythonNativeWrapper wrapper = toPythonWrapperNode.executeWrapper(pointer, false);
             if (wrapper instanceof PythonAbstractObjectNativeWrapper objectWrapper) {
                 isWrapperProfile.enter(inliningTarget);
