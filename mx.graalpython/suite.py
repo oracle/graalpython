@@ -1231,7 +1231,7 @@ suite = {
                             "./META-INF/resources/<os>/<arch>/lib/graalpy<graal_ver:major_minor>/": [
                                 "dependency:GRAALPYTHON_NATIVE_LIBS/<os>/<arch>/*",
                             ],
-                            "./META-INF/resources/<os>/<arch>/lib/venv/scripts/macos/graalpy": "dependency:python-macos-launcher",
+                            "./META-INF/resources/<os>/<arch>/lib/python<py_ver:major_minor>/venv/scripts/macos/graalpy": "dependency:python-macos-launcher",
                         }
                     }
                 },
