@@ -38,7 +38,10 @@
 # SOFTWARE.
 
 if [ -n "$GITHUB_RUN_ID" ]; then
-    dnf install -y openblas-devel /usr/bin/cmake /usr/bin/sudo libffi-devel
+    dnf install -y openblas-devel /usr/bin/sudo libffi-devel
+    # There's already cmake in the manylinux image installed via pipx that is
+    # too new to build torch, this downgrades it
+    pipx install --force cmake==3.28
     export USE_CUDA=0
 fi
 export MAX_JOBS=4

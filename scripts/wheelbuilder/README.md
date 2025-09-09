@@ -65,7 +65,6 @@ For macOS/aarch64, you get no isolation from act, so I just run it directly.
 git clone https://github.com/oracle/graalpython
 VERSION=24.2.0
 export GITHUB_RUN_ID=doesntMatterJustTriggerBrewInstallScripts
-export PIP_GRAALPY_PATCHES_URL="$(pwd)/graalpython/graalpython/lib-graalpython/patches"
 python3 -m venv wheelbuilder-venv
 . wheelbuilder-venv/bin/activate
 python3 graalpython/scripts/wheelbuilder/build_wheels.py https://github.com/oracle/graalpython/releases/download/graal-$VERSION/graalpy-$VERSION-macos-aarch64.tar.gz
@@ -76,7 +75,6 @@ For Windows/amd64, you get no isolation from act, so I just run it directly in V
 git clone https://github.com/oracle/graalpython
 $VERSION="24.2.0"
 $env:GITHUB_RUN_ID="doesntMatterJustTriggerBrewInstallScripts"
-$env:PIP_GRAALPY_PATCHES_URL="$PWD/graalpython/graalpython/lib-graalpython/patches"
 python3 -m venv wheelbuilder-venv
 wheelbuilder-venv/scripts/activate
 python3 graalpython/scripts/wheelbuilder/build_wheels.py https://github.com/oracle/graalpython/releases/download/graal-$VERSION/graalpy-$VERSION-windows-amd64.zip
