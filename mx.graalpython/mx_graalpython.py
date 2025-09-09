@@ -292,7 +292,7 @@ def libpythonvm_build_args():
         commit = str(vc.tip(SUITE.dir)).strip()
         try:
             branch = str(vc.active_branch(SUITE.dir)).strip()
-        except Exception:
+        except Exception: # pylint: disable=broad-except
             branch = "master"
 
         if script := os.environ.get("ARTIFACT_DOWNLOAD_SCRIPT"):
