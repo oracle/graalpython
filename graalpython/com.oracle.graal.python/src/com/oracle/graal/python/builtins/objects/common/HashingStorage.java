@@ -49,9 +49,9 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageFactory.Ini
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageCopy;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes.LenNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIterNextNode;
@@ -66,7 +66,7 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.ArrayBuilder;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Bind;
@@ -208,7 +208,7 @@ public abstract class HashingStorage {
                         @Bind Node inliningTarget,
                         @Shared @Cached PyObjectGetIter getIter,
                         @Shared @Cached PyIterNextNode nextNode,
-                        @Shared @Cached PyObjectGetItem getItemNode,
+                        @Cached PyObjectGetItem getItemNode,
                         @Cached CallNode callKeysMethod) {
             // We don't need to pass self as the attribute object has it already.
             Object keysIterable = callKeysMethod.execute(frame, keyAttr);
@@ -233,9 +233,8 @@ public abstract class HashingStorage {
                         @Bind Node inliningTarget,
                         @Shared @Cached PyObjectGetIter getIter,
                         @Shared @Cached PyIterNextNode nextNode,
-                        @Shared @Cached PyObjectGetItem getItemNode,
                         @Cached FastConstructListNode createListNode,
-                        @Cached LenNode seqLenNode,
+                        @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Cached PRaiseNode raise,
                         @Cached InlinedConditionProfile lengthTwoProfile,
                         @Cached IsBuiltinObjectProfile isTypeErrorProfile) throws PException {
@@ -250,17 +249,17 @@ public abstract class HashingStorage {
                     } catch (IteratorExhausted e) {
                         break;
                     }
-                    PSequence element = createListNode.execute(frame, inliningTarget, next);
-                    assert element != null;
+                    PList element = createListNode.execute(frame, inliningTarget, next);
+                    SequenceStorage elementStorage = element.getSequenceStorage();
                     // This constructs a new list using the builtin type. So, the object cannot
                     // be subclassed and we can directly call 'len()'.
-                    len = seqLenNode.execute(inliningTarget, element);
+                    len = elementStorage.length();
 
                     if (lengthTwoProfile.profile(inliningTarget, len != 2)) {
                         throw raise.raise(inliningTarget, ValueError, ErrorMessages.DICT_UPDATE_SEQ_ELEM_HAS_LENGTH_2_REQUIRED, elements.size(), len);
                     }
-                    Object key = getItemNode.execute(frame, inliningTarget, element, 0);
-                    Object value = getItemNode.execute(frame, inliningTarget, element, 1);
+                    Object key = getItemScalarNode.execute(inliningTarget, elementStorage, 0);
+                    Object value = getItemScalarNode.execute(inliningTarget, elementStorage, 1);
                     elements.add(new KeyValue(key, value));
                 }
             } catch (PException e) {

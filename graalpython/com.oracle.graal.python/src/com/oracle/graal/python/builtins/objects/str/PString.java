@@ -29,12 +29,11 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.builtinClassToType;
 
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -51,7 +50,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @SuppressWarnings("truffle-abstract-export")
 @ExportLibrary(InteropLibrary.class)
-public final class PString extends PSequence {
+public final class PString extends PythonBuiltinObject {
     private TruffleString materializedValue;
     private NativeCharSequence nativeCharSequence;
 
@@ -132,12 +131,6 @@ public final class PString extends PSequence {
     }
 
     @Override
-    public SequenceStorage getSequenceStorage() {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public int hashCode() {
         return isMaterialized() ? materializedValue.hashCode() : nativeCharSequence.hashCode();
     }
@@ -148,7 +141,6 @@ public final class PString extends PSequence {
         return obj != null && obj.equals(isMaterialized() ? materializedValue : nativeCharSequence);
     }
 
-    @Override
     @ExportMessage
     @SuppressWarnings("static-method")
     public boolean isString() {
@@ -205,12 +197,6 @@ public final class PString extends PSequence {
         } finally {
             gil.release(mustRelease);
         }
-    }
-
-    @Override
-    public void setSequenceStorage(SequenceStorage store) {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new UnsupportedOperationException();
     }
 
     @ExportMessage

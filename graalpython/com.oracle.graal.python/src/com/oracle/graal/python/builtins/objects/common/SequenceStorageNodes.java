@@ -85,7 +85,6 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes.CoerceToIntSlice;
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes.ComputeIndices;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
@@ -357,10 +356,6 @@ public abstract class SequenceStorageNodes {
 
         protected static boolean isObject(StorageType et) {
             return et == StorageType.Generic;
-        }
-
-        protected static boolean hasStorage(Object source) {
-            return source instanceof PSequence && !(source instanceof PString);
         }
     }
 
@@ -1425,7 +1420,7 @@ public abstract class SequenceStorageNodes {
             execute(frame, inliningTarget, s, info, iterable, true);
         }
 
-        @Specialization(guards = "hasStorage(seq)")
+        @Specialization
         static void doStorage(Node inliningTarget, SequenceStorage s, SliceInfo info, PSequence seq, boolean canGeneralize,
                         @Shared("setStorageSliceNode") @Cached(inline = false) SetStorageSliceNode setStorageSliceNode,
                         @Cached GetSequenceStorageNode getSequenceStorageNode) {
@@ -2385,7 +2380,7 @@ public abstract class SequenceStorageNodes {
             }
         }
 
-        @Specialization(guards = {"hasStorage(seq)", "isBuiltinSequence(seq)"})
+        @Specialization(guards = {"isBuiltinSequence(seq)"})
         @SuppressWarnings("truffle-static-method")
         SequenceStorage doWithStorage(SequenceStorage left, PSequence seq, int len,
                         @Bind Node inliningTarget,

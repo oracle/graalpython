@@ -45,9 +45,9 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T_KEYS;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
@@ -59,7 +59,6 @@ import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -135,14 +134,13 @@ public abstract class ConcatDictToStorageNode extends PNodeWithContext {
                     @Cached ListNodes.FastConstructListNode asList,
                     @Exclusive @Cached HashingStorageNodes.HashingStorageGetItem resultGetItem,
                     @Exclusive @Cached HashingStorageNodes.HashingStorageSetItem resultSetItem,
-                    @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorage,
                     @Cached SequenceStorageNodes.GetItemScalarNode sequenceGetItem,
                     @Exclusive @Cached InlinedLoopConditionProfile loopProfile,
                     @Cached PyObjectGetItem getItem) throws SameDictKeyException, NonMappingException {
         HashingStorage result = dest;
         try {
-            PSequence keys = asList.execute(frame, inliningTarget, callKeys.execute(frame, inliningTarget, other, T_KEYS));
-            SequenceStorage keysStorage = getSequenceStorage.execute(inliningTarget, keys);
+            PList keys = asList.execute(frame, inliningTarget, callKeys.execute(frame, inliningTarget, other, T_KEYS));
+            SequenceStorage keysStorage = keys.getSequenceStorage();
             int keysLen = keysStorage.length();
             loopProfile.profileCounted(inliningTarget, keysLen);
             for (int i = 0; loopProfile.inject(inliningTarget, i < keysLen); i++) {

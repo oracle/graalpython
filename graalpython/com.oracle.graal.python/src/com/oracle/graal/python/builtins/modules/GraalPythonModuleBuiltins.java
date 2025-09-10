@@ -123,7 +123,6 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PSet;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.OsEnvironGetNode;
@@ -876,7 +875,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
                     detail = whichCallTarget(fn.getCallTarget());
                 } else if (object instanceof PBuiltinMethod fn) {
                     detail = whichCallTarget(fn.getBuiltinFunction().getCallTarget());
-                } else if (object instanceof PSequence sequence && !(object instanceof PString)) {
+                } else if (object instanceof PSequence sequence) {
                     detail = sequence.getSequenceStorage();
                 } else if (object instanceof PArray array) {
                     detail = array.getSequenceStorage();

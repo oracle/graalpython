@@ -54,8 +54,8 @@ import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
-import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.annotations.Builtin;
+import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.ObjectToOpaquePathNode;
@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.ToBytesNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
@@ -89,7 +90,6 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -132,19 +132,19 @@ public final class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                         @Cached ObjectToOpaquePathNode objectToOpaquePathNode,
                         @Cached("createNotNormalized()") GetItemNode getItemNode,
                         @Cached PRaiseNode raiseNode) {
-            PSequence argsSequence;
+            PList argsList;
             try {
-                argsSequence = fastConstructListNode.execute(frame, inliningTarget, processArgs);
+                argsList = fastConstructListNode.execute(frame, inliningTarget, processArgs);
             } catch (PException e) {
                 e.expect(inliningTarget, TypeError, isBuiltinClassProfile);
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_MUST_BE_S, "argv", "a tuple");
             }
 
-            SequenceStorage argsStorage = getSequenceStorageNode.execute(inliningTarget, argsSequence);
+            SequenceStorage argsStorage = getSequenceStorageNode.execute(inliningTarget, argsList);
             int len = argsStorage.length();
             Object[] argsArray = new Object[len];
             for (int i = 0; i < len; ++i) {
-                SequenceStorage newStorage = getSequenceStorageNode.execute(inliningTarget, argsSequence);
+                SequenceStorage newStorage = getSequenceStorageNode.execute(inliningTarget, argsList);
                 if (newStorage != argsStorage || newStorage.length() != len) {
                     // TODO write a test for this
                     throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.ARGS_CHANGED_DURING_ITERATION);

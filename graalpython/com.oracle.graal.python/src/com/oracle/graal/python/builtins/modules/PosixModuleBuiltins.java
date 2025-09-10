@@ -55,21 +55,20 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.annotations.ArgumentClinic.PrimitiveType;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.ArgumentName;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.BuiltinName;
-import com.oracle.graal.python.annotations.Builtin;
+import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.AuditNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes.LenNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToArrayNode;
@@ -128,7 +127,6 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
@@ -2020,21 +2018,19 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = {"isNoValue(ns)"})
         static long[] times(VirtualFrame frame, PTuple times, @SuppressWarnings("unused") PNone ns,
                         @Bind Node inliningTarget,
-                        @Exclusive @Cached LenNode lenNode,
-                        @Shared @Cached("createNotNormalized()") GetItemNode getItemNode,
+                        @Shared @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                         @Cached ObjectToTimespecNode objectToTimespecNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
-            return convertToTimespec(frame, inliningTarget, times, lenNode, getItemNode, objectToTimespecNode, raiseNode);
+            return convertToTimespec(frame, inliningTarget, times, getItemNode, objectToTimespecNode, raiseNode);
         }
 
         @Specialization
         static long[] ns(VirtualFrame frame, @SuppressWarnings("unused") PNone times, PTuple ns,
                         @Bind Node inliningTarget,
-                        @Exclusive @Cached LenNode lenNode,
-                        @Shared @Cached("createNotNormalized()") GetItemNode getItemNode,
+                        @Shared @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                         @Cached SplitLongToSAndNsNode splitLongToSAndNsNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
-            return convertToTimespec(frame, inliningTarget, ns, lenNode, getItemNode, splitLongToSAndNsNode, raiseNode);
+            return convertToTimespec(frame, inliningTarget, ns, getItemNode, splitLongToSAndNsNode, raiseNode);
         }
 
         @Specialization(guards = {"!isPNone(times)", "!isNoValue(ns)"})
@@ -2066,14 +2062,15 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.MUST_BE_EITHER_OR, "utime", "times", "a tuple of two ints", "None");
         }
 
-        private static long[] convertToTimespec(VirtualFrame frame, Node inliningTarget, PTuple times, LenNode lenNode, GetItemNode getItemNode, ConvertToTimespecBaseNode convertToTimespecBaseNode,
-                        PRaiseNode raiseNode) {
-            if (lenNode.execute(inliningTarget, times) != 2) {
+        private static long[] convertToTimespec(VirtualFrame frame, Node inliningTarget, PTuple times, SequenceStorageNodes.GetItemScalarNode getItemNode,
+                        ConvertToTimespecBaseNode convertToTimespecBaseNode, PRaiseNode raiseNode) {
+            SequenceStorage storage = times.getSequenceStorage();
+            if (storage.length() != 2) {
                 throw timesTupleError(inliningTarget, raiseNode);
             }
             long[] timespec = new long[4];
-            convertToTimespecBaseNode.execute(frame, inliningTarget, getItemNode.execute(times.getSequenceStorage(), 0), timespec, 0);
-            convertToTimespecBaseNode.execute(frame, inliningTarget, getItemNode.execute(times.getSequenceStorage(), 1), timespec, 2);
+            convertToTimespecBaseNode.execute(frame, inliningTarget, getItemNode.execute(inliningTarget, storage, 0), timespec, 0);
+            convertToTimespecBaseNode.execute(frame, inliningTarget, getItemNode.execute(inliningTarget, storage, 1), timespec, 2);
             return timespec;
         }
     }
@@ -3245,17 +3242,19 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isInteger(value)"})
         static void doGeneric(VirtualFrame frame, Node inliningTarget, Object value, long[] timespec, int offset,
                         @Cached PyNumberDivmodNode divmodNode,
-                        @Cached LenNode lenNode,
                         @Cached(value = "createNotNormalized()", inline = false) GetItemNode getItemNode,
                         @Cached PyLongAsLongNode asLongNode,
                         @Cached PRaiseNode raiseNode) {
             Object divmod = divmodNode.execute(frame, inliningTarget, value, BILLION);
-            if (!PGuards.isPTuple(divmod) || lenNode.execute(inliningTarget, (PSequence) divmod) != 2) {
-                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.MUST_RETURN_2TUPLE, value, divmod);
+            if (divmod instanceof PTuple tuple) {
+                SequenceStorage storage = tuple.getSequenceStorage();
+                if (storage.length() == 2) {
+                    timespec[offset] = asLongNode.execute(frame, inliningTarget, getItemNode.execute(storage, 0));
+                    timespec[offset + 1] = asLongNode.execute(frame, inliningTarget, getItemNode.execute(storage, 1));
+                    return;
+                }
             }
-            SequenceStorage storage = ((PTuple) divmod).getSequenceStorage();
-            timespec[offset] = asLongNode.execute(frame, inliningTarget, getItemNode.execute(storage, 0));
-            timespec[offset + 1] = asLongNode.execute(frame, inliningTarget, getItemNode.execute(storage, 1));
+            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.MUST_RETURN_2TUPLE, value, divmod);
         }
     }
 
