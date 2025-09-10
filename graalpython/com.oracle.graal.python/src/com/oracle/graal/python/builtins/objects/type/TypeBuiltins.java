@@ -77,10 +77,10 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -134,6 +134,7 @@ import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -877,18 +878,19 @@ public final class TypeBuiltins extends PythonBuiltins {
             }
 
             @Specialization
-            static void set(PythonAbstractNativeObject type, TruffleString value,
+            static void set(Node inliningTarget, PythonAbstractNativeObject type, TruffleString value,
                             @Bind PythonLanguage language,
                             @Cached(inline = false) CStructAccess.WritePointerNode writePointerNode,
                             @Cached(inline = false) CStructAccess.WriteObjectNewRefNode writeObject,
+                            @Cached HiddenAttr.WriteNode writeAttrNode,
                             @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                             @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
                 value = switchEncodingNode.execute(value, TruffleString.Encoding.UTF_8);
                 byte[] bytes = copyToByteArrayNode.execute(value, TruffleString.Encoding.UTF_8);
-                PBytes bytesObject = PFactory.createBytes(language, bytes);
-                writePointerNode.writeToObj(type, PyTypeObject__tp_name, PySequenceArrayWrapper.ensureNativeSequence(bytesObject));
+                PBytes utf8Bytes = PFactory.createBytes(language, bytes);
+                writePointerNode.writeToObj(type, PyTypeObject__tp_name, PySequenceArrayWrapper.ensureNativeSequence(utf8Bytes));
                 PString pString = PFactory.createString(language, value);
-                pString.setUtf8Bytes(bytesObject);
+                writeAttrNode.execute(inliningTarget, pString, HiddenAttr.PSTRING_UTF8, utf8Bytes);
                 writeObject.writeToObject(type, PyHeapTypeObject__ht_name, pString);
             }
         }
