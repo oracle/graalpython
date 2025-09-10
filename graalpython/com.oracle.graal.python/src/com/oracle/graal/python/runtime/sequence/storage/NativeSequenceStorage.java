@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,8 +47,16 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeStorageReference;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
-public abstract class NativeSequenceStorage extends SequenceStorage {
+@ExportLibrary(InteropLibrary.class)
+public abstract class NativeSequenceStorage extends SequenceStorage implements TruffleObject {
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(NativeSequenceStorage.class);
 
@@ -127,4 +135,15 @@ public abstract class NativeSequenceStorage extends SequenceStorage {
         return replicatedNativeReferences;
     }
 
+    @ExportMessage
+    boolean isPointer(
+                    @Shared @CachedLibrary(limit = "1") InteropLibrary lib) {
+        return lib.isPointer(ptr);
+    }
+
+    @ExportMessage
+    long asPointer(
+                    @Shared @CachedLibrary(limit = "1") InteropLibrary lib) throws UnsupportedMessageException {
+        return lib.asPointer(ptr);
+    }
 }

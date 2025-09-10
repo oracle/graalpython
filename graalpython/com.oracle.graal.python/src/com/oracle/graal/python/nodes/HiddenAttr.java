@@ -98,10 +98,10 @@ public final class HiddenAttr {
     public static final HiddenAttr PROMOTED_START = new HiddenAttr("promoted_start");   // PythonCextSlotBuiltins
     public static final HiddenAttr PROMOTED_STEP = new HiddenAttr("promoted_step");     // PythonCextSlotBuiltins
     public static final HiddenAttr PROMOTED_STOP = new HiddenAttr("promoted_stop");     // PythonCextSlotBuiltins
-    public static final HiddenAttr NATIVE_STORAGE = new HiddenAttr("native_storage");
     public static final HiddenAttr NATIVE_SLOTS = new HiddenAttr("__native_slots__");
     public static final HiddenAttr INSTANCESHAPE = new HiddenAttr("instanceshape");
     public static final HiddenAttr STRUCTSEQ_FIELD_NAMES = new HiddenAttr("struct_seq_field_names");
+    public static final HiddenAttr PSTRING_NATIVE_DATA = new HiddenAttr("native_string_data");
     public static final HiddenAttr PSTRING_UTF8 = new HiddenAttr("utf8");
     public static final HiddenAttr PSTRING_WCHAR = new HiddenAttr("wchar");
 

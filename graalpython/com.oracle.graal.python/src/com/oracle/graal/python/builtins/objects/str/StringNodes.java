@@ -57,7 +57,6 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ReadUnicodeArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -100,7 +99,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.api.strings.TruffleString.Encoding;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.api.strings.TruffleStringIterator;
 
@@ -118,26 +116,20 @@ public abstract class StringNodes {
 
         public abstract TruffleString execute(Node inliningTarget, PString materialize);
 
-        @Specialization(guards = {"x.isNativeCharSequence()", "x.isNativeMaterialized()"})
-        static TruffleString doMaterializedNative(PString x) {
-            return x.getNativeCharSequence().getMaterialized();
-        }
-
-        @Specialization(guards = {"x.isNativeCharSequence()", "!x.isMaterialized()"}, replaces = "doMaterializedNative")
-        @InliningCutoff
-        static TruffleString doNative(Node inliningTarget, PString x,
-                        @Cached ReadUnicodeArrayNode readArray,
-                        @Cached TruffleString.FromIntArrayUTF32Node fromArray) {
-            NativeCharSequence sequence = x.getNativeCharSequence();
-            assert TS_ENCODING == Encoding.UTF_32 : "needs switch_encoding otherwise";
-            TruffleString materialized = fromArray.execute(readArray.execute(inliningTarget, sequence.getPtr(), sequence.getElements(), sequence.getElementSize()));
-            x.setMaterialized(materialized);
-            return materialized;
-        }
-
         @Specialization(guards = "x.isMaterialized()")
         static TruffleString doMaterialized(PString x) {
             return x.getMaterialized();
+        }
+
+        @Fallback
+        @InliningCutoff
+        static TruffleString doNative(Node inliningTarget, PString x,
+                        @Cached HiddenAttr.ReadNode readAttrNode,
+                        @Cached TruffleString.FromNativePointerNode fromNativePointerNode) {
+            NativeStringData nativeData = x.getNativeStringData(inliningTarget, readAttrNode);
+            TruffleString materialized = nativeData.toTruffleString(fromNativePointerNode);
+            x.setMaterialized(materialized);
+            return materialized;
         }
     }
 
@@ -160,24 +152,19 @@ public abstract class StringNodes {
             return doString(x.getMaterialized(), codePointLengthNode);
         }
 
-        @Specialization(guards = {"x.isNativeCharSequence()", "isKnownLength(elements)"})
-        static int doNativeKnownLength(PString x,
-                        @Bind("x.getNativeCharSequence().getElements()") int elements) {
-            return elements;
-        }
-
-        @Specialization(guards = {"x.isNativeCharSequence()", "!isKnownLength(elements)"})
-        static int doNativeUnknownLength(PString x,
-                        @SuppressWarnings("unused") @Bind("x.getNativeCharSequence().getElements()") int elements,
+        @Specialization(guards = "!x.isMaterialized()")
+        static int doNative(PString x,
                         @Bind Node inliningTarget,
+                        @Cached HiddenAttr.ReadNode readAttrNode,
+                        @Cached InlinedConditionProfile oneByteProfile,
                         @Cached StringMaterializeNode materializeNode,
                         @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
-            return doString(materializeNode.execute(inliningTarget, x), codePointLengthNode);
-        }
-
-        static boolean isKnownLength(int elements) {
-            // -1 means we have to search for the null terminator to compute the length
-            return elements != -1;
+            NativeStringData nativeData = x.getNativeStringData(inliningTarget, readAttrNode);
+            if (oneByteProfile.profile(inliningTarget, nativeData.getCharSize() == 1)) {
+                return nativeData.length();
+            } else {
+                return doString(materializeNode.execute(inliningTarget, x), codePointLengthNode);
+            }
         }
 
         @Specialization

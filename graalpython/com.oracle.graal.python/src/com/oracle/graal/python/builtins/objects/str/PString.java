@@ -53,22 +53,23 @@ import com.oracle.truffle.api.strings.TruffleString;
 @ExportLibrary(InteropLibrary.class)
 public final class PString extends PythonBuiltinObject {
     private TruffleString materializedValue;
-    private NativeCharSequence nativeCharSequence;
-
-    public PString(Object clazz, Shape instanceShape, NativeCharSequence value) {
-        super(builtinClassToType(clazz), instanceShape);
-        this.nativeCharSequence = value;
-    }
 
     public PString(Object clazz, Shape instanceShape, TruffleString value) {
         super(builtinClassToType(clazz), instanceShape);
-        assert value != null;
         this.materializedValue = value;
     }
 
     @TruffleBoundary
     public TruffleString getValueUncached() {
         return isMaterialized() ? getMaterialized() : StringMaterializeNode.executeUncached(this);
+    }
+
+    public NativeStringData getNativeStringData(Node inliningTarget, HiddenAttr.ReadNode readNode) {
+        return (NativeStringData) readNode.execute(inliningTarget, this, HiddenAttr.PSTRING_NATIVE_DATA, null);
+    }
+
+    public void setNativeStringData(Node inliningTarget, HiddenAttr.WriteNode writeNode, NativeStringData value) {
+        writeNode.execute(inliningTarget, this, HiddenAttr.PSTRING_NATIVE_DATA, value);
     }
 
     public PBytes getUtf8Bytes(Node inliningTarget, HiddenAttr.ReadNode readNode) {
@@ -87,15 +88,6 @@ public final class PString extends PythonBuiltinObject {
         writeNode.execute(inliningTarget, this, HiddenAttr.PSTRING_WCHAR, value);
     }
 
-    public boolean isNativeCharSequence() {
-        return nativeCharSequence != null;
-    }
-
-    public boolean isNativeMaterialized() {
-        assert isNativeCharSequence();
-        return nativeCharSequence.isMaterialized();
-    }
-
     public boolean isMaterialized() {
         return materializedValue != null;
     }
@@ -110,29 +102,25 @@ public final class PString extends PythonBuiltinObject {
         materializedValue = materialized;
     }
 
-    public NativeCharSequence getNativeCharSequence() {
-        assert isNativeCharSequence();
-        return nativeCharSequence;
-    }
-
-    public void setNativeCharSequence(NativeCharSequence nativeCharSequence) {
-        this.nativeCharSequence = nativeCharSequence;
-    }
-
     @Override
     public String toString() {
-        return isMaterialized() ? materializedValue.toJavaStringUncached() : nativeCharSequence.toString();
+        return isMaterialized() ? materializedValue.toJavaStringUncached() : "<unmaterialized native string>";
     }
 
     @Override
     public int hashCode() {
-        return isMaterialized() ? materializedValue.hashCode() : nativeCharSequence.hashCode();
+        return CastToTruffleStringNode.executeUncached(this).hashCode();
     }
 
+    // equals is used from DynamicObject lookups
     @Ignore
     @Override
     public boolean equals(Object obj) {
-        return obj != null && obj.equals(isMaterialized() ? materializedValue : nativeCharSequence);
+        try {
+            return CastToTruffleStringNode.executeUncached(this).equalsUncached(CastToTruffleStringNode.executeUncached(obj), TS_ENCODING);
+        } catch (CannotCastException e) {
+            return false;
+        }
     }
 
     @ExportMessage

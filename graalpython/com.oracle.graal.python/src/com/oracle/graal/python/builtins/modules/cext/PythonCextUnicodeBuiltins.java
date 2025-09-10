@@ -124,7 +124,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
-import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
+import com.oracle.graal.python.builtins.objects.str.NativeStringData;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.EncodeNode;
@@ -812,12 +812,22 @@ public final class PythonCextUnicodeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, Py_ssize_t, Py_ssize_t, PY_UCS4}, call = Ignored)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, Py_ssize_t, Int, Int}, call = Ignored)
     abstract static class GraalPyPrivate_Unicode_New extends CApiQuaternaryBuiltinNode {
         @Specialization
-        static Object doGeneric(Object ptr, long elements, long elementSize, int isAscii,
-                        @Bind PythonLanguage language) {
-            return PFactory.createString(language, new NativeCharSequence(ptr, (int) elements, (int) elementSize, isAscii != 0));
+        static Object doGeneric(Object ptr, long elements, int charSize, int isAscii,
+                        @Bind Node inliningTarget,
+                        @Bind PythonLanguage language,
+                        @Cached HiddenAttr.WriteNode writeNode,
+                        @Cached PRaiseNode raiseNode) {
+            long size = elements * charSize;
+            if (!PInt.isIntRange(size)) {
+                throw raiseNode.raise(inliningTarget, MemoryError);
+            }
+            PString s = PFactory.createString(language, null);
+            NativeStringData data = NativeStringData.create(charSize, isAscii != 0, ptr, (int) size);
+            s.setNativeStringData(inliningTarget, writeNode, data);
+            return s;
         }
     }
 
@@ -1246,9 +1256,6 @@ public final class PythonCextUnicodeBuiltins {
 
         @Specialization
         static int pstring(PString s) {
-            if (s.isNativeCharSequence()) {
-                return s.isNativeMaterialized() ? 1 : 0;
-            }
             return s.isMaterialized() ? 1 : 0;
         }
 

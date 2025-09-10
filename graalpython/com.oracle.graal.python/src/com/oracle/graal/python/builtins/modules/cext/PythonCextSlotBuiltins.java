@@ -77,7 +77,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.setter;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.vectorcallfunc;
 import static com.oracle.graal.python.nodes.HiddenAttr.METHOD_DEF_PTR;
-import static com.oracle.graal.python.nodes.HiddenAttr.NATIVE_STORAGE;
 import static com.oracle.graal.python.nodes.HiddenAttr.PROMOTED_START;
 import static com.oracle.graal.python.nodes.HiddenAttr.PROMOTED_STEP;
 import static com.oracle.graal.python.nodes.HiddenAttr.PROMOTED_STOP;
@@ -111,7 +110,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
-import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
+import com.oracle.graal.python.builtins.objects.str.NativeStringData;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringLenNode;
@@ -167,10 +166,12 @@ public final class PythonCextSlotBuiltins {
         int get(PString object,
                         @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile storageProfile,
+                        @Cached HiddenAttr.ReadNode readAttrNode,
                         @Cached TruffleString.GetCodeRangeNode getCodeRangeNode) {
             // important: avoid materialization of native sequences
-            if (storageProfile.profile(inliningTarget, object.isNativeCharSequence())) {
-                return object.getNativeCharSequence().isAsciiOnly() ? 1 : 0;
+            NativeStringData nativeData = object.getNativeStringData(inliningTarget, readAttrNode);
+            if (storageProfile.profile(inliningTarget, nativeData != null)) {
+                return nativeData.isAscii() ? 1 : 0;
             }
 
             TruffleString string = object.getMaterialized();
@@ -205,10 +206,12 @@ public final class PythonCextSlotBuiltins {
         static int get(PString object,
                         @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile storageProfile,
+                        @Cached HiddenAttr.ReadNode readAttrNode,
                         @Cached TruffleString.GetCodeRangeNode getCodeRangeNode) {
             // important: avoid materialization of native sequences
-            if (storageProfile.profile(inliningTarget, object.isNativeCharSequence())) {
-                return object.getNativeCharSequence().getElementSize() & 0b111;
+            NativeStringData nativeData = object.getNativeStringData(inliningTarget, readAttrNode);
+            if (storageProfile.profile(inliningTarget, nativeData != null)) {
+                return nativeData.getCharSize();
             }
             TruffleString string = object.getMaterialized();
             TruffleString.CodeRange range = getCodeRangeNode.execute(string, TS_ENCODING);
@@ -677,10 +680,12 @@ public final class PythonCextSlotBuiltins {
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached CStructAccess.AllocateNode allocateNode,
                         @Cached CStructAccess.WriteTruffleStringNode writeTruffleStringNode,
-                        @Cached HiddenAttr.WriteNode writeAttribute) {
-            if (object.isNativeCharSequence()) {
+                        @Cached HiddenAttr.ReadNode readAttrNode,
+                        @Cached HiddenAttr.WriteNode writeAttrNode) {
+            NativeStringData nativeData = object.getNativeStringData(inliningTarget, readAttrNode);
+            if (nativeData != null) {
                 // in this case, we can just return the pointer
-                return object.getNativeCharSequence().getPtr();
+                return nativeData.getPtr();
             }
             TruffleString string = object.getMaterialized();
             TruffleString.CodeRange range = getCodeRangeNode.execute(string, TS_ENCODING);
@@ -702,20 +707,14 @@ public final class PythonCextSlotBuiltins {
                 encoding = TruffleString.Encoding.UTF_32;
             }
             string = switchEncodingNode.execute(string, encoding);
-            int byteLength = string.byteLength(encoding) + /* null terminator */ charSize;
-            Object ptr = allocateNode.alloc(byteLength);
+            int byteLength = string.byteLength(encoding);
+            Object ptr = allocateNode.alloc(byteLength + /* null terminator */ charSize);
             writeTruffleStringNode.write(ptr, string, encoding);
             /*
-             * Set native char sequence, so we can just return the pointer the next time.
+             * Set native data, so we can just return the pointer the next time.
              */
-            NativeCharSequence nativeSequence = new NativeCharSequence(ptr, string.byteLength(encoding) / charSize, charSize, isAscii);
-            object.setNativeCharSequence(nativeSequence);
-            /*
-             * Create a native sequence storage to manage the lifetime of the native memory.
-             *
-             * TODO it would be nicer if the native char sequence could manage its own memory
-             */
-            writeAttribute.execute(inliningTarget, object, NATIVE_STORAGE, NativeByteSequenceStorage.create(ptr, byteLength, byteLength, true));
+            NativeStringData data = NativeStringData.create(charSize, isAscii, ptr, byteLength);
+            object.setNativeStringData(inliningTarget, writeAttrNode, data);
             return ptr;
         }
     }
