@@ -146,11 +146,14 @@ def run_tkinter_build_script():
 
 def setup_tkinter():
 
-    packages = ["cffi", "setuptools"]
+    packages = ["pip", "cffi", "setuptools"]
+
+    sys.stdout.write("Checking for required packages before importing tkinter:\n")
+    sys.stdout.flush()
 
     to_install = []
     for pkg in packages:
-        sys.stdout.write(f"Checking {pkg}...")
+        sys.stdout.write(f"  {pkg}...")
         sys.stdout.flush()
 
         if check_package(pkg):
@@ -160,12 +163,15 @@ def setup_tkinter():
             to_install.append(pkg)
 
     if to_install:
-        if prompt_user_install(', '.join(to_install)):
+        response = input(f"{YELLOW} Would you like to install {', '.join(to_install)} {"package" if len(to_install) == 1 else "packages"}? [Y/n]: {RESET}").strip().lower()
+        if response in ("", "y", "yes"):
+            if "pip" in to_install:
+                subprocess.check_call([sys.executable, "-m", "ensurepip", "--default-pip"])
+                to_install.remove("pip")
             subprocess.check_call([sys.executable, "-m", "pip", "install", *to_install])
-            print(f"{GREEN}{', '.join(to_install)} installed successfully.{RESET}")
+            print(f"{GREEN}All required packages were installed successfully.{RESET}")
         else:
-            print(f"{RED}Cannot continue without: {', '.join(to_install)}{RESET}")
-            print(f"Please install manually using: pip install {' '.join(to_install)}")
+            print(f"{RED}Cannot import tkinter without {"this package" if len(to_install) == 1 else "these packages"}: {' '.join(to_install)}")
             sys.exit(1)
 
     install_system_dependencies()
