@@ -38,6 +38,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+#include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -45,13 +46,29 @@
 #include <libgen.h>
 #include <string.h>
 #include <limits.h>
+#include <stdarg.h>
 #include <mach-o/dyld.h>
-
-#define MAX_LINE 4096
-#define MAX_ARGS 100
 
 #define GRAAL_PYTHON_EXE_ARG "--python.Executable="
 #define GRAAL_PYTHON_BASE_EXE_ARG "--python.VenvlauncherCommand="
+
+static bool debug_enabled = false;
+
+void debug(const char *format, ...) {
+    if (!debug_enabled) return;
+
+    va_list va;
+    char buffer[1024];
+    va_start(va, format);
+    int result = vsnprintf(buffer, sizeof(buffer), format, va);
+    va_end(va);
+
+    if (result <= 0) return;
+
+    fprintf(stderr, "%s", buffer);
+    fflush(stderr);
+}
+
 
 /**
  * Reads the 'venvlauncher_command' from a pyvenv.cfg file.
@@ -110,15 +127,36 @@ char *get_pyenvcfg_command(const char *pyenv_cfg_path) {
 
         }
     }
+
     free(current_line);
+    if (ferror(fp)) {
+        perror("getline failed");
+        fclose(fp);
+        exit(1);
+    }
+
+    fclose(fp);
     fprintf(stderr, "venvlauncher_command not found in pyenv.cfg file");
     exit(1);
+}
+
+int count_args(const char *cmd) {
+    char *copy = strdup(cmd);
+    int count = 0;
+    char *token = strtok(copy, " ");
+    while (token) {
+        count++;
+        token = strtok(NULL, " ");
+    }
+
+    free(copy);
+    return count;
 }
 
 char **split_venv_command_into_args(const char *venv_command, int *argc_out) {
 
     char *copy = strdup(venv_command);
-    size_t capacity = 5;
+    const int capacity = count_args(copy);
     char **args = malloc(capacity * sizeof(char *));
     if (!args) {
         fprintf(stderr, "allocation failed failed\n");
@@ -126,31 +164,16 @@ char **split_venv_command_into_args(const char *venv_command, int *argc_out) {
         exit(1);
     }
 
-    size_t count = 0;
+    int count = 0;
     char *current_token = strtok(copy, " ");
     while (current_token) {
-        if (count >= capacity) {
-            capacity *= 2;
-            char **tmp = realloc(args, capacity * sizeof(char *));
-            if (!tmp) {
-                // allocation failed
-                fprintf(stderr, "reallocation failed\n");
-                for (size_t i = 0; i < count; i++) {
-                    free(args[i]);
-                }
-                free(args);
-                free(copy);
-                exit(1);
-            }
-            args = tmp;
-        }
-
         args[count++] = strdup(current_token);
         current_token = strtok(NULL, " ");
     }
 
     free(copy);
-    *argc_out = (int) count;
+    assert(capacity == count);
+    *argc_out = count;
     return args;
 }
 
@@ -167,10 +190,12 @@ void find_pyvenv(char *pyvenv_cfg_path, size_t path_size) {
     // First try search for the pyvenv on top level
     char *dir_path = dirname(executable_path);
     snprintf(pyvenv_cfg_path, path_size, "%s/pyvenv.cfg", dir_path);
+    debug("Searching for pyenv.cfg file in %s\n", pyvenv_cfg_path);
     if (access(pyvenv_cfg_path, F_OK) != 0) {
         // Try searching one level up
         dir_path = dirname(dir_path);
         snprintf(pyvenv_cfg_path, path_size, "%s/pyvenv.cfg", dir_path);
+        debug("Searching for pyenv.cfg file in %s\n", pyvenv_cfg_path);
         if (access(pyvenv_cfg_path, F_OK) != 0) {
             fprintf(stderr, "Error: pyvenv.cfg file not found at %s\n", pyvenv_cfg_path);
             exit(1);
@@ -179,10 +204,16 @@ void find_pyvenv(char *pyvenv_cfg_path, size_t path_size) {
 }
 
 int main(int argc, char *argv[]) {
+    if (getenv("PYLAUNCHER_DEBUG") != NULL) {
+        debug_enabled = true;
+    }
+    debug("Original argv are:\n");
+    for (int i = 1; i < argc; i++) {
+        debug("argv[%d] = %s\n", i, argv[i]);
+    }
+
     char pyvenv_cfg_path[PATH_MAX];
-
     find_pyvenv(pyvenv_cfg_path, sizeof(pyvenv_cfg_path));
-
     char *venv_command = get_pyenvcfg_command(pyvenv_cfg_path);
 
     int venv_argc = 0;
@@ -223,6 +254,11 @@ int main(int argc, char *argv[]) {
     }
 
     args[k] = NULL;
+
+    debug("Final arguments to execv: \n");
+    for (int i = 0; i < k; i++) {
+        debug("arg[%d] = %s\n", i, args[i]);
+    }
 
     execv(args[0], args);
     perror("execv failed"); // only runs if execv fails
