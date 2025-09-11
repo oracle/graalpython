@@ -686,6 +686,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                             package %s;
 
                             import java.util.TreeSet;
+                            import com.oracle.graal.python.nfi.Nfi2;
                             import com.oracle.truffle.api.CompilerDirectives;
                             import com.oracle.truffle.api.interop.InteropLibrary;
                             import com.oracle.truffle.api.interop.UnknownIdentifierException;
@@ -697,11 +698,9 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                                     // no instances
                                 }
 
-                                public static boolean reallyHasMember(Object capiLibrary, String name) {
+                                public static boolean reallyHasMember(long capiLibrary, String name) {
                                     try {
-                                        InteropLibrary.getUncached().readMember(capiLibrary, name);
-                                    } catch (UnsupportedMessageException e) {
-                                        throw CompilerDirectives.shouldNotReachHere(e);
+                                        Nfi2.lookupSymbolUncached(capiLibrary, name);
                                     } catch (UnknownIdentifierException e) {
                                         return false;
                                     }
@@ -711,7 +710,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                                 /**
                                  * Checks whether the expected builtins exist in the library.
                                  */
-                                public static boolean assertBuiltins(Object capiLibrary) {
+                                public static boolean assertBuiltins(long capiLibrary) {
                                     boolean hasMember = false;
                                     TreeSet<String> messages = new TreeSet<>();
                                     %s

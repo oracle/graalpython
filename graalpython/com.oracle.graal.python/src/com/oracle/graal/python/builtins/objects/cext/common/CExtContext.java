@@ -78,10 +78,10 @@ public abstract class CExtContext {
     private final PythonContext context;
 
     /** The library object representing 'libpython.*.so' or similar. */
-    private final Object library;
+    private final long library;
     private final String libraryName;
 
-    public CExtContext(PythonContext context, Object library, String libraryName) {
+    public CExtContext(PythonContext context, long library, String libraryName) {
         this.context = context;
         this.library = library;
         this.libraryName = libraryName;
@@ -91,7 +91,7 @@ public abstract class CExtContext {
         return context;
     }
 
-    public final Object getLibrary() {
+    public final long getLibrary() {
         return library;
     }
 

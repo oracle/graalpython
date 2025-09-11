@@ -81,22 +81,22 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuil
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureExecutableNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureExecutableNode;
 import com.oracle.graal.python.builtins.objects.cext.copying.NativeLibraryLocator;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.FreeNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.FreeNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -105,6 +105,8 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
+import com.oracle.graal.python.nfi.Nfi2;
+import com.oracle.graal.python.nfi.NfiType;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -120,7 +122,6 @@ import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonSystemThreadTask;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.SuppressFBWarnings;
-import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -146,7 +147,6 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
-import com.oracle.truffle.api.source.Source.SourceBuilder;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.CodeRange;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
@@ -316,7 +316,7 @@ public final class CApiContext extends CExtContext {
         return PythonLanguage.getLogger(LOGGER_CAPI_NAME + "." + clazz.getSimpleName());
     }
 
-    public CApiContext(PythonContext context, Object library, NativeLibraryLocator locator) {
+    public CApiContext(PythonContext context, long library, NativeLibraryLocator locator) {
         super(context, library, locator.getCapiLibrary());
         this.nativeSymbolCache = new Object[NativeCAPISymbol.values().length];
         this.nativeLibraryLocator = locator;
@@ -579,11 +579,11 @@ public final class CApiContext extends CExtContext {
         CompilerAsserts.neverPartOfCompilation();
         String name = symbol.getName();
         try {
-            Object nativeSymbol = InteropLibrary.getUncached().readMember(PythonContext.get(null).getCApiContext().getLibrary(), name);
+            Object nativeSymbol = new NativePointer(Nfi2.lookupSymbolUncached(PythonContext.get(null).getCApiContext().getLibrary(), name));
             nativeSymbol = EnsureExecutableNode.executeUncached(nativeSymbol, symbol);
             VarHandle.storeStoreFence();
             return nativeSymbolCache[symbol.ordinal()] = nativeSymbol;
-        } catch (UnsupportedMessageException | UnknownIdentifierException e) {
+        } catch (UnknownIdentifierException e) {
             throw CompilerDirectives.shouldNotReachHere(e);
         }
     }
@@ -789,9 +789,23 @@ public final class CApiContext extends CExtContext {
         return ensureCapiWasLoaded(node, context, name, path, null);
     }
 
+    // TODO(NFI2) debugging only, remove this
+    public static CApiContext ensureCapiWasLoaded(Node node, PythonContext context, TruffleString name, TruffleString path, String reason) throws IOException, ImportException, ApiInitException {
+        boolean b = context.hasCApiContext();
+        long startTime = System.nanoTime();
+        try {
+            return ensureCapiWasLoaded0(node, context, name, path, reason);
+        } finally {
+            long endTime = System.nanoTime();
+            if (!b) {
+                System.err.println("@@@@@@@@@@@@@@@@@@@@@@@ CAPI loaded in " + (endTime - startTime) / 1000000.0 + "ms");
+            }
+        }
+    }
+
     @TruffleBoundary
     @SuppressWarnings("try")
-    public static CApiContext ensureCapiWasLoaded(Node node, PythonContext context, TruffleString name, TruffleString path, String reason) throws IOException, ImportException, ApiInitException {
+    public static CApiContext ensureCapiWasLoaded0(Node node, PythonContext context, TruffleString name, TruffleString path, String reason) throws IOException, ImportException, ApiInitException {
         assert PythonContext.get(null).ownsGil(); // unsafe lazy initialization
         // The initialization may run Python code (e.g., module import in
         // GraalPyPrivate_InitBuiltinTypesAndStructs), so just holding the GIL is not enough
@@ -877,45 +891,38 @@ public final class CApiContext extends CExtContext {
         Env env = context.getEnv();
         InteropLibrary U = InteropLibrary.getUncached();
 
-        TruffleFile homePath = env.getInternalTruffleFile(context.getCAPIHome().toJavaStringUncached());
-        // e.g. "libpython-native.so"
-        String libName = PythonContext.getSupportLibName("python-native");
-        final TruffleFile capiFile = homePath.resolve(libName).getCanonicalFile();
-        try {
-            SourceBuilder capiSrcBuilder;
-            boolean useNative = true;
-            boolean isolateNative = PythonOptions.IsolateNativeModules.getValue(env.getOptions());
-            final NativeLibraryLocator loc;
-            if (!isolateNative) {
-                useNative = nativeCAPILoaded.compareAndSet(NO_NATIVE_CONTEXT, GLOBAL_NATIVE_CONTEXT);
-            } else {
-                useNative = nativeCAPILoaded.compareAndSet(NO_NATIVE_CONTEXT, ISOLATED_NATIVE_CONTEXT) || nativeCAPILoaded.get() == ISOLATED_NATIVE_CONTEXT;
-            }
-            if (!useNative) {
-                String actualReason = "initialize native extensions support";
-                if (reason != null) {
-                    actualReason = reason;
-                } else if (name != null && path != null) {
-                    actualReason = String.format("load a native module '%s' from path '%s'", name.toJavaStringUncached(), path.toJavaStringUncached());
+            TruffleFile homePath = env.getInternalTruffleFile(context.getCAPIHome().toJavaStringUncached());
+            // e.g. "libpython-native.so"
+            String libName = PythonContext.getSupportLibName("python-native");
+            final TruffleFile capiFile = homePath.resolve(libName).getCanonicalFile();
+            try {
+                boolean useNative = true;
+                boolean isolateNative = PythonOptions.IsolateNativeModules.getValue(env.getOptions());
+                final NativeLibraryLocator loc;
+                if (!isolateNative) {
+                    useNative = nativeCAPILoaded.compareAndSet(NO_NATIVE_CONTEXT, GLOBAL_NATIVE_CONTEXT);
+                } else {
+                    useNative = nativeCAPILoaded.compareAndSet(NO_NATIVE_CONTEXT, ISOLATED_NATIVE_CONTEXT) || nativeCAPILoaded.get() == ISOLATED_NATIVE_CONTEXT;
                 }
-                throw new ApiInitException(toTruffleStringUncached(
-                                String.format("Option python.IsolateNativeModules is set to 'false' and a second GraalPy context attempted to %s. " +
-                                                "At least one context in this process runs with 'IsolateNativeModules' set to false. " +
-                                                "Depending on the order of context creation, this means some contexts in the process " +
-                                                "cannot use native module.", actualReason)));
-            }
-            loc = new NativeLibraryLocator(context, capiFile, isolateNative);
-            context.ensureNFILanguage(node, "allowNativeAccess", "true");
-            String dlopenFlags = isolateNative ? "RTLD_LOCAL" : "RTLD_GLOBAL";
-            capiSrcBuilder = Source.newBuilder(J_NFI_LANGUAGE, String.format("load(%s) \"%s\"", dlopenFlags, loc.getCapiLibrary()), "<libpython>");
+                if (!useNative) {
+                    String actualReason = "initialize native extensions support";
+                    if (reason != null) {
+                        actualReason = reason;
+                    } else if (name != null && path != null) {
+                        actualReason = String.format("load a native module '%s' from path '%s'", name.toJavaStringUncached(), path.toJavaStringUncached());
+                    }
+                    throw new ApiInitException(toTruffleStringUncached(
+                                    String.format("Option python.IsolateNativeModules is set to 'false' and a second GraalPy context attempted to %s. " +
+                                                    "At least one context in this process runs with 'IsolateNativeModules' set to false. " +
+                                                    "Depending on the order of context creation, this means some contexts in the process " +
+                                                    "cannot use native module.", actualReason)));
+                }
+                loc = new NativeLibraryLocator(context, capiFile, isolateNative);
+                context.ensureNFILanguage(node, "allowNativeAccess", "true");
+                int dlopenFlags = isolateNative ? PosixConstants.RTLD_LOCAL.value : PosixConstants.RTLD_GLOBAL.value;
             LOGGER.config(() -> "loading CAPI from " + loc.getCapiLibrary() + " as native");
-            if (!context.getLanguage().getEngineOption(PythonOptions.ExposeInternalSources)) {
-                capiSrcBuilder.internal(true);
-            }
-            CallTarget capiLibraryCallTarget = context.getEnv().parseInternal(capiSrcBuilder.build());
-
-            Object capiLibrary = capiLibraryCallTarget.call();
-            Object initFunction = U.readMember(capiLibrary, "initialize_graal_capi");
+            long capiLibrary = Nfi2.loadLibraryUncached(loc.getCapiLibrary(), dlopenFlags);
+            long initFunction = Nfi2.lookupSymbolUncached(capiLibrary, "initialize_graal_capi");
             CApiContext cApiContext = new CApiContext(context, capiLibrary, loc);
             context.setCApiContext(cApiContext);
             context.setCApiState(PythonContext.CApiState.INITIALIZING);
@@ -929,9 +936,7 @@ public final class CApiContext extends CExtContext {
                 Object gcState = cApiContext.createGCState();
                 PythonThreadState currentThreadState = context.getThreadState(context.getLanguage());
                 Object nativeThreadState = PThreadState.getOrCreateNativeThreadState(currentThreadState);
-                Object signature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "(ENV,POINTER,POINTER,POINTER):POINTER", "exec").build()).call();
-                initFunction = SignatureLibrary.getUncached().bind(signature, initFunction);
-                Object nativeThreadLocalVarPointer = U.execute(initFunction, builtinArrayWrapper, gcState, nativeThreadState);
+                Object nativeThreadLocalVarPointer = Nfi2.createSignatureUncached(NfiType.POINTER, NfiType.POINTER, NfiType.POINTER, NfiType.POINTER, NfiType.POINTER).invokeUncached(initFunction, 0L, builtinArrayWrapper, gcState, nativeThreadState);
                 assert U.isPointer(nativeThreadLocalVarPointer);
                 assert !U.isNull(nativeThreadLocalVarPointer);
                 currentThreadState.setNativeThreadLocalVarPointer(nativeThreadLocalVarPointer);
@@ -948,15 +953,14 @@ public final class CApiContext extends CExtContext {
              * it during context exit, but when the VM is terminated by a signal, the context exit
              * is skipped. For that case we set up the shutdown hook.
              */
-            Object finalizeFunction = U.readMember(capiLibrary, "GraalPyPrivate_GetFinalizeCApiPointer");
-            Object finalizeSignature = env.parseInternal(Source.newBuilder(J_NFI_LANGUAGE, "():POINTER", "exec").build()).call();
-            Object finalizingPointer = SignatureLibrary.getUncached().call(finalizeSignature, finalizeFunction);
-            try {
-                cApiContext.addNativeFinalizer(context, finalizingPointer);
-            } catch (RuntimeException e) {
-                // This can happen when other languages restrict multithreading
-                LOGGER.warning(() -> "didn't register a native finalizer due to: " + e.getMessage());
-            }
+            long finalizeFunction = Nfi2.lookupSymbolUncached(capiLibrary, "GraalPyPrivate_GetFinalizeCApiPointer");
+            Object finalizingPointer = Nfi2.createSignatureUncached(NfiType.POINTER).invokeUncached(finalizeFunction);
+                try {
+                    cApiContext.addNativeFinalizer(context, finalizingPointer);
+                } catch (RuntimeException e) {
+                    // This can happen when other languages restrict multithreading
+                    LOGGER.warning(() -> "didn't register a native finalizer due to: " + e.getMessage());
+                }
 
             return cApiContext;
         } catch (PException e) {
@@ -964,7 +968,7 @@ public final class CApiContext extends CExtContext {
              * Python exceptions that occur during the C API initialization are just passed through
              */
             throw e;
-        } catch (RuntimeException | UnsupportedMessageException | ArityException | UnknownIdentifierException | UnsupportedTypeException e) {
+        } catch (RuntimeException | ArityException | UnknownIdentifierException | UnsupportedTypeException e) {
             // we cannot really check if we truly need native access, so
             // when the abi contains "managed" we assume we do not
             if (!libName.contains("managed") && !context.isNativeAccessAllowed()) {

@@ -674,9 +674,10 @@ Py_LOCAL_SYMBOL int8_t *_graalpy_finalizing = NULL;
 PyAPI_FUNC(PyThreadState **) initialize_graal_capi(TruffleEnv* env, void **builtin_closures, GCState *gc, PyThreadState *tstate) {
     clock_t t = clock();
 
-    if (env) {
-        TRUFFLE_CONTEXT = (*env)->getTruffleContext(env);
-    }
+//    TODO(NFI2) add support for ENV?
+//    if (env) {
+//        TRUFFLE_CONTEXT = (*env)->getTruffleContext(env);
+//    }
 
     _PyGC_InitState(gc);
 
