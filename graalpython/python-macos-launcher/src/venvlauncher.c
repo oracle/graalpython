@@ -58,7 +58,7 @@ void debug(const char *format, ...) {
     if (!debug_enabled) return;
 
     va_list va;
-    char buffer[1024];
+    char buffer[PATH_MAX * 2];
     va_start(va, format);
     int result = vsnprintf(buffer, sizeof(buffer), format, va);
     va_end(va);
@@ -159,7 +159,7 @@ char **split_venv_command_into_args(const char *venv_command, int *argc_out) {
     const int capacity = count_args(copy);
     char **args = malloc(capacity * sizeof(char *));
     if (!args) {
-        fprintf(stderr, "allocation failed failed\n");
+        fprintf(stderr, "allocation failed\n");
         free(copy);
         exit(1);
     }
