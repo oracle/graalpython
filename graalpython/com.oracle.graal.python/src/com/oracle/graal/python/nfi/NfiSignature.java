@@ -40,24 +40,32 @@
  */
 package com.oracle.graal.python.nfi;
 
+import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.Linker;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
 import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.oracle.truffle.api.CallTarget;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.nodes.RootNode;
 
 public final class NfiSignature {
+
+    static final MethodType INTEROP_METHOD_TYPE = MethodType.methodType(Object.class, Object.class, Object[].class);
 
     private final NfiType resType;
     private final NfiType[] argTypes;
     private MethodHandle downcallMethodHandle;
     private FunctionDescriptor functionDescriptor;
+    private MethodType interopUpcallMethodType;
 
     NfiSignature(NfiType resType, NfiType[] argTypes) {
         this.resType = resType;
@@ -87,7 +95,7 @@ public final class NfiSignature {
         }
         Object[] convertedArgs = new Object[args.length];
         for (int i = 0; i < args.length; i++) {
-            convertedArgs[i] = argTypes[i].convertArg(args[i]);
+            convertedArgs[i] = argTypes[i].getConvertArgJavaToNativeNodeUncached().execute(args[i]);
         }
         return convertedArgs;
     }
@@ -104,6 +112,28 @@ public final class NfiSignature {
             // TODO(NFI2) proper exception handling
             throw new RuntimeException(e);
         }
+    }
+
+    @SuppressWarnings("restricted")
+    public long createInteropClosureUncached(Object executable) {
+        // TODO(NFI2) remove once we are sure that all closures are direct nodes instead of interop
+        // executables
+        RootNode rootNode = new NfiInteropClosureRootNode(this);
+        // TODO(NFI2) SVM needs this handle to be a static method
+        MethodHandle handle = handle_CallTarget_call.bindTo(rootNode.getCallTarget());
+        handle = handle.asCollector(Object[].class, 2).asType(INTEROP_METHOD_TYPE).asVarargsCollector(Object[].class);
+        if (interopUpcallMethodType == null) {
+            Class<?>[] javaArgTypes = new Class<?>[argTypes.length + 1];
+            javaArgTypes[0] = Object.class;
+            for (int i = 0; i < argTypes.length; i++) {
+                javaArgTypes[i + 1] = argTypes[i].asJavaType();
+            }
+            interopUpcallMethodType = MethodType.methodType(resType.asJavaType(), javaArgTypes);
+        }
+        handle = handle.asType(interopUpcallMethodType);
+        handle = handle.bindTo(executable);
+        // TODO(NFI2) per-context or closure-specific Arena
+        return Linker.nativeLinker().upcallStub(handle, getFunctionDescriptor(), Arena.global()).address();
     }
 
     @SuppressWarnings("restricted")
@@ -126,5 +156,16 @@ public final class NfiSignature {
             functionDescriptor = resType == NfiType.VOID ? FunctionDescriptor.ofVoid(argLayouts) : FunctionDescriptor.of(resType.asLayout(), argLayouts);
         }
         return functionDescriptor;
+    }
+
+    static final MethodHandle handle_CallTarget_call;
+
+    static {
+        MethodType callType = MethodType.methodType(Object.class, Object[].class);
+        try {
+            handle_CallTarget_call = MethodHandles.lookup().findVirtual(CallTarget.class, "call", callType);
+        } catch (NoSuchMethodException | IllegalAccessException ex) {
+            throw CompilerDirectives.shouldNotReachHere(ex);
+        }
     }
 }

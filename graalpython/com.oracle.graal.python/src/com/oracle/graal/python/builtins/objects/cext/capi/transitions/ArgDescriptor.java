@@ -57,11 +57,13 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
+import com.oracle.graal.python.nfi.NfiType;
 import com.oracle.graal.python.util.Supplier;
 
 enum ArgBehavior {
     PyObject(
                     "POINTER",
+                    NfiType.POINTER,
                     "J",
                     "jlong",
                     "long",
@@ -71,26 +73,27 @@ enum ArgBehavior {
                     PythonToNativeNewRefNode::create,
                     NativeToPythonTransferNode::create,
                     NativeToPythonTransferNode.getUncached()),
-    PyObjectBorrowed("POINTER", "J", "jlong", "long", ToNativeBorrowedNode::new, NativeToPythonNode::create, NativeToPythonNode.getUncached(), null, null, null),
-    PyObjectAsTruffleString("POINTER", "J", "jlong", "long", null, ToPythonStringNode::create, ToPythonStringNode.getUncached(), null, null, null),
-    PyObjectWrapper("POINTER", "J", "jlong", "long", null, ToPythonWrapperNode::create, ToPythonWrapperNode.getUncached(), null, null, null),
-    Pointer("POINTER", "J", "jlong", "long", null, null, null),
-    WrappedPointer("POINTER", "J", "jlong", "long", null, WrappedPointerToPythonNodeGen::create, WrappedPointerToPythonNodeGen.getUncached()),
-    TruffleStringPointer("POINTER", "J", "jlong", "long", null, CharPtrToPythonNode::create, CharPtrToPythonNode.getUncached()),
-    Char8("SINT8", "C", "jbyte", "byte", null, null, null),
-    UChar8("UINT8", "C", "jbyte", "byte", null, null, null),
-    Char16("SINT16", "C", "jchar", "char", null, null, null),
-    Int32("SINT32", "I", "jint", "int", null, null, null),
-    UInt32("UINT32", "I", "jint", "int", null, null, null),
-    Int64("SINT64", "J", "jlong", "long", null, null, null),
-    UInt64("UINT64", "J", "jlong", "long", null, null, null),
-    Long("SINT64", "J", "jlong", "long", null, FromLongNode::create, FromLongNode.getUncached()),
-    Float32("FLOAT", "F", "jfloat", "float", null, null, null),
-    Float64("DOUBLE", "D", "jdouble", "double", null, null, null),
-    Void("VOID", "V", "void", "void", null, null, null),
-    Unknown("SINT64", "J", "jlong", "long", null, null, null);
+    PyObjectBorrowed("POINTER", NfiType.POINTER, "J", "jlong", "long", ToNativeBorrowedNode::new, NativeToPythonNode::create, NativeToPythonNode.getUncached(), null, null, null),
+    PyObjectAsTruffleString("POINTER", NfiType.POINTER, "J", "jlong", "long", null, ToPythonStringNode::create, ToPythonStringNode.getUncached(), null, null, null),
+    PyObjectWrapper("POINTER", NfiType.POINTER, "J", "jlong", "long", null, ToPythonWrapperNode::create, ToPythonWrapperNode.getUncached(), null, null, null),
+    Pointer("POINTER", NfiType.POINTER, "J", "jlong", "long", null, null, null),
+    WrappedPointer("POINTER", NfiType.POINTER, "J", "jlong", "long", null, WrappedPointerToPythonNodeGen::create, WrappedPointerToPythonNodeGen.getUncached()),
+    TruffleStringPointer("POINTER", NfiType.POINTER, "J", "jlong", "long", null, CharPtrToPythonNode::create, CharPtrToPythonNode.getUncached()),
+    Char8("SINT8", NfiType.SINT8, "C", "jbyte", "byte", null, null, null),
+    UChar8("UINT8", NfiType.SINT8, "C", "jbyte", "byte", null, null, null),
+    Char16("SINT16", NfiType.SINT16, "C", "jchar", "char", null, null, null),
+    Int32("SINT32", NfiType.SINT32, "I", "jint", "int", null, null, null),
+    UInt32("UINT32", NfiType.SINT32, "I", "jint", "int", null, null, null),
+    Int64("SINT64", NfiType.SINT64, "J", "jlong", "long", null, null, null),
+    UInt64("UINT64", NfiType.SINT64, "J", "jlong", "long", null, null, null),
+    Long("SINT64", NfiType.SINT64, "J", "jlong", "long", null, FromLongNode::create, FromLongNode.getUncached()),
+    Float32("FLOAT", NfiType.FLOAT, "F", "jfloat", "float", null, null, null),
+    Float64("DOUBLE", NfiType.DOUBLE, "D", "jdouble", "double", null, null, null),
+    Void("VOID", NfiType.VOID, "V", "void", "void", null, null, null),
+    Unknown("SINT64", NfiType.SINT64, "J", "jlong", "long", null, null, null);
 
     public final String nfiSignature;
+    public final NfiType nfi2Type;
     public final String jniSignature;
     public final String jniType;
     public final String javaSignature;
@@ -101,10 +104,11 @@ enum ArgBehavior {
     public final Supplier<CExtToJavaNode> nativeToPythonTransfer;
     public final CExtToJavaNode uncachedNativeToPythonTransfer;
 
-    ArgBehavior(String nfiSignature, String jniSignature, String jniType, String javaSignature, Supplier<CExtToNativeNode> pythonToNative, Supplier<CExtToJavaNode> nativeToPython,
+    ArgBehavior(String nfiSignature, NfiType nfi2Type, String jniSignature, String jniType, String javaSignature, Supplier<CExtToNativeNode> pythonToNative, Supplier<CExtToJavaNode> nativeToPython,
                     CExtToJavaNode uncachedNativeToPython,
                     Supplier<CExtToNativeNode> pythonToNativeTransfer, Supplier<CExtToJavaNode> nativeToPythonTransfer, CExtToJavaNode uncachedNativeToPythonTransfer) {
         this.nfiSignature = nfiSignature;
+        this.nfi2Type = nfi2Type;
         this.jniSignature = jniSignature;
         this.jniType = jniType;
         this.javaSignature = javaSignature;
@@ -116,9 +120,9 @@ enum ArgBehavior {
         this.uncachedNativeToPythonTransfer = uncachedNativeToPythonTransfer;
     }
 
-    ArgBehavior(String nfiSignature, String jniSignature, String jniType, String javaType, Supplier<CExtToNativeNode> pythonToNative, Supplier<CExtToJavaNode> nativeToPython,
+    ArgBehavior(String nfiSignature, NfiType nfi2Type, String jniSignature, String jniType, String javaType, Supplier<CExtToNativeNode> pythonToNative, Supplier<CExtToJavaNode> nativeToPython,
                     CExtToJavaNode uncachedNativeToPython) {
-        this(nfiSignature, jniSignature, jniType, javaType, pythonToNative, nativeToPython, uncachedNativeToPython, null, null, null);
+        this(nfiSignature, nfi2Type, jniSignature, jniType, javaType, pythonToNative, nativeToPython, uncachedNativeToPython, null, null, null);
     }
 }
 
@@ -450,6 +454,10 @@ public enum ArgDescriptor {
 
     public String getNFISignature() {
         return behavior.nfiSignature;
+    }
+
+    public NfiType getNFI2Type() {
+        return behavior.nfi2Type;
     }
 
     public String getJniSignature() {

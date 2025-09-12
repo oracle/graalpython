@@ -52,7 +52,6 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.lang.invoke.VarHandle;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -86,12 +85,11 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFun
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureExecutableNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureExecutableNode;
 import com.oracle.graal.python.builtins.objects.cext.copying.NativeLibraryLocator;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
@@ -106,6 +104,7 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.nfi.Nfi2;
+import com.oracle.graal.python.nfi.NfiSignature;
 import com.oracle.graal.python.nfi.NfiType;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -136,13 +135,10 @@ import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
@@ -888,8 +884,7 @@ public final class CApiContext extends CExtContext {
     }
 
     private static CApiContext loadCApi(Node node, PythonContext context, TruffleString name, TruffleString path, String reason) throws IOException, ImportException, ApiInitException {
-        Env env = context.getEnv();
-        InteropLibrary U = InteropLibrary.getUncached();
+            Env env = context.getEnv();
 
             TruffleFile homePath = env.getInternalTruffleFile(context.getCAPIHome().toJavaStringUncached());
             // e.g. "libpython-native.so"
@@ -927,7 +922,6 @@ public final class CApiContext extends CExtContext {
             context.setCApiContext(cApiContext);
             context.setCApiState(PythonContext.CApiState.INITIALIZING);
 
-            try (BuiltinArrayWrapper builtinArrayWrapper = new BuiltinArrayWrapper()) {
                 /*
                  * The GC state needs to be created before the first managed object is sent to
                  * native. This is because the native object stub could take part in GC and will
@@ -936,11 +930,22 @@ public final class CApiContext extends CExtContext {
                 Object gcState = cApiContext.createGCState();
                 PythonThreadState currentThreadState = context.getThreadState(context.getLanguage());
                 Object nativeThreadState = PThreadState.getOrCreateNativeThreadState(currentThreadState);
-                Object nativeThreadLocalVarPointer = Nfi2.createSignatureUncached(NfiType.POINTER, NfiType.POINTER, NfiType.POINTER, NfiType.POINTER, NfiType.POINTER).invokeUncached(initFunction, 0L, builtinArrayWrapper, gcState, nativeThreadState);
-                assert U.isPointer(nativeThreadLocalVarPointer);
-                assert !U.isNull(nativeThreadLocalVarPointer);
-                currentThreadState.setNativeThreadLocalVarPointer(nativeThreadLocalVarPointer);
-            }
+
+                long builtinArrayPtr = Nfi2.malloc(PythonCextBuiltinRegistry.builtins.length * CStructAccess.POINTER_SIZE);
+                try {
+                    for (int id = 0; id < PythonCextBuiltinRegistry.builtins.length; id++) {
+                        CApiBuiltinExecutable builtin = PythonCextBuiltinRegistry.builtins[id];
+                        CStructAccess.WritePointerNode.writeArrayElementUncached(builtinArrayPtr, id, builtin.getNativePointer());
+                    }
+                    NfiSignature initSignature = Nfi2.createSignatureUncached(NfiType.POINTER, NfiType.POINTER, NfiType.POINTER, NfiType.POINTER, NfiType.POINTER);
+                    // TODO(NFI2) ENV parameter
+                    Object nativeThreadLocalVarPointer = initSignature.invokeUncached(initFunction, 0L, builtinArrayPtr, gcState, nativeThreadState);
+                    assert InteropLibrary.getUncached().isPointer(nativeThreadLocalVarPointer);
+                    assert !InteropLibrary.getUncached().isNull(nativeThreadLocalVarPointer);
+                    currentThreadState.setNativeThreadLocalVarPointer(nativeThreadLocalVarPointer);
+                } finally {
+                    Nfi2.free(builtinArrayPtr);
+                }
 
             assert PythonCApiAssertions.assertBuiltins(capiLibrary);
             cApiContext.pyDateTimeCAPICapsule = PyDateTimeCAPIWrapper.initWrapper(context, cApiContext);
@@ -1289,112 +1294,10 @@ public final class CApiContext extends CExtContext {
         return extensions.get(Pair.create(filename, name));
     }
 
-    /**
-     * An array wrapper around {@link PythonCextBuiltinRegistry#builtins} which also implements
-     * {@link InteropLibrary#toNative(Object)}. This is intended to be passed to the C API
-     * initialization function. In order to avoid memory leaks if the wrapper receives
-     * {@code toNative}, it should be used in a try-with-resources.
-     */
-    @ExportLibrary(InteropLibrary.class)
-    @SuppressWarnings("static-method")
-    static final class BuiltinArrayWrapper implements TruffleObject, AutoCloseable {
-        private long pointer;
-
-        @ExportMessage
-        boolean hasArrayElements() {
-            return true;
-        }
-
-        @ExportMessage
-        long getArraySize() {
-            return PythonCextBuiltinRegistry.builtins.length;
-        }
-
-        @ExportMessage
-        boolean isArrayElementReadable(long index) {
-            return 0 <= index && index < PythonCextBuiltinRegistry.builtins.length;
-        }
-
-        @ExportMessage
-        @TruffleBoundary
-        Object readArrayElement(long index) throws InvalidArrayIndexException {
-            if (!isArrayElementReadable(index)) {
-                throw InvalidArrayIndexException.create(index);
-            }
-            // cast is guaranteed by 'isArrayElementReadable'
-            return getCAPIBuiltinExecutable((int) index);
-        }
-
-        private static CApiBuiltinExecutable getCAPIBuiltinExecutable(int id) {
-            CompilerAsserts.neverPartOfCompilation();
-            try {
-                CApiBuiltinExecutable builtin = PythonCextBuiltinRegistry.builtins[id];
-                LOGGER.finer("CApiContext.BuiltinArrayWrapper.get " + id + " / " + builtin.name());
-                return builtin;
-            } catch (Throwable e) {
-                // this is a fatal error, so print it to stderr:
-                e.printStackTrace(new PrintStream(PythonContext.get(null).getEnv().err()));
-                throw new RuntimeException(e);
-            }
-        }
-
-        @ExportMessage
-        boolean isPointer() {
-            return pointer != 0;
-        }
-
-        @ExportMessage
-        long asPointer() throws UnsupportedMessageException {
-            if (pointer != 0) {
-                return pointer;
-            }
-            throw UnsupportedMessageException.create();
-        }
-
-        @ExportMessage
-        @TruffleBoundary
-        void toNative() {
-            if (pointer == 0) {
-                assert PythonContext.get(null).isNativeAccessAllowed();
-                Object ptr = CStructAccess.AllocateNode.callocUncached(PythonCextBuiltinRegistry.builtins.length, CStructAccess.POINTER_SIZE);
-                pointer = CExtCommonNodes.CoerceNativePointerToLongNode.executeUncached(ptr);
-                if (pointer != 0) {
-                    InteropLibrary lib = null;
-                    for (int i = 0; i < PythonCextBuiltinRegistry.builtins.length; i++) {
-                        CApiBuiltinExecutable capiBuiltinExecutable = getCAPIBuiltinExecutable(i);
-                        if (lib == null || !lib.accepts(capiBuiltinExecutable)) {
-                            lib = InteropLibrary.getUncached(capiBuiltinExecutable);
-                        }
-                        assert lib.accepts(capiBuiltinExecutable);
-                        lib.toNative(capiBuiltinExecutable);
-                        try {
-                            CStructAccess.WritePointerNode.writeArrayElementUncached(pointer, i, lib.asPointer(capiBuiltinExecutable));
-                        } catch (UnsupportedMessageException e) {
-                            throw CompilerDirectives.shouldNotReachHere(e);
-                        }
-                    }
-                }
-            }
-        }
-
-        @Override
-        public void close() {
-            if (pointer != 0) {
-                FreeNode.executeUncached(pointer);
-            }
-        }
-    }
-
     public long getClosurePointer(Object executable) {
         CompilerAsserts.neverPartOfCompilation();
         ClosureInfo info = callableClosureByExecutable.get(executable);
         return info == null ? -1 : info.pointer;
-    }
-
-    public Object getClosureForExecutable(Object executable) {
-        CompilerAsserts.neverPartOfCompilation();
-        ClosureInfo info = callableClosureByExecutable.get(executable);
-        return info == null ? null : info.closure;
     }
 
     public Object getClosureDelegate(long pointer) {
@@ -1411,6 +1314,9 @@ public final class CApiContext extends CExtContext {
 
     public void setClosurePointer(Object closure, Object delegate, Object executable, long pointer) {
         CompilerAsserts.neverPartOfCompilation();
+        // TODO(NFI2) closure in ClosureInfo is unused, but cpyext tests crash without it, we
+        // probably need to keep it strongly referenced. Remove once registerClosure uses panama
+        // directly
         var info = new ClosureInfo(closure, delegate, executable, pointer);
         callableClosureByExecutable.put(executable, info);
         callableClosures.put(pointer, info);

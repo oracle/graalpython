@@ -81,7 +81,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T__WEAKREF;
 import static com.oracle.graal.python.nodes.ErrorMessages.INDEX_OUT_OF_RANGE;
 import static com.oracle.graal.python.nodes.ErrorMessages.NATIVE_S_SUBTYPES_NOT_IMPLEMENTED;
 import static com.oracle.graal.python.nodes.HiddenAttr.NATIVE_SLOTS;
-import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
@@ -97,7 +96,6 @@ import java.lang.annotation.Target;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Level;
@@ -165,6 +163,9 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.nfi.Nfi2;
+import com.oracle.graal.python.nfi.NfiSignature;
+import com.oracle.graal.python.nfi.NfiType;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
@@ -223,11 +224,8 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.IndirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
-import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 public final class PythonCextBuiltins {
 
@@ -698,65 +696,35 @@ public final class PythonCextBuiltins {
             return pointer;
         }
 
-        private static final class SignatureContainerRootNode extends RootNode {
-
-            final HashMap<String, SignatureLibrary> libs = new HashMap<>();
-
-            protected SignatureContainerRootNode() {
-                super(null);
-            }
-
-            @Override
-            public Object execute(VirtualFrame frame) {
-                throw CompilerDirectives.shouldNotReachHere("not meant to be executed");
-            }
-
-            public SignatureLibrary getLibrary(String name) {
-                return libs.computeIfAbsent(name, n -> {
-                    SignatureLibrary lib = SignatureLibrary.getFactory().createDispatched(3);
-                    SignatureContainerRootNode.this.insert(lib);
-                    return lib;
-                });
-            }
-        }
-
         @ExportMessage
         @TruffleBoundary
         void toNative() {
+            getNativePointer();
+        }
+
+        @TruffleBoundary
+        public long getNativePointer() {
             PythonContext context = PythonContext.get(null);
             long pointer = context.getCApiContext().getClosurePointer(this);
             if (pointer == -1) {
-                if (context.signatureContainer == null) {
-                    context.signatureContainer = new SignatureContainerRootNode().getCallTarget();
-                }
-
                 try {
-                    SignatureContainerRootNode container = (SignatureContainerRootNode) context.signatureContainer.getRootNode();
-                    // create NFI closure and get its address
-                    boolean panama = PythonOptions.UsePanama.getValue(context.getEnv().getOptions());
-                    StringBuilder signature = new StringBuilder(panama ? "with panama (" : "(");
+                    NfiType[] argTypes = new NfiType[args.length];
                     for (int i = 0; i < args.length; i++) {
-                        signature.append(i == 0 ? "" : ",");
-                        signature.append(args[i].getNFISignature());
+                        argTypes[i] = args[i].getNFI2Type();
                     }
-                    signature.append("):").append(ret.getNFISignature());
+                    NfiSignature signature = Nfi2.createSignatureUncached(ret.getNFI2Type(), argTypes);
 
-                    Object nfiSignature = context.getEnv().parseInternal(Source.newBuilder(J_NFI_LANGUAGE, signature.toString(), "exec").build()).call();
-                    Object closure = container.getLibrary(name).createClosure(nfiSignature, this);
-                    InteropLibrary lib = InteropLibrary.getUncached(closure);
-                    lib.toNative(closure);
-                    try {
-                        pointer = lib.asPointer(closure);
-                    } catch (UnsupportedMessageException e) {
-                        throw CompilerDirectives.shouldNotReachHere(e);
-                    }
-                    context.getCApiContext().setClosurePointer(closure, null, this, pointer);
+                    // TODO(NFI2) use static methods for builtins closures instead of interop
+                    // executable
+                    pointer = signature.createInteropClosureUncached(this);
+                    context.getCApiContext().setClosurePointer(null, null, this, pointer);
                     LOGGER.finer(CApiBuiltinExecutable.class.getSimpleName() + " toNative: " + id + " / " + name() + " -> " + pointer);
                 } catch (Throwable t) {
                     t.printStackTrace(new PrintStream(context.getEnv().err()));
                     throw t;
                 }
             }
+            return pointer;
         }
 
         @Override

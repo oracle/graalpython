@@ -40,57 +40,38 @@
  */
 package com.oracle.graal.python.nfi;
 
-import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.nodes.RootNode;
 
-import java.lang.foreign.MemoryLayout;
-import java.lang.foreign.ValueLayout;
+final class NfiInteropClosureRootNode extends RootNode {
 
-public enum NfiType {
-    VOID,
-    SINT8,
-    SINT16,
-    SINT32,
-    SINT64,
-    FLOAT,
-    DOUBLE,
-    POINTER;
+    @Child InteropLibrary interop;
+    final NfiSignature signature;
 
-    MemoryLayout asLayout() {
-        return switch (this) {
-            case VOID -> throw shouldNotReachHere("VOID has no layout");
-            case SINT8 -> ValueLayout.JAVA_BYTE;
-            case SINT16 -> ValueLayout.JAVA_SHORT;
-            case SINT32 -> ValueLayout.JAVA_INT;
-            case SINT64 -> ValueLayout.JAVA_LONG;
-            case FLOAT -> ValueLayout.JAVA_FLOAT;
-            case DOUBLE -> ValueLayout.JAVA_DOUBLE;
-            case POINTER -> ValueLayout.JAVA_LONG;
-        };
+    NfiInteropClosureRootNode(NfiSignature signature) {
+        super(PythonLanguage.get(null));
+        this.signature = signature;
+        interop = InteropLibrary.getFactory().createDispatched(3);
     }
 
-    Class<?> asJavaType() {
-        return switch (this) {
-            case VOID -> void.class;
-            case SINT8 -> byte.class;
-            case SINT16 -> short.class;
-            case SINT32 -> int.class;
-            case SINT64 -> long.class;
-            case FLOAT -> float.class;
-            case DOUBLE -> double.class;
-            case POINTER -> long.class;
-        };
-    }
-
-    ConvertArgJavaToNativeNode getConvertArgJavaToNativeNodeUncached() {
-        return switch (this) {
-            case VOID -> ConvertArgJavaToNativeNodeFactory.ToVOIDNodeGen.getUncached();
-            case SINT8 -> ConvertArgJavaToNativeNodeFactory.ToINT8NodeGen.getUncached();
-            case SINT16 -> ConvertArgJavaToNativeNodeFactory.ToINT16NodeGen.getUncached();
-            case SINT32 -> ConvertArgJavaToNativeNodeFactory.ToINT32NodeGen.getUncached();
-            case SINT64 -> ConvertArgJavaToNativeNodeFactory.ToINT64NodeGen.getUncached();
-            case FLOAT -> ConvertArgJavaToNativeNodeFactory.ToFLOATNodeGen.getUncached();
-            case DOUBLE -> ConvertArgJavaToNativeNodeFactory.ToDOUBLENodeGen.getUncached();
-            case POINTER -> ConvertArgJavaToNativeNodeFactory.ToPointerNodeGen.getUncached();
-        };
+    @Override
+    public Object execute(VirtualFrame frame) {
+        try {
+            Object receiver = frame.getArguments()[0];
+            Object[] args = (Object[]) frame.getArguments()[1];
+            Object[] convertedArgs = new Object[args.length];
+            for (int i = 0; i < args.length; i++) {
+                convertedArgs[i] = args[i];
+                // TODO(NFI2) remove wrapping after migration to RAWPOINTER
+                if (signature.getArgTypes()[i] == NfiType.POINTER) {
+                    convertedArgs[i] = new NativePointer((long) convertedArgs[i]);
+                }
+            }
+            return signature.getResType().getConvertArgJavaToNativeNodeUncached().execute(interop.execute(receiver, convertedArgs));
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
     }
 }
