@@ -52,6 +52,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbo
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_SUBTYPE_TRAVERSE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper.IMMORTAL_REFCNT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper.MANAGED_REFCNT;
+import static com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ensureExecutableUncached;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CConstants.PYLONG_BITS_IN_DIGIT;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyFloatObject__ob_fval;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMethodDef__ml_doc;
@@ -111,7 +112,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureExecutableNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureTruffleStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionFromNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformPExceptionToNativeNode;
@@ -148,6 +148,7 @@ import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.RichCmpOp;
+import com.oracle.graal.python.nfi.NfiBoundFunction;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
@@ -237,14 +238,13 @@ public abstract class CExtNodes {
         Object callNativeConstructor(Object object, Object arg,
                         @Bind Node inliningTarget,
                         @Cached PythonToNativeNode toSulongNode,
-                        @Cached NativeToPythonTransferNode toJavaNode,
-                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
+                        @Cached NativeToPythonTransferNode toJavaNode) {
             assert TypeNodes.NeedsNativeAllocationNode.executeUncached(object);
             try {
-                Object callable = CApiContext.getNativeSymbol(inliningTarget, getFunction());
-                Object result = interopLibrary.execute(callable, toSulongNode.execute(object), arg);
+                NfiBoundFunction callable = CApiContext.getNativeSymbol(inliningTarget, getFunction());
+                Object result = callable.invoke(toSulongNode.execute(object), arg);
                 return toJavaNode.execute(result);
-            } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException e) {
+            } catch (UnsupportedTypeException | ArityException e) {
                 throw shouldNotReachHere("C subtype_new function failed", e);
             }
         }
@@ -614,15 +614,14 @@ public abstract class CExtNodes {
         @Specialization
         static boolean doGeneric(Node inliningTarget, RichCmpOp op, Object a, Object b,
                         @Cached NormalizePtrNode normalizeA,
-                        @Cached NormalizePtrNode normalizeB,
-                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
+                        @Cached NormalizePtrNode normalizeB) {
             CompilerAsserts.partialEvaluationConstant(op);
             Object ptrA = normalizeA.execute(inliningTarget, a);
             Object ptrB = normalizeB.execute(inliningTarget, b);
             try {
-                Object sym = CApiContext.getNativeSymbol(inliningTarget, FUN_PTR_COMPARE);
-                return (int) interopLibrary.execute(sym, ptrA, ptrB, op.asNative()) != 0;
-            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+                NfiBoundFunction sym = CApiContext.getNativeSymbol(inliningTarget, FUN_PTR_COMPARE);
+                return (int) sym.invoke(ptrA, ptrB, op.asNative()) != 0;
+            } catch (UnsupportedTypeException | ArityException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
         }
@@ -845,7 +844,6 @@ public abstract class CExtNodes {
         @Specialization
         static Object doWithoutContext(NativeCAPISymbol symbol, Object[] args,
                         @Bind Node inliningTarget,
-                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @Cached EnsureTruffleStringNode ensureTruffleStringNode) {
             try {
                 PythonContext pythonContext = PythonContext.get(inliningTarget);
@@ -855,9 +853,9 @@ public abstract class CExtNodes {
                     CApiContext.ensureCapiWasLoaded("call internal native GraalPy function");
                 }
                 // TODO review EnsureTruffleStringNode with GR-37896
-                Object callable = CApiContext.getNativeSymbol(inliningTarget, symbol);
-                return ensureTruffleStringNode.execute(inliningTarget, interopLibrary.execute(callable, args));
-            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+                NfiBoundFunction callable = CApiContext.getNativeSymbol(inliningTarget, symbol);
+                return ensureTruffleStringNode.execute(inliningTarget, callable.invoke(args));
+            } catch (UnsupportedTypeException | ArityException e) {
                 // consider these exceptions to be fatal internal errors
                 throw shouldNotReachHere(e);
             }
@@ -1899,7 +1897,7 @@ public abstract class CExtNodes {
         // TODO(fa) support static and class methods
         PExternalFunctionWrapper sig = PExternalFunctionWrapper.fromMethodFlags(flags);
         RootCallTarget callTarget = PExternalFunctionWrapper.getOrCreateCallTarget(sig, language, methodName, CExtContext.isMethStatic(flags));
-        mlMethObj = EnsureExecutableNode.executeUncached(mlMethObj, sig);
+        mlMethObj = ensureExecutableUncached(mlMethObj, sig);
         PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(mlMethObj);
         PBuiltinFunction function = PFactory.createBuiltinFunction(language, methodName, null, PythonUtils.EMPTY_OBJECT_ARRAY, kwDefaults, flags, callTarget);
         HiddenAttr.WriteNode.executeUncached(function, METHOD_DEF_PTR, methodDef);

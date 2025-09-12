@@ -56,6 +56,7 @@ import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.nfi.NfiBoundFunction;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -164,7 +165,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
             PythonContext pythonContext = PythonContext.get(inliningTarget);
             // call native 'gc_collect' if C API context is already available
             if (pythonContext.getCApiContext() != null && pythonContext.getLanguage(inliningTarget).getEngineOption(PythonOptions.PythonGC)) {
-                Object executable = CApiContext.getNativeSymbol(inliningTarget, SYMBOL);
+                NfiBoundFunction executable = CApiContext.getNativeSymbol(inliningTarget, SYMBOL);
                 PythonThreadState threadState = getThreadStateNode.execute(inliningTarget);
                 Object result = invokeNode.call(frame, inliningTarget, threadState, C_API_TIMING, SYMBOL.getTsName(), executable, level);
                 res = checkPrimitiveFunctionResultNode.executeLong(threadState, SYMBOL.getTsName(), result);

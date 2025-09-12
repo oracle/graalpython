@@ -47,9 +47,9 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -61,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.TpSlotMeta;
 import com.oracle.graal.python.builtins.objects.type.slots.NodeFactoryUtils.NodeFactoryBase;
+import com.oracle.graal.python.nfi.NfiBoundFunction;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode.Dynamic;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -206,13 +207,14 @@ public abstract class TpSlot {
      * array and cannot optimize for specific signature.
      */
     public abstract static sealed class TpSlotNative extends TpSlot permits TpSlotCExtNative {
-        final Object callable;
+        // TODO(NFI2) use direct calls instead of interop
+        final NfiBoundFunction callable;
 
-        public TpSlotNative(Object callable) {
+        public TpSlotNative(NfiBoundFunction callable) {
             this.callable = callable;
         }
 
-        public static TpSlotNative createCExtSlot(Object callable) {
+        public static TpSlotNative createCExtSlot(NfiBoundFunction callable) {
             return new TpSlotCExtNative(callable);
         }
 
@@ -235,7 +237,7 @@ public abstract class TpSlot {
         /**
          * Bound callable that supports the execute interop message.
          */
-        public final Object getCallable() {
+        public final NfiBoundFunction getCallable() {
             return callable;
         }
     }
@@ -244,7 +246,7 @@ public abstract class TpSlot {
      * Standard CPython C API slot that takes {@code PyObject*} arguments.
      */
     public static final class TpSlotCExtNative extends TpSlotNative {
-        public TpSlotCExtNative(Object callable) {
+        public TpSlotCExtNative(NfiBoundFunction callable) {
             super(callable);
         }
     }

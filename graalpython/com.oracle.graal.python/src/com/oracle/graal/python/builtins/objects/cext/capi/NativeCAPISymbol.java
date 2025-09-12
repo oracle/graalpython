@@ -56,6 +56,9 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
+import com.oracle.graal.python.nfi.Nfi2;
+import com.oracle.graal.python.nfi.NfiSignature;
+import com.oracle.graal.python.nfi.NfiType;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -143,7 +146,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     private final String name;
     private final TruffleString tsName;
 
-    private final String signature;
+    private final NfiSignature signature;
 
     @CompilationFinal(dimensions = 1) private static final NativeCAPISymbol[] VALUES = values();
 
@@ -151,13 +154,11 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
         this.name = name;
         this.tsName = toTruffleStringUncached(name);
 
-        StringBuilder s = new StringBuilder("(");
+        NfiType[] nfiTypes = new NfiType[arguments.length];
         for (int i = 0; i < arguments.length; i++) {
-            s.append(i == 0 ? "" : ",");
-            s.append(arguments[i].getNFISignature());
+            nfiTypes[i] = arguments[i].getNFI2Type();
         }
-        s.append("):").append(returnValue.getNFISignature());
-        this.signature = s.toString();
+        this.signature = Nfi2.createSignatureUncached(returnValue.getNFI2Type(), nfiTypes);
     }
 
     NativeCAPISymbol(String name) {
@@ -180,7 +181,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
         return VALUES;
     }
 
-    public String getSignature() {
+    public NfiSignature getSignature() {
         assert signature != null : "no signature for " + this;
         return signature;
     }

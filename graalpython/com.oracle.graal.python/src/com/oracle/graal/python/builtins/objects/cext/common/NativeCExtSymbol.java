@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.common;
 
+import com.oracle.graal.python.nfi.NfiSignature;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public interface NativeCExtSymbol {
@@ -50,5 +51,5 @@ public interface NativeCExtSymbol {
     /**
      * Returns the NFI signature.
      */
-    String getSignature();
+    NfiSignature getSignature();
 }

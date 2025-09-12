@@ -53,6 +53,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
+import static com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ensureExecutableUncached;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_NEEDS_S_AS_FIRST_ARG;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___FILE__;
@@ -75,13 +76,13 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureExecutableNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.PrefixSuffixNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
+import com.oracle.graal.python.nfi.NfiBoundFunction;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
@@ -272,7 +273,6 @@ public final class PythonCextModuleBuiltins {
                         @Cached CStructAccess.ReadPointerNode readPointerNode,
                         @Cached CStructAccess.ReadI64Node readI64Node,
                         @CachedLibrary(limit = "1") InteropLibrary lib,
-                        @Cached EnsureExecutableNode ensureExecutableNode,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached ExternalFunctionInvokeNode externalFunctionInvokeNode,
                         @Cached CheckPrimitiveFunctionResultNode checkPrimitiveFunctionResultNode,
@@ -290,7 +290,8 @@ public final class PythonCextModuleBuiltins {
                     Object mdState = self.getNativeModuleState();
                     if (mSize <= 0 || (mdState != null && !lib.isNull(mdState))) {
                         PythonThreadState threadState = getThreadStateNode.execute(inliningTarget);
-                        Object traverseExecutable = ensureExecutableNode.execute(inliningTarget, mTraverse, PExternalFunctionWrapper.TRAVERSEPROC);
+                        NfiBoundFunction traverseExecutable = ensureExecutableUncached(mTraverse, PExternalFunctionWrapper.TRAVERSEPROC);
+                        // TODO(NFI2) call directly
                         Object res = externalFunctionInvokeNode.call(null, inliningTarget, threadState, TIMING, T__M_TRAVERSE, traverseExecutable, toNativeNode.execute(self), visitFun, arg);
                         int ires = (int) checkPrimitiveFunctionResultNode.executeLong(threadState, StringLiterals.T_VISIT, res);
                         if (ires != 0) {

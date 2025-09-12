@@ -85,7 +85,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFun
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureExecutableNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
@@ -104,6 +103,7 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.nfi.Nfi2;
+import com.oracle.graal.python.nfi.NfiBoundFunction;
 import com.oracle.graal.python.nfi.NfiSignature;
 import com.oracle.graal.python.nfi.NfiType;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -198,13 +198,13 @@ public final class CApiContext extends CExtContext {
      * Same as {@link #nativeSymbolCache} if there is only one context per JVM (i.e. just one engine
      * in single-context mode). Will be {@code null} in case of multiple contexts.
      */
-    @CompilationFinal(dimensions = 1) private static Object[] nativeSymbolCacheSingleContext;
+    @CompilationFinal(dimensions = 1) private static NfiBoundFunction[] nativeSymbolCacheSingleContext;
     private static boolean nativeSymbolCacheSingleContextUsed;
 
     /**
      * A private (i.e. per-context) cache of C API symbols (usually helper functions).
      */
-    private final Object[] nativeSymbolCache;
+    private final NfiBoundFunction[] nativeSymbolCache;
 
     private record ClosureInfo(Object closure, Object delegate, Object executable, long pointer) {
     }
@@ -314,7 +314,7 @@ public final class CApiContext extends CExtContext {
 
     public CApiContext(PythonContext context, long library, NativeLibraryLocator locator) {
         super(context, library, locator.getCapiLibrary());
-        this.nativeSymbolCache = new Object[NativeCAPISymbol.values().length];
+        this.nativeSymbolCache = new NfiBoundFunction[NativeCAPISymbol.values().length];
         this.nativeLibraryLocator = locator;
 
         /*
@@ -525,8 +525,8 @@ public final class CApiContext extends CExtContext {
      *            {@link CApiContext} instance (if necessary).
      * @return The C API symbol cache.
      */
-    private static Object[] getSymbolCache(Node caller) {
-        Object[] cache = nativeSymbolCacheSingleContext;
+    private static NfiBoundFunction[] getSymbolCache(Node caller) {
+        NfiBoundFunction[] cache = nativeSymbolCacheSingleContext;
         if (cache != null) {
             return cache;
         }
@@ -546,19 +546,13 @@ public final class CApiContext extends CExtContext {
 
     public static boolean isIdenticalToSymbol(long ptr, NativeCAPISymbol symbol) {
         CompilerAsserts.neverPartOfCompilation();
-        Object nativeSymbol = getNativeSymbol(null, symbol);
-        InteropLibrary lib = InteropLibrary.getUncached(nativeSymbol);
-        lib.toNative(nativeSymbol);
-        try {
-            return lib.asPointer(nativeSymbol) == ptr;
-        } catch (UnsupportedMessageException e) {
-            throw new RuntimeException(e);
-        }
+        NfiBoundFunction nativeSymbol = getNativeSymbol(null, symbol);
+        return nativeSymbol.getAddress() == ptr;
     }
 
-    public static Object getNativeSymbol(Node caller, NativeCAPISymbol symbol) {
-        Object[] nativeSymbolCache = getSymbolCache(caller);
-        Object result = nativeSymbolCache[symbol.ordinal()];
+    public static NfiBoundFunction getNativeSymbol(Node caller, NativeCAPISymbol symbol) {
+        NfiBoundFunction[] nativeSymbolCache = getSymbolCache(caller);
+        NfiBoundFunction result = nativeSymbolCache[symbol.ordinal()];
         if (result == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             result = lookupNativeSymbol(nativeSymbolCache, symbol);
@@ -571,12 +565,12 @@ public final class CApiContext extends CExtContext {
      * Lookup the given C API symbol in the library, store it to the provided cache, and return the
      * callable symbol.
      */
-    private static Object lookupNativeSymbol(Object[] nativeSymbolCache, NativeCAPISymbol symbol) {
+    private static NfiBoundFunction lookupNativeSymbol(NfiBoundFunction[] nativeSymbolCache, NativeCAPISymbol symbol) {
         CompilerAsserts.neverPartOfCompilation();
         String name = symbol.getName();
         try {
-            Object nativeSymbol = new NativePointer(Nfi2.lookupSymbolUncached(PythonContext.get(null).getCApiContext().getLibrary(), name));
-            nativeSymbol = EnsureExecutableNode.executeUncached(nativeSymbol, symbol);
+            long nativeSymbolPtr = Nfi2.lookupSymbolUncached(PythonContext.get(null).getCApiContext().getLibrary(), name);
+            NfiBoundFunction nativeSymbol = symbol.getSignature().bind(nativeSymbolPtr);
             VarHandle.storeStoreFence();
             return nativeSymbolCache[symbol.ordinal()] = nativeSymbol;
         } catch (UnknownIdentifierException e) {
@@ -604,8 +598,7 @@ public final class CApiContext extends CExtContext {
             this.gcRSSMinimum = context.getOption(PythonOptions.BackgroundGCTaskMinimum);
         }
 
-        Object nativeSymbol = null;
-        InteropLibrary callNative = null;
+        NfiBoundFunction nativeSymbol = null;
 
         long currentRSS = -1;
         long previousRSS = -1;
@@ -638,11 +631,10 @@ public final class CApiContext extends CExtContext {
         Long getCurrentRSS() {
             if (nativeSymbol == null) {
                 nativeSymbol = CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_GET_CURRENT_RSS);
-                callNative = InteropLibrary.getUncached(nativeSymbol);
             }
             Long rss = 0L;
             try {
-                rss = (Long) callNative.execute(nativeSymbol);
+                rss = (Long) nativeSymbol.invoke();
             } catch (Exception ignored) {
             }
             return rss;

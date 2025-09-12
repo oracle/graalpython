@@ -51,6 +51,8 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots.TpSlotGroup;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.TpSlotMeta;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
+import com.oracle.graal.python.nfi.Nfi2;
+import com.oracle.graal.python.nfi.NfiType;
 import com.oracle.graal.python.util.Function;
 
 public class TpSlotsTests {
@@ -58,9 +60,7 @@ public class TpSlotsTests {
     public void testBuilderBasic() {
         Builder builder = TpSlots.newBuilder();
         for (TpSlotMeta def : TpSlotMeta.VALUES) {
-            // Use the TpSlotMeta as dummy "callable" object to verify that the slot values were
-            // properly assigned to the right fields of TpSlots record
-            builder.set(def, TpSlotNative.createCExtSlot(def));
+            builder.set(def, createCExtSlot(def));
         }
 
         TpSlots slots = builder.build();
@@ -95,9 +95,9 @@ public class TpSlotsTests {
     @Test
     public void testBuilderOptimizations1() {
         Builder builder = TpSlots.newBuilder();
-        builder.set(TpSlotMeta.MP_LENGTH, TpSlotNative.createCExtSlot(TpSlotMeta.MP_LENGTH));
-        builder.set(TpSlotMeta.TP_GETATTR, TpSlotNative.createCExtSlot(TpSlotMeta.TP_GETATTR));
-        builder.set(TpSlotMeta.TP_SETATTR, TpSlotNative.createCExtSlot(TpSlotMeta.TP_SETATTR));
+        builder.set(TpSlotMeta.MP_LENGTH, createCExtSlot(TpSlotMeta.MP_LENGTH));
+        builder.set(TpSlotMeta.TP_GETATTR, createCExtSlot(TpSlotMeta.TP_GETATTR));
+        builder.set(TpSlotMeta.TP_SETATTR, createCExtSlot(TpSlotMeta.TP_SETATTR));
 
         TpSlots slots = builder.build();
         verifySlots(slots, def -> def == TpSlotMeta.MP_LENGTH || def == TpSlotMeta.TP_GETATTR || def == TpSlotMeta.TP_SETATTR);
@@ -111,7 +111,7 @@ public class TpSlotsTests {
     @Test
     public void testBuilderOptimizations2() {
         Builder builder = TpSlots.newBuilder();
-        builder.set(TpSlotMeta.SQ_LENGTH, TpSlotNative.createCExtSlot(TpSlotMeta.SQ_LENGTH));
+        builder.set(TpSlotMeta.SQ_LENGTH, createCExtSlot(TpSlotMeta.SQ_LENGTH));
 
         TpSlots slots = builder.build();
         verifySlots(slots, def -> def == TpSlotMeta.SQ_LENGTH);
@@ -137,8 +137,15 @@ public class TpSlotsTests {
         }
     }
 
+    // Use the TpSlotMeta's ordinal value as a pointer for creating a dummy bound function to
+    // verify that the slot values were properly assigned to the right fields of TpSlots
+    // record
+    private static TpSlotNative createCExtSlot(TpSlotMeta def) {
+        return TpSlotNative.createCExtSlot(Nfi2.createSignatureUncached(NfiType.VOID).bind(def.ordinal()));
+    }
+
     private static void checkSlotValue(TpSlotMeta def, TpSlot slotValue) {
-        Assert.assertTrue(def.name(), slotValue instanceof TpSlotNative slotNative && slotNative.getCallable() == def);
+        Assert.assertTrue(def.name(), slotValue instanceof TpSlotNative slotNative && slotNative.getCallable().getAddress() == def.ordinal());
     }
 
     private static boolean getGroup(TpSlots slots, TpSlotGroup group) {

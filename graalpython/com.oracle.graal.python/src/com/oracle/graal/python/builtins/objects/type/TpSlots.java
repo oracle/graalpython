@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.type;
 
+import static com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ensureExecutableUncached;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AITER__;
@@ -163,7 +164,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.Ssizeob
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.TpSlotWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.UnaryFuncWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonClassNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureExecutableNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ReadPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.WritePointerNode;
@@ -211,6 +211,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.TpSlotN
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.TpSlotVarargsBuiltin;
 import com.oracle.graal.python.lib.PyDictGetItem;
 import com.oracle.graal.python.lib.PyDictSetItem;
+import com.oracle.graal.python.nfi.NfiBoundFunction;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -1352,7 +1353,7 @@ public record TpSlots(TpSlot nb_bool, //
             }
             // There is no mapping from this pointer to existing TpSlot, we create a new
             // TpSlotNative wrapping the executable
-            Object executable = EnsureExecutableNode.executeUncached(field, def.nativeSignature);
+            NfiBoundFunction executable = ensureExecutableUncached(field, def.nativeSignature);
             builder.set(def, TpSlotNative.createCExtSlot(executable));
         }
         return builder.build();

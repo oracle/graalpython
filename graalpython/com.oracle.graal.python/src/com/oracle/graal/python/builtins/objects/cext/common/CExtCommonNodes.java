@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.cext.common;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.nodes.ErrorMessages.RETURNED_NULL_WO_SETTING_EXCEPTION;
 import static com.oracle.graal.python.nodes.ErrorMessages.RETURNED_RESULT_WITH_EXCEPTION_SET;
-import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_IGNORE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_REPLACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
@@ -52,11 +51,10 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeEncodeError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
 import java.nio.charset.Charset;
 import java.util.logging.Level;
-
-import org.graalvm.collections.Pair;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -72,7 +70,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PrimitiveNativeWrapper
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.EnsureExecutableNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.GetIndexNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ReadUnicodeArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.TransformPExceptionToNativeCachedNodeGen;
@@ -86,6 +83,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.CallSlotLen
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.nfi.NfiBoundFunction;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -102,8 +100,6 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CallTarget;
-import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
@@ -116,24 +112,17 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.NeverDefault;
-import com.oracle.truffle.api.dsl.NonIdempotent;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.nodes.DirectCallNode;
-import com.oracle.truffle.api.nodes.IndirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
-import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 public abstract class CExtCommonNodes {
 
@@ -1286,34 +1275,7 @@ public abstract class CExtCommonNodes {
         }
     }
 
-    /**
-     * This unwraps foreign pointer objects (e.g. LLVM pointers) if they respond to
-     * {@link InteropLibrary#isPointer(Object)} with {@code true} and creates a new
-     * {@link NativePointer} object with the long value. This is useful to avoid unnecessary
-     * indirections.
-     */
-    @GenerateUncached
-    @GenerateInline
-    @GenerateCached(false)
-    public abstract static class UnwrapForeignPointerNode extends Node {
-
-        public abstract Object execute(Node inliningTarget, Object pointerObject);
-
-        @Specialization(limit = "3")
-        static Object doOther(Object pointerObject,
-                        @CachedLibrary("pointerObject") InteropLibrary lib) {
-            if (lib.isPointer(pointerObject)) {
-                try {
-                    return new NativePointer(lib.asPointer(pointerObject));
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
-                }
-            }
-            // This is usually the path for managed mode. We expect a backend pointer object.
-            assert CApiTransitions.isBackendPointerObject(pointerObject);
-            return pointerObject;
-        }
-    }
+    private static final TruffleLogger LOGGER = CApiContext.getLogger(CExtContext.class);
 
     /**
      * Ensures that the given pointer object is an executable interop value.
@@ -1329,108 +1291,29 @@ public abstract class CExtCommonNodes {
      * {@code NFI} pointer.
      * </p>
      */
-    @GenerateInline
-    @GenerateCached(false)
-    @GenerateUncached
-    public abstract static class EnsureExecutableNode extends Node {
-        private static final TruffleLogger LOGGER = CApiContext.getLogger(CExtContext.class);
-
-        public static Object executeUncached(Object callable, NativeCExtSymbol descriptor) {
-            return EnsureExecutableNodeGen.getUncached().execute(null, callable, descriptor);
+    // TODO(NFI2) callers should use direct Nfi2 invoke
+    // TODO(NFI2) accept long parameter only instead of interop ptr? Review all usages.
+    @TruffleBoundary
+    public static NfiBoundFunction ensureExecutableUncached(Object callable, NativeCExtSymbol descriptor) {
+        PythonContext pythonContext = PythonContext.get(null);
+        if (callable instanceof NfiBoundFunction f) {
+            // TODO(NFI2) this happens during cpyext tests
+            return f;
         }
-
-        /**
-         * @param inliningTarget The inlining target.
-         * @param callable The callable to ensure that it is executable.
-         * @param descriptor The descriptor describing the signature to bind to if the object is not
-         *            executable.
-         * @return An interop object that is {@link InteropLibrary#isExecutable(Object) executable}.
-         */
-        public abstract Object execute(Node inliningTarget, Object callable, NativeCExtSymbol descriptor);
-
-        @Specialization(guards = {"descriptor == cachedDescriptor", "withPanama(inliningTarget) == cachedWithPanama", "!isExecutable(lib, callable)"}, limit = "3")
-        static Object doBind(Node inliningTarget, Object callable, @SuppressWarnings("unused") NativeCExtSymbol descriptor,
-                        @SuppressWarnings("unused") @Cached("descriptor") NativeCExtSymbol cachedDescriptor,
-                        @SuppressWarnings("unused") @Cached("withPanama(inliningTarget)") boolean cachedWithPanama,
-                        @SuppressWarnings("unused") @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Shared @Cached UnwrapForeignPointerNode unwrapForeignPointerNode,
-                        @Shared @CachedLibrary(limit = "1") SignatureLibrary signatureLib,
-                        @Cached("createFactory(descriptor)") DirectCallNode nfiSignatureFactory) {
-            /*
-             * Since we mix native and LLVM execution, it happens that 'callable' is an LLVM pointer
-             * (that is still not executable). To avoid unnecessary indirections, we test
-             * 'isPointer(callable)' and if so, we retrieve the bare long value using
-             * 'asPointer(callable)' and wrap it in our own NativePointer.
-             */
-            Object funPtr = unwrapForeignPointerNode.execute(inliningTarget, callable);
-            if (LOGGER.isLoggable(Level.FINER)) {
-                LOGGER.finer(PythonUtils.formatJString("Binding %s (signature: %s) to NFI signature %s", callable, descriptor.getName(), descriptor.getSignature()));
-            }
-            return signatureLib.bind(nfiSignatureFactory.call(), funPtr);
+        if (!pythonContext.isNativeAccessAllowed()) {
+            LOGGER.severe(PythonUtils.formatJString("Attempting to bind %s to an NFI signature but native access is not allowed", callable));
         }
-
-        @Specialization(guards = "lib.isExecutable(callable)")
-        @SuppressWarnings("unused")
-        static Object doNothing(Object callable, NativeCExtSymbol descriptor,
-                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib) {
-            return callable;
+        if (LOGGER.isLoggable(Level.FINER)) {
+            LOGGER.finer(PythonUtils.formatJString("Binding %s (signature: %s) to NFI signature %s", callable, descriptor.getName(), descriptor.getSignature()));
         }
-
-        @Specialization(replaces = {"doBind", "doNothing"})
-        static Object doGeneric(Node inliningTarget, Object callable, NativeCExtSymbol descriptor,
-                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Shared @Cached UnwrapForeignPointerNode unwrapForeignPointerNode,
-                        @Shared @CachedLibrary(limit = "1") SignatureLibrary signatureLib,
-                        @Cached IndirectCallNode nfiSignatureFactory) {
-            PythonContext pythonContext = PythonContext.get(inliningTarget);
-            if (!lib.isExecutable(callable)) {
-                if (!pythonContext.isNativeAccessAllowed()) {
-                    LOGGER.severe(PythonUtils.formatJString("Attempting to bind %s to an NFI signature but native access is not allowed", callable));
-                }
-                // see 'doBind' for explanation
-                Object funPtr = unwrapForeignPointerNode.execute(inliningTarget, callable);
-                if (LOGGER.isLoggable(Level.FINER)) {
-                    LOGGER.finer(PythonUtils.formatJString("Binding %s (signature: %s) to NFI signature %s", callable, descriptor.getName(), descriptor.getSignature()));
-                }
-                return signatureLib.bind(nfiSignatureFactory.call(getCallTarget(pythonContext, descriptor)), funPtr);
-            }
-            return callable;
+        InteropLibrary lib = InteropLibrary.getUncached(callable);
+        if (!lib.isPointer(callable)) {
+            throw shouldNotReachHere();
         }
-
-        private static Source getSource(PythonLanguage language, boolean panama, NativeCExtSymbol descriptor) {
-            CompilerAsserts.neverPartOfCompilation();
-
-            assert descriptor.getSignature() != null && !descriptor.getSignature().isEmpty();
-            String src = (panama ? "with panama " : "") + descriptor.getSignature();
-            return language.getOrCreateSource(EnsureExecutableNode::buildNFISource, Pair.create(src, descriptor.getName()));
-        }
-
-        // TODO(fa): we could avoid this boundary by storing the sources to the NativeCExtSymbol
-        @TruffleBoundary
-        private static CallTarget getCallTarget(PythonContext pythonContext, NativeCExtSymbol descriptor) {
-            Source source = getSource(pythonContext.getLanguage(), pythonContext.getOption(PythonOptions.UsePanama), descriptor);
-            return pythonContext.getEnv().parseInternal(source);
-        }
-
-        @NeverDefault
-        static DirectCallNode createFactory(NativeCExtSymbol descriptor) {
-            CompilerAsserts.neverPartOfCompilation();
-            return DirectCallNode.create(getCallTarget(PythonContext.get(null), descriptor));
-        }
-
-        @NonIdempotent
-        static boolean withPanama(Node inliningTarget) {
-            return PythonContext.get(inliningTarget).getOption(PythonOptions.UsePanama);
-        }
-
-        @Idempotent
-        static boolean isExecutable(InteropLibrary lib, Object object) {
-            return lib.isExecutable(object);
-        }
-
-        private static Source buildNFISource(Object key) {
-            Pair<?, ?> srcAndName = (Pair<?, ?>) key;
-            return Source.newBuilder(J_NFI_LANGUAGE, (String) srcAndName.getLeft(), (String) srcAndName.getRight()).internal(true).build();
+        try {
+            return descriptor.getSignature().bind(lib.asPointer(callable));
+        } catch (UnsupportedMessageException e) {
+            throw shouldNotReachHere();
         }
     }
 }

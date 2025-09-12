@@ -51,6 +51,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
+import static com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ensureExecutableUncached;
 import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.METH_CLASS;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_name;
 import static com.oracle.graal.python.nodes.HiddenAttr.AS_BUFFER;
@@ -81,7 +82,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.SetterRoot;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureExecutableNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
@@ -368,7 +368,7 @@ public final class PythonCextTypeBuiltins {
             PythonLanguage language = PythonLanguage.get(inliningTarget);
             if (!interopLibrary.isNull(getter)) {
                 RootCallTarget getterCT = getterCallTarget(name, language);
-                getter = EnsureExecutableNode.executeUncached(getter, PExternalFunctionWrapper.GETTER);
+                getter = ensureExecutableUncached(getter, PExternalFunctionWrapper.GETTER);
                 get = PFactory.createBuiltinFunction(language, name, cls, EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(getter, closure), 0, getterCT);
             }
 
@@ -376,7 +376,7 @@ public final class PythonCextTypeBuiltins {
             boolean hasSetter = !interopLibrary.isNull(setter);
             if (hasSetter) {
                 RootCallTarget setterCT = setterCallTarget(name, language);
-                setter = EnsureExecutableNode.executeUncached(setter, PExternalFunctionWrapper.SETTER);
+                setter = ensureExecutableUncached(setter, PExternalFunctionWrapper.SETTER);
                 set = PFactory.createBuiltinFunction(language, name, cls, EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(setter, closure), 0, setterCT);
             }
 

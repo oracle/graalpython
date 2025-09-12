@@ -55,6 +55,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
+import static com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ensureExecutableUncached;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.util.PythonUtils.tsArray;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -80,7 +81,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureExecutableNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetIndexNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionFromNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ConvertPIntToPrimitiveNodeGen;
@@ -103,6 +103,10 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
 import com.oracle.graal.python.lib.RichCmpOp;
+import com.oracle.graal.python.nfi.Nfi2;
+import com.oracle.graal.python.nfi.NfiBoundFunction;
+import com.oracle.graal.python.nfi.NfiSignature;
+import com.oracle.graal.python.nfi.NfiType;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -381,7 +385,7 @@ public abstract class ExternalFunctionNodes {
         @CompilationFinal(dimensions = 1) private static final PExternalFunctionWrapper[] VALUES = values();
         @CompilationFinal(dimensions = 1) private static final PExternalFunctionWrapper[] BY_ID = new PExternalFunctionWrapper[51];
 
-        public final String signature;
+        public final NfiSignature signature;
         public final ArgDescriptor returnValue;
         public final ArgDescriptor[] arguments;
         public final int numDefaults;
@@ -391,13 +395,11 @@ public abstract class ExternalFunctionNodes {
             this.returnValue = returnValue;
             this.arguments = arguments;
 
-            StringBuilder s = new StringBuilder("(");
+            NfiType[] nfiTypes = new NfiType[arguments.length];
             for (int i = 0; i < arguments.length; i++) {
-                s.append(i == 0 ? "" : ",");
-                s.append(arguments[i].getNFISignature());
+                nfiTypes[i] = arguments[i].getNFI2Type();
             }
-            s.append("):").append(returnValue.getNFISignature());
-            this.signature = s.toString();
+            this.signature = Nfi2.createSignatureUncached(returnValue.getNFI2Type(), nfiTypes);
             this.numDefaults = numDefaults;
         }
 
@@ -606,7 +608,7 @@ public abstract class ExternalFunctionNodes {
             RootCallTarget callTarget = getOrCreateCallTarget(sig, language, name, CExtContext.isMethStatic(flags));
 
             // ensure that 'callable' is executable via InteropLibrary
-            Object boundCallable = EnsureExecutableNode.executeUncached(callable, sig);
+            NfiBoundFunction boundCallable = ensureExecutableUncached(callable, sig);
             PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(boundCallable);
             TpSlot slot = TpSlotNative.createCExtSlot(boundCallable);
 
@@ -615,8 +617,7 @@ public abstract class ExternalFunctionNodes {
 
             Object type = enclosingType == PNone.NO_VALUE ? null : enclosingType;
             return switch (sig) {
-                case NOARGS, O, VARARGS, KEYWORDS, FASTCALL, FASTCALL_WITH_KEYWORDS, METHOD ->
-                    PFactory.createBuiltinFunction(language, name, type, defaults, kwDefaults, flags, callTarget);
+                case NOARGS, O, VARARGS, KEYWORDS, FASTCALL, FASTCALL_WITH_KEYWORDS, METHOD -> PFactory.createBuiltinFunction(language, name, type, defaults, kwDefaults, flags, callTarget);
                 case NEW -> PFactory.createNewWrapper(language, type, defaults, kwDefaults, callTarget, slot);
                 default -> PFactory.createWrapperDescriptor(language, name, type, defaults, kwDefaults, flags, callTarget, slot, sig);
             };
@@ -663,15 +664,18 @@ public abstract class ExternalFunctionNodes {
             return result;
         }
 
+        @Override
         public String getName() {
             return name();
         }
 
+        @Override
         public TruffleString getTsName() {
             throw CompilerDirectives.shouldNotReachHere();
         }
 
-        public String getSignature() {
+        @Override
+        public NfiSignature getSignature() {
             return signature;
         }
     }
@@ -727,8 +731,48 @@ public abstract class ExternalFunctionNodes {
         }
 
         @Specialization
-        static Object invoke(VirtualFrame frame, Node inliningTarget, PythonThreadState threadState, CApiTiming timing, TruffleString name, Object callable, Object[] cArguments,
-                        @Cached("createFor($node)") InteropCallData boundaryCallData,
+        static Object invoke(VirtualFrame frame, Node inliningTarget, PythonThreadState threadState, CApiTiming timing, TruffleString name, NfiBoundFunction callable, Object[] cArguments,
+                        @Shared @Cached(value = "createFor($node)", uncached = "getUncached()") IndirectCallData indirectCallData) {
+
+            // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store
+            // it to the context since we cannot propagate it through the native frames.
+            Object state = IndirectCallContext.enter(frame, threadState, indirectCallData);
+
+            CApiTiming.enter();
+            try {
+                return callable.invoke(cArguments);
+            } catch (UnsupportedTypeException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CALLING_NATIVE_FUNC_FAILED, name, e);
+            } catch (ArityException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CALLING_NATIVE_FUNC_EXPECTED_ARGS, name, e.getExpectedMinArity(), e.getActualArity());
+            } catch (Throwable exception) {
+                /*
+                 * Always re-acquire the GIL here. This is necessary because it could happen that C
+                 * extensions are releasing the GIL and if then an LLVM exception occurs, C code
+                 * wouldn't re-acquire it (unexpectedly).
+                 */
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                GilNode.uncachedAcquire();
+                throw exception;
+            } finally {
+                CApiTiming.exit(timing);
+                /*
+                 * Special case after calling a C function: transfer caught exception back to frame
+                 * to simulate the global state semantics.
+                 */
+                if (frame != null && threadState.getCaughtException() != null) {
+                    PArguments.setException(frame, threadState.getCaughtException());
+                }
+                IndirectCallContext.exit(frame, threadState, state);
+            }
+        }
+
+        // TODO(NFI2) remove this once all callers use NfiBoundFunction
+        @Specialization(guards = "!isNfi(callable)")
+        static Object invokeGeneric(VirtualFrame frame, Node inliningTarget, PythonThreadState threadState, CApiTiming timing, TruffleString name, Object callable, Object[] cArguments,
+                        @Shared @Cached("createFor($node)") InteropCallData boundaryCallData,
                         @CachedLibrary(limit = "2") InteropLibrary lib) {
 
             // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store
@@ -764,6 +808,10 @@ public abstract class ExternalFunctionNodes {
                 }
                 InteropCallContext.exit(frame, threadState, state);
             }
+        }
+
+        static boolean isNfi(Object o) {
+            return o instanceof NfiBoundFunction;
         }
     }
 

@@ -50,8 +50,13 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
+// TODO(NFI2) do not expose fields
 @ExportLibrary(InteropLibrary.class)
 public record NfiBoundFunction(long ptr, MethodHandle boundHandle, NfiSignature signature) implements TruffleObject {
+
+    public long getAddress() {
+        return ptr;
+    }
 
     // TODO(NFI2) duplicate code with NfiSignature.invokeUncached
     public Object invoke(Object... args) throws UnsupportedTypeException, ArityException {
@@ -94,6 +99,7 @@ public record NfiBoundFunction(long ptr, MethodHandle boundHandle, NfiSignature 
 
     // TODO(NFI2) do not implement interop? for now we need this in
     // ExternalFunctionNodes.createKwDefaults()
+    // Look for usages of ensureExecutableUncached()
     @ExportMessage
     public Object execute(Object... arguments) throws UnsupportedTypeException, ArityException, UnsupportedMessageException {
         Object r = invoke(arguments);
