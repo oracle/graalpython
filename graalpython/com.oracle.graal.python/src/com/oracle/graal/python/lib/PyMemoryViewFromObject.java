@@ -74,6 +74,7 @@ import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -82,6 +83,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
+@GenerateUncached
 @GenerateInline(false)          // footprint reduction 48 -> 29
 public abstract class PyMemoryViewFromObject extends PNodeWithContext {
     public abstract PMemoryView execute(VirtualFrame frame, Object object);
@@ -197,5 +199,9 @@ public abstract class PyMemoryViewFromObject extends PNodeWithContext {
     @NeverDefault
     public static PyMemoryViewFromObject create() {
         return PyMemoryViewFromObjectNodeGen.create();
+    }
+
+    public static PyMemoryViewFromObject getUncached() {
+        return PyMemoryViewFromObjectNodeGen.getUncached();
     }
 }

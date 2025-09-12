@@ -109,6 +109,7 @@ public class MemoryViewNodes {
 
     @GenerateInline
     @GenerateCached(false)
+    @GenerateUncached
     public abstract static class InitFlagsNode extends Node {
         public abstract int execute(Node inliningTarget, int ndim, int itemsize, int[] shape, int[] strides, int[] suboffsets);
 

@@ -83,14 +83,12 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CreateModuleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.ToPythonWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureExecutableNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
@@ -1074,16 +1072,13 @@ public final class CApiContext extends CExtContext {
      * @param context The Python context object.
      * @param spec The name and path of the module (also containing the original module spec
      *            object).
-     * @param checkFunctionResultNode A node to check that the function result does not indicate
-     *            that an exception was raised on the native side. It should be an adopted node,
-     *            because only an adopted node will report useful source locations.
      * @return A Python module.
      * @throws IOException If the specified file cannot be loaded.
      * @throws ApiInitException If the corresponding native context could not be initialized.
      * @throws ImportException If an exception occurred during C extension initialization.
      */
     @TruffleBoundary
-    public static Object loadCExtModule(Node location, PythonContext context, ModuleSpec spec, CheckFunctionResultNode checkFunctionResultNode)
+    public static Object loadCExtModule(Node location, PythonContext context, ModuleSpec spec)
                     throws IOException, ApiInitException, ImportException {
         if (getLogger(CApiContext.class).isLoggable(Level.WARNING) && context.getOption(PythonOptions.WarnExperimentalFeatures)) {
             if (!C_EXT_SUPPORTED_LIST.contains(spec.name.toJavaStringUncached())) {
@@ -1142,7 +1137,7 @@ public final class CApiContext extends CExtContext {
         }
 
         try {
-            return cApiContext.initCApiModule(location, library, spec.getInitFunctionName(), spec, interopLib, checkFunctionResultNode);
+            return cApiContext.initCApiModule(location, library, spec.getInitFunctionName(), spec, interopLib);
         } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
             throw new ImportException(CExtContext.wrapJavaException(e, location), spec.name, spec.path, ErrorMessages.CANNOT_INITIALIZE_WITH, spec.path, spec.getEncodedName(), "");
         }
@@ -1283,7 +1278,7 @@ public final class CApiContext extends CExtContext {
     }
 
     @TruffleBoundary
-    public Object initCApiModule(Node location, Object sharedLibrary, TruffleString initFuncName, ModuleSpec spec, InteropLibrary llvmInteropLib, CheckFunctionResultNode checkFunctionResultNode)
+    public Object initCApiModule(Node node, Object sharedLibrary, TruffleString initFuncName, ModuleSpec spec, InteropLibrary llvmInteropLib)
                     throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException {
         PythonContext context = getContext();
         CApiContext cApiContext = context.getCApiContext();
@@ -1307,7 +1302,7 @@ public final class CApiContext extends CExtContext {
             nativeResult = InteropLibrary.getUncached().execute(pyinitFunc, arguments);
         }
 
-        checkFunctionResultNode.execute(context, initFuncName, nativeResult);
+        ExternalFunctionNodesFactory.DefaultCheckFunctionResultNodeGen.getUncached().execute(context, initFuncName, nativeResult);
 
         Object result = NativeToPythonNode.executeUncached(nativeResult);
         if (!(result instanceof PythonModule)) {
@@ -1322,10 +1317,10 @@ public final class CApiContext extends CExtContext {
              */
             Object clazz = GetClassNode.executeUncached(result);
             if (clazz == PNone.NO_VALUE) {
-                throw PRaiseNode.raiseStatic(location, PythonBuiltinClassType.SystemError, ErrorMessages.INIT_FUNC_RETURNED_UNINT_OBJ, initFuncName);
+                throw PRaiseNode.raiseStatic(node, PythonBuiltinClassType.SystemError, ErrorMessages.INIT_FUNC_RETURNED_UNINT_OBJ, initFuncName);
             }
 
-            return CreateModuleNodeGen.getUncached().execute(cApiContext, spec, result, sharedLibrary);
+            return CExtNodes.createModule(node, cApiContext, spec, result, sharedLibrary);
         } else {
             // see: 'import.c: _PyImport_FixupExtensionObject'
             PythonModule module = (PythonModule) result;
