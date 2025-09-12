@@ -44,7 +44,6 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_LANGLE;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
-import java.io.IOException;
 import java.io.InputStream;
 
 import org.graalvm.nativeimage.ImageInfo;
@@ -65,11 +64,13 @@ public final class PythonFrozenModule {
             InputStream resourceAsStream = PythonFrozenModule.class.getResourceAsStream("Frozen" + symbol + "." + getSuffix());
             if (resourceAsStream != null) {
                 byte[] bytes = resourceAsStream.readAllBytes();
-                // TODO exception handling
                 code = MarshalModuleBuiltins.deserializeCodeUnit(null, null, bytes);
             }
-        } catch (IOException e) {
-            // fall-through
+        } catch (Exception e) {
+            // Fail loudly on SVM. On JVM, just fall back to normal import silently
+            if (ImageInfo.inImageBuildtimeCode()) {
+                throw new IllegalStateException("Failed to load frozen module");
+            }
         }
     }
 

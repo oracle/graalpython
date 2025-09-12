@@ -174,7 +174,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         FROZEN_NOT_FOUND,   // It wasn't in frozen modules.
         FROZEN_DISABLED,    // -X frozen_modules=off (and not essential)
         FROZEN_EXCLUDED,    // Frozen module has no code. We don't use this in our frozen modules
-        FROZEN_INVALID,     // Frozen module has empty code. We don't use this our frozen modules
+        FROZEN_INVALID,     // Frozen module has empty code
     }
 
     @Override
@@ -656,7 +656,9 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                         module.getOriginalName(),
                         !isAlias);
 
-        // CPython checks for invalid/empty modules here, but we don't generate those
+        if (info.code == null) {
+            return new FrozenResult(FROZEN_INVALID, info);
+        }
 
         return new FrozenResult(FROZEN_OKAY, info);
     }
