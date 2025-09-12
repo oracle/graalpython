@@ -44,7 +44,9 @@ FROZEN = [
     ('stdlib - startup, without site (python -S)', [
         'abc',
         'codecs',
-        '<encodings.*>',
+        # GraalPy change: don't freeze all the encodings, we have our own intrinsified encodings
+        '<encodings>',
+        'encodings.aliases',
         'io',
         ]),
     ('stdlib - startup, with site', [
@@ -52,9 +54,10 @@ FROZEN = [
         '_weakrefset',
         'types',
         'enum',
-        'sre_constants',
-        'sre_parse',
-        'sre_compile',
+        # GraalPy change: don't freeze these, they are deprecated, CPython probably just forgot to remove them from here
+        # 'sre_constants',
+        # 'sre_parse',
+        # 'sre_compile',
         'operator',
         'keyword',
         'heapq',
