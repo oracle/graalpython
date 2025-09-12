@@ -90,6 +90,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonFrozenModule;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -131,6 +132,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.utilities.TriState;
 
@@ -157,20 +159,14 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
 
     private static class FrozenInfo {
         @SuppressWarnings("unused") final TruffleString name;
-        final byte[] data;
-        final int size;
+        final CodeUnit code;
         final boolean isPackage;
         final TruffleString origName;
         @SuppressWarnings("unused") final boolean isAlias;
 
-        FrozenInfo(byte[] data, int size) {
-            this(null, data, size, false, null, false);
-        }
-
-        FrozenInfo(TruffleString name, byte[] data, int size, boolean isPackage, TruffleString origName, boolean isAlias) {
+        FrozenInfo(TruffleString name, CodeUnit code, boolean isPackage, TruffleString origName, boolean isAlias) {
             this.name = name;
-            this.data = data;
-            this.size = size;
+            this.code = code;
             this.isPackage = isPackage;
             this.origName = origName;
             this.isAlias = isAlias;
@@ -548,39 +544,45 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                         @Cached PRaiseNode raiseNode) {
             FrozenInfo info;
             if (dataObj != PNone.NONE) {
+                byte[] bytes;
+                int size;
                 try {
-                    info = new FrozenInfo(bufferLib.getInternalOrCopiedByteArray(dataObj), bufferLib.getBufferLength(dataObj));
+                    bytes = bufferLib.getInternalOrCopiedByteArray(dataObj);
+                    size = bufferLib.getBufferLength(dataObj);
                 } finally {
                     bufferLib.release(dataObj, frame, indirectCallData);
                 }
-                if (info.size == 0) {
+                if (size == 0) {
                     /* Does not contain executable code. */
                     raiseFrozenError(frame, FROZEN_INVALID, name, constructAndRaiseNode.get(inliningTarget));
                 }
+
+                Object code = null;
+
+                try {
+                    code = MarshalModuleBuiltins.Marshal.load(context, bytes, size);
+                } catch (MarshalError | NumberFormatException e) {
+                    raiseFrozenError(frame, FROZEN_INVALID, name, constructAndRaiseNode.get(inliningTarget));
+                }
+
+                if (!isCodeObjectProfile.profile(inliningTarget, code instanceof PCode)) {
+                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.NOT_A_CODE_OBJECT, name);
+                }
+
+                return code;
             } else {
                 FrozenResult result = findFrozen(context, name, equalNode);
                 FrozenStatus status = result.status;
                 info = result.info;
                 raiseFrozenError(frame, status, name, constructAndRaiseNode.get(inliningTarget));
+
+                RootCallTarget callTarget = createCallTarget(context, info);
+                return PFactory.createCode(context.getLanguage(), callTarget);
             }
-
-            Object code = null;
-
-            try {
-                code = MarshalModuleBuiltins.Marshal.load(context, info.data, info.size);
-            } catch (MarshalError | NumberFormatException e) {
-                raiseFrozenError(frame, FROZEN_INVALID, name, constructAndRaiseNode.get(inliningTarget));
-            }
-
-            if (!isCodeObjectProfile.profile(inliningTarget, code instanceof PCode)) {
-                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.NOT_A_CODE_OBJECT, name);
-            }
-
-            return code;
         }
     }
 
-    @Builtin(name = "find_frozen", parameterNames = {"name", "withData"}, minNumOfPositionalArgs = 1, doc = "find_frozen($module, name, /, *, withdata=False)\n" +
+    @Builtin(name = "find_frozen", parameterNames = {"name", "withdata"}, minNumOfPositionalArgs = 1, doc = "find_frozen($module, name, /, *, withdata=False)\n" +
                     "--\n" +
                     "\n" +
                     "Return info about the corresponding frozen module (if there is one) or None.\n" +
@@ -594,7 +596,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                     "                the module\'s current name)")
     @GenerateNodeFactory
     @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.TString)
-    @ArgumentClinic(name = "withData", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "false", useDefaultForNone = true)
+    @ArgumentClinic(name = "withdata", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "false", useDefaultForNone = true)
     abstract static class FindFrozen extends PythonBinaryClinicBuiltinNode {
 
         @Override
@@ -625,7 +627,8 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
             PMemoryView data = null;
 
             if (withData) {
-                data = memoryViewNode.execute(frame, PFactory.createBytes(context.getLanguage(inliningTarget), info.data));
+                byte[] bytes = MarshalModuleBuiltins.serializeCodeUnit(inliningTarget, context, info.code);
+                data = memoryViewNode.execute(frame, PFactory.createBytes(context.getLanguage(inliningTarget), bytes));
             }
 
             Object[] returnValues = new Object[]{
@@ -690,8 +693,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                 }
         }
 
-        PCode code = (PCode) MarshalModuleBuiltins.Marshal.load(core.getContext(), info.data, info.size);
-
+        RootCallTarget callTarget = createCallTarget(core.getContext(), info);
         PythonModule module = globals == null ? PFactory.createPythonModule(core.getLanguage(), name) : globals;
 
         if (info.isPackage) {
@@ -699,13 +701,18 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
             WriteAttributeToPythonObjectNode.getUncached().execute(module, T___PATH__, PFactory.createList(core.getLanguage()));
         }
 
-        RootCallTarget callTarget = code.getRootCallTarget();
         CallDispatchers.SimpleIndirectInvokeNode.executeUncached(callTarget, PArguments.withGlobals(module));
 
         Object origName = info.origName == null ? PNone.NONE : info.origName;
         WriteAttributeToPythonObjectNode.getUncached().execute(module, T___ORIGNAME__, origName);
 
         return module;
+    }
+
+    private static RootCallTarget createCallTarget(PythonContext context, FrozenInfo info) {
+        String name = PythonLanguage.FROZEN_FILENAME_PREFIX + info.name + PythonLanguage.FROZEN_FILENAME_SUFFIX;
+        Source source = Source.newBuilder("python", "", name).content(Source.CONTENT_NONE).build();
+        return context.getLanguage().callTargetFromBytecode(context, source, info.code);
     }
 
     /*
@@ -727,20 +734,11 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         boolean isAlias = module.getOriginalName() == null || !equalNode.execute(name, module.getOriginalName(), TS_ENCODING);
         FrozenInfo info = new FrozenInfo(name,
                         module.getCode(),
-                        module.getSize(),
                         module.isPackage(),
                         module.getOriginalName(),
                         !isAlias);
 
-        if (module.getCode() == null) {
-            /* It is frozen but marked as un-importable. */
-            return new FrozenResult(FROZEN_EXCLUDED, info);
-        }
-
-        if (module.getCode()[0] == '\0' || module.getSize() == 0) {
-            /* Does not contain executable code. */
-            return new FrozenResult(FROZEN_INVALID, info);
-        }
+        // CPython checks for invalid/empty modules here, but we don't generate those
 
         return new FrozenResult(FROZEN_OKAY, info);
     }
