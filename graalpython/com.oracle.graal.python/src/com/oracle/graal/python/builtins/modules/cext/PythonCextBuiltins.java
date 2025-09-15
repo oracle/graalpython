@@ -160,7 +160,6 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -1035,7 +1034,7 @@ public final class PythonCextBuiltins {
     abstract static class GraalPyPrivate_Set_Native_Slots extends CApiTernaryBuiltinNode {
 
         @Specialization
-        static int doPythonClass(PythonClass pythonClass, Object nativeGetSets, Object nativeMembers,
+        static int doPythonClass(PythonManagedClass pythonClass, Object nativeGetSets, Object nativeMembers,
                         @Bind Node inliningTarget,
                         @Cached HiddenAttr.WriteNode writeAttrNode) {
             writeAttrNode.execute(inliningTarget, pythonClass, NATIVE_SLOTS, new Object[]{nativeGetSets, nativeMembers});
