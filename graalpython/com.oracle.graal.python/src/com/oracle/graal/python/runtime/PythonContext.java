@@ -75,6 +75,7 @@ import java.lang.reflect.Field;
 import java.nio.file.LinkOption;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.security.Security;
 import java.text.MessageFormat;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -1510,18 +1511,14 @@ public final class PythonContext extends Python3Core {
         assert !env.isPreInitialization();
         if (secureRandom == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            try {
-                secureRandom = SecureRandom.getInstance("NativePRNGNonBlocking");
-            } catch (NoSuchAlgorithmException e) {
-                if (getPythonOS() == PLATFORM_WIN32) {
-                    try {
-                        secureRandom = SecureRandom.getInstanceStrong();
-                    } catch (NoSuchAlgorithmException e2) {
-                        throw new RuntimeException("Unable to obtain entropy source for random number generation (NativePRNGNonBlocking)", e2);
-                    }
-                } else {
-                    throw new RuntimeException("Unable to obtain entropy source for random number generation (NativePRNGNonBlocking)", e);
+            if (Security.getAlgorithms("SecureRandom").contains("NATIVEPRNGNONBLOCKING")) {
+                try {
+                    secureRandom = SecureRandom.getInstance("NATIVEPRNGNONBLOCKING");
+                } catch (NoSuchAlgorithmException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
                 }
+            } else {
+                secureRandom = new SecureRandom();
             }
         }
         return secureRandom;
