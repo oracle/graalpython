@@ -1,4 +1,4 @@
-# Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -38,18 +38,44 @@
 # SOFTWARE.
 
 if [ -n "$GITHUB_RUN_ID" ]; then
-    dnf install -y openblas-devel /usr/bin/cmake /usr/bin/sudo /usr/bin/curl java-11-openjdk-devel
+    export CPYTHON_EXE="$HOMEBREW_PREFIX/bin/python"
 fi
-pip install pip numpy wheel packaging requests opt_einsum
-pip install keras_preprocessing --no-deps
-mkdir -p tmp_bazel
-curl -L https://github.com/bazelbuild/bazel/releases/download/6.4.0/bazel-6.4.0-linux-x86_64 -o $(pwd)/tmp_bazel/bazel
-chmod +x tmp_bazel/bazel
-export PATH=$(pwd)/tmp_bazel/:$PATH
-bazel --version
-if [ -n "$1" ]; then
-    pip wheel "tensorflow==$1"
+
+# BSD patch fails to apply our pymupdf.patch
+pip install git+https://github.com/timfel/python-patch-ng
+
+# darwin's linker does not support --gc-sections but mupdf passes that we wrap
+# cc and pass all arguments on, but we remove the argument -Wl,--gc-sections
+mkdir cc_bin
+export PATH="$(pwd)/cc_bin:$PATH"
+original_cc=`which cc`
+cat <<EOF> cc_bin/cc
+#!/bin/bash
+# Wrapper for cc that removes --gc-sections from command line arguments if present
+# Pass on all arguments, but remove -Wl,--gc-sections if it is given
+
+if [[ "\$@" == *"-Wl,--gc-sections"* ]]; then
+  echo "Removing -Wl,--gc-sections argument from command line..."
+  newargs=()
+  for arg in "\$@"; do
+    if [ \$arg != "-Wl,--gc-sections" ]; then
+      newargs+=("\$arg")
+    fi
+  done
+  exec $original_cc "\${newargs[@]}"
 else
-    pip wheel tensorflow
+  exec $original_cc "\$@"
 fi
-rm -rf tmp_bazel
+EOF
+chmod +x cc_bin/cc
+export CC="$(pwd)/cc_bin/cc"
+
+export USE_SONAME="no"
+
+if [ -n "$1" ]; then
+    pip wheel "pymupdf==$1"
+else
+    pip wheel pymupdf
+fi
+
+rm -rf cc_bin

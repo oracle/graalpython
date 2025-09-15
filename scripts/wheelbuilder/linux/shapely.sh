@@ -1,4 +1,4 @@
-# Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,19 +37,26 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+GEOS_VERSION=3.13.1
+GEOS_INSTALL="/usr"
+
 if [ -n "$GITHUB_RUN_ID" ]; then
-    dnf install -y openblas-devel /usr/bin/cmake /usr/bin/sudo /usr/bin/curl java-11-openjdk-devel
+    dnf install -y cmake
+    curl -OL --retry 5 "https://download.osgeo.org/geos/geos-${GEOS_VERSION}.tar.bz2"
+    tar xfj "geos-${GEOS_VERSION}.tar.bz2" && rm "geos-${GEOS_VERSION}.tar.bz2"
+    cmake -DCMAKE_INSTALL_LIBDIR=lib \
+          "-DCMAKE_INSTALL_NAME_DIR=${GEOS_INSTALL}/lib" \
+          "-DCMAKE_INSTALL_PREFIX=${GEOS_INSTALL}" \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DBUILD_TESTING=OFF \
+          -S "geos-${GEOS_VERSION}" -B build
+    cmake --build build -j 4
+    cmake --install build
+    rm -rf build "geos-${GEOS_VERSION}"
 fi
-pip install pip numpy wheel packaging requests opt_einsum
-pip install keras_preprocessing --no-deps
-mkdir -p tmp_bazel
-curl -L https://github.com/bazelbuild/bazel/releases/download/6.4.0/bazel-6.4.0-linux-x86_64 -o $(pwd)/tmp_bazel/bazel
-chmod +x tmp_bazel/bazel
-export PATH=$(pwd)/tmp_bazel/:$PATH
-bazel --version
+
 if [ -n "$1" ]; then
-    pip wheel "tensorflow==$1"
+    pip wheel "shapely==$1"
 else
-    pip wheel tensorflow
+    pip wheel shapely
 fi
-rm -rf tmp_bazel

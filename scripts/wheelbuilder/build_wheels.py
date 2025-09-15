@@ -1,4 +1,4 @@
-# Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -47,35 +47,37 @@ The steps are:
 4. Go over the build scripts and run them in the venv
 """
 
-import hashlib
 import importlib
 import os
-import re
 import shlex
 import shutil
 import subprocess
 import sys
 import tarfile
 import zipfile
-
 from argparse import ArgumentParser
 from glob import glob
-from os.path import abspath, basename, dirname, exists, isabs, join, splitext
-from tempfile import TemporaryDirectory
+from os.path import abspath, dirname, exists, expanduser, isdir, join, splitext
 from urllib.request import urlretrieve
 
+sys.path.append(os.path.dirname(__file__))
+from repair_wheels import repair_wheels
 
-def ensure_installed(name):
+
+def ensure_installed(name, *extra):
     try:
         return importlib.import_module(name)
     except ImportError:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", name])
+        subprocess.check_call([sys.executable, "-m", "pip", "install", name, *extra])
         return importlib.import_module(name)
 
 
 def download(url, out):
-    print("Downloading", url, flush=True)
-    urlretrieve(url, out)
+    if not os.path.exists(out):
+        print("Downloading", url, flush=True)
+        urlretrieve(url, out)
+    else:
+        print("Using previously downloaded", out, flush=True)
 
 
 def extract(archive):
@@ -100,18 +102,47 @@ def create_venv():
     subprocess.check_call([binary, "-m", "venv", "graalpy"])
     print("Installing wheel with", pip, flush=True)
     subprocess.check_call([pip, "install", "wheel"])
+    print("Installing paatch to provide patch.exe", flush=True)
+    p = subprocess.run([pip, "install", "paatch"])
+    if p.returncode != 0:
+        print("Installing paatch failed, assuming a GNU patch compatible binary is on PATH", flush=True)
     return pip
 
 
+def prepare_environment(pip_exe):
+    env = os.environ.copy()
+    env["PATH"] = abspath(dirname(pip_exe)) + os.pathsep + env["PATH"]
+    env["VIRTUAL_ENV"] = abspath(dirname(dirname(pip_exe)))
+    if not shutil.which("cargo"):
+        cargo_bin = join(expanduser("~"), ".cargo", "bin")
+        if isdir(cargo_bin):
+            env["PATH"] += os.pathsep + cargo_bin
+    return env
+
+
 def build_wheels(pip):
-    packages_selected = [s for s in os.environ.get("PACKAGES_TO_BUILD", "").split(",") if s]
-    packages_to_build = set()
     with open(join(dirname(__file__), "packages.txt")) as f:
-        for line in f.readlines():
-            line = line.strip()
-            name, version = line.split("==")
-            if not packages_selected or name in packages_selected or line in packages_selected:
-                packages_to_build.add(line)
+        packages_from_txt = [tuple(l.strip().split("==")) for l in f]
+    packages_to_build = []
+    for s in os.environ.get("PACKAGES_TO_BUILD", "").split(","):
+        s = s.strip()
+        if not s:
+            continue
+        elif "==" in s:
+            name, version = s.split("==")
+        else:
+            name, version = s, None
+            for n, v in packages_from_txt:
+                if n == name:
+                    version = v
+                    break
+        if not version:
+            print("ERROR: Asked to build", s, "but no version given")
+            return False
+        packages_to_build.append((name, version))
+    if not packages_to_build:
+        packages_to_build = packages_from_txt
+    print("About to build", packages_to_build)
     scriptdir = abspath(join(dirname(__file__), sys.platform))
     if sys.platform == "win32":
         script_ext = "bat"
@@ -121,66 +152,45 @@ def build_wheels(pip):
         available_scripts = {s.lower(): s for s in os.listdir(scriptdir)}
     else:
         available_scripts = {}
-    for spec in packages_to_build:
-        name, version = spec.split("==")
-        whl_count = len(glob("*.whl"))
-        script = f"{name}.{version}.{script_ext}".lower()
-        if script not in available_scripts:
-            script = f"{name}.{script_ext}".lower()
-        if script in available_scripts:
-            script = join(scriptdir, available_scripts[script])
-            env = os.environ.copy()
-            env["PATH"] = abspath(dirname(pip)) + os.pathsep + env["PATH"]
-            env["VIRTUAL_ENV"] = abspath(dirname(dirname(pip)))
-            print("Building", name, version, "with", script, flush=True)
-            if sys.platform == "win32":
-                cmd = [script, version]  # Python's subprocess.py does the quoting we need
-            else:
-                cmd = f"{shlex.quote(script)} {version}"
-            subprocess.check_call(cmd, shell=True, env=env)
-            if not len(glob("*.whl")) > whl_count:
-                print("Building wheel for", name, version, "after", script, "did not", flush=True)
-                subprocess.check_call([pip, "wheel", spec])
-        else:
+    remaining_packages = 0
+    while remaining_packages != len(packages_to_build):
+        remaining_packages = len(packages_to_build)
+        for name, version in packages_to_build.copy():
+            whl_count = len(glob("*.whl"))
+            script = f"{name}.{version}.{script_ext}".lower()
+            if script not in available_scripts:
+                script = f"{name}.{script_ext}".lower()
+            if script in available_scripts:
+                script = join(scriptdir, available_scripts[script])
+                env = prepare_environment(pip)
+                print("Building", name, version, "with", script, flush=True)
+                if sys.platform == "win32":
+                    cmd = [script, version]  # Python's subprocess.py does the quoting we need
+                else:
+                    cmd = f"{os.environ.get('SHELL', '/bin/sh')} {shlex.quote(script)} {version}"
+                p = subprocess.run(cmd, shell=True, env=env)
+                if p.returncode != 0:
+                    continue
+                if len(glob("*.whl")) > whl_count:
+                    packages_to_build.remove((name, version))
+                    continue
+                print(script, "did not build a wheel, we will do so now", flush=True)
             print("Building", name, version, flush=True)
-            subprocess.check_call([pip, "wheel", spec])
-
-
-def repair_wheels():
-    if sys.platform == "win32":
-        ensure_installed("delvewheel")
-        env = os.environ.copy()
-        env["PYTHONUTF8"] = "1"
-        subprocess.check_call(
-            [
-                sys.executable,
-                "-m",
-                "delvewheel",
-                "repair",
-                "-v",
-                "--exclude",
-                "python-native.dll",
-                "-w",
-                "wheelhouse",
-                *glob("*.whl"),
-            ],
-            env=env,
-        )
-    elif sys.platform == "linux":
-        ensure_installed("auditwheel")
-        subprocess.check_call(
-            [join(dirname(sys.executable), "auditwheel"), "repair", "-w", "wheelhouse", *glob("*.whl")]
-        )
-    elif sys.platform == "darwin":
-        ensure_installed("delocate")
-        subprocess.check_call(
-            [join(dirname(sys.executable), "delocate-wheel"), "-v", "-w", "wheelhouse", *glob("*.whl")]
-        )
+            p = subprocess.run([pip, "wheel", f"{name}=={version}"])
+            if p.returncode == 0:
+                packages_to_build.remove((name, version))
+    if packages_to_build:
+        print("Failed to build all packages, the following packages failed")
+        print(packages_to_build)
+        return False
+    else:
+        return True
 
 
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("graalpy_url")
+    parser.add_argument("--ignore-failures", action="store_true", default=False)
     args = parser.parse_args()
     ext = splitext(args.graalpy_url)[1]
     outpath = f"graalpy{ext}"
@@ -188,5 +198,7 @@ if __name__ == "__main__":
     download(args.graalpy_url, outpath)
     extract(outpath)
     pip = create_venv()
-    build_wheels(pip)
-    repair_wheels()
+    success = build_wheels(pip)
+    repair_wheels("wheelhouse")
+    if not success and not args.ignore_failures:
+        sys.exit(1)

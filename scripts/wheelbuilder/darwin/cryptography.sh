@@ -1,4 +1,4 @@
-# Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -38,18 +38,11 @@
 # SOFTWARE.
 
 if [ -n "$GITHUB_RUN_ID" ]; then
-    dnf install -y openblas-devel /usr/bin/cmake /usr/bin/sudo /usr/bin/curl java-11-openjdk-devel
+    brew install pkg-config libffi openssl
 fi
-pip install pip numpy wheel packaging requests opt_einsum
-pip install keras_preprocessing --no-deps
-mkdir -p tmp_bazel
-curl -L https://github.com/bazelbuild/bazel/releases/download/6.4.0/bazel-6.4.0-linux-x86_64 -o $(pwd)/tmp_bazel/bazel
-chmod +x tmp_bazel/bazel
-export PATH=$(pwd)/tmp_bazel/:$PATH
-bazel --version
+export PKG_CONFIG_PATH=/opt/homebrew/opt/openssl/lib/pkgconfig
 if [ -n "$1" ]; then
-    pip wheel "tensorflow==$1"
+    pip wheel "cryptography==$1"
 else
-    pip wheel tensorflow
+    pip wheel cryptography
 fi
-rm -rf tmp_bazel
