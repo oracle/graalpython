@@ -389,9 +389,10 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "is_builtin", minNumOfPositionalArgs = 1)
+    @Builtin(name = "is_builtin", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"name"})
+    @ArgumentClinic(name = "name", conversion = ClinicConversion.TString)
     @GenerateNodeFactory
-    public abstract static class IsBuiltin extends PythonBuiltinNode {
+    public abstract static class IsBuiltin extends PythonUnaryClinicBuiltinNode {
 
         @Specialization
         @TruffleBoundary
@@ -404,21 +405,9 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization
-        @TruffleBoundary
-        public int run(PString name,
-                        @Bind Node inliningTarget,
-                        @Cached CastToTruffleStringNode toString) {
-            try {
-                return run(toString.execute(inliningTarget, name));
-            } catch (CannotCastException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
-        }
-
-        @Fallback
-        public int run(@SuppressWarnings("unused") Object noName) {
-            return 0;
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return ImpModuleBuiltinsClinicProviders.IsBuiltinClinicProviderGen.INSTANCE;
         }
     }
 

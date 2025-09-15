@@ -82,7 +82,6 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.SharedMultiprocessingData;
 import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.ArrayBuilder;
 import com.oracle.graal.python.util.PythonUtils;
@@ -359,11 +358,11 @@ public final class MultiprocessingGraalPyModuleBuiltins extends PythonBuiltins {
             PythonContext context = getContext();
             SharedMultiprocessingData sharedData = context.getSharedMultiprocessingData();
 
-            PSequence pSequence = constructListNode.execute(frame, inliningTarget, multiprocessingFdsList);
-            int size = sizeNode.execute(frame, inliningTarget, pSequence);
+            PList list = constructListNode.execute(frame, inliningTarget, multiprocessingFdsList);
+            int size = sizeNode.execute(frame, inliningTarget, list);
             int[] multiprocessingFds = new int[size];
             for (int i = 0; i < size; i++) {
-                Object pythonObject = getItem.execute(frame, inliningTarget, pSequence, i);
+                Object pythonObject = getItem.execute(frame, inliningTarget, list, i);
                 multiprocessingFds[i] = toInt(inliningTarget, castToJava, pythonObject);
             }
 

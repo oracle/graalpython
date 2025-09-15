@@ -124,7 +124,7 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
-import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
+import com.oracle.graal.python.builtins.objects.str.NativeStringData;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.EncodeNode;
@@ -144,6 +144,7 @@ import com.oracle.graal.python.lib.PyUnicodeFSDecoderNode;
 import com.oracle.graal.python.lib.PyUnicodeFromEncodedObject;
 import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
@@ -811,12 +812,22 @@ public final class PythonCextUnicodeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, Py_ssize_t, Py_ssize_t, PY_UCS4}, call = Ignored)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, Py_ssize_t, Int, Int}, call = Ignored)
     abstract static class GraalPyPrivate_Unicode_New extends CApiQuaternaryBuiltinNode {
         @Specialization
-        static Object doGeneric(Object ptr, long elements, long elementSize, int isAscii,
-                        @Bind PythonLanguage language) {
-            return PFactory.createString(language, new NativeCharSequence(ptr, (int) elements, (int) elementSize, isAscii != 0));
+        static Object doGeneric(Object ptr, long elements, int charSize, int isAscii,
+                        @Bind Node inliningTarget,
+                        @Bind PythonLanguage language,
+                        @Cached HiddenAttr.WriteNode writeNode,
+                        @Cached PRaiseNode raiseNode) {
+            long size = elements * charSize;
+            if (!PInt.isIntRange(size)) {
+                throw raiseNode.raise(inliningTarget, MemoryError);
+            }
+            PString s = PFactory.createString(language, null);
+            NativeStringData data = NativeStringData.create(charSize, isAscii != 0, ptr, (int) size);
+            s.setNativeStringData(inliningTarget, writeNode, data);
+            return s;
         }
     }
 
@@ -1165,15 +1176,18 @@ public final class PythonCextUnicodeBuiltins {
                         @Cached InlinedConditionProfile hasSizeProfile,
                         @Cached InlinedConditionProfile hasUtf8Profile,
                         @Cached CStructAccess.WriteLongNode writeLongNode,
-                        @Cached _PyUnicode_AsUTF8String asUTF8String) {
-            if (hasUtf8Profile.profile(inliningTarget, s.getUtf8Bytes() == null)) {
-                PBytes bytes = (PBytes) asUTF8String.execute(s, T_STRICT);
-                s.setUtf8Bytes(bytes);
+                        @Cached _PyUnicode_AsUTF8String asUTF8String,
+                        @Cached HiddenAttr.ReadNode readAttrNode,
+                        @Cached HiddenAttr.WriteNode writeAttrNode) {
+            PBytes utf8bytes = s.getUtf8Bytes(inliningTarget, readAttrNode);
+            if (hasUtf8Profile.profile(inliningTarget, utf8bytes == null)) {
+                utf8bytes = (PBytes) asUTF8String.execute(s, T_STRICT);
+                s.setUtf8Bytes(inliningTarget, writeAttrNode, utf8bytes);
             }
             if (hasSizeProfile.profile(inliningTarget, !lib.isNull(sizePtr))) {
-                writeLongNode.write(sizePtr, s.getUtf8Bytes().getSequenceStorage().length());
+                writeLongNode.write(sizePtr, utf8bytes.getSequenceStorage().length());
             }
-            return PySequenceArrayWrapper.ensureNativeSequence(s.getUtf8Bytes());
+            return PySequenceArrayWrapper.ensureNativeSequence(utf8bytes);
         }
 
         @Fallback
@@ -1214,16 +1228,19 @@ public final class PythonCextUnicodeBuiltins {
                         @Cached InlinedConditionProfile hasSizeProfile,
                         @Cached InlinedConditionProfile hasUnicodeProfile,
                         @Cached CStructAccess.WriteLongNode writeLongNode,
-                        @Cached UnicodeAsWideCharNode asWideCharNode) {
+                        @Cached UnicodeAsWideCharNode asWideCharNode,
+                        @Cached HiddenAttr.ReadNode readAttrNode,
+                        @Cached HiddenAttr.WriteNode writeAttrNode) {
             int wcharSize = CStructs.wchar_t.size();
-            if (hasUnicodeProfile.profile(inliningTarget, s.getWCharBytes() == null)) {
-                PBytes bytes = asWideCharNode.executeNativeOrder(inliningTarget, s, wcharSize);
-                s.setWCharBytes(bytes);
+            PBytes wcharBytes = s.getWCharBytes(inliningTarget, readAttrNode);
+            if (hasUnicodeProfile.profile(inliningTarget, wcharBytes == null)) {
+                wcharBytes = asWideCharNode.executeNativeOrder(inliningTarget, s, wcharSize);
+                s.setWCharBytes(inliningTarget, writeAttrNode, wcharBytes);
             }
             if (hasSizeProfile.profile(inliningTarget, !lib.isNull(sizePtr))) {
-                writeLongNode.write(sizePtr, s.getWCharBytes().getSequenceStorage().length() / wcharSize);
+                writeLongNode.write(sizePtr, wcharBytes.getSequenceStorage().length() / wcharSize);
             }
-            return PySequenceArrayWrapper.ensureNativeSequence(s.getWCharBytes());
+            return PySequenceArrayWrapper.ensureNativeSequence(wcharBytes);
         }
 
         @Fallback
@@ -1239,9 +1256,6 @@ public final class PythonCextUnicodeBuiltins {
 
         @Specialization
         static int pstring(PString s) {
-            if (s.isNativeCharSequence()) {
-                return s.isNativeMaterialized() ? 1 : 0;
-            }
             return s.isMaterialized() ? 1 : 0;
         }
 

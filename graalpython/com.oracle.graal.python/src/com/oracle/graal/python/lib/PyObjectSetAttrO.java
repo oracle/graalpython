@@ -43,17 +43,14 @@ package com.oracle.graal.python.lib;
 import static com.oracle.graal.python.nodes.ErrorMessages.ATTR_NAME_MUST_BE_STRING;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr.CallSlotSetAttrONode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -87,15 +84,8 @@ public abstract class PyObjectSetAttrO extends PNodeWithContext {
 
     @Specialization
     static void doIt(Frame frame, Node inliningTarget, Object self, TruffleString name, Object value,
-                    @Shared @Cached PyObjectSetAttr setAttr) {
+                    @Cached PyObjectSetAttr setAttr) {
         setAttr.execute(frame, inliningTarget, self, name, value);
-    }
-
-    @Specialization(guards = "isBuiltinPString(name)")
-    static void doIt(Frame frame, Node inliningTarget, Object self, PString name, Object value,
-                    @Cached CastToTruffleStringNode castNode,
-                    @Shared @Cached PyObjectSetAttr setAttr) {
-        setAttr.execute(frame, inliningTarget, self, castNode.castKnownString(inliningTarget, name), value);
     }
 
     @Fallback

@@ -29,12 +29,12 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.builtinClassToType;
 
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
+import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -51,25 +51,11 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @SuppressWarnings("truffle-abstract-export")
 @ExportLibrary(InteropLibrary.class)
-public final class PString extends PSequence {
+public final class PString extends PythonBuiltinObject {
     private TruffleString materializedValue;
-    private NativeCharSequence nativeCharSequence;
-
-    /*
-     * We need to keep a reference to the encoded forms for functions that return char pointers to
-     * keep the underlying memory alive (NativeSequenceStorage frees memory in finalizer).
-     */
-    private PBytes utf8Bytes;
-    private PBytes wCharBytes;
-
-    public PString(Object clazz, Shape instanceShape, NativeCharSequence value) {
-        super(builtinClassToType(clazz), instanceShape);
-        this.nativeCharSequence = value;
-    }
 
     public PString(Object clazz, Shape instanceShape, TruffleString value) {
         super(builtinClassToType(clazz), instanceShape);
-        assert value != null;
         this.materializedValue = value;
     }
 
@@ -78,13 +64,28 @@ public final class PString extends PSequence {
         return isMaterialized() ? getMaterialized() : StringMaterializeNode.executeUncached(this);
     }
 
-    public boolean isNativeCharSequence() {
-        return nativeCharSequence != null;
+    public NativeStringData getNativeStringData(Node inliningTarget, HiddenAttr.ReadNode readNode) {
+        return (NativeStringData) readNode.execute(inliningTarget, this, HiddenAttr.PSTRING_NATIVE_DATA, null);
     }
 
-    public boolean isNativeMaterialized() {
-        assert isNativeCharSequence();
-        return nativeCharSequence.isMaterialized();
+    public void setNativeStringData(Node inliningTarget, HiddenAttr.WriteNode writeNode, NativeStringData value) {
+        writeNode.execute(inliningTarget, this, HiddenAttr.PSTRING_NATIVE_DATA, value);
+    }
+
+    public PBytes getUtf8Bytes(Node inliningTarget, HiddenAttr.ReadNode readNode) {
+        return (PBytes) readNode.execute(inliningTarget, this, HiddenAttr.PSTRING_UTF8, null);
+    }
+
+    public void setUtf8Bytes(Node inliningTarget, HiddenAttr.WriteNode writeNode, PBytes value) {
+        writeNode.execute(inliningTarget, this, HiddenAttr.PSTRING_UTF8, value);
+    }
+
+    public PBytes getWCharBytes(Node inliningTarget, HiddenAttr.ReadNode readNode) {
+        return (PBytes) readNode.execute(inliningTarget, this, HiddenAttr.PSTRING_WCHAR, null);
+    }
+
+    public void setWCharBytes(Node inliningTarget, HiddenAttr.WriteNode writeNode, PBytes value) {
+        writeNode.execute(inliningTarget, this, HiddenAttr.PSTRING_WCHAR, value);
     }
 
     public boolean isMaterialized() {
@@ -101,54 +102,27 @@ public final class PString extends PSequence {
         materializedValue = materialized;
     }
 
-    public NativeCharSequence getNativeCharSequence() {
-        assert isNativeCharSequence();
-        return nativeCharSequence;
-    }
-
-    public void setNativeCharSequence(NativeCharSequence nativeCharSequence) {
-        this.nativeCharSequence = nativeCharSequence;
-    }
-
     @Override
     public String toString() {
-        return isMaterialized() ? materializedValue.toJavaStringUncached() : nativeCharSequence.toString();
-    }
-
-    public PBytes getUtf8Bytes() {
-        return utf8Bytes;
-    }
-
-    public void setUtf8Bytes(PBytes bytes) {
-        this.utf8Bytes = bytes;
-    }
-
-    public PBytes getWCharBytes() {
-        return wCharBytes;
-    }
-
-    public void setWCharBytes(PBytes bytes) {
-        this.wCharBytes = bytes;
-    }
-
-    @Override
-    public SequenceStorage getSequenceStorage() {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new UnsupportedOperationException();
+        return isMaterialized() ? materializedValue.toJavaStringUncached() : "<unmaterialized native string>";
     }
 
     @Override
     public int hashCode() {
-        return isMaterialized() ? materializedValue.hashCode() : nativeCharSequence.hashCode();
+        return CastToTruffleStringNode.executeUncached(this).hashCode();
     }
 
+    // equals is used from DynamicObject lookups
     @Ignore
     @Override
     public boolean equals(Object obj) {
-        return obj != null && obj.equals(isMaterialized() ? materializedValue : nativeCharSequence);
+        try {
+            return CastToTruffleStringNode.executeUncached(this).equalsUncached(CastToTruffleStringNode.executeUncached(obj), TS_ENCODING);
+        } catch (CannotCastException e) {
+            return false;
+        }
     }
 
-    @Override
     @ExportMessage
     @SuppressWarnings("static-method")
     public boolean isString() {
@@ -205,12 +179,6 @@ public final class PString extends PSequence {
         } finally {
             gil.release(mustRelease);
         }
-    }
-
-    @Override
-    public void setSequenceStorage(SequenceStorage store) {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new UnsupportedOperationException();
     }
 
     @ExportMessage

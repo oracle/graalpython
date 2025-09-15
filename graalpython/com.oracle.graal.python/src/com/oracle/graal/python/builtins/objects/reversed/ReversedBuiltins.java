@@ -41,10 +41,10 @@ import java.math.BigInteger;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -262,9 +262,9 @@ public final class ReversedBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!self.isExhausted()", "self.isPSequence()"})
         static int lengthHint(PSequenceReverseIterator self,
                         @Bind Node inliningTarget,
-                        @Cached SequenceNodes.LenNode lenNode,
+                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached PRaiseNode raiseNode) {
-            int len = lenNode.execute(inliningTarget, self.getPSequence());
+            int len = getSequenceStorageNode.execute(inliningTarget, self.getPSequence()).length();
             if (len == -1) {
                 throw raiseNode.raise(inliningTarget, TypeError, OBJ_HAS_NO_LEN, self);
             }

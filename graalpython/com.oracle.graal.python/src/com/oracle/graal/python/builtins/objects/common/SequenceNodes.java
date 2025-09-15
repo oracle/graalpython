@@ -49,8 +49,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetO
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.SetSequenceStorageNodeGen;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PySequenceCheckNode;
 import com.oracle.graal.python.nodes.PGuards;
@@ -82,42 +80,10 @@ public abstract class SequenceNodes {
     @GenerateInline
     @GenerateCached(false)
     @ImportStatic(PGuards.class)
-    public abstract static class LenNode extends Node {
-
-        public abstract int execute(Node inliningTarget, PSequence seq);
-
-        public static int executeUncached(PSequence seq) {
-            return SequenceNodesFactory.LenNodeGen.getUncached().execute(null, seq);
-        }
-
-        @Specialization
-        static int doPString(PString str,
-                        @Cached(inline = false) StringNodes.StringLenNode lenNode) {
-            return lenNode.execute(str);
-        }
-
-        @Specialization(guards = "!isPString(seq)")
-        static int doWithStorage(Node inliningTarget, PSequence seq,
-                        @Cached SequenceNodes.GetSequenceStorageNode getStorage) {
-            return getStorage.execute(inliningTarget, seq).length();
-        }
-    }
-
-    @GenerateUncached
-    @GenerateInline
-    @GenerateCached(false)
-    @ImportStatic(PGuards.class)
     public abstract static class IsInBoundsNode extends Node {
         public abstract boolean execute(Node inliningTarget, PSequence seq, long idx);
 
         @Specialization
-        static boolean doString(PString str, long idx,
-                        @Cached(inline = false) StringNodes.StringLenNode lenNode) {
-            int length = lenNode.execute(str);
-            return 0 <= idx && idx < length;
-        }
-
-        @Specialization(guards = "!isPString(seq)")
         static boolean doWithStorage(Node inliningTarget, PSequence seq, long idx,
                         @Cached SequenceNodes.GetSequenceStorageNode getStorage) {
             int length = getStorage.execute(inliningTarget, seq).length();

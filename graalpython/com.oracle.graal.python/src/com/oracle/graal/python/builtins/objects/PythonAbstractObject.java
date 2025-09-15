@@ -77,7 +77,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorKey;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIteratorNext;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -107,7 +106,6 @@ import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyIterCheckNode;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
-import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
@@ -705,8 +703,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     // GR-44020: make shared:
                     @Exclusive @Cached PyObjectLookupAttr lookupKeys,
                     @Cached CallNode callKeys,
-                    @Cached PyObjectGetItem getItemNode,
-                    @Cached SequenceNodes.LenNode lenNode,
+                    @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                     @Cached TypeNodes.GetMroNode getMroNode,
                     @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                     @Cached TruffleString.RegionEqualNode regionEqualNode,
@@ -732,9 +729,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     Object keysMethod = lookupKeys.execute(null, inliningTarget, this, T_KEYS);
                     if (keysMethod != PNone.NO_VALUE) {
                         PList mapKeys = castToList.executeWithGlobalState(callKeys.executeWithoutFrame(keysMethod));
-                        int len = lenNode.execute(inliningTarget, mapKeys);
+                        SequenceStorage storage = mapKeys.getSequenceStorage();
+                        int len = storage.length();
                         for (int i = 0; i < len; i++) {
-                            Object key = getItemNode.execute(null, inliningTarget, mapKeys, i);
+                            Object key = getItemScalarNode.execute(inliningTarget, storage, i);
                             TruffleString tsKey = null;
                             if (key instanceof TruffleString) {
                                 tsKey = (TruffleString) key;

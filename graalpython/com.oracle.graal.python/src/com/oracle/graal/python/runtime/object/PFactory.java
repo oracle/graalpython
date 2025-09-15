@@ -212,7 +212,6 @@ import com.oracle.graal.python.builtins.objects.ssl.PMemoryBIO;
 import com.oracle.graal.python.builtins.objects.ssl.PSSLContext;
 import com.oracle.graal.python.builtins.objects.ssl.PSSLSocket;
 import com.oracle.graal.python.builtins.objects.ssl.SSLMethod;
-import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.struct.PStruct;
 import com.oracle.graal.python.builtins.objects.superobject.SuperObject;
@@ -344,14 +343,6 @@ public final class PFactory {
     }
 
     public static PString createString(PythonLanguage language, Object cls, Shape shape, TruffleString string) {
-        return trace(language, new PString(cls, shape, string));
-    }
-
-    public static PString createString(PythonLanguage language, NativeCharSequence string) {
-        return createString(language, PythonBuiltinClassType.PString, language.getBuiltinTypeInstanceShape(PythonBuiltinClassType.PString), string);
-    }
-
-    public static PString createString(PythonLanguage language, Object cls, Shape shape, NativeCharSequence string) {
         return trace(language, new PString(cls, shape, string));
     }
 

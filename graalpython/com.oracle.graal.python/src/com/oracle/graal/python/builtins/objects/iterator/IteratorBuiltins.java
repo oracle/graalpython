@@ -39,9 +39,9 @@ import java.math.BigInteger;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -422,8 +422,8 @@ public final class IteratorBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!self.isExhausted()", "self.isPSequence()"})
         static int lengthHint(PSequenceIterator self,
                         @Bind Node inliningTarget,
-                        @Cached SequenceNodes.LenNode lenNode) {
-            int len = lenNode.execute(inliningTarget, self.getPSequence()) - self.getIndex();
+                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode) {
+            int len = getSequenceStorageNode.execute(inliningTarget, self.getPSequence()).length() - self.getIndex();
             return len < 0 ? 0 : len;
         }
 

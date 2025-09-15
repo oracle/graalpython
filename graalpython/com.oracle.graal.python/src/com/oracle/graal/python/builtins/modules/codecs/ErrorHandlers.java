@@ -67,7 +67,7 @@ import com.oracle.graal.python.builtins.modules.codecs.CodecsRegistry.PyCodecLoo
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.exception.UnicodeDecodeErrorBuiltins.MakeDecodeExceptionNode;
 import com.oracle.graal.python.builtins.objects.exception.UnicodeDecodeErrorBuiltins.PyUnicodeDecodeErrorGetEncodingNode;
@@ -93,6 +93,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -850,17 +851,18 @@ public final class ErrorHandlers {
 
         @Specialization
         static DecodingErrorHandlerResult doTuple(Node inliningTarget, PTuple result,
-                        @Cached SequenceNodes.LenNode lenNode,
-                        @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
+                        @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Cached CastToTruffleStringChecked0Node castToTruffleStringCheckedNode,
                         @Cached CastToJavaIntExactNode castToJavaIntExactNode,
                         @Cached PRaiseNode raiseNode) {
-            if (lenNode.execute(inliningTarget, result) != 2) {
+            SequenceStorage storage = result.getSequenceStorage();
+            if (storage.length() != 2) {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.DECODING_ERROR_HANDLER_MUST_RETURN_STR_INT_TUPLE);
             }
-            Object[] array = getObjectArrayNode.execute(inliningTarget, result);
-            TruffleString str = castToTruffleStringCheckedNode.cast(inliningTarget, array[0], ErrorMessages.DECODING_ERROR_HANDLER_MUST_RETURN_STR_INT_TUPLE);
-            int pos = castToJavaIntExactNode.execute(inliningTarget, array[1]);
+            Object item1 = getItemScalarNode.execute(inliningTarget, storage, 0);
+            Object item2 = getItemScalarNode.execute(inliningTarget, storage, 1);
+            TruffleString str = castToTruffleStringCheckedNode.cast(inliningTarget, item1, ErrorMessages.DECODING_ERROR_HANDLER_MUST_RETURN_STR_INT_TUPLE);
+            int pos = castToJavaIntExactNode.execute(inliningTarget, item2);
             return new DecodingErrorHandlerResult(str, pos);
         }
 
@@ -919,26 +921,27 @@ public final class ErrorHandlers {
 
         @Specialization
         static EncodingErrorHandlerResult doTuple(Node inliningTarget, PTuple result,
-                        @Cached SequenceNodes.LenNode lenNode,
-                        @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
+                        @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Cached CastToJavaIntExactNode castToJavaIntExactNode,
                         @Cached PyUnicodeCheckNode pyUnicodeCheckNode,
                         @Cached PyBytesCheckNode pyBytesCheckNode,
                         @Cached PRaiseNode raiseNode) {
-            if (lenNode.execute(inliningTarget, result) != 2) {
+            SequenceStorage storage = result.getSequenceStorage();
+            if (storage.length() != 2) {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.ENCODING_ERROR_HANDLER_MUST_RETURN_STR_BYTES_INT_TUPLE);
             }
-            Object[] array = getObjectArrayNode.execute(inliningTarget, result);
+            Object item1 = getItemScalarNode.execute(inliningTarget, storage, 0);
+            Object item2 = getItemScalarNode.execute(inliningTarget, storage, 1);
             boolean isUnicode;
-            if (pyUnicodeCheckNode.execute(inliningTarget, array[0])) {
+            if (pyUnicodeCheckNode.execute(inliningTarget, item1)) {
                 isUnicode = true;
-            } else if (pyBytesCheckNode.execute(inliningTarget, array[0])) {
+            } else if (pyBytesCheckNode.execute(inliningTarget, item1)) {
                 isUnicode = false;
             } else {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.ENCODING_ERROR_HANDLER_MUST_RETURN_STR_BYTES_INT_TUPLE);
             }
-            int pos = castToJavaIntExactNode.execute(inliningTarget, array[1]);
-            return new EncodingErrorHandlerResult(array[0], pos, isUnicode);
+            int pos = castToJavaIntExactNode.execute(inliningTarget, item2);
+            return new EncodingErrorHandlerResult(item1, pos, isUnicode);
         }
 
         @Fallback

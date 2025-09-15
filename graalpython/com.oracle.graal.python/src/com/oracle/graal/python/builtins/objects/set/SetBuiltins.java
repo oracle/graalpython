@@ -32,11 +32,11 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.HashNotImplemented;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -59,7 +59,6 @@ import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.IteratorExhausted;
@@ -284,7 +283,7 @@ public final class SetBuiltins extends PythonBuiltins {
 
         @Idempotent
         static boolean isBuiltinSequence(Node inliningTarget, Object other, GetPythonObjectClassNode getClassNode) {
-            return other instanceof PSequence && !(other instanceof PString) && getClassNode.execute(inliningTarget, (PSequence) other) instanceof PythonBuiltinClassType;
+            return other instanceof PSequence && getClassNode.execute(inliningTarget, (PSequence) other) instanceof PythonBuiltinClassType;
         }
 
         @Specialization(guards = "isBuiltinSequence(inliningTarget, other, getClassNode)", limit = "1")
