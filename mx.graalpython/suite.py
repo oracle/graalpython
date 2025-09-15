@@ -1233,16 +1233,17 @@ suite = {
             "description": "GraalVM Python header resources",
             "layout": {
                 "./META-INF/resources/include/": [
-                    "dependency:graalpy-pyconfig/<os>-<arch>/<multitarget_libc_selection>/pyconfig.h",
                     "file:graalpython/com.oracle.graal.python.cext/include/*",
                 ],
             },
             "maven": False,
         },
 
-        # The native libraries we ship. These are platform specific, and even
-        # the names of libraries are platform specific. So we already put them
-        # in the right folder structure here
+        # The native libraries we ship and pyconfig.h. These are platform specific,
+        # and even the names of libraries are platform specific. So we already put them
+        # in the right folder structure here; pyconfig.h is put into the right
+        # "include" directory, the structure must be kept in sync with how
+        # GRAALPYTHON_INCLUDE_RESOURCES is deployed
         "GRAALPYTHON_NATIVE_RESOURCES": {
             "native": True,
             "platformDependent": True,
@@ -1265,6 +1266,7 @@ suite = {
                             ],
                             "./META-INF/resources/<os>/<arch>/Lib/venv/scripts/nt/graalpy.exe": "dependency:python-venvlauncher",
                             "./META-INF/resources/<os>/<arch>/Lib/venv/scripts/nt/python.exe": "dependency:python-venvlauncher",
+                            "./META-INF/resources/<os>/<arch>/include/": "dependency:graalpy-pyconfig/<os>-<arch>/<multitarget_libc_selection>/pyconfig.h",
                         },
                     },
                 },
@@ -1275,6 +1277,7 @@ suite = {
                                 "dependency:GRAALPYTHON_NATIVE_LIBS/<os>/<arch>/*",
                             ],
                             "./META-INF/resources/<os>/<arch>/lib/python<py_ver:major_minor>/venv/scripts/macos/graalpy": "dependency:python-macos-launcher",
+                            "./META-INF/resources/<os>/<arch>/include/python<py_ver:major_minor>/": "dependency:graalpy-pyconfig/<os>-<arch>/<multitarget_libc_selection>/pyconfig.h",
                         }
                     }
                 },
@@ -1284,6 +1287,7 @@ suite = {
                             "./META-INF/resources/<os>/<arch>/lib/graalpy<graal_ver:major_minor>/": [
                                 "dependency:GRAALPYTHON_NATIVE_LIBS/<os>/<arch>/*",
                             ],
+                            "./META-INF/resources/<os>/<arch>/include/python<py_ver:major_minor>/": "dependency:graalpy-pyconfig/<os>-<arch>/<multitarget_libc_selection>/pyconfig.h",
                         },
                     },
                 },
