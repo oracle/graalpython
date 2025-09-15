@@ -640,6 +640,10 @@ public abstract class CExtCommonNodes {
             sysExc.setCause(currentException);
             throw PRaiseNode.raiseExceptionObjectStatic(node, sysExc, PythonOptions.isPExceptionWithJavaStacktrace(language));
         }
+
+        public static TransformExceptionFromNativeNode getUncached() {
+            return CExtCommonNodesFactory.TransformExceptionFromNativeNodeGen.getUncached();
+        }
     }
 
     @GenerateInline

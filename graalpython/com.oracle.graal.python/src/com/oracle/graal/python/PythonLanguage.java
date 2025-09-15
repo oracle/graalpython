@@ -569,43 +569,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         if (MIME_TYPE_BYTECODE.equals(source.getMimeType())) {
             byte[] bytes = source.getBytes().toByteArray();
             CodeUnit code = MarshalModuleBuiltins.deserializeCodeUnit(null, context, bytes);
-            boolean internal = shouldMarkSourceInternal(context);
-            // The original file path should be passed as the name
-            String name = source.getName();
-            if (name != null && !name.isEmpty()) {
-                Source textSource = tryLoadSource(context, code, internal, name);
-                if (textSource == null) {
-                    if (name.startsWith(FROZEN_FILENAME_PREFIX) && name.endsWith(FROZEN_FILENAME_SUFFIX)) {
-                        String id = name.substring(FROZEN_FILENAME_PREFIX.length(), name.length() - FROZEN_FILENAME_SUFFIX.length());
-                        String fs = context.getEnv().getFileNameSeparator();
-                        String path = context.getStdlibHome() + fs + id.replace(".", fs) + J_PY_EXTENSION;
-                        textSource = tryLoadSource(context, code, internal, path);
-                        if (textSource == null) {
-                            path = context.getStdlibHome() + fs + id.replace(".", fs) + fs + "__init__.py";
-                            textSource = tryLoadSource(context, code, internal, path);
-                        }
-                    }
-                }
-                if (textSource != null) {
-                    source = textSource;
-                }
-            }
-            if (internal && !source.isInternal()) {
-                source = Source.newBuilder(source).internal(true).build();
-            }
-            RootNode rootNode = null;
-
-            if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                if (source.hasBytes()) {
-                    // Force a character-based source so that source sections work as expected.
-                    source = Source.newBuilder(source).content(Source.CONTENT_NONE).build();
-                }
-                rootNode = ((BytecodeDSLCodeUnit) code).createRootNode(context, source);
-            } else {
-                rootNode = PBytecodeRootNode.create(this, (BytecodeCodeUnit) code, source);
-            }
-
-            return PythonUtils.getOrCreateCallTarget(rootNode);
+            return callTargetFromBytecode(context, source, code);
         }
 
         String mime = source.getMimeType();
@@ -629,6 +593,46 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
         assert !source.isInteractive();
         return parse(context, source, type, false, optimize, false, null, FutureFeature.fromFlags(flags));
+    }
+
+    public RootCallTarget callTargetFromBytecode(PythonContext context, Source source, CodeUnit code) {
+        boolean internal = shouldMarkSourceInternal(context);
+        // The original file path should be passed as the name
+        String name = source.getName();
+        if (name != null && !name.isEmpty()) {
+            Source textSource = tryLoadSource(context, code, internal, name);
+            if (textSource == null) {
+                if (name.startsWith(FROZEN_FILENAME_PREFIX) && name.endsWith(FROZEN_FILENAME_SUFFIX)) {
+                    String id = name.substring(FROZEN_FILENAME_PREFIX.length(), name.length() - FROZEN_FILENAME_SUFFIX.length());
+                    String fs = context.getEnv().getFileNameSeparator();
+                    String path = context.getStdlibHome() + fs + id.replace(".", fs) + J_PY_EXTENSION;
+                    textSource = tryLoadSource(context, code, internal, path);
+                    if (textSource == null) {
+                        path = context.getStdlibHome() + fs + id.replace(".", fs) + fs + "__init__.py";
+                        textSource = tryLoadSource(context, code, internal, path);
+                    }
+                }
+            }
+            if (textSource != null) {
+                source = textSource;
+            }
+        }
+        if (internal && !source.isInternal()) {
+            source = Source.newBuilder(source).internal(true).build();
+        }
+        RootNode rootNode;
+
+        if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+            if (source.hasBytes()) {
+                // Force a character-based source so that source sections work as expected.
+                source = Source.newBuilder(source).content(Source.CONTENT_NONE).build();
+            }
+            rootNode = ((BytecodeDSLCodeUnit) code).createRootNode(context, source);
+        } else {
+            rootNode = PBytecodeRootNode.create(this, (BytecodeCodeUnit) code, source);
+        }
+
+        return PythonUtils.getOrCreateCallTarget(rootNode);
     }
 
     private static Source tryLoadSource(PythonContext context, CodeUnit code, boolean internal, String path) {

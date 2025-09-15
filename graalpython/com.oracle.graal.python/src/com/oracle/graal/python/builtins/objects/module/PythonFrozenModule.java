@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,27 +44,34 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_LANGLE;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
-import java.io.IOException;
 import java.io.InputStream;
 
+import org.graalvm.nativeimage.ImageInfo;
+
+import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
+import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonFrozenModule {
+    private final String symbol;
     private final TruffleString originalName;
-    private final byte[] code;
     private final boolean isPackage;
+    private CodeUnit code;
 
-    private static byte[] getByteCode(String symbol) {
+    private void initCode() {
         try {
             InputStream resourceAsStream = PythonFrozenModule.class.getResourceAsStream("Frozen" + symbol + "." + getSuffix());
             if (resourceAsStream != null) {
-                return resourceAsStream.readAllBytes();
+                byte[] bytes = resourceAsStream.readAllBytes();
+                code = MarshalModuleBuiltins.deserializeCodeUnit(null, null, bytes);
             }
-        } catch (IOException e) {
-            // fall-through
+        } catch (Exception e) {
+            // Fail loudly on SVM. On JVM, just fall back to normal import silently
+            if (ImageInfo.inImageBuildtimeCode()) {
+                throw new IllegalStateException("Failed to load frozen module");
+            }
         }
-        return null;
     }
 
     private static String getSuffix() {
@@ -76,13 +83,16 @@ public final class PythonFrozenModule {
     }
 
     public PythonFrozenModule(String symbol, String originalName, boolean isPackage) {
-        this(toTruffleStringUncached(originalName), getByteCode(symbol), isPackage);
+        this(symbol, toTruffleStringUncached(originalName), isPackage);
     }
 
-    private PythonFrozenModule(TruffleString originalName, byte[] code, boolean isPackage) {
+    private PythonFrozenModule(String symbol, TruffleString originalName, boolean isPackage) {
+        this.symbol = symbol;
         this.originalName = originalName;
-        this.code = code;
         this.isPackage = isPackage;
+        if (ImageInfo.inImageBuildtimeCode()) {
+            initCode();
+        }
     }
 
     public PythonFrozenModule asPackage(boolean flag) {
@@ -93,7 +103,7 @@ public final class PythonFrozenModule {
             if (isPackage) {
                 origName = T_LANGLE.concatUncached(originalName, TS_ENCODING, false);
             }
-            return new PythonFrozenModule(origName, code, flag);
+            return new PythonFrozenModule(symbol, origName, flag);
         }
     }
 
@@ -101,15 +111,14 @@ public final class PythonFrozenModule {
         return originalName;
     }
 
-    public byte[] getCode() {
+    public CodeUnit getCode() {
+        if (!ImageInfo.inImageCode() && code == null) {
+            initCode();
+        }
         return code;
     }
 
     public boolean isPackage() {
         return isPackage;
-    }
-
-    public int getSize() {
-        return code != null ? code.length : 0;
     }
 }

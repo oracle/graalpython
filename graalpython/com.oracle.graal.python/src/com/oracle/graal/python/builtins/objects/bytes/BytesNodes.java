@@ -850,6 +850,10 @@ public abstract class BytesNodes {
     public abstract static class HashBufferNode extends PNodeWithContext {
         public abstract long execute(Node inliningTarget, Object buffer);
 
+        public static long executeUncached(Object buffer) {
+            return BytesNodesFactory.HashBufferNodeGen.getUncached().execute(null, buffer);
+        }
+
         @Specialization(guards = "bufferLib.hasInternalByteArray(buffer)", limit = "2")
         static long hashDirect(Object buffer,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {

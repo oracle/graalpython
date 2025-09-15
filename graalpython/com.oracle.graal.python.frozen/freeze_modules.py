@@ -44,7 +44,9 @@ FROZEN = [
     ('stdlib - startup, without site (python -S)', [
         'abc',
         'codecs',
-        '<encodings.*>',
+        # GraalPy change: don't freeze all the encodings, we have our own intrinsified encodings
+        '<encodings>',
+        'encodings.aliases',
         'io',
         ]),
     ('stdlib - startup, with site', [
@@ -52,9 +54,10 @@ FROZEN = [
         '_weakrefset',
         'types',
         'enum',
-        'sre_constants',
-        'sre_parse',
-        'sre_compile',
+        # GraalPy change: don't freeze these, they are deprecated, CPython probably just forgot to remove them from here
+        # 'sre_constants',
+        # 'sre_parse',
+        # 'sre_compile',
         'operator',
         'keyword',
         'heapq',
@@ -553,7 +556,8 @@ public final class FrozenModules {"""
 def freeze_module(src):
     with open(src.pyfile, "r", encoding="utf-8") as src_file, open(src.frozenfile, "wb") as binary_file:
         code_obj = compile(src_file.read(), f"<frozen {src.id}>", "exec")
-        marshal.dump(code_obj, binary_file)
+        # GraalPy note: we don't use marshal here, we just dump the co_code which implicitly marshals the code unit
+        binary_file.write(code_obj.co_code)
 
 
 def write_frozen_modules_map(out_file, modules):

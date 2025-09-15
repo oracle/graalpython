@@ -65,6 +65,10 @@ public abstract class ModuleGetNameNode extends Node {
 
     public abstract TruffleString execute(Node inliningTarget, Object module);
 
+    public static TruffleString executeUncached(Object module) {
+        return ModuleGetNameNodeGen.getUncached().execute(null, module);
+    }
+
     @Specialization
     static TruffleString doPythonModule(Node inliningTarget, PythonModule module,
                     @Cached ReadAttributeFromModuleNode readNameNode,

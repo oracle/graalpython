@@ -460,6 +460,10 @@ public class CStructAccess {
             assert validPointer(pointer);
             return (int) call.call(NativeCAPISymbol.FUN_READ_INT_MEMBER, pointer, offset);
         }
+
+        public static ReadI32Node getUncached() {
+            return ReadI32NodeGen.getUncached();
+        }
     }
 
     @ImportStatic(PGuards.class)

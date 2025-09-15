@@ -1000,7 +1000,8 @@ class _LoaderBasics:
         if code is None:
             raise ImportError(f'cannot load module {module.__name__!r} when '
                               'get_code() returns None')
-        _bootstrap._call_with_frames_removed(exec, code, module.__dict__)
+        # GraalPy change: we don't need _call_with_frames_removed
+        exec(code, module.__dict__)
 
     def load_module(self, fullname):
         """This method is deprecated."""
@@ -1064,7 +1065,8 @@ class SourceLoader(_LoaderBasics):
 
         The 'data' argument can be any object type that compile() supports.
         """
-        return _bootstrap._call_with_frames_removed(compile, data, path, 'exec',
+        # GraalPy change: we don't need _call_with_frames_removed
+        return compile(data, path, 'exec',
                                         dont_inherit=True, optimize=_optimize)
 
     def get_code(self, fullname):
@@ -1294,15 +1296,15 @@ class ExtensionFileLoader(FileLoader, _LoaderBasics):
 
     def create_module(self, spec):
         """Create an uninitialized extension module"""
-        module = _bootstrap._call_with_frames_removed(
-            _imp.create_dynamic, spec)
+        # GraalPy change: we don't need _call_with_frames_removed
+        module = _imp.create_dynamic(spec)
         _bootstrap._verbose_message('extension module {!r} loaded from {!r}',
                          spec.name, self.path)
         return module
 
     def exec_module(self, module):
         """Initialize an extension module"""
-        _bootstrap._call_with_frames_removed(_imp.exec_dynamic, module)
+        _imp.exec_dynamic(module)
         _bootstrap._verbose_message('extension module {!r} executed from {!r}',
                          self.name, self.path)
 
