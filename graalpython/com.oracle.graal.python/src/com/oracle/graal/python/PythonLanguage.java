@@ -109,6 +109,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.Function;
+import com.oracle.graal.python.util.LazySource;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.Assumption;
@@ -597,48 +598,48 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     public RootCallTarget callTargetFromBytecode(PythonContext context, Source source, CodeUnit code) {
         boolean internal = shouldMarkSourceInternal(context);
+        SourceBuilder builder = null;
         // The original file path should be passed as the name
         String name = source.getName();
         if (name != null && !name.isEmpty()) {
-            Source textSource = tryLoadSource(context, code, internal, name);
-            if (textSource == null) {
+            builder = sourceForOriginalFile(context, code, internal, name);
+            if (builder == null) {
                 if (name.startsWith(FROZEN_FILENAME_PREFIX) && name.endsWith(FROZEN_FILENAME_SUFFIX)) {
                     String id = name.substring(FROZEN_FILENAME_PREFIX.length(), name.length() - FROZEN_FILENAME_SUFFIX.length());
                     String fs = context.getEnv().getFileNameSeparator();
                     String path = context.getStdlibHome() + fs + id.replace(".", fs) + J_PY_EXTENSION;
-                    textSource = tryLoadSource(context, code, internal, path);
-                    if (textSource == null) {
+                    builder = sourceForOriginalFile(context, code, internal, path);
+                    if (builder == null) {
                         path = context.getStdlibHome() + fs + id.replace(".", fs) + fs + "__init__.py";
-                        textSource = tryLoadSource(context, code, internal, path);
+                        builder = sourceForOriginalFile(context, code, internal, path);
                     }
                 }
             }
-            if (textSource != null) {
-                source = textSource;
-            }
         }
-        if (internal && !source.isInternal()) {
-            source = Source.newBuilder(source).internal(true).build();
+        if (builder == null) {
+            builder = Source.newBuilder(source).internal(internal).content(Source.CONTENT_NONE);
         }
         RootNode rootNode;
+        LazySource lazySource = new LazySource(builder);
 
         if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-            if (source.hasBytes()) {
-                // Force a character-based source so that source sections work as expected.
-                source = Source.newBuilder(source).content(Source.CONTENT_NONE).build();
-            }
-            rootNode = ((BytecodeDSLCodeUnit) code).createRootNode(context, source);
+            // TODO lazily load source in bytecode DSL interpreter too
+            rootNode = ((BytecodeDSLCodeUnit) code).createRootNode(context, lazySource.getSource());
         } else {
-            rootNode = PBytecodeRootNode.create(this, (BytecodeCodeUnit) code, source);
+            rootNode = PBytecodeRootNode.create(this, (BytecodeCodeUnit) code, lazySource, internal);
         }
 
         return PythonUtils.getOrCreateCallTarget(rootNode);
     }
 
-    private static Source tryLoadSource(PythonContext context, CodeUnit code, boolean internal, String path) {
+    private static SourceBuilder sourceForOriginalFile(PythonContext context, CodeUnit code, boolean internal, String path) {
         try {
-            return Source.newBuilder(PythonLanguage.ID, context.getEnv().getPublicTruffleFile(path)).name(code.name.toJavaStringUncached()).internal(internal).build();
-        } catch (IOException | SecurityException | UnsupportedOperationException | InvalidPathException e) {
+            TruffleFile file = context.getEnv().getPublicTruffleFile(path);
+            if (!file.isReadable()) {
+                return null;
+            }
+            return Source.newBuilder(PythonLanguage.ID, file).name(code.name.toJavaStringUncached()).internal(internal);
+        } catch (SecurityException | UnsupportedOperationException | InvalidPathException e) {
             return null;
         }
     }
@@ -724,7 +725,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         Compiler compiler = new Compiler(parserCallbacks);
         CompilationUnit cu = compiler.compile(mod, EnumSet.noneOf(Compiler.Flags.class), optimize, futureFeatures);
         BytecodeCodeUnit co = cu.assemble();
-        return PBytecodeRootNode.create(this, co, source, parserCallbacks);
+        return PBytecodeRootNode.create(this, co, new LazySource(source), source.isInternal(), parserCallbacks);
     }
 
     private RootNode compileForBytecodeDSLInterpreter(PythonContext context, ModTy mod, Source source, int optimize,

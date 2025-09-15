@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,51 +38,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.bytecode.instrumentation;
+package com.oracle.graal.python.util;
 
-import java.util.Set;
+import java.io.IOException;
 
-import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
-import com.oracle.truffle.api.instrumentation.InstrumentableNode;
-import com.oracle.truffle.api.instrumentation.StandardTags;
-import com.oracle.truffle.api.instrumentation.Tag;
-import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.source.SourceSection;
+import com.oracle.truffle.api.source.Source;
 
-/**
- * @see InstrumentationRoot
- * @see InstrumentationSupport
- */
-class InstrumentationRootImpl extends InstrumentationRoot {
+public final class LazySource {
+    private Source.SourceBuilder builder;
+    private Source source;
 
-    @Child private volatile InstrumentationSupport instrumentationSupport;
+    public LazySource(Source.SourceBuilder builder) {
+        this.builder = builder;
+    }
 
-    @Override
-    public InstrumentableNode materializeInstrumentableNodes(Set<Class<? extends Tag>> materializedTags) {
-        if (materializedTags.contains(StandardTags.StatementTag.class)) {
-            if (instrumentationSupport == null) {
-                Node node = getParent();
-                while (!(node instanceof PBytecodeRootNode)) {
-                    node = node.getParent();
-                }
-                PBytecodeRootNode rootNode = (PBytecodeRootNode) node;
-                if (rootNode.getSource().hasCharacters()) {
-                    instrumentationSupport = insert(new InstrumentationSupport(rootNode));
-                    rootNode.materializeContainedFunctionsForInstrumentation(materializedTags);
-                    notifyInserted(instrumentationSupport);
-                }
+    public LazySource(Source source) {
+        this.source = source;
+    }
+
+    public Source getSource() {
+        if (source == null) {
+            try {
+                source = builder.build();
+            } catch (IOException e) {
+                source = builder.content(Source.CONTENT_NONE).build();
             }
+            builder = null;
         }
-        return this;
-    }
-
-    @Override
-    public InstrumentationSupport getInstrumentation() {
-        return instrumentationSupport;
-    }
-
-    @Override
-    public SourceSection getSourceSection() {
-        return getRootNode().getSourceSection();
+        return source;
     }
 }

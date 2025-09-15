@@ -54,6 +54,7 @@ import com.oracle.graal.python.compiler.OpCodes;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.graal.python.util.LazySource;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -63,7 +64,6 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.source.Source;
 
 public abstract class MakeFunctionNode extends PNodeWithContext {
     private final RootCallTarget callTarget;
@@ -134,9 +134,9 @@ public abstract class MakeFunctionNode extends PNodeWithContext {
         return stackTop;
     }
 
-    public static MakeFunctionNode create(PythonLanguage language, BytecodeCodeUnit code, Source source) {
+    public static MakeFunctionNode create(PythonLanguage language, BytecodeCodeUnit code, LazySource lazySource, boolean internal) {
         RootCallTarget callTarget;
-        PBytecodeRootNode bytecodeRootNode = PBytecodeRootNode.create(language, code, source);
+        PBytecodeRootNode bytecodeRootNode = PBytecodeRootNode.create(language, code, lazySource, internal);
         if (code.isGeneratorOrCoroutine()) {
             // TODO what should the frameDescriptor be? does it matter?
             callTarget = new PBytecodeGeneratorFunctionRootNode(language, bytecodeRootNode.getFrameDescriptor(), bytecodeRootNode, code.name).getCallTarget();
