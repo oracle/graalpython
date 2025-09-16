@@ -67,7 +67,6 @@ import mx_graalpython_python_benchmarks
 # re-export custom mx project classes so they can be used from suite.py
 from mx import MavenProject #pylint: disable=unused-import
 from mx_cmake import CMakeNinjaProject #pylint: disable=unused-import
-from mx_graalpython_gradleproject import GradlePluginProject #pylint: disable=unused-import
 
 from mx_gate import Task
 from mx_graalpython_bench_param import PATH_MESO
@@ -989,6 +988,45 @@ def deploy_local_maven_repo(env=None):
     return path, version, env
 
 
+def deploy_graalpy_extensions_to_local_maven_repo(env=None):
+    env = {**os.environ.copy(), **(env or {})}
+    m2_cache = get_maven_cache()
+    if m2_cache:
+        mvn_repo_local = f'-Dmaven.repo.local={m2_cache}'
+        maven_opts = env.get('MAVEN_OPTS')
+        maven_opts = maven_opts + " " + mvn_repo_local if maven_opts else mvn_repo_local
+        env['MAVEN_OPTS'] = maven_opts
+        mx.log(f'Added {mvn_repo_local} to MAVEN_OPTS={maven_opts}')
+
+    gradle_java_home = os.environ.get('GRADLE_JAVA_HOME')
+    if not gradle_java_home:
+        def abortCallback(msg):
+            mx.abort("Could not find a JDK of version between 17 and 21 to build a Gradle plugin from graalpy-extensions.\n"
+                     "Export GRADLE_JAVA_HOME pointing to a suitable JDK or use the generic MX mechanism explained below:\n" + msg)
+        gradle_java_home = mx.get_tools_jdk('17..21', abortCallback=abortCallback).home
+
+    graalpy_extensions_path = os.environ.get('GRAALPY_EXTENSIONS_PATH')
+    if not graalpy_extensions_path:
+        mx.log("Cloning graalpy-extensions. If you want to use custom local clone, set env variable GRAALPY_EXTENSIONS_PATH")
+        graalpy_extensions_path = os.path.join(SUITE.get_mx_output_dir(), 'graalpy-extensions')
+        if os.path.exists(graalpy_extensions_path):
+            shutil.rmtree(graalpy_extensions_path)
+        mx.run(['git', 'clone', '--depth=1', 'https://github.com/oracle/graalpy-extensions.git', graalpy_extensions_path])
+
+    local_repo_path = os.path.join(SUITE.get_mx_output_dir(), 'public-maven-repo')
+    version = GRAAL_VERSION
+    # Note: running the maven wrapper causes some issues in the CI around MAVEN_OPTS
+    mx.run_maven(['-f', os.path.join(graalpy_extensions_path, 'pom.xml'),
+            '-Pmxurlrewrite', '-DskipJavainterfacegen', '-DskipTests', '-DdeployAtEnd=true',
+            f'-Drevision={version}',
+            f'-Dlocal.repo.url=' + pathlib.Path(local_repo_path).as_uri(),
+            f'-DaltDeploymentRepository=local::default::file:{local_repo_path}',
+            f"-Dgradle.java.home={gradle_java_home}",
+            'deploy'], env=env, cwd=graalpy_extensions_path)
+
+    return local_repo_path, version, env
+
+
 def deploy_local_maven_repo_wrapper(*_):
     p, _, _ = deploy_local_maven_repo()
     print(f"local Maven repo path: {p}")
@@ -1437,6 +1475,7 @@ def graalpython_gate_runner(_, tasks):
             gvm_jdk = graalvm_jdk()
             standalone_home = graalpy_standalone_home('jvm')
             mvn_repo_path, version, env = deploy_local_maven_repo()
+            deploy_graalpy_extensions_to_local_maven_repo()
 
             if RUNNING_ON_LATEST_JAVA:
                 # our standalone python binary is meant for standalone graalpy

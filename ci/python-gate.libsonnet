@@ -100,7 +100,7 @@
         },
         windows: {
             common: {
-                MAVEN_HOME: {name: 'maven', version: '3.3.9', platformspecific: false},
+                MAVEN_HOME: {name: 'maven', version: '3.9.10', platformspecific: false},
             },
             amd64: {},
             aarch64: {},
