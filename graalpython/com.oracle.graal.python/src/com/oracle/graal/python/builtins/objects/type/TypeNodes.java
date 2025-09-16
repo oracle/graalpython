@@ -109,7 +109,6 @@ import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins.GetWeakRef
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltinsFactory;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextTypeBuiltins.GraalPyPrivate_Type_AddMember;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
