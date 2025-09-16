@@ -164,6 +164,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.nfi.Nfi2;
+import com.oracle.graal.python.nfi.NfiClosureBaseNode;
 import com.oracle.graal.python.nfi.NfiSignature;
 import com.oracle.graal.python.nfi.NfiType;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -222,7 +223,6 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
-import com.oracle.truffle.api.nodes.IndirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -612,12 +612,6 @@ public final class PythonCextBuiltins {
             return callTarget;
         }
 
-        @SuppressWarnings("static-method")
-        @ExportMessage
-        public boolean isExecutable() {
-            return true;
-        }
-
         public CApiCallPath call() {
             return call;
         }
@@ -651,32 +645,6 @@ public final class PythonCextBuiltins {
         public CApiBuiltinNode getUncachedNode() {
             // TODO: how to set "node.ret"?
             throw CompilerDirectives.shouldNotReachHere("not supported - uncached for " + name);
-        }
-
-        @ExportMessage
-        static final class Execute {
-            @Specialization(guards = "self == cachedSelf", limit = "3")
-            public static Object doExecute(@SuppressWarnings("unused") CApiBuiltinExecutable self, Object[] arguments,
-                            @Cached("self") CApiBuiltinExecutable cachedSelf,
-                            @Cached(parameters = "cachedSelf") ExecuteCApiBuiltinNode call) {
-
-                try {
-                    return call.execute(cachedSelf, arguments);
-                } catch (ThreadDeath t) {
-                    CompilerDirectives.transferToInterpreter();
-                    throw t;
-                } catch (Throwable t) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    t.printStackTrace();
-                    throw CompilerDirectives.shouldNotReachHere(t);
-                }
-            }
-
-            @Specialization
-            public static Object doFallback(@SuppressWarnings("unused") CApiBuiltinExecutable self, @SuppressWarnings("unused") Object[] arguments) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw CompilerDirectives.shouldNotReachHere("shouldn't hit generic case of " + Execute.class.getName());
-            }
         }
 
         @ExportMessage
@@ -716,7 +684,7 @@ public final class PythonCextBuiltins {
 
                     // TODO(NFI2) use static methods for builtins closures instead of interop
                     // executable
-                    pointer = signature.createInteropClosureUncached(this);
+                    pointer = signature.createDirectClosureUncached(() -> ExecuteCApiBuiltinNode.create(this));
                     context.getCApiContext().setClosurePointer(null, null, this, pointer);
                     LOGGER.finer(CApiBuiltinExecutable.class.getSimpleName() + " toNative: " + id + " / " + name() + " -> " + pointer);
                 } catch (Throwable t) {
@@ -733,26 +701,8 @@ public final class PythonCextBuiltins {
         }
     }
 
-    @GenerateUncached
-    abstract static class ExecuteCApiBuiltinNode extends Node {
-        abstract Object execute(CApiBuiltinExecutable self, Object[] arguments);
+    static final class ExecuteCApiBuiltinNode extends NfiClosureBaseNode {
 
-        public static ExecuteCApiBuiltinNode create(CApiBuiltinExecutable self) {
-            try {
-                return new CachedExecuteCApiBuiltinNode(self);
-            } catch (Throwable t) {
-                PNodeWithContext.printStack();
-                LOGGER.logp(Level.SEVERE, "ExecuteCApiBuiltinNode", "create", "while creating CApiBuiltin " + self.name, t);
-                throw t;
-            }
-        }
-
-        public static ExecuteCApiBuiltinNode getUncached(@SuppressWarnings("unused") CApiBuiltinExecutable self) {
-            return UncachedExecuteCApiBuiltinNode.INSTANCE;
-        }
-    }
-
-    static final class CachedExecuteCApiBuiltinNode extends ExecuteCApiBuiltinNode {
         private final CApiBuiltinExecutable cachedSelf;
         @Child private GilNode gilNode = GilNode.create();
         @Child private CExtToNativeNode retNode;
@@ -760,7 +710,17 @@ public final class PythonCextBuiltins {
         @Child private CApiBuiltinNode builtinNode;
         @Child private TransformPExceptionToNativeCachedNode transformExceptionToNativeNode;
 
-        CachedExecuteCApiBuiltinNode(CApiBuiltinExecutable cachedSelf) {
+        public static ExecuteCApiBuiltinNode create(CApiBuiltinExecutable self) {
+            try {
+                return new ExecuteCApiBuiltinNode(self);
+            } catch (Throwable t) {
+                PNodeWithContext.printStack();
+                LOGGER.logp(Level.SEVERE, "ExecuteCApiBuiltinNode", "create", "while creating CApiBuiltin " + self.name, t);
+                throw t;
+            }
+        }
+
+        ExecuteCApiBuiltinNode(CApiBuiltinExecutable cachedSelf) {
             assert cachedSelf.ret.createCheckResultNode() == null : "primitive result check types are only intended for ExternalFunctionInvokeNode";
             this.cachedSelf = cachedSelf;
             this.retNode = cachedSelf.createRetNode();
@@ -769,7 +729,8 @@ public final class PythonCextBuiltins {
         }
 
         @Override
-        Object execute(CApiBuiltinExecutable self, Object[] arguments) {
+        public Object execute(Object[] arguments) {
+            CApiBuiltinExecutable self = cachedSelf;
             boolean wasAcquired = self.acquireGil() && gilNode.acquire();
             CApiTiming.enter();
             try {
@@ -820,21 +781,6 @@ public final class PythonCextBuiltins {
             for (int i = 0; i < argNodes.length; i++) {
                 argCast[i] = argNodes[i] == null ? arguments[i] : argNodes[i].execute(arguments[i]);
             }
-        }
-    }
-
-    static final class UncachedExecuteCApiBuiltinNode extends ExecuteCApiBuiltinNode {
-
-        static final UncachedExecuteCApiBuiltinNode INSTANCE = new UncachedExecuteCApiBuiltinNode();
-
-        @Override
-        public boolean isAdoptable() {
-            return false;
-        }
-
-        @Override
-        Object execute(CApiBuiltinExecutable self, Object[] arguments) {
-            return IndirectCallNode.getUncached().call(self.getCallTarget(), arguments);
         }
     }
 

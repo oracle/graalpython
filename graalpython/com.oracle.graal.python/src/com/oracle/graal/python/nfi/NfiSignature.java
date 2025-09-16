@@ -51,6 +51,7 @@ import java.lang.invoke.MethodType;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.interop.ArityException;
@@ -60,12 +61,14 @@ import com.oracle.truffle.api.nodes.RootNode;
 public final class NfiSignature {
 
     static final MethodType INTEROP_METHOD_TYPE = MethodType.methodType(Object.class, Object.class, Object[].class);
+    static final MethodType DIRECT_METHOD_TYPE = MethodType.methodType(Object.class, Object[].class);
 
     private final NfiType resType;
     private final NfiType[] argTypes;
     private MethodHandle downcallMethodHandle;
     private FunctionDescriptor functionDescriptor;
     private MethodType interopUpcallMethodType;
+    private MethodType directUpcallMethodType;
 
     NfiSignature(NfiType resType, NfiType[] argTypes) {
         this.resType = resType;
@@ -132,6 +135,24 @@ public final class NfiSignature {
         }
         handle = handle.asType(interopUpcallMethodType);
         handle = handle.bindTo(executable);
+        // TODO(NFI2) per-context or closure-specific Arena
+        return Linker.nativeLinker().upcallStub(handle, getFunctionDescriptor(), Arena.global()).address();
+    }
+
+    @SuppressWarnings("restricted")
+    public long createDirectClosureUncached(Supplier<NfiClosureBaseNode> closureNode) {
+        RootNode rootNode = new NfiDirectClosureRootNode(closureNode, this);
+        // TODO(NFI2) SVM needs this handle to be a static method
+        MethodHandle handle = handle_CallTarget_call.bindTo(rootNode.getCallTarget());
+        handle = handle.asType(DIRECT_METHOD_TYPE).asVarargsCollector(Object[].class);
+        if (directUpcallMethodType == null) {
+            Class<?>[] javaArgTypes = new Class<?>[argTypes.length];
+            for (int i = 0; i < argTypes.length; i++) {
+                javaArgTypes[i] = argTypes[i].asJavaType();
+            }
+            directUpcallMethodType = MethodType.methodType(resType.asJavaType(), javaArgTypes);
+        }
+        handle = handle.asType(directUpcallMethodType);
         // TODO(NFI2) per-context or closure-specific Arena
         return Linker.nativeLinker().upcallStub(handle, getFunctionDescriptor(), Arena.global()).address();
     }
