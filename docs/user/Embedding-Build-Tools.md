@@ -206,7 +206,7 @@ The **version** property defines which version of GraalPy to use.
 ```groovy
 plugins {
     // other plugins ...
-    id 'org.graalvm.python' version '24.2.0'
+    id 'org.graalvm.python' version '25.0.0'
 }
 ```
 
