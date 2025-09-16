@@ -161,15 +161,6 @@ if wants_debug_build():
 
 
 if WIN32:
-    # we need the .lib for pythonjni
-    original_DefaultNativeProject_getArchivableResults = mx_native.DefaultNativeProject.getArchivableResults
-    def getArchivableResultsWithLib(self, *args, **kwargs):
-        for result in original_DefaultNativeProject_getArchivableResults(self, *args, **kwargs):
-            if any(r.endswith("pythonjni.dll") for r in result):
-                yield tuple(r.replace(".dll", ".lib") for r in result)
-            yield result
-    mx_native.DefaultNativeProject.getArchivableResults = getArchivableResultsWithLib
-
     # let's check if VS compilers are on the PATH
     if not os.environ.get("LIB"):
         mx.log("LIB not in environment, not a VS shell")
