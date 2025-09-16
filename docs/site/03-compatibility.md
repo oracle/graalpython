@@ -73,7 +73,7 @@ img.pylogo {
     const LOWER_PRIORITY = "This version works, but there is no reason to prefer it over more recent versions.";
     const BUILD_SCRIPT_AVAILABLE = (url) => `If you have trouble building this package, there is a <a href='${url}' target='_blank'>script</a>.`
 
-    const default_version = 'v242';
+    const default_version = 'v250';
     const show_percentages = true;
     const dbs = {};
     var module_query = '';
@@ -534,7 +534,8 @@ img.pylogo {
                 <h3 id="compattable-container" class="langpage__title-02">Compatibility per GraalPy Release</h3>
               <div class="compatibility_page-filter">
               <div class="compatibility__row">
-                  <p class="compatibility_page-item compatibility_page-module compatibility_page-active" data-filter="v242">GraalPy 24.2</p>
+                  <p class="compatibility_page-item compatibility_page-module compatibility_page-active" data-filter="v250">GraalPy 25.0</p>
+                  <p class="compatibility_page-item compatibility_page-module" data-filter="v242">GraalPy 24.2</p>
                   <p class="compatibility_page-item compatibility_page-module" data-filter="v241">GraalPy 24.1</p>
               </div>
           </div>
