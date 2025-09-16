@@ -37,6 +37,7 @@
         java_embedding_meso_small: "java-embedding-meso-small:*",
         jmh: "python-jmh:GRAALPYTHON_BENCH",
         heap: "heap-graalpython:*",
+        micro_small_heap: "micro-small-heap-graalpython:*",
     },
 
     PY_BENCHMARKS:: {
