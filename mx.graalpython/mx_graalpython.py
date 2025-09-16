@@ -2406,7 +2406,7 @@ class GraalpythonProject(mx.ArchivableProject):
         mx.Project.__init__(self, suite, name, subDir, srcDirs, deps, workingSets, d, theLicense, **kwargs)
 
     def getOutput(self, replaceVar=mx_subst.results_substitutions):
-        return self.get_output_root()
+        return replaceVar.substitute(self.get_output_root())
 
     def output_dir(self):
         return self.getOutput()
