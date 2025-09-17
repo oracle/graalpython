@@ -37,13 +37,42 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+from pathlib import Path
+import re
+import subprocess
 import sys
 import time
 
-import re
-import subprocess
-
 TOTAL_RE = re.compile(r'^Total +\d+ +(\d+)', re.MULTILINE)
+PRIVATE_RE = re.compile(r'Private_(?:Clean|Dirty):\s+(\d+) kB')
+
+
+def jmap(jmap_binary, ppid):
+    if not jmap_binary:
+        return 0
+    try:
+        jmap_output = subprocess.check_output(
+            [jmap_binary, '-histo:live', str(ppid)],
+            universal_newlines=True,
+            stderr=subprocess.DEVNULL,
+        )
+        if match := TOTAL_RE.search(jmap_output):
+            heap_bytes = int(match.group(1))
+            return heap_bytes
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        pass
+    return 0
+
+
+def uss(ppid):
+    smap = Path(f"/proc/{ppid}/smaps")
+    try:
+        memory_map = smap.read_text()
+        total_bytes = sum(int(val) * 1024 for val in PRIVATE_RE.findall(memory_map))
+        return total_bytes
+    except FileNotFoundError:
+        pass
+    return 0
 
 
 def main():
@@ -54,19 +83,12 @@ def main():
     with open(output_file, 'w') as f:
         for _ in range(iterations):
             proc = subprocess.Popen(benchmark)
+            ppid = proc.pid
             while proc.poll() is None:
                 time.sleep(0.3)
-                try:
-                    jmap_output = subprocess.check_output(
-                        [jmap_binary, '-histo:live', str(proc.pid)],
-                        universal_newlines=True,
-                        stderr=subprocess.DEVNULL,
-                    )
-                    if match := TOTAL_RE.search(jmap_output):
-                        heap_bytes = int(match.group(1))
-                        f.write(f'{heap_bytes}\n')
-                except subprocess.CalledProcessError:
-                    pass
+                uss_bytes = uss(ppid)
+                heap_bytes = jmap(jmap_binary, ppid)
+                f.write(f"{heap_bytes} {uss_bytes}\n")
             if proc.returncode != 0:
                 sys.exit(proc.returncode)
 

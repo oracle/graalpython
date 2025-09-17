@@ -1053,9 +1053,6 @@ suite = {
                 "BOUNCYCASTLE-PKIX",
                 "BOUNCYCASTLE-UTIL",
             ],
-            "javaProperties": {
-                # "python.jni.library": "<lib:pythonjni>"
-            },
             "description": "GraalPy, a high-performance embeddable Python 3 runtime for Java. This artifact includes the core language runtime without standard libraries. It is not recommended to depend on the artifact directly. Instead, use \'org.graalvm.polyglot:python\' or \'org.graalvm.polyglot:python-community\' to ensure all dependencies are pulled in correctly.",
             "maven": {
                 "artifactId": "python-language",

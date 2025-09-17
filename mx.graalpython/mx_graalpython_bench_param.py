@@ -340,5 +340,6 @@ HEAP_BENCHMARKS = {
         "post-startup": [],
         "import-a-lot": [],
         "allocate-objects": [],
-    }]
+    }],
+    "micro-small-heap": [PATH_MICRO, MICRO_BENCHMARKS_SMALL],
 }

@@ -949,9 +949,15 @@ class LiveHeapTracker(mx_benchmark.Tracker):
         if self.bmSuite:
             bench_name = f"{self.bmSuite.name()}-{bench_name}"
         ts = datetime.now().strftime("%Y%m%d-%H%M%S")
-        jmap_command = mx.get_jdk().exe_path('jmap')
+        vm = self.bmSuite.execution_context.virtual_machine
+        if isinstance(vm, GraalPythonVm) and vm.launcher_type == "jvm":
+            jmap_command = mx.get_jdk().exe_path('jmap')
+        else:
+            jmap_command = ""
         self.out_file = os.path.join(os.getcwd(), f"heap_tracker_{bench_name}_{ts}.txt")
         iterations = 3
+        if "-i" in cmd:
+            cmd[cmd.index("-i") + 1] = "1"
         return [sys.executable, str(DIR / 'live_heap_tracker.py'), self.out_file, str(iterations), jmap_command, *cmd]
 
     def get_rules(self, bmSuiteArgs):
@@ -964,18 +970,41 @@ class LiveHeapTracker(mx_benchmark.Tracker):
 
         def parse(self, text):
             with open(self.tracker.out_file) as f:
-                heap_mb = [int(line.strip()) / (1024 ** 2) for line in f if line]
+                heap_mb, uss_mb = zip(*(map(lambda i: int(i) / (1024 ** 2), line.split()) for line in f if line))
             os.unlink(self.tracker.out_file)
-            self.tracker.out_file = None
-            deciles = statistics.quantiles(heap_mb, n=10)
-            print(f"Heap size deciles (MiB): {deciles}")
+            heap_deciles = statistics.quantiles(heap_mb, n=10)
+            uss_deciles = statistics.quantiles(uss_mb, n=10)
+            print(f"Heap size deciles (MiB): {heap_deciles}")
+            print(f"USS size deciles (MiB): {uss_deciles}")
+            # The heap benchmarks are a separate suite, because they are run
+            # very differently, but we want to be able to conveniently query
+            # all data about the same suites that we have. So, if this suite
+            # name ends with "-heap", we drop that so it gets attributed to the
+            # base suite.
+            suite = self.tracker.bmSuite.benchSuiteName(self.bmSuiteArgs)
+            if suite.endswith("-heap"):
+                suite = suite[:-len("-heap")]
+            benchmark = f"{suite}.{self.tracker.bmSuite.currently_running_benchmark()}"
+            vm_flags = ' '.join(self.tracker.bmSuite.vmArgs(self.bmSuiteArgs))
             return [
                 PythonBaseBenchmarkSuite.with_branch_and_commit_dict({
-                    "benchmark": self.tracker.bmSuite.currently_running_benchmark(),
-                    "bench-suite": self.tracker.bmSuite.benchSuiteName(self.bmSuiteArgs),
-                    "config.vm-flags": ' '.join(self.tracker.bmSuite.vmArgs(self.bmSuiteArgs)),
+                    "benchmark": benchmark,
+                    "bench-suite": suite,
+                    "config.vm-flags": vm_flags,
                     "metric.name": "allocated-memory",
-                    "metric.value": deciles[-1],
+                    "metric.value": heap_deciles[-1],
+                    "metric.unit": "MB",
+                    "metric.type": "numeric",
+                    "metric.score-function": "id",
+                    "metric.better": "lower",
+                    "metric.iteration": 0
+                }),
+                PythonBaseBenchmarkSuite.with_branch_and_commit_dict({
+                    "benchmark": benchmark,
+                    "bench-suite": suite,
+                    "config.vm-flags": vm_flags,
+                    "metric.name": "memory",
+                    "metric.value": uss_deciles[-1],
                     "metric.unit": "MB",
                     "metric.type": "numeric",
                     "metric.score-function": "id",
@@ -1004,7 +1033,17 @@ class PythonHeapBenchmarkSuite(PythonBaseBenchmarkSuite):
     def createCommandLineArgs(self, benchmarks, bmSuiteArgs):
         benchmark = benchmarks[0]
         bench_path = os.path.join(self._bench_path, f'{benchmark}.py')
-        return [*self.vmArgs(bmSuiteArgs), bench_path, *self.runArgs(bmSuiteArgs)]
+        bench_args = self._benchmarks[benchmark]
+        run_args = self.runArgs(bmSuiteArgs)
+        cmd_args = []
+        if "-i" in bench_args:
+            # Need to use the harness to parse
+            cmd_args.append(HARNESS_PATH)
+        if "-i" not in run_args:
+            # Explicit iteration count overrides default
+            run_args += bench_args
+        cmd_args.append(bench_path)
+        return [*self.vmArgs(bmSuiteArgs), *cmd_args, *run_args]
 
     def successPatterns(self):
         return []

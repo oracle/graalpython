@@ -467,6 +467,9 @@
             // logging
             ["mx"] + self.mx_parameters + self.dy + ["sversions"],
         ],
+        on_success+: [
+            ["rm", "-rf", "graal_dumps"],
+        ],
     }),
 
     graalpy_ee_gate:: $.graalpy_gate + task_spec({
