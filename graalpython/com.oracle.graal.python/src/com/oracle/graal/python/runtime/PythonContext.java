@@ -25,10 +25,10 @@
  */
 package com.oracle.graal.python.runtime;
 
-import static com.oracle.graal.python.annotations.PythonOS.PLATFORM_DARWIN;
-import static com.oracle.graal.python.annotations.PythonOS.PLATFORM_WIN32;
 import static com.oracle.graal.python.PythonLanguage.getPythonOS;
 import static com.oracle.graal.python.PythonLanguage.throwIfUnsupported;
+import static com.oracle.graal.python.annotations.PythonOS.PLATFORM_DARWIN;
+import static com.oracle.graal.python.annotations.PythonOS.PLATFORM_WIN32;
 import static com.oracle.graal.python.builtins.modules.SysModuleBuiltins.T_CACHE_TAG;
 import static com.oracle.graal.python.builtins.modules.SysModuleBuiltins.T__MULTIARCH;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_CLOSED;
@@ -75,7 +75,6 @@ import java.lang.reflect.Field;
 import java.nio.file.LinkOption;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.security.Security;
 import java.text.MessageFormat;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -102,9 +101,9 @@ import java.util.logging.Level;
 import org.graalvm.options.OptionKey;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.CtypesThreadState;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -1511,13 +1510,14 @@ public final class PythonContext extends Python3Core {
         assert !env.isPreInitialization();
         if (secureRandom == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            if (Security.getAlgorithms("SecureRandom").contains("NATIVEPRNGNONBLOCKING")) {
-                try {
-                    secureRandom = SecureRandom.getInstance("NATIVEPRNGNONBLOCKING");
-                } catch (NoSuchAlgorithmException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
-                }
-            } else {
+            /*
+             * Be careful with what we initialize here. Doing stuff likes Security.getAlgorithms may
+             * eagerly initialize bouncycastle and bloat the heap. Run the heap:post-startup
+             * benchmark when making changes.
+             */
+            try {
+                secureRandom = SecureRandom.getInstance("NATIVEPRNGNONBLOCKING");
+            } catch (NoSuchAlgorithmException e) {
                 secureRandom = new SecureRandom();
             }
         }
