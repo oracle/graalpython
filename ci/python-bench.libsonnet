@@ -13,7 +13,6 @@
     local platform_spec         = run_spec.platform_spec,
     local evaluate_late         = run_spec.evaluate_late,
     local downloads             = self.downloads,
-    local graalpy_gate          = self.graalpy_gate,
     local os_arch_jdk_mixin     = self.os_arch_jdk_mixin,
     local all_jobs              = self.all_jobs,
     local no_jobs               = self.no_jobs,
