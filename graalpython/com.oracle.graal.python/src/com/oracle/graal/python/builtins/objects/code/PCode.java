@@ -560,7 +560,7 @@ public final class PCode extends PythonBuiltinObject {
                 return PFactory.createCode(language, root.getCallTarget(), root.getSignature(), code);
             } else {
                 BytecodeCodeUnit code = (BytecodeCodeUnit) o;
-                PBytecodeRootNode bytecodeRootNode = PBytecodeRootNode.create(language, code, getSourceSection(rootNode).getSource());
+                PBytecodeRootNode bytecodeRootNode = PBytecodeRootNode.create(language, code, ((PBytecodeRootNode) rootNode).getLazySource(), rootNode.isInternal());
                 return PFactory.createCode(language, bytecodeRootNode.getCallTarget(), bytecodeRootNode.getSignature(), code);
             }
         } else if (o instanceof BigInteger) {

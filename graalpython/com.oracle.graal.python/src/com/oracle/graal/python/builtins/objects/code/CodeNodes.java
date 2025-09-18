@@ -64,6 +64,7 @@ import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.graal.python.util.LazySource;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CallTarget;
@@ -176,7 +177,7 @@ public abstract class CodeNodes {
                                     code.outputCanQuicken, code.variableShouldUnbox,
                                     code.generalizeInputsMap, code.generalizeVarsMap);
                 }
-                rootNode = PBytecodeRootNode.create(context.getLanguage(), code, PythonUtils.createFakeSource());
+                rootNode = PBytecodeRootNode.create(context.getLanguage(), code, new LazySource(PythonUtils.createFakeSource()), false);
                 if (code.isGeneratorOrCoroutine()) {
                     rootNode = new PBytecodeGeneratorFunctionRootNode(context.getLanguage(), rootNode.getFrameDescriptor(), (PBytecodeRootNode) rootNode, code.name);
                 }

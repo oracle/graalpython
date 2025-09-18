@@ -237,6 +237,7 @@ import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.LazySource;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -549,7 +550,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     final int classcellIndex;
 
     private final BytecodeCodeUnit co;
-    private final Source source;
+    private final LazySource lazySource;
     private SourceSection sourceSection;
     // For deferred deprecation warnings
     private final ParserCallbacksImpl parserCallbacks;
@@ -674,15 +675,15 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @TruffleBoundary
-    public static PBytecodeRootNode create(PythonLanguage language, BytecodeCodeUnit co, Source source) {
-        return create(language, co, source, null);
+    public static PBytecodeRootNode create(PythonLanguage language, BytecodeCodeUnit co, LazySource lazySource, boolean internal) {
+        return create(language, co, lazySource, internal, null);
     }
 
     @TruffleBoundary
-    public static PBytecodeRootNode create(PythonLanguage language, BytecodeCodeUnit co, Source source, ParserCallbacksImpl parserCallbacks) {
+    public static PBytecodeRootNode create(PythonLanguage language, BytecodeCodeUnit co, LazySource lazySource, boolean internal, ParserCallbacksImpl parserCallbacks) {
         BytecodeFrameInfo frameInfo = new BytecodeFrameInfo();
         FrameDescriptor fd = makeFrameDescriptor(co, frameInfo);
-        PBytecodeRootNode rootNode = new PBytecodeRootNode(language, fd, co.computeSignature(), co, source, parserCallbacks);
+        PBytecodeRootNode rootNode = new PBytecodeRootNode(language, fd, co.computeSignature(), co, lazySource, internal, parserCallbacks);
         PythonContext context = PythonContext.get(rootNode);
         if (context != null && context.getOption(PythonOptions.EagerlyMaterializeInstrumentationNodes)) {
             rootNode.adoptChildren();
@@ -693,15 +694,15 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @TruffleBoundary
-    private PBytecodeRootNode(PythonLanguage language, FrameDescriptor fd, Signature sign, BytecodeCodeUnit co, Source source, ParserCallbacksImpl parserCallbacks) {
+    private PBytecodeRootNode(PythonLanguage language, FrameDescriptor fd, Signature sign, BytecodeCodeUnit co, LazySource source, boolean internal,
+                    ParserCallbacksImpl parserCallbacks) {
         super(language, fd);
-        assert source != null;
         this.celloffset = co.varnames.length;
         this.freeoffset = celloffset + co.cellvars.length;
         this.stackoffset = freeoffset + co.freevars.length;
         this.bcioffset = stackoffset + co.stacksize;
-        this.source = source;
-        this.internal = source.isInternal();
+        this.lazySource = source;
+        this.internal = internal;
         this.parserCallbacks = parserCallbacks;
         this.signature = sign;
         this.bytecode = co.code;
@@ -788,7 +789,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     public Source getSource() {
-        return source;
+        return lazySource.getSource();
+    }
+
+    public LazySource getLazySource() {
+        return lazySource;
     }
 
     public byte[] getBytecode() {
@@ -2879,7 +2884,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     private MakeFunctionNode insertMakeFunctionNode(Node[] localNodes, int beginBci, BytecodeCodeUnit codeUnit) {
-        return insertChildNode(localNodes, beginBci, MakeFunctionNodeGen.class, () -> MakeFunctionNode.create(getLanguage(PythonLanguage.class), codeUnit, source));
+        return insertChildNode(localNodes, beginBci, MakeFunctionNodeGen.class, () -> MakeFunctionNode.create(getLanguage(PythonLanguage.class), codeUnit, lazySource, internal));
     }
 
     public void materializeContainedFunctionsForInstrumentation(Set<Class<? extends Tag>> materializedTags) {
@@ -6016,15 +6021,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     public SourceSection getSourceSection() {
         if (sourceSection != null) {
             return sourceSection;
-        } else if (!source.hasCharacters()) {
-            /*
-             * TODO We could still expose the disassembled bytecode for a debugger to have something
-             * to step through.
-             */
-            sourceSection = source.createUnavailableSection();
+        } else if (!getSource().hasCharacters()) {
+            sourceSection = getSource().createUnavailableSection();
             return sourceSection;
         } else {
-            sourceSection = co.getSourceSection(source);
+            sourceSection = co.getSourceSection(getSource());
             return sourceSection;
         }
     }
@@ -6098,7 +6099,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @Override
     protected RootNode cloneUninitialized() {
-        return new PBytecodeRootNode(getLanguage(), getFrameDescriptor(), getSignature(), co, source, parserCallbacks);
+        return new PBytecodeRootNode(getLanguage(), getFrameDescriptor(), getSignature(), co, lazySource, internal, parserCallbacks);
     }
 
     public void triggerDeferredDeprecationWarnings() {
