@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PythonClassNativeWrapp
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
+import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.TruffleObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -110,23 +111,22 @@ public abstract class GetNativeWrapperNode extends PNodeWithContext {
     }
 
     @Specialization
-    static Object doInt(int l) {
-        return HandlePointerConverter.intToPointer(l);
+    static Object doInt(int i) {
+        return HandlePointerConverter.intToPointer(i);
     }
 
     @Specialization
     static Object doLong(long l) {
-        if (l == (int) l) {
-            return HandlePointerConverter.intToPointer(l);
+        if (PInt.fitsInInt(l)) {
+            return HandlePointerConverter.intToPointer((int) l);
         }
         return PrimitiveNativeWrapper.createLong(l);
     }
 
     @Specialization
     static Object doDouble(double d) {
-        float f = (float) d;
-        if (!Double.isFinite(d) || f == d) {
-            return HandlePointerConverter.floatToPointer(d);
+        if (PFloat.fitsInFloat(d)) {
+            return HandlePointerConverter.floatToPointer((float) d);
         }
         return PrimitiveNativeWrapper.createDouble(d);
     }

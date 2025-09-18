@@ -162,4 +162,10 @@ public class PFloat extends PythonBuiltinObject {
     long asLong(@CachedLibrary("this.value") InteropLibrary interop) throws UnsupportedMessageException {
         return interop.asLong(value);
     }
+
+    @Ignore
+    public static boolean fitsInFloat(double d) {
+        float f = (float) d;
+        return !Double.isFinite(d) || f == d;
+    }
 }

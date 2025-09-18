@@ -91,6 +91,7 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.FreeN
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -920,15 +921,12 @@ public abstract class CApiTransitions {
             return stubPointer | HANDLE_TAG_BIT;
         }
 
-        public static long intToPointer(long value) {
-            assert value == (int) value;
-            return (value << 3) & _35BIT_MASK | HANDLE_TAG_BIT | INTEGER_TAG_BIT;
+        public static long intToPointer(int value) {
+            return ((long) value << 3) & _35BIT_MASK | HANDLE_TAG_BIT | INTEGER_TAG_BIT;
         }
 
-        public static long floatToPointer(double value) {
-            float f = (float) value;
-            assert !Double.isFinite(value) || f == value;
-            long rawFloatBits = Float.floatToRawIntBits(f);
+        public static long floatToPointer(float value) {
+            long rawFloatBits = Float.floatToRawIntBits(value);
             return (rawFloatBits << 3) & _35BIT_MASK | HANDLE_TAG_BIT | FLOAT_TAG_BIT;
         }
 
@@ -977,15 +975,15 @@ public abstract class CApiTransitions {
             } else if (wrapper.isInt()) {
                 return HandlePointerConverter.intToPointer(wrapper.getInt());
             } else if (wrapper.isLong()) {
-                if ((int) wrapper.getLong() == wrapper.getLong()) {
-                    return HandlePointerConverter.intToPointer((int) wrapper.getLong());
+                long value = wrapper.getLong();
+                if (PInt.fitsInInt(value)) {
+                    return HandlePointerConverter.intToPointer((int) value);
                 }
                 type = PythonBuiltinClassType.PInt;
             } else if (isFloat) {
                 double d = wrapper.getDouble();
-                float f = (float) d;
-                if (!Double.isFinite(d) || f == d) {
-                    return HandlePointerConverter.floatToPointer(wrapper.getDouble());
+                if (PFloat.fitsInFloat(d)) {
+                    return HandlePointerConverter.floatToPointer((float) d);
                 }
                 type = PythonBuiltinClassType.PFloat;
             } else {

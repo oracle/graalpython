@@ -703,4 +703,10 @@ public final class PInt extends PythonBuiltinObject {
     private static BigInteger longToUnsignedBigInt(long l) {
         return BigInteger.valueOf(l >>> 32).shiftLeft(32).add(BigInteger.valueOf(l & 0xFFFFFFFFL));
     }
+
+    @Ignore
+    public static boolean fitsInInt(long l) {
+        int i = (int) l;
+        return l == i;
+    }
 }
