@@ -6,8 +6,8 @@ Disassembly of <module>:
 
 Disassembly of gen:
 Flags: CO_GENERATOR
-  2:10  -   2:11        0 LOAD_FAST                         0    (a)                               can quicken
-  2:14  -   2:15        2 LOAD_BYTE_I                       1                                      can quicken
+  2:10  -   2:11        0 LOAD_FAST                         0    (a)
+  2:14  -   2:15        2 LOAD_BYTE                         1
   2:10  -   2:15        4 BINARY_OP                         0    (ADD)                             generalizes: 2, 0
   2:4   -   2:15        6 YIELD_VALUE
   2:4   -   2:15        7 RESUME_YIELD

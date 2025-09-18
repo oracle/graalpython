@@ -20,7 +20,7 @@ Disassembly of HandlerTask:
   2:4   -   6:37       14 RETURN_VALUE
 
 Disassembly of HandlerTask.__init__:
-  4:12  -   4:13        0 LOAD_BYTE_I                       0                                      can quicken
+  4:12  -   4:13        0 LOAD_BYTE                         0
   4:8   -   4:9         2 STORE_FAST                        6    (x)                               generalizes: 0
   5:14  -   5:24        4 LOAD_GLOBAL                       0    (ValueError)
   5:8   -   5:24        6 RAISE_VARARGS                     1

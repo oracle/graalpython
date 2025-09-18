@@ -1,14 +1,14 @@
 Disassembly of <module>:
   1:0   -   2:22        0 LOAD_STRING                       0    ('b')
-  1:18  -   1:19        2 LOAD_BYTE_O                       2
+  1:18  -   1:19        2 LOAD_BYTE                         2
   1:0   -   2:22        4 LOAD_STRING                       1    ('a')
-  1:10  -   1:11        6 LOAD_BYTE_O                       1
+  1:10  -   1:11        6 LOAD_BYTE                         1
   1:0   -   2:22        8 LOAD_STRING                       2    ('c')
-  1:24  -   1:25       10 LOAD_BYTE_O                       3
+  1:24  -   1:25       10 LOAD_BYTE                         3
   1:0   -   2:22       12 LOAD_STRING                       3    ('d')
-  1:29  -   1:30       14 LOAD_BYTE_O                       4
+  1:29  -   1:30       14 LOAD_BYTE                         4
   1:0   -   2:22       16 LOAD_STRING                       4    ('e')
-  1:36  -   1:37       18 LOAD_BYTE_O                       5
+  1:36  -   1:37       18 LOAD_BYTE                         5
   1:0   -   2:22       20 COLLECTION_FROM_STACK             10   (dict)
   1:0   -   2:22       22 MAKE_FUNCTION                     4    (foo)
   1:0   -   2:22       25 STORE_NAME                        0    (foo)

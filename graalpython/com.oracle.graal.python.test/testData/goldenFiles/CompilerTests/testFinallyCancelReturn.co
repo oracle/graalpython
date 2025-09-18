@@ -6,10 +6,10 @@ Disassembly of <module>:
 
 Disassembly of foo:
   2:11  -   2:16        0 LOAD_GLOBAL                       0    (range)
-  2:17  -   2:19        2 LOAD_BYTE_O                       10
+  2:17  -   2:19        2 LOAD_BYTE                         10
   2:11  -   2:20        4 CALL_FUNCTION                     1
   2:2   -   5:26        6 GET_ITER
-  2:2   -   5:26  >>    7 FOR_ITER                          25   (to 32)                           can quicken
+  2:2   -   5:26  >>    7 FOR_ITER                          25   (to 32)
   2:6   -   2:7         9 STORE_FAST                        0    (i)                               generalizes: 7
   3:4   -   5:26       11 NOP
   4:13  -   4:14       12 LOAD_GLOBAL                       1    (a)

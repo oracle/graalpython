@@ -1,6 +1,6 @@
 Disassembly of <module>:
-  1:7   -   1:8         0 LOAD_BYTE_O                       1
-  1:9   -   1:10        2 LOAD_BYTE_O                       1
+  1:7   -   1:8         0 LOAD_BYTE                         1
+  1:9   -   1:10        2 LOAD_BYTE                         1
   1:6   -   1:11        4 COLLECTION_FROM_STACK             2    (dict)
   2:2   -   3:5         6 MATCH_MAPPING
   2:2   -   3:5         7 POP_AND_JUMP_IF_FALSE             25   (to 32)

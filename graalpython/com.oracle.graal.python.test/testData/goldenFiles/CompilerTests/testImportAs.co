@@ -1,5 +1,5 @@
 Disassembly of <module>:
-  1:0   -   1:17        0 LOAD_BYTE_O                       0
+  1:0   -   1:17        0 LOAD_BYTE                         0
   1:0   -   1:17        2 LOAD_CONST                        0    ([])
   1:0   -   1:17        4 IMPORT_NAME                       0    (a.b.c)
   1:0   -   1:17        6 IMPORT_FROM                       1    (b)

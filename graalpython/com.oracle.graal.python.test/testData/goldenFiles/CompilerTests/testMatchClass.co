@@ -1,11 +1,11 @@
 Disassembly of <module>:
-  1:6   -   1:7         0 LOAD_BYTE_O                       1
+  1:6   -   1:7         0 LOAD_BYTE                         1
   2:7   -   2:10        2 LOAD_NAME                         0    (int)
   2:2   -   3:10        4 LOAD_CONST                        0    ([])
   2:2   -   3:10        6 MATCH_CLASS                       1
   2:2   -   3:10        8 POP_AND_JUMP_IF_FALSE             16   (to 24)
   2:2   -   3:10       12 DUP_TOP
-  2:2   -   3:10       13 LOAD_BYTE_I                       0                                      can quicken
+  2:2   -   3:10       13 LOAD_BYTE                         0
   2:2   -   3:10       15 BINARY_SUBSCR                                                            generalizes: 13
   2:2   -   3:10       16 ROT_N                             2
   2:2   -   3:10       18 POP_TOP

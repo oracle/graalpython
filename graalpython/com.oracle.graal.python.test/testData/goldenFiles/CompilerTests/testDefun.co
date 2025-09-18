@@ -1,5 +1,5 @@
 Disassembly of <module>:
-  1:24  -   1:25        0 LOAD_BYTE_O                       5
+  1:24  -   1:25        0 LOAD_BYTE                         5
   1:0   -   2:21        2 COLLECTION_FROM_STACK             1    (Object[])
   1:0   -   2:21        4 MAKE_FUNCTION                     1    (docompute)
   1:0   -   2:21        7 STORE_NAME                        0    (docompute)
