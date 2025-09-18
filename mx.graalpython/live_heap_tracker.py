@@ -80,6 +80,8 @@ def main():
     iterations = int(sys.argv[2])
     jmap_binary = sys.argv[3]
     benchmark = sys.argv[4:]
+    # Run the benchmark once to ensure pyc files are generated
+    subprocess.check_call(benchmark)
     with open(output_file, 'w') as f:
         for _ in range(iterations):
             proc = subprocess.Popen(benchmark)
