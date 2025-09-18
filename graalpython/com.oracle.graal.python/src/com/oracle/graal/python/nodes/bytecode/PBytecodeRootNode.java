@@ -577,16 +577,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
      * determines the type like above.
      */
     private final byte[] variableShouldUnbox;
-    /**
-     * Which instruction bci's have to be generalized when generalizing inputs of instruction at
-     * given bci.
-     */
-    private final int[][] generalizeInputsMap;
-    /**
-     * Which store instruction bci's have to be generalized when generalizing variable with given
-     * index.
-     */
-    private final int[][] generalizeVarsMap;
 
     /*
      * Whether this variable should be unboxed in the interpreter. We unbox all variables in
@@ -708,8 +698,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         this.bytecode = co.code;
         this.outputCanQuicken = co.outputCanQuicken;
         this.variableShouldUnbox = co.variableShouldUnbox;
-        this.generalizeInputsMap = co.generalizeInputsMap;
-        this.generalizeVarsMap = co.generalizeVarsMap;
         this.consts = co.constants;
         this.longConsts = co.primitiveConstants;
         this.names = co.names;
@@ -4749,17 +4737,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     private void generalizeInputs(int beginBci) {
         CompilerAsserts.neverPartOfCompilation();
-        if (generalizeInputsMap != null) {
-            if (generalizeInputsMap[beginBci] != null) {
-                for (int i = 0; i < generalizeInputsMap[beginBci].length; i++) {
-                    int generalizeBci = generalizeInputsMap[beginBci][i];
-                    OpCodes generalizeInstr = OpCodes.fromOpCode(bytecode[generalizeBci]);
-                    if (generalizeInstr.generalizesTo != null) {
-                        bytecode[generalizeBci] = (byte) generalizeInstr.generalizesTo.ordinal();
-                    }
-                }
-            }
-        }
+        co.generalizeInputs(beginBci);
     }
 
     /**
@@ -4783,18 +4761,16 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private void generalizeVariableStores(int index) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
         variableTypes[index] = QuickeningTypes.OBJECT;
-        if (generalizeVarsMap != null) {
-            if (generalizeVarsMap[index] != null) {
-                for (int i = 0; i < generalizeVarsMap[index].length; i++) {
-                    int generalizeBci = generalizeVarsMap[index][i];
-                    /*
-                     * Keep unadapted stores as they are because we don't know how to generalize
-                     * their unadapted inputs. They will adapt to object once executed.
-                     */
-                    if (bytecode[generalizeBci] != OpCodesConstants.STORE_FAST) {
-                        generalizeInputs(generalizeBci);
-                        bytecode[generalizeBci] = OpCodesConstants.STORE_FAST_O;
-                    }
+        if (co.generalizeVarsIndices != null && index + 1 < co.generalizeVarsIndices.length) {
+            for (int i = co.generalizeVarsIndices[index]; i < co.generalizeVarsIndices[index + 1]; i++) {
+                int generalizeBci = co.generalizeVarsValues[i];
+                /*
+                 * Keep unadapted stores as they are because we don't know how to generalize their
+                 * unadapted inputs. They will adapt to object once executed.
+                 */
+                if (bytecode[generalizeBci] != OpCodesConstants.STORE_FAST) {
+                    generalizeInputs(generalizeBci);
+                    bytecode[generalizeBci] = OpCodesConstants.STORE_FAST_O;
                 }
             }
         }

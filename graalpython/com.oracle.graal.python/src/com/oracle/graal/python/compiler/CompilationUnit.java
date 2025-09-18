@@ -275,20 +275,34 @@ public final class CompilationUnit {
             }
         }
 
+        int generizationListSize = 0;
+        int totalGeneralizations = 0;
+        for (Instruction insn : quickenedInstructions) {
+            if (insn.quickeningGeneralizeList != null && !insn.quickeningGeneralizeList.isEmpty()) {
+                generizationListSize++;
+                totalGeneralizations += insn.quickeningGeneralizeList.size();
+            }
+        }
+        int[] generalizeInputsKeys = generizationListSize > 0 ? new int[generizationListSize] : EMPTY_INT_ARRAY;
+        int[] generalizeInputsIndices = generizationListSize > 0 ? new int[generizationListSize + 1] : EMPTY_INT_ARRAY;
+        int[] generalizeInputsValues = generizationListSize > 0 ? new int[totalGeneralizations] : EMPTY_INT_ARRAY;
         byte[] finishedCanQuickenOutput = new byte[buf.size()];
-        int[][] finishedGeneralizeInputsMap = new int[buf.size()][];
-        int[][] finishedGeneralizeVarsMap = new int[varCount][];
+        int generalizationIndex1 = 0;
+        int generalizationIndex2 = 0;
         for (Instruction insn : quickenedInstructions) {
             int insnBodyBci = insn.bodyBci();
             finishedCanQuickenOutput[insnBodyBci] = insn.quickenOutput;
-            if (insn.quickeningGeneralizeList != null && insn.quickeningGeneralizeList.size() > 0) {
-                finishedGeneralizeInputsMap[insnBodyBci] = new int[insn.quickeningGeneralizeList.size()];
-                for (int j = 0; j < finishedGeneralizeInputsMap[insnBodyBci].length; j++) {
+            if (insn.quickeningGeneralizeList != null && !insn.quickeningGeneralizeList.isEmpty()) {
+                generalizeInputsKeys[generalizationIndex1] = insnBodyBci;
+                generalizeInputsIndices[generalizationIndex1] = generalizationIndex2;
+                for (int j = 0; j < insn.quickeningGeneralizeList.size(); j++) {
                     int bci = insn.quickeningGeneralizeList.get(j).bodyBci();
                     assert bci >= 0;
-                    finishedGeneralizeInputsMap[insnBodyBci][j] = bci;
+                    generalizeInputsValues[generalizationIndex2++] = bci;
                 }
+                generalizationIndex1++;
             }
+            generalizeInputsIndices[generizationListSize] = generalizationIndex2;
         }
         if (cell2arg != null) {
             for (int i = 0; i < cell2arg.length; i++) {
@@ -297,7 +311,9 @@ public final class CompilationUnit {
                 }
             }
         }
-        if (!scope.isGenerator()) {
+        int[] generalizeVarsIndices = EMPTY_INT_ARRAY;
+        int[] generalizeVarsValues = EMPTY_INT_ARRAY;
+        if (!scope.isGenerator() && varCount > 0) {
             /*
              * We do an optimization in the interpreter that we don't unbox variables that would
              * mostly get boxed again. This helps for interpreter performance, but for compiled code
@@ -306,19 +322,26 @@ public final class CompilationUnit {
              * modes of usage (boxed vs unboxed) would be too complex, so we skip the optimization
              * there and unbox all variables.
              */
+            int totalVarsGeneralizations = 0;
             for (int i = 0; i < varCount; i++) {
                 List<Instruction> stores = variableStores.get(i);
-                if (!stores.isEmpty()) {
-                    finishedGeneralizeVarsMap[i] = new int[stores.size()];
+                totalVarsGeneralizations += stores.size();
+            }
+            if (totalVarsGeneralizations > 0) {
+                generalizeVarsIndices = new int[varCount + 1];
+                generalizeVarsValues = new int[totalVarsGeneralizations];
+                int generalizeVarsIndex = 0;
+                for (int i = 0; i < varCount; i++) {
+                    List<Instruction> stores = variableStores.get(i);
+                    generalizeVarsIndices[i] = generalizeVarsIndex;
                     for (int j = 0; j < stores.size(); j++) {
-                        finishedGeneralizeVarsMap[i][j] = stores.get(j).bodyBci();
+                        generalizeVarsValues[generalizeVarsIndex++] = stores.get(j).bodyBci();
                     }
-                } else {
-                    finishedGeneralizeVarsMap[i] = EMPTY_INT_ARRAY;
+                    if (boxingMetric[i] <= 0) {
+                        shouldUnboxVariable[i] = 0;
+                    }
                 }
-                if (boxingMetric[i] <= 0) {
-                    shouldUnboxVariable[i] = 0;
-                }
+                generalizeVarsIndices[varCount] = generalizeVarsIndex;
             }
         }
         return new BytecodeCodeUnit(toTruffleStringUncached(name), toTruffleStringUncached(qualName),
@@ -335,7 +358,7 @@ public final class CompilationUnit {
                         buf.toByteArray(),
                         sourceMapBuilder.build(),
                         orderedLong(primitiveConstants), exceptionHandlerRanges, maxStackSize, conditionProfileCount,
-                        finishedCanQuickenOutput, shouldUnboxVariable, finishedGeneralizeInputsMap, finishedGeneralizeVarsMap);
+                        finishedCanQuickenOutput, shouldUnboxVariable, generalizeInputsKeys, generalizeInputsIndices, generalizeInputsValues, generalizeVarsIndices, generalizeVarsValues);
     }
 
     private static void addExceptionRange(Collection<int[]> finishedExceptionHandlerRanges, int start, int end, int handler, int stackLevel) {

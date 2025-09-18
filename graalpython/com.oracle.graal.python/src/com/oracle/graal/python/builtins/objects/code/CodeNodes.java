@@ -175,7 +175,7 @@ public abstract class CodeNodes {
                                     code.startColumn, code.endLine, code.endColumn, code.code, code.srcOffsetTable,
                                     code.primitiveConstants, code.exceptionHandlerRanges, code.stacksize, code.conditionProfileCount,
                                     code.outputCanQuicken, code.variableShouldUnbox,
-                                    code.generalizeInputsMap, code.generalizeVarsMap);
+                                    code.generalizeInputsKeys, code.generalizeInputsIndices, code.generalizeInputsValues, code.generalizeVarsIndices, code.generalizeVarsValues);
                 }
                 rootNode = PBytecodeRootNode.create(context.getLanguage(), code, new LazySource(PythonUtils.createFakeSource()), false);
                 if (code.isGeneratorOrCoroutine()) {

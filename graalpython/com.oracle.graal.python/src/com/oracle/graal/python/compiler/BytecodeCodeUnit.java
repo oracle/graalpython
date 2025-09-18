@@ -75,8 +75,13 @@ public final class BytecodeCodeUnit extends CodeUnit {
     /* Quickening data. See docs in PBytecodeRootNode */
     @CompilationFinal(dimensions = 1) public final byte[] outputCanQuicken;
     @CompilationFinal(dimensions = 1) public final byte[] variableShouldUnbox;
-    @CompilationFinal(dimensions = 1) public final int[][] generalizeInputsMap;
-    @CompilationFinal(dimensions = 1) public final int[][] generalizeVarsMap;
+    @CompilationFinal(dimensions = 1) public final int[] generalizeVarsIndices;
+    @CompilationFinal(dimensions = 1) public final int[] generalizeVarsValues;
+    // Which BCIs can trigger generalization. Used to binary search BCI index to the next array
+    @CompilationFinal(dimensions = 1) public final int[] generalizeInputsKeys;
+    // Start indices of generalizations in the next array. Has a sentinel value at the end
+    @CompilationFinal(dimensions = 1) public final int[] generalizeInputsIndices;
+    @CompilationFinal(dimensions = 1) public final int[] generalizeInputsValues;
 
     /* Lazily initialized source map */
     @CompilationFinal SourceMap sourceMap;
@@ -88,7 +93,8 @@ public final class BytecodeCodeUnit extends CodeUnit {
                     int endLine, int endColumn,
                     byte[] code, byte[] linetable,
                     long[] primitiveConstants, int[] exceptionHandlerRanges, int stacksize, int conditionProfileCount,
-                    byte[] outputCanQuicken, byte[] variableShouldUnbox, int[][] generalizeInputsMap, int[][] generalizeVarsMap) {
+                    byte[] outputCanQuicken, byte[] variableShouldUnbox, int[] generalizeInputsKeys, int[] generalizeInputsIndices, int[] generalizeInputsValues,
+                    int[] generalizeVarsIndices, int[] generalizeVarsValues) {
         super(name, qualname, argCount, kwOnlyArgCount, positionalOnlyArgCount, flags, names, varnames, cellvars, freevars, cell2arg, constants, startLine, startColumn, endLine, endColumn);
         this.code = code;
         this.srcOffsetTable = linetable;
@@ -98,8 +104,11 @@ public final class BytecodeCodeUnit extends CodeUnit {
         this.conditionProfileCount = conditionProfileCount;
         this.outputCanQuicken = outputCanQuicken;
         this.variableShouldUnbox = variableShouldUnbox;
-        this.generalizeInputsMap = generalizeInputsMap;
-        this.generalizeVarsMap = generalizeVarsMap;
+        this.generalizeInputsKeys = generalizeInputsKeys;
+        this.generalizeInputsIndices = generalizeInputsIndices;
+        this.generalizeInputsValues = generalizeInputsValues;
+        this.generalizeVarsIndices = generalizeVarsIndices;
+        this.generalizeVarsValues = generalizeVarsValues;
     }
 
     public SourceMap getSourceMap() {
@@ -122,6 +131,23 @@ public final class BytecodeCodeUnit extends CodeUnit {
             return -1;
         }
         return getSourceMap().startColumnMap[bci];
+    }
+
+    public void generalizeInputs(int bci) {
+        if (generalizeInputsKeys != null) {
+            int key = Arrays.binarySearch(generalizeInputsKeys, bci);
+            if (key >= 0) {
+                int genStart = generalizeInputsIndices[key];
+                int genEnd = generalizeInputsIndices[key + 1];
+                for (int i = genStart; i < genEnd; i++) {
+                    int generalizeBci = generalizeInputsValues[i];
+                    OpCodes generalizeInstr = OpCodes.fromOpCode(code[generalizeBci]);
+                    if (generalizeInstr.generalizesTo != null) {
+                        code[generalizeBci] = (byte) generalizeInstr.generalizesTo.ordinal();
+                    }
+                }
+            }
+        }
     }
 
     @Override
@@ -204,7 +230,7 @@ public final class BytecodeCodeUnit extends CodeUnit {
                     case MAKE_FUNCTION: {
                         line[4] = String.format("% 2d", followingArgs[0]);
                         CodeUnit codeUnit = (CodeUnit) constants[oparg];
-                        line[5] = line[5] = codeUnit.qualname.toJavaStringUncached();
+                        line[5] = codeUnit.qualname.toJavaStringUncached();
                         break;
                     }
                     case MAKE_TYPE_PARAM:
@@ -345,27 +371,32 @@ public final class BytecodeCodeUnit extends CodeUnit {
             }
         }
 
+        int generalizationIndex1 = 0;
         for (bci = 0; bci < code.length; bci++) {
             String[] line = lines.get(bci);
             if (line != null) {
                 line[5] = line[5] == null ? "" : String.format("(%s)", line[5]);
                 line[6] = line[6] == null ? "" : String.format("(%s)", line[6]);
                 line[7] = "";
-                if (outputCanQuicken != null && (outputCanQuicken[bci] != 0 || generalizeInputsMap[bci] != null)) {
+                int generalizationIndex2 = -1;
+                if (generalizeInputsKeys != null && generalizationIndex1 < generalizeInputsKeys.length && generalizeInputsKeys[generalizationIndex1] == bci) {
+                    generalizationIndex2 = generalizeInputsIndices[generalizationIndex1++];
+                }
+                if (outputCanQuicken != null && (outputCanQuicken[bci] != 0 || generalizationIndex2 >= 0)) {
                     StringBuilder quickenSb = new StringBuilder();
                     if (outputCanQuicken[bci] != 0) {
                         quickenSb.append("can quicken");
                     }
-                    if (generalizeInputsMap[bci] != null) {
-                        if (quickenSb.length() > 0) {
+                    if (generalizationIndex2 >= 0) {
+                        if (!quickenSb.isEmpty()) {
                             quickenSb.append(", ");
                         }
                         quickenSb.append("generalizes: ");
-                        for (int i = 0; i < generalizeInputsMap[bci].length; i++) {
-                            if (i > 0) {
+                        for (int i = generalizationIndex2; i < generalizeInputsIndices[generalizationIndex1]; i++) {
+                            if (i > generalizationIndex2) {
                                 quickenSb.append(", ");
                             }
-                            quickenSb.append(generalizeInputsMap[bci][i]);
+                            quickenSb.append(generalizeInputsValues[i]);
                         }
                     }
                     line[7] = quickenSb.toString();
