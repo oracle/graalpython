@@ -1270,9 +1270,9 @@ public abstract class CApiTransitions {
                         @Cached InlinedExactClassProfile profile,
                         @Cached UpdateStrongRefNode updateRefNode) {
             if (HandlePointerConverter.pointsToPyIntHandle(pointer)) {
-                throw new RuntimeException("ResolveHandleNode int");
+                throw CompilerDirectives.shouldNotReachHere("ResolveHandleNode int");
             } else if (HandlePointerConverter.pointsToPyFloatHandle(pointer)) {
-                throw new RuntimeException("ResolveHandleNode float");
+                throw CompilerDirectives.shouldNotReachHere("ResolveHandleNode float");
             }
             HandleContext nativeContext = PythonContext.get(inliningTarget).nativeContext;
             int idx = readI32Node.read(HandlePointerConverter.pointerToStub(pointer), CFields.GraalPyObject__handle_table_index);
@@ -1986,9 +1986,9 @@ public abstract class CApiTransitions {
             assert pythonContext.ownsGil();
             if (isHandleSpaceProfile.profile(inliningTarget, HandlePointerConverter.pointsToPyHandleSpace(pointer))) {
                 if (HandlePointerConverter.pointsToPyIntHandle(pointer)) {
-                    throw new RuntimeException("not implemented NativePtrToPythonWrapperNode int");
+                    throw CompilerDirectives.shouldNotReachHere("not implemented NativePtrToPythonWrapperNode int");
                 } else if (HandlePointerConverter.pointsToPyFloatHandle(pointer)) {
-                    throw new RuntimeException("not implemented NativePtrToPythonWrapperNode float");
+                    throw CompilerDirectives.shouldNotReachHere("not implemented NativePtrToPythonWrapperNode float");
                 }
                 int idx = readI32Node.read(HandlePointerConverter.pointerToStub(pointer), CFields.GraalPyObject__handle_table_index);
                 PythonObjectReference reference = nativeStubLookupGet(nativeContext, pointer, idx);
