@@ -391,13 +391,13 @@
         for bench in ["warmup"]
     } + {
         [bench]: bench_task(bench) + platform_spec(no_jobs) + bench_variants({
-            "vm_name:graalvm_ee_default_interpreter"                    : {"linux:amd64:jdk-latest" : post_merge     + t("01:00:00")},
-            "vm_name:graalvm_ee_default_interpreter_bc_dsl"             : {"linux:amd64:jdk-latest" : post_merge     + t("01:00:00")},
-            "vm_name:graalpython_enterprise_interpreter"                : {"linux:amd64:jdk-latest" : daily          + t("01:00:00")},
-            "vm_name:graalpython_enterprise_interpreter_bc_dsl"         : {"linux:amd64:jdk-latest" : daily          + t("01:00:00")},
-            "vm_name:cpython"                                           : {"linux:amd64:jdk-latest" : weekly         + t("00:30:00")},
+            "vm_name:graalvm_ee_default_interpreter"                    : {"linux:amd64:jdk-latest" : post_merge     + t("02:00:00")},
+            "vm_name:graalvm_ee_default_interpreter_bc_dsl"             : {"linux:amd64:jdk-latest" : post_merge     + t("02:00:00")},
+            "vm_name:graalpython_enterprise_interpreter"                : {"linux:amd64:jdk-latest" : weekly         + t("02:00:00")},
+            "vm_name:graalpython_enterprise_interpreter_bc_dsl"         : {"linux:amd64:jdk-latest" : weekly         + t("02:00:00")},
+            "vm_name:cpython"                                           : {"linux:amd64:jdk-latest" : weekly         + t("01:00:00")},
         }),
-        for bench in ["heap", "micro_small_heap"]
+        for bench in ["heap", "micro_small_heap", "micro_native_heap"]
     } + {
         // interop benchmarks only for graalpython, weekly is enough
         [bench]: bench_task(bench) + platform_spec(no_jobs) + bench_variants({
