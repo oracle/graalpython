@@ -75,7 +75,7 @@
 #define points_to_py_float_handle(PTR) (((uint64_t)(uintptr_t)(PTR)) & FLOAT_TAG_BIT)
 
 #define stub_to_pointer(STUB_PTR) ((uintptr_t)(((uint64_t)(uintptr_t)(PTR)) | HANDLE_TAG_BIT))
-#define int_to_pointer(INT)       ((uintptr_t)((((uint64_t)(uint32_t)(INT) << 3) & _35_BIT_MASK) | HANDLE_TAG_BIT | INTEGER_TAG_BIT))
+#define int32_to_pointer(INT)       ((uintptr_t)((((uint64_t)(uint32_t)(INT) << 3) & _35_BIT_MASK) | HANDLE_TAG_BIT | INTEGER_TAG_BIT))
 static inline PyObject* float_to_pointer(float dbl) {
     uint32_t float_bits;
     memcpy(&float_bits, &dbl, sizeof(float));
@@ -83,7 +83,7 @@ static inline PyObject* float_to_pointer(float dbl) {
 }
 
 #define pointer_to_stub(PTR)  ((PyObject*)(((uint64_t)(uintptr_t)(PTR)) & ~HANDLE_TAG_BIT))
-#define pointer_to_long(PTR)   ((int64_t)(int32_t)(((uint64_t)(uintptr_t)(PTR)) >> 3))
+#define pointer_to_int64(PTR)   ((int64_t)(int32_t)(((uint64_t)(uintptr_t)(PTR)) >> 3))
 static inline double pointer_to_double(PyObject* ptr) {
     uint32_t float_bits = (uint32_t)(((uint64_t)(uintptr_t)ptr) >> 3);
     float value;

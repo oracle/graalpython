@@ -86,7 +86,7 @@ static PyObject *
 get_small_int(sdigit ival)
 {
     // GraalPy change - we tag 32-bit integers
-    return int_to_pointer(ival);
+    return int32_to_pointer(ival);
 }
 
 #if 0 // GraalPy change
@@ -474,7 +474,7 @@ PyLong_AsLongAndOverflow(PyObject *vv, int *overflow)
     }
     if (points_to_py_int_handle(vv)) {
         *overflow = 0;
-        return pointer_to_long(vv);
+        return pointer_to_int64(vv);
     }
     long result = (long) GraalPyPrivate_Long_AsPrimitive(vv, MODE_COERCE_SIGNED, sizeof(long));
     if (result == -1L && PyErr_Occurred() && PyErr_ExceptionMatches(PyExc_OverflowError)) {
@@ -494,7 +494,7 @@ PyLong_AsLong(PyObject *obj)
 {
     // GraalPy change: different implementation
     if (points_to_py_int_handle(obj)) {
-        return pointer_to_long(obj);
+        return pointer_to_int64(obj);
     }
     return (long) GraalPyPrivate_Long_AsPrimitive(obj, MODE_COERCE_SIGNED, sizeof(long));
 }
@@ -523,7 +523,7 @@ _PyLong_AsInt(PyObject *obj)
 Py_ssize_t
 PyLong_AsSsize_t(PyObject *vv) {
     if (points_to_py_int_handle(vv)) {
-        return pointer_to_long(vv);
+        return pointer_to_int64(vv);
     }
     return (Py_ssize_t) GraalPyPrivate_Long_AsPrimitive(vv, MODE_PINT_SIGNED, sizeof(Py_ssize_t));
 }
@@ -540,7 +540,7 @@ PyLong_AsUnsignedLong(PyObject *vv)
         return (unsigned long) -1;
     }
     if (points_to_py_int_handle(vv)) {
-        long value = pointer_to_long(vv);
+        long value = pointer_to_int64(vv);
         if (value < 0) {
             PyErr_SetString(PyExc_OverflowError, "can't convert negative value to unsigned int");
             return (unsigned long) -1;
@@ -558,7 +558,7 @@ PyLong_AsSize_t(PyObject *vv)
 {
     // GraalPy change: different implementation
     if (points_to_py_int_handle(vv)) {
-        long value = pointer_to_long(vv);
+        long value = pointer_to_int64(vv);
         if (value < 0) {
             PyErr_SetString(PyExc_OverflowError, "can't convert negative value to unsigned int");
             return (size_t) -1;
@@ -610,7 +610,7 @@ PyLong_AsUnsignedLongMask(PyObject *op)
         return (unsigned long) -1;
     }
     if (points_to_py_int_handle(op)) {
-        return pointer_to_long(op);
+        return pointer_to_int64(op);
     }
     return (unsigned long) GraalPyPrivate_Long_AsPrimitive(op, MODE_COERCE_MASK, sizeof(unsigned long));
 }
@@ -979,7 +979,7 @@ PyLong_FromLongLong(long long ival)
 {
     // GraalPy change: different implementation
     if ((int)ival == ival) {
-        return int_to_pointer(ival);
+        return int32_to_pointer(ival);
     } else {
         return GraalPyPrivate_Long_FromLongLong(ival);
     }
@@ -1006,7 +1006,7 @@ PyLong_AsLongLong(PyObject *vv)
         return -1;
     }
     if (points_to_py_int_handle(vv)) {
-        return pointer_to_long(vv);
+        return pointer_to_int64(vv);
     }
     return (long long) GraalPyPrivate_Long_AsPrimitive(vv, MODE_COERCE_SIGNED, sizeof(long long));
 }
@@ -1023,7 +1023,7 @@ PyLong_AsUnsignedLongLong(PyObject *vv)
         return (unsigned long long)-1;
     }
     if (points_to_py_int_handle(vv)) {
-        long value = pointer_to_long(vv);
+        long value = pointer_to_int64(vv);
         if (value < 0) {
             PyErr_SetString(PyExc_OverflowError, "can't convert negative value to unsigned int");
             return (unsigned long long) -1;
@@ -1076,7 +1076,7 @@ PyLong_AsUnsignedLongLongMask(PyObject *op)
         return (unsigned long long)-1;
     }
     if (points_to_py_int_handle(op)) {
-        return pointer_to_long(op);
+        return pointer_to_int64(op);
     }
     return (unsigned long long) GraalPyPrivate_Long_AsPrimitive(op, MODE_COERCE_MASK, sizeof(unsigned long long));
 }
@@ -6140,7 +6140,7 @@ PyUnstable_Long_CompactValue(const PyLongObject* op) {
 
 Py_ssize_t PyUnstable_Long_CompactValue(const PyLongObject *op) {
     if (points_to_py_int_handle(op)) {
-        return pointer_to_long(op);
+        return pointer_to_int64(op);
     }
     return GraalPyPrivate_Long_AsPrimitive((PyObject*) op, MODE_PINT_SIGNED, sizeof(Py_ssize_t));
 }
@@ -6148,7 +6148,7 @@ Py_ssize_t PyUnstable_Long_CompactValue(const PyLongObject *op) {
 // GraalPy additions
 uintptr_t GraalPyPrivate_Long_lv_tag(const PyLongObject *op) {
     if (points_to_py_int_handle(op)) {
-        int64_t t = pointer_to_long(op);
+        int64_t t = pointer_to_int64(op);
         if (t == 0) {
             return SIGN_ZERO;
         }

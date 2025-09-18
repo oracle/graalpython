@@ -333,7 +333,7 @@ PyFloat_AsDouble(PyObject *op)
     // GraalPy change: upcall for managed
     if (points_to_py_handle_space(op)) {
         if (points_to_py_int_handle(op)) {
-            return (double)pointer_to_long(op);
+            return (double)pointer_to_int64(op);
         }
         return GraalPyPrivate_Float_AsDouble(op);
     }

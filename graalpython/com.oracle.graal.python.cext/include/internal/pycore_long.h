@@ -71,7 +71,7 @@ static inline PyObject* _PyLong_GetZero(void)
 /* GraalVM change
 { return (PyObject *)&_PyLong_SMALL_INTS[_PY_NSMALLNEGINTS]; }
 */
-{ return int_to_pointer(0); }
+{ return int32_to_pointer(0); }
 
 // Return a borrowed reference to the one singleton.
 // The function cannot return NULL.
@@ -79,7 +79,7 @@ static inline PyObject* _PyLong_GetOne(void)
 /* GraalVM change
 { return (PyObject *)&_PyLong_SMALL_INTS[_PY_NSMALLNEGINTS+1]; }
 */
-{ return int_to_pointer(1); }
+{ return int32_to_pointer(1); }
 
 static inline PyObject* _PyLong_FromUnsignedChar(unsigned char i)
 {
