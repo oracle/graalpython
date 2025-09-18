@@ -73,7 +73,6 @@ public final class BytecodeCodeUnit extends CodeUnit {
     public final int conditionProfileCount;
 
     /* Quickening data. See docs in PBytecodeRootNode */
-    @CompilationFinal(dimensions = 1) public final byte[] outputCanQuicken;
     @CompilationFinal(dimensions = 1) public final byte[] variableShouldUnbox;
     @CompilationFinal(dimensions = 1) public final int[] generalizeVarsIndices;
     @CompilationFinal(dimensions = 1) public final int[] generalizeVarsValues;
@@ -93,7 +92,7 @@ public final class BytecodeCodeUnit extends CodeUnit {
                     int endLine, int endColumn,
                     byte[] code, byte[] linetable,
                     long[] primitiveConstants, int[] exceptionHandlerRanges, int stacksize, int conditionProfileCount,
-                    byte[] outputCanQuicken, byte[] variableShouldUnbox, int[] generalizeInputsKeys, int[] generalizeInputsIndices, int[] generalizeInputsValues,
+                    byte[] variableShouldUnbox, int[] generalizeInputsKeys, int[] generalizeInputsIndices, int[] generalizeInputsValues,
                     int[] generalizeVarsIndices, int[] generalizeVarsValues) {
         super(name, qualname, argCount, kwOnlyArgCount, positionalOnlyArgCount, flags, names, varnames, cellvars, freevars, cell2arg, constants, startLine, startColumn, endLine, endColumn);
         this.code = code;
@@ -102,7 +101,6 @@ public final class BytecodeCodeUnit extends CodeUnit {
         this.exceptionHandlerRanges = exceptionHandlerRanges;
         this.stacksize = stacksize;
         this.conditionProfileCount = conditionProfileCount;
-        this.outputCanQuicken = outputCanQuicken;
         this.variableShouldUnbox = variableShouldUnbox;
         this.generalizeInputsKeys = generalizeInputsKeys;
         this.generalizeInputsIndices = generalizeInputsIndices;
@@ -161,7 +159,7 @@ public final class BytecodeCodeUnit extends CodeUnit {
             OpCodes opcode = OpCodes.fromOpCode(code[bci++]);
 
             if (!quickened) {
-                opcode = unquicken(opcode);
+                opcode = opcode.quickens != null ? opcode.quickens : opcode;
             }
 
             String[] line = lines.computeIfAbsent(bcBCI, k -> new String[DISASSEMBLY_NUM_COLUMNS]);
@@ -378,26 +376,15 @@ public final class BytecodeCodeUnit extends CodeUnit {
                 line[5] = line[5] == null ? "" : String.format("(%s)", line[5]);
                 line[6] = line[6] == null ? "" : String.format("(%s)", line[6]);
                 line[7] = "";
-                int generalizationIndex2 = -1;
                 if (generalizeInputsKeys != null && generalizationIndex1 < generalizeInputsKeys.length && generalizeInputsKeys[generalizationIndex1] == bci) {
-                    generalizationIndex2 = generalizeInputsIndices[generalizationIndex1++];
-                }
-                if (outputCanQuicken != null && (outputCanQuicken[bci] != 0 || generalizationIndex2 >= 0)) {
+                    int generalizationIndex2 = generalizeInputsIndices[generalizationIndex1++];
                     StringBuilder quickenSb = new StringBuilder();
-                    if (outputCanQuicken[bci] != 0) {
-                        quickenSb.append("can quicken");
-                    }
-                    if (generalizationIndex2 >= 0) {
-                        if (!quickenSb.isEmpty()) {
+                    quickenSb.append("generalizes: ");
+                    for (int i = generalizationIndex2; i < generalizeInputsIndices[generalizationIndex1]; i++) {
+                        if (i > generalizationIndex2) {
                             quickenSb.append(", ");
                         }
-                        quickenSb.append("generalizes: ");
-                        for (int i = generalizationIndex2; i < generalizeInputsIndices[generalizationIndex1]; i++) {
-                            if (i > generalizationIndex2) {
-                                quickenSb.append(", ");
-                            }
-                            quickenSb.append(generalizeInputsValues[i]);
-                        }
+                        quickenSb.append(generalizeInputsValues[i]);
                     }
                     line[7] = quickenSb.toString();
                 }
@@ -674,7 +661,7 @@ public final class BytecodeCodeUnit extends CodeUnit {
             bci += 2;
             op = OpCodes.fromOpCode(bytecode[bci]);
         }
-        op = unquicken(op);
+        op = op.quickens != null ? op.quickens : op;
         byte[] followingArgs = null;
         if (op.argLength > 0) {
             oparg |= Byte.toUnsignedInt(bytecode[bci + 1]);
@@ -695,27 +682,5 @@ public final class BytecodeCodeUnit extends CodeUnit {
 
     public void iterateBytecode(BytecodeAction action) {
         iterateBytecode(code, action);
-    }
-
-    public byte[] getBytecodeForSerialization() {
-        byte[] bytecode = Arrays.copyOf(code, code.length);
-        for (int bci = 0; bci < bytecode.length;) {
-            OpCodes op = OpCodes.fromOpCode(bytecode[bci]);
-            bytecode[bci] = (byte) unquicken(op).ordinal();
-            bci += op.length();
-        }
-        return bytecode;
-    }
-
-    private static OpCodes unquicken(OpCodes op) {
-        if (op.quickens == null) {
-            return op;
-        }
-        return switch (op.quickens) {
-            // These are already quickened by the compiler, so keep them quickened
-            // See CompilationUnit.emitBytecode
-            case LOAD_BYTE, LOAD_INT, LOAD_LONG, LOAD_DOUBLE, LOAD_TRUE, LOAD_FALSE -> op;
-            default -> op.quickens;
-        };
     }
 }

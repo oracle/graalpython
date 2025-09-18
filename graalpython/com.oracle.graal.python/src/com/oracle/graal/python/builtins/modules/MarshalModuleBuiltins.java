@@ -1371,7 +1371,6 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             int startColumn = readInt();
             int endLine = readInt();
             int endColumn = readInt();
-            byte[] outputCanQuicken = readBytes();
             byte[] variableShouldUnbox = readBytes();
             int[] generalizeInputsKeys = readIntArray();
             int[] generalizeInputsIndices = readIntArray();
@@ -1381,7 +1380,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             return new BytecodeCodeUnit(name, qualname, argCount, kwOnlyArgCount, positionalOnlyArgCount, flags, names, varnames,
                             cellvars, freevars, cell2arg, constants, startLine, startColumn, endLine, endColumn, code, srcOffsetTable,
                             primitiveConstants, exceptionHandlerRanges, stacksize, conditionProfileCount,
-                            outputCanQuicken, variableShouldUnbox, generalizeInputsKeys, generalizeInputsIndices, generalizeInputsValues, generalizeVarsIndices, generalizeVarsValues);
+                            variableShouldUnbox, generalizeInputsKeys, generalizeInputsIndices, generalizeInputsValues, generalizeVarsIndices, generalizeVarsValues);
         }
 
         private BytecodeDSLCodeUnit readBytecodeDSLCodeUnit() {
@@ -1436,7 +1435,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             writeInt(code.kwOnlyArgCount);
             writeInt(code.positionalOnlyArgCount);
             writeInt(code.stacksize);
-            writeBytes(code.getBytecodeForSerialization());
+            writeBytes(code.code);
             writeBytes(code.srcOffsetTable);
             writeInt(code.flags);
             writeStringArray(code.names);
@@ -1456,7 +1455,6 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             writeInt(code.startColumn);
             writeInt(code.endLine);
             writeInt(code.endColumn);
-            writeBytes(code.outputCanQuicken);
             writeBytes(code.variableShouldUnbox);
             writeIntArray(code.generalizeInputsKeys);
             writeIntArray(code.generalizeInputsIndices);

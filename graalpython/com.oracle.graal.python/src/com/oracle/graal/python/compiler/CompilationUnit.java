@@ -225,13 +225,13 @@ public final class CompilationUnit {
                 addExceptionRange(finishedExceptionHandlerRanges, start, end, handlerBci, stackLevel);
             }
             for (Instruction i : b.instr) {
-                if (i.quickenOutput != 0 || i.quickeningGeneralizeList != null) {
+                if (i.quickenOutput || i.quickeningGeneralizeList != null) {
                     quickenedInstructions.add(i);
                 }
                 if (i.opcode == OpCodes.STORE_FAST) {
                     variableStores.get(i.arg).add(i);
                 } else if (i.opcode == OpCodes.LOAD_FAST) {
-                    boxingMetric[i.arg] += i.quickenOutput != 0 ? quickenMetricWeight : -quickenMetricWeight;
+                    boxingMetric[i.arg] += i.quickenOutput ? quickenMetricWeight : -quickenMetricWeight;
                 }
                 i.bci = buf.size();
                 emitBytecode(i, buf, sourceMapBuilder);
@@ -286,12 +286,10 @@ public final class CompilationUnit {
         int[] generalizeInputsKeys = generizationListSize > 0 ? new int[generizationListSize] : EMPTY_INT_ARRAY;
         int[] generalizeInputsIndices = generizationListSize > 0 ? new int[generizationListSize + 1] : EMPTY_INT_ARRAY;
         int[] generalizeInputsValues = generizationListSize > 0 ? new int[totalGeneralizations] : EMPTY_INT_ARRAY;
-        byte[] finishedCanQuickenOutput = new byte[buf.size()];
         int generalizationIndex1 = 0;
         int generalizationIndex2 = 0;
         for (Instruction insn : quickenedInstructions) {
             int insnBodyBci = insn.bodyBci();
-            finishedCanQuickenOutput[insnBodyBci] = insn.quickenOutput;
             if (insn.quickeningGeneralizeList != null && !insn.quickeningGeneralizeList.isEmpty()) {
                 generalizeInputsKeys[generalizationIndex1] = insnBodyBci;
                 generalizeInputsIndices[generalizationIndex1] = generalizationIndex2;
@@ -358,7 +356,7 @@ public final class CompilationUnit {
                         buf.toByteArray(),
                         sourceMapBuilder.build(),
                         orderedLong(primitiveConstants), exceptionHandlerRanges, maxStackSize, conditionProfileCount,
-                        finishedCanQuickenOutput, shouldUnboxVariable, generalizeInputsKeys, generalizeInputsIndices, generalizeInputsValues, generalizeVarsIndices, generalizeVarsValues);
+                        shouldUnboxVariable, generalizeInputsKeys, generalizeInputsIndices, generalizeInputsValues, generalizeVarsIndices, generalizeVarsValues);
     }
 
     private static void addExceptionRange(Collection<int[]> finishedExceptionHandlerRanges, int start, int end, int handler, int stackLevel) {
@@ -459,17 +457,31 @@ public final class CompilationUnit {
         OpCodes opcode = instr.opcode;
         // Pre-quicken constant loads
         if (opcode == OpCodes.LOAD_BYTE) {
-            opcode = (instr.quickenOutput & QuickeningTypes.INT) != 0 ? OpCodes.LOAD_BYTE_I : OpCodes.LOAD_BYTE_O;
+            opcode = instr.quickenOutput ? OpCodes.LOAD_BYTE_I : OpCodes.LOAD_BYTE_O;
         } else if (opcode == OpCodes.LOAD_INT) {
-            opcode = (instr.quickenOutput & QuickeningTypes.INT) != 0 ? OpCodes.LOAD_INT_I : OpCodes.LOAD_INT_O;
+            opcode = instr.quickenOutput ? OpCodes.LOAD_INT_I : OpCodes.LOAD_INT_O;
         } else if (opcode == OpCodes.LOAD_LONG) {
-            opcode = (instr.quickenOutput & QuickeningTypes.LONG) != 0 ? OpCodes.LOAD_LONG_L : OpCodes.LOAD_LONG_O;
+            opcode = instr.quickenOutput ? OpCodes.LOAD_LONG_L : OpCodes.LOAD_LONG_O;
         } else if (opcode == OpCodes.LOAD_DOUBLE) {
-            opcode = (instr.quickenOutput & QuickeningTypes.DOUBLE) != 0 ? OpCodes.LOAD_DOUBLE_D : OpCodes.LOAD_DOUBLE_O;
+            opcode = instr.quickenOutput ? OpCodes.LOAD_DOUBLE_D : OpCodes.LOAD_DOUBLE_O;
         } else if (opcode == OpCodes.LOAD_TRUE) {
-            opcode = (instr.quickenOutput & QuickeningTypes.BOOLEAN) != 0 ? OpCodes.LOAD_TRUE_B : OpCodes.LOAD_TRUE_O;
+            opcode = instr.quickenOutput ? OpCodes.LOAD_TRUE_B : OpCodes.LOAD_TRUE_O;
         } else if (opcode == OpCodes.LOAD_FALSE) {
-            opcode = (instr.quickenOutput & QuickeningTypes.BOOLEAN) != 0 ? OpCodes.LOAD_FALSE_B : OpCodes.LOAD_FALSE_O;
+            opcode = instr.quickenOutput ? OpCodes.LOAD_FALSE_B : OpCodes.LOAD_FALSE_O;
+        } else if (opcode == OpCodes.LOAD_FAST) {
+            opcode = instr.quickenOutput ? OpCodes.LOAD_FAST : OpCodes.LOAD_FAST_ADAPTIVE_O;
+        } else if (opcode == OpCodes.FOR_ITER) {
+            opcode = instr.quickenOutput ? OpCodes.FOR_ITER_I : OpCodes.FOR_ITER_O;
+        } else if (!instr.quickenOutput) {
+            if (opcode == OpCodes.UNARY_OP) {
+                opcode = OpCodes.UNARY_OP_ADAPTIVE_O;
+            } else if (opcode == OpCodes.BINARY_OP) {
+                opcode = OpCodes.BINARY_OP_ADAPTIVE_O;
+            } else if (opcode == OpCodes.BINARY_SUBSCR) {
+                opcode = OpCodes.BINARY_SUBSCR_ADAPTIVE_O;
+            } else if (opcode.generalizesTo != null) {
+                opcode = instr.opcode.generalizesTo;
+            }
         }
         assert opcode.ordinal() < 256;
         SourceRange location = instr.location;

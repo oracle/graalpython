@@ -568,11 +568,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @CompilationFinal(dimensions = 1) private final int[] exceptionHandlerRanges;
 
     /**
-     * Whether instruction at given bci can put a primitive value on stack. The number is a bitwise
-     * or of possible types defined by {@link QuickeningTypes}.
-     */
-    private final byte[] outputCanQuicken;
-    /**
      * Whether store instructions to this variable should attempt to unbox primitives. The number
      * determines the type like above.
      */
@@ -696,7 +691,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         this.parserCallbacks = parserCallbacks;
         this.signature = sign;
         this.bytecode = co.code;
-        this.outputCanQuicken = co.outputCanQuicken;
         this.variableShouldUnbox = co.variableShouldUnbox;
         this.consts = co.constants;
         this.longConsts = co.primitiveConstants;
@@ -1533,7 +1527,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         break;
                     case OpCodesConstants.LOAD_FAST: {
                         oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
-                        bytecodeLoadFastAdaptive(virtualFrame, localFrame, ++stackTop, localBC, bci++, oparg, localNodes, hasUnboxedLocals);
+                        bytecodeLoadFastAdaptiveInputOutput(virtualFrame, localFrame, ++stackTop, localBC, bci++, oparg, localNodes, hasUnboxedLocals);
+                        break;
+                    }
+                    case OpCodesConstants.LOAD_FAST_ADAPTIVE_O: {
+                        oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
+                        bytecodeLoadFastAdaptiveInputOnly(virtualFrame, localFrame, ++stackTop, localBC, bci++, oparg, localNodes, hasUnboxedLocals);
                         break;
                     }
                     case OpCodesConstants.LOAD_FAST_O: {
@@ -1729,7 +1728,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         stackTop++;
                         break;
                     case OpCodesConstants.UNARY_OP: {
-                        bytecodeUnaryOpAdaptive(virtualFrame, stackTop, bci++, localBC, localNodes);
+                        bytecodeUnaryOpAdaptiveInputOutput(virtualFrame, stackTop, bci++, localBC, localNodes);
+                        break;
+                    }
+                    case OpCodesConstants.UNARY_OP_ADAPTIVE_O: {
+                        bytecodeUnaryOpAdaptiveInputOnly(virtualFrame, stackTop, bci++, localBC, localNodes);
                         break;
                     }
                     case OpCodesConstants.UNARY_OP_O_O: {
@@ -1769,7 +1772,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                     case OpCodesConstants.BINARY_OP: {
                         int op = Byte.toUnsignedInt(localBC[bci + 1]);
-                        bytecodeBinaryOpAdaptive(virtualFrame, stackTop--, localBC, bci++, localNodes, op, useCachedNodes);
+                        bytecodeBinaryOpAdaptiveInputOutput(virtualFrame, stackTop--, localBC, bci++, localNodes, op, useCachedNodes);
+                        break;
+                    }
+                    case OpCodesConstants.BINARY_OP_ADAPTIVE_O: {
+                        int op = Byte.toUnsignedInt(localBC[bci + 1]);
+                        bytecodeBinaryOpAdaptiveInputOnly(virtualFrame, stackTop--, localBC, bci++, localNodes, op, useCachedNodes);
                         break;
                     }
                     case OpCodesConstants.BINARY_OP_OO_O: {
@@ -1808,7 +1816,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         break;
                     }
                     case OpCodesConstants.BINARY_SUBSCR: {
-                        stackTop = bytecodeBinarySubscrAdaptive(virtualFrame, stackTop, bci, localNodes, bciSlot);
+                        stackTop = bytecodeBinarySubscrAdaptiveInputOutput(virtualFrame, stackTop, bci, localNodes, bciSlot);
+                        break;
+                    }
+                    case OpCodesConstants.BINARY_SUBSCR_ADAPTIVE_O: {
+                        stackTop = bytecodeBinarySubscrAdaptiveInputOnly(virtualFrame, stackTop, bci, localNodes, bciSlot);
                         break;
                     }
                     case OpCodesConstants.BINARY_SUBSCR_SEQ_I_I: {
@@ -1823,7 +1835,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         stackTop = bytecodeBinarySubscrSeqIO(virtualFrame, stackTop, bci, localNodes);
                         break;
                     }
-                    case OpCodesConstants.BINARY_SUBSCR_SEQ_O_O: {
+                    case OpCodesConstants.BINARY_SUBSCR_O_O: {
                         stackTop = bytecodeBinarySubscrOO(virtualFrame, stackTop, bci, localNodes, bciSlot);
                         break;
                     }
@@ -2108,10 +2120,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         setCurrentBci(virtualFrame, bciSlot, bci);
                         bytecodeGetYieldFromIter(virtualFrame, useCachedNodes, stackTop, localNodes, beginBci);
                         break;
-                    }
-                    case OpCodesConstants.FOR_ITER: {
-                        bytecodeForIterAdaptive(bci);
-                        continue;
                     }
                     case OpCodesConstants.FOR_ITER_O: {
                         setCurrentBci(virtualFrame, bciSlot, bci);
@@ -3083,22 +3091,20 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return ret;
     }
 
-    private int bytecodeBinarySubscrAdaptive(VirtualFrame virtualFrame, int stackTop, int bci, Node[] localNodes, int bciSlot) {
+    private int bytecodeBinarySubscrAdaptiveInputOutput(VirtualFrame virtualFrame, int stackTop, int bci, Node[] localNodes, int bciSlot) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
         if (virtualFrame.isInt(stackTop) && virtualFrame.getObject(stackTop - 1) instanceof PSequence) {
             /* Always start with object result and then try to rewrite to a more specific one */
             // TODO this would benefit from having an uncached node
             bytecode[bci] = OpCodesConstants.BINARY_SUBSCR_SEQ_I_O;
             stackTop = bytecodeBinarySubscrSeqIO(virtualFrame, stackTop, bci, localNodes);
-            if (bytecode[bci] == OpCodesConstants.BINARY_SUBSCR_SEQ_I_O && outputCanQuicken[bci] != 0) {
-                Object result = virtualFrame.getObject(stackTop);
-                if (result instanceof Integer && (outputCanQuicken[bci] & QuickeningTypes.INT) != 0) {
-                    bytecode[bci] = OpCodesConstants.BINARY_SUBSCR_SEQ_I_I;
-                    virtualFrame.setInt(stackTop, (Integer) result);
-                } else if (result instanceof Double && (outputCanQuicken[bci] & QuickeningTypes.DOUBLE) != 0) {
-                    bytecode[bci] = OpCodesConstants.BINARY_SUBSCR_SEQ_I_D;
-                    virtualFrame.setDouble(stackTop, (Double) result);
-                }
+            Object result = virtualFrame.getObject(stackTop);
+            if (result instanceof Integer) {
+                bytecode[bci] = OpCodesConstants.BINARY_SUBSCR_SEQ_I_I;
+                virtualFrame.setInt(stackTop, (Integer) result);
+            } else if (result instanceof Double) {
+                bytecode[bci] = OpCodesConstants.BINARY_SUBSCR_SEQ_I_D;
+                virtualFrame.setDouble(stackTop, (Double) result);
             }
             return stackTop;
         }
@@ -3106,7 +3112,23 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             generalizeInputs(bci);
             generalizeFrameSlot(virtualFrame, stackTop);
         }
-        bytecode[bci] = OpCodesConstants.BINARY_SUBSCR_SEQ_O_O;
+        bytecode[bci] = OpCodesConstants.BINARY_SUBSCR_O_O;
+        return bytecodeBinarySubscrOO(virtualFrame, stackTop, bci, localNodes, bciSlot);
+    }
+
+    private int bytecodeBinarySubscrAdaptiveInputOnly(VirtualFrame virtualFrame, int stackTop, int bci, Node[] localNodes, int bciSlot) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        if (virtualFrame.isInt(stackTop) && virtualFrame.getObject(stackTop - 1) instanceof PSequence) {
+            /* Always start with object result and then try to rewrite to a more specific one */
+            // TODO this would benefit from having an uncached node
+            bytecode[bci] = OpCodesConstants.BINARY_SUBSCR_SEQ_I_O;
+            return bytecodeBinarySubscrSeqIO(virtualFrame, stackTop, bci, localNodes);
+        }
+        if (!virtualFrame.isObject(stackTop)) {
+            generalizeInputs(bci);
+            generalizeFrameSlot(virtualFrame, stackTop);
+        }
+        bytecode[bci] = OpCodesConstants.BINARY_SUBSCR_O_O;
         return bytecodeBinarySubscrOO(virtualFrame, stackTop, bci, localNodes, bciSlot);
     }
 
@@ -3202,7 +3224,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         CompilerDirectives.transferToInterpreterAndInvalidate();
         generalizeInputs(bci);
         generalizeFrameSlot(virtualFrame, stackTop);
-        bytecode[bci] = OpCodesConstants.BINARY_SUBSCR_SEQ_O_O;
+        bytecode[bci] = OpCodesConstants.BINARY_SUBSCR_O_O;
         return bytecodeBinarySubscrOO(virtualFrame, stackTop, bci, localNodes, bcioffset);
     }
 
@@ -3439,15 +3461,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
-    private void bytecodeForIterAdaptive(int bci) {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        if ((outputCanQuicken[bci] & QuickeningTypes.INT) != 0) {
-            bytecode[bci] = OpCodesConstants.FOR_ITER_I;
-        } else {
-            bytecode[bci] = OpCodesConstants.FOR_ITER_O;
-        }
-    }
-
     private void generalizePopAndJumpIfTrueB(int bci) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
         generalizeInputs(bci);
@@ -3484,7 +3497,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         return virtualFrame.getValue(stackTop);
     }
 
-    private void bytecodeBinaryOpAdaptive(VirtualFrame virtualFrame, int stackTop, byte[] localBC, int bci, Node[] localNodes, int op, boolean useCachedNodes) {
+    private void bytecodeBinaryOpAdaptiveInputOutput(VirtualFrame virtualFrame, int stackTop, byte[] localBC, int bci, Node[] localNodes, int op, boolean useCachedNodes) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
         if (virtualFrame.isObject(stackTop) && virtualFrame.isObject(stackTop - 1)) {
             localBC[bci] = OpCodesConstants.BINARY_OP_OO_O;
@@ -3514,13 +3527,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 case BinaryOpsConstants.INPLACE_XOR:
                 case BinaryOpsConstants.POW:
                 case BinaryOpsConstants.INPLACE_POW:
-                    if ((outputCanQuicken[bci] & QuickeningTypes.INT) != 0) {
-                        localBC[bci] = OpCodesConstants.BINARY_OP_II_I;
-                        bytecodeBinaryOpIII(virtualFrame, stackTop, bci, localNodes, op, useCachedNodes);
-                    } else {
-                        localBC[bci] = OpCodesConstants.BINARY_OP_II_O;
-                        bytecodeBinaryOpIIO(virtualFrame, stackTop, bci, localNodes, op);
-                    }
+                    localBC[bci] = OpCodesConstants.BINARY_OP_II_I;
+                    bytecodeBinaryOpIII(virtualFrame, stackTop, bci, localNodes, op, useCachedNodes);
                     return;
                 case BinaryOpsConstants.TRUEDIV:
                 case BinaryOpsConstants.INPLACE_TRUEDIV:
@@ -3535,13 +3543,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 case BinaryOpsConstants.LE:
                 case BinaryOpsConstants.LT:
                 case BinaryOpsConstants.IS:
-                    if ((outputCanQuicken[bci] & QuickeningTypes.BOOLEAN) != 0) {
-                        localBC[bci] = OpCodesConstants.BINARY_OP_II_B;
-                        bytecodeBinaryOpIIB(virtualFrame, stackTop, bci, localNodes, op);
-                    } else {
-                        localBC[bci] = OpCodesConstants.BINARY_OP_II_O;
-                        bytecodeBinaryOpIIO(virtualFrame, stackTop, bci, localNodes, op);
-                    }
+                    localBC[bci] = OpCodesConstants.BINARY_OP_II_B;
+                    bytecodeBinaryOpIIB(virtualFrame, stackTop, bci, localNodes, op);
                     return;
             }
         } else if (virtualFrame.isDouble(stackTop) && virtualFrame.isDouble(stackTop - 1)) {
@@ -3556,13 +3559,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 case BinaryOpsConstants.INPLACE_TRUEDIV:
                 case BinaryOpsConstants.POW:
                 case BinaryOpsConstants.INPLACE_POW:
-                    if ((outputCanQuicken[bci] & QuickeningTypes.INT) != 0) {
-                        localBC[bci] = OpCodesConstants.BINARY_OP_DD_D;
-                        bytecodeBinaryOpDDD(virtualFrame, stackTop, bci, localNodes, op, useCachedNodes);
-                    } else {
-                        localBC[bci] = OpCodesConstants.BINARY_OP_DD_O;
-                        bytecodeBinaryOpDDO(virtualFrame, stackTop, bci, localNodes, op, useCachedNodes);
-                    }
+                    localBC[bci] = OpCodesConstants.BINARY_OP_DD_D;
+                    bytecodeBinaryOpDDD(virtualFrame, stackTop, bci, localNodes, op, useCachedNodes);
                     return;
                 case BinaryOpsConstants.EQ:
                 case BinaryOpsConstants.NE:
@@ -3570,13 +3568,82 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 case BinaryOpsConstants.GE:
                 case BinaryOpsConstants.LE:
                 case BinaryOpsConstants.LT:
-                    if ((outputCanQuicken[bci] & QuickeningTypes.BOOLEAN) != 0) {
-                        localBC[bci] = OpCodesConstants.BINARY_OP_DD_B;
-                        bytecodeBinaryOpDDB(virtualFrame, stackTop, bci, localNodes, op);
-                    } else {
-                        localBC[bci] = OpCodesConstants.BINARY_OP_DD_O;
-                        bytecodeBinaryOpDDO(virtualFrame, stackTop, bci, localNodes, op, useCachedNodes);
-                    }
+                    localBC[bci] = OpCodesConstants.BINARY_OP_DD_B;
+                    bytecodeBinaryOpDDB(virtualFrame, stackTop, bci, localNodes, op);
+                    return;
+            }
+        }
+        // TODO other types
+        generalizeFrameSlot(virtualFrame, stackTop);
+        generalizeFrameSlot(virtualFrame, stackTop - 1);
+        generalizeInputs(bci);
+        localBC[bci] = OpCodesConstants.BINARY_OP_OO_O;
+        bytecodeBinaryOpOOO(virtualFrame, stackTop, bci, localNodes, op, bcioffset);
+    }
+
+    private void bytecodeBinaryOpAdaptiveInputOnly(VirtualFrame virtualFrame, int stackTop, byte[] localBC, int bci, Node[] localNodes, int op, boolean useCachedNodes) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        if (virtualFrame.isObject(stackTop) && virtualFrame.isObject(stackTop - 1)) {
+            localBC[bci] = OpCodesConstants.BINARY_OP_OO_O;
+            bytecodeBinaryOpOOO(virtualFrame, stackTop, bci, localNodes, op, bcioffset);
+            return;
+        } else if (virtualFrame.isInt(stackTop) && virtualFrame.isInt(stackTop - 1)) {
+            switch (op) {
+                case BinaryOpsConstants.ADD:
+                case BinaryOpsConstants.INPLACE_ADD:
+                case BinaryOpsConstants.SUB:
+                case BinaryOpsConstants.INPLACE_SUB:
+                case BinaryOpsConstants.MUL:
+                case BinaryOpsConstants.INPLACE_MUL:
+                case BinaryOpsConstants.FLOORDIV:
+                case BinaryOpsConstants.INPLACE_FLOORDIV:
+                case BinaryOpsConstants.MOD:
+                case BinaryOpsConstants.INPLACE_MOD:
+                case BinaryOpsConstants.LSHIFT:
+                case BinaryOpsConstants.INPLACE_LSHIFT:
+                case BinaryOpsConstants.RSHIFT:
+                case BinaryOpsConstants.INPLACE_RSHIFT:
+                case BinaryOpsConstants.AND:
+                case BinaryOpsConstants.INPLACE_AND:
+                case BinaryOpsConstants.OR:
+                case BinaryOpsConstants.INPLACE_OR:
+                case BinaryOpsConstants.XOR:
+                case BinaryOpsConstants.INPLACE_XOR:
+                case BinaryOpsConstants.POW:
+                case BinaryOpsConstants.INPLACE_POW:
+                case BinaryOpsConstants.TRUEDIV:
+                case BinaryOpsConstants.INPLACE_TRUEDIV:
+                case BinaryOpsConstants.EQ:
+                case BinaryOpsConstants.NE:
+                case BinaryOpsConstants.GT:
+                case BinaryOpsConstants.GE:
+                case BinaryOpsConstants.LE:
+                case BinaryOpsConstants.LT:
+                case BinaryOpsConstants.IS:
+                    localBC[bci] = OpCodesConstants.BINARY_OP_II_O;
+                    bytecodeBinaryOpIIO(virtualFrame, stackTop, bci, localNodes, op);
+                    return;
+            }
+        } else if (virtualFrame.isDouble(stackTop) && virtualFrame.isDouble(stackTop - 1)) {
+            switch (op) {
+                case BinaryOpsConstants.ADD:
+                case BinaryOpsConstants.INPLACE_ADD:
+                case BinaryOpsConstants.SUB:
+                case BinaryOpsConstants.INPLACE_SUB:
+                case BinaryOpsConstants.MUL:
+                case BinaryOpsConstants.INPLACE_MUL:
+                case BinaryOpsConstants.TRUEDIV:
+                case BinaryOpsConstants.INPLACE_TRUEDIV:
+                case BinaryOpsConstants.POW:
+                case BinaryOpsConstants.INPLACE_POW:
+                case BinaryOpsConstants.EQ:
+                case BinaryOpsConstants.NE:
+                case BinaryOpsConstants.GT:
+                case BinaryOpsConstants.GE:
+                case BinaryOpsConstants.LE:
+                case BinaryOpsConstants.LT:
+                    localBC[bci] = OpCodesConstants.BINARY_OP_DD_O;
+                    bytecodeBinaryOpDDO(virtualFrame, stackTop, bci, localNodes, op, useCachedNodes);
                     return;
             }
         }
@@ -4010,7 +4077,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         virtualFrame.setObject(stackTop - 1, result);
     }
 
-    private void bytecodeUnaryOpAdaptive(VirtualFrame virtualFrame, int stackTop, int bci, byte[] localBC, Node[] localNodes) {
+    private void bytecodeUnaryOpAdaptiveInputOutput(VirtualFrame virtualFrame, int stackTop, int bci, byte[] localBC, Node[] localNodes) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
         int op = Byte.toUnsignedInt(localBC[bci + 1]);
         if (virtualFrame.isObject(stackTop)) {
@@ -4018,44 +4085,57 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             bytecodeUnaryOpOO(virtualFrame, stackTop, bci, localNodes, op, bcioffset);
             return;
         } else if (virtualFrame.isInt(stackTop)) {
-            if ((outputCanQuicken[bci] & QuickeningTypes.INT) != 0) {
-                if (op == UnaryOpsConstants.NOT) {
-                    // TODO UNARY_OP_I_B
-                    localBC[bci] = OpCodesConstants.UNARY_OP_I_O;
-                    bytecodeUnaryOpIO(virtualFrame, stackTop, bci, localNodes, op);
-                } else {
-                    localBC[bci] = OpCodesConstants.UNARY_OP_I_I;
-                    bytecodeUnaryOpII(virtualFrame, stackTop, bci, localNodes, op);
-                }
+            if (op == UnaryOpsConstants.NOT) {
+                // TODO UNARY_OP_I_B
+                localBC[bci] = OpCodesConstants.UNARY_OP_I_O;
+                bytecodeUnaryOpIO(virtualFrame, stackTop, bci, localNodes, op);
+            } else {
+                localBC[bci] = OpCodesConstants.UNARY_OP_I_I;
+                bytecodeUnaryOpII(virtualFrame, stackTop, bci, localNodes, op);
+            }
+            return;
+        } else if (virtualFrame.isDouble(stackTop)) {
+            if (op == UnaryOpsConstants.NOT || op == UnaryOpsConstants.INVERT) {
+                // TODO UNARY_OP_D_B
+                localBC[bci] = OpCodesConstants.UNARY_OP_D_O;
+                bytecodeUnaryOpDO(virtualFrame, stackTop, bci, localNodes, op);
+            } else {
+                localBC[bci] = OpCodesConstants.UNARY_OP_D_D;
+                bytecodeUnaryOpDD(virtualFrame, stackTop, bci, localNodes, op);
+            }
+            return;
+        } else if (virtualFrame.isBoolean(stackTop)) {
+            if (op == UnaryOpsConstants.NOT) {
+                localBC[bci] = OpCodesConstants.UNARY_OP_B_B;
+                bytecodeUnaryOpBB(virtualFrame, stackTop, bci, localNodes, op);
                 return;
             }
+        }
+        generalizeInputs(bci);
+        generalizeFrameSlot(virtualFrame, stackTop);
+        localBC[bci] = OpCodesConstants.UNARY_OP_O_O;
+        bytecodeUnaryOpOO(virtualFrame, stackTop, bci, localNodes, op, bcioffset);
+    }
+
+    private void bytecodeUnaryOpAdaptiveInputOnly(VirtualFrame virtualFrame, int stackTop, int bci, byte[] localBC, Node[] localNodes) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        int op = Byte.toUnsignedInt(localBC[bci + 1]);
+        if (virtualFrame.isObject(stackTop)) {
+            localBC[bci] = OpCodesConstants.UNARY_OP_O_O;
+            bytecodeUnaryOpOO(virtualFrame, stackTop, bci, localNodes, op, bcioffset);
+            return;
+        } else if (virtualFrame.isInt(stackTop)) {
             localBC[bci] = OpCodesConstants.UNARY_OP_I_O;
             bytecodeUnaryOpIO(virtualFrame, stackTop, bci, localNodes, op);
             return;
         } else if (virtualFrame.isDouble(stackTop)) {
-            if ((outputCanQuicken[bci] & QuickeningTypes.INT) != 0) {
-                if (op == UnaryOpsConstants.NOT || op == UnaryOpsConstants.INVERT) {
-                    // TODO UNARY_OP_D_B
-                    localBC[bci] = OpCodesConstants.UNARY_OP_D_O;
-                    bytecodeUnaryOpDO(virtualFrame, stackTop, bci, localNodes, op);
-                } else {
-                    localBC[bci] = OpCodesConstants.UNARY_OP_D_D;
-                    bytecodeUnaryOpDD(virtualFrame, stackTop, bci, localNodes, op);
-                }
-                return;
-            }
             localBC[bci] = OpCodesConstants.UNARY_OP_D_O;
             bytecodeUnaryOpIO(virtualFrame, stackTop, bci, localNodes, op);
             return;
         } else if (virtualFrame.isBoolean(stackTop)) {
             if (op == UnaryOpsConstants.NOT) {
-                if ((outputCanQuicken[bci] & QuickeningTypes.BOOLEAN) != 0) {
-                    localBC[bci] = OpCodesConstants.UNARY_OP_B_B;
-                    bytecodeUnaryOpBB(virtualFrame, stackTop, bci, localNodes, op);
-                } else {
-                    localBC[bci] = OpCodesConstants.UNARY_OP_B_O;
-                    bytecodeUnaryOpBO(virtualFrame, stackTop, bci, localNodes, op);
-                }
+                localBC[bci] = OpCodesConstants.UNARY_OP_B_O;
+                bytecodeUnaryOpBO(virtualFrame, stackTop, bci, localNodes, op);
                 return;
             }
         }
@@ -4569,43 +4649,46 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @InliningCutoff
-    private void bytecodeLoadFastAdaptive(VirtualFrame virtualFrame, Frame localFrame, int stackTop, byte[] localBC, int bci, int index, Node[] localNodes, boolean hasUnboxedLocals) {
+    private void bytecodeLoadFastAdaptiveInputOutput(VirtualFrame virtualFrame, Frame localFrame, int stackTop, byte[] localBC, int bci, int index, Node[] localNodes, boolean hasUnboxedLocals) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
         if (localFrame.isObject(index)) {
             localBC[bci] = OpCodesConstants.LOAD_FAST_O;
             bytecodeLoadFastO(virtualFrame, localFrame, stackTop, bci, index, localNodes, hasUnboxedLocals);
         } else if (localFrame.isInt(index)) {
-            if ((outputCanQuicken[bci] & QuickeningTypes.INT) != 0) {
-                localBC[bci] = OpCodesConstants.LOAD_FAST_I;
-                bytecodeLoadFastI(virtualFrame, localFrame, stackTop, bci, index, localNodes, hasUnboxedLocals);
-            } else {
-                localBC[bci] = OpCodesConstants.LOAD_FAST_I_BOX;
-                bytecodeLoadFastIBox(virtualFrame, localFrame, stackTop, bci, index, localNodes, hasUnboxedLocals);
-            }
+            localBC[bci] = OpCodesConstants.LOAD_FAST_I;
+            bytecodeLoadFastI(virtualFrame, localFrame, stackTop, bci, index, localNodes, hasUnboxedLocals);
         } else if (localFrame.isLong(index)) {
-            if ((outputCanQuicken[bci] & QuickeningTypes.LONG) != 0) {
-                localBC[bci] = OpCodesConstants.LOAD_FAST_L;
-                bytecodeLoadFastL(virtualFrame, localFrame, stackTop, bci, index, localNodes, hasUnboxedLocals);
-            } else {
-                localBC[bci] = OpCodesConstants.LOAD_FAST_L_BOX;
-                bytecodeLoadFastLBox(virtualFrame, localFrame, stackTop, bci, index, localNodes, hasUnboxedLocals);
-            }
+            localBC[bci] = OpCodesConstants.LOAD_FAST_L;
+            bytecodeLoadFastL(virtualFrame, localFrame, stackTop, bci, index, localNodes, hasUnboxedLocals);
         } else if (localFrame.isDouble(index)) {
-            if ((outputCanQuicken[bci] & QuickeningTypes.DOUBLE) != 0) {
-                localBC[bci] = OpCodesConstants.LOAD_FAST_D;
-                bytecodeLoadFastD(virtualFrame, localFrame, stackTop, bci, index, localNodes, hasUnboxedLocals);
-            } else {
-                localBC[bci] = OpCodesConstants.LOAD_FAST_D_BOX;
-                bytecodeLoadFastDBox(virtualFrame, localFrame, stackTop, bci, index, localNodes, hasUnboxedLocals);
-            }
+            localBC[bci] = OpCodesConstants.LOAD_FAST_D;
+            bytecodeLoadFastD(virtualFrame, localFrame, stackTop, bci, index, localNodes, hasUnboxedLocals);
         } else if (localFrame.isBoolean(index)) {
-            if ((outputCanQuicken[bci] & QuickeningTypes.BOOLEAN) != 0) {
-                localBC[bci] = OpCodesConstants.LOAD_FAST_B;
-                bytecodeLoadFastB(virtualFrame, localFrame, stackTop, bci, index, localNodes, hasUnboxedLocals);
-            } else {
-                localBC[bci] = OpCodesConstants.LOAD_FAST_B_BOX;
-                bytecodeLoadFastBBox(virtualFrame, localFrame, stackTop, bci, index, localNodes, hasUnboxedLocals);
-            }
+            localBC[bci] = OpCodesConstants.LOAD_FAST_B;
+            bytecodeLoadFastB(virtualFrame, localFrame, stackTop, bci, index, localNodes, hasUnboxedLocals);
+        } else {
+            throw CompilerDirectives.shouldNotReachHere("Unimplemented stack item type for LOAD_FAST");
+        }
+    }
+
+    @InliningCutoff
+    private void bytecodeLoadFastAdaptiveInputOnly(VirtualFrame virtualFrame, Frame localFrame, int stackTop, byte[] localBC, int bci, int index, Node[] localNodes, boolean hasUnboxedLocals) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        if (localFrame.isObject(index)) {
+            localBC[bci] = OpCodesConstants.LOAD_FAST_O;
+            bytecodeLoadFastO(virtualFrame, localFrame, stackTop, bci, index, localNodes, hasUnboxedLocals);
+        } else if (localFrame.isInt(index)) {
+            localBC[bci] = OpCodesConstants.LOAD_FAST_I_BOX;
+            bytecodeLoadFastIBox(virtualFrame, localFrame, stackTop, bci, index, localNodes, hasUnboxedLocals);
+        } else if (localFrame.isLong(index)) {
+            localBC[bci] = OpCodesConstants.LOAD_FAST_L_BOX;
+            bytecodeLoadFastLBox(virtualFrame, localFrame, stackTop, bci, index, localNodes, hasUnboxedLocals);
+        } else if (localFrame.isDouble(index)) {
+            localBC[bci] = OpCodesConstants.LOAD_FAST_D_BOX;
+            bytecodeLoadFastDBox(virtualFrame, localFrame, stackTop, bci, index, localNodes, hasUnboxedLocals);
+        } else if (localFrame.isBoolean(index)) {
+            localBC[bci] = OpCodesConstants.LOAD_FAST_B_BOX;
+            bytecodeLoadFastBBox(virtualFrame, localFrame, stackTop, bci, index, localNodes, hasUnboxedLocals);
         } else {
             throw CompilerDirectives.shouldNotReachHere("Unimplemented stack item type for LOAD_FAST");
         }
