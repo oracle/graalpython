@@ -40,9 +40,9 @@
  */
 package com.oracle.graal.python.runtime;
 
+import static com.oracle.graal.python.PythonLanguage.getPythonOS;
 import static com.oracle.graal.python.annotations.PythonOS.PLATFORM_LINUX;
 import static com.oracle.graal.python.annotations.PythonOS.PLATFORM_WIN32;
-import static com.oracle.graal.python.PythonLanguage.getPythonOS;
 import static com.oracle.graal.python.builtins.modules.SignalModuleBuiltins.signalFromName;
 import static com.oracle.graal.python.builtins.objects.thread.PThread.getThreadId;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
@@ -873,9 +873,20 @@ public final class EmulatedPosixSupport extends PosixResources {
             errorBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.EBADFD);
         }
-        boolean unlock = lockType == F_UNLCK.getValueIfDefined();
-        boolean shared = lockType == F_RDLCK.getValueIfDefined();
-        boolean exclusive = lockType == F_WRLCK.getValueIfDefined();
+        boolean unlock, shared, exclusive;
+        if (PythonLanguage.getPythonOS() == PLATFORM_WIN32) {
+            /*
+             * Windows doesn't expose fnctl, but we call this from MsvcrtModuleBuiltins, where we
+             * use 0 for unlock and 1 for lock
+             */
+            unlock = lockType == 0;
+            exclusive = !unlock;
+            shared = false;
+        } else {
+            unlock = lockType == F_UNLCK.getValueIfDefined();
+            shared = lockType == F_RDLCK.getValueIfDefined();
+            exclusive = lockType == F_WRLCK.getValueIfDefined();
+        }
         if (!unlock && !shared && !exclusive) {
             errorBranch.enter(inliningTarget);
             throw posixException(OSErrorEnum.EINVAL);
