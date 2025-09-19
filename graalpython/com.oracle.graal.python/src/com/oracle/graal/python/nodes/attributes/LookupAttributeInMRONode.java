@@ -74,7 +74,6 @@ import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -180,7 +179,21 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
 
     // PythonClass specializations:
 
-    record AttributeAssumptionPair(Assumption assumption, Object value, boolean invalidate) {
+    static final class AttributeAssumptionPair {
+        private final Assumption assumption;
+        private final Object value;
+        private final boolean invalidate;
+        private boolean invalidateNextCall;
+
+        AttributeAssumptionPair(Assumption assumption, Object value, boolean invalidate) {
+            this.assumption = assumption;
+            this.value = value;
+            this.invalidate = invalidate;
+        }
+
+        public Assumption assumption() {
+            return assumption;
+        }
     }
 
     @SuppressWarnings("serial")
@@ -233,14 +246,15 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
                     @Bind Node inliningTarget,
                     @Cached("klass") Object cachedKlass,
                     @Cached IsSameTypeNode isSameTypeNode,
-                    @Cached InlinedBranchProfile shouldInvalidate,
                     @Cached("findAttrAndAssumptionInMRO(cachedKlass)") AttributeAssumptionPair cachedAttrInMROInfo) {
-        if (shouldInvalidate.wasEntered(inliningTarget)) {
-            throw InvalidateLookupException.INSTANCE;
-        } else if (cachedAttrInMROInfo.invalidate) {
+        if (cachedAttrInMROInfo.invalidate) {
             // next time we will invalidate, but this time we must return the result to avoid
             // triggering side effects in __eq__ multiple times
-            shouldInvalidate.enter(inliningTarget);
+            if (cachedAttrInMROInfo.invalidateNextCall) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw InvalidateLookupException.INSTANCE;
+            }
+            cachedAttrInMROInfo.invalidateNextCall = true;
         }
         return cachedAttrInMROInfo.value;
     }
