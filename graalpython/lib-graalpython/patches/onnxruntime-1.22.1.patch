@@ -93,3 +93,12 @@ index 2a06916..c790a21 100644
          if args.use_gdk:
              cmake_args += [
                  "-DCMAKE_TOOLCHAIN_FILE=" + os.path.join(source_dir, "cmake", "gdk_toolchain.cmake"),
+@@ -2167,7 +2173,7 @@ def main():
+         os.environ["ANDROID_NDK_HOME"] = args.android_ndk_path
+ 
+     if not is_windows() and not is_macOS():
+-        if not args.allow_running_as_root:
++        if False and not args.allow_running_as_root:
+             is_root_user = os.geteuid() == 0
+             if is_root_user:
+                 raise BuildError(

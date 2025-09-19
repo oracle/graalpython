@@ -391,11 +391,15 @@
         for bench in ["warmup"]
     } + {
         [bench]: bench_task(bench) + platform_spec(no_jobs) + bench_variants({
-            "vm_name:graalvm_ee_default_interpreter"                    : {"linux:amd64:jdk-latest" : post_merge     + t("01:00:00")},
-            "vm_name:graalvm_ee_default_interpreter_bc_dsl"             : {"linux:amd64:jdk-latest" : post_merge     + t("01:00:00")},
-            "vm_name:graalpython_enterprise_interpreter"                : {"linux:amd64:jdk-latest" : daily          + t("01:00:00")},
-            "vm_name:graalpython_enterprise_interpreter_bc_dsl"         : {"linux:amd64:jdk-latest" : daily          + t("01:00:00")},
-            "vm_name:cpython"                                           : {"linux:amd64:jdk-latest" : weekly         + t("00:30:00")},
+            "vm_name:graalvm_ee_default_interpreter"                    : {"linux:amd64:jdk-latest" : post_merge     + t("02:00:00")},
+            "vm_name:graalpython_enterprise_interpreter"                : {"linux:amd64:jdk-latest" : weekly         + t("02:00:00")},
+            "vm_name:cpython"                                           : {"linux:amd64:jdk-latest" : weekly         + t("01:00:00")},
+        }),
+        for bench in ["heap", "micro_small_heap"]
+    } + {
+        [bench + "-bytecode-dsl"]: bench_task(bench) + bytecode_dsl_bench + platform_spec(no_jobs) + bench_variants({
+            "vm_name:graalvm_ee_default_interpreter_bc_dsl"             : {"linux:amd64:jdk-latest" : post_merge     + t("02:00:00")},
+            "vm_name:graalpython_enterprise_interpreter_bc_dsl"         : {"linux:amd64:jdk-latest" : weekly         + t("02:00:00")},
         }),
         for bench in ["heap", "micro_small_heap"]
     } + {
@@ -425,7 +429,7 @@
         for bench in ["pyperformance"]
     } + {
         // Bytecode DSL benchmarks with community benchmark suites for external numbers
-        [bench + "-bytecode-dsl"]: bench_task(bench, PY_BENCHMARKS) + platform_spec(no_jobs) + raw_results + bench_variants({
+        [bench + "-bytecode-dsl"]: bench_task(bench, PY_BENCHMARKS) + bytecode_dsl_bench + platform_spec(no_jobs) + raw_results + bench_variants({
             "vm_name:graalvm_ee_default_bc_dsl"                                : {"linux:amd64:jdk-latest" : weekly     + t("08:00:00")},
         }),
         for bench in ["pyperformance"]

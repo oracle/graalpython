@@ -37,6 +37,7 @@
         jmh: "python-jmh:GRAALPYTHON_BENCH",
         heap: "heap-graalpython:*",
         micro_small_heap: "micro-small-heap-graalpython:*",
+        micro_native_heap: "micro-native-heap-graalpython:*",
     },
 
     PY_BENCHMARKS:: {

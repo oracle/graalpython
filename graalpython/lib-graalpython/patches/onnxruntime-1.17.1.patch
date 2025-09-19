@@ -140,3 +140,12 @@ index 31f242c..300211b 100644
      if args.use_gdk:
          cmake_args += [
              "-DCMAKE_TOOLCHAIN_FILE=" + os.path.join(source_dir, "cmake", "gdk_toolchain.cmake"),
+@@ -2485,7 +2490,7 @@ def main():
+         args.use_cache = True
+ 
+     if not is_windows():
+-        if not args.allow_running_as_root:
++        if False and not args.allow_running_as_root:
+             is_root_user = os.geteuid() == 0
+             if is_root_user:
+                 raise BuildError(

@@ -7441,12 +7441,12 @@ GraalPyPrivate_InitNativeDateTime()
     PyMemberDef* members_delta = PyDateTime_DeltaType.tp_members;
 
     static int64_t datetime_types[] = {
-        &PyDateTime_DateType, "datetime.date",
-        &PyDateTime_DateTimeType, "datetime.datetime",
-        &PyDateTime_TimeType, "datetime.time",
-        &PyDateTime_DeltaType, "datetime.timedelta",
-        &PyDateTime_TZInfoType, "datetime.timezone",
-        NULL, NULL
+        (intptr_t)&PyDateTime_DateType, (intptr_t)"datetime.date",
+        (intptr_t)&PyDateTime_DateTimeType, (intptr_t)"datetime.datetime",
+        (intptr_t)&PyDateTime_TimeType, (intptr_t)"datetime.time",
+        (intptr_t)&PyDateTime_DeltaType, (intptr_t)"datetime.timedelta",
+        (intptr_t)&PyDateTime_TZInfoType, (intptr_t)"datetime.timezone",
+        0, 0
     };
     GraalPyPrivate_InitBuiltinTypesAndStructs(datetime_types);
 

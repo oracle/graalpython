@@ -342,4 +342,5 @@ HEAP_BENCHMARKS = {
         "allocate-objects": [],
     }],
     "micro-small-heap": [PATH_MICRO, MICRO_BENCHMARKS_SMALL],
+    "micro-native-heap": [PATH_MICRO, MICRO_NATIVE_BENCHMARKS],
 }
