@@ -1,5 +1,5 @@
 Disassembly of <module>:
-  1:0   -   1:34        0 LOAD_BYTE_O                       0
+  1:0   -   1:34        0 LOAD_BYTE                         0
   1:0   -   1:34        2 LOAD_CONST                        0    ([sqrt, sin])
   1:0   -   1:34        4 IMPORT_NAME                       0    (math)
   1:0   -   1:34        6 IMPORT_FROM                       1    (sqrt)

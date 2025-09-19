@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -57,7 +57,7 @@ final class Instruction {
      * extended args
      */
     public int bci = -1;
-    public byte quickenOutput;
+    public boolean quickenOutput;
     public List<Instruction> quickeningGeneralizeList;
 
     Instruction(OpCodes opcode, int arg, byte[] followingArgs, Block target, SourceRange location) {

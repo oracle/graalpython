@@ -3,13 +3,13 @@ Disassembly of <module>:
   2:2   -   3:5         3 MATCH_SEQUENCE
   2:2   -   3:5         4 POP_AND_JUMP_IF_FALSE             30   (to 34)
   2:2   -   3:5         8 GET_LEN
-  2:2   -   3:5         9 LOAD_BYTE_O                       1
-  2:2   -   3:5        11 BINARY_OP                         17   (GE)                              can quicken
+  2:2   -   3:5         9 LOAD_BYTE                         1
+  2:2   -   3:5        11 BINARY_OP                         17   (GE)
   2:2   -   3:5        13 POP_AND_JUMP_IF_FALSE             21   (to 34)                           generalizes: 11
   2:2   -   3:5        17 DUP_TOP
   2:2   -   3:5        18 GET_LEN
-  2:2   -   3:5        19 LOAD_BYTE_O                       1
-  2:2   -   3:5        21 BINARY_OP                         2    (SUB)                             can quicken
+  2:2   -   3:5        19 LOAD_BYTE                         1
+  2:2   -   3:5        21 BINARY_OP                         2    (SUB)
   2:2   -   3:5        23 BINARY_SUBSCR                                                            generalizes: 21
   2:2   -   3:5        24 ROT_N                             2
   2:2   -   3:5        26 POP_TOP

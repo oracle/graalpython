@@ -227,7 +227,7 @@ import com.oracle.truffle.api.strings.TruffleString;
  * Compiler for bytecode interpreter.
  */
 public class Compiler implements SSTreeVisitor<Void> {
-    public static final int BYTECODE_VERSION = 30;
+    public static final int BYTECODE_VERSION = 31;
 
     private final ParserCallbacks parserCallbacks;
 
@@ -359,7 +359,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             Instruction index = popQuickeningStack();
             popQuickeningStack(); // Ignore the collection, it's always object
             if (index != null && (index.opcode.canQuickenOutputTypes() & QuickeningTypes.INT) != 0) {
-                index.quickenOutput = QuickeningTypes.INT;
+                index.quickenOutput = true;
                 insn.quickeningGeneralizeList = List.of(index);
             }
             quickeningStack.add(insn);
@@ -370,9 +370,9 @@ public class Compiler implements SSTreeVisitor<Void> {
             popQuickeningStack(); // Ignore the collection, it's always object
             Instruction value = popQuickeningStack();
             if (index != null && (index.opcode.canQuickenOutputTypes() & QuickeningTypes.INT) != 0) {
-                index.quickenOutput = QuickeningTypes.INT;
+                index.quickenOutput = true;
                 if (value != null && (value.opcode.canQuickenOutputTypes() & canQuickenInputTypes) != 0) {
-                    value.quickenOutput = canQuickenInputTypes;
+                    value.quickenOutput = true;
                     insn.quickeningGeneralizeList = List.of(value, index);
                 } else {
                     insn.quickeningGeneralizeList = List.of(index);
@@ -415,7 +415,7 @@ public class Compiler implements SSTreeVisitor<Void> {
         }
         if (canQuickenInputTypes != 0 && inputs != null) {
             for (int i = 0; i < inputs.size(); i++) {
-                inputs.get(i).quickenOutput = canQuickenInputTypes;
+                inputs.get(i).quickenOutput = true;
             }
         }
     }

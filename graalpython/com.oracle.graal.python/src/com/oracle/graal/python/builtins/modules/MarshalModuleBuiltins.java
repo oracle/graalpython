@@ -1326,29 +1326,6 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        private void writeSparseTable(int[][] table) {
-            writeInt(table.length);
-            for (int i = 0; i < table.length; i++) {
-                if (table[i] != null && table[i].length > 0) {
-                    writeInt(i);
-                    writeIntArray(table[i]);
-                }
-            }
-            writeInt(-1);
-        }
-
-        private int[][] readSparseTable() {
-            int length = readInt();
-            int[][] table = new int[length][];
-            while (true) {
-                int i = readInt();
-                if (i == -1) {
-                    return table;
-                }
-                table[i] = readIntArray();
-            }
-        }
-
         private CodeUnit readCodeUnit() {
             int codeUnitType = readByte();
             return switch (codeUnitType) {
@@ -1394,14 +1371,16 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             int startColumn = readInt();
             int endLine = readInt();
             int endColumn = readInt();
-            byte[] outputCanQuicken = readBytes();
             byte[] variableShouldUnbox = readBytes();
-            int[][] generalizeInputsMap = readSparseTable();
-            int[][] generalizeVarsMap = readSparseTable();
+            int[] generalizeInputsKeys = readIntArray();
+            int[] generalizeInputsIndices = readIntArray();
+            int[] generalizeInputsValues = readIntArray();
+            int[] generalizeVarsIndices = readIntArray();
+            int[] generalizeVarsValues = readIntArray();
             return new BytecodeCodeUnit(name, qualname, argCount, kwOnlyArgCount, positionalOnlyArgCount, flags, names, varnames,
                             cellvars, freevars, cell2arg, constants, startLine, startColumn, endLine, endColumn, code, srcOffsetTable,
                             primitiveConstants, exceptionHandlerRanges, stacksize, conditionProfileCount,
-                            outputCanQuicken, variableShouldUnbox, generalizeInputsMap, generalizeVarsMap);
+                            variableShouldUnbox, generalizeInputsKeys, generalizeInputsIndices, generalizeInputsValues, generalizeVarsIndices, generalizeVarsValues);
         }
 
         private BytecodeDSLCodeUnit readBytecodeDSLCodeUnit() {
@@ -1456,7 +1435,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             writeInt(code.kwOnlyArgCount);
             writeInt(code.positionalOnlyArgCount);
             writeInt(code.stacksize);
-            writeBytes(code.getBytecodeForSerialization());
+            writeBytes(code.code);
             writeBytes(code.srcOffsetTable);
             writeInt(code.flags);
             writeStringArray(code.names);
@@ -1476,10 +1455,12 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             writeInt(code.startColumn);
             writeInt(code.endLine);
             writeInt(code.endColumn);
-            writeBytes(code.outputCanQuicken);
             writeBytes(code.variableShouldUnbox);
-            writeSparseTable(code.generalizeInputsMap);
-            writeSparseTable(code.generalizeVarsMap);
+            writeIntArray(code.generalizeInputsKeys);
+            writeIntArray(code.generalizeInputsIndices);
+            writeIntArray(code.generalizeInputsValues);
+            writeIntArray(code.generalizeVarsIndices);
+            writeIntArray(code.generalizeVarsValues);
         }
 
         @SuppressWarnings("unchecked")

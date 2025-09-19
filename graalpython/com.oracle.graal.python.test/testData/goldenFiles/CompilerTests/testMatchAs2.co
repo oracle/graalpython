@@ -1,9 +1,9 @@
 Disassembly of <module>:
-  1:6   -   1:7         0 LOAD_BYTE_O                       1
+  1:6   -   1:7         0 LOAD_BYTE                         1
   2:3   -   3:8         2 DUP_TOP
   2:3   -   3:8         3 DUP_TOP
-  2:8   -   2:9         4 LOAD_BYTE_O                       1
-  2:8   -   2:9         6 BINARY_OP                         12   (EQ)                              can quicken
+  2:8   -   2:9         4 LOAD_BYTE                         1
+  2:8   -   2:9         6 BINARY_OP                         12   (EQ)
   2:8   -   2:9         8 POP_AND_JUMP_IF_FALSE             14   (to 22)                           generalizes: 6
   2:8   -   2:9        12 ROT_N                             1
   2:8   -   2:9        14 STORE_NAME                        0    (x)
@@ -13,8 +13,8 @@ Disassembly of <module>:
   3:7   -   3:8        20 JUMP_FORWARD                      22   (to 42)
   2:3   -   3:8   >>   22 POP_TOP
   4:3   -   5:8        23 DUP_TOP
-  4:8   -   4:9        24 LOAD_BYTE_O                       2
-  4:8   -   4:9        26 BINARY_OP                         12   (EQ)                              can quicken
+  4:8   -   4:9        24 LOAD_BYTE                         2
+  4:8   -   4:9        26 BINARY_OP                         12   (EQ)
   4:8   -   4:9        28 POP_AND_JUMP_IF_FALSE             13   (to 41)                           generalizes: 26
   4:8   -   4:9        32 ROT_N                             1
   4:8   -   4:9        34 STORE_NAME                        1    (y)

@@ -7,7 +7,7 @@ Disassembly of <module>:
 Disassembly of foo:
   2:13  -   2:16        0 LOAD_FAST                         0    (obj)
   2:4   -   3:16        2 GET_ITER
-  2:4   -   3:16  >>    3 FOR_ITER                          13   (to 16)                           can quicken
+  2:4   -   3:16  >>    3 FOR_ITER                          13   (to 16)
   2:8   -   2:9         5 STORE_FAST                        1    (x)                               generalizes: 3
   3:8   -   3:13        7 LOAD_GLOBAL                       0    (print)
   3:14  -   3:15        9 LOAD_FAST                         1    (x)

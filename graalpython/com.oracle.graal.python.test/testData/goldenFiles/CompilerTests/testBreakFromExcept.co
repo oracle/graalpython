@@ -1,13 +1,13 @@
 Disassembly of <module>:
   1:9   -   1:14        0 LOAD_NAME                         0    (range)
-  1:15  -   1:17        2 LOAD_BYTE_O                       10
+  1:15  -   1:17        2 LOAD_BYTE                         10
   1:9   -   1:18        4 CALL_FUNCTION                     1
   1:0   -   4:36        6 GET_ITER
   1:0   -   4:36  >>    7 FOR_ITER                          50   (to 57)
   1:4   -   1:5         9 STORE_NAME                        1    (i)
   2:2   -   4:36       11 NOP
-  3:4   -   3:5        12 LOAD_BYTE_I                       1                                      can quicken
-  3:8   -   3:9        14 LOAD_BYTE_I                       0                                      can quicken
+  3:4   -   3:5        12 LOAD_BYTE                         1
+  3:8   -   3:9        14 LOAD_BYTE                         0
   3:4   -   3:9        16 BINARY_OP                         8    (TRUEDIV)                         generalizes: 14, 12
   3:4   -   3:9        18 POP_TOP
   3:4   -   3:9        19 JUMP_FORWARD                      36   (to 55)

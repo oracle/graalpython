@@ -3,8 +3,8 @@ Disassembly of <module>:
   2:2   -   3:5         3 MATCH_SEQUENCE
   2:2   -   3:5         4 POP_AND_JUMP_IF_FALSE             25   (to 29)
   2:2   -   3:5         8 GET_LEN
-  2:2   -   3:5         9 LOAD_BYTE_O                       2
-  2:2   -   3:5        11 BINARY_OP                         12   (EQ)                              can quicken
+  2:2   -   3:5         9 LOAD_BYTE                         2
+  2:2   -   3:5        11 BINARY_OP                         12   (EQ)
   2:2   -   3:5        13 POP_AND_JUMP_IF_FALSE             16   (to 29)                           generalizes: 11
   2:2   -   3:5        17 UNPACK_SEQUENCE                   2
   2:2   -   3:5        19 POP_TOP
