@@ -1952,12 +1952,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         stackTop = bytecodeImportFrom(virtualFrame, stackTop, beginBci, oparg, localNames, localNodes, useCachedNodes);
                         break;
                     }
-                    case OpCodesConstants.IMPORT_STAR: {
-                        setCurrentBci(virtualFrame, bciSlot, bci);
-                        oparg |= Byte.toUnsignedInt(localBC[++bci]);
-                        stackTop = bytecodeImportStar(virtualFrame, stackTop, beginBci, oparg, localNames, localNodes, useCachedNodes);
-                        break;
-                    }
                     case OpCodesConstants.JUMP_FORWARD:
                         oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
                         bci += oparg;
@@ -2320,10 +2314,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         virtualFrame.setObject(stackTop, getAwait.execute(virtualFrame, virtualFrame.getObject(stackTop)));
                         break;
                     }
-                    case OpCodesConstants.PRINT_EXPR: {
-                        stackTop = bytecodePrintExpr(virtualFrame, useCachedNodes, stackTop, bci, localNodes, bciSlot, beginBci);
-                        break;
-                    }
                     case OpCodesConstants.EXTENDED_ARG: {
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         oparg <<= 8;
@@ -2333,10 +2323,12 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case OpCodesConstants.LOAD_FROM_DICT_OR_DEREF:
                     case OpCodesConstants.LOAD_FROM_DICT_OR_GLOBALS:
                     case OpCodesConstants.MAKE_TYPE_PARAM:
+                    case OpCodesConstants.IMPORT_STAR:
                         stackTop = infrequentBytecodes(virtualFrame, localFrame, bc, bci, stackTop, beginBci, oparg, localBC, globals, locals, localNames, localNodes, bciSlot, localCelloffset,
                                         useCachedNodes);
                         bci++;
                         break;
+                    case OpCodesConstants.PRINT_EXPR:
                     case OpCodesConstants.LOAD_LOCALS:
                     case OpCodesConstants.MAKE_TYPE_ALIAS:
                     case OpCodesConstants.MAKE_GENERIC:
@@ -2471,6 +2463,16 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             }
             case OpCodesConstants.MAKE_GENERIC: {
                 stackTop = bytecodeMakeGeneric(virtualFrame, useCachedNodes, stackTop, localNodes, beginBci);
+                break;
+            }
+            case OpCodesConstants.PRINT_EXPR: {
+                stackTop = bytecodePrintExpr(virtualFrame, useCachedNodes, stackTop, bci, localNodes, bciSlot, beginBci);
+                break;
+            }
+            case OpCodesConstants.IMPORT_STAR: {
+                setCurrentBci(virtualFrame, bciSlot, bci);
+                oparg |= Byte.toUnsignedInt(localBC[++bci]);
+                stackTop = bytecodeImportStar(virtualFrame, stackTop, beginBci, oparg, localNames, localNodes, useCachedNodes);
                 break;
             }
             default:
