@@ -163,10 +163,7 @@ def downstream_test_pydantic_core(graalpy, testdir):
     run(['git', 'clone', 'https://github.com/pydantic/pydantic-core.git', '-b', 'main'], cwd=testdir)
     src = testdir / 'pydantic-core'
     run(['uv', 'sync', '--python', graalpy, '--group', 'testing'], cwd=src)
-    # XXX UNSAFE_PYO3_SKIP_VERSION_CHECK should not be necessary once pydantic-core updates to a newer pyo3 version
-    run(['uv', 'pip', 'install', '-e', '.'], cwd=src, env={**os.environ, 'UNSAFE_PYO3_SKIP_VERSION_CHECK': '1'})
-    # XXX remove after pydantic-core updates to hypothesis >= 6.136.7
-    run(['uv', 'pip', 'install', 'hypothesis==6.136.7'], cwd=src)
+    run(['uv', 'pip', 'install', '-e', '.'], cwd=src)
     run(['uv', 'run', 'pytest', '-v', '--tb=short'], cwd=src)
 
 
