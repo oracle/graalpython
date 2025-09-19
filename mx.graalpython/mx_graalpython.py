@@ -308,15 +308,18 @@ def libpythonvm_build_args():
                             profile = get_profile(["--branch", b])
                         except BaseException:
                             pass
-        if CI and not os.path.isfile(profile or "") and (
-                # When running on a release branch or attempting to merge into
-                # a release branch, make sure we can use a PGO profile
-                any(b.startswith("release/") for b in [branch, os.environ.get("TO_BRANCH", "")])
-                # When running in the CI on a bench runner, use a PGO profile
-                or ",bench," in os.environ.get("LABELS", "")
-        ):
-            mx.warn("PGO profile must exist for benchmarking and release, creating one now...")
-            profile = graalpy_native_pgo_build_and_test()
+
+        if CI and not os.path.isfile(profile or ""):
+            mx.log("No profile in CI job")
+            # When running on a release branch or attempting to merge into
+            # a release branch, make sure we can use a PGO profile, and
+            # when running in the CI on a bench runner, ensure a PGO profile
+            if (
+                    any(b.startswith("release/") for b in [branch, os.environ.get("TO_BRANCH", "")])
+                    or (",bench," in os.environ.get("LABELS", ""))
+            ):
+                mx.warn("PGO profile must exist for benchmarking and release, creating one now...")
+                profile = graalpy_native_pgo_build_and_test()
 
     if os.path.isfile(profile or ""):
         print(invert(f"Automatically chose PGO profile {profile}. To disable this, set GRAALPY_PGO_PROFILE to an empty string'", blinking=True), file=sys.stderr)
