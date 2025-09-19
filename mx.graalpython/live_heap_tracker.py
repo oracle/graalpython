@@ -83,6 +83,7 @@ def main():
     # Run the benchmark once to ensure pyc files are generated
     subprocess.check_call(benchmark)
     with open(output_file, 'w') as f:
+        t0 = time.time()
         for _ in range(iterations):
             proc = subprocess.Popen(benchmark)
             ppid = proc.pid
@@ -91,6 +92,9 @@ def main():
                 uss_bytes = uss(ppid)
                 heap_bytes = jmap(jmap_binary, ppid)
                 f.write(f"{heap_bytes} {uss_bytes}\n")
+            # cut short if this is a long benchmark
+            if time.time() - t0 > 30:
+                break
             if proc.returncode != 0:
                 sys.exit(proc.returncode)
 
