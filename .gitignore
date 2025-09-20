@@ -97,3 +97,4 @@ pom-mx.xml
 /*-venv/
 .aider*
 *.iprof.gz
+compile_commands.json

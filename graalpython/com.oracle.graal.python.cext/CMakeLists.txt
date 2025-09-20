@@ -36,6 +36,8 @@ function(require_var var)
 endfunction()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+add_custom_target(compile_commands_target ALL
+  COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_BINARY_DIR}/compile_commands.json" "${CMAKE_SOURCE_DIR}")
 
 require_var(GRAALPY_PARENT_DIR)
 require_var(CAPI_INC_DIR)

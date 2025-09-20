@@ -948,8 +948,12 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             if (object instanceof PythonAbstractNativeObject) {
                 return -1;
             }
-            PythonNativeWrapper nativeWrapper = GetNativeWrapperNode.executeUncached(object);
-            return nativeWrapper.ref.getHandleTableIndex();
+            Object nativeWrapper = GetNativeWrapperNode.executeUncached(object);
+            if (nativeWrapper instanceof PythonNativeWrapper pn) {
+                return pn.ref.getHandleTableIndex();
+            } else {
+                return -1;
+            }
         }
     }
 

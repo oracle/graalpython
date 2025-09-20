@@ -113,10 +113,10 @@ public class MemMoveNodeTests {
 
         }.getCallTarget().call();
 
-        Assert.assertEquals(1, GetItemScalarNode.executeUncached(storage, 0));
-        Assert.assertEquals(2, GetItemScalarNode.executeUncached(storage, 1));
-        Assert.assertEquals(2, GetItemScalarNode.executeUncached(storage, 2));
-        Assert.assertEquals(2, GetItemScalarNode.executeUncached(storage, 3));
-        Assert.assertEquals(3, GetItemScalarNode.executeUncached(storage, 4));
+        Assert.assertEquals(1L, ((Number) GetItemScalarNode.executeUncached(storage, 0)).longValue());
+        Assert.assertEquals(2L, ((Number) GetItemScalarNode.executeUncached(storage, 1)).longValue());
+        Assert.assertEquals(2L, ((Number) GetItemScalarNode.executeUncached(storage, 2)).longValue());
+        Assert.assertEquals(2L, ((Number) GetItemScalarNode.executeUncached(storage, 3)).longValue());
+        Assert.assertEquals(3L, ((Number) GetItemScalarNode.executeUncached(storage, 4)).longValue());
     }
 }

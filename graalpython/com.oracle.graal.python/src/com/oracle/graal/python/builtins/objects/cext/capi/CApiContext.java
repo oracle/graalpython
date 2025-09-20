@@ -87,7 +87,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.Py
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.ToPythonWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureExecutableNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
@@ -95,12 +94,9 @@ import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.Ap
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.copying.NativeLibraryLocator;
-import com.oracle.graal.python.builtins.objects.cext.structs.CConstants;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.FreeNode;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ReadPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
@@ -161,12 +157,6 @@ public final class CApiContext extends CExtContext {
 
     public static final String LOGGER_CAPI_NAME = "capi";
 
-    /** Same as _PY_NSMALLNEGINTS */
-    public static final int PY_NSMALLNEGINTS = 5;
-
-    /** Same as _PY_NSMALLPOSINTS */
-    public static final int PY_NSMALLPOSINTS = 257;
-
     /**
      * NFI source for Python module init functions (i.e. {@code "PyInit_modname"}).
      */
@@ -177,23 +167,6 @@ public final class CApiContext extends CExtContext {
 
     /** Native wrappers for context-insensitive singletons like {@link PNone#NONE}. */
     @CompilationFinal(dimensions = 1) private final PythonAbstractObjectNativeWrapper[] singletonNativePtrs;
-
-    /**
-     * This cache is used to cache native wrappers for frequently used primitives. This is strictly
-     * defined to be the range {@code [-5, 256]}. CPython does exactly the same (see
-     * {@code PyLong_FromLong}; implemented in macro {@code CHECK_SMALL_INT}).
-     */
-    @CompilationFinal(dimensions = 1) private final PrimitiveNativeWrapper[] primitiveNativeWrapperCache;
-
-    /**
-     * Pointer to a native array of long objects in interval
-     * [{@link com.oracle.graal.python.builtins.objects.cext.structs.CConstants#_PY_NSMALLNEGINTS
-     * -_PY_NSMALLNEGINTS},
-     * {@link com.oracle.graal.python.builtins.objects.cext.structs.CConstants#_PY_NSMALLPOSINTS
-     * _PY_NSMALLPOSINTS}[. This corresponds to CPython's {@code PyInterpreterState.small_ints} and
-     * is actually a native mirror of {@link #primitiveNativeWrapperCache}.
-     */
-    private Object nativeSmallIntsArray;
 
     /**
      * Pointer to the native {@code GCState GC state}. This corresponds to CPython's
@@ -387,14 +360,6 @@ public final class CApiContext extends CExtContext {
             singletonNativePtrs[i] = new PythonObjectNativeWrapper(CONTEXT_INSENSITIVE_SINGLETONS[i]);
         }
 
-        // initialize primitive native wrapper cache
-        primitiveNativeWrapperCache = new PrimitiveNativeWrapper[PY_NSMALLNEGINTS + PY_NSMALLPOSINTS];
-        for (int i = 0; i < primitiveNativeWrapperCache.length; i++) {
-            int value = i - PY_NSMALLNEGINTS;
-            assert CApiGuards.isSmallInteger(value);
-            primitiveNativeWrapperCache[i] = PrimitiveNativeWrapper.createInt(value);
-        }
-
         // initialize Py_True and Py_False
         context.getTrue().setNativeWrapper(PrimitiveNativeWrapper.createBool(true));
         context.getFalse().setNativeWrapper(PrimitiveNativeWrapper.createBool(false));
@@ -501,88 +466,10 @@ public final class CApiContext extends CExtContext {
         }
     }
 
-    public PrimitiveNativeWrapper getCachedPrimitiveNativeWrapper(int i) {
-        assert CApiGuards.isSmallInteger(i);
-        PrimitiveNativeWrapper primitiveNativeWrapper = primitiveNativeWrapperCache[i + 5];
-        assert primitiveNativeWrapper.getRefCount() > 0;
-        return primitiveNativeWrapper;
-    }
-
-    public PrimitiveNativeWrapper getCachedPrimitiveNativeWrapper(long l) {
-        assert CApiGuards.isSmallLong(l);
-        return getCachedPrimitiveNativeWrapper((int) l);
-    }
-
     public PrimitiveNativeWrapper getCachedBooleanPrimitiveNativeWrapper(boolean b) {
         PythonAbstractObjectNativeWrapper wrapper = b ? getContext().getTrue().getNativeWrapper() : getContext().getFalse().getNativeWrapper();
         assert wrapper.getRefCount() > 0;
         return (PrimitiveNativeWrapper) wrapper;
-    }
-
-    /**
-     * Returns or allocates (on demand) the native array {@code PyInterpreterState.small_ints} and
-     * write all elements to it.
-     */
-    Object getOrCreateSmallInts() {
-        CompilerAsserts.neverPartOfCompilation();
-        // TODO(fa): this should not require the GIL (GR-51314)
-        assert getContext().ownsGil();
-        if (nativeSmallIntsArray == null) {
-            assert CConstants._PY_NSMALLNEGINTS.intValue() == PY_NSMALLNEGINTS;
-            assert CConstants._PY_NSMALLPOSINTS.intValue() == PY_NSMALLPOSINTS;
-            Object smallInts = CStructAccess.AllocateNode.callocUncached(PY_NSMALLNEGINTS + PY_NSMALLPOSINTS, CStructAccess.POINTER_SIZE);
-            for (int i = 0; i < PY_NSMALLNEGINTS + PY_NSMALLPOSINTS; i++) {
-                CStructAccessFactory.WriteObjectNewRefNodeGen.getUncached().writeArrayElement(smallInts, i, i - PY_NSMALLNEGINTS);
-            }
-            nativeSmallIntsArray = smallInts;
-        }
-        return nativeSmallIntsArray;
-    }
-
-    /**
-     * Deallocates the native small int array (pointer {@link #nativeSmallIntsArray}) and all
-     * wrappers of the small ints (in {@link #primitiveNativeWrapperCache}) which are immortal and
-     * must therefore be explicitly free'd. This method modifies the
-     * {@link HandleContext#nativeStubLookup stub lookup table} but runs not guest code.
-     */
-    private void freeSmallInts(HandleContext handleContext) {
-        CompilerAsserts.neverPartOfCompilation();
-        // TODO(fa): this should not require the GIL (GR-51314)
-        assert getContext().ownsGil();
-        if (nativeSmallIntsArray != null) {
-            assert verifyNativeSmallInts();
-            // free the native array used to store the stub pointers of the small int wrappers
-            FreeNode.executeUncached(nativeSmallIntsArray);
-            nativeSmallIntsArray = null;
-        }
-        for (PrimitiveNativeWrapper wrapper : primitiveNativeWrapperCache) {
-            assert wrapper.isIntLike() && CApiGuards.isSmallLong(wrapper.getLong());
-            assert !wrapper.isNative() || wrapper.getRefCount() == IMMORTAL_REFCNT;
-            if (wrapper.ref != null) {
-                CApiTransitions.nativeStubLookupRemove(handleContext, wrapper.ref);
-            }
-            CApiTransitions.releaseNativeWrapperUncached(wrapper);
-        }
-    }
-
-    /**
-     * Verifies integrity of the pointers stored in the native small int array. Each pointer must
-     * denote the according small int wrapper. The objects are expected to be immortal.
-     */
-    private boolean verifyNativeSmallInts() {
-        // TODO(fa): this should not require the GIL (GR-51314)
-        assert getContext().ownsGil();
-        for (int i = 0; i < PY_NSMALLNEGINTS + PY_NSMALLPOSINTS; i++) {
-            Object elementPtr = ReadPointerNode.getUncached().readArrayElement(nativeSmallIntsArray, i);
-            PythonNativeWrapper wrapper = ToPythonWrapperNode.executeUncached(elementPtr, false);
-            if (wrapper != primitiveNativeWrapperCache[i]) {
-                return false;
-            }
-            if (primitiveNativeWrapperCache[i].isNative() && primitiveNativeWrapperCache[i].getRefCount() != IMMORTAL_REFCNT) {
-                return false;
-            }
-        }
-        return true;
     }
 
     /**
@@ -1229,7 +1116,6 @@ public final class CApiContext extends CExtContext {
         try {
             // TODO(fa): remove GIL acquisition (GR-51314)
             try (GilNode.UncachedAcquire ignored = GilNode.uncachedAcquire()) {
-                freeSmallInts(handleContext);
                 freeSingletonNativeWrappers(handleContext);
                 /*
                  * Clear all remaining native object stubs. This must be done after the small int

@@ -91,6 +91,8 @@
 
 // required for __UINT32_MAX__ etc.
 #include <limits.h>
+// for size_t
+#include <stddef.h>
 
 #if defined(_MSC_VER) && !defined(__clang__)
 // defines based on MSVC documentation

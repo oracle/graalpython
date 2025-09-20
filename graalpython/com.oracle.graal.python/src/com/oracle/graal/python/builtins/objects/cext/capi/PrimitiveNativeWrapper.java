@@ -255,17 +255,8 @@ public final class PrimitiveNativeWrapper extends PythonAbstractObjectNativeWrap
                     @Bind Node inliningTarget,
                     @Cached CApiTransitions.FirstToNativeNode firstToNativeNode) {
         if (!isNative()) {
-            boolean immortal;
-            if (isBool()) {
-                assert (PythonContext.get(inliningTarget).getCApiContext().getCachedBooleanPrimitiveNativeWrapper(value != 0) == this);
-                immortal = true;
-            } else {
-                // small int values are cached and will be immortal
-                immortal = isIntLike() && CApiGuards.isSmallLong(value);
-                // if this wrapper wraps a small int value, this wrapper is one of the cached
-                // primitive native wrappers
-                assert !immortal || (PythonContext.get(inliningTarget).getCApiContext().getCachedPrimitiveNativeWrapper(value) == this);
-            }
+            boolean immortal = isBool();
+            assert !isBool() || (PythonContext.get(inliningTarget).getCApiContext().getCachedBooleanPrimitiveNativeWrapper(value != 0) == this);
             setNativePointer(firstToNativeNode.execute(inliningTarget, this, immortal));
         }
     }

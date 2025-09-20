@@ -40,20 +40,16 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
-import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P;
 
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
-import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyFloatFromString;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -61,20 +57,11 @@ import com.oracle.truffle.api.nodes.Node;
 
 public final class PythonCextFloatBuiltins {
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {ArgDescriptor.Double}, call = Direct)
-    abstract static class PyFloat_FromDouble extends CApiUnaryBuiltinNode {
-
+    @CApiBuiltin(ret = PyObjectTransfer, args = {ArgDescriptor.Double}, call = Ignored)
+    abstract static class GraalPyPrivate_Float_FromDouble extends CApiUnaryBuiltinNode {
         @Specialization
         static double fromDouble(double d) {
             return d;
-        }
-
-        @Specialization(guards = "!isDouble(obj)")
-        static Object fromDouble(Object obj,
-                        @Bind Node inliningTarget,
-                        @Cached StringBuiltins.StrNewNode strNode) {
-            // cpython PyFloat_FromDouble takes only 'double'
-            throw PRaiseNode.raiseStatic(inliningTarget, SystemError, BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P, strNode.executeWith(null, obj), obj);
         }
     }
 

@@ -41,9 +41,6 @@
 package com.oracle.graal.python.builtins.objects.cext.capi.transitions;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.FromLongNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.FromUInt32Node;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToInt32Node;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToInt64Node;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToNativeBorrowedNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToPythonStringNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CheckInquiryResultNodeGen;
@@ -82,11 +79,11 @@ enum ArgBehavior {
     TruffleStringPointer("POINTER", "J", "jlong", "long", null, CharPtrToPythonNode::create, CharPtrToPythonNode.getUncached()),
     Char8("SINT8", "C", "jbyte", "byte", null, null, null),
     Char16("SINT16", "C", "jchar", "char", null, null, null),
-    Int32("SINT32", "I", "jint", "int", ToInt32Node::create, null, null),
-    UInt32("UINT32", "I", "jint", "int", ToInt32Node::create, FromUInt32Node::create, FromUInt32Node.getUncached()),
-    Int64("SINT64", "J", "jlong", "long", ToInt64Node::create, null, null),
-    UInt64("UINT64", "J", "jlong", "long", ToInt64Node::create, null, null),
-    Long("SINT64", "J", "jlong", "long", ToInt64Node::create, FromLongNode::create, FromLongNode.getUncached()),
+    Int32("SINT32", "I", "jint", "int", null, null, null),
+    UInt32("UINT32", "I", "jint", "int", null, null, null),
+    Int64("SINT64", "J", "jlong", "long", null, null, null),
+    UInt64("UINT64", "J", "jlong", "long", null, null, null),
+    Long("SINT64", "J", "jlong", "long", null, FromLongNode::create, FromLongNode.getUncached()),
     Float32("FLOAT", "F", "jfloat", "float", null, null, null),
     Float64("DOUBLE", "D", "jdouble", "double", null, null, null),
     Void("VOID", "V", "void", "void", null, null, null),
@@ -128,7 +125,6 @@ public enum ArgDescriptor {
     Void(ArgBehavior.Void, "void"),
     VoidNoReturn(ArgBehavior.Void, "void"),
     PyObject(ArgBehavior.PyObject, "PyObject*"),
-    ConstPyObject(ArgBehavior.PyObject, "const PyObject*"),
     PyObjectBorrowed(ArgBehavior.PyObjectBorrowed, "PyObject*"),
     PyObjectWrapper(ArgBehavior.PyObjectWrapper, "PyObject*"),
     PyObjectAsTruffleString(ArgBehavior.PyObjectAsTruffleString, "PyObject*"),

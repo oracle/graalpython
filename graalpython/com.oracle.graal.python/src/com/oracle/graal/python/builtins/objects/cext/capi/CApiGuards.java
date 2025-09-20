@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -58,22 +58,5 @@ public abstract class CApiGuards {
 
     public static boolean isSpecialSingleton(Object delegate) {
         return CApiContext.getSingletonNativeWrapperIdx(delegate) != -1;
-    }
-
-    /**
-     * This guard defines the range of integer values for which PInt objects (and in our particular
-     * case, native wrappers) are cached.
-     */
-    public static boolean isSmallInteger(int i) {
-        return -CApiContext.PY_NSMALLNEGINTS <= i && i < CApiContext.PY_NSMALLPOSINTS;
-    }
-
-    /** see {@link #isSmallInteger(int)} */
-    public static boolean isSmallLong(long i) {
-        return -CApiContext.PY_NSMALLNEGINTS <= i && i < CApiContext.PY_NSMALLPOSINTS;
-    }
-
-    public static boolean isSmallIntegerWrapper(PrimitiveNativeWrapper nativeWrapper) {
-        return nativeWrapper.isIntLike() && isSmallLong(nativeWrapper.getLong());
     }
 }

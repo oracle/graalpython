@@ -107,7 +107,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateStrongRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.GetNativeWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
@@ -1123,6 +1122,9 @@ public abstract class CExtNodes {
             if (pointer == 0) {
                 return;
             }
+            if (HandlePointerConverter.pointsToPyFloatHandle(pointer) || HandlePointerConverter.pointsToPyIntHandle(pointer)) {
+                return;
+            }
             PythonNativeWrapper wrapper = toPythonWrapperNode.executeWrapper(pointer, false);
             if (wrapper instanceof PythonAbstractObjectNativeWrapper objectWrapper) {
                 isWrapperProfile.enter(inliningTarget);
@@ -1164,30 +1166,24 @@ public abstract class CExtNodes {
 
         @Specialization(guards = "delegate == null")
         static void doPrimitiveNativeWrapper(Node inliningTarget, @SuppressWarnings("unused") Object delegate, PrimitiveNativeWrapper nativeWrapper) {
-            assert !isSmallIntegerWrapperSingleton(nativeWrapper, PythonContext.get(inliningTarget)) : "clearing primitive native wrapper singleton of small integer";
+            // ignore
         }
 
         @Specialization(guards = "delegate != null")
         static void doPrimitiveNativeWrapperMaterialized(Node inliningTarget, PythonAbstractObject delegate, PrimitiveNativeWrapper nativeWrapper,
                         @Cached InlinedConditionProfile profile) {
             if (profile.profile(inliningTarget, delegate.getNativeWrapper() == nativeWrapper)) {
-                assert !isSmallIntegerWrapperSingleton(nativeWrapper, PythonContext.get(inliningTarget)) : "clearing primitive native wrapper singleton of small integer";
                 delegate.clearNativeWrapper();
             }
         }
 
         @Specialization(guards = {"delegate != null", "!isAnyPythonObject(delegate)"})
         static void doOther(@SuppressWarnings("unused") Object delegate, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper) {
-            assert !isPrimitiveNativeWrapper(nativeWrapper);
             // ignore
         }
 
         static boolean isPrimitiveNativeWrapper(PythonNativeWrapper nativeWrapper) {
             return nativeWrapper instanceof PrimitiveNativeWrapper;
-        }
-
-        private static boolean isSmallIntegerWrapperSingleton(PrimitiveNativeWrapper nativeWrapper, PythonContext context) {
-            return CApiGuards.isSmallIntegerWrapper(nativeWrapper) && GetNativeWrapperNode.doLongSmall(nativeWrapper.getLong(), context) == nativeWrapper;
         }
     }
 
@@ -1216,6 +1212,11 @@ public abstract class CExtNodes {
                 return lookup;
             }
             if (HandlePointerConverter.pointsToPyHandleSpace(pointer)) {
+                if (HandlePointerConverter.pointsToPyIntHandle(pointer)) {
+                    return HandlePointerConverter.pointerToLong(pointer);
+                } else if (HandlePointerConverter.pointsToPyFloatHandle(pointer)) {
+                    return HandlePointerConverter.pointerToDouble(pointer);
+                }
                 return resolveHandleNode.execute(inliningTarget, pointer);
             }
             return pointer;
@@ -1237,6 +1238,11 @@ public abstract class CExtNodes {
                 lookup = CApiTransitions.lookupNative(pointer);
                 if (lookup != null) {
                     if (lookup instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
+                        if (HandlePointerConverter.pointsToPyIntHandle(pointer)) {
+                            return HandlePointerConverter.pointerToLong(pointer);
+                        } else if (HandlePointerConverter.pointsToPyFloatHandle(pointer)) {
+                            return HandlePointerConverter.pointerToDouble(pointer);
+                        }
                         updateRefNode.execute(inliningTarget, objectNativeWrapper, objectNativeWrapper.incRef());
                     }
                     return lookup;

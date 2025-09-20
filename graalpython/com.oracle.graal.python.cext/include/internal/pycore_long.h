@@ -64,7 +64,6 @@ extern void _PyLong_FiniTypes(PyInterpreterState *interp);
 /* GraalVM change
 #define _PyLong_SMALL_INTS _Py_SINGLETON(small_ints)
 */
-#define _PyLong_SMALL_INT_PTRS (PyThreadState_GET()->small_ints)
 
 // Return a borrowed reference to the zero singleton.
 // The function cannot return NULL.
@@ -72,7 +71,7 @@ static inline PyObject* _PyLong_GetZero(void)
 /* GraalVM change
 { return (PyObject *)&_PyLong_SMALL_INTS[_PY_NSMALLNEGINTS]; }
 */
-{ return _PyLong_SMALL_INT_PTRS[_PY_NSMALLNEGINTS]; }
+{ return int32_to_pointer(0); }
 
 // Return a borrowed reference to the one singleton.
 // The function cannot return NULL.
@@ -80,7 +79,7 @@ static inline PyObject* _PyLong_GetOne(void)
 /* GraalVM change
 { return (PyObject *)&_PyLong_SMALL_INTS[_PY_NSMALLNEGINTS+1]; }
 */
-{ return _PyLong_SMALL_INT_PTRS[_PY_NSMALLNEGINTS+1]; }
+{ return int32_to_pointer(1); }
 
 static inline PyObject* _PyLong_FromUnsignedChar(unsigned char i)
 {
