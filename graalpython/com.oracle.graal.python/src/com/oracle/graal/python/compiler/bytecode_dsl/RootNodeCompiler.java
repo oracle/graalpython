@@ -208,10 +208,49 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
     private final HashMap<Object, Integer> constants = new HashMap<>();
     private final HashMap<String, Integer> names = new HashMap<>();
 
+    /**
+     * Initialized lazily only for generator functions. Internal variable used to store the
+     * generator's exception state. Cleared if there is no exception, otherwise set to the
+     * {@link com.oracle.graal.python.runtime.exception.PException} object. This stores only
+     * exception raised inside the generator (not caller passed exception state).
+     * <p>
+     * We need to distinguish between the caller exception state passed in the generator's frame's
+     * arguments array (could be null => meaning: stack-walk is needed to fetch it) and the
+     * exception state of the generator itself. Example:
+     *
+     * <pre>
+     *     def gen():
+     *          try:
+     *              3/0
+     *          except:
+     *              yeild sys.exc_info()
+     *     g = gen()
+     *     try:
+     *         raise AttributeError()
+     *     except:
+     *         print(gen.send(None)) # gives division by zero error, not AttributeError
+     * </pre>
+     */
+    private BytecodeLocal generatorExceptionStateLocal;
+
     // Mutable (must be reset)
     private SourceRange currentLocation;
     boolean savedYieldFromGenerator;
     BytecodeLocal yieldFromGenerator;
+
+    /**
+     * Applicable only for generators: we need to know if we are in a code block that saved the
+     * exception state from caller ("outer exception") in order to restore it later, because if
+     * there is a yield in that block, on the resume we must update the saved exception state
+     * according to the exception state of the new caller. Any nested except block is
+     * saving/restoring exception that was raised by the generator and that should stay across
+     * resumes.
+     * <p>
+     * This field holds the local used to save the exception if we are in except or any other kind
+     * of block that saves and restores current exception.
+     */
+    private BytecodeLocal currentSaveExceptionLocal;
+    private BytecodeLocal prevSaveExceptionLocal;
 
     public RootNodeCompiler(BytecodeDSLCompilerContext ctx, RootNodeCompiler parent, SSTNode rootNode, EnumSet<FutureFeature> futureFeatures) {
         this(ctx, parent, null, rootNode, rootNode, futureFeatures);
@@ -549,7 +588,9 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
     }
 
     public void reset() {
-        this.currentLocation = null;
+        currentLocation = null;
+        currentSaveExceptionLocal = null;
+        prevSaveExceptionLocal = null;
         this.savedYieldFromGenerator = false;
     }
 
@@ -885,10 +926,10 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
     @Override
     public BytecodeDSLCompilerResult visit(ExprTy.Lambda node) {
         return compileRootNode("<lambda>", ArgumentInfo.fromArguments(node.args), node.getSourceRange(),
-                        b -> emitFunctionDefBody(node, node.args, new SSTNode[]{node.body}, b, null, !scope.isGenerator()));
+                        b -> emitFunctionDefBody(node, node.args, new SSTNode[]{node.body}, b, null, true));
     }
 
-    private void emitFunctionDefBody(SSTNode node, ArgumentsTy args, SSTNode[] body, Builder b, Object docstring, boolean isRegularLambda) {
+    private void emitFunctionDefBody(SSTNode node, ArgumentsTy args, SSTNode[] body, Builder b, Object docstring, boolean isLambda) {
         beginRootNode(node, args, b);
 
         int i = 0;
@@ -903,9 +944,15 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             addConstant(PNone.NONE);
         }
 
+        if (scope.isGenerator() || scope.isCoroutine()) {
+            b.beginResumeYieldGenerator();
+            b.emitYieldGenerator();
+            b.endResumeYieldGenerator();
+        }
+
         StatementCompiler statementCompiler = new StatementCompiler(b);
 
-        if (isRegularLambda) {
+        if (isLambda) {
             assert i == 0;
             assert body[0] instanceof ExprTy;
             beginReturn(b);
@@ -1065,6 +1112,12 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         return compileRootNode(name, new ArgumentInfo(1, 0, 0, false, false), node.getSourceRange(), b -> {
             beginRootNode(node, null, b);
 
+            if (node instanceof GeneratorExp) {
+                b.beginResumeYieldGenerator();
+                b.emitYieldGenerator();
+                b.endResumeYieldGenerator();
+            }
+
             StatementCompiler statementCompiler = new StatementCompiler(b);
             boolean isGenerator = emptyCollectionProducer == null;
             BytecodeLocal collectionLocal = null;
@@ -1086,6 +1139,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
             beginReturn(b);
             if (isGenerator) {
+                // TODO: what if someone sends us some value?
                 b.emitLoadConstant(PNone.NONE);
             } else {
                 b.emitLoadLocal(collectionLocal);
@@ -1193,17 +1247,40 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         b.emitLoadConstant(addConstant(constant));
     }
 
+    private boolean inTopMostSaveExceptionBlock() {
+        return currentSaveExceptionLocal != null && prevSaveExceptionLocal == null;
+    }
+
+    private BytecodeLocal enterSaveExceptionBlock(BytecodeLocal saveExceptionLocal) {
+        BytecodeLocal prevPrev = prevSaveExceptionLocal;
+        prevSaveExceptionLocal = currentSaveExceptionLocal;
+        currentSaveExceptionLocal = saveExceptionLocal;
+        return prevPrev;
+    }
+
+    private void exitSaveExceptionBlock(BytecodeLocal prevPrev) {
+        currentSaveExceptionLocal = prevSaveExceptionLocal;
+        prevSaveExceptionLocal = prevPrev;
+    }
+
     /**
      * This helper encapsulates all of the logic needed to yield and resume. Yields should not be
      * emitted directly.
      */
-    private static void emitYield(Consumer<StatementCompiler> yieldValueProducer, StatementCompiler statementCompiler) {
-        statementCompiler.b.beginResumeYield();
-        statementCompiler.b.beginYield();
-        statementCompiler.b.beginPreYield();
+    private void emitYield(Consumer<StatementCompiler> yieldValueProducer, StatementCompiler statementCompiler) {
+        // We are doing this dance, because we cannot pass `null` local, so if boths locals are the
+        // same, it means by convention that the second one is in fact "null".
+        BytecodeLocal savedExLocal = generatorExceptionStateLocal;
+        if (inTopMostSaveExceptionBlock()) {
+            // If we are in a top most except block, what we saved is caller exception state, so we
+            // will need to refresh it on next resume according to the new caller
+            savedExLocal = currentSaveExceptionLocal;
+        }
+
+        statementCompiler.b.beginResumeYield(generatorExceptionStateLocal, savedExLocal);
+        statementCompiler.b.beginYieldFromGenerator(generatorExceptionStateLocal);
         yieldValueProducer.accept(statementCompiler);
-        statementCompiler.b.endPreYield();
-        statementCompiler.b.endYield();
+        statementCompiler.b.endYieldFromGenerator();
         statementCompiler.b.endResumeYield();
     }
 
@@ -1467,6 +1544,10 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 freeVariableLocals[i] = local;
             }
             b.emitInitFreeVars(freeVariableLocals);
+        }
+
+        if (scope.isCoroutine() || scope.isGenerator()) {
+            generatorExceptionStateLocal = b.createLocal();
         }
     }
 
@@ -4995,6 +5076,8 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                  * try {
                  *   try_catch_else
                  * } catch uncaught_ex {
+                 *   # this all is finally in case of exceptional exit
+                 *   # user defined handlers already run in try_catch_else above
                  *   save current exception
                  *   set the current exception to uncaught_ex
                  *   markCaught(uncaught_ex)
@@ -5022,6 +5105,8 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
                     b.beginBlock(); // catch
                         BytecodeLocal savedException = b.createLocal();
+                        BytecodeLocal prevPrevSaved = enterSaveExceptionBlock(savedException);
+
                         emitSaveCurrentException(savedException);
                         emitSetCurrentException();
                         // Mark this location for the stack trace.
@@ -5050,6 +5135,8 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                         b.beginReraise();
                             b.emitLoadException();
                         b.endReraise();
+
+                        exitSaveExceptionBlock(prevPrevSaved);
                     b.endBlock(); // catch
                 b.endTryCatchOtherwise();
                 // @formatter:on
@@ -5127,7 +5214,6 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                  */
                 b.beginBlock(); // outermost block
 
-                BytecodeLocal savedException = b.createLocal();
                 BytecodeLabel afterElse = b.createLabel();
 
                 b.beginTryCatch();
@@ -5137,6 +5223,9 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                     b.endBlock(); // try
 
                     b.beginBlock(); // catch
+                        BytecodeLocal savedException = b.createLocal();
+                        BytecodeLocal prevPrevEx = enterSaveExceptionBlock(savedException);
+
                         emitSaveCurrentException(savedException);
                         emitSetCurrentException();
                         // Mark this location for the stack trace.
@@ -5234,6 +5323,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                             b.endReraise();
                         }
 
+                        exitSaveExceptionBlock(prevPrevEx);
                     b.endBlock(); // catch
 
                 b.endTryCatch();
@@ -5260,16 +5350,34 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             b.endStoreLocal();
         }
 
+        private void beginSetCurrentException(boolean clearGeneratorException) {
+            if (generatorExceptionStateLocal != null) {
+                b.beginSetCurrentGeneratorException(generatorExceptionStateLocal, clearGeneratorException);
+            } else {
+                b.beginSetCurrentException();
+            }
+        }
+
+        private void endSetCurrentException() {
+            if (generatorExceptionStateLocal != null) {
+                b.endSetCurrentGeneratorException();
+            } else {
+                b.endSetCurrentException();
+            }
+        }
+
         private void emitSetCurrentException() {
-            b.beginSetCurrentException();
+            beginSetCurrentException(false);
             b.emitLoadException();
-            b.endSetCurrentException();
+            endSetCurrentException();
         }
 
         private void emitRestoreCurrentException(BytecodeLocal savedException) {
-            b.beginSetCurrentException();
+            // in top most except block we are restoring either to NO_EXCEPTION or to caller
+            // exception, so we clear the generator exception
+            beginSetCurrentException(inTopMostSaveExceptionBlock());
             b.emitLoadLocal(savedException);
-            b.endSetCurrentException();
+            endSetCurrentException();
         }
 
         private void emitUnbindHandlerVariable(ExceptHandlerTy.ExceptHandler handler) {

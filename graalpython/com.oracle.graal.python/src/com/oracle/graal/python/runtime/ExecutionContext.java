@@ -45,6 +45,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.exception.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
@@ -85,9 +86,32 @@ import com.oracle.truffle.api.profiles.InlinedCountingConditionProfile;
  * depending on whether the other side is also a Python frame.
  */
 public abstract class ExecutionContext {
+    /**
+     * Helper methods to prepare for a call from code that has access to the current Python
+     * {@link VirtualFrame} to a Python callable. The frame contains exception state and current
+     * PFrame reference, which may need to be passed down to the callee (see
+     * {@link PRootNode#needsExceptionState()} and {@link PRootNode#needsCallerFrame()}).
+     * <p>
+     * Code that does not have access to the current Python {@link VirtualFrame}, e.g.,
+     * {@code TruffleBoundary} code, should be wrapped in {@link IndirectCallContext}, which
+     * transfers the state from the frame to the thread state and back. If such code then needs to
+     * call a Python callable, it should use {@link IndirectCalleeContext}.
+     */
     @GenerateInline(false) // 28 -> 10
     @GenerateUncached
     public abstract static class CallContext extends Node {
+
+        /*
+         * Bytecode DSL note: When resuming a generator/coroutine, the call target is a
+         * ContinuationRoot with a different calling convention from regular PRootNodes. The first
+         * argument is a materialized frame, which will be used for the execution itself. We will,
+         * e.g., lookup the exception state in that frame's arguments.
+         *
+         * So for Bytecode DSL generators, we update the arguments array of that materialized frame
+         * instead of the arguments array that will be used for the actual Truffle call to the
+         * ContinuationRoot, which is not accessible to us in the generator root.
+         */
+
         /**
          * Prepare an indirect call from a Python frame to a Python function.
          */
@@ -96,12 +120,7 @@ public abstract class ExecutionContext {
         }
 
         private static Object[] getActualCallArguments(Object[] callArguments) {
-            /**
-             * Bytecode DSL note: When resuming a generator/coroutine, the call target is a
-             * ContinuationRoot with a different calling convention from regular PRootNodes. The
-             * first argument is a materialized frame containing the arguments used for argument
-             * reads.
-             */
+            // See Bytecode DSL note at the top
             if (callArguments.length == 2 && callArguments[0] instanceof MaterializedFrame materialized) {
                 return materialized.getArguments();
             }
@@ -118,11 +137,11 @@ public abstract class ExecutionContext {
             Object[] actualCallArguments;
             boolean needsExceptionState;
             if (rootNode instanceof ContinuationRootNode continuationRoot) {
+                // See Bytecode DSL note at the top
                 calleeRootNode = (PRootNode) continuationRoot.getSourceRootNode();
                 assert callArguments.length == 2;
                 actualCallArguments = ((MaterializedFrame) callArguments[0]).getArguments();
-                // Local exception state takes precedence over any exception in the caller's context
-                needsExceptionState = calleeRootNode.needsExceptionState() && !PArguments.hasException(actualCallArguments);
+                needsExceptionState = calleeRootNode.needsExceptionState();
             } else {
                 // n.b.: The class cast should always be correct, since this context
                 // must only be used when calling from Python to Python
@@ -157,7 +176,7 @@ public abstract class ExecutionContext {
                             @Cached(inline = false) MaterializeFrameNode materialize) {
                 PFrame.Reference thisInfo = PArguments.getCurrentFrameInfo(frame);
                 // We are handing the PFrame of the current frame to the caller, i.e., it does
-                // not 'escape' since it is still on the stack.Also, force synchronization of
+                // not 'escape' since it is still on the stack. Also, force synchronization of
                 // values
                 PFrame pyFrame = materialize.execute(frame, callNode, false, true);
                 assert thisInfo.getPyFrame() == pyFrame;
@@ -269,6 +288,24 @@ public abstract class ExecutionContext {
         }
     }
 
+    /**
+     * Execution of a Python function should be wrapped with {@link #enter(VirtualFrame)} and
+     * {@link #exit(VirtualFrame, PRootNode)}.
+     * <p>
+     * When entering the function we create the {@link PFrame.Reference} that represents the current
+     * (possibly not yet materialized virtual frame). From then on, at any point we can refer to the
+     * current {@link PFrame.Reference} instance if we have the current virtual frame at hand.
+     * <p>
+     * When leaving the function, we check if the current frame needs to outlive the function
+     * execution, i.e., needs to escape. In such case, the frame is materialized to a {@link PFrame}
+     * instance, and we copy local variables and some arguments into a new {@link MaterializedFrame}
+     * stored in the {@link PFrame} (see {@link MaterializeFrameNode}). The {@link PFrame} is stored
+     * into {@link PFrame.Reference}.
+     * <p>
+     * The frame may have been matarialized already during the function execution, in such case we
+     * just synchronize the existing {@link PFrame} with the virtual frame when leaving the
+     * function.
+     */
     public static final class CalleeContext extends Node {
 
         @Child private MaterializeFrameNode materializeNode;
@@ -370,9 +407,11 @@ public abstract class ExecutionContext {
     public abstract static class IndirectCallContext {
         /**
          * Prepare a call from a Python frame to a callable without frame. This transfers the
-         * exception state from the frame to the context and also puts the current frame info (which
-         * represents the last Python caller) in the context.
-         *
+         * exception state from the frame to the thread state and also puts the current frame info
+         * (which represents the last Python caller) in the thread state, this is done so that we
+         * can then access the exception state or current frame reference in the code that cannot
+         * take the {@link VirtualFrame} as an argument.
+         * <p>
          * This is mostly useful when calling methods annotated with {@code @TruffleBoundary} that
          * again use nodes that would require a frame. Use following pattern to call such methods
          * and just pass a {@code null} frame.
@@ -403,6 +442,9 @@ public abstract class ExecutionContext {
          *
          * </pre>
          * </p>
+         *
+         * See also {@link IndirectCalleeContext} for helper methods to make a call from a caller
+         * without frame to a Python function.
          */
         public static Object enter(VirtualFrame frame, PythonLanguage language, PythonContext context, IndirectCallData indirectCallData) {
             if (frame == null || indirectCallData.isUncached()) {
@@ -513,35 +555,60 @@ public abstract class ExecutionContext {
         }
     }
 
+    /**
+     * Prepares a call from a caller without access to the current {@link VirtualFrame}, e.g.,
+     * {@code TruffleBoundary} code, to a Python callable. There should have been a call to one of
+     * the {@code enter} helper methods from {@link IndirectCallContext} before the transition from
+     * the code with {@link VirtualFrame} to the code without access to the frame.
+     * <p>
+     * The helper methods in this class will save and restore the exception state and frame
+     * reference to/from the thread state, and pass down the exception state to the callee if it
+     * asks for it using {@link PRootNode#needsExceptionState()}.
+     */
     public abstract static class IndirectCalleeContext {
         /**
-         * Prepare an indirect call from a foreign frame to a Python function.
+         * Prepare an indirect call from code that doesn't have access to the current Python
+         * {@link VirtualFrame}, or doesn't have a frame, e.g., foreign code, to a Python function.
+         * <p>
+         * Unlike {@link #enter(PythonLanguage, PythonContext, Object[], RootCallTarget)}, this
+         * method does not assume that the call target argument is a constant and cannot read
+         * {@link PRootNode#needsExceptionState()}.
          */
-        public static Object enterIndirect(PythonLanguage language, PythonContext context, Object[] pArguments) {
-            return enter(context.getThreadState(language), pArguments, true);
+        public static Object enterIndirect(PythonLanguage language, PythonContext context, Object[] pArguments, RootCallTarget callTarget) {
+            return enter(context.getThreadState(language), unwrapArgumentsArray(callTarget, pArguments), true);
         }
 
         /**
-         * @see #enterIndirect(PythonLanguage, PythonContext, Object[])
+         * @see #enterIndirect(PythonLanguage, PythonContext, Object[], RootCallTarget)
          */
-        public static Object enterIndirect(PythonThreadState threadState, Object[] pArguments) {
-            return enter(threadState, pArguments, true);
+        public static Object enterIndirect(PythonThreadState threadState, Object[] pArguments, RootCallTarget callTarget) {
+            return enter(threadState, unwrapArgumentsArray(callTarget, pArguments), true);
         }
 
         /**
          * @see #enter(PythonThreadState, Object[], RootCallTarget)
          */
         public static Object enter(PythonLanguage language, PythonContext context, Object[] pArguments, RootCallTarget callTarget) {
-            PRootNode calleeRootNode = (PRootNode) callTarget.getRootNode();
-            return enter(context.getThreadState(language), pArguments, calleeRootNode.needsExceptionState());
+            return enter(context.getThreadState(language), unwrapArgumentsArray(callTarget, pArguments), needsExceptionState(callTarget));
         }
 
         /**
          * Prepare a call from a foreign frame to a Python function.
          */
         public static Object enter(PythonThreadState threadState, Object[] pArguments, RootCallTarget callTarget) {
-            PRootNode calleeRootNode = (PRootNode) callTarget.getRootNode();
-            return enter(threadState, pArguments, calleeRootNode.needsExceptionState());
+            return enter(threadState, unwrapArgumentsArray(callTarget, pArguments), needsExceptionState(callTarget));
+        }
+
+        private static Object[] unwrapArgumentsArray(RootCallTarget callTarget, Object[] arguments) {
+            if (PGenerator.isDSLGeneratorTarget(callTarget)) {
+                return PGenerator.getDSLGeneratorFrame(arguments).getArguments();
+            }
+            return arguments;
+        }
+
+        private static boolean needsExceptionState(RootCallTarget callTarget) {
+            PRootNode calleeRootNode = (PRootNode) PGenerator.unwrapContinuationRoot(callTarget.getRootNode());
+            return calleeRootNode.needsExceptionState();
         }
 
         private static Object enter(PythonThreadState threadState, Object[] pArguments, boolean needsExceptionState) {

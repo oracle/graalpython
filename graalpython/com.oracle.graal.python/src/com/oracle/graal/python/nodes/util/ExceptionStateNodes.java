@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,10 +51,12 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.bytecode.ContinuationRootNode;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameInstance.FrameAccess;
+import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -131,6 +133,11 @@ public abstract class ExceptionStateNodes {
                 RootNode rootNode = target.getRootNode();
                 Node callNode = frameInstance.getCallNode();
                 IndirectCallData.setEncapsulatingNeedsToPassExceptionState(callNode);
+                if (rootNode instanceof ContinuationRootNode) {
+                    Frame frame = frameInstance.getFrame(FrameAccess.READ_ONLY);
+                    assert frame.getArguments().length == 2;
+                    return PArguments.getException((MaterializedFrame) frame.getArguments()[0]);
+                }
                 if (rootNode instanceof PRootNode pRootNode) {
                     pRootNode.setNeedsExceptionState();
                     Frame frame = frameInstance.getFrame(FrameAccess.READ_ONLY);

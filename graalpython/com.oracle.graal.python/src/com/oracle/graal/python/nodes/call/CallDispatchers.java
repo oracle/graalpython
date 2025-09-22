@@ -160,7 +160,7 @@ public class CallDispatchers {
             if (profileIsNullFrame.profile(inliningTarget, frame == null)) {
                 PythonContext context = PythonContext.get(inliningTarget);
                 PythonThreadState threadState = context.getThreadState(context.getLanguage(inliningTarget));
-                Object state = IndirectCalleeContext.enterIndirect(threadState, arguments);
+                Object state = IndirectCalleeContext.enterIndirect(threadState, arguments, callTarget);
                 try {
                     return callNode.call(callTarget, arguments);
                 } finally {
@@ -464,7 +464,7 @@ public class CallDispatchers {
     }
 
     /**
-     * Node for invoking a call target with an inline cache. Takes PArguments
+     * Node for invoking a call target with an inline cache. Takes PArguments.
      */
     @GenerateInline
     @GenerateCached(false)

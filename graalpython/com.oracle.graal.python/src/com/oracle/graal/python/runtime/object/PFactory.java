@@ -261,6 +261,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.bytecode.ContinuationRootNode;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.instrumentation.AllocationReporter;
 import com.oracle.truffle.api.nodes.Node;
@@ -823,8 +824,9 @@ public final class PFactory {
         return trace(language, PGenerator.create(language, function, rootNode, callTargets, arguments, PythonBuiltinClassType.PGenerator));
     }
 
-    public static PGenerator createGenerator(PythonLanguage language, PFunction function, PBytecodeDSLRootNode rootNode, Object[] arguments) {
-        return trace(language, PGenerator.create(language, function, rootNode, arguments, PythonBuiltinClassType.PGenerator));
+    public static PGenerator createGenerator(PythonLanguage language, PFunction function, PBytecodeDSLRootNode rootNode, Object[] arguments, ContinuationRootNode continuationRootNode,
+                    MaterializedFrame continuationFrame) {
+        return trace(language, PGenerator.create(language, function, rootNode, arguments, PythonBuiltinClassType.PGenerator, continuationRootNode, continuationFrame));
     }
 
     public static PGenerator createIterableCoroutine(PythonLanguage language, PFunction function, PBytecodeRootNode rootNode, RootCallTarget[] callTargets,
@@ -833,16 +835,17 @@ public final class PFactory {
     }
 
     public static PGenerator createIterableCoroutine(PythonLanguage language, PFunction function, PBytecodeDSLRootNode rootNode,
-                    Object[] arguments) {
-        return trace(language, PGenerator.create(language, function, rootNode, arguments, PythonBuiltinClassType.PGenerator, true));
+                    Object[] arguments, ContinuationRootNode continuationRootNode, MaterializedFrame continuationFrame) {
+        return trace(language, PGenerator.create(language, function, rootNode, arguments, PythonBuiltinClassType.PGenerator, true, continuationRootNode, continuationFrame));
     }
 
     public static PGenerator createCoroutine(PythonLanguage language, PFunction function, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
         return trace(language, PGenerator.create(language, function, rootNode, callTargets, arguments, PythonBuiltinClassType.PCoroutine));
     }
 
-    public static PGenerator createCoroutine(PythonLanguage language, PFunction function, PBytecodeDSLRootNode rootNode, Object[] arguments) {
-        return trace(language, PGenerator.create(language, function, rootNode, arguments, PythonBuiltinClassType.PCoroutine));
+    public static PGenerator createCoroutine(PythonLanguage language, PFunction function, PBytecodeDSLRootNode rootNode, Object[] arguments, ContinuationRootNode continuationRootNode,
+                    MaterializedFrame continuationFrame) {
+        return trace(language, PGenerator.create(language, function, rootNode, arguments, PythonBuiltinClassType.PCoroutine, continuationRootNode, continuationFrame));
     }
 
     public static PCoroutineWrapper createCoroutineWrapper(PythonLanguage language, PGenerator generator) {

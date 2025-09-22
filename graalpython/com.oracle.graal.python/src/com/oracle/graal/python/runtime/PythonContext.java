@@ -129,6 +129,7 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -199,6 +200,7 @@ import com.oracle.truffle.api.interop.ExceptionType;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
@@ -525,11 +527,14 @@ public final class PythonContext extends Python3Core {
 
             // Ensure tracing + profiling are enabled for each method on the stack.
             Truffle.getRuntime().iterateFrames((frameInstance) -> {
-                if (frameInstance.getCallTarget() instanceof RootCallTarget c && c.getRootNode() instanceof PBytecodeDSLRootNode r) {
-                    if (r.needsTraceAndProfileInstrumentation()) {
-                        r.ensureTraceAndProfileEnabled();
+                if (frameInstance.getCallTarget() instanceof RootCallTarget c) {
+                    RootNode root = PGenerator.unwrapContinuationRoot(c.getRootNode());
+                    if (root instanceof PBytecodeDSLRootNode r) {
+                        if (r.needsTraceAndProfileInstrumentation()) {
+                            r.ensureTraceAndProfileEnabled();
+                        }
+                        rootNodes.add(r);
                     }
-                    rootNodes.add(r);
                 }
                 return null;
             });

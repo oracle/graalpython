@@ -11,7 +11,6 @@ class ExceptionTest(unittest.TestCase):
     # Tests for the issue #23353: check that the currently handled exception
     # is correctly saved/restored in PyEval_EvalFrameEx().
 
-    @unittest.skipIf(os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: bug in comment above")
     def test_except_throw(self):
 
         def store_raise_exc_generator():
@@ -49,7 +48,6 @@ class ExceptionTest(unittest.TestCase):
 
         self.assertEqual(sys.exc_info(), (None, None, None))
 
-    @unittest.skipIf(os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: bug in comment above")
     def test_except_next(self):
         def gen():
             self.assertEqual(sys.exc_info()[0], ValueError)
@@ -107,14 +105,14 @@ class ExceptionTest(unittest.TestCase):
     #         yield
     #         self.assertIsNone(sys.exc_info()[0])
     #         yield "done"
- 
+
     #     g = gen()
     #     next(g)
     #     try:
     #         raise ValueError
     #     except Exception as exc:
     #         g.throw(exc)
- 
+
     #     self.assertEqual(next(g), "done")
     #     self.assertEqual(sys.exc_info(), (None, None, None))
 
@@ -129,7 +127,7 @@ class ExceptionTest(unittest.TestCase):
             yield
             log.append(3)
             return
-        
+
         log = []
         g = gen(log)
         next(g)
@@ -152,7 +150,7 @@ class ExceptionTest(unittest.TestCase):
             yield
             log.append(3)
             return
-        
+
         log = []
         g = gen(log)
         next(g)
@@ -175,7 +173,7 @@ class ExceptionTest(unittest.TestCase):
             yield
             log.append(3)
             return
-        
+
         log = []
         g = gen(log)
         next(g)
@@ -191,7 +189,7 @@ class ExceptionTest(unittest.TestCase):
         def gen():
             self.assertEqual(sys.exc_info()[0], None)
             yield
-            
+
             try:
                 raise TypeError
             except TypeError:
@@ -201,7 +199,7 @@ class ExceptionTest(unittest.TestCase):
             yield
             self.assertIsNone(sys.exc_info()[0])
             yield "done"
-            
+
         try:
             raise ValueError
         except ValueError:
@@ -352,3 +350,130 @@ def test_generator_cell_confusion():
         ]
 
     assert len(illegal_state_expected_cell_got_list()) == 2
+
+def test_generator_exceptions_finally():
+    def get_exc_state():
+        assert sys.exc_info()[1] == sys.exception()
+        return sys.exception()
+
+    def generator():
+        yield get_exc_state() # 1
+        try:
+            yield get_exc_state() # 2
+            3 / 0
+        except:
+            yield get_exc_state() # 3
+            yield get_exc_state() # 4
+        finally:
+            yield get_exc_state() # 5
+            try:
+                raise NameError()
+            except:
+                yield get_exc_state() # 6
+                try:
+                    raise KeyError()
+                except:
+                    yield get_exc_state() # 7
+                yield get_exc_state() # 8
+            yield get_exc_state() # 9
+        yield get_exc_state() # 10
+
+    def run_test(check_caller_ex):
+        g = generator()
+        assert check_caller_ex(g.send(None)) # 1
+        assert check_caller_ex(g.send(None)) # 2
+        assert type(g.send(None)) == ZeroDivisionError # 3
+        assert type(g.send(None)) == ZeroDivisionError # 4
+        assert check_caller_ex(g.send(None)) # 5
+        assert type(g.send(None)) == NameError # 6
+        assert type(g.send(None)) == KeyError # 7
+        assert type(g.send(None)) == NameError # 8
+        assert check_caller_ex(g.send(None)) # 9
+        assert check_caller_ex(g.send(None)) # 10
+
+    run_test(lambda x: x is None)
+    try:
+        raise NotImplementedError()
+    except:
+        run_test(lambda x: type(x) == NotImplementedError)
+
+
+def test_generator_exceptions_complex():
+    def get_exc_state():
+        assert sys.exc_info()[1] == sys.exception()
+        return sys.exception()
+
+    def generator():
+        yield get_exc_state() # 1
+        try:
+            yield get_exc_state() # 2
+            3 / 0
+        except:
+            yield get_exc_state() # 3
+            yield get_exc_state() # 4
+        yield get_exc_state() # 5
+        yield get_exc_state() # 6
+        yield get_exc_state() # 7
+        try:
+            yield get_exc_state() # 8
+            raise KeyError()
+        except:
+            yield get_exc_state() # 9
+            yield get_exc_state() # 10
+        yield get_exc_state() # 11
+        try:
+            raise NameError()
+        except:
+            yield get_exc_state() # 12
+            try:
+                raise NotImplementedError()
+            except:
+                yield get_exc_state() # 13
+            yield get_exc_state() # 14
+        yield get_exc_state() # 15
+        yield get_exc_state() # 16
+
+    g = generator()
+    try:
+        raise AttributeError()
+    except:
+        assert type(g.send(None)) == AttributeError # 1
+        assert type(g.send(None)) == AttributeError # 2
+        assert type(g.send(None)) == ZeroDivisionError # 3
+        assert type(g.send(None)) == ZeroDivisionError # 4
+        assert type(g.send(None)) == AttributeError # 5
+    assert g.send(None) is None # 6
+    try:
+        raise IndexError()
+    except:
+        assert type(g.send(None)) == IndexError # 7
+        assert type(g.send(None)) == IndexError # 8
+        assert type(g.send(None)) == KeyError # 9
+        assert type(g.send(None)) == KeyError # 10
+        assert type(g.send(None)) == IndexError # 11
+    try:
+        raise TypeError()
+    except:
+        assert type(g.send(None)) == NameError # 12
+        assert type(g.send(None)) == NotImplementedError # 13
+        assert type(g.send(None)) == NameError # 14
+        assert type(g.send(None)) == TypeError # 15
+    assert g.send(None) is None # 16
+
+    g = generator()
+    assert g.send(None) is None # 1
+    assert g.send(None) is None # 2
+    assert type(g.send(None)) == ZeroDivisionError # 3
+    assert type(g.send(None)) == ZeroDivisionError # 4
+    assert g.send(None) is None # 5
+    assert g.send(None) is None # 6
+    assert g.send(None) is None # 7
+    assert g.send(None) is None # 8
+    assert type(g.send(None)) == KeyError # 9
+    assert type(g.send(None)) == KeyError # 10
+    assert g.send(None) is None # 11
+    assert type(g.send(None)) == NameError # 12
+    assert type(g.send(None)) == NotImplementedError # 13
+    assert type(g.send(None)) == NameError # 14
+    assert g.send(None) is None # 15
+    assert g.send(None) is None # 16

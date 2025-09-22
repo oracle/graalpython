@@ -27,6 +27,8 @@ package com.oracle.graal.python.builtins.objects.traceback;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.builtins.objects.generator.PGenerator.getDSLGeneratorFrame;
+import static com.oracle.graal.python.builtins.objects.generator.PGenerator.isDSLGeneratorTracebackElement;
 import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.J_TB_FRAME;
 import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.J_TB_LASTI;
 import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.J_TB_LINENO;
@@ -54,6 +56,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
+import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -61,7 +64,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -79,6 +81,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -199,10 +202,6 @@ public final class TracebackBuiltins extends PythonBuiltins {
                         next.setLocation(pFrame.getBci(), pFrame.getBytecodeNode());
                         pyIndex++;
                     }
-                    // XXX workaround for DSL continuations not capturing frames
-                    if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER && element.getTarget().getRootNode() instanceof ContinuationRootNode && element.getFrame() == null) {
-                        pyIndex++;
-                    }
                 }
             }
             if (lazyTraceback.catchingFrameWantedForTraceback()) {
@@ -219,11 +218,19 @@ public final class TracebackBuiltins extends PythonBuiltins {
         private static PFrame materializeFrame(TruffleStackTraceElement element, MaterializeFrameNode materializeFrameNode) {
             Node location = element.getLocation();
             RootNode rootNode = element.getTarget().getRootNode();
-            if (rootNode instanceof PBytecodeRootNode || rootNode instanceof PBytecodeGeneratorRootNode) {
+            if (rootNode instanceof PBytecodeRootNode || rootNode instanceof PBytecodeGeneratorRootNode ||
+                            rootNode instanceof PBytecodeDSLRootNode) {
                 location = rootNode;
             }
+            if (rootNode instanceof ContinuationRootNode continuationRoot) {
+                location = continuationRoot.getRootNode();
+            }
             // create the PFrame and refresh frame values
-            return materializeFrameNode.execute(location, false, true, element.getFrame());
+            Frame frame = element.getFrame();
+            if (isDSLGeneratorTracebackElement(element)) {
+                frame = getDSLGeneratorFrame(element);
+            }
+            return materializeFrameNode.execute(location, false, true, frame);
         }
     }
 

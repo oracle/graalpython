@@ -163,7 +163,6 @@ import com.oracle.graal.python.runtime.sequence.storage.NativePrimitiveSequenceS
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -361,7 +360,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
                 throw new PythonExitException(this, 2);
             }
             PythonLanguage language = context.getLanguage();
-            CallTarget callTarget = context.getEnv().parsePublic(source);
+            RootCallTarget callTarget = (RootCallTarget) context.getEnv().parsePublic(source);
             Object[] arguments = PArguments.create();
             PythonModule mainModule = context.getMainModule();
             PDict mainDict = GetOrCreateDictNode.executeUncached(mainModule);
@@ -369,7 +368,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             PArguments.setSpecialArgument(arguments, mainDict);
             PArguments.setException(arguments, PException.NO_EXCEPTION);
             context.initializeMainModule(inputFilePath);
-            Object state = ExecutionContext.IndirectCalleeContext.enterIndirect(language, context, arguments);
+            Object state = ExecutionContext.IndirectCalleeContext.enterIndirect(language, context, arguments, callTarget);
             try {
                 callTarget.call(arguments);
             } finally {

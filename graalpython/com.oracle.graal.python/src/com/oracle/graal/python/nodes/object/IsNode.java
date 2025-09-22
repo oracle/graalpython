@@ -54,7 +54,6 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
-import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLGeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.expression.BinaryOp;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsAnyBuiltinObjectProfile;
@@ -240,13 +239,6 @@ public abstract class IsNode extends Node implements BinaryOp {
                 RootNode leftRootNode = leftCt.getRootNode();
                 RootNode rightRootNode = rightCt.getRootNode();
                 if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                    if (leftRootNode instanceof PBytecodeDSLGeneratorFunctionRootNode l) {
-                        leftRootNode = l.getBytecodeRootNode();
-                    }
-                    if (rightRootNode instanceof PBytecodeDSLGeneratorFunctionRootNode r) {
-                        rightRootNode = r.getBytecodeRootNode();
-                    }
-
                     if (leftRootNode instanceof PBytecodeDSLRootNode l && rightRootNode instanceof PBytecodeDSLRootNode r) {
                         return l.getCodeUnit() == r.getCodeUnit();
                     }

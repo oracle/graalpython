@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.compiler.BytecodeCodeUnit;
@@ -67,7 +68,6 @@ import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorFunctionRootNode
 import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
-import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLGeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.runtime.GilNode;
@@ -82,7 +82,6 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.bytecode.BytecodeNode;
-import com.oracle.truffle.api.bytecode.ContinuationRootNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -368,12 +367,7 @@ public final class PCode extends PythonBuiltinObject {
 
     private static RootNode rootNodeForExtraction(RootNode rootNode) {
         if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-            if (rootNode instanceof PBytecodeDSLGeneratorFunctionRootNode generatorFunctionRootNode) {
-                return generatorFunctionRootNode.getBytecodeRootNode();
-            }
-            if (rootNode instanceof ContinuationRootNode generatorRootNode) {
-                return (RootNode) generatorRootNode.getSourceRootNode();
-            }
+            return PGenerator.unwrapContinuationRoot(rootNode);
         } else {
             if (rootNode instanceof PBytecodeGeneratorFunctionRootNode generatorFunctionRootNode) {
                 return generatorFunctionRootNode.getBytecodeRootNode();
@@ -381,8 +375,8 @@ public final class PCode extends PythonBuiltinObject {
             if (rootNode instanceof PBytecodeGeneratorRootNode generatorRootNode) {
                 return generatorRootNode.getBytecodeRootNode();
             }
+            return rootNode;
         }
-        return rootNode;
     }
 
     @TruffleBoundary

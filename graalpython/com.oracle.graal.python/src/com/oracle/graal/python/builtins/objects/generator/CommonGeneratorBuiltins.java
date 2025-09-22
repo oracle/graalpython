@@ -61,7 +61,6 @@ import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.exception.PrepareExceptionNode;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.lib.IteratorExhausted;
@@ -81,7 +80,6 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.bytecode.ContinuationResult;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -156,42 +154,14 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
         static Object cachedBytecodeDSL(VirtualFrame frame, Node inliningTarget, PGenerator self, Object sendValue,
                         @Cached(parameters = "self.getCurrentCallTarget()") DirectCallNode callNode,
                         @Exclusive @Cached CallDispatchers.SimpleDirectInvokeNode invoke,
-                        @Cached("self.getContinuation() == null") boolean firstCall,
                         @Exclusive @Cached InlinedBranchProfile returnProfile,
                         @Exclusive @Cached IsBuiltinObjectProfile errorProfile,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             self.setRunning(true);
             Object generatorResult;
             try {
-                ContinuationResult continuation = self.getContinuation();
-                Object[] arguments;
-                // TODO: GR-62196, Bytecode DSL does not have the same shape of arguments array for
-                // continuation calls:
-
-                // 1) in the manual interpreter, we always pass an array of the same length (with
-                // slots defined in PArguments), this argument array is used for callee context
-                // enter/exit in PBytecodeGeneratorRootNode as opposed to the original arguments
-                // array taken from the PGenerator object. Moreover, this array is a copy of
-                // PGenerator arguments, and the comment above prepareArguments seems to indicate
-                // that we indeed need a fresh copy, because we do not want to share the state
-                // stored in the arguments between invocations
-
-                // 2) Bytecode DSL doesn't do callee context enter/exit for individual calls,
-                // but for the whole coroutine
-
-                // 3) when walking the stack, e.g., in MaterializeFrameNode, we must take care of
-                // this additional arguments shape and unwrap the materialized frame from the
-                // continuation frame to access its arguments array that will have the desired
-                // "PArguments shape", however this will be a shared arguments array, so it is a
-                // question if this unwrapping would be correct, see 1).
-
-                if (firstCall) {
-                    // First invocation: call the regular root node.
-                    arguments = self.getCallArguments(sendValue);
-                } else {
-                    // Subsequent invocations: call a continuation root node.
-                    arguments = new Object[]{continuation.getFrame(), sendValue};
-                }
+                self.prepareResume();
+                Object[] arguments = new Object[]{self.getGeneratorFrame(), sendValue};
                 generatorResult = invoke.execute(frame, inliningTarget, callNode, arguments);
             } catch (PException e) {
                 throw handleException(self, inliningTarget, errorProfile, raiseNode, e);
@@ -234,23 +204,14 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
         @Megamorphic
         static Object genericBytecodeDSL(VirtualFrame frame, Node inliningTarget, PGenerator self, Object sendValue,
                         @Exclusive @Cached CallDispatchers.SimpleIndirectInvokeNode invoke,
-                        @Exclusive @Cached InlinedConditionProfile firstInvocationProfile,
                         @Exclusive @Cached InlinedBranchProfile returnProfile,
                         @Exclusive @Cached IsBuiltinObjectProfile errorProfile,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             self.setRunning(true);
             Object generatorResult;
             try {
-                ContinuationResult continuation = self.getContinuation();
-                Object[] arguments;
-                if (firstInvocationProfile.profile(inliningTarget, continuation == null)) {
-                    // First invocation: call the regular root node.
-                    arguments = self.getCallArguments(sendValue);
-                } else {
-                    // Subsequent invocations: call a continuation root node.
-                    arguments = new Object[]{continuation.getFrame(), sendValue};
-                }
-
+                self.prepareResume();
+                Object[] arguments = new Object[]{self.getGeneratorFrame(), sendValue};
                 generatorResult = invoke.execute(frame, inliningTarget, self.getCurrentCallTarget(), arguments);
             } catch (PException e) {
                 throw handleException(self, inliningTarget, errorProfile, raiseNode, e);
@@ -377,12 +338,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                 // its frame to the traceback manually.
                 self.markAsFinished();
                 Node location = self.getCurrentCallTarget().getRootNode();
-                MaterializedFrame generatorFrame;
-                if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                    generatorFrame = Truffle.getRuntime().createMaterializedFrame(PArguments.create(), self.getRootNode().getFrameDescriptor());
-                } else {
-                    generatorFrame = self.getGeneratorFrame();
-                }
+                MaterializedFrame generatorFrame = self.getGeneratorFrame();
                 PFrame pFrame = MaterializeFrameNode.materializeGeneratorFrame(location, generatorFrame, PFrame.Reference.EMPTY);
                 FrameInfo info = (FrameInfo) generatorFrame.getFrameDescriptor().getInfo();
                 pFrame.setLine(info.getFirstLineNumber());

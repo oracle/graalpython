@@ -316,7 +316,9 @@ public final class TopLevelExceptionHandler extends RootNode {
             PArguments.setSpecialArgument(arguments, mainDict);
             PArguments.setException(arguments, PException.NO_EXCEPTION);
         }
-        Object state = IndirectCalleeContext.enterIndirect(language, pythonContext, arguments);
+        // At the top level we don't have a real Python frame at hand, so we go through
+        // IndirectCalleeContext
+        Object state = IndirectCalleeContext.enterIndirect(language, pythonContext, arguments, innerCallTarget);
         try {
             Object result = innerCallTarget.call(arguments);
             if (mainModule != null && result == PNone.NONE && !source.isInteractive()) {

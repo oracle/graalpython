@@ -44,6 +44,7 @@ import java.util.Objects;
 
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
@@ -359,11 +360,7 @@ public final class ReadCallerFrameNode extends Node {
 
     private static RootNode getRootNode(FrameInstance frameInstance) {
         RootCallTarget target = (RootCallTarget) frameInstance.getCallTarget();
-        RootNode rootNode = target.getRootNode();
-        if (rootNode instanceof ContinuationRootNode continuationRoot) {
-            return (RootNode) continuationRoot.getSourceRootNode();
-        }
-        return rootNode;
+        return PGenerator.unwrapContinuationRoot(target.getRootNode());
     }
 
     private static Frame getFrame(FrameInstance frameInstance, FrameInstance.FrameAccess frameAccess) {

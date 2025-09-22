@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -184,7 +184,7 @@ def fn():
     assert "fn doc" not in code.co_consts
     for const in code.co_consts:
         if type(const) == types.CodeType:
-            code = const 
+            code = const
     assert "fn doc" in code.co_consts
     assert "this is fun" not in code.co_consts
     for const in code.co_consts:
@@ -209,7 +209,7 @@ def gen():
     assert "gen doc" not in code.co_consts
     for const in code.co_consts:
         if type(const) == types.CodeType:
-            code = const 
+            code = const
     assert "gen doc" in code.co_consts
     assert "this is fun" not in code.co_consts
     for const in code.co_consts:
@@ -223,3 +223,11 @@ def test_consts_do_not_leak_java_types():
     code = compile(codestr, '<test>', 'exec')
     for const in code.co_consts:
         assert isinstance(const, (str, tuple)) or const is None
+
+
+def test_generator_and_gen_body_code_are_equal():
+    def g():
+        yield 42
+
+    x = g()
+    assert g.__code__ is x.gi_code
