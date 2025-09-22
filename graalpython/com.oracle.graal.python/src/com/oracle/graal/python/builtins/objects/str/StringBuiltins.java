@@ -194,6 +194,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
+import com.oracle.truffle.api.strings.InternalByteArray;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.CodePointLengthNode;
 import com.oracle.truffle.api.strings.TruffleString.CodeRange;
@@ -530,11 +531,14 @@ public final class StringBuiltins extends PythonBuiltins {
         PTuple doGeneric(Object self,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached CastToTruffleStringChecked2Node cast) {
+                        @Cached CastToTruffleStringChecked2Node cast,
+                        @Cached TruffleString.GetInternalByteArrayNode getInternalByteArrayNode,
+                        @Cached TruffleString.FromByteArrayNode fromByteArrayNode) {
             TruffleString selfStr = cast.cast(inliningTarget, self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, T___GETNEWARGS__, self);
             // CPython requires the resulting string not to be the same object as the original for
             // some reason
-            PString copy = PFactory.createString(language, selfStr);
+            InternalByteArray array = getInternalByteArrayNode.execute(selfStr, TS_ENCODING);
+            TruffleString copy = fromByteArrayNode.execute(array.getArray(), array.getOffset(), array.getLength(), TS_ENCODING, false);
             return PFactory.createTuple(language, new Object[]{copy});
         }
     }

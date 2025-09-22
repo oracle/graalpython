@@ -3,6 +3,9 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
+## Version 25.1.0
+* Intern string literals in source files
+
 ## Version 25.0.1
 * Allow users to keep going on unsupported JDK/OS/ARCH combinations at their own risk by opting out of early failure using `-Dtruffle.UseFallbackRuntime=true`, `-Dpolyglot.engine.userResourceCache=/set/to/a/writeable/dir`, `-Dpolyglot.engine.allowUnsupportedPlatform=true`, and `-Dpolyglot.python.UnsupportedPlatformEmulates=[linux|macos|windows]` and `-Dorg.graalvm.python.resources.exclude=native.files`.
 

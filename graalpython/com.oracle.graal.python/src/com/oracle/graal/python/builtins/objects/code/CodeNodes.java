@@ -116,8 +116,11 @@ public abstract class CodeNodes {
                         int nlocals, int stacksize, int flags,
                         byte[] codedata, Object[] constants, TruffleString[] names,
                         TruffleString[] varnames, TruffleString[] freevars, TruffleString[] cellvars,
-                        TruffleString filename, TruffleString name, TruffleString qualname, int firstlineno,
+                        TruffleString filename, TruffleString uninternedName, TruffleString qualname, int firstlineno,
                         byte[] linetable) {
+            filename = PythonUtils.internString(filename);
+            TruffleString name = PythonUtils.internString(uninternedName);
+            qualname = PythonUtils.internString(qualname);
 
             RootCallTarget ct;
             Signature signature;

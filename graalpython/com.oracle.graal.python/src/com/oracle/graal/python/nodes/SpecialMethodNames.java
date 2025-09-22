@@ -40,11 +40,14 @@
  */
 package com.oracle.graal.python.nodes;
 
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
-
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class SpecialMethodNames {
+
+    private static TruffleString tsLiteral(String s) {
+        return PythonUtils.tsInternedLiteral(s);
+    }
 
     public static final String J___NEW__ = "__new__";
     public static final TruffleString T___NEW__ = tsLiteral(J___NEW__);

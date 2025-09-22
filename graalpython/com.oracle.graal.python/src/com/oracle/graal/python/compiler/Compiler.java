@@ -165,6 +165,7 @@ import static com.oracle.graal.python.compiler.SSTUtils.checkSubscripter;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___TYPE_PARAMS__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.util.PythonUtils.arrayCopyOf;
+import static com.oracle.graal.python.util.PythonUtils.codePointsToInternedTruffleString;
 import static com.oracle.graal.python.util.PythonUtils.codePointsToTruffleString;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
@@ -1437,7 +1438,7 @@ public class Compiler implements SSTreeVisitor<Void> {
             case BIGINTEGER:
                 return addOp(LOAD_BIGINT, addObject(unit.constants, value.getBigInteger()));
             case CODEPOINTS:
-                return addOp(LOAD_STRING, addObject(unit.constants, codePointsToTruffleString(value.getCodePoints())));
+                return addOp(LOAD_STRING, addObject(unit.constants, codePointsToInternedTruffleString(value.getCodePoints())));
             case BYTES:
                 return addOp(LOAD_BYTES, addObject(unit.constants, value.getBytes()));
             case TUPLE:
@@ -1972,7 +1973,7 @@ public class Compiler implements SSTreeVisitor<Void> {
                     constants.add(c.value.getDouble());
                 } else if (c.value.kind == ConstantValue.Kind.CODEPOINTS) {
                     constantType = determineConstantType(constantType, CollectionBits.ELEMENT_OBJECT);
-                    constants.add(codePointsToTruffleString(c.value.getCodePoints()));
+                    constants.add(codePointsToInternedTruffleString(c.value.getCodePoints()));
                 } else if (c.value.kind == ConstantValue.Kind.NONE) {
                     constantType = determineConstantType(constantType, CollectionBits.ELEMENT_OBJECT);
                     constants.add(PNone.NONE);

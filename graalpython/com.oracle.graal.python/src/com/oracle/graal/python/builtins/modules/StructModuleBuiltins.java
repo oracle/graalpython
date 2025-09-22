@@ -9,7 +9,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J__STRUCT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__STRUCT;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.StructError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+import static com.oracle.graal.python.util.PythonUtils.tsInternedLiteral;
 
 import java.util.Arrays;
 import java.util.List;
@@ -51,7 +51,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 @CoreFunctions(defineModule = J__STRUCT, isEager = true)
 public class StructModuleBuiltins extends PythonBuiltins {
     private static final int DEFAULT_CACHE_SIZE = 100;
-    private static final TruffleString T_ERROR = tsLiteral("error");
+    private static final TruffleString T_ERROR = tsInternedLiteral("error");
     private final LRUStructCache cache = new LRUStructCache(DEFAULT_CACHE_SIZE);
 
     static class LRUStructCache extends LRUCache<Object, PStruct> {

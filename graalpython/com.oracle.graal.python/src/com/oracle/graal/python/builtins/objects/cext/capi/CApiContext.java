@@ -102,6 +102,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
@@ -115,6 +116,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.ConcurrentWeakSet;
 import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonSystemThreadTask;
 import com.oracle.graal.python.util.PythonUtils;
@@ -178,7 +180,7 @@ public final class CApiContext extends CExtContext {
     private final HashMap<Pair<TruffleString, TruffleString>, PythonModule> extensions = new HashMap<>(4);
 
     /** corresponds to {@code unicodeobject.c: interned} */
-    private PDict internedUnicode;
+    private final ConcurrentWeakSet<PString> pstringInterningCache = new ConcurrentWeakSet<>();
     private final ArrayList<Object> modulesByIndex = new ArrayList<>(0);
 
     public final HashMap<Long, PLock> locks = new HashMap<>();
@@ -380,12 +382,8 @@ public final class CApiContext extends CExtContext {
         return Objects.toString(ptr);
     }
 
-    public PDict getInternedUnicode() {
-        return internedUnicode;
-    }
-
-    public void setInternedUnicode(PDict internedUnicode) {
-        this.internedUnicode = internedUnicode;
+    public ConcurrentWeakSet<PString> getPstringInterningCache() {
+        return pstringInterningCache;
     }
 
     /**

@@ -460,8 +460,8 @@ public abstract class PGuards {
         throw new UnexpectedResultException(result);
     }
 
-    private static boolean isBuiltinImmutableTypeInstance(PythonObject dict, PythonBuiltinClassType type) {
-        return dict.getPythonClass() == type;
+    private static boolean isBuiltinImmutableTypeInstance(PythonObject object, PythonBuiltinClassType type) {
+        return object.getPythonClass() == type;
     }
 
     public static boolean isBuiltinDict(PythonObject dict) {

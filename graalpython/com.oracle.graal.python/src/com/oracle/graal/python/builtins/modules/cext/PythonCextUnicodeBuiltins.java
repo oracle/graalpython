@@ -109,7 +109,6 @@ import com.oracle.graal.python.builtins.modules.codecs.ErrorHandlers;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.UnicodeFromFormatNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
@@ -119,9 +118,6 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Read
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.str.NativeStringData;
@@ -133,7 +129,6 @@ import com.oracle.graal.python.builtins.objects.str.StringBuiltins.FindNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.RFindNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.ReplaceNode;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.StartsWithNode;
-import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -155,9 +150,11 @@ import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.graal.python.util.ConcurrentWeakSet;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -319,36 +316,18 @@ public final class PythonCextUnicodeBuiltins {
         @Specialization
         static Object withPString(PString str,
                         @Bind Node inliningTarget,
-                        @Cached PyUnicodeCheckExactNode unicodeCheckExactNode,
-                        @Cached CastToTruffleStringNode cast,
-                        @Cached StringNodes.IsInternedStringNode isInternedStringNode,
-                        @Cached StringNodes.InternStringNode internNode,
-                        @Cached HashingStorageGetItem getItem,
-                        @Cached HashingStorageSetItem setItem) {
+                        @Cached PyUnicodeCheckExactNode unicodeCheckExactNode) {
             if (!unicodeCheckExactNode.execute(inliningTarget, str)) {
                 return getNativeNull(inliningTarget);
             }
+
+            str.intern();
             /*
              * TODO this is not integrated with str.intern, pointer comparisons of two str.intern'ed
              * string may still yield failse
              */
-            boolean isInterned = isInternedStringNode.execute(inliningTarget, str);
-            if (isInterned) {
-                return str;
-            }
-            TruffleString ts = cast.execute(inliningTarget, str);
-            CApiContext cApiContext = getCApiContext(inliningTarget);
-            PDict dict = cApiContext.getInternedUnicode();
-            if (dict == null) {
-                dict = PFactory.createDict(cApiContext.getContext().getLanguage(internNode));
-                cApiContext.setInternedUnicode(dict);
-            }
-            Object interned = getItem.execute(inliningTarget, dict.getDictStorage(), ts);
-            if (interned == null) {
-                interned = internNode.execute(inliningTarget, str);
-                dict.setDictStorage(setItem.execute(inliningTarget, dict.getDictStorage(), ts, interned));
-            }
-            return interned;
+            ConcurrentWeakSet<PString> interningCache = PythonContext.get(inliningTarget).getCApiContext().getPstringInterningCache();
+            return interningCache.intern(str, s -> s);
         }
 
         @Fallback

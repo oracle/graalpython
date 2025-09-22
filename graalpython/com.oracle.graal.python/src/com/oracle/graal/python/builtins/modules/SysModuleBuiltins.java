@@ -134,6 +134,7 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_VALUE_UNKNOWN;
 import static com.oracle.graal.python.nodes.StringLiterals.T_VERSION;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsInternedLiteral;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
@@ -184,7 +185,6 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.namespace.PSimpleNamespace;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.thread.PThread;
@@ -213,6 +213,7 @@ import com.oracle.graal.python.lib.PyUnicodeFromEncodedObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttributeHandler;
@@ -466,7 +467,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
     private static PSimpleNamespace makeImplementation(PythonLanguage language, PTuple graalpyVersionInfo, TruffleString gmultiarch) {
         final PSimpleNamespace ns = PFactory.createSimpleNamespace(language);
-        ns.setAttribute(tsLiteral("name"), T_GRAALPYTHON_ID);
+        ns.setAttribute(StringLiterals.T_NAME, T_GRAALPYTHON_ID);
         /*- 'cache_tag' must match the format of mx.graalpython/mx_graalpython.py:graalpy_ext */
         ns.setAttribute(T_CACHE_TAG, toTruffleStringUncached(J_GRAALPYTHON_ID +
                         PythonLanguage.GRAALVM_MAJOR + PythonLanguage.GRAALVM_MINOR + PythonLanguage.DEV_TAG +
@@ -586,10 +587,10 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         PythonContext context = core.getContext();
         PythonLanguage language = core.getLanguage();
         String[] args = context.getEnv().getApplicationArguments();
-        sys.setAttribute(tsLiteral("argv"), PFactory.createList(language, convertToObjectArray(args)));
-        sys.setAttribute(tsLiteral("orig_argv"), PFactory.createList(language, convertToObjectArray(PythonOptions.getOrigArgv(core.getContext()))));
+        sys.setAttribute(tsInternedLiteral("argv"), PFactory.createList(language, convertToObjectArray(args)));
+        sys.setAttribute(tsInternedLiteral("orig_argv"), PFactory.createList(language, convertToObjectArray(PythonOptions.getOrigArgv(context))));
 
-        sys.setAttribute(tsLiteral("stdlib_module_names"), createStdLibModulesSet(language));
+        sys.setAttribute(tsInternedLiteral("stdlib_module_names"), createStdLibModulesSet(language));
 
         TruffleString prefix = context.getSysPrefix();
         for (TruffleString name : SysModuleBuiltins.SYS_PREFIX_ATTRIBUTES) {
@@ -601,7 +602,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
             sys.setAttribute(name, base_prefix);
         }
 
-        sys.setAttribute(tsLiteral("platlibdir"), tsLiteral("lib"));
+        sys.setAttribute(tsInternedLiteral("platlibdir"), tsInternedLiteral("lib"));
 
         TruffleString coreHome = context.getCoreHome();
         TruffleString stdlibHome = context.getStdlibHome();
@@ -610,16 +611,16 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         if (!context.getEnv().isPreInitialization()) {
             TruffleString executable = context.getOption(PythonOptions.Executable);
             TruffleString baseExecutable = context.getOption(PythonOptions.BaseExecutable);
-            sys.setAttribute(tsLiteral("executable"), executable);
-            sys.setAttribute(tsLiteral("_base_executable"), baseExecutable.isEmpty() ? executable : baseExecutable);
+            sys.setAttribute(tsInternedLiteral("executable"), executable);
+            sys.setAttribute(tsInternedLiteral("_base_executable"), baseExecutable.isEmpty() ? executable : baseExecutable);
         }
-        sys.setAttribute(tsLiteral("dont_write_bytecode"), context.getOption(PythonOptions.DontWriteBytecodeFlag));
+        sys.setAttribute(tsInternedLiteral("dont_write_bytecode"), context.getOption(PythonOptions.DontWriteBytecodeFlag));
         TruffleString pycachePrefix = context.getOption(PythonOptions.PyCachePrefix);
         if (pycachePrefix.isEmpty() && PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER && System.getenv("GRAALPY_BYTECODE_DSL_PYTHONPYCACHEPREFIX") != null) {
             pycachePrefix = PythonUtils.toTruffleStringUncached(System.getenv("GRAALPY_BYTECODE_DSL_PYTHONPYCACHEPREFIX"));
         }
-        sys.setAttribute(tsLiteral("pycache_prefix"), pycachePrefix.isEmpty() ? PNone.NONE : pycachePrefix);
-        sys.setAttribute(tsLiteral("_stdlib_dir"), stdlibHome);
+        sys.setAttribute(tsInternedLiteral("pycache_prefix"), pycachePrefix.isEmpty() ? PNone.NONE : pycachePrefix);
+        sys.setAttribute(tsInternedLiteral("_stdlib_dir"), stdlibHome);
 
         TruffleString strWarnoption = context.getOption(PythonOptions.WarnOptions);
         Object[] warnoptions;
@@ -630,7 +631,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         } else {
             warnoptions = PythonUtils.EMPTY_OBJECT_ARRAY;
         }
-        sys.setAttribute(tsLiteral("warnoptions"), PFactory.createList(language, warnoptions));
+        sys.setAttribute(tsInternedLiteral("warnoptions"), PFactory.createList(language, warnoptions));
 
         Env env = context.getEnv();
         TruffleString pythonPath = context.getOption(PythonOptions.PythonPath);
@@ -660,8 +661,8 @@ public final class SysModuleBuiltins extends PythonBuiltins {
             path[pathIdx++] = toTruffleStringUncached(capiHome + env.getFileNameSeparator() + "modules");
         }
         PList sysPaths = PFactory.createList(language, path);
-        sys.setAttribute(tsLiteral("path"), sysPaths);
-        sys.setAttribute(tsLiteral("flags"), PFactory.createStructSeq(language, SysModuleBuiltins.FLAGS_DESC,
+        sys.setAttribute(tsInternedLiteral("path"), sysPaths);
+        sys.setAttribute(tsInternedLiteral("flags"), PFactory.createStructSeq(language, SysModuleBuiltins.FLAGS_DESC,
                         PInt.intValue(!context.getOption(PythonOptions.PythonOptimizeFlag)), // debug
                         PInt.intValue(context.getOption(PythonOptions.InspectFlag)), // inspect
                         PInt.intValue(context.getOption(PythonOptions.TerminalIsInteractive)), // interactive
@@ -932,7 +933,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached StringNodes.InternStringNode internNode,
                         @Cached PRaiseNode raiseNode) {
-            final PString interned = internNode.execute(inliningTarget, s);
+            final Object interned = internNode.execute(inliningTarget, s);
             if (interned == null) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANNOT_INTERN_P, s);
             }
@@ -1335,11 +1336,11 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         static final TruffleString T_CAUSE_MESSAGE = tsLiteral("\nThe above exception was the direct cause of the following exception:\n\n");
         static final TruffleString T_CONTEXT_MESSAGE = tsLiteral("\nDuring handling of the above exception, another exception occurred:\n\n");
         static final TruffleString T_ATTR_PRINT_FILE_AND_LINE = tsLiteral("print_file_and_line");
-        static final TruffleString T_ATTR_MSG = tsLiteral("msg");
-        static final TruffleString T_ATTR_FILENAME = tsLiteral("filename");
-        static final TruffleString T_ATTR_LINENO = tsLiteral("lineno");
-        static final TruffleString T_ATTR_OFFSET = tsLiteral("offset");
-        static final TruffleString T_ATTR_TEXT = tsLiteral("text");
+        static final TruffleString T_ATTR_MSG = tsInternedLiteral("msg");
+        static final TruffleString T_ATTR_FILENAME = tsInternedLiteral("filename");
+        static final TruffleString T_ATTR_LINENO = tsInternedLiteral("lineno");
+        static final TruffleString T_ATTR_OFFSET = tsInternedLiteral("offset");
+        static final TruffleString T_ATTR_TEXT = tsInternedLiteral("text");
 
         @Child private PyTraceBackPrintNode pyTraceBackPrintNode;
 

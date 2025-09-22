@@ -43,7 +43,7 @@ package com.oracle.graal.python.builtins.objects.code;
 import static com.oracle.graal.python.nodes.StringLiterals.J_EMPTY_STRING;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.toInternedTruffleStringUncached;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -230,7 +230,7 @@ public final class PCode extends PythonBuiltinObject {
                 filename = context.getCodeFilename(funcRootNode.getCallTarget());
             }
         } else {
-            return toTruffleStringUncached(funcRootNode.getName());
+            return toInternedTruffleStringUncached(funcRootNode.getName());
         }
         if (filename != null) {
             // for compiled modules, _imp._fix_co_filename will set the filename
@@ -243,7 +243,7 @@ public final class PCode extends PythonBuiltinObject {
         } else {
             jFilename = funcRootNode.getName();
         }
-        return toTruffleStringUncached(jFilename);
+        return toInternedTruffleStringUncached(jFilename);
     }
 
     @TruffleBoundary
@@ -278,7 +278,11 @@ public final class PCode extends PythonBuiltinObject {
 
     @TruffleBoundary
     private static TruffleString extractName(RootNode rootNode) {
-        return toTruffleStringUncached(rootNode.getName());
+        CodeUnit code = getCodeUnit(rootNode);
+        if (code != null) {
+            return code.name;
+        }
+        return toInternedTruffleStringUncached(rootNode.getName());
     }
 
     @TruffleBoundary
@@ -425,6 +429,8 @@ public final class PCode extends PythonBuiltinObject {
 
     public void setFilename(TruffleString filename) {
         CompilerAsserts.neverPartOfCompilation();
+        filename = PythonUtils.internString(filename);
+
         this.filename = filename;
         RootNode rootNode = rootNodeForExtraction(getRootNode());
         setRootNodeFileName(rootNode, filename);
@@ -444,6 +450,7 @@ public final class PCode extends PythonBuiltinObject {
     public TruffleString getFilename() {
         if (filename == null) {
             filename = extractFileName(getRootNode());
+            assert filename == null || PythonUtils.isInterned(filename);
         }
         return filename;
     }
@@ -569,6 +576,8 @@ public final class PCode extends PythonBuiltinObject {
             return PFactory.createTuple(language, new BoolSequenceStorage((boolean[]) o));
         } else if (o instanceof byte[]) {
             return PFactory.createBytes(language, (byte[]) o);
+        } else if (o instanceof TruffleString string) {
+            return PythonUtils.internString(string);
         } else if (o instanceof TruffleString[] strings) {
             Object[] array = new Object[strings.length];
             System.arraycopy(strings, 0, array, 0, strings.length);

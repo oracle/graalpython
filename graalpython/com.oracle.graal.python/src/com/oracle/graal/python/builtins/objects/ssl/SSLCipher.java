@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,11 +40,13 @@
  */
 package com.oracle.graal.python.builtins.objects.ssl;
 
+import static com.oracle.graal.python.util.PythonUtils.toInternedTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -1903,7 +1905,7 @@ public enum SSLCipher {
     private final TruffleString auth;
 
     private static final TruffleString T_ID = tsLiteral("id");
-    private static final TruffleString T_NAME = tsLiteral("name");
+    private static final TruffleString T_NAME = StringLiterals.T_NAME;
     private static final TruffleString T_PROTOCOL = tsLiteral("protocol");
     private static final TruffleString T_DESCRIPTION = tsLiteral("description");
     private static final TruffleString T_STRENGTH_BITS = tsLiteral("strength_bits");
@@ -1917,15 +1919,15 @@ public enum SSLCipher {
     SSLCipher(int opensslId, String opensslName, String protocol, String description, int strengthBits, int algorithmBits, boolean aead, String symmetric, String digest, String kea, String auth) {
         this.opensslId = opensslId;
         this.opensslName = toTruffleStringUncached(opensslName);
-        this.protocol = toTruffleStringUncached(protocol);
+        this.protocol = toInternedTruffleStringUncached(protocol);
         this.description = toTruffleStringUncached(description);
         this.strengthBits = strengthBits;
         this.algorithmBits = algorithmBits;
         this.aead = aead;
-        this.symmetric = toTruffleStringUncached(symmetric);
-        this.digest = toTruffleStringUncached(digest);
-        this.kea = toTruffleStringUncached(kea);
-        this.auth = toTruffleStringUncached(auth);
+        this.symmetric = toInternedTruffleStringUncached(symmetric);
+        this.digest = toInternedTruffleStringUncached(digest);
+        this.kea = toInternedTruffleStringUncached(kea);
+        this.auth = toInternedTruffleStringUncached(auth);
 
     }
 

@@ -38,6 +38,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Overflow
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsInternedLiteral;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.lang.management.ManagementFactory;
@@ -295,7 +296,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         posix.setAttribute(PythonBuiltinClassType.PStatvfsResult.getName(), core.lookupType(PythonBuiltinClassType.PStatvfsResult));
         posix.setAttribute(PythonBuiltinClassType.PTerminalSize.getName(), core.lookupType(PythonBuiltinClassType.PTerminalSize));
 
-        posix.setAttribute(tsLiteral("error"), core.lookupType(PythonBuiltinClassType.OSError));
+        posix.setAttribute(tsInternedLiteral("error"), core.lookupType(PythonBuiltinClassType.OSError));
     }
 
     @Override

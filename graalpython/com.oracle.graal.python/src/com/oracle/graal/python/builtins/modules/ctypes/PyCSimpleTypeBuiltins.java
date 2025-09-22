@@ -56,6 +56,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Attribut
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.tsInternedLiteral;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
@@ -80,7 +81,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.str.StringNodes.InternStringNode;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TypeNode;
@@ -120,7 +120,7 @@ public final class PyCSimpleTypeBuiltins extends PythonBuiltins {
     protected static final TruffleString T_LOWER_S = tsLiteral("s");
     protected static final TruffleString T_UPPER_X = tsLiteral("X");
     protected static final TruffleString T_UPPER_O = tsLiteral("O");
-    private static final TruffleString T__BE = tsLiteral("_be");
+    private static final TruffleString T__BE = tsInternedLiteral("_be");
 
     protected static final TruffleString T_CTYPE_BE = tsLiteral("__ctype_be__");
     protected static final TruffleString T_CTYPE_LE = tsLiteral("__ctype_le__");
@@ -142,7 +142,6 @@ public final class PyCSimpleTypeBuiltins extends PythonBuiltins {
         static Object PyCSimpleType_new(VirtualFrame frame, Object type, Object[] args, PKeyword[] kwds,
                         @Bind Node inliningTarget,
                         @Cached TypeNode typeNew,
-                        @Cached InternStringNode internStringNode,
                         @Cached GetDictIfExistsNode getDict,
                         @Cached SetDictNode setDict,
                         @Cached HashingStorageAddAllToOther addAllToOtherNode,
@@ -239,7 +238,6 @@ public final class PyCSimpleTypeBuiltins extends PythonBuiltins {
             if (type == PyCSimpleType && fmt.setfunc_swapped != FieldSet.nil && fmt.getfunc_swapped != FieldGet.nil) {
                 Object swapped = CreateSwappedType(frame, inliningTarget, type, args, kwds, proto, fmt,
                                 typeNew,
-                                internStringNode,
                                 toTruffleStringNode,
                                 getDict,
                                 setDict,
@@ -259,14 +257,13 @@ public final class PyCSimpleTypeBuiltins extends PythonBuiltins {
 
     private static Object CreateSwappedType(VirtualFrame frame, Node inliningTarget, Object type, Object[] args, PKeyword[] kwds, Object proto, FieldDesc fmt,
                     TypeNode typeNew,
-                    InternStringNode internStringNode,
                     CastToTruffleStringNode toString,
                     GetDictIfExistsNode getDict,
                     SetDictNode setDict,
                     HashingStorageAddAllToOther addAllToOther) {
         int argsLen = args.length;
         Object[] swapped_args = new Object[argsLen];
-        TruffleString suffix = toString.execute(inliningTarget, internStringNode.execute(inliningTarget, T__BE));
+        TruffleString suffix = T__BE;
         TruffleString name = toString.execute(inliningTarget, args[0]);
         TruffleString newname = StringUtils.cat(name, suffix);
 

@@ -91,7 +91,6 @@ public final class HiddenAttr {
     public static final HiddenAttr DECODER_OBJECT = new HiddenAttr("decoder_object");   // cjkcodecs
     public static final HiddenAttr PICKLE_STATE = new HiddenAttr("state");              // pickle
     public static final HiddenAttr NEXT_ELEMENT = new HiddenAttr("next_element");       // PythonAbstractObject
-    public static final HiddenAttr INTERNED = new HiddenAttr("_interned");              // PString
     public static final HiddenAttr HOST_INTEROP_BEHAVIOR = new HiddenAttr(J___GRAALPYTHON_INTEROP_BEHAVIOR__);      // polyglot
     public static final HiddenAttr TREGEX_CACHE = new HiddenAttr("tregex_cache");       // _sre
     public static final HiddenAttr METHOD_DEF_PTR = new HiddenAttr("method_def_ptr");   // PythonCextMethodBuiltins

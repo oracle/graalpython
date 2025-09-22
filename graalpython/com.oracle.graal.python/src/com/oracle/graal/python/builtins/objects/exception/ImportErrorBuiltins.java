@@ -45,7 +45,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NAME;
 import static com.oracle.graal.python.nodes.StringLiterals.T_PATH;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
@@ -116,9 +115,6 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
     @SlotSignature(minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class ImportErrorInitNode extends PythonVarargsBuiltinNode {
-        private static final TruffleString NAME = tsLiteral("name");
-        private static final TruffleString PATH = tsLiteral("path");
-
         @Specialization
         static Object init(PBaseException self, Object[] args, PKeyword[] kwargs,
                         @Bind Node inliningTarget,
@@ -129,9 +125,9 @@ public final class ImportErrorBuiltins extends PythonBuiltins {
             Object[] attrs = IMPORT_ERROR_ATTR_FACTORY.create(args);
             for (PKeyword kw : kwargs) {
                 TruffleString kwName = kw.getName();
-                if (equalNode.execute(kwName, NAME, TS_ENCODING)) {
+                if (equalNode.execute(kwName, T_NAME, TS_ENCODING)) {
                     attrs[IDX_NAME] = kw.getValue();
-                } else if (equalNode.execute(kwName, PATH, TS_ENCODING)) {
+                } else if (equalNode.execute(kwName, T_PATH, TS_ENCODING)) {
                     attrs[IDX_PATH] = kw.getValue();
                 } else {
                     throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, S_IS_AN_INVALID_ARG_FOR_S, kw.getName(), "ImportError");

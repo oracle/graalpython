@@ -47,6 +47,7 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_DOT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_GRAALPYTHON;
 import static com.oracle.graal.python.nodes.StringLiterals.T_JAVA;
 import static com.oracle.graal.python.nodes.StringLiterals.T_REF;
+import static com.oracle.graal.python.util.PythonUtils.toInternedTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -1206,7 +1207,7 @@ public abstract class Python3Core {
         for (PythonBuiltins builtin : builtins) {
             CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
             if (annotation.defineModule().length() > 0) {
-                createModule(toTruffleStringUncached(annotation.defineModule()), builtin);
+                createModule(toInternedTruffleStringUncached(annotation.defineModule()), builtin);
             }
         }
         // publish builtin types in the corresponding modules
@@ -1240,13 +1241,13 @@ public abstract class Python3Core {
             builtin.initialize(this);
             CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
             if (annotation.defineModule().length() > 0) {
-                PythonModule module = builtinModules.get(toTruffleStringUncached(annotation.defineModule()));
+                PythonModule module = builtinModules.get(toInternedTruffleStringUncached(annotation.defineModule()));
                 if (module != null) {
                     addBuiltinsTo(module, builtin);
                 }
             }
             if (annotation.extendsModule().length() > 0) {
-                PythonModule module = builtinModules.get(toTruffleStringUncached(annotation.extendsModule()));
+                PythonModule module = builtinModules.get(toInternedTruffleStringUncached(annotation.extendsModule()));
                 if (module != null) {
                     addBuiltinsTo(module, builtin);
                 }

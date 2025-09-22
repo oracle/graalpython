@@ -26,8 +26,8 @@
 package com.oracle.graal.python.nodes.function;
 
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringArrayUncached;
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.toInternedTruffleStringArrayUncached;
+import static com.oracle.graal.python.util.PythonUtils.toInternedTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.ArrayList;
@@ -119,7 +119,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
      * Should return a signature compatible with {@link #createArgumentsList(Builtin, boolean)}
      */
     public static Signature createSignature(NodeFactory<? extends PythonBuiltinBaseNode> factory, Builtin builtin, boolean declaresExplicitSelf, boolean constructsClass) {
-        TruffleString[] parameterNames = toTruffleStringArrayUncached(builtin.parameterNames());
+        TruffleString[] parameterNames = toInternedTruffleStringArrayUncached(builtin.parameterNames());
         int maxNumPosArgs = Math.max(builtin.minNumOfPositionalArgs(), parameterNames.length);
 
         if (builtin.maxNumOfPositionalArgs() >= 0) {
@@ -178,7 +178,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
         assert canUseSpecialBuiltinNode(builtin) || !usesSpecialBuiltinNode(factory.getNodeClass()) : factory.getNodeClass().getName() +
                         " must not use PythonUnary/Binary/Ternary/QuaternaryBultinNode";
         return new Signature(posOnlyArgs, builtin.takesVarKeywordArgs(), builtin.takesVarArgs() ? parameterNames.length : -1,
-                        parameterNames, toTruffleStringArrayUncached(builtin.keywordOnlyNames()), false, toTruffleStringUncached(builtin.raiseErrorName()));
+                        parameterNames, toInternedTruffleStringArrayUncached(builtin.keywordOnlyNames()), false, toInternedTruffleStringUncached(builtin.raiseErrorName()));
     }
 
     private static boolean validateBuiltin(NodeFactory<? extends PythonBuiltinBaseNode> factory, Builtin builtin) {

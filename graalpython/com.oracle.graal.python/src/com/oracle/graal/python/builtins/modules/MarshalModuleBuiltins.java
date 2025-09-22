@@ -93,7 +93,6 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.IsInternedStringNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.compiler.BytecodeCodeUnit;
@@ -112,6 +111,7 @@ import com.oracle.graal.python.lib.PyTupleCheckExactNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckExactNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNodeGen;
@@ -817,16 +817,17 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 } else if (isJavaString(v)) {
                     writeByte(TYPE_UNICODE | flag);
                     writeString(TruffleString.fromJavaStringUncached((String) v, TS_ENCODING));
-                } else if (v instanceof TruffleString) {
-                    writeByte(TYPE_UNICODE | flag);
-                    writeString((TruffleString) v);
                 } else if (PyUnicodeCheckExactNode.executeUncached(v)) {
-                    if (version >= 3 && IsInternedStringNode.executeUncached((PString) v)) {
+                    if (version >= 3 && IsInternedStringNode.executeUncached(v)) {
                         writeByte(TYPE_INTERNED | flag);
                     } else {
                         writeByte(TYPE_UNICODE | flag);
                     }
-                    writeString(((PString) v).getValueUncached());
+                    if (v instanceof PString pstring) {
+                        writeString(pstring.getValueUncached());
+                    } else {
+                        writeString((TruffleString) v);
+                    }
                 } else if (PyTupleCheckExactNode.executeUncached(v)) {
                     Object[] items = GetObjectArrayNode.executeUncached(v);
                     if (version >= 4 && items.length < 256) {
@@ -1082,9 +1083,9 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 case TYPE_SHORT_ASCII:
                     return addRef.run(readAscii(readByteSize(), false));
                 case TYPE_INTERNED:
-                    return addRef.run(StringNodes.InternStringNode.executeUncached(readString()));
+                    return addRef.run(readString(true));
                 case TYPE_UNICODE:
-                    return addRef.run(readString());
+                    return addRef.run(readString(false));
                 case TYPE_SMALL_TUPLE:
                     int smallTupleSize = readByteSize();
                     Object[] smallTupleItems = new Object[smallTupleSize];
@@ -1162,9 +1163,18 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             writeBytes(ba.getArray(), ba.getOffset(), ba.getLength());
         }
 
-        private TruffleString readString() {
+        private TruffleString readString(boolean intern) {
             int sz = readInt();
-            return TruffleString.fromByteArrayUncached(readNBytes(sz), 0, sz, Encoding.UTF_8, true).switchEncodingUncached(TS_ENCODING, TranscodingErrorHandler.DEFAULT_KEEP_SURROGATES_IN_UTF8);
+            if (sz == 0) {
+                return StringLiterals.T_EMPTY_STRING;
+            }
+            var utf8String = TruffleString.fromByteArrayUncached(readNBytes(sz), 0, sz, Encoding.UTF_8, true);
+            var value = utf8String.switchEncodingUncached(TS_ENCODING, TranscodingErrorHandler.DEFAULT_KEEP_SURROGATES_IN_UTF8);
+            if (intern) {
+                return PythonUtils.internString(value);
+            } else {
+                return value;
+            }
         }
 
         private void writeShortString(String v) throws IOException {
@@ -1174,6 +1184,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             out.write(bytes);
         }
 
+        // Only used by readDoubleString() so no interning
         private TruffleString readShortString() {
             int sz = readByteSize();
             byte[] bytes = readNBytes(sz);
@@ -1184,7 +1195,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             byte[] bytes = readNBytes((int) sz);
             TruffleString value = TruffleString.fromByteArrayUncached(bytes, 0, (int) sz, Encoding.US_ASCII, true).switchEncodingUncached(TS_ENCODING);
             if (intern) {
-                return StringNodes.InternStringNode.executeUncached(value);
+                return PythonUtils.internString(value);
             } else {
                 return value;
             }
@@ -1216,7 +1227,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 case ARRAY_TYPE_BOOLEAN:
                     return readBooleanArray();
                 case ARRAY_TYPE_STRING:
-                    return readStringArray();
+                    return readStringArray(false);
                 case ARRAY_TYPE_OBJECT:
                     return readObjectArray();
                 default:
@@ -1284,14 +1295,14 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             return a;
         }
 
-        private TruffleString[] readStringArray() {
+        private TruffleString[] readStringArray(boolean intern) {
             int length = readInt();
             if (length == 0) {
                 return EMPTY_TRUFFLESTRING_ARRAY;
             }
             TruffleString[] a = new TruffleString[length];
             for (int i = 0; i < length; i++) {
-                a[i] = readString();
+                a[i] = readString(intern);
             }
             return a;
         }
@@ -1346,8 +1357,8 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             if (fileVersion != Compiler.BYTECODE_VERSION) {
                 throw new MarshalError(ValueError, ErrorMessages.BYTECODE_VERSION_MISMATCH, Compiler.BYTECODE_VERSION, fileVersion);
             }
-            TruffleString name = readString();
-            TruffleString qualname = readString();
+            TruffleString name = readString(true);
+            TruffleString qualname = readString(true);
             int argCount = readInt();
             int kwOnlyArgCount = readInt();
             int positionalOnlyArgCount = readInt();
@@ -1355,10 +1366,10 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             byte[] code = readBytes();
             byte[] srcOffsetTable = readBytes();
             int flags = readInt();
-            TruffleString[] names = readStringArray();
-            TruffleString[] varnames = readStringArray();
-            TruffleString[] cellvars = readStringArray();
-            TruffleString[] freevars = readStringArray();
+            TruffleString[] names = readStringArray(true);
+            TruffleString[] varnames = readStringArray(true);
+            TruffleString[] cellvars = readStringArray(true);
+            TruffleString[] freevars = readStringArray(true);
             int[] cell2arg = readIntArray();
             if (cell2arg.length == 0) {
                 cell2arg = null;
@@ -1391,16 +1402,16 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             }
 
             byte[] serialized = readBytes();
-            TruffleString name = readString();
-            TruffleString qualname = readString();
+            TruffleString name = readString(true);
+            TruffleString qualname = readString(true);
             int argCount = readInt();
             int kwOnlyArgCount = readInt();
             int positionalOnlyArgCount = readInt();
             int flags = readInt();
-            TruffleString[] names = readStringArray();
-            TruffleString[] varnames = readStringArray();
-            TruffleString[] cellvars = readStringArray();
-            TruffleString[] freevars = readStringArray();
+            TruffleString[] names = readStringArray(true);
+            TruffleString[] varnames = readStringArray(true);
+            TruffleString[] cellvars = readStringArray(true);
+            TruffleString[] freevars = readStringArray(true);
             int[] cell2arg = readIntArray();
             if (cell2arg.length == 0) {
                 cell2arg = null;
@@ -1492,7 +1503,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         private PCode readCode() {
-            TruffleString fileName = readString();
+            TruffleString fileName = readString(true);
             int flags = readInt();
 
             int codeLen = readSize();

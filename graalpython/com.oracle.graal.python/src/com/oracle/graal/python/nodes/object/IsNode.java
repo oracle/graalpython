@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.nodes.object;
 
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
@@ -79,7 +77,6 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.strings.TruffleString;
 
 @ImportStatic(PythonOptions.class)
 @GenerateUncached
@@ -293,16 +290,13 @@ public abstract class IsNode extends Node implements BinaryOp {
     }
 
     // pstring (may be interned)
+    /** See {@link StringNodes.InternStringNode} and {@link StringNodes.IsInternedStringNode} */
     @Specialization
-    public static boolean doPString(PString left, PString right,
-                    @Bind Node inliningTarget,
-                    @Cached StringNodes.StringMaterializeNode materializeNode,
-                    @Cached StringNodes.IsInternedStringNode isInternedStringNode,
-                    @Cached TruffleString.EqualNode equalNode) {
-        if (isInternedStringNode.execute(inliningTarget, left) && isInternedStringNode.execute(inliningTarget, right)) {
-            return equalNode.execute(materializeNode.execute(inliningTarget, left), materializeNode.execute(inliningTarget, right), TS_ENCODING);
+    public static boolean doPString(PString left, PString right) {
+        if (left == right) {
+            return true;
         }
-        return left == right;
+        return PGuards.isBuiltinPString(left) && PGuards.isBuiltinPString(right) && left.isMaterialized() && right.isMaterialized() && left.getMaterialized() == right.getMaterialized();
     }
 
     // everything else

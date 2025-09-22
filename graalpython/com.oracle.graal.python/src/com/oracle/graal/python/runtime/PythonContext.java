@@ -2698,6 +2698,7 @@ public final class PythonContext extends Python3Core {
     }
 
     public void setCodeFilename(CallTarget callTarget, TruffleString filename) {
+        assert PythonUtils.isInterned(filename);
         codeFilename.put(callTarget, filename);
     }
 
@@ -2706,6 +2707,7 @@ public final class PythonContext extends Python3Core {
     }
 
     public void setCodeUnitFilename(CodeUnit co, TruffleString filename) {
+        assert PythonUtils.isInterned(filename);
         codeUnitFilename.put(co, filename);
     }
 

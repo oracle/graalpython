@@ -62,6 +62,7 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_VERSION;
 import static com.oracle.graal.python.nodes.StringLiterals.T_WARNINGS;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsInternedLiteral;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.IllegalFormatException;
@@ -151,7 +152,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
     public static final TruffleString T_WARN = tsLiteral(J_WARN);
     public static final TruffleString T_WARN_EXPLICIT = tsLiteral(J_WARN_EXPLICIT);
 
-    private static final TruffleString T_ERROR = tsLiteral("error");
+    private static final TruffleString T_ERROR = tsInternedLiteral("error");
     private static final TruffleString T_ALWAYS = tsLiteral("always");
     private static final TruffleString T_ONCE = tsLiteral("once");
     private static final TruffleString T_IGNORE = tsLiteral("ignore");
