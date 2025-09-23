@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # Copyright 2008-2010 Isaac Gouy
 # Copyright (c) 2013, 2014, Regents of the University of California
-# Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2025, Oracle and/or its affiliates.
 # All rights reserved.
 #
 # Revised BSD license
@@ -54,7 +54,7 @@ def main(n, n_threads=503, cycle=itertools.cycle):
             if n > 0:
                 n = (yield (n - 1))
             else:
-                print(worker_id)
+                # print(worker_id)
                 return
 
 
