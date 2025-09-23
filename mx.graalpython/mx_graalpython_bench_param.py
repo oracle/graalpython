@@ -170,6 +170,18 @@ MICRO_BENCHMARKS_SMALL = {
     'with-exception': ITER_6 + WARMUP_2 + ['5_000_000'],
     'tuple-indexing-from-constructor': ITER_6 + WARMUP_2 + ['250_000'],
     'tuple-indexing-from-literal': ITER_6 + WARMUP_2 + ['400_000'],
+    'c-member-access': ITER_5 + ['30'],
+    'c-list-iterating-obj': ITER_5 + ['500000'],
+    'c-magic-bool': ITER_5 + ['1000000'],
+    'c-magic-iter': ITER_5 + ['500000'],
+    'c-arith-binop': ITER_5 + ['3'],
+    'c-arith-binop2': ITER_5 + ['5'],
+    'c-call-classmethod': ITER_5 + ['200000'],
+    'c-issubtype-polymorphic-forced-to-native': ITER_5 + ['100000'],
+    'c-issubtype-polymorphic': ITER_5 + ['100000'],
+    'c-issubtype-monorphic': ITER_5 + ['200000'],
+    'c-call-method': ITER_5 + ['50000'],
+    'c-call-method-int-float': ITER_5 + ['500000'],
 }
 
 def _pickling_benchmarks(module='pickle'):
@@ -343,5 +355,4 @@ HEAP_BENCHMARKS = {
         "allocate-objects": [],
     }],
     "micro-small-heap": [PATH_MICRO, MICRO_BENCHMARKS_SMALL],
-    "micro-native-heap": [PATH_MICRO, MICRO_NATIVE_BENCHMARKS],
 }

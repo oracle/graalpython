@@ -51,7 +51,7 @@ static PyMethodDef MyModuleMethods[] = {
 
 static PyModuleDef c_min_method_module = {
     PyModuleDef_HEAD_INIT,
-    "int_float_method_module",
+    "minimal_method_module",
     NULL,
     -1,
     MyModuleMethods
@@ -70,7 +70,6 @@ from c_min_method_module import as_double
 
 # ~igv~: function_root_count_at
 def count(num):
-    print("###### NUM: " + str(num))
     for i in range(num):
         if 42 != as_double(42):
             raise RuntimeError()
