@@ -170,7 +170,7 @@ safepoint action mechanism can thus be used to kill threads waiting on the GIL.
 ### High-level
 
 C extensions assume reference counting, but on the managed side we want to leverage
-Java tracing GC. This creates a mismatch. The approach is to do both, reference
+Java's tracing garbage collector (GC). This creates a mismatch. The approach is to do both, reference
 counting and tracing GC, at the same time.
 
 On the native side we use reference counting. The native code is responsible for doing
@@ -180,8 +180,8 @@ code is created and when the last reference from the native code is destroyed.
 
 On the managed side we rely on tracing GC, so managed references are not ref-counted.
 For the ref-counting scheme on the native side, we approximate all the managed references
-as a single reference, i.e., we increment the refcount when object is referenced from managed
-code, and using a `PhantomReference` and reference queue we decrement the refcount when
+as a single reference, i.e., we increment the `refcount` when object is referenced from managed
+code, and using a `PhantomReference` and reference queue we decrement the `refcount` when
 there are no longer any managed references (but we do not clean the object as long as
 `refcount > 0`, because that means that there are still native references to it).
 
@@ -189,56 +189,179 @@ there are no longer any managed references (but we do not clean the object as lo
 
 There are two kinds of Python objects in GraalPy: managed and native.
 
+Below is a rough draft of the types and memory layouts involved and how they connect:
+
+- On the left is the managed (Java) heap
+- On the right are memory layouts allocated natively
+- At the top are the classes involved with making built-in and pure Python objects available to native code (with PInt as an example)
+- At the bottom are the classes involved in making our Java code work when natively allocated memory is passed into GraalPy.
+
+```
+    Managed Heap                                        Native Heap
+                                                          Stub allocated to represent managed object
+    +------------------------+                          +-------------------------------+
+    | PInt                   |<---+                     | struct PyGC_Head {            |
+    +------------------------+    |                     |    uintptr_t _gc_next         |
+    | BigInteger value       |    |                     |    uintptr_t _gc_prev         |
+    +------------------------+    |                     | }                             |
+                                  |       +------------>| struct GraalPyObject {        |
+    +------------------------+    |       |             |    Py_ssize_t ob_refcnt       |
+    | PythonNativeWrapper    |<---+       |     +------>|    PyObject *ob_type          |
+    +------------------------+------------+     |       |    int32_t handle_table_index |---+
+    |                        +<---+             |       | }                             |   |
+    +------------------------+    |             |       +-------------------------------+   |
+                                  |             |                                           |
+                                  |             |                                           |
+    +------------------------+    |             |                                           |
++---| PythonObjectReference  |<---+             |                                           |
+|   +------------------------+------------------+                                           |
+|   | boolean gc             |                                                              |
+|   | boolean freeAtCollect  |                         -                                    |
+|   +------------------------+                                                              |
+|                                                                                           |
+|   +------------------------+                                                              |
+|_/\| ReferenceQueue         |<---+                                                         |
+| \/+------------------------+    |                                                         |
+|                                 |                                                         |
+|   +---------------------------------------------------+                                   |
+|   | HandleContext                                     |                                   |
+|   +---------------------------------------------------+    index into nativeStubLookup    |
+|   | PythonObjectreference[] nativeStubLookup          |-----------------------------------+
+|   | HashMap<Long, NativeObjectReference> nativeLookup |
+|   +---------------------------------------------------+
+|                                                 |
+|   +-----------------------+                     |       Object allocated by native extension
++---| NativeObjectReference |                     |     +--------------------------------+
+    +-----------------------+                     +-----| struct PyObject {              |
+ +->|                       |---+                       |   Py_ssize_t ob_refcnt         |
+ |  +-----------------------+   |                       |   PyObject *ob_type            |
+ |                              +---------------------->|   ...                          |
+ |  +--------------------+                              |   // extension defined memory  |
+ +->| PythonNativeObject |----------------------------->|                                |
+    +--------------------+                              +--------------------------------+
+    |                    |
+    +--------------------+
+
+```
+
+Managed objects are associated with `PythonNativeWrapper` subinstances when
+they go to native, native objects are represented throughout the interpreters
+as `PythonAbstractNativeObject`. Both have associated weak references,
+`PythonObjectReference` and `NativeObjectReference`, respectively.
+
 #### Managed Objects
 
-Managed objects are allocated in the interpreter. If there is no native code involved,
-we do not do anything special and let the Java GC handle them. When a managed object
-is passed to a native extension code:
+Managed objects are allocated in the interpreter. If there is no native code
+involved, we do not do anything special and let the Java GC handle them. If
+native code wants to create any kind of object that is implemented as a
+built-in (in GraalPy) or in pure Python, we do an upcall and create the managed
+object. This object is immediately passed back to native code directly,
+and goes through the same transformation as one that was created from Python or
+Java code and is, for example, passed as an argument.
 
-* We wrap it in `PythonObjectNativeWrapper`. This is mostly in order to provide different
-interop protocol: we do not want to expose `toNative` and `asPointer` on Python objects.
+When a managed object is passed to a native extension code:
 
-* When NFI calls `toNative`/`asPointer` we:
-    * Allocate C memory that will represent the object on the native side (including the refcount field)
-    * Add a mapping of that memory address to the `PythonObjectNativeWrapper` object to a hash map `CApiTransitions.nativeLookup`.
-    * We initialize the refcount field to a constant `MANAGED_REFCNT` (larger number, because some
-              extensions like to special case on some small refcount values)
-    * Create `PythonObjectReference`: a weak reference to the `PythonObjectNativeWrapper`,
-    when this reference is enqueued (i.e., no managed references exist), we decrement the refcount by
-    `MANAGED_REFCNT` and if the recount falls back to `0`, we deallocate the native memory of the object,
-    otherwise we need to wait for the native code to eventually call `Py_DecRef` and make it `0`.
+* We create  `PythonNativeWrapper`. We create `PythonNativeWrapper` to
+  provide a different interop protocol, and not expose `toNative` and
+  `asPointer` on Python objects. The wrapper is stored inside the
+  `PythonAbstractObject`, because pointer identity is relied upon by some
+  extensions we saw in the wild. (See PythonToNativeNode)
+    * If the object was a "primitive" (TruffleString, int, long, boolean) we must
+      box it first into a `PythonAbstractObject`, so we create a `PString` or
+      `PInt` wrapper (or retrieve one for the singletons).
+    * For container types (such as tuples, lists), when their elements are
+      accessed any primitive elements are (like the previous step) boxed into a
+      `PythonAbstractObject`.
 
-* When extension code wants to create a new reference, it will call `Py_IncRef`.
-In the C implementation of `Py_IncRef` we check if a managed object with
-`refcount==MANAGED_REFCNT` wants to increment its refcount. In such case, the native code is
-creating a first reference to the managed object, we must make sure to keep the object alive
-as long as there are some native references. We set a field `PythonObjectReference.strongReference`,
-which will keep the `PythonObjectNativeWrapper` alive even when all other managed references die.
+* When NFI calls `toNative`/`asPointer`, we:
+    * Allocate a native stub that will represent the object on the native side.
+      We allocate room for the `refcount` and type pointer to avoid upcalls for
+      reading those. For some types such as floats, we also store the
+      double value into native memory to avoid upcalls (see
+      `FirstToNativeNode`). We also store a custom 32-bit integer into the native
+      memory with an index into the `nativeStubLookup` array.
+    * Create `PythonObjectReference`: a weak reference to the
+      `PythonObjectNativeWrapper`. It is stored in `nativeStubLookup` for
+      lookup. When this reference is enqueued (meaning no managed references to
+      the object exist anymore), we decrement the `refcount` by `MANAGED_REFCNT`
+      and if the recount reached `0`, we deallocate the object's native memory.
+      Otherwise, we need to wait for the native code to eventually
+      call `Py_DecRef` and make it `0` (see `AllocateNativeObjectStubNode`). The
+      field `gc` indicates if this object has a GC header prepended to the
+      pointer. The field `freeAtCollect` indicates this pointer can be free'd
+      immediately when the reference is enqueued.
+    * Initialize the `refcount` field to a constant `MANAGED_REFCNT` (larger
+      number, because some extensions like to special case on some small
+      `refcount` values)
+    * Set the high bit of the allocated pointer to quickly identify stubs
+      in native code. This allows us to make small
+      modifications to the existing macros for checking types and refcounts in
+      the Python C API.
 
-* When extension code is done with the object, it will call `Py_DecRef`.
-In the C implementation of `Py_DecRef` we check if a managed object with `refcount == MANAGED_REFCNT+1`
-wants to decrement its refcount to MANAGED_REFCNT, which means that there are no native references
-to that object anymore. In such case we clear the `PythonObjectReference.strongReference` field,
-and the memory management is then again left solely to the Java tracing GC.
+* When extension code creates a new reference, it calls `Py_IncRef`.
+  In the C implementation of `Py_IncRef`, we check if a managed
+  object with `refcount==MANAGED_REFCNT` wants to increment its `refcount`.
+  To ensure the object remains alive while native references exist,
+  we set the `PythonObjectReference.strongReference` field which keeps
+  the `PythonObjectNativeWrapper` alive even after all managed references are gone.
+
+* When extension code is done with the object, it calls `Py_DecRef`. In the
+  C implementation of `Py_DecRef`, we check if a managed object with
+  `refcount == MANAGED_REFCNT+1` wants to decrement its `refcount` to `MANAGED_REFCNT`,
+  which means that there are no native references to that object anymore.
+  We then clear the `PythonObjectReference.strongReference` field, and the
+  memory management is then again left solely to the Java tracing GC.
 
 #### Native Objects
 
-Native objects allocated using `PyObject_GC_New` in the native code are backed by native memory
-and may never be passed to managed code (as a return value of extension function or as an argument
-to some C API call). If a native object is not made available to managed code, it is just reference
-counted as usual, where `Py_DecRef` call that reaches `0` will deallocate the object. If a native
-object is passed to managed code:
+Native objects allocated using `PyObject_GC_New` in the native code are backed
+by native memory and may never be passed to managed code (as a return value of
+extension function or as an argument to some C API call). If a native object is
+not made available to managed code, it is just reference counted as usual,
+and when `Py_DecRef` reduces its count to `0`, it deallocates the object.
 
-* We increment the refcount of the native object by `MANAGED_REFCNT`
+
+If a native object is passed to managed code (see
+CApiTransitions.createAbstractNativeObject):
+* We increment the `refcount` of the native object by `MANAGED_REFCNT`
 * We create:
   * `PythonAbstractNativeObject` Java object to mirror it on the managed side
-  * `NativeObjectReference`, a weak reference to the `PythonAbstractNativeObject`.
-* Add mapping: native object address => `NativeObjectReference` into hash map `CApiTransitions.nativeLookup`
+  * `NativeObjectReference`, a weak reference to the
+    `PythonAbstractNativeObject` which will be enqueued when it is no longer
+    referenced from managed objects.
+* Add mapping: native object address => `NativeObjectReference` into hash map
+  `CApiTransitions.nativeLookup`
   * Next time we just fetch the existing wrapper and don't do any of this
-* When `NativeObjectReference` is enqueued, we decrement the refcount by `MANAGED_REFCNT`
-  * If the refcount falls to `0`, it means that there are no references to the object even from
-  native code, and we can destroy it. If it does not fall to `0`, we just wait for the native
-  code to eventually call `Py_DecRef` that makes it fall to `0`.
+* When `NativeObjectReference` is enqueued, we decrement the `refcount` by
+  `MANAGED_REFCNT`
+  * If the `refcount` falls to `0`, it means that there are no references to the
+    object even from native code, and we can destroy it. If it does not fall to
+    `0`, we just wait for the native code to eventually call `Py_DecRef` that
+    makes it fall to `0`.
+
+##### Memory Pressure
+
+Since native allocations are not visible to the JVM, we can run into trouble if
+an application allocates only small managed objects that have large amounts of
+off-heap memory attached. In such cases, the GC does not see any memory
+pressure and may not collect the objects with associated native memory.
+To address this, we track off-heap allocations and count the allocated bytes.
+In order to correctly account for free'd memory, we prepend a header that
+stores the allocated size in the Python APIs memory management functions.
+
+When we exceed a configurable threshold (`MaxNativeMemory`), we force a full Java GC,
+which also triggers a native Python cycle collection (see below). Unfortunately
+not all extensions use that API, so we *also* run a background thread
+that watches process RSS (see the `BackgroundGCTask*` context options). If
+RSS increases too quickly and we are allocating weak references for native objects,
+we force GCs more frequently.
+
+For things that allocate GPU memory this is still not enough, since there are no
+APIs we can use to get GPU allocation rate across platforms. For PyTorch (for example)
+we apply a patch that forces a GC whenever a CUDA allocation fails and retries.
+Additionally, some extensions cause such a high rate of stub allocations that polling
+weak references on a lower priority background thread was too slow. To address this,
+we also poll during transitions to prevent our handle table from growing too rapidly.
 
 #### Weak References
 
@@ -263,7 +386,7 @@ The high level solution is that when we see a "dead" cycle going through an obje
 which may be, however, referenced from managed),
 we fully replicate the object graphs (and the cycle) on the managed side (refcounts of native objects
 in the cycle, which were not referenced from managed yet, will get new `NativeObjectReference`
-created and refcount incremented by `MANAGED_REFCNT`). Managed objects already refer
+created and `refcount` incremented by `MANAGED_REFCNT`). Managed objects already refer
 to the `PythonAbstractNativeObject` wrappers of the native objects (e.g., some Python container
 with managed storage), but we also make the native wrappers refer to whatever their referents
 are on the Java side (we use `tp_traverse` to find their referents).
@@ -279,17 +402,17 @@ count them into this limit. Let us call this limit *weak to strong limit*.
 After this, if the objects on the managed side (the managed objects or `PythonAbstractNativeObject`
 mirrors of native objects) are garbage, eventually Java GC will collect them.
 This will push their references to the reference queue. When polled from the queue (`CApiTransitions#pollReferenceQueue`),
-we decrement the refcount by `MANAGED_REFCNT` (no managed references anymore) and
-if their refcount falls to `0`, they are freed - as part of that, we call the
+we decrement the `refcount` by `MANAGED_REFCNT` (no managed references anymore) and
+if their `refcount` falls to `0`, they are freed - as part of that, we call the
 `tp_clear` slot for native objects, which should call `Py_CLEAR` for their references,
-which does `Py_DecRef` - eventually all objects in the cycle should fall to refcount `0`.
+which does `Py_DecRef` - eventually all objects in the cycle should fall to `refcount` `0`.
 
-*Example: managed object `o1` has refcount `MANAGED_REFCNT+1`: `MANAGED_REFCNT` representing all managed
+*Example: managed object `o1` has `refcount` `MANAGED_REFCNT+1`: `MANAGED_REFCNT` representing all managed
 references, and `+1` for some native object `o2` referencing it. Native object `o2` has
 refcount `MANAGED_REFCNT`, because it is referenced only from managed (from `o1`).
 Both `o1` and `o2` form a cycle that was already transformed to managed during cycle GC.
-The reference queue processing will subtract `MANAGED_REFCNT` from `o1`'s refcount making it `1`.
-Then the reference queue processing will subtract `MANAGED_REFCNT` from `o2`'s refcount making it fall
+The reference queue processing will subtract `MANAGED_REFCNT` from `o1`'s `refcount` making it `1`.
+Then the reference queue processing will subtract `MANAGED_REFCNT` from `o2`'s `refcount` making it fall
 to `0` - this triggers the `tp_clear` of `o2`, which should subtract the final `1` from `o1`'s refcount.*
 
 If some of the managed objects are not garbage, and they passed back to native code,

@@ -22,5 +22,6 @@ Below are the options you can set on contexts for GraalPy.
 {% gfm_docs ../user/Embedding-Permissions.md %}
 {% gfm_docs ../user/Tooling.md %}
 {% gfm_docs ../user/Troubleshooting.md %}
+{% gfm_docs ../user/Test-Tiers.md %}
 
 {% copy_assets ../user/assets %}
