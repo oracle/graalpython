@@ -1923,6 +1923,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @ConstantOperand(type = LocalRangeAccessor.class)
     @ImportStatic({PGuards.class})
     public static final class UnpackToLocals {
+        @ExplodeLoop
         @Specialization(guards = "isBuiltinSequence(sequence)")
         public static void doUnpackSequence(VirtualFrame localFrame, LocalRangeAccessor results, PSequence sequence,
                         @Bind Node inliningTarget,
@@ -1954,6 +1955,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
 
         @Specialization
+        @ExplodeLoop
         @InliningCutoff
         public static void doUnpackIterable(VirtualFrame virtualFrame, LocalRangeAccessor results, Object collection,
                         @Bind Node inliningTarget,
