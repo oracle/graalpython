@@ -74,9 +74,11 @@ import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
+import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexWithBoundsCheckNode;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.dict.DictNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.ChainExceptionsNode;
@@ -215,6 +217,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.PSequenceWithStorage;
 import com.oracle.graal.python.runtime.sequence.storage.BoolSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
@@ -3206,43 +3209,42 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation(storeBytecodeIndex = true)
     @ImportStatic(PGuards.class)
     public static final class BinarySubscript {
-        // TODO: GR-64248, the result is not BE'd because of the UnexpectedResultException. maybe we
-        // should explicitly check for an int storage type?
-        @Specialization(rewriteOn = UnexpectedResultException.class, guards = "isBuiltinList(list)")
-        public static int doIntList(PList list, int index,
-                        @Shared @Cached("createForList()") SequenceStorageNodes.GetItemNode getListItemNode) throws UnexpectedResultException {
-            return getListItemNode.executeInt(list.getSequenceStorage(), index);
+        static boolean isBuiltinListOrTuple(PSequenceWithStorage s) {
+            return PGuards.isBuiltinTuple(s) && PGuards.isBuiltinList(s);
         }
 
-        @Specialization(rewriteOn = UnexpectedResultException.class, guards = "isBuiltinList(list)")
-        public static double doDoubleList(PList list, int index,
-                        @Shared @Cached("createForList()") SequenceStorageNodes.GetItemNode getListItemNode) throws UnexpectedResultException {
-            return getListItemNode.executeDouble(list.getSequenceStorage(), index);
+        public static boolean isIntBuiltinListOrTuple(PSequenceWithStorage s) {
+            return isBuiltinListOrTuple(s) && s.getSequenceStorage() instanceof IntSequenceStorage;
         }
 
-        @Specialization(replaces = {"doIntList", "doDoubleList"}, guards = "isBuiltinList(list)")
-        public static Object doObjectList(PList list, int index,
-                        @Shared @Cached("createForList()") SequenceStorageNodes.GetItemNode getListItemNode) {
-            return getListItemNode.execute(list.getSequenceStorage(), index);
+        @Specialization(guards = "isIntBuiltinListOrTuple(list)")
+        public static int doIntStorage(PSequenceWithStorage list, int index,
+                        @Shared @Cached NormalizeIndexWithBoundsCheckNode normalizeIndexNode) {
+            IntSequenceStorage storage = (IntSequenceStorage) list.getSequenceStorage();
+            int normalizedIndex = normalizeIndexNode.execute(index, storage.length(), ErrorMessages.LIST_INDEX_OUT_OF_RANGE);
+            return storage.getIntItemNormalized(normalizedIndex);
         }
 
-        @Specialization(rewriteOn = UnexpectedResultException.class, guards = "isBuiltinTuple(tuple)")
-        public static int doIntTuple(PTuple tuple, int index,
-                        @Shared @Cached("createForTuple()") SequenceStorageNodes.GetItemNode getTupleItemNode) throws UnexpectedResultException {
-            return getTupleItemNode.executeInt(tuple.getSequenceStorage(), index);
-
+        public static boolean isDoubleBuiltinListOrTuple(PSequenceWithStorage s) {
+            return isBuiltinListOrTuple(s) && s.getSequenceStorage() instanceof DoubleSequenceStorage;
         }
 
-        @Specialization(rewriteOn = UnexpectedResultException.class, guards = "isBuiltinTuple(tuple)")
-        public static double doDoubleTuple(PTuple tuple, int index,
-                        @Shared @Cached("createForTuple()") SequenceStorageNodes.GetItemNode getTupleItemNode) throws UnexpectedResultException {
-            return getTupleItemNode.executeDouble(tuple.getSequenceStorage(), index);
+        @Specialization(guards = "isDoubleBuiltinListOrTuple(list)")
+        public static double doDoubleStorage(PSequenceWithStorage list, int index,
+                        @Shared @Cached NormalizeIndexWithBoundsCheckNode normalizeIndexNode) {
+            DoubleSequenceStorage storage = (DoubleSequenceStorage) list.getSequenceStorage();
+            int normalizedIndex = normalizeIndexNode.execute(index, storage.length(), ErrorMessages.LIST_INDEX_OUT_OF_RANGE);
+            return storage.getDoubleItemNormalized(normalizedIndex);
         }
 
-        @Specialization(replaces = {"doIntTuple", "doDoubleTuple"}, guards = "isBuiltinTuple(tuple)")
-        public static Object doObjectTuple(PTuple tuple, int index,
-                        @Shared @Cached("createForTuple()") SequenceStorageNodes.GetItemNode getTupleItemNode) {
-            return getTupleItemNode.execute(tuple.getSequenceStorage(), index);
+        @Specialization(replaces = {"doIntStorage", "doDoubleStorage"}, guards = "isBuiltinListOrTuple(list)")
+        public static Object doObjectStorage(PSequenceWithStorage list, int index,
+                        @Bind Node inliningTarget,
+                        @Shared @Cached NormalizeIndexWithBoundsCheckNode normalizeIndexNode,
+                        @Cached GetItemScalarNode getItemScalarNode) {
+            SequenceStorage storage = list.getSequenceStorage();
+            int normalizedIndex = normalizeIndexNode.execute(index, storage.length(), ErrorMessages.LIST_INDEX_OUT_OF_RANGE);
+            return getItemScalarNode.execute(inliningTarget, storage, normalizedIndex);
         }
 
         @Fallback

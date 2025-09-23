@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.FindNode;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.GetBytesStorage;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.HexStringToBytesNode;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
+import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexWithBoundsCheckNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalByteArrayNode;
@@ -229,18 +230,18 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isNoValue(value)")
         static void set(PByteArray self, int index, Object value,
                         @Bind Node inliningTarget,
-                        @Shared @Cached("forBytearray()") NormalizeIndexNode normalizeIndexNode,
+                        @Shared @Cached NormalizeIndexWithBoundsCheckNode normalizeIndexNode,
                         @Cached SequenceStorageNodes.SetItemScalarNode setItemNode) {
-            index = normalizeIndexNode.execute(index, self.getSequenceStorage().length());
+            index = normalizeIndexNode.execute(index, self.getSequenceStorage().length(), ErrorMessages.BYTEARRAY_OUT_OF_BOUNDS);
             setItemNode.execute(inliningTarget, self.getSequenceStorage(), index, value);
         }
 
         @Specialization(guards = "isNoValue(value)")
         static void del(PByteArray self, int index, @SuppressWarnings("unused") Object value,
                         @Bind Node inliningTarget,
-                        @Shared @Cached("forBytearray()") NormalizeIndexNode normalizeIndexNode,
+                        @Shared @Cached NormalizeIndexWithBoundsCheckNode normalizeIndexNode,
                         @Cached SequenceStorageNodes.DeleteItemNode deleteItemNode) {
-            index = normalizeIndexNode.execute(index, self.getSequenceStorage().length());
+            index = normalizeIndexNode.execute(index, self.getSequenceStorage().length(), ErrorMessages.BYTEARRAY_OUT_OF_BOUNDS);
             deleteItemNode.execute(inliningTarget, self.getSequenceStorage(), index);
         }
     }
@@ -254,12 +255,12 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached("forBytearray()") NormalizeIndexNode normalizeIndexNode,
+                        @Cached NormalizeIndexWithBoundsCheckNode normalizeIndexNode,
                         @Cached SequenceStorageNodes.SetItemScalarNode setItemNode,
                         @Cached @Exclusive PRaiseNode raiseNode) {
             if (indexCheckNode.execute(inliningTarget, indexObj)) {
                 int index = asSizeNode.executeExact(frame, inliningTarget, indexObj);
-                index = normalizeIndexNode.execute(index, self.getSequenceStorage().length());
+                index = normalizeIndexNode.execute(index, self.getSequenceStorage().length(), ErrorMessages.BYTEARRAY_OUT_OF_BOUNDS);
                 setItemNode.execute(inliningTarget, self.getSequenceStorage(), index, value);
             } else {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "bytearray", indexObj);
