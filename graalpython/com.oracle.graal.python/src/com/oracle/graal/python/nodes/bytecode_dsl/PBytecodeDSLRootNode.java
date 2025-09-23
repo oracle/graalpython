@@ -1538,7 +1538,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @ConstantOperand(type = TruffleString.class)
     public static final class GetAttribute {
         @Specialization
-        @InliningCutoff
         public static Object doIt(VirtualFrame frame,
                         TruffleString name,
                         Object obj,
@@ -1551,7 +1550,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @ConstantOperand(type = TruffleString.class)
     public static final class SetAttribute {
         @Specialization
-        @InliningCutoff
         public static void doIt(VirtualFrame frame,
                         TruffleString key,
                         Object value,
@@ -2477,7 +2475,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation
     public static final class SetCurrentException {
         @Specialization
-        @InliningCutoff
         public static void doPException(VirtualFrame frame, Object ex) {
             PArguments.setException(frame, (AbstractTruffleException) ex);
         }
@@ -2488,7 +2485,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @ConstantOperand(type = boolean.class)
     public static final class SetCurrentGeneratorException {
         @Specialization
-        @InliningCutoff
         public static void doPException(VirtualFrame frame, LocalAccessor currentGeneratorException, boolean clearGeneratorEx, Object ex,
                         @Bind BytecodeNode bytecode) {
             if (clearGeneratorEx) {
@@ -2503,14 +2499,12 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation(storeBytecodeIndex = false)
     public static final class MarkExceptionAsCaught {
         @Specialization
-        @InliningCutoff
         public static void doPException(VirtualFrame frame, PException ex,
                         @Bind PBytecodeDSLRootNode rootNode) {
             ex.markAsCaught(frame, rootNode);
         }
 
         @Fallback
-        @InliningCutoff
         public static void doNothing(@SuppressWarnings("unused") Object ex) {
         }
     }
@@ -2518,6 +2512,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation(storeBytecodeIndex = true)
     public static final class AssertFailed {
         @Specialization
+        @InliningCutoff
         public static void doAssertFailed(VirtualFrame frame, Object assertionMessage,
                         @Bind PBytecodeDSLRootNode rooNode) {
             if (assertionMessage == PNone.NO_VALUE) {
@@ -2917,7 +2912,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation(storeBytecodeIndex = true)
     public static final class CallNilaryMethod {
         @Specialization
-        @InliningCutoff
         public static Object doCall(VirtualFrame frame, Object callable,
                         @Cached CallNode node) {
             return node.execute(frame, callable, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
@@ -2927,7 +2921,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation(storeBytecodeIndex = true)
     public static final class CallUnaryMethod {
         @Specialization
-        @InliningCutoff
         public static Object doCall(VirtualFrame frame, Object callable, Object arg0,
                         @Cached CallUnaryMethodNode node) {
             return node.executeObject(frame, callable, arg0);
@@ -2937,7 +2930,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation(storeBytecodeIndex = true)
     public static final class CallBinaryMethod {
         @Specialization
-        @InliningCutoff
         public static Object doObject(VirtualFrame frame, Object callable, Object arg0, Object arg1,
                         @Cached CallBinaryMethodNode node) {
             return node.executeObject(frame, callable, arg0, arg1);
@@ -2947,7 +2939,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation(storeBytecodeIndex = true)
     public static final class CallTernaryMethod {
         @Specialization
-        @InliningCutoff
         public static Object doCall(VirtualFrame frame, Object callable, Object arg0, Object arg1, Object arg2,
                         @Cached CallTernaryMethodNode node) {
             return node.execute(frame, callable, arg0, arg1, arg2);
@@ -2957,7 +2948,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation(storeBytecodeIndex = true)
     public static final class CallQuaternaryMethod {
         @Specialization
-        @InliningCutoff
         public static Object doCall(VirtualFrame frame, Object callable, Object arg0, Object arg1, Object arg2, Object arg3,
                         @Cached CallQuaternaryMethodNode node) {
             return node.execute(frame, callable, arg0, arg1, arg2, arg3);
@@ -2967,7 +2957,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation(storeBytecodeIndex = true)
     public static final class CallVarargsMethod {
         @Specialization
-        @InliningCutoff
         public static Object doCall(VirtualFrame frame, Object callable, Object[] args, PKeyword[] keywords,
                         @Cached CallNode node) {
             return node.execute(frame, callable, args, keywords);
@@ -2979,7 +2968,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @ConstantOperand(type = LocalAccessor.class)
     public static final class ContextManagerEnter {
         @Specialization
-        @InliningCutoff
         public static void doEnter(VirtualFrame frame,
                         LocalAccessor exitSetter,
                         LocalAccessor resultSetter,
@@ -3084,6 +3072,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation(storeBytecodeIndex = true)
     public static final class AsyncContextManagerCallExit {
         @Specialization
+        @InliningCutoff
         public static Object doRegular(VirtualFrame frame,
                         PNone none, Object exit, Object contextManager,
                         @Shared @Cached CallQuaternaryMethodNode callExit) {
