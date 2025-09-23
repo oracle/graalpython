@@ -76,7 +76,7 @@ public final class NfiDirectClosureRootNode extends RootNode {
             }
             return signature.getResType().getConvertArgJavaToNativeNodeUncached().execute(closureNode.execute(convertedArgs));
         } catch (Throwable e) {
-            throw new RuntimeException(e);
+            throw CompilerDirectives.shouldNotReachHere(e);
         }
     }
 }

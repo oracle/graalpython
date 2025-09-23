@@ -1264,6 +1264,11 @@ public abstract class CExtCommonNodes {
             return nativePointer.asPointer();
         }
 
+        @Specialization
+        static long doNfiFunction(NfiBoundFunction function) {
+            return function.getAddress();
+        }
+
         @Specialization(guards = "!isNativePointer(pointerObject)", limit = "3")
         static long doOther(Object pointerObject,
                         @CachedLibrary("pointerObject") InteropLibrary lib) {
@@ -1271,7 +1276,7 @@ public abstract class CExtCommonNodes {
         }
 
         static boolean isNativePointer(Object pointerObject) {
-            return pointerObject instanceof NativePointer;
+            return pointerObject instanceof NativePointer || pointerObject instanceof NfiBoundFunction;
         }
     }
 

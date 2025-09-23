@@ -1706,7 +1706,7 @@ public record TpSlots(TpSlot nb_bool, //
     }
 
     private static boolean areSameNativeCallables(TpSlot a, TpSlot b) {
-        return a instanceof TpSlotNative na && b instanceof TpSlotNative nb && na.isSameCallable(nb, InteropLibrary.getUncached());
+        return a instanceof TpSlotNative na && b instanceof TpSlotNative nb && na.isSameCallable(nb);
     }
 
     public static void setSlots(PythonAbstractClass klass, TpSlots slots) {

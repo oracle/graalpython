@@ -876,37 +876,37 @@ public final class CApiContext extends CExtContext {
     }
 
     private static CApiContext loadCApi(Node node, PythonContext context, TruffleString name, TruffleString path, String reason) throws IOException, ImportException, ApiInitException {
-            Env env = context.getEnv();
+        Env env = context.getEnv();
 
-            TruffleFile homePath = env.getInternalTruffleFile(context.getCAPIHome().toJavaStringUncached());
-            // e.g. "libpython-native.so"
-            String libName = PythonContext.getSupportLibName("python-native");
-            final TruffleFile capiFile = homePath.resolve(libName).getCanonicalFile();
-            try {
-                boolean useNative = true;
-                boolean isolateNative = PythonOptions.IsolateNativeModules.getValue(env.getOptions());
-                final NativeLibraryLocator loc;
-                if (!isolateNative) {
-                    useNative = nativeCAPILoaded.compareAndSet(NO_NATIVE_CONTEXT, GLOBAL_NATIVE_CONTEXT);
-                } else {
-                    useNative = nativeCAPILoaded.compareAndSet(NO_NATIVE_CONTEXT, ISOLATED_NATIVE_CONTEXT) || nativeCAPILoaded.get() == ISOLATED_NATIVE_CONTEXT;
+        TruffleFile homePath = env.getInternalTruffleFile(context.getCAPIHome().toJavaStringUncached());
+        // e.g. "libpython-native.so"
+        String libName = PythonContext.getSupportLibName("python-native");
+        final TruffleFile capiFile = homePath.resolve(libName).getCanonicalFile();
+        try {
+            boolean useNative = true;
+            boolean isolateNative = PythonOptions.IsolateNativeModules.getValue(env.getOptions());
+            final NativeLibraryLocator loc;
+            if (!isolateNative) {
+                useNative = nativeCAPILoaded.compareAndSet(NO_NATIVE_CONTEXT, GLOBAL_NATIVE_CONTEXT);
+            } else {
+                useNative = nativeCAPILoaded.compareAndSet(NO_NATIVE_CONTEXT, ISOLATED_NATIVE_CONTEXT) || nativeCAPILoaded.get() == ISOLATED_NATIVE_CONTEXT;
+            }
+            if (!useNative) {
+                String actualReason = "initialize native extensions support";
+                if (reason != null) {
+                    actualReason = reason;
+                } else if (name != null && path != null) {
+                    actualReason = String.format("load a native module '%s' from path '%s'", name.toJavaStringUncached(), path.toJavaStringUncached());
                 }
-                if (!useNative) {
-                    String actualReason = "initialize native extensions support";
-                    if (reason != null) {
-                        actualReason = reason;
-                    } else if (name != null && path != null) {
-                        actualReason = String.format("load a native module '%s' from path '%s'", name.toJavaStringUncached(), path.toJavaStringUncached());
-                    }
-                    throw new ApiInitException(toTruffleStringUncached(
-                                    String.format("Option python.IsolateNativeModules is set to 'false' and a second GraalPy context attempted to %s. " +
-                                                    "At least one context in this process runs with 'IsolateNativeModules' set to false. " +
-                                                    "Depending on the order of context creation, this means some contexts in the process " +
-                                                    "cannot use native module.", actualReason)));
-                }
-                loc = new NativeLibraryLocator(context, capiFile, isolateNative);
-                context.ensureNFILanguage(node, "allowNativeAccess", "true");
-                int dlopenFlags = isolateNative ? PosixConstants.RTLD_LOCAL.value : PosixConstants.RTLD_GLOBAL.value;
+                throw new ApiInitException(toTruffleStringUncached(
+                                String.format("Option python.IsolateNativeModules is set to 'false' and a second GraalPy context attempted to %s. " +
+                                                "At least one context in this process runs with 'IsolateNativeModules' set to false. " +
+                                                "Depending on the order of context creation, this means some contexts in the process " +
+                                                "cannot use native module.", actualReason)));
+            }
+            loc = new NativeLibraryLocator(context, capiFile, isolateNative);
+            context.ensureNFILanguage(node, "allowNativeAccess", "true");
+            int dlopenFlags = isolateNative ? PosixConstants.RTLD_LOCAL.value : PosixConstants.RTLD_GLOBAL.value;
             LOGGER.config(() -> "loading CAPI from " + loc.getCapiLibrary() + " as native");
             long capiLibrary = Nfi2.loadLibraryUncached(loc.getCapiLibrary(), dlopenFlags);
             long initFunction = Nfi2.lookupSymbolUncached(capiLibrary, "initialize_graal_capi");
@@ -914,30 +914,31 @@ public final class CApiContext extends CExtContext {
             context.setCApiContext(cApiContext);
             context.setCApiState(PythonContext.CApiState.INITIALIZING);
 
-                /*
-                 * The GC state needs to be created before the first managed object is sent to
-                 * native. This is because the native object stub could take part in GC and will
-                 * then already require the GC state.
-                 */
-                Object gcState = cApiContext.createGCState();
-                PythonThreadState currentThreadState = context.getThreadState(context.getLanguage());
-                Object nativeThreadState = PThreadState.getOrCreateNativeThreadState(currentThreadState);
+            /*
+             * The GC state needs to be created before the first managed object is sent to native.
+             * This is because the native object stub could take part in GC and will then already
+             * require the GC state.
+             */
+            Object gcState = cApiContext.createGCState();
+            PythonThreadState currentThreadState = context.getThreadState(context.getLanguage());
+            Object nativeThreadState = PThreadState.getOrCreateNativeThreadState(currentThreadState);
 
-                long builtinArrayPtr = Nfi2.malloc(PythonCextBuiltinRegistry.builtins.length * CStructAccess.POINTER_SIZE);
-                try {
-                    for (int id = 0; id < PythonCextBuiltinRegistry.builtins.length; id++) {
-                        CApiBuiltinExecutable builtin = PythonCextBuiltinRegistry.builtins[id];
-                        CStructAccess.WritePointerNode.writeArrayElementUncached(builtinArrayPtr, id, builtin.getNativePointer());
-                    }
-                    NfiSignature initSignature = Nfi2.createSignatureUncached(NfiType.POINTER, NfiType.POINTER, NfiType.POINTER, NfiType.POINTER, NfiType.POINTER);
-                    // TODO(NFI2) ENV parameter
-                    Object nativeThreadLocalVarPointer = initSignature.invokeUncached(initFunction, 0L, builtinArrayPtr, gcState, nativeThreadState);
-                    assert InteropLibrary.getUncached().isPointer(nativeThreadLocalVarPointer);
-                    assert !InteropLibrary.getUncached().isNull(nativeThreadLocalVarPointer);
-                    currentThreadState.setNativeThreadLocalVarPointer(nativeThreadLocalVarPointer);
-                } finally {
-                    Nfi2.free(builtinArrayPtr);
+            long builtinArrayPtr = Nfi2.malloc(PythonCextBuiltinRegistry.builtins.length * CStructAccess.POINTER_SIZE);
+            try {
+                for (int id = 0; id < PythonCextBuiltinRegistry.builtins.length; id++) {
+                    CApiBuiltinExecutable builtin = PythonCextBuiltinRegistry.builtins[id];
+                    CStructAccess.WritePointerNode.writeArrayElementUncached(builtinArrayPtr, id, builtin.getNativePointer());
                 }
+                NfiSignature initSignature = Nfi2.createSignatureUncached(NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER);
+                // TODO(NFI2) ENV parameter
+                // TODO(NFI2) unwrap gcState, should just be a long
+                Object nativeThreadLocalVarPointer = initSignature.invokeUncached(initFunction, 0L, builtinArrayPtr, ((NativePointer) gcState).asPointer(), ((NativePointer) nativeThreadState).asPointer());
+                assert InteropLibrary.getUncached().isPointer(nativeThreadLocalVarPointer);
+                assert !InteropLibrary.getUncached().isNull(nativeThreadLocalVarPointer);
+                currentThreadState.setNativeThreadLocalVarPointer(nativeThreadLocalVarPointer);
+            } finally {
+                Nfi2.free(builtinArrayPtr);
+            }
 
             assert PythonCApiAssertions.assertBuiltins(capiLibrary);
             cApiContext.pyDateTimeCAPICapsule = PyDateTimeCAPIWrapper.initWrapper(context, cApiContext);
@@ -951,13 +952,13 @@ public final class CApiContext extends CExtContext {
              * is skipped. For that case we set up the shutdown hook.
              */
             long finalizeFunction = Nfi2.lookupSymbolUncached(capiLibrary, "GraalPyPrivate_GetFinalizeCApiPointer");
-            Object finalizingPointer = Nfi2.createSignatureUncached(NfiType.POINTER).invokeUncached(finalizeFunction);
-                try {
-                    cApiContext.addNativeFinalizer(context, finalizingPointer);
-                } catch (RuntimeException e) {
-                    // This can happen when other languages restrict multithreading
-                    LOGGER.warning(() -> "didn't register a native finalizer due to: " + e.getMessage());
-                }
+            long finalizingPointer = (long) Nfi2.createSignatureUncached(NfiType.RAW_POINTER).invokeUncached(finalizeFunction);
+            try {
+                cApiContext.addNativeFinalizer(context, finalizingPointer);
+            } catch (RuntimeException e) {
+                // This can happen when other languages restrict multithreading
+                LOGGER.warning(() -> "didn't register a native finalizer due to: " + e.getMessage());
+            }
 
             return cApiContext;
         } catch (PException e) {
@@ -1089,21 +1090,15 @@ public final class CApiContext extends CExtContext {
      * triggered a dlclose that dropped the refcount of the python-native library to 0. We leak 1
      * byte of memory and this shutdown hook for each context that ever initialized the C API.
      */
-    private void addNativeFinalizer(PythonContext context, Object finalizingPointerObj) {
+    private void addNativeFinalizer(PythonContext context, long finalizingPointer) {
         final Unsafe unsafe = context.getUnsafe();
-        InteropLibrary lib = InteropLibrary.getUncached(finalizingPointerObj);
-        if (!lib.isNull(finalizingPointerObj) && lib.isPointer(finalizingPointerObj)) {
-            try {
-                long finalizingPointer = lib.asPointer(finalizingPointerObj);
-                // We are writing off heap memory and registering a VM shutdown hook, there is no
-                // point in creating this thread via Truffle sandbox at this point
-                nativeFinalizerRunnable = () -> unsafe.putByte(finalizingPointer, (byte) 1);
-                context.registerAtexitHook((c) -> nativeFinalizerRunnable.run());
-                nativeFinalizerShutdownHook = new Thread(nativeFinalizerRunnable);
-                Runtime.getRuntime().addShutdownHook(nativeFinalizerShutdownHook);
-            } catch (UnsupportedMessageException e) {
-                throw new RuntimeException(e);
-            }
+        if (finalizingPointer != 0L) {
+            // We are writing off heap memory and registering a VM shutdown hook, there is no
+            // point in creating this thread via Truffle sandbox at this point
+            nativeFinalizerRunnable = () -> unsafe.putByte(finalizingPointer, (byte) 1);
+            context.registerAtexitHook((c) -> nativeFinalizerRunnable.run());
+            nativeFinalizerShutdownHook = new Thread(nativeFinalizerRunnable);
+            Runtime.getRuntime().addShutdownHook(nativeFinalizerShutdownHook);
         }
     }
 

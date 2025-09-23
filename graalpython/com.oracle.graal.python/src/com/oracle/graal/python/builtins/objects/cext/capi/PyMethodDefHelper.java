@@ -86,7 +86,7 @@ import com.oracle.truffle.api.strings.TruffleString;
  * {@code PyMethodDef} we *MUST NOT* keep a reference to any runtime objects because they would
  * leak.
  * </p>
- * 
+ *
  * @param name The name of the function or method object.
  * @param meth A reference to the executable function. In CPython, this is a function pointer of
  *            type {@code PyCFunction}. In our case, it can either be a native function pointer or a
@@ -103,6 +103,8 @@ public record PyMethodDefHelper(TruffleString name, Object meth, int flags, Truf
         for (int i = 0; i < kwDefaults.length; i++) {
             if (ExternalFunctionNodes.KW_CALLABLE.equals(kwDefaults[i].getName())) {
                 // This can happen for slot wrapper methods of native slots
+                // TODO(NFI2) this should be NfiBoundFunction, used to be interop executable. Where
+                // do we invoke it?
                 return kwDefaults[i].getValue();
             }
         }

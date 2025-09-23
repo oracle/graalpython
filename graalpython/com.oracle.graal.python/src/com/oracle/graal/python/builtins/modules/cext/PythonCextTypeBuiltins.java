@@ -98,6 +98,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyDictGetItem;
 import com.oracle.graal.python.lib.PyDictSetDefault;
 import com.oracle.graal.python.lib.PyDictSetItem;
+import com.oracle.graal.python.nfi.NfiBoundFunction;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
@@ -368,16 +369,16 @@ public final class PythonCextTypeBuiltins {
             PythonLanguage language = PythonLanguage.get(inliningTarget);
             if (!interopLibrary.isNull(getter)) {
                 RootCallTarget getterCT = getterCallTarget(name, language);
-                getter = ensureExecutableUncached(getter, PExternalFunctionWrapper.GETTER);
-                get = PFactory.createBuiltinFunction(language, name, cls, EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(getter, closure), 0, getterCT);
+                NfiBoundFunction getterFun = ensureExecutableUncached(getter, PExternalFunctionWrapper.GETTER);
+                get = PFactory.createBuiltinFunction(language, name, cls, EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(getterFun, closure), 0, getterCT);
             }
 
             PBuiltinFunction set = null;
             boolean hasSetter = !interopLibrary.isNull(setter);
             if (hasSetter) {
                 RootCallTarget setterCT = setterCallTarget(name, language);
-                setter = ensureExecutableUncached(setter, PExternalFunctionWrapper.SETTER);
-                set = PFactory.createBuiltinFunction(language, name, cls, EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(setter, closure), 0, setterCT);
+                NfiBoundFunction setterFun = ensureExecutableUncached(setter, PExternalFunctionWrapper.SETTER);
+                set = PFactory.createBuiltinFunction(language, name, cls, EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(setterFun, closure), 0, setterCT);
             }
 
             // create get-set descriptor

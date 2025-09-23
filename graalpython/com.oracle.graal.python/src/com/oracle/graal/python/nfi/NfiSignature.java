@@ -48,12 +48,11 @@ import java.lang.foreign.MemorySegment;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -62,6 +61,7 @@ public final class NfiSignature {
 
     static final MethodType INTEROP_METHOD_TYPE = MethodType.methodType(Object.class, Object.class, Object[].class);
     static final MethodType DIRECT_METHOD_TYPE = MethodType.methodType(Object.class, Object[].class);
+    static final MethodType DOWNCALL_METHOD_TYPE = MethodType.methodType(Object.class, new Class<?>[]{MemorySegment.class, Object[].class});
 
     private final NfiType resType;
     private final NfiType[] argTypes;
@@ -84,8 +84,18 @@ public final class NfiSignature {
     }
 
     @Override
+    @TruffleBoundary
     public String toString() {
-        return Stream.of(argTypes).map(NfiType::toString).collect(Collectors.joining(", ", "(", ")")) + ": " + resType;
+        StringBuilder sb = new StringBuilder("(");
+        for (int i = 0; i < argTypes.length; i++) {
+            if (i > 0) {
+                sb.append(", ");
+            }
+            sb.append(argTypes[i]);
+        }
+        sb.append("): ");
+        sb.append(resType);
+        return sb.toString();
     }
 
     public NfiBoundFunction bind(long pointer) {
@@ -103,21 +113,26 @@ public final class NfiSignature {
         return convertedArgs;
     }
 
+    Object convertResult(Object r) {
+        if (resType == NfiType.POINTER) {
+            // TODO(NFI2) migrate to RAWPOINTER and remove this wrapping
+            return new NativePointer((long) r);
+        }
+        return r;
+    }
+
+    @TruffleBoundary
     public Object invokeUncached(long function, Object... args) throws ArityException, UnsupportedTypeException {
         try {
-            Object r = getDowncallMethodHandle().invokeExact(MemorySegment.ofAddress(function), convertArgs(args));
-            if (resType == NfiType.POINTER) {
-                // TODO(NFI2) migrate to RAWPOINTER and remove this wrapping
-                r = new NativePointer((long) r);
-            }
-            return r;
+            return convertResult(getDowncallMethodHandle().invokeExact(MemorySegment.ofAddress(function), convertArgs(args)));
         } catch (Throwable e) {
             // TODO(NFI2) proper exception handling
-            throw new RuntimeException(e);
+            throw CompilerDirectives.shouldNotReachHere(e);
         }
     }
 
     @SuppressWarnings("restricted")
+    @TruffleBoundary
     public long createInteropClosureUncached(Object executable) {
         // TODO(NFI2) remove once we are sure that all closures are direct nodes instead of interop
         // executables
@@ -140,6 +155,7 @@ public final class NfiSignature {
     }
 
     @SuppressWarnings("restricted")
+    @TruffleBoundary
     public long createDirectClosureUncached(Supplier<NfiClosureBaseNode> closureNode) {
         RootNode rootNode = new NfiDirectClosureRootNode(closureNode, this);
         // TODO(NFI2) SVM needs this handle to be a static method
@@ -162,7 +178,7 @@ public final class NfiSignature {
         if (downcallMethodHandle == null) {
             MethodHandle methodHandle = Linker.nativeLinker().downcallHandle(getFunctionDescriptor());
             methodHandle = methodHandle.asSpreader(Object[].class, argTypes.length);
-            methodHandle = methodHandle.asType(MethodType.methodType(Object.class, new Class<?>[]{MemorySegment.class, Object[].class}));
+            methodHandle = methodHandle.asType(DOWNCALL_METHOD_TYPE);
             downcallMethodHandle = methodHandle;
         }
         return downcallMethodHandle;

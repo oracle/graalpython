@@ -178,13 +178,14 @@ public abstract class ExternalFunctionNodes {
     static final TruffleString[] KEYWORDS_HIDDEN_CALLABLE = new TruffleString[]{KW_CALLABLE};
     static final TruffleString[] KEYWORDS_HIDDEN_CALLABLE_AND_CLOSURE = new TruffleString[]{KW_CALLABLE, KW_CLOSURE};
 
-    public static PKeyword[] createKwDefaults(Object callable) {
-        assert InteropLibrary.getUncached().isExecutable(callable);
+    public static PKeyword[] createKwDefaults(NfiBoundFunction callable) {
+        // TODO(NFI2) NfiBoundFunction is not executable - use direct invoke
+        // assert InteropLibrary.getUncached().isExecutable(callable);
         return new PKeyword[]{new PKeyword(KW_CALLABLE, callable)};
     }
 
-    public static PKeyword[] createKwDefaults(Object callable, Object closure) {
-        assert InteropLibrary.getUncached().isExecutable(callable);
+    public static PKeyword[] createKwDefaults(NfiBoundFunction callable, Object closure) {
+        // assert InteropLibrary.getUncached().isExecutable(callable);
         return new PKeyword[]{new PKeyword(KW_CALLABLE, callable), new PKeyword(KW_CLOSURE, closure)};
     }
 

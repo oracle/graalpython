@@ -48,35 +48,51 @@ import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 
 import com.oracle.graal.python.runtime.PosixConstants;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 
 import sun.misc.Unsafe;
 
 public final class Nfi2 {
 
-    // TODO(NFI2) error handling
-    @SuppressWarnings("restricted") static final MethodHandle dlopen = Linker.nativeLinker().downcallHandle(
-                    Linker.nativeLinker().defaultLookup().find("dlopen").get(),
-                    FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG, ValueLayout.JAVA_INT));
+    private static MethodHandle dlopen;
+    private static MethodHandle dlsym;
 
-    @SuppressWarnings("restricted") static final MethodHandle dlsym = Linker.nativeLinker().downcallHandle(
-                    Linker.nativeLinker().defaultLookup().find("dlsym").get(),
-                    FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG));
+    // TODO(NFI2) error handling
+    @SuppressWarnings("restricted")
+    private static MethodHandle ensureDlopenHandle() {
+        if (dlopen == null) {
+            dlopen = Linker.nativeLinker().downcallHandle(
+                            Linker.nativeLinker().defaultLookup().find("dlopen").get(),
+                            FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG, ValueLayout.JAVA_INT));
+        }
+        return dlopen;
+    }
+
+    @SuppressWarnings("restricted")
+    private static MethodHandle ensureDlsymHandle() {
+        if (dlsym == null) {
+            dlsym = Linker.nativeLinker().downcallHandle(
+                            Linker.nativeLinker().defaultLookup().find("dlsym").get(),
+                            FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG));
+        }
+        return dlsym;
+    }
 
     public static long loadLibraryUncached(String name, int flags) {
         long lib;
         long nativeName = javaStringToNativeUtf8(name);
         try {
             // TODO(NFI2) only add RTLD_LAZY flag if actually needed
-            lib = (long) dlopen.invokeExact(nativeName, flags | PosixConstants.RTLD_LAZY.value);
+            lib = (long) ensureDlopenHandle().invokeExact(nativeName, flags | PosixConstants.RTLD_LAZY.value);
         } catch (Throwable e) {
             // TODO(NFI2) proper exception handling
-            throw new RuntimeException(e);
+            throw CompilerDirectives.shouldNotReachHere(e);
         } finally {
             free(nativeName);
         }
         if (lib == 0) {
-            throw new RuntimeException("Failed to load library " + name);
+            throw CompilerDirectives.shouldNotReachHere("Failed to load library " + name);
         }
         return lib;
     }
@@ -85,9 +101,9 @@ public final class Nfi2 {
         long symbol;
         long nativeName = javaStringToNativeUtf8(name);
         try {
-            symbol = (long) dlsym.invokeExact(library, nativeName);
+            symbol = (long) ensureDlsymHandle().invokeExact(library, nativeName);
         } catch (Throwable e) {
-            throw new RuntimeException(e);
+            throw CompilerDirectives.shouldNotReachHere(e);
         } finally {
             free(nativeName);
         }
@@ -115,7 +131,7 @@ public final class Nfi2 {
                 theUnsafe.setAccessible(true);
                 return (Unsafe) theUnsafe.get(Unsafe.class);
             } catch (Exception e) {
-                throw new RuntimeException("exception while trying to get Unsafe", e);
+                throw CompilerDirectives.shouldNotReachHere("exception while trying to get Unsafe", e);
             }
         }
     }

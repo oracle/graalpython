@@ -75,9 +75,6 @@ import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.utilities.TruffleWeakReference;
@@ -140,9 +137,8 @@ public abstract class TpSlot {
         }
 
         @Specialization
-        static boolean nativeSlots(TpSlotNative a, TpSlotNative b,
-                        @CachedLibrary(limit = "1") InteropLibrary interop) {
-            return a.isSameCallable(b, interop);
+        static boolean nativeSlots(TpSlotNative a, TpSlotNative b) {
+            return a.isSameCallable(b);
         }
 
         @Fallback
@@ -218,20 +214,8 @@ public abstract class TpSlot {
             return new TpSlotCExtNative(callable);
         }
 
-        public final boolean isSameCallable(TpSlotNative other, InteropLibrary interop) {
-            if (this == other || this.callable == other.callable) {
-                return true;
-            }
-            // NFISymbols do not implement isIdentical interop message, so we compare the pointers
-            // Interop is going to be quite slow (in interpreter), should we eagerly request the
-            // pointer in the ctor?
-            interop.toNative(callable);
-            interop.toNative(other.callable);
-            try {
-                return interop.asPointer(callable) == interop.asPointer(other.callable);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
+        public final boolean isSameCallable(TpSlotNative other) {
+            return this == other || this.callable == other.callable || callable.getAddress() == other.callable.getAddress();
         }
 
         /**

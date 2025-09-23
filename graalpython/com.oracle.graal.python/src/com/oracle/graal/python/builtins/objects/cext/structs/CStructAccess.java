@@ -65,6 +65,7 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactor
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.WriteIntNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.WriteLongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.WritePointerNodeGen;
+import com.oracle.graal.python.nfi.NfiBoundFunction;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -1264,7 +1265,7 @@ public class CStructAccess {
             UNSAFE.putLong(pointer + offset, coerceToLongNode.execute(inliningTarget, value));
         }
 
-        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"}, limit = "3")
+        @Specialization(guards = {"!isLong(pointer)", "isPointer(pointer, lib)"}, limit = "3")
         static void writePointer(Object pointer, long offset, Object value,
                         @Bind Node inliningTarget,
                         @CachedLibrary("pointer") InteropLibrary lib,
@@ -1272,12 +1273,16 @@ public class CStructAccess {
             writeLong(asPointer(pointer, lib), offset, value, inliningTarget, coerceToLongNode);
         }
 
-        @Specialization(guards = {"!isLong(pointer)", "!lib.isPointer(pointer)"})
+        @Specialization(guards = {"!isLong(pointer)", "!isPointer(pointer, lib)"})
         static void writeManaged(Object pointer, long offset, Object value,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached PCallCapiFunction call) {
             assert validPointer(pointer);
             call.call(NativeCAPISymbol.FUN_WRITE_POINTER_MEMBER, pointer, offset, value);
+        }
+
+        static boolean isPointer(Object o, InteropLibrary lib) {
+            return o instanceof NfiBoundFunction || lib.isPointer(o);
         }
 
         public static WritePointerNode getUncached() {

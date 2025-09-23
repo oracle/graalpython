@@ -42,71 +42,43 @@ package com.oracle.graal.python.nfi;
 
 import java.lang.invoke.MethodHandle;
 
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.ArityException;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
 
-// TODO(NFI2) do not expose fields
-@ExportLibrary(InteropLibrary.class)
-public record NfiBoundFunction(long ptr, MethodHandle boundHandle, NfiSignature signature) implements TruffleObject {
+public final class NfiBoundFunction {
+    private final long ptr;
+    private final MethodHandle boundHandle;
+    private final NfiSignature signature;
+
+    NfiBoundFunction(long ptr, MethodHandle boundHandle, NfiSignature signature) {
+        this.ptr = ptr;
+        this.boundHandle = boundHandle;
+        this.signature = signature;
+    }
 
     public long getAddress() {
         return ptr;
     }
 
     // TODO(NFI2) duplicate code with NfiSignature.invokeUncached
+    @TruffleBoundary
     public Object invoke(Object... args) throws UnsupportedTypeException, ArityException {
         try {
-            Object r = boundHandle.invokeExact(signature.convertArgs(args));
-            if (signature.getResType() == NfiType.POINTER) {
-                // TODO(NFI2) migrate to RAWPOINTER and remove this wrapping
-                r = new NativePointer((long) r);
-            }
-            return r;
+            return signature.convertResult(boundHandle.invokeExact(signature.convertArgs(args)));
         } catch (Throwable e) {
             // TODO(NFI2) proper exception handling
-            throw new RuntimeException(e);
+            throw CompilerDirectives.shouldNotReachHere(e);
         }
     }
 
-    @ExportMessage
-    boolean isPointer() {
-        return true;
-    }
-
-    @ExportMessage
-    boolean isNull() {
-        return false;
-    }
-
-    @ExportMessage
-    long asPointer() {
-        return ptr;
-    }
-
-    @ExportMessage
-    void toNative() {
-    }
-
-    @ExportMessage
-    boolean isExecutable() {
-        return true;
-    }
-
-    // TODO(NFI2) do not implement interop? for now we need this in
-    // ExternalFunctionNodes.createKwDefaults()
-    // Look for usages of ensureExecutableUncached()
-    @ExportMessage
-    public Object execute(Object... arguments) throws UnsupportedTypeException, ArityException, UnsupportedMessageException {
-        Object r = invoke(arguments);
-        if (r == null) {
-            assert signature.getResType() == NfiType.VOID;
-            return new NativePointer(0);
-        }
-        return r;
+    @Override
+    @TruffleBoundary
+    public String toString() {
+        return "NfiBoundFunction[" +
+                        "ptr=" + ptr + ", " +
+                        "boundHandle=" + boundHandle + ", " +
+                        "signature=" + signature + ']';
     }
 }

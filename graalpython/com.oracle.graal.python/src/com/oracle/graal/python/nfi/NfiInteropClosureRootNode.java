@@ -41,6 +41,7 @@
 package com.oracle.graal.python.nfi;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -71,7 +72,7 @@ final class NfiInteropClosureRootNode extends RootNode {
             }
             return signature.getResType().getConvertArgJavaToNativeNodeUncached().execute(interop.execute(receiver, convertedArgs));
         } catch (Throwable e) {
-            throw new RuntimeException(e);
+            throw CompilerDirectives.shouldNotReachHere(e);
         }
     }
 }

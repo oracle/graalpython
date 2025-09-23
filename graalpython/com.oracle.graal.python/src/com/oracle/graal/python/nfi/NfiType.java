@@ -53,7 +53,8 @@ public enum NfiType {
     SINT64,
     FLOAT,
     DOUBLE,
-    POINTER;
+    POINTER,        // arg can be interop pointer, retval is wrapped in NativePointer
+    RAW_POINTER;    // arg must be long, retval is long
 
     MemoryLayout asLayout() {
         return switch (this) {
@@ -64,7 +65,7 @@ public enum NfiType {
             case SINT64 -> ValueLayout.JAVA_LONG;
             case FLOAT -> ValueLayout.JAVA_FLOAT;
             case DOUBLE -> ValueLayout.JAVA_DOUBLE;
-            case POINTER -> ValueLayout.JAVA_LONG;
+            case POINTER, RAW_POINTER -> ValueLayout.JAVA_LONG;
         };
     }
 
@@ -77,7 +78,7 @@ public enum NfiType {
             case SINT64 -> long.class;
             case FLOAT -> float.class;
             case DOUBLE -> double.class;
-            case POINTER -> long.class;
+            case POINTER, RAW_POINTER -> long.class;
         };
     }
 
@@ -87,7 +88,7 @@ public enum NfiType {
             case SINT8 -> ConvertArgJavaToNativeNodeFactory.ToINT8NodeGen.getUncached();
             case SINT16 -> ConvertArgJavaToNativeNodeFactory.ToINT16NodeGen.getUncached();
             case SINT32 -> ConvertArgJavaToNativeNodeFactory.ToINT32NodeGen.getUncached();
-            case SINT64 -> ConvertArgJavaToNativeNodeFactory.ToINT64NodeGen.getUncached();
+            case SINT64, RAW_POINTER -> ConvertArgJavaToNativeNodeFactory.ToINT64NodeGen.getUncached();
             case FLOAT -> ConvertArgJavaToNativeNodeFactory.ToFLOATNodeGen.getUncached();
             case DOUBLE -> ConvertArgJavaToNativeNodeFactory.ToDOUBLENodeGen.getUncached();
             case POINTER -> ConvertArgJavaToNativeNodeFactory.ToPointerNodeGen.getUncached();

@@ -73,6 +73,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___COMPLEX__;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.coerceToLong;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
@@ -616,8 +617,8 @@ public abstract class CExtNodes {
                         @Cached NormalizePtrNode normalizeA,
                         @Cached NormalizePtrNode normalizeB) {
             CompilerAsserts.partialEvaluationConstant(op);
-            Object ptrA = normalizeA.execute(inliningTarget, a);
-            Object ptrB = normalizeB.execute(inliningTarget, b);
+            long ptrA = normalizeA.execute(inliningTarget, a);
+            long ptrB = normalizeB.execute(inliningTarget, b);
             try {
                 NfiBoundFunction sym = CApiContext.getNativeSymbol(inliningTarget, FUN_PTR_COMPARE);
                 return (int) sym.invoke(ptrA, ptrB, op.asNative()) != 0;
@@ -631,20 +632,22 @@ public abstract class CExtNodes {
         @GenerateCached(false)
         @GenerateUncached
         abstract static class NormalizePtrNode extends Node {
-            abstract Object execute(Node inliningTarget, Object ptr);
+            abstract long execute(Node inliningTarget, Object ptr);
 
             @Specialization
-            static Object doLong(long l) {
+            static long doLong(long l) {
                 return l;
             }
 
-            @Specialization
-            static Object doLong(PythonNativeObject o) {
-                return o.getPtr();
+            @Specialization(limit = "3")
+            static long doLong(@SuppressWarnings("unused") PythonNativeObject o,
+                            @Bind("o.getPtr()") Object ptr,
+                            @CachedLibrary("ptr") InteropLibrary lib) {
+                return coerceToLong(ptr, lib);
             }
 
             @Specialization
-            static Object doLong(PythonNativeVoidPtr o) {
+            static long doLong(PythonNativeVoidPtr o) {
                 return o.getNativePointer();
             }
         }
@@ -1897,8 +1900,8 @@ public abstract class CExtNodes {
         // TODO(fa) support static and class methods
         PExternalFunctionWrapper sig = PExternalFunctionWrapper.fromMethodFlags(flags);
         RootCallTarget callTarget = PExternalFunctionWrapper.getOrCreateCallTarget(sig, language, methodName, CExtContext.isMethStatic(flags));
-        mlMethObj = ensureExecutableUncached(mlMethObj, sig);
-        PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(mlMethObj);
+        NfiBoundFunction fun = ensureExecutableUncached(mlMethObj, sig);
+        PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(fun);
         PBuiltinFunction function = PFactory.createBuiltinFunction(language, methodName, null, PythonUtils.EMPTY_OBJECT_ARRAY, kwDefaults, flags, callTarget);
         HiddenAttr.WriteNode.executeUncached(function, METHOD_DEF_PTR, methodDef);
 
