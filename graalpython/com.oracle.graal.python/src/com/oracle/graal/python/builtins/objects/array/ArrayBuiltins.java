@@ -57,10 +57,10 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -72,7 +72,8 @@ import com.oracle.graal.python.builtins.objects.array.ArrayNodes.GetValueNode;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
-import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
+import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexWithBoundsCheckNode;
+import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexWithoutBoundsCheckNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -760,9 +761,9 @@ public final class ArrayBuiltins extends PythonBuiltins {
         static void setitem(VirtualFrame frame, PArray self, Object idx, Object value,
                         @Bind Node inliningTarget,
                         @Exclusive @Cached PyNumberIndexNode indexNode,
-                        @Shared @Cached("forArrayAssign()") NormalizeIndexNode normalizeIndexNode,
+                        @Shared @Cached NormalizeIndexWithBoundsCheckNode normalizeIndexNode,
                         @Cached ArrayNodes.PutValueNode putValueNode) {
-            int index = normalizeIndexNode.execute(indexNode.execute(frame, inliningTarget, idx), self.getLength());
+            int index = normalizeIndexNode.execute(indexNode.execute(frame, inliningTarget, idx), self.getLength(), ErrorMessages.ARRAY_ASSIGN_OUT_OF_BOUNDS);
             putValueNode.execute(frame, inliningTarget, self, index, value);
         }
 
@@ -770,11 +771,11 @@ public final class ArrayBuiltins extends PythonBuiltins {
         static void delitem(VirtualFrame frame, PArray self, Object idx, @SuppressWarnings("unused") Object value,
                         @Bind Node inliningTarget,
                         @Exclusive @Cached PyNumberIndexNode indexNode,
-                        @Shared @Cached("forArrayAssign()") NormalizeIndexNode normalizeIndexNode,
+                        @Shared @Cached NormalizeIndexWithBoundsCheckNode normalizeIndexNode,
                         @Exclusive @Cached DeleteArraySliceNode deleteSliceNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             self.checkCanResize(inliningTarget, raiseNode);
-            int index = normalizeIndexNode.execute(indexNode.execute(frame, inliningTarget, idx), self.getLength());
+            int index = normalizeIndexNode.execute(indexNode.execute(frame, inliningTarget, idx), self.getLength(), ErrorMessages.ARRAY_ASSIGN_OUT_OF_BOUNDS);
             deleteSliceNode.execute(inliningTarget, self, index, 1);
         }
 
@@ -1124,12 +1125,12 @@ public final class ArrayBuiltins extends PythonBuiltins {
         @Specialization
         static Object insert(VirtualFrame frame, PArray self, int inputIndex, Object value,
                         @Bind Node inliningTarget,
-                        @Cached("create(false)") NormalizeIndexNode normalizeIndexNode,
+                        @Cached NormalizeIndexWithoutBoundsCheckNode normalizeIndexNode,
                         @Cached ArrayNodes.CheckValueNode checkValueNode,
                         @Cached ArrayNodes.PutValueNode putValueNode,
                         @Cached ArrayNodes.ShiftNode shiftNode,
                         @Cached PRaiseNode raiseNode) {
-            int index = normalizeIndexNode.execute(inputIndex, self.getLength());
+            int index = normalizeIndexNode.execute(inputIndex, self.getLength(), ErrorMessages.INDEX_OUT_OF_RANGE);
             if (index > self.getLength()) {
                 index = self.getLength();
             } else if (index < 0) {
@@ -1179,14 +1180,14 @@ public final class ArrayBuiltins extends PythonBuiltins {
         @Specialization
         static Object pop(PArray self, int inputIndex,
                         @Bind Node inliningTarget,
-                        @Cached("forPop()") NormalizeIndexNode normalizeIndexNode,
+                        @Cached NormalizeIndexWithBoundsCheckNode normalizeIndexNode,
                         @Cached ArrayNodes.GetValueNode getValueNode,
                         @Cached DeleteArraySliceNode deleteSliceNode,
                         @Cached PRaiseNode raiseNode) {
             if (self.getLength() == 0) {
                 throw raiseNode.raise(inliningTarget, IndexError, ErrorMessages.POP_FROM_EMPTY_ARRAY);
             }
-            int index = normalizeIndexNode.execute(inputIndex, self.getLength());
+            int index = normalizeIndexNode.execute(inputIndex, self.getLength(), ErrorMessages.POP_INDEX_OUT_OF_RANGE);
             Object value = getValueNode.execute(inliningTarget, self, index);
             self.checkCanResize(inliningTarget, raiseNode);
             deleteSliceNode.execute(inliningTarget, self, index, 1);

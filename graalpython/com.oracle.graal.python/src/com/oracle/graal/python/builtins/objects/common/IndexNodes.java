@@ -107,16 +107,6 @@ public abstract class IndexNodes {
         }
 
         @NeverDefault
-        public static NormalizeIndexNode create(boolean boundsCheck) {
-            return new NormalizeIndexNode(ErrorMessages.INDEX_OUT_OF_RANGE, boundsCheck);
-        }
-
-        @NeverDefault
-        public static NormalizeIndexNode create(TruffleString errorMessage, boolean boundsCheck) {
-            return new NormalizeIndexNode(errorMessage, boundsCheck);
-        }
-
-        @NeverDefault
         public static NormalizeIndexNode forList() {
             return create(ErrorMessages.LIST_INDEX_OUT_OF_RANGE);
         }
@@ -129,31 +119,6 @@ public abstract class IndexNodes {
         @NeverDefault
         public static NormalizeIndexNode forTuple() {
             return create(ErrorMessages.TUPLE_OUT_OF_BOUNDS);
-        }
-
-        @NeverDefault
-        public static NormalizeIndexNode forArray() {
-            return create(ErrorMessages.ARRAY_OUT_OF_BOUNDS);
-        }
-
-        @NeverDefault
-        public static NormalizeIndexNode forArrayAssign() {
-            return create(ErrorMessages.ARRAY_ASSIGN_OUT_OF_BOUNDS);
-        }
-
-        @NeverDefault
-        public static NormalizeIndexNode forPop() {
-            return create(ErrorMessages.POP_INDEX_OUT_OF_RANGE);
-        }
-
-        @NeverDefault
-        public static NormalizeIndexNode forRange() {
-            return create(ErrorMessages.RANGE_OUT_OF_BOUNDS);
-        }
-
-        @NeverDefault
-        public static NormalizeIndexNode forBytearray() {
-            return create(ErrorMessages.BYTEARRAY_OUT_OF_BOUNDS);
         }
     }
 
@@ -177,17 +142,22 @@ public abstract class IndexNodes {
         public static NormalizeIndexCustomMessageNode getUncached() {
             return NormalizeIndexWithBoundsCheckNodeGen.getUncached();
         }
-
-        @NeverDefault
-        public static NormalizeIndexCustomMessageNode getUncachedWithoutBoundsCheck() {
-            return NormalizeIndexWithoutBoundsCheckNodeGen.getUncached();
-        }
     }
 
     @GenerateUncached
     @GenerateInline(false)       // footprint reduction 28 -> 10
     // not inlined because it is always created dynamically by NormalizeIndexNode
-    abstract static class NormalizeIndexWithBoundsCheckNode extends NormalizeIndexCustomMessageNode {
+    public abstract static class NormalizeIndexWithBoundsCheckNode extends NormalizeIndexCustomMessageNode {
+
+        @NeverDefault
+        public static NormalizeIndexWithBoundsCheckNode create() {
+            return NormalizeIndexWithBoundsCheckNodeGen.create();
+        }
+
+        @NeverDefault
+        public static NormalizeIndexWithBoundsCheckNode getUncached() {
+            return NormalizeIndexWithBoundsCheckNodeGen.getUncached();
+        }
 
         @Specialization
         static int doInt(int index, int length, TruffleString errorMessage,
@@ -272,7 +242,17 @@ public abstract class IndexNodes {
     @GenerateUncached
     @GenerateInline(false)       // footprint reduction 24 -> 6
     // not inlined because it is always created dynamically by NormalizeIndexNode
-    abstract static class NormalizeIndexWithoutBoundsCheckNode extends NormalizeIndexCustomMessageNode {
+    public abstract static class NormalizeIndexWithoutBoundsCheckNode extends NormalizeIndexCustomMessageNode {
+
+        @NeverDefault
+        public static NormalizeIndexWithoutBoundsCheckNode create() {
+            return NormalizeIndexWithoutBoundsCheckNodeGen.create();
+        }
+
+        @NeverDefault
+        public static NormalizeIndexWithoutBoundsCheckNode getUncached() {
+            return NormalizeIndexWithoutBoundsCheckNodeGen.getUncached();
+        }
 
         @Specialization
         static int doInt(int index, int length, @SuppressWarnings("unused") TruffleString errorMessage,

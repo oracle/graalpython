@@ -74,9 +74,11 @@ import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
+import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexWithBoundsCheckNode;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.dict.DictNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.ChainExceptionsNode;
@@ -215,6 +217,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.PSequenceWithStorage;
 import com.oracle.graal.python.runtime.sequence.storage.BoolSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
@@ -1538,7 +1541,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @ConstantOperand(type = TruffleString.class)
     public static final class GetAttribute {
         @Specialization
-        @InliningCutoff
         public static Object doIt(VirtualFrame frame,
                         TruffleString name,
                         Object obj,
@@ -1551,7 +1553,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @ConstantOperand(type = TruffleString.class)
     public static final class SetAttribute {
         @Specialization
-        @InliningCutoff
         public static void doIt(VirtualFrame frame,
                         TruffleString key,
                         Object value,
@@ -1923,6 +1924,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @ConstantOperand(type = LocalRangeAccessor.class)
     @ImportStatic({PGuards.class})
     public static final class UnpackToLocals {
+        @ExplodeLoop
         @Specialization(guards = "isBuiltinSequence(sequence)")
         public static void doUnpackSequence(VirtualFrame localFrame, LocalRangeAccessor results, PSequence sequence,
                         @Bind Node inliningTarget,
@@ -1954,6 +1956,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
 
         @Specialization
+        @ExplodeLoop
         @InliningCutoff
         public static void doUnpackIterable(VirtualFrame virtualFrame, LocalRangeAccessor results, Object collection,
                         @Bind Node inliningTarget,
@@ -2475,7 +2478,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation
     public static final class SetCurrentException {
         @Specialization
-        @InliningCutoff
         public static void doPException(VirtualFrame frame, Object ex) {
             PArguments.setException(frame, (AbstractTruffleException) ex);
         }
@@ -2486,7 +2488,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @ConstantOperand(type = boolean.class)
     public static final class SetCurrentGeneratorException {
         @Specialization
-        @InliningCutoff
         public static void doPException(VirtualFrame frame, LocalAccessor currentGeneratorException, boolean clearGeneratorEx, Object ex,
                         @Bind BytecodeNode bytecode) {
             if (clearGeneratorEx) {
@@ -2501,14 +2502,12 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation(storeBytecodeIndex = false)
     public static final class MarkExceptionAsCaught {
         @Specialization
-        @InliningCutoff
         public static void doPException(VirtualFrame frame, PException ex,
                         @Bind PBytecodeDSLRootNode rootNode) {
             ex.markAsCaught(frame, rootNode);
         }
 
         @Fallback
-        @InliningCutoff
         public static void doNothing(@SuppressWarnings("unused") Object ex) {
         }
     }
@@ -2516,6 +2515,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation(storeBytecodeIndex = true)
     public static final class AssertFailed {
         @Specialization
+        @InliningCutoff
         public static void doAssertFailed(VirtualFrame frame, Object assertionMessage,
                         @Bind PBytecodeDSLRootNode rooNode) {
             if (assertionMessage == PNone.NO_VALUE) {
@@ -2915,7 +2915,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation(storeBytecodeIndex = true)
     public static final class CallNilaryMethod {
         @Specialization
-        @InliningCutoff
         public static Object doCall(VirtualFrame frame, Object callable,
                         @Cached CallNode node) {
             return node.execute(frame, callable, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
@@ -2925,7 +2924,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation(storeBytecodeIndex = true)
     public static final class CallUnaryMethod {
         @Specialization
-        @InliningCutoff
         public static Object doCall(VirtualFrame frame, Object callable, Object arg0,
                         @Cached CallUnaryMethodNode node) {
             return node.executeObject(frame, callable, arg0);
@@ -2935,7 +2933,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation(storeBytecodeIndex = true)
     public static final class CallBinaryMethod {
         @Specialization
-        @InliningCutoff
         public static Object doObject(VirtualFrame frame, Object callable, Object arg0, Object arg1,
                         @Cached CallBinaryMethodNode node) {
             return node.executeObject(frame, callable, arg0, arg1);
@@ -2945,7 +2942,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation(storeBytecodeIndex = true)
     public static final class CallTernaryMethod {
         @Specialization
-        @InliningCutoff
         public static Object doCall(VirtualFrame frame, Object callable, Object arg0, Object arg1, Object arg2,
                         @Cached CallTernaryMethodNode node) {
             return node.execute(frame, callable, arg0, arg1, arg2);
@@ -2955,7 +2951,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation(storeBytecodeIndex = true)
     public static final class CallQuaternaryMethod {
         @Specialization
-        @InliningCutoff
         public static Object doCall(VirtualFrame frame, Object callable, Object arg0, Object arg1, Object arg2, Object arg3,
                         @Cached CallQuaternaryMethodNode node) {
             return node.execute(frame, callable, arg0, arg1, arg2, arg3);
@@ -2965,7 +2960,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation(storeBytecodeIndex = true)
     public static final class CallVarargsMethod {
         @Specialization
-        @InliningCutoff
         public static Object doCall(VirtualFrame frame, Object callable, Object[] args, PKeyword[] keywords,
                         @Cached CallNode node) {
             return node.execute(frame, callable, args, keywords);
@@ -2977,7 +2971,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @ConstantOperand(type = LocalAccessor.class)
     public static final class ContextManagerEnter {
         @Specialization
-        @InliningCutoff
         public static void doEnter(VirtualFrame frame,
                         LocalAccessor exitSetter,
                         LocalAccessor resultSetter,
@@ -3082,6 +3075,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation(storeBytecodeIndex = true)
     public static final class AsyncContextManagerCallExit {
         @Specialization
+        @InliningCutoff
         public static Object doRegular(VirtualFrame frame,
                         PNone none, Object exit, Object contextManager,
                         @Shared @Cached CallQuaternaryMethodNode callExit) {
@@ -3215,43 +3209,42 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation(storeBytecodeIndex = true)
     @ImportStatic(PGuards.class)
     public static final class BinarySubscript {
-        // TODO: GR-64248, the result is not BE'd because of the UnexpectedResultException. maybe we
-        // should explicitly check for an int storage type?
-        @Specialization(rewriteOn = UnexpectedResultException.class, guards = "isBuiltinList(list)")
-        public static int doIntList(PList list, int index,
-                        @Shared @Cached("createForList()") SequenceStorageNodes.GetItemNode getListItemNode) throws UnexpectedResultException {
-            return getListItemNode.executeInt(list.getSequenceStorage(), index);
+        static boolean isBuiltinListOrTuple(PSequenceWithStorage s) {
+            return PGuards.isBuiltinTuple(s) && PGuards.isBuiltinList(s);
         }
 
-        @Specialization(rewriteOn = UnexpectedResultException.class, guards = "isBuiltinList(list)")
-        public static double doDoubleList(PList list, int index,
-                        @Shared @Cached("createForList()") SequenceStorageNodes.GetItemNode getListItemNode) throws UnexpectedResultException {
-            return getListItemNode.executeDouble(list.getSequenceStorage(), index);
+        public static boolean isIntBuiltinListOrTuple(PSequenceWithStorage s) {
+            return isBuiltinListOrTuple(s) && s.getSequenceStorage() instanceof IntSequenceStorage;
         }
 
-        @Specialization(replaces = {"doIntList", "doDoubleList"}, guards = "isBuiltinList(list)")
-        public static Object doObjectList(PList list, int index,
-                        @Shared @Cached("createForList()") SequenceStorageNodes.GetItemNode getListItemNode) {
-            return getListItemNode.execute(list.getSequenceStorage(), index);
+        @Specialization(guards = "isIntBuiltinListOrTuple(list)")
+        public static int doIntStorage(PSequenceWithStorage list, int index,
+                        @Shared @Cached NormalizeIndexWithBoundsCheckNode normalizeIndexNode) {
+            IntSequenceStorage storage = (IntSequenceStorage) list.getSequenceStorage();
+            int normalizedIndex = normalizeIndexNode.execute(index, storage.length(), ErrorMessages.LIST_INDEX_OUT_OF_RANGE);
+            return storage.getIntItemNormalized(normalizedIndex);
         }
 
-        @Specialization(rewriteOn = UnexpectedResultException.class, guards = "isBuiltinTuple(tuple)")
-        public static int doIntTuple(PTuple tuple, int index,
-                        @Shared @Cached("createForTuple()") SequenceStorageNodes.GetItemNode getTupleItemNode) throws UnexpectedResultException {
-            return getTupleItemNode.executeInt(tuple.getSequenceStorage(), index);
-
+        public static boolean isDoubleBuiltinListOrTuple(PSequenceWithStorage s) {
+            return isBuiltinListOrTuple(s) && s.getSequenceStorage() instanceof DoubleSequenceStorage;
         }
 
-        @Specialization(rewriteOn = UnexpectedResultException.class, guards = "isBuiltinTuple(tuple)")
-        public static double doDoubleTuple(PTuple tuple, int index,
-                        @Shared @Cached("createForTuple()") SequenceStorageNodes.GetItemNode getTupleItemNode) throws UnexpectedResultException {
-            return getTupleItemNode.executeDouble(tuple.getSequenceStorage(), index);
+        @Specialization(guards = "isDoubleBuiltinListOrTuple(list)")
+        public static double doDoubleStorage(PSequenceWithStorage list, int index,
+                        @Shared @Cached NormalizeIndexWithBoundsCheckNode normalizeIndexNode) {
+            DoubleSequenceStorage storage = (DoubleSequenceStorage) list.getSequenceStorage();
+            int normalizedIndex = normalizeIndexNode.execute(index, storage.length(), ErrorMessages.LIST_INDEX_OUT_OF_RANGE);
+            return storage.getDoubleItemNormalized(normalizedIndex);
         }
 
-        @Specialization(replaces = {"doIntTuple", "doDoubleTuple"}, guards = "isBuiltinTuple(tuple)")
-        public static Object doObjectTuple(PTuple tuple, int index,
-                        @Shared @Cached("createForTuple()") SequenceStorageNodes.GetItemNode getTupleItemNode) {
-            return getTupleItemNode.execute(tuple.getSequenceStorage(), index);
+        @Specialization(replaces = {"doIntStorage", "doDoubleStorage"}, guards = "isBuiltinListOrTuple(list)")
+        public static Object doObjectStorage(PSequenceWithStorage list, int index,
+                        @Bind Node inliningTarget,
+                        @Shared @Cached NormalizeIndexWithBoundsCheckNode normalizeIndexNode,
+                        @Cached GetItemScalarNode getItemScalarNode) {
+            SequenceStorage storage = list.getSequenceStorage();
+            int normalizedIndex = normalizeIndexNode.execute(index, storage.length(), ErrorMessages.LIST_INDEX_OUT_OF_RANGE);
+            return getItemScalarNode.execute(inliningTarget, storage, normalizedIndex);
         }
 
         @Fallback

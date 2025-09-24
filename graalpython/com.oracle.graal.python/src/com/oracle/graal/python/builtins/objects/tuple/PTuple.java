@@ -27,8 +27,7 @@ package com.oracle.graal.python.builtins.objects.tuple;
 
 import static com.oracle.graal.python.util.PythonUtils.builtinClassToType;
 
-import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.PSequenceWithStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -41,9 +40,8 @@ import com.oracle.truffle.api.object.Shape;
 
 @SuppressWarnings("truffle-abstract-export")
 @ExportLibrary(InteropLibrary.class)
-public final class PTuple extends PSequence {
+public final class PTuple extends PSequenceWithStorage {
 
-    private SequenceStorage store;
     private long hash = -1;
 
     public PTuple(Object cls, Shape instanceShape, Object[] elements) {
@@ -60,17 +58,6 @@ public final class PTuple extends PSequence {
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
         return String.format("tuple(%s)", store);
-    }
-
-    @Override
-    public SequenceStorage getSequenceStorage() {
-        return store;
-    }
-
-    @Override
-    public void setSequenceStorage(SequenceStorage store) {
-        assert !(this.store instanceof MroSequenceStorage) : "attempting to replace MroSequenceStorage";
-        this.store = store;
     }
 
     public long getHash() {
