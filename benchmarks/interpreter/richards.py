@@ -45,6 +45,19 @@
 #  Outer loop added by Alex Jacoby
 from __future__ import print_function
 
+# Used in the polybench harness as the default number of iterations for
+# this benchmark.
+def iterations():
+    return 60
+
+# Used in the polybench harness for aggregating the iteration datapoints.
+def summary():
+    return {
+        "name": "OutlierRemovalAverageSummary",
+        "lower-threshold": 0.05,
+        "upper-threshold": 0.2,
+    }
+
 # Task IDs
 I_IDLE = 1
 I_WORK = 2

@@ -21,6 +21,24 @@
 # or visit www.oracle.com if you need additional information or have any
 # questions.
 
+# Used in the polybench harness as the default number of warmup iterations
+# for this benchmark.
+def warmupIterations():
+    return 10
+
+# Used in the polybench harness as the default number of iterations for
+# this benchmark.
+def iterations():
+    return 30
+
+# Used in the polybench harness for aggregating the iteration datapoints.
+def summary():
+    return {
+        "name": "OutlierRemovalAverageSummary",
+        "lower-threshold": 0,
+        "upper-threshold": 0.3,
+    }
+
 def fibonacci(n):
     if n < 1:
         return 0

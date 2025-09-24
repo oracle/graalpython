@@ -39,6 +39,19 @@ altering those collections changed to the builtin methods) but largely retains
 the layout & logic from the original. (Ugh.)
 
 """
+# Used in the polybench harness as the default number of iterations for
+# this benchmark.
+def iterations():
+    return 60
+
+# Used in the polybench harness for aggregating the iteration datapoints.
+def summary():
+    return {
+        "name": "OutlierRemovalAverageSummary",
+        "lower-threshold": 0.1,
+        "upper-threshold": 0.4,
+    }
+
 # The JS variant implements "OrderedCollection", which basically completely
 # overlaps with ``list``. So we'll cheat. :D
 class OrderedCollection(list):
