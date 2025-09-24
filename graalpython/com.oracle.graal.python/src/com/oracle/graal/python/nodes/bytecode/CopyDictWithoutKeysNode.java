@@ -60,7 +60,7 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateInline(false) // used in BCI root node
-@OperationProxy.Proxyable
+@OperationProxy.Proxyable(storeBytecodeIndex = true)
 public abstract class CopyDictWithoutKeysNode extends PNodeWithContext {
     public abstract PDict execute(Frame frame, Object subject, Object[] keys);
 

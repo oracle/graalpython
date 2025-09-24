@@ -53,6 +53,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.bytecode.OperationProxy;
+import com.oracle.truffle.api.bytecode.StoreBytecodeIndex;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -66,11 +67,12 @@ import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 @GenerateInline(false)
 @GenerateUncached
-@OperationProxy.Proxyable
+@OperationProxy.Proxyable(storeBytecodeIndex = false)
 public abstract class PyNumberInPlaceAddNode extends PyNumberAddFastPathsBase {
 
     @Fallback
     @InliningCutoff
+    @StoreBytecodeIndex
     public static Object doIt(VirtualFrame frame, Object v, Object w,
                     @Bind Node inliningTarget,
                     @Exclusive @Cached GetClassNode getVClass,

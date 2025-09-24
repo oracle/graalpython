@@ -1872,7 +1872,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     // format(object, [format_spec])
     @Builtin(name = J_FORMAT, minNumOfPositionalArgs = 1, parameterNames = {"object", "format_spec"})
     @GenerateNodeFactory
-    @OperationProxy.Proxyable
+    @OperationProxy.Proxyable(storeBytecodeIndex = true)
     @ImportStatic(PGuards.class)
     public abstract static class FormatNode extends PythonBinaryBuiltinNode {
 

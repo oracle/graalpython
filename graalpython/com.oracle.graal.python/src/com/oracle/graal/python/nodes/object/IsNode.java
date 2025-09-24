@@ -63,6 +63,7 @@ import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.bytecode.OperationProxy;
+import com.oracle.truffle.api.bytecode.StoreBytecodeIndex;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -82,7 +83,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @ImportStatic(PythonOptions.class)
 @GenerateUncached
-@OperationProxy.Proxyable
+@OperationProxy.Proxyable(storeBytecodeIndex = false)
 @GenerateInline(false)       // footprint reduction 44 -> 26
 public abstract class IsNode extends Node implements BinaryOp {
 
@@ -215,6 +216,7 @@ public abstract class IsNode extends Node implements BinaryOp {
     // native objects
     @Specialization
     @InliningCutoff
+    @StoreBytecodeIndex
     public static boolean doNative(PythonAbstractNativeObject left, PythonAbstractNativeObject right,
                     @Exclusive @CachedLibrary(limit = "1") InteropLibrary interop) {
         // Assumption: not perf critical, instead of refactoring
@@ -268,6 +270,7 @@ public abstract class IsNode extends Node implements BinaryOp {
 
     // none
     @Specialization(guards = "someIsNone(left, right)")
+    @StoreBytecodeIndex
     public static boolean doPNone(Object left, Object right,
                     @Bind Node inliningTarget,
                     @Shared @Cached IsForeignObjectNode isForeignObjectNode,
@@ -305,6 +308,7 @@ public abstract class IsNode extends Node implements BinaryOp {
     // everything else
     @Fallback
     @InliningCutoff
+    @StoreBytecodeIndex
     public static boolean doOther(Object left, Object right,
                     @Bind Node inliningTarget,
                     @Shared @Cached IsForeignObjectNode isForeignObjectNode,

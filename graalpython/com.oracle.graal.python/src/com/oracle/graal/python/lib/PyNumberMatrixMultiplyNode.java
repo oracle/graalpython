@@ -43,6 +43,7 @@ package com.oracle.graal.python.lib;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.ReversibleSlot;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.truffle.api.bytecode.OperationProxy;
+import com.oracle.truffle.api.bytecode.StoreBytecodeIndex;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -53,11 +54,12 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateInline(false)
-@OperationProxy.Proxyable
+@OperationProxy.Proxyable(storeBytecodeIndex = false)
 @GenerateUncached
 public abstract class PyNumberMatrixMultiplyNode extends BinaryOpNode {
 
     @Specialization
+    @StoreBytecodeIndex
     public static Object doIt(VirtualFrame frame, Object v, Object w,
                     @Bind Node inliningTarget,
                     @Cached CallBinaryOpNode callBinaryOpNode) {

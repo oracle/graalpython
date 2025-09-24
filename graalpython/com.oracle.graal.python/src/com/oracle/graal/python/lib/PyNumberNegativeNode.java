@@ -50,6 +50,7 @@ import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.bytecode.OperationProxy;
+import com.oracle.truffle.api.bytecode.StoreBytecodeIndex;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -62,7 +63,7 @@ import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
 @GenerateInline(false)
-@OperationProxy.Proxyable
+@OperationProxy.Proxyable(storeBytecodeIndex = false)
 public abstract class PyNumberNegativeNode extends UnaryOpNode {
 
     public static final int INT_MIN_VALUE = Integer.MIN_VALUE;
@@ -90,6 +91,7 @@ public abstract class PyNumberNegativeNode extends UnaryOpNode {
 
     @Fallback
     @InliningCutoff
+    @StoreBytecodeIndex
     public static Object doObject(VirtualFrame frame, Object object,
                     @Bind Node inliningTarget,
                     @Cached GetClassNode getClassNode,

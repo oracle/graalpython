@@ -50,6 +50,7 @@ import com.oracle.graal.python.lib.PyObjectIsTrueNode.PyObjectIsTrueNodeGeneric;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.bytecode.OperationProxy;
+import com.oracle.truffle.api.bytecode.StoreBytecodeIndex;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -67,7 +68,7 @@ import com.oracle.truffle.api.strings.TruffleString;
  * {@link PyObjectIsNotTrueNode}.
  */
 @GenerateInline(false)
-@OperationProxy.Proxyable
+@OperationProxy.Proxyable(storeBytecodeIndex = false)
 public abstract class PyObjectIsNotTrueNode extends PNodeWithContext {
     public abstract boolean execute(Frame frame, Object object);
 
@@ -129,6 +130,7 @@ public abstract class PyObjectIsNotTrueNode extends PNodeWithContext {
     @Specialization(guards = {"!isBoolean(object)", "!isPNone(object)", "!isInt(object)", "!isLong(object)", "!isDouble(object)", "!isTruffleString(object)"}, //
                     replaces = {"doList", "doTuple", "doDict", "doSet"})
     @InliningCutoff
+    @StoreBytecodeIndex
     public static boolean doOthers(VirtualFrame frame, Object object,
                     @Cached PyObjectIsTrueNodeGeneric internalNode) {
         return !internalNode.execute(frame, object);

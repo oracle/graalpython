@@ -117,7 +117,7 @@ public abstract class SetNodes {
     }
 
     @GenerateUncached
-    @OperationProxy.Proxyable
+    @OperationProxy.Proxyable(storeBytecodeIndex = true)
     @GenerateInline(false)       // footprint reduction 92 -> 73
     public abstract static class AddNode extends PNodeWithContext {
         public abstract void execute(Frame frame, PSet self, Object o);

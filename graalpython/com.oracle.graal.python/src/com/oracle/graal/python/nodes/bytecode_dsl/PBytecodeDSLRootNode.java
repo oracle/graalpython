@@ -249,6 +249,7 @@ import com.oracle.truffle.api.bytecode.OperationProxy;
 import com.oracle.truffle.api.bytecode.Prolog;
 import com.oracle.truffle.api.bytecode.ShortCircuitOperation;
 import com.oracle.truffle.api.bytecode.ShortCircuitOperation.Operator;
+import com.oracle.truffle.api.bytecode.StoreBytecodeIndex;
 import com.oracle.truffle.api.bytecode.Variadic;
 import com.oracle.truffle.api.bytecode.Yield;
 import com.oracle.truffle.api.dsl.Bind;
@@ -330,7 +331,7 @@ import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 @ShortCircuitOperation(name = "BoolAnd", booleanConverter = PyObjectIsTrueNode.class, operator = Operator.AND_RETURN_VALUE)
 @ShortCircuitOperation(name = "BoolOr", booleanConverter = PyObjectIsTrueNode.class, operator = Operator.OR_RETURN_VALUE)
 @ShortCircuitOperation(name = "PrimitiveBoolAnd", operator = Operator.AND_RETURN_VALUE)
-@SuppressWarnings("unused")
+@SuppressWarnings({"unused"})
 public abstract class PBytecodeDSLRootNode extends PRootNode implements BytecodeRootNode {
     public static final int EXPLODE_LOOP_THRESHOLD = 30;
     private static final BytecodeConfig TRACE_AND_PROFILE_CONFIG = PBytecodeDSLRootNodeGen.newConfigBuilder().//
@@ -411,7 +412,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         return "<bytecode " + co.name + " at " + Integer.toHexString(hashCode()) + ">";
     }
 
-    @Prolog
+    @Prolog(storeBytecodeIndex = false)
     public static final class EnterCalleeContext {
         @Specialization
         public static void doEnter(VirtualFrame frame,
@@ -425,7 +426,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @EpilogReturn
+    @EpilogReturn(storeBytecodeIndex = true)
     public static final class EpilogForReturn {
         @Specialization
         public static Object doExit(VirtualFrame frame, Object returnValue,
@@ -440,7 +441,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @EpilogExceptional
+    @EpilogExceptional(storeBytecodeIndex = true)
     public static final class EpilogForException {
         @Specialization
         public static void doExit(VirtualFrame frame, AbstractTruffleException ate,
@@ -724,7 +725,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         return result;
     }
 
-    @Instrumentation
+    @Instrumentation(storeBytecodeIndex = true)
     public static final class TraceOrProfileCall {
         @Specialization
         public static void perform(VirtualFrame frame,
@@ -736,7 +737,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Instrumentation
+    @Instrumentation(storeBytecodeIndex = true)
     @ConstantOperand(type = int.class)
     public static final class TraceLine {
         @Specialization
@@ -748,7 +749,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Instrumentation
+    @Instrumentation(storeBytecodeIndex = true)
     @ConstantOperand(type = int.class)
     public static final class TraceLineAtLoopHeader {
         @Specialization
@@ -760,7 +761,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Instrumentation
+    @Instrumentation(storeBytecodeIndex = true)
     public static final class TraceOrProfileReturn {
         @Specialization
         public static Object perform(VirtualFrame frame, Object value,
@@ -1003,6 +1004,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
      * provides access to the generator frame even before the generator was started.
      */
     @Yield
+    @SuppressWarnings("truffle-interpreted-performance") // blocked by GR-69979
     public static final class YieldGenerator {
         @Specialization
         public static Object doYield(
@@ -1054,7 +1056,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
      * Resumes execution after the artificial yield of the generator object
      * ({@link YieldGenerator}).
      */
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     public static final class ResumeYieldGenerator {
         @Specialization
         public static void doObject(VirtualFrame frame, Object generator,
@@ -1077,6 +1079,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
      * Performs some clean-up steps before suspending execution, and updates the generator state.
      */
     @Yield
+    @SuppressWarnings("truffle-interpreted-performance") // blocked by GR-69979
     @ConstantOperand(type = LocalAccessor.class)
     public static final class YieldFromGenerator {
         @Specialization
@@ -1122,7 +1125,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     public static final class Contains {
         @Specialization
         static Object contains(VirtualFrame frame, Object item, Object container,
@@ -1132,7 +1135,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = TruffleString.class)
     public static final class WriteName {
         @Specialization
@@ -1142,7 +1145,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = TruffleString.class)
     public static final class ReadName {
         @Specialization
@@ -1152,7 +1155,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = TruffleString.class)
     public static final class DeleteName {
         @Specialization(guards = "hasLocals(frame)")
@@ -1173,7 +1176,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     @ConstantOperand(type = LocalRangeAccessor.class)
     public static final class CopyArguments {
         @Specialization
@@ -1186,7 +1189,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     @ConstantOperand(type = int.class)
     public static final class LoadVariableArguments {
         @Specialization
@@ -1196,7 +1199,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     @ConstantOperand(type = int.class)
     public static final class LoadKeywordArguments {
         @Specialization
@@ -1206,7 +1209,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     @ConstantOperand(type = double.class)
     @ConstantOperand(type = double.class)
     public static final class LoadComplex {
@@ -1217,7 +1220,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     @ConstantOperand(type = BigInteger.class)
     public static final class LoadBigInt {
         @Specialization
@@ -1227,7 +1230,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     @ConstantOperand(type = byte[].class, dimensions = 0)
     public static final class LoadBytes {
         @Specialization
@@ -1237,7 +1240,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     public static final class GetIter {
         @Specialization
         public static Object perform(VirtualFrame frame, Object receiver,
@@ -1247,7 +1250,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     public static final class FormatStr {
         @Specialization
         public static TruffleString perform(VirtualFrame frame, Object object,
@@ -1257,7 +1260,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     public static final class FormatRepr {
         @Specialization
         public static TruffleString perform(VirtualFrame frame, Object object,
@@ -1267,7 +1270,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     public static final class FormatAscii {
         @Specialization
         public static TruffleString perform(VirtualFrame frame, Object object,
@@ -1277,7 +1280,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     public static final class PrintExpr {
         @Specialization
         public static void perform(VirtualFrame frame, Object object,
@@ -1286,7 +1289,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = LocalAccessor.class)
     public static final class MatchKeys {
         @Specialization
@@ -1298,7 +1301,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = LocalAccessor.class)
     public static final class MatchClass {
         @Specialization
@@ -1310,7 +1313,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = TruffleString.class, name = "name")
     @ConstantOperand(type = TruffleString.class, name = "qualifiedName")
     @ConstantOperand(type = BytecodeDSLCodeUnit.class)
@@ -1421,7 +1424,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     public static final class Pow {
         @Specialization
         public static Object doIt(VirtualFrame frame, Object left, Object right,
@@ -1430,7 +1433,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     public static final class InPlacePow {
         @Specialization
         public static Object doIt(VirtualFrame frame, Object left, Object right,
@@ -1439,7 +1442,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     @ConstantOperand(type = LocalAccessor.class)
     public static final class ForIterate {
 
@@ -1501,6 +1504,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
 
         @Specialization
+        @StoreBytecodeIndex
         @InliningCutoff
         public static boolean doIterator(VirtualFrame frame, LocalAccessor output, Object object,
                         @Bind Node inliningTarget,
@@ -1518,7 +1522,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = TruffleString.class)
     public static final class GetMethod {
         @Specialization
@@ -1530,7 +1534,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = TruffleString.class)
     public static final class GetAttribute {
         @Specialization
@@ -1543,7 +1547,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = TruffleString.class)
     public static final class SetAttribute {
         @Specialization
@@ -1558,7 +1562,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = TruffleString.class)
     public static final class DeleteAttribute {
         @Specialization
@@ -1573,7 +1577,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     public static final class DeleteItem {
         @Specialization
         public static void doWithFrame(VirtualFrame frame, Object primary, Object index,
@@ -1583,7 +1587,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = TruffleString.class)
     public static final class ReadGlobal {
         @Specialization
@@ -1593,7 +1597,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = TruffleString.class)
     public static final class WriteGlobal {
         @Specialization
@@ -1603,7 +1607,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = TruffleString.class)
     public static final class DeleteGlobal {
         @Specialization
@@ -1616,7 +1620,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     /**
      * Returns the {@code __build_class__} builtin.
      */
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     public static final class LoadBuildClass {
 
         public static final TruffleString NAME = BuiltinNames.T___BUILD_CLASS__;
@@ -1629,7 +1633,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     public static final class MakeList {
         @Specialization
         public static PList perform(@Variadic Object[] elements,
@@ -1638,7 +1642,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     @ImportStatic({PBytecodeDSLRootNode.class})
     public static final class MakeSet {
         @Specialization(guards = "elements.length == 0")
@@ -1649,6 +1653,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
 
         @Specialization(guards = "elements.length != 0")
+        @StoreBytecodeIndex
         public static PSet doNonEmpty(VirtualFrame frame, @Variadic Object[] elements,
                         @Bind PBytecodeDSLRootNode rootNode,
                         @Bind Node inliningTarget,
@@ -1657,7 +1662,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     public static final class MakeFrozenSet {
         @Specialization(guards = "elements.length == 0")
         public static PFrozenSet doEmpty(VirtualFrame frame, @Variadic Object[] elements,
@@ -1667,6 +1672,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
 
         @Specialization(guards = "elements.length != 0")
+        @StoreBytecodeIndex
         public static PFrozenSet doNonEmpty(VirtualFrame frame, @Variadic Object[] elements,
                         @Bind PBytecodeDSLRootNode rootNode,
                         @Bind Node inliningTarget,
@@ -1675,7 +1681,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     public static final class MakeTuple {
         @Specialization
         public static Object perform(@Variadic Object[] elements,
@@ -1684,7 +1690,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     @ConstantOperand(type = int[].class, dimensions = 0)
     public static final class MakeConstantIntList {
         @Specialization
@@ -1695,7 +1701,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     @ConstantOperand(type = long[].class, dimensions = 0)
     public static final class MakeConstantLongList {
         @Specialization
@@ -1706,7 +1712,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     @ConstantOperand(type = boolean[].class, dimensions = 0)
     public static final class MakeConstantBooleanList {
         @Specialization
@@ -1717,7 +1723,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     @ConstantOperand(type = double[].class, dimensions = 0)
     public static final class MakeConstantDoubleList {
         @Specialization
@@ -1728,7 +1734,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     @ConstantOperand(type = Object[].class, dimensions = 0)
     public static final class MakeConstantObjectList {
         @Specialization
@@ -1739,7 +1745,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     @ConstantOperand(type = int[].class, dimensions = 0)
     public static final class MakeConstantIntTuple {
         @Specialization
@@ -1750,7 +1756,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     @ConstantOperand(type = long[].class, dimensions = 0)
     public static final class MakeConstantLongTuple {
         @Specialization
@@ -1761,7 +1767,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     @ConstantOperand(type = boolean[].class, dimensions = 0)
     public static final class MakeConstantBooleanTuple {
         @Specialization
@@ -1772,7 +1778,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     @ConstantOperand(type = double[].class, dimensions = 0)
     public static final class MakeConstantDoubleTuple {
         @Specialization
@@ -1783,7 +1789,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     @ConstantOperand(type = Object[].class, dimensions = 0)
     public static final class MakeConstantObjectTuple {
         @Specialization
@@ -1794,7 +1800,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     public static final class MakeSlice {
 
         @Specialization
@@ -1829,7 +1835,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     @ConstantOperand(type = TruffleString[].class, dimensions = 0, specifyAtEnd = true)
     public static final class MakeKeywords {
         @Specialization
@@ -1843,7 +1849,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     public static final class MappingToKeywords {
         @Specialization
         public static PKeyword[] perform(Object sourceCollection,
@@ -1854,7 +1860,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     @ConstantOperand(type = int.class)
     public static final class MakeDict {
         @Specialization(guards = "entries == 0")
@@ -1865,6 +1871,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
 
         @Specialization
+        @StoreBytecodeIndex
         public static PDict empty(VirtualFrame frame, int entries, @Variadic Object[] keysAndValues,
                         @Bind PBytecodeDSLRootNode rootNode,
                         @Bind Node inliningTarget,
@@ -1892,7 +1899,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     public static final class SetDictItem {
         @Specialization
         public static void perform(VirtualFrame frame, PDict item, Object key, Object value,
@@ -1902,14 +1909,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    public static final class LiteralBoolean {
-        @Specialization
-        public static boolean doBoolean(boolean value) {
-            return value;
-        }
-    }
-
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     public static final class SetItem {
         @Specialization
         public static void doIt(VirtualFrame frame, Object value, Object primary, Object slice,
@@ -1919,7 +1919,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = LocalRangeAccessor.class)
     @ImportStatic({PGuards.class})
     public static final class UnpackToLocals {
@@ -1989,7 +1989,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = int.class)
     @ConstantOperand(type = LocalRangeAccessor.class)
     @ImportStatic({PGuards.class})
@@ -2099,7 +2099,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         throw PRaiseNode.raiseStatic(nodeForRaise, PythonErrorType.TypeError, ErrorMessages.NOT_SUPPORTED_BETWEEN_INSTANCES, operator, left, right);
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     public static final class Le {
         @Specialization
         public static boolean cmp(int left, int right) {
@@ -2138,13 +2138,14 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
         @Specialization
         @InliningCutoff
+        @StoreBytecodeIndex
         public static Object doGeneric(VirtualFrame frame, Object left, Object right,
                         @Cached GenericRichCompare richCompareNode) {
             return richCompareNode.execute(frame, left, right, RichCmpOp.Py_LE);
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     public static final class Lt {
         @Specialization
         public static boolean cmp(int left, int right) {
@@ -2183,13 +2184,14 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
         @Specialization
         @InliningCutoff
+        @StoreBytecodeIndex
         public static Object doGeneric(VirtualFrame frame, Object left, Object right,
                         @Cached GenericRichCompare richCompareNode) {
             return richCompareNode.execute(frame, left, right, RichCmpOp.Py_LT);
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     public static final class Ge {
         @Specialization
         public static boolean cmp(int left, int right) {
@@ -2228,13 +2230,14 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
         @Specialization
         @InliningCutoff
+        @StoreBytecodeIndex
         public static Object doGeneric(VirtualFrame frame, Object left, Object right,
                         @Cached GenericRichCompare richCompareNode) {
             return richCompareNode.execute(frame, left, right, RichCmpOp.Py_GE);
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     public static final class Gt {
         @Specialization
         public static boolean cmp(int left, int right) {
@@ -2273,13 +2276,14 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
         @Specialization
         @InliningCutoff
+        @StoreBytecodeIndex
         public static final Object doGeneric(VirtualFrame frame, Object left, Object right,
                         @Cached GenericRichCompare richCompareNode) {
             return richCompareNode.execute(frame, left, right, RichCmpOp.Py_GT);
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     public static final class Eq {
         @Specialization
         public static boolean cmp(int left, int right) {
@@ -2324,13 +2328,14 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
         @Specialization
         @InliningCutoff
+        @StoreBytecodeIndex
         public static Object doGeneric(VirtualFrame frame, Object left, Object right,
                         @Cached GenericRichCompare richCompareNode) {
             return richCompareNode.execute(frame, left, right, RichCmpOp.Py_EQ);
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     public static final class Ne {
         @Specialization
         public static boolean cmp(int left, int right) {
@@ -2375,13 +2380,14 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
         @Specialization
         @InliningCutoff
+        @StoreBytecodeIndex
         public static Object doGeneric(VirtualFrame frame, Object left, Object right,
                         @Cached GenericRichCompare richCompareNode) {
             return richCompareNode.execute(frame, left, right, RichCmpOp.Py_NE);
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = TruffleString.class)
     @ConstantOperand(type = TruffleString[].class, dimensions = 0)
     @ConstantOperand(type = int.class)
@@ -2394,7 +2400,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = TruffleString.class)
     public static final class ImportFrom {
         @Specialization
@@ -2405,7 +2411,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = TruffleString.class)
     @ConstantOperand(type = int.class)
     public static final class ImportStar {
@@ -2422,7 +2428,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     public static final class Raise {
         @Specialization
         public static void perform(VirtualFrame frame, Object typeOrExceptionObject, Object cause,
@@ -2432,7 +2438,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     public static final class Reraise {
         @Specialization
         public static void doPException(PException ex,
@@ -2475,7 +2481,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     @ConstantOperand(type = LocalAccessor.class)
     @ConstantOperand(type = boolean.class)
     public static final class SetCurrentGeneratorException {
@@ -2492,7 +2498,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     public static final class MarkExceptionAsCaught {
         @Specialization
         @InliningCutoff
@@ -2507,7 +2513,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     public static final class AssertFailed {
         @Specialization
         public static void doAssertFailed(VirtualFrame frame, Object assertionMessage,
@@ -2520,7 +2526,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = int.class)
     public static final class LoadCell {
         @Specialization
@@ -2537,7 +2543,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
      * variable (next argument). The immediate operand is the cell index, so that we can find out
      * the name of the variable for the dict lookup.
      */
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = int.class)
     public static final class LoadFromDictOrCell {
         @Specialization
@@ -2566,7 +2572,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
      * Attempts to read a value from a dict (argument), and if not present, reads a global variable
      * of given name (immediate argument).
      */
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = TruffleString.class)
     public static final class LoadFromDictOrGlobals {
         @Specialization
@@ -2603,7 +2609,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     @ConstantOperand(type = LocalRangeAccessor.class)
     public static final class CreateCells {
         @Specialization
@@ -2617,7 +2623,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = int.class)
     public static final class ClearCell {
         @Specialization
@@ -2630,7 +2636,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     @ConstantOperand(type = LocalAccessor.class)
     public static final class ClearLocal {
         @Specialization
@@ -2640,7 +2646,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     @ConstantOperand(type = LocalRangeAccessor.class)
     public static final class InitFreeVars {
         @Specialization
@@ -2654,7 +2660,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     public static final class MakeCellArray {
         @Specialization
         public static PCell[] doMakeCellArray(@Variadic Object[] cells) {
@@ -2662,7 +2668,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = LocalAccessor.class)
     public static final class KwargsMerge {
         @Specialization
@@ -2690,7 +2696,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     @Variadic
     @ImportStatic({PGuards.class})
     public static final class UnpackStarredVariadic {
@@ -2740,7 +2746,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = int.class)
     @ImportStatic({PGuards.class})
     public static final class UnpackSequence {
@@ -2809,7 +2815,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = int.class)
     @ConstantOperand(type = int.class)
     @ImportStatic({PGuards.class})
@@ -2906,7 +2912,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     public static final class CallNilaryMethod {
         @Specialization
         @InliningCutoff
@@ -2916,7 +2922,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     public static final class CallUnaryMethod {
         @Specialization
         @InliningCutoff
@@ -2926,7 +2932,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     public static final class CallBinaryMethod {
         @Specialization
         @InliningCutoff
@@ -2936,7 +2942,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     public static final class CallTernaryMethod {
         @Specialization
         @InliningCutoff
@@ -2946,7 +2952,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     public static final class CallQuaternaryMethod {
         @Specialization
         @InliningCutoff
@@ -2956,7 +2962,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     public static final class CallVarargsMethod {
         @Specialization
         @InliningCutoff
@@ -2966,7 +2972,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = LocalAccessor.class)
     @ConstantOperand(type = LocalAccessor.class)
     public static final class ContextManagerEnter {
@@ -2998,7 +3004,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     public static final class ContextManagerExit {
         @Specialization
         public static void doRegular(VirtualFrame frame, PNone none, Object exit, Object contextManager,
@@ -3041,7 +3047,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = LocalAccessor.class)
     @ConstantOperand(type = LocalAccessor.class)
     public static final class AsyncContextManagerEnter {
@@ -3073,7 +3079,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     public static final class AsyncContextManagerCallExit {
         @Specialization
         public static Object doRegular(VirtualFrame frame,
@@ -3108,7 +3114,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     public static final class AsyncContextManagerExit {
         /**
          * NB: There is nothing to do after awaiting __exit__(None, None, None), so this operation
@@ -3136,7 +3142,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     @ConstantOperand(type = int.class)
     public static final class BuildString {
         @Specialization
@@ -3154,7 +3160,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     @ConstantOperand(type = LocalAccessor.class)
     public static final class TeeLocal {
         @Specialization
@@ -3186,7 +3192,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     public static final class GetLen {
         @Specialization
         public static int doObject(VirtualFrame frame, Object value,
@@ -3196,7 +3202,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     @ConstantOperand(type = long.class)
     public static final class CheckTypeFlags {
         @Specialization
@@ -3206,7 +3212,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     @ImportStatic(PGuards.class)
     public static final class BinarySubscript {
         // TODO: GR-64248, the result is not BE'd because of the UnexpectedResultException. maybe we
@@ -3261,7 +3267,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     /**
      * Resumes execution after yield.
      */
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = LocalAccessor.class)
     @ConstantOperand(type = LocalAccessor.class)
     public static final class ResumeYield {
@@ -3307,7 +3313,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = LocalAccessor.class)
     @ConstantOperand(type = LocalAccessor.class)
     @SuppressWarnings("truffle-interpreted-performance")
@@ -3389,7 +3395,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = LocalAccessor.class)
     @ConstantOperand(type = LocalAccessor.class)
     @SuppressWarnings("truffle-interpreted-performance")
@@ -3485,7 +3491,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
      * This operation makes use of Truffle's boxing overloads. When an operation tries to quicken
      * this one for boxing elimination, the correct overload will be selected.
      */
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = LocalAccessor.class)
     @ConstantOperand(type = int.class)
     public static final class CheckAndLoadLocal {
@@ -3529,7 +3535,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = LocalAccessor.class)
     @ConstantOperand(type = int.class)
     public static final class DeleteLocal {
@@ -3553,7 +3559,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, localName);
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     public static final class RaiseNotImplementedError {
         @Specialization
         public static void doRaise(VirtualFrame frame, TruffleString name,
@@ -3568,7 +3574,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
      * (defined in {@link MakeTypeParamKind}) which and whether it will need to pop bound or
      * constraints for a TypeVar.
      */
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = int.class)
     public static final class MakeTypeParam {
         @Specialization
@@ -3600,7 +3606,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
      * Creates a TypeAliasType object. Arguments: name, type parameters (tuple or null), and the
      * value of the type alias.
      */
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     public static final class MakeTypeAliasType {
         @Specialization
         public static PTypeAliasType doObject(TruffleString name, Object typeParams, Object computeValue,
@@ -3615,7 +3621,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
      * Creates a base for generic classes by calling typing._GenericAlias. Expects Python tuple as
      * an argument.
      */
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     public static final class MakeGeneric {
         @Specialization
         static Object makeGeneric(VirtualFrame frame, PTuple params,
