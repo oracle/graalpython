@@ -262,6 +262,17 @@ class AbstractResult(unittest.TestResult):
         super().addFailure(test, err)
         self.report_result(self.make_result(test, status=TestStatus.FAILURE, param=format_exception(err[1])))
 
+    def addSubTest(self, test, subtest, err):
+        super().addSubTest(test, subtest, err)
+
+        if err:
+            if issubclass(err[0], test.failureException):
+                status = TestStatus.FAILURE
+            else:
+                status = TestStatus.ERROR
+
+            self.report_result(self.make_result(test, status=status, param=format_exception(err[1])))
+
     def addError(self, test, err):
         super().addError(test, err)
         self.report_result(self.make_result(test, status=TestStatus.ERROR, param=format_exception(err[1])))
