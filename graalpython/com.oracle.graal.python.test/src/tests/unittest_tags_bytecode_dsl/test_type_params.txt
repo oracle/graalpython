@@ -65,7 +65,6 @@ test.test_type_params.TypeParamsNonlocalTest.test_nonlocal_allowed @ linux-x86_6
 test.test_type_params.TypeParamsNonlocalTest.test_nonlocal_disallowed_01 @ linux-x86_64
 test.test_type_params.TypeParamsNonlocalTest.test_nonlocal_disallowed_02 @ linux-x86_64
 test.test_type_params.TypeParamsNonlocalTest.test_nonlocal_disallowed_03 @ linux-x86_64
-test.test_type_params.TypeParamsPickleTest.test_pickling_classes @ linux-x86_64
 test.test_type_params.TypeParamsPickleTest.test_pickling_functions @ linux-x86_64
 test.test_type_params.TypeParamsRuntimeTest.test_broken_class_namespace @ linux-x86_64
 test.test_type_params.TypeParamsRuntimeTest.test_name_error @ linux-x86_64

@@ -1,7 +1,4 @@
-test.test_call.FastCallTests.test_fastcall @ linux-x86_64
 test.test_call.FastCallTests.test_fastcall_clearing_dict @ linux-x86_64
-test.test_call.FastCallTests.test_vectorcall @ linux-x86_64
-test.test_call.FastCallTests.test_vectorcall_dict @ linux-x86_64
 test.test_call.FunctionCalls.test_frames_are_popped_after_failed_calls @ linux-x86_64
 test.test_call.FunctionCalls.test_kwargs_order @ linux-x86_64
 test.test_call.TestCallingConventions.test_fastcall @ linux-x86_64

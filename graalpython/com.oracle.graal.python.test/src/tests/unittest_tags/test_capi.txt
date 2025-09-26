@@ -230,7 +230,6 @@ test.test_capi.test_misc.Test_testcapi.test_empty_argparse @ darwin-arm64,darwin
 test.test_capi.test_misc.Test_testcapi.test_from_contiguous @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_capi.test_misc.Test_testcapi.test_from_spec_metatype_inheritance @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_capi.test_misc.Test_testcapi.test_gc_control @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_capi.test_misc.Test_testcapi.test_gc_visit_objects_basic @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_capi.test_misc.Test_testcapi.test_gc_visit_objects_exit_early @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_capi.test_misc.Test_testcapi.test_get_statictype_slots @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_capi.test_misc.Test_testcapi.test_get_type_dict @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

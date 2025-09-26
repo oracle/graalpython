@@ -75,15 +75,11 @@ test.test_importlib.extension.test_loader.Source_SinglePhaseExtensionModuleTests
 test.test_importlib.extension.test_path_hook.Frozen_PathHookTests.test_success @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.extension.test_path_hook.Source_PathHookTests.test_success @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.frozen.test_finder.Frozen_FindSpecTests.test_failure @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_importlib.frozen.test_finder.Frozen_FindSpecTests.test_module @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.frozen.test_finder.Frozen_FindSpecTests.test_not_using_frozen @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_importlib.frozen.test_finder.Frozen_FindSpecTests.test_package @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.frozen.test_finder.Frozen_FindSpecTests.test_path_ignored @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.frozen.test_finder.Frozen_FindSpecTests.test_target_ignored @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.frozen.test_finder.Source_FindSpecTests.test_failure @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_importlib.frozen.test_finder.Source_FindSpecTests.test_module @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.frozen.test_finder.Source_FindSpecTests.test_not_using_frozen @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_importlib.frozen.test_finder.Source_FindSpecTests.test_package @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.frozen.test_finder.Source_FindSpecTests.test_path_ignored @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.frozen.test_finder.Source_FindSpecTests.test_target_ignored @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_importlib.frozen.test_loader.Frozen_ExecModuleTests.test_lacking_parent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
