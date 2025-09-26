@@ -128,6 +128,9 @@ public abstract class BuiltinNames {
 
     public static final TruffleString T_MODULES = tsLiteral("modules");
 
+    // time
+    public static final TruffleString T_TIME = tsLiteral("time");
+
     // built-in functions
     public static final String J_ABS = "abs";
     public static final TruffleString T_ABS = tsLiteral(J_ABS);

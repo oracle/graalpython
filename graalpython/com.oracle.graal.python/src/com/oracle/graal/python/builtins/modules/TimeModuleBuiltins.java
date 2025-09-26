@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.namespace.PSimpleNamespace;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
+import com.oracle.graal.python.lib.OsEnvironGetNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyImportImport;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
@@ -90,7 +91,6 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonImageBuildOptions;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -112,12 +112,14 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.ToJavaStringNode;
 
 @CoreFunctions(defineModule = "time")
 public final class TimeModuleBuiltins extends PythonBuiltins {
     private static final int DELAY_NANOS = 10;
     private static final String CTIME_FORMAT = "%s %s %2d %02d:%02d:%02d %d";
     private static final ZoneId GMT = ZoneId.of("GMT");
+    private static final TruffleString T_TZ = tsLiteral("TZ");
 
     private static final StructSequence.BuiltinTypeDescriptor STRUCT_TIME_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PStructTime,
@@ -162,30 +164,64 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     @Override
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
-        // Should we read TZ env variable?
-        ZoneId defaultZoneId = core.getContext().getEnv().getTimeZone();
         ModuleState moduleState = new ModuleState();
-        moduleState.currentZoneId = defaultZoneId;
-        moduleState.timeSlept = 0;
         PythonModule timeModule = core.lookupBuiltinModule(T_TIME);
         timeModule.setModuleState(moduleState);
 
-        TimeZone defaultTimeZone = TimeZone.getTimeZone(defaultZoneId);
-        TruffleString noDaylightSavingZone = toTruffleStringUncached(defaultTimeZone.getDisplayName(false, TimeZone.SHORT));
-        TruffleString daylightSavingZone = toTruffleStringUncached(defaultTimeZone.getDisplayName(true, TimeZone.SHORT));
-
-        timeModule.setAttribute(T_TZNAME, PFactory.createTuple(core.getLanguage(), new Object[]{noDaylightSavingZone, daylightSavingZone}));
-        timeModule.setAttribute(T_DAYLIGHT, PInt.intValue(defaultTimeZone.getDSTSavings() != 0));
-        timeModule.setAttribute(T_TIMEZONE, defaultTimeZone.getRawOffset() / -1000);
-        timeModule.setAttribute(T_ALTZONE, (defaultTimeZone.getRawOffset() + defaultTimeZone.getDSTSavings()) / -1000);
+        setGlobalTimeZone(timeModule, core.getLanguage(), core.getContext());
 
         // register_interop_behavior() for time.struct_time
         AbstractImportNode.importModule(T_POLYGLOT_TIME);
     }
 
+    /**
+     * Determine and set global time zone (for the current Truffle context). Timezone is based on
+     * the TZ env variable. Intentionally don't change Java default timezone (with
+     * {@code TimeZone.setDefault}) because it affects all the contexts.
+     */
+    private static void setGlobalTimeZone(PythonModule timeModule, PythonLanguage language, PythonContext context) {
+        TruffleString tsTzEnv = OsEnvironGetNode.lookupUncached(T_TZ);
+
+        TimeZone timeZone;
+        if (tsTzEnv == null) {
+            // switch back to the context-specific default timezone
+            ZoneId zoneId = context.getEnv().getTimeZone();
+            timeZone = TimeZone.getTimeZone(zoneId);
+        } else {
+            String tzEnv = ToJavaStringNode.getUncached().execute(tsTzEnv);
+            timeZone = TimeZone.getTimeZone(tzEnv);
+        }
+
+        // save in the module state
+        ModuleState moduleState = timeModule.getModuleState(ModuleState.class);
+        moduleState.currentZoneId = timeZone.toZoneId();
+
+        // update time module attributes
+        TruffleString noDaylightSavingZone = toTruffleStringUncached(timeZone.getDisplayName(false, TimeZone.SHORT));
+        TruffleString daylightSavingZone = toTruffleStringUncached(timeZone.getDisplayName(true, TimeZone.SHORT));
+
+        timeModule.setAttribute(T_TZNAME, PFactory.createTuple(language, new Object[]{noDaylightSavingZone, daylightSavingZone}));
+        timeModule.setAttribute(T_DAYLIGHT, PInt.intValue(timeZone.getDSTSavings() != 0));
+        timeModule.setAttribute(T_TIMEZONE, timeZone.getRawOffset() / -1000);
+        timeModule.setAttribute(T_ALTZONE, (timeZone.getRawOffset() + timeZone.getDSTSavings()) / -1000);
+    }
+
     @TruffleBoundary
     public static double timeSeconds() {
         return System.currentTimeMillis() / 1000.0;
+    }
+
+    /**
+     * Return current time zone (that can be changed with time.tzset()). The only correct way to get
+     * it.
+     */
+    public static TimeZone getGlobalTimeZone(PythonContext context) {
+        PythonModule timeModule = context.lookupBuiltinModule(T_TIME);
+
+        ModuleState moduleState = timeModule.getModuleState(ModuleState.class);
+        ZoneId zoneId = moduleState.currentZoneId;
+
+        return TimeZone.getTimeZone(zoneId);
     }
 
     private static final int TM_YEAR = 0; /* year */
@@ -306,23 +342,15 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "tzset")
+    // time.tzset()
+    @Builtin(name = "tzset", maxNumOfPositionalArgs = 1, declaresExplicitSelf = true)
     @GenerateNodeFactory
     public abstract static class TzSetNode extends PythonBuiltinNode {
-        private static final TruffleString SET_TIMEZONE_ERROR = tsLiteral("Setting timezone was disallowed.");
 
         @Specialization
         @TruffleBoundary
-        Object tzset() {
-            if (!PythonImageBuildOptions.WITHOUT_PLATFORM_ACCESS) {
-                String tzEnv = getContext().getEnv().getEnvironment().get("TZ");
-                if (tzEnv == null) {
-                    tzEnv = "";
-                }
-                TimeZone.setDefault(TimeZone.getTimeZone(tzEnv));
-            } else {
-                throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.AttributeError, SET_TIMEZONE_ERROR);
-            }
+        Object tzset(PythonModule self) {
+            setGlobalTimeZone(self, getLanguage(), getContext());
             return PNone.NONE;
         }
     }
@@ -920,7 +948,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         static TruffleString formatTime(PythonModule module, TruffleString format, @SuppressWarnings("unused") PNone time,
                         @Bind Node inliningTarget,
                         @Shared("byteIndexOfCp") @Cached TruffleString.ByteIndexOfCodePointNode byteIndexOfCodePointNode,
-                        @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode,
+                        @Shared("ts2js") @Cached ToJavaStringNode toJavaStringNode,
                         @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             if (byteIndexOfCodePointNode.execute(format, 0, 0, format.byteLength(TS_ENCODING), TS_ENCODING) >= 0) {
@@ -936,7 +964,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Shared("byteIndexOfCp") @Cached TruffleString.ByteIndexOfCodePointNode byteIndexOfCodePointNode,
-                        @Shared("ts2js") @Cached TruffleString.ToJavaStringNode toJavaStringNode,
+                        @Shared("ts2js") @Cached ToJavaStringNode toJavaStringNode,
                         @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             if (byteIndexOfCodePointNode.execute(format, 0, 0, format.byteLength(TS_ENCODING), TS_ENCODING) >= 0) {

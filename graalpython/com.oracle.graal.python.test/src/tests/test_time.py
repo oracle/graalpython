@@ -67,6 +67,30 @@ class ClockInfoTests(unittest.TestCase):
         self.assertRaises(TypeError, time.get_clock_info, 1)
         self.assertRaises(ValueError, time.get_clock_info, 'bogus')
 
+class TzSetTests(unittest.TestCase):
+    def test_removing_tz(self):
+        # sets system timezone to the local one
+
+        from os import environ
+        original_TZ = environ.get('TZ', None)
+        original_timezone = time.timezone
+
+        try:
+            environ['TZ'] = "Asia/Kolkata" # there is no daylight saving time for this timezone
+            time.tzset()
+            self.assertEqual(time.timezone, -5.5 * 3600)
+
+            del environ['TZ']
+            time.tzset()
+            self.assertEqual(time.timezone, original_timezone)
+        finally:
+            # Repair TZ environment variable in case any other tests rely on it.
+            if original_TZ is not None:
+                environ['TZ'] = original_TZ
+            elif 'TZ' in environ:
+                del environ['TZ']
+            time.tzset()
+
 class StructTimeTests(unittest.TestCase):
 
     def test_new_struct_time(self):
