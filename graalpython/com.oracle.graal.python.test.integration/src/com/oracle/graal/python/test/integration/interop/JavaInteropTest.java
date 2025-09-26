@@ -55,6 +55,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Context.Builder;
@@ -219,15 +220,31 @@ public class JavaInteropTest {
                 context.eval(createSource("import java; java.math.BigInteger.ONE.divide(java.math.BigInteger.ZERO)"));
                 fail();
             } catch (PolyglotException e) {
-                Assert.assertTrue(e.isHostException());
-                Assert.assertTrue(e.asHostException() instanceof ArithmeticException);
-                Assert.assertTrue(e.getMessage(), e.getMessage().contains("divide by zero"));
+                try {
+                    Assert.assertTrue(e.isHostException());
+                    Assert.assertTrue(e.asHostException() instanceof ArithmeticException);
+                    Assert.assertTrue(e.getMessage(), e.getMessage().contains("divide by zero"));
+                } catch (AssertionError assertionError) {
+                    throw new AssertionError(getAssertionMessage(e), assertionError);
+                }
             }
 
             String outString = getOutString();
             String errString = getErrString();
             Assert.assertTrue(outString, outString.isEmpty());
             Assert.assertTrue(errString, errString.isEmpty());
+        }
+
+        private static String getAssertionMessage(PolyglotException ex) {
+            var builder = new StringBuilder(ex.getClass().getSimpleName() + "\n");
+            try {
+                builder.append(ex.getMessage());
+                builder.append('\n');
+                builder.append(Arrays.stream(ex.getStackTrace()).map(StackTraceElement::toString).collect(Collectors.joining("\n")));
+            } catch (Throwable ignore) {
+                // pass
+            }
+            return builder.toString();
         }
 
         @Test

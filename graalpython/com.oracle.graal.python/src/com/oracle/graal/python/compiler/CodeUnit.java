@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.compiler;
 
+import static com.oracle.graal.python.util.PythonUtils.isInterned;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -51,8 +53,6 @@ import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.api.strings.TruffleString;
-
-import static com.oracle.graal.python.util.PythonUtils.isInterned;
 
 /**
  * A context-independent representation of code for bytecode interpreter. Contains the actual

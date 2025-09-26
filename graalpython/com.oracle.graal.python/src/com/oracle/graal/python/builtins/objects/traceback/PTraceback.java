@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -59,6 +59,11 @@ public final class PTraceback extends PythonBuiltinObject {
     private PFrame.Reference frameInfo;
     private int lineno = UNKNOWN_LINE_NUMBER;
     private int bci = -1;
+    /**
+     * Only for Bytecode DSL. The traceback may represent the catch BCI, in which case we need the
+     * {@link BytecodeNode} that executed the catch BCI, which may not necessarily be the one
+     * accessible from in {@link PFrame#getLocation()}.
+     */
     private BytecodeNode bytecodeNode = null;
     private int lasti = -1;
     private PTraceback next;

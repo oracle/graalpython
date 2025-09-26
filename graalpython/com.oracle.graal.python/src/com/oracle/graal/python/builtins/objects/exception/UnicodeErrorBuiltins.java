@@ -60,7 +60,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -130,7 +130,7 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isPBytes(value)", "!isString(value)"})
         static PBytes doOther(VirtualFrame frame, Object value,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonBufferAccessLibrary bufferLib,
                         @Bind PythonLanguage language) {
             try {
@@ -138,7 +138,7 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
                 final int bufferLength = bufferLib.getBufferLength(value);
                 return PFactory.createBytes(language, buffer, bufferLength);
             } finally {
-                bufferLib.release(value, frame, indirectCallData);
+                bufferLib.release(value, frame, callData);
             }
         }
     }

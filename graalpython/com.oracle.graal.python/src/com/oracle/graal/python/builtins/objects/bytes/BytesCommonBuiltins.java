@@ -59,10 +59,10 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -114,8 +114,9 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
+import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -261,7 +262,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         @Specialization(limit = "3")
         static PBytesLike add(VirtualFrame frame, Object self, Object other,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") InteropCallData callData,
                         @Cached GetBytesStorage getBytesStorage,
                         @CachedLibrary("other") PythonBufferAcquireLibrary bufferAcquireLib,
                         @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
@@ -269,7 +270,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                         @Exclusive @Cached PRaiseNode raiseNode) {
             Object otherBuffer;
             try {
-                otherBuffer = bufferAcquireLib.acquireReadonly(other, frame, indirectCallData);
+                otherBuffer = bufferAcquireLib.acquireReadonly(other, frame, callData);
             } catch (PException e) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANT_CONCAT_P_TO_P, other, self);
             }
@@ -277,7 +278,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                 SequenceStorage selfBuffer = getBytesStorage.execute(inliningTarget, self);
                 return concatBuffers(self, selfBuffer, otherBuffer, inliningTarget, bufferLib, create, raiseNode);
             } finally {
-                bufferLib.release(otherBuffer, frame, indirectCallData);
+                bufferLib.release(otherBuffer, frame, callData);
             }
         }
 
@@ -319,24 +320,25 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         static Object mod(VirtualFrame frame, Object self, Object right,
                         @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Cached BytesLikeCheck check,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") InteropCallData interopCallData,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached BytesNodes.CreateBytesNode create) {
-            Object buffer = acquireLib.acquireReadonly(self, frame, indirectCallData);
+            Object buffer = acquireLib.acquireReadonly(self, frame, interopCallData);
             try {
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                 int bytesLen = bufferLib.getBufferLength(buffer);
                 BytesFormatProcessor formatter = new BytesFormatProcessor(PythonContext.get(inliningTarget), bytes, bytesLen, inliningTarget);
-                Object savedState = IndirectCallContext.enter(frame, inliningTarget, indirectCallData);
+                Object savedState = BoundaryCallContext.enter(frame, boundaryCallData);
                 try {
                     byte[] data = formatter.format(right);
                     return create.execute(inliningTarget, self, data);
                 } finally {
-                    IndirectCallContext.exit(frame, inliningTarget, indirectCallData, savedState);
+                    BoundaryCallContext.exit(frame, boundaryCallData, savedState);
                 }
             } finally {
-                bufferLib.release(buffer, frame, indirectCallData);
+                bufferLib.release(buffer, frame, interopCallData);
             }
         }
 
@@ -574,7 +576,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         PTuple partition(VirtualFrame frame, Object self, Object sep,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary("sep") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached GetBytesStorage getBytesStorage,
@@ -585,7 +587,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
             SequenceStorage storage = getBytesStorage.execute(inliningTarget, self);
             int len = storage.length();
             byte[] bytes = toBytesNode.execute(frame, self);
-            Object sepBuffer = acquireLib.acquireReadonly(sep, frame, indirectCallData);
+            Object sepBuffer = acquireLib.acquireReadonly(sep, frame, callData);
             try {
                 int lenSep = bufferLib.getBufferLength(sepBuffer);
                 if (lenSep == 0) {
@@ -618,7 +620,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                 }
                 return PFactory.createTuple(language, new Object[]{first, second, third});
             } finally {
-                bufferLib.release(sepBuffer, frame, indirectCallData);
+                bufferLib.release(sepBuffer, frame, callData);
             }
         }
 
@@ -774,13 +776,13 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         @Specialization(guards = "bufferAcquireLib.hasBuffer(object)", limit = "3")
         static byte doBuffer(VirtualFrame frame, Object object,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary("object") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             PythonContext context = PythonContext.get(inliningTarget);
             PythonLanguage language = context.getLanguage(inliningTarget);
-            Object buffer = bufferAcquireLib.acquireReadonly(object, frame, context, language, indirectCallData);
+            Object buffer = bufferAcquireLib.acquireReadonly(object, frame, context, language, callData);
             try {
                 if (bufferLib.getBufferLength(buffer) != 1) {
                     throw raiseNode.raise(inliningTarget, ValueError, SEP_MUST_BE_LENGTH_1);
@@ -791,7 +793,7 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                 }
                 return b;
             } finally {
-                bufferLib.release(buffer, frame, context, language, indirectCallData);
+                bufferLib.release(buffer, frame, context, language, callData);
             }
         }
 
@@ -1493,16 +1495,16 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         static byte[] doBuffer(VirtualFrame frame, Object object,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary("object") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
             PythonLanguage language = context.getLanguage(inliningTarget);
-            Object buffer = bufferAcquireLib.acquireReadonly(object, frame, context, language, indirectCallData);
+            Object buffer = bufferAcquireLib.acquireReadonly(object, frame, context, language, callData);
             try {
                 // TODO avoid copying
                 return bufferLib.getCopiedByteArray(buffer);
             } finally {
-                bufferLib.release(buffer, frame, context, language, indirectCallData);
+                bufferLib.release(buffer, frame, context, language, callData);
             }
         }
 
@@ -1873,19 +1875,19 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isPNone(object)")
         PBytesLike strip(VirtualFrame frame, Object self, Object object,
                         @Bind Node node,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Shared("createByte") @Cached BytesNodes.CreateBytesNode create,
                         @Shared("toByteSelf") @Cached BytesNodes.ToBytesNode selfToBytesNode) {
-            Object buffer = bufferAcquireLib.acquireReadonly(object, frame, indirectCallData);
+            Object buffer = bufferAcquireLib.acquireReadonly(object, frame, callData);
             try {
                 byte[] stripBs = bufferLib.getInternalOrCopiedByteArray(buffer);
                 int stripBsLen = bufferLib.getBufferLength(buffer);
                 byte[] bs = selfToBytesNode.execute(frame, self);
                 return create.execute(node, self, getResultBytes(bs, findIndex(bs, stripBs, stripBsLen)));
             } finally {
-                bufferLib.release(buffer, frame, indirectCallData);
+                bufferLib.release(buffer, frame, callData);
             }
         }
 
@@ -2309,14 +2311,14 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         @Specialization
         static PBytesLike remove(VirtualFrame frame, Object self, Object prefix,
                         @Bind Node node,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary(limit = "1") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached BytesNodes.CreateBytesNode create,
                         @Cached InlinedConditionProfile profile) {
 
-            Object selfBuffer = bufferAcquireLib.acquireReadonly(self, frame, indirectCallData);
-            Object prefixBuffer = bufferAcquireLib.acquireReadonly(prefix, frame, indirectCallData);
+            Object selfBuffer = bufferAcquireLib.acquireReadonly(self, frame, callData);
+            Object prefixBuffer = bufferAcquireLib.acquireReadonly(prefix, frame, callData);
             try {
                 int selfBsLen = bufferLib.getBufferLength(selfBuffer);
                 int prefixBsLen = bufferLib.getBufferLength(prefixBuffer);
@@ -2339,8 +2341,8 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                 }
                 return create.execute(node, self, selfBs);
             } finally {
-                bufferLib.release(selfBuffer, frame, indirectCallData);
-                bufferLib.release(prefixBuffer, frame, indirectCallData);
+                bufferLib.release(selfBuffer, frame, callData);
+                bufferLib.release(prefixBuffer, frame, callData);
             }
         }
     }
@@ -2351,13 +2353,13 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         @Specialization
         static PBytesLike remove(VirtualFrame frame, Object self, Object suffix,
                         @Bind Node node,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary(limit = "1") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached BytesNodes.CreateBytesNode create,
                         @Cached InlinedConditionProfile profile) {
-            Object selfBuffer = bufferAcquireLib.acquireReadonly(self, frame, indirectCallData);
-            Object suffixBuffer = bufferAcquireLib.acquireReadonly(suffix, frame, indirectCallData);
+            Object selfBuffer = bufferAcquireLib.acquireReadonly(self, frame, callData);
+            Object suffixBuffer = bufferAcquireLib.acquireReadonly(suffix, frame, callData);
             try {
                 int selfBsLen = bufferLib.getBufferLength(selfBuffer);
                 int suffixBsLen = bufferLib.getBufferLength(suffixBuffer);
@@ -2380,8 +2382,8 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                 }
                 return create.execute(node, self, selfBs);
             } finally {
-                bufferLib.release(selfBuffer, frame, indirectCallData);
-                bufferLib.release(suffixBuffer, frame, indirectCallData);
+                bufferLib.release(selfBuffer, frame, callData);
+                bufferLib.release(suffixBuffer, frame, callData);
             }
         }
     }

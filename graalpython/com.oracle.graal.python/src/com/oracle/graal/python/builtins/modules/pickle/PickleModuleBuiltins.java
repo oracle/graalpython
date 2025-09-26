@@ -61,7 +61,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -84,8 +84,7 @@ public final class PickleModuleBuiltins extends PythonBuiltins {
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
         PickleState state = new PickleState();
-        final PickleState.PickleStateInitNode initNode = PickleStateFactory.PickleStateInitNodeGen.getUncached();
-        initNode.execute(state);
+        PickleState.init(state, core.getContext());
         HiddenAttr.WriteNode.executeUncached(core.lookupType(PythonBuiltinClassType.Pickler), HiddenAttr.PICKLE_STATE, state);
     }
 
@@ -194,7 +193,7 @@ public final class PickleModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") InteropCallData callData,
                         @Cached PUnpickler.LoadNode loadNode,
                         @Cached PyObjectGetIter getIter) {
             try {
@@ -206,7 +205,7 @@ public final class PickleModuleBuiltins extends PythonBuiltins {
                 unpickler.setFixImports(fixImports);
                 return loadNode.execute(frame, unpickler);
             } finally {
-                bufferLib.release(buffer, frame, indirectCallData);
+                bufferLib.release(buffer, frame, callData);
             }
         }
     }

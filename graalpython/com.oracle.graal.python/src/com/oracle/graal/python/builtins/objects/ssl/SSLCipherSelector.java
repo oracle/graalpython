@@ -55,6 +55,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.Node;
 
 public class SSLCipherSelector {
@@ -71,8 +72,14 @@ public class SSLCipherSelector {
         selectCiphersFromList(node, cipherList, selected, deleted);
         // The call fails when no <= TLSv1.2 ciphersuites get selected, regardless of TLSv1.3
         // ciphersuites
-        if (selected.size() == 0) {
-            throw PConstructAndRaiseNode.raiseUncachedSSLError(ErrorMessages.NO_CIPHER_CAN_BE_SELECTED);
+        if (selected.isEmpty()) {
+            EncapsulatingNodeReference nodeRef = EncapsulatingNodeReference.getCurrent();
+            Node prev = nodeRef.set(node);
+            try {
+                throw PConstructAndRaiseNode.raiseUncachedSSLError(ErrorMessages.NO_CIPHER_CAN_BE_SELECTED);
+            } finally {
+                nodeRef.set(prev);
+            }
         }
         // The API that CPython uses is meant only for setting <= TLSv1.2 ciphersuites, but it
         // also unconditionally adds a hardcoded list of TLSv1.3 ciphersuites to the beginning

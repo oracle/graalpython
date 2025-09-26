@@ -70,10 +70,10 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -115,6 +115,8 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -190,12 +192,13 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ParametersNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object parameters(PGenericAlias self,
+        static Object parameters(VirtualFrame frame, PGenericAlias self,
                         @Bind Node inliningTarget,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached InlinedBranchProfile createProfile) {
             if (self.getParameters() == null) {
                 createProfile.enter(inliningTarget);
-                self.setParameters(PFactory.createTuple(PythonLanguage.get(inliningTarget), GenericTypeNodes.makeParameters(self.getArgs())));
+                self.setParameters(PFactory.createTuple(PythonLanguage.get(inliningTarget), GenericTypeNodes.makeParameters(frame, boundaryCallData, self.getArgs())));
             }
             return self.getParameters();
         }
@@ -214,9 +217,9 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class OrNode extends BinaryOpBuiltinNode {
         @Specialization
-        static Object union(Object self, Object other,
+        static Object union(VirtualFrame frame, Object self, Object other,
                         @Cached GenericTypeNodes.UnionTypeOrNode orNode) {
-            return orNode.execute(self, other);
+            return orNode.execute(frame, self, other);
         }
     }
 
@@ -226,8 +229,19 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
         private static final TruffleString SEPARATOR = tsLiteral(", ");
 
         @Specialization
+        static Object repr(VirtualFrame frame, PGenericAlias self,
+                        @Bind Node inliningTarget,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
+            Object saved = BoundaryCallContext.enter(frame, boundaryCallData);
+            try {
+                return reprBoundary(self);
+            } finally {
+                BoundaryCallContext.exit(frame, boundaryCallData, saved);
+            }
+        }
+
         @TruffleBoundary
-        static Object repr(PGenericAlias self) {
+        static Object reprBoundary(PGenericAlias self) {
             TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
             if (self.isStarred()) {
                 sb.appendCodePointUncached('*');
@@ -424,15 +438,14 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class DirNode extends PythonUnaryBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        static Object dir(PGenericAlias self,
+        static Object dir(VirtualFrame frame, PGenericAlias self,
                         @Bind Node inliningTarget,
                         @Cached PyObjectDir dir,
                         @Cached PySequenceContainsNode containsNode,
                         @Cached ListNodes.AppendNode appendNode) {
-            PList list = dir.execute(null, inliningTarget, self.getOrigin());
+            PList list = dir.execute(frame, inliningTarget, self.getOrigin());
             for (int i = 0; i < ATTR_EXCEPTIONS.length; i++) {
-                if (!containsNode.execute(null, inliningTarget, list, ATTR_EXCEPTIONS[i])) {
+                if (!containsNode.execute(frame, inliningTarget, list, ATTR_EXCEPTIONS[i])) {
                     appendNode.execute(list, ATTR_EXCEPTIONS[i]);
                 }
             }
@@ -444,15 +457,27 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetItemNode extends MpSubscriptBuiltinNode {
         @Specialization
-        static Object getitem(PGenericAlias self, Object item,
+        static Object getitem(VirtualFrame frame, PGenericAlias self, Object item,
                         @Bind Node inliningTarget,
-                        @Bind PythonLanguage language) {
-            if (self.getParameters() == null) {
-                self.setParameters(PFactory.createTuple(language, GenericTypeNodes.makeParameters(self.getArgs())));
+                        @Bind PythonLanguage language,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
+            Object saved = BoundaryCallContext.enter(frame, boundaryCallData);
+            Object[] newargs;
+            try {
+                newargs = createNewArgs(self, item, inliningTarget, language);
+            } finally {
+                BoundaryCallContext.exit(frame, boundaryCallData, saved);
             }
-            Object[] newargs = GenericTypeNodes.subsParameters(inliningTarget, self, self.getArgs(), self.getParameters(), item);
             PTuple newargsTuple = PFactory.createTuple(language, newargs);
             return PFactory.createGenericAlias(language, self.getOrigin(), newargsTuple, self.isStarred());
+        }
+
+        @TruffleBoundary
+        private static Object[] createNewArgs(PGenericAlias self, Object item, Node inliningTarget, PythonLanguage language) {
+            if (self.getParameters() == null) {
+                self.setParameters(PFactory.createTuple(language, GenericTypeNodes.makeParametersUncached(self.getArgs())));
+            }
+            return GenericTypeNodes.subsParametersUncached(inliningTarget, self, self.getArgs(), self.getParameters(), item);
         }
     }
 

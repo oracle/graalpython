@@ -48,11 +48,13 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -62,15 +64,17 @@ import com.oracle.truffle.api.strings.TruffleString;
 @GenerateUncached
 @GenerateCached(false)
 public abstract class OsEnvironGetNode extends PNodeWithContext {
-    protected abstract TruffleString execute(TruffleString name);
-
-    public static TruffleString executeUncached(TruffleString name) {
-        return OsEnvironGetNodeGen.getUncached().execute(name);
+    public static TruffleString lookup(VirtualFrame frame, BoundaryCallData boundaryCallData, TruffleString name) {
+        Object saved = BoundaryCallContext.enter(frame, boundaryCallData);
+        try {
+            return lookupUncached(name);
+        } finally {
+            BoundaryCallContext.exit(frame, boundaryCallData, saved);
+        }
     }
 
     @TruffleBoundary
-    @Specialization
-    static TruffleString doLookup(TruffleString name) {
+    public static TruffleString lookupUncached(TruffleString name) {
         Object os = AbstractImportNode.importModule(T_OS);
         Object environ = PyObjectGetAttr.executeUncached(os, T_ENVIRON);
         try {

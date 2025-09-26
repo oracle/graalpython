@@ -75,10 +75,10 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -127,7 +127,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.function.builtins.clinic.LongIndexConverterNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
@@ -137,6 +137,7 @@ import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CallTarget;
+import com.oracle.truffle.api.ThreadLocalAction.Access;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -732,7 +733,7 @@ public final class MMapBuiltins extends PythonBuiltins {
         static int doIt(VirtualFrame frame, PMMap self, Object dataBuffer,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary("dataBuffer") PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
@@ -752,7 +753,7 @@ public final class MMapBuiltins extends PythonBuiltins {
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             } finally {
-                bufferLib.release(dataBuffer, frame, indirectCallData);
+                bufferLib.release(dataBuffer, frame, callData);
             }
         }
     }
@@ -810,7 +811,7 @@ public final class MMapBuiltins extends PythonBuiltins {
         static long find(VirtualFrame frame, PMMap self, Object subBuffer, Object startIn, Object endIn,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary("subBuffer") PythonBufferAccessLibrary bufferLib,
                         @Cached LongIndexConverterNode startConverter,
                         @Cached LongIndexConverterNode endConverter,
@@ -870,7 +871,7 @@ public final class MMapBuiltins extends PythonBuiltins {
                 }
                 return -1;
             } finally {
-                bufferLib.release(subBuffer, frame, indirectCallData);
+                bufferLib.release(subBuffer, frame, callData);
             }
         }
 
@@ -955,7 +956,7 @@ public final class MMapBuiltins extends PythonBuiltins {
         }
 
         @Override
-        public void execute(PythonContext context) {
+        public void execute(PythonContext context, Access access) {
             if (ref.isReleased()) {
                 return;
             }

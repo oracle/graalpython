@@ -86,10 +86,10 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -495,8 +495,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
                         @Cached PyNumberIndexNode indexNode,
                         @Shared @Cached TruffleString.SubstringNode substringNode,
                         @Shared @Cached TruffleStringBuilder.ToStringNode toStringNode,
-                        @Shared @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @Shared @Cached TruffleStringBuilder.AppendStringNode appendStringNode) {
             int size = asSizeNode.executeExact(frame, inliningTarget, indexNode.execute(frame, inliningTarget, arg), OverflowError);
             if (size >= 0) {
                 if (size < self.getStringSize()) {
@@ -504,7 +503,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
                 }
                 return size;
             }
-            return negSize(self, size, raiseNode);
+            return negSize(self, size, inliningTarget);
         }
 
         @Specialization(guards = {"self.isOK()", "!self.isClosed()", "size < 0"})
@@ -677,7 +676,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
             SequenceStorage storage = state.getSequenceStorage();
             Object[] array = getArray.execute(inliningTarget, storage);
             if (storage.length() < 4) {
-                return notTuple(self, state, raiseNode);
+                return notTuple(self, state, inliningTarget);
             }
             initNode.execute(frame, self, array[0], array[1]);
             /*

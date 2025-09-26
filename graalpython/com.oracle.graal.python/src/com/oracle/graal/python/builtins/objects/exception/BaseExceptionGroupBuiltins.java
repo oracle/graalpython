@@ -55,10 +55,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -95,8 +95,8 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -394,10 +394,10 @@ public class BaseExceptionGroupBuiltins extends PythonBuiltins {
         @Specialization
         static Object split(VirtualFrame frame, PBaseExceptionGroup self, Object matcherValue,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData) {
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
             PythonContext context = PythonContext.get(inliningTarget);
             PythonLanguage language = context.getLanguage(inliningTarget);
-            Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
+            Object state = BoundaryCallContext.enter(frame, language, context, boundaryCallData);
             /*
              * TODO this could benefit from PE, but the recusions and list building make that
              * annoying to implement.
@@ -406,7 +406,7 @@ public class BaseExceptionGroupBuiltins extends PythonBuiltins {
             try {
                 result = doSplit(self, matcherValue, inliningTarget, true);
             } finally {
-                IndirectCallContext.exit(frame, language, context, state);
+                BoundaryCallContext.exit(frame, language, context, state);
             }
             Object match = result.match != null ? result.match : PNone.NONE;
             Object rest = result.rest != null ? result.rest : PNone.NONE;
@@ -420,10 +420,10 @@ public class BaseExceptionGroupBuiltins extends PythonBuiltins {
         @Specialization
         static Object subgroup(VirtualFrame frame, PBaseExceptionGroup self, Object matcherValue,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData) {
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
             PythonContext context = PythonContext.get(inliningTarget);
             PythonLanguage language = context.getLanguage(inliningTarget);
-            Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
+            Object state = BoundaryCallContext.enter(frame, language, context, boundaryCallData);
             /*
              * TODO this could benefit from PE, but the recusions and list building make that
              * annoying to implement.
@@ -432,7 +432,7 @@ public class BaseExceptionGroupBuiltins extends PythonBuiltins {
             try {
                 result = doSplit(self, matcherValue, inliningTarget, false);
             } finally {
-                IndirectCallContext.exit(frame, language, context, state);
+                BoundaryCallContext.exit(frame, language, context, state);
             }
             return result.match != null ? result.match : PNone.NONE;
         }

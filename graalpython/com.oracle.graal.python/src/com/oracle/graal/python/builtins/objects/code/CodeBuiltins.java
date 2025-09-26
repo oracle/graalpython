@@ -73,7 +73,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -635,7 +635,7 @@ public final class CodeBuiltins extends PythonBuiltins {
                         TruffleString coName, TruffleString coQualname,
                         Object coLnotab, @SuppressWarnings("unused") Object coExceptiontable,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") InteropCallData callData,
                         @Cached CodeNodes.CreateCodeNode createCodeNode,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
@@ -660,10 +660,10 @@ public final class CodeBuiltins extends PythonBuiltins {
                                 PGuards.isNone(coLnotab) ? self.getLinetable() : bufferLib.getInternalOrCopiedByteArray(coLnotab));
             } finally {
                 if (!PGuards.isNone(coCode)) {
-                    bufferLib.release(coCode, frame, indirectCallData);
+                    bufferLib.release(coCode, frame, callData);
                 }
                 if (!PGuards.isNone(coLnotab)) {
-                    bufferLib.release(coLnotab, frame, indirectCallData);
+                    bufferLib.release(coLnotab, frame, callData);
                 }
             }
         }

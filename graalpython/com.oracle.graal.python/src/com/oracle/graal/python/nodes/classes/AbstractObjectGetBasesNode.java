@@ -61,6 +61,10 @@ public abstract class AbstractObjectGetBasesNode extends PNodeWithContext {
 
     public abstract PTuple execute(Frame frame, Node inliningTarget, Object cls);
 
+    public static AbstractObjectGetBasesNode getUncached() {
+        return AbstractObjectGetBasesNodeGen.getUncached();
+    }
+
     @Specialization
     static PTuple getBasesCached(VirtualFrame frame, Node inliningTarget, Object cls,
                     @Cached PyObjectLookupAttr lookupAttr) {

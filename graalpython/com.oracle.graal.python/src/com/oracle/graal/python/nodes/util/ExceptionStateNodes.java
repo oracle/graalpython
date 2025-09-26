@@ -41,11 +41,15 @@
 package com.oracle.graal.python.nodes.util;
 
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonContextFactory.GetThreadStateNodeGen;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -55,7 +59,9 @@ import com.oracle.truffle.api.bytecode.ContinuationRootNode;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.FrameInstance.FrameAccess;
+import com.oracle.truffle.api.frame.FrameInstanceVisitor;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
@@ -118,8 +124,9 @@ public abstract class ExceptionStateNodes {
             // from the context. The caller didn't know that it is necessary to provide the
             // exception in the context. So, we do a full stack walk until the first frame
             // having the exception state in the special slot. And we set the appropriate flag
-            // on the root node such that the next time, we will find the exception state in the
-            // context immediately.
+            // on the root nodes along the way such that the next time, we will find the exception
+            // state in our frame (or context if in non-Python frame code without access to the
+            // current virtual frame, e.g., TruffleBoundary code).
 
             // TODO(fa) performance warning ?
             return fullStackWalk();
@@ -127,23 +134,47 @@ public abstract class ExceptionStateNodes {
 
         @TruffleBoundary
         public static AbstractTruffleException fullStackWalk() {
+            PythonContext.setWasStackWalk();
+            return Truffle.getRuntime().iterateFrames(new FrameInstanceVisitor<AbstractTruffleException>() {
+                boolean first = true;
 
-            return Truffle.getRuntime().iterateFrames(frameInstance -> {
-                RootCallTarget target = (RootCallTarget) frameInstance.getCallTarget();
-                RootNode rootNode = target.getRootNode();
-                Node callNode = frameInstance.getCallNode();
-                IndirectCallData.setEncapsulatingNeedsToPassExceptionState(callNode);
-                if (rootNode instanceof ContinuationRootNode) {
-                    Frame frame = frameInstance.getFrame(FrameAccess.READ_ONLY);
-                    assert frame.getArguments().length == 2;
-                    return PArguments.getException((MaterializedFrame) frame.getArguments()[0]);
+                @Override
+                public AbstractTruffleException visitFrame(FrameInstance frameInstance) {
+                    RootCallTarget target = (RootCallTarget) frameInstance.getCallTarget();
+                    RootNode rootNode = target.getRootNode();
+                    Node callNode = frameInstance.getCallNode();
+                    // We must have a callNode for Bytecode DSL root nodes. If this assertion fires,
+                    // it can be because of missing BoundaryCallContext.enter/exit around
+                    // @TruffleBoundary calls that may call back into Python code. Look at the Java
+                    // stack trace and check if all @TruffleBoundary methods are preceded by
+                    // BoundaryCallContext.enter/exit
+                    assert first || !(PGenerator.unwrapContinuationRoot(rootNode) instanceof PBytecodeDSLRootNode) || !PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER || callNode != null : rootNode;
+                    first = false;
+                    IndirectCallData.setEncapsulatingNeedsToPassExceptionState(callNode);
+                    PRootNode pRootNode = null;
+                    AbstractTruffleException result = null;
+                    if (rootNode instanceof ContinuationRootNode continuationRootNode) {
+                        if (continuationRootNode.getSourceRootNode() instanceof PBytecodeDSLRootNode r) {
+                            pRootNode = r;
+                            Frame frame = frameInstance.getFrame(FrameAccess.READ_ONLY);
+                            assert frame.getArguments().length == 2;
+                            result = PArguments.getException((MaterializedFrame) frame.getArguments()[0]);
+                        }
+                    } else if (rootNode instanceof PRootNode r) {
+                        pRootNode = r;
+                        Frame frame = frameInstance.getFrame(FrameAccess.READ_ONLY);
+                        result = PArguments.getException(frame);
+                    }
+                    if (result == null) {
+                        // This frame doesn't have the exception in its arguments array, ask the
+                        // caller to pass it next time and continue the stack walking by returning
+                        // the null result
+                        if (pRootNode != null) {
+                            pRootNode.setNeedsExceptionState();
+                        }
+                    }
+                    return result;
                 }
-                if (rootNode instanceof PRootNode pRootNode) {
-                    pRootNode.setNeedsExceptionState();
-                    Frame frame = frameInstance.getFrame(FrameAccess.READ_ONLY);
-                    return PArguments.getException(frame);
-                }
-                return null;
             });
 
         }

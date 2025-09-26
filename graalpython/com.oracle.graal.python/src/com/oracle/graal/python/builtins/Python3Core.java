@@ -369,6 +369,7 @@ import com.oracle.graal.python.lib.PyDictSetItem;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
@@ -920,7 +921,7 @@ public abstract class Python3Core {
     }
 
     private void initializeImportlib() {
-        PythonModule bootstrap = ImpModuleBuiltins.importFrozenModuleObject(this, T__FROZEN_IMPORTLIB, false);
+        PythonModule bootstrap = ImpModuleBuiltins.importFrozenModuleObjectNoRaise(this, T__FROZEN_IMPORTLIB);
         PythonModule bootstrapExternal;
         boolean useFrozenModules = bootstrap != null;
 
@@ -938,7 +939,7 @@ public abstract class Python3Core {
             loadFile(toTruffleStringUncached("importlib/_bootstrap_external"), getContext().getStdlibHome(), bootstrapExternal);
             loadFile(toTruffleStringUncached("importlib/_bootstrap"), getContext().getStdlibHome(), bootstrap);
         } else {
-            bootstrapExternal = ImpModuleBuiltins.importFrozenModuleObject(this, T__FROZEN_IMPORTLIB_EXTERNAL, true);
+            bootstrapExternal = ImpModuleBuiltins.importFrozenModuleObject(null, PConstructAndRaiseNode.Lazy.getUncached(), this, T__FROZEN_IMPORTLIB_EXTERNAL);
             setItem.execute(null, null, sysModules, T_IMPORTLIB_BOOTSTRAP, bootstrap);
             setItem.execute(null, null, sysModules, T_IMPORTLIB_BOOTSTRAP_EXTERNAL, bootstrapExternal);
             LOGGER.log(Level.FINE, () -> "import '" + T__FROZEN_IMPORTLIB + "' # <frozen>");
@@ -1287,7 +1288,7 @@ public abstract class Python3Core {
     }
 
     private void loadFile(TruffleString s, TruffleString prefix, PythonModule mod) {
-        if (ImpModuleBuiltins.importFrozenModuleObject(this, cat(T_GRAALPYTHON, T_DOT, s), false, mod) != null) {
+        if (ImpModuleBuiltins.importFrozenModuleObjectNoRaise(this, cat(T_GRAALPYTHON, T_DOT, s), mod) != null) {
             LOGGER.log(Level.FINE, () -> "import '" + s + "' # <frozen>");
             return;
         }

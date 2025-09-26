@@ -69,6 +69,11 @@ public final class PFrame extends PythonBuiltinObject {
     private final MaterializedFrame locals;
     private Object localsDict;
     private final Reference virtualFrameInfo;
+    /**
+     * For the manual bytecode interpreter the location can be the {@link PBytecodeRootNode} itself,
+     * but for the Bytecode DSL interpreter, the location must be an AST node connected to the
+     * {@link BytecodeNode} that was executed at the time when the BCI was captured.
+     */
     private Node location;
     private RootCallTarget callTarget;
     private int line = UNINITIALIZED_LINE;
@@ -321,7 +326,7 @@ public final class PFrame extends PythonBuiltinObject {
     }
 
     public BytecodeNode getBytecodeNode() {
-        return (location instanceof BytecodeNode bytecodeNode) ? bytecodeNode : null;
+        return PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER ? BytecodeNode.get(location) : null;
     }
 
     public int getBci() {

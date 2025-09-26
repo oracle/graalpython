@@ -51,10 +51,10 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ISABSTRACTMET
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -84,6 +84,8 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassE
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -127,8 +129,18 @@ public final class PropertyBuiltins extends PythonBuiltins {
     abstract static class PropertyInitNode extends PythonBuiltinNode {
 
         @Specialization
+        static Object doGeneric(VirtualFrame frame, PProperty self, Object fget, Object fset, Object fdel, Object doc,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
+            Object saved = BoundaryCallContext.enter(frame, boundaryCallData);
+            try {
+                return doGenericBoundary(self, fget, fset, fdel, doc);
+            } finally {
+                BoundaryCallContext.exit(frame, boundaryCallData, saved);
+            }
+        }
+
         @TruffleBoundary
-        static Object doGeneric(PProperty self, Object fget, Object fset, Object fdel, Object doc) {
+        static Object doGenericBoundary(PProperty self, Object fget, Object fset, Object fdel, Object doc) {
             /*
              * CPython explicitly checks if the objects are 'NONE' and if so, they set 'NULL'. Also,
              * they just allow 'NULL' (which indicates a missing parameter and is our
@@ -234,7 +246,26 @@ public final class PropertyBuiltins extends PythonBuiltins {
         }
     }
 
+    @SuppressWarnings("this-escape")
     abstract static class PropertyCopyingNode extends PythonBinaryBuiltinNode {
+        @Child BoundaryCallData boundaryCallData = BoundaryCallData.createFor(this);
+
+        @Override
+        public final Object execute(VirtualFrame frame, Object arg, Object arg2) {
+            Object saved = BoundaryCallContext.enter(frame, boundaryCallData);
+            try {
+                return executeBoundary(arg, arg2);
+            } finally {
+                BoundaryCallContext.exit(frame, boundaryCallData, saved);
+            }
+        }
+
+        @TruffleBoundary
+        private Object executeBoundary(Object arg, Object arg2) {
+            return executeImpl(arg, arg2);
+        }
+
+        abstract Object executeImpl(Object arg, Object arg2);
 
         /**
          * Similar to {@code descrobject.c: property_copy}
@@ -273,7 +304,7 @@ public final class PropertyBuiltins extends PythonBuiltins {
             // shortcut: create new property object directly
             if (IsBuiltinClassProfile.profileClassSlowPath(type, PythonBuiltinClassType.PProperty)) {
                 PProperty copy = PFactory.createProperty(PythonLanguage.get(null));
-                PropertyInitNode.doGeneric(copy, get, set, del, doc);
+                PropertyInitNode.doGenericBoundary(copy, get, set, del, doc);
                 return copy;
             }
             PProperty newProp = (PProperty) CallNode.executeUncached(type, get, set, del, doc);

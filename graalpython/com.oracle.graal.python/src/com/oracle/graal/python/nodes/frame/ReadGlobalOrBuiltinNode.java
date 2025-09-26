@@ -178,8 +178,8 @@ public abstract class ReadGlobalOrBuiltinNode extends PNodeWithContext {
     }
 
     @Fallback
-    protected static Object syserr(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") Object dict, @SuppressWarnings("unused") TruffleString attributeId) {
-        throw PRaiseNode.raiseStatic(null, SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
+    protected Object syserr(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") Object dict, @SuppressWarnings("unused") TruffleString attributeId) {
+        throw PRaiseNode.raiseStatic(this, SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
     }
 
     private static Object returnGlobalOrBuiltin(Object result, TruffleString attributeId, ReadBuiltinNode readFromBuiltinsNode, Node inliningTarget, InlinedBranchProfile wasReadFromModule) {

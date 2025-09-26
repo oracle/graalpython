@@ -76,8 +76,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -134,16 +134,16 @@ public final class FaulthandlerModuleBuiltins extends PythonBuiltins {
         PNone doit(VirtualFrame frame, Object fileObj, boolean allThreads,
                         @Bind Node inliningTarget,
                         @Cached GetFilenoNode getFilenoNode,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData) {
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
             int fileno = getFilenoNode.execute(frame, inliningTarget, fileObj);
             PythonContext context = getContext();
             PythonLanguage language = context.getLanguage(this);
-            Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
+            Object state = BoundaryCallContext.enter(frame, language, context, boundaryCallData);
             try {
                 // it's not important for this to be fast at all
                 dump(language, context, fileno, fileObj, allThreads);
             } finally {
-                IndirectCallContext.exit(frame, language, context, state);
+                BoundaryCallContext.exit(frame, language, context, state);
             }
             TruffleSafepoint.poll(this);
             return PNone.NONE;

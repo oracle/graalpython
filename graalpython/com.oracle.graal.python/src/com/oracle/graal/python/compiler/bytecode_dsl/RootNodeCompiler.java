@@ -5484,7 +5484,9 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 b.emitLoadLocal(contextManager);
                 b.endAsyncContextManagerEnter();
                 // await the result
+                b.beginStoreLocal(value);
                 emitAwait(() -> b.emitLoadLocal(value));
+                b.endStoreLocal();
             } else {
                 // call __enter__
                 b.beginContextManagerEnter(exit, value);

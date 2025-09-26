@@ -60,7 +60,7 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -98,7 +98,7 @@ public final class BufferedWriterMixinBuiltins extends AbstractBufferedIOBuiltin
         @Specialization(guards = "self.isOK()")
         static Object write(@SuppressWarnings("unused") VirtualFrame frame, PBuffered self, Object buffer,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached EnterBufferedNode lock,
                         @Cached("create(T_WRITE)") CheckIsClosedNode checkIsClosedNode,
@@ -108,7 +108,7 @@ public final class BufferedWriterMixinBuiltins extends AbstractBufferedIOBuiltin
                 checkIsClosedNode.execute(frame, self);
                 return writeNode.execute(frame, inliningTarget, self, buffer);
             } finally {
-                bufferLib.release(buffer, frame, indirectCallData);
+                bufferLib.release(buffer, frame, callData);
                 EnterBufferedNode.leave(self);
             }
         }

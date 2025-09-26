@@ -57,8 +57,8 @@ import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNodeGen.CastToListNodeGen;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -121,35 +121,35 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
         @Specialization(rewriteOn = PException.class)
         static PList starredIterable(VirtualFrame frame, PythonObject value,
                         @Bind Node inliningTarget,
-                        @Shared @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Shared @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Shared @Cached ConstructListNode constructListNode) {
             PythonContext context = PythonContext.get(inliningTarget);
             PythonLanguage language = context.getLanguage(inliningTarget);
-            Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
+            Object state = BoundaryCallContext.enter(frame, language, context, boundaryCallData);
             try {
                 return constructListNode.execute(frame, value);
             } finally {
-                IndirectCallContext.exit(frame, language, context, state);
+                BoundaryCallContext.exit(frame, language, context, state);
             }
         }
 
         @Specialization
         static PList starredGeneric(VirtualFrame frame, Object v,
                         @Bind Node inliningTarget,
-                        @Shared @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Shared @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Shared @Cached ConstructListNode constructListNode,
                         @Cached IsBuiltinObjectProfile attrProfile,
                         @Cached PRaiseNode raise) {
             PythonContext context = PythonContext.get(inliningTarget);
             PythonLanguage language = context.getLanguage(inliningTarget);
-            Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
+            Object state = BoundaryCallContext.enter(frame, language, context, boundaryCallData);
             try {
                 return constructListNode.execute(frame, v);
             } catch (PException e) {
                 e.expectAttributeError(inliningTarget, attrProfile);
                 throw raise.raise(inliningTarget, TypeError, ErrorMessages.OBJ_NOT_ITERABLE, v);
             } finally {
-                IndirectCallContext.exit(frame, language, context, state);
+                BoundaryCallContext.exit(frame, language, context, state);
             }
         }
 

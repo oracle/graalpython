@@ -90,7 +90,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -396,7 +396,7 @@ public final class ErrorHandlers {
         static Object doDecodeException(VirtualFrame frame, PBaseException exception,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") InteropCallData callData,
                         @SuppressWarnings("unused") @Cached @Exclusive PyObjectTypeCheck pyObjectTypeCheck,
                         @Cached PyUnicodeDecodeErrorGetObjectNode getObjectNode,
                         @Cached PyUnicodeDecodeErrorGetStartNode getStartNode,
@@ -413,14 +413,14 @@ public final class ErrorHandlers {
             }
             byte[] replacement = new byte[4 * (end - start)];
             int pos = 0;
-            Object srcBuf = acquireLib.acquireReadonly(object, frame, indirectCallData);
+            Object srcBuf = acquireLib.acquireReadonly(object, frame, callData);
             try {
                 byte[] src = accessLib.getInternalOrCopiedByteArray(srcBuf);
                 for (int i = start; i < end; i++) {
                     pos = BytesUtils.byteEscape(src[i] & 0xFF, pos, replacement);
                 }
             } finally {
-                accessLib.release(srcBuf, frame, indirectCallData);
+                accessLib.release(srcBuf, frame, callData);
             }
             TruffleString resultAscii = fromByteArrayNode.execute(replacement, Encoding.US_ASCII, false);
             return PFactory.createTuple(language, new Object[]{switchEncodingNode.execute(resultAscii, TS_ENCODING), end});
@@ -568,7 +568,7 @@ public final class ErrorHandlers {
         static Object doDecode(VirtualFrame frame, PBaseException exception,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") InteropCallData callData,
                         @SuppressWarnings("unused") @Exclusive @Cached PyObjectTypeCheck pyObjectTypeCheck,
                         @Cached PyUnicodeDecodeErrorGetObjectNode getObjectNode,
                         @Cached PyUnicodeDecodeErrorGetStartNode getStartNode,
@@ -587,7 +587,7 @@ public final class ErrorHandlers {
             if (encoding == StandardEncoding.UNKNOWN) {
                 throw raiseNode.raiseExceptionObject(inliningTarget, exception);
             }
-            Object srcBuf = acquireLib.acquireReadonly(object, frame, indirectCallData);
+            Object srcBuf = acquireLib.acquireReadonly(object, frame, callData);
             try {
                 int cp = 0;
                 int srcLen = accessLib.getBufferLength(srcBuf);
@@ -599,7 +599,7 @@ public final class ErrorHandlers {
                 }
                 return PFactory.createTuple(language, new Object[]{fromCodePointNode.execute(cp, TS_ENCODING, true), start + encoding.byteLength});
             } finally {
-                accessLib.release(srcBuf, frame, indirectCallData);
+                accessLib.release(srcBuf, frame, callData);
             }
         }
 
@@ -696,7 +696,7 @@ public final class ErrorHandlers {
         static Object doDecode(VirtualFrame frame, PBaseException exception,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") InteropCallData callData,
                         @SuppressWarnings("unused") @Exclusive @Cached PyObjectTypeCheck pyObjectTypeCheck,
                         @Cached PyUnicodeDecodeErrorGetObjectNode getObjectNode,
                         @Cached PyUnicodeDecodeErrorGetStartNode getStartNode,
@@ -709,7 +709,7 @@ public final class ErrorHandlers {
             int start = getStartNode.execute(inliningTarget, exception);
             int end = getEndNode.execute(inliningTarget, exception);
             Object object = getObjectNode.execute(inliningTarget, exception);
-            Object srcBuf = acquireLib.acquireReadonly(object, frame, indirectCallData);
+            Object srcBuf = acquireLib.acquireReadonly(object, frame, callData);
             TruffleStringBuilder tsb = TruffleStringBuilder.create(TS_ENCODING);
             try {
                 byte[] src = accessLib.getInternalOrCopiedByteArray(srcBuf);
@@ -727,7 +727,7 @@ public final class ErrorHandlers {
                 }
                 return PFactory.createTuple(language, new Object[]{toStringNode.execute(tsb), start + consumed});
             } finally {
-                accessLib.release(srcBuf, frame, indirectCallData);
+                accessLib.release(srcBuf, frame, callData);
             }
         }
 

@@ -44,6 +44,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
+import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.bytecode.BytecodeFrameInfo;
 import com.oracle.graal.python.nodes.bytecode.FrameInfo;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLFrameInfo;
@@ -68,6 +69,7 @@ import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 /**
@@ -81,7 +83,7 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
  * <p>
  * A virtual frame of the Bytecode DSL continuation root node may appear during Truffle stack walk,
  * otherwise the current frame used for execution of GraalPy AST nodes inside a generator is always
- * the materialized generator frame.
+ * the materialized generator frame, which should be passed as {@code frameToMaterialize}.
  **/
 @ReportPolymorphism
 @GenerateUncached
@@ -98,25 +100,60 @@ public abstract class MaterializeFrameNode extends Node {
         return MaterializeFrameNodeGen.getUncached();
     }
 
-    public final PFrame execute(Frame frame, Node location, boolean markAsEscaped, boolean forceSync) {
-        return execute(location, markAsEscaped, forceSync, frame);
+    /**
+     * Like {@link #executeOnStack(boolean, boolean, Frame)}, but the current {@link BytecodeNode}
+     * is passed as argument to avoid its lookup. Can be used if this node is uncached.
+     */
+    public final PFrame executeOnStack(Frame frameToMaterialize, BytecodeNode location, boolean markAsEscaped, boolean forceSync) {
+        assert PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER;
+        return execute(location, markAsEscaped, forceSync, frameToMaterialize);
     }
 
+    /**
+     * Like {@link #executeOnStack(boolean, boolean, Frame)}, but the current root node is passed as
+     * argument to avoid its lookup. Can be used if this node is uncached.
+     */
+    public final PFrame executeOnStack(Frame frameToMaterialize, PRootNode location, boolean markAsEscaped, boolean forceSync) {
+        assert !PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER || !(location instanceof PBytecodeDSLRootNode);
+        return execute(location, markAsEscaped, forceSync, frameToMaterialize);
+    }
+
+    /**
+     * Should be used when we are materializing frame that is currently on top of the stack. For
+     * Bytecode DSL, this must not be used as uncached, because we need to be able to get the
+     * {@link BytecodeNode} by traversing the AST. For the manual interpreter or builtin and other
+     * root nodes, we fetch the root node from the frame descriptor.
+     */
     public final PFrame executeOnStack(boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize) {
-        PFrame.Reference info = PArguments.getCurrentFrameInfo(frameToMaterialize);
-        Node location = info.getRootNode();
-        if (location instanceof PBytecodeDSLRootNode rootNode) {
-            location = rootNode.getBytecodeNode();
+        Node location;
+        RootNode rootNode = PArguments.getCurrentFrameInfo(frameToMaterialize).getRootNode();
+        if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER && PGenerator.unwrapContinuationRoot(rootNode) instanceof PBytecodeDSLRootNode) {
+            assert this.isAdoptable();
+            location = BytecodeNode.get(this);
+            assert location != null;
+        } else {
+            location = rootNode;
         }
         return execute(location, markAsEscaped, forceSync, frameToMaterialize);
     }
 
+    /**
+     * @param location Location of the call. For Bytecode DSL this must be the call node, not the
+     *            root node from within which the call was made, because the AST could have been
+     *            updated (from different thread or an async action) since the call was made.
+     *            Specifically, Bytecode DSL updates the root node's {@code BytecodeNode} field,
+     *            while another {@code BytecodeNode} is still on stack an executing in its
+     *            {@code continueAt} method. We must use the on-stack BytecodeNode to resolve the
+     *            BCI that we read from its stack frame. For a frame that is on top of the stack,
+     *            this must be some adopted node in the AST that is currently being executed.
+     */
     public final PFrame execute(Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize) {
         assert !PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER || frameToMaterialize.getArguments().length != 2 : "caller forgot to unwrap continuation frame";
+        assert !PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER || !(location instanceof PBytecodeDSLRootNode) : location.getClass().getSimpleName();
         return executeImpl(location, markAsEscaped, forceSync, frameToMaterialize);
     }
 
-    public abstract PFrame executeImpl(Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize);
+    abstract PFrame executeImpl(Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize);
 
     @Specialization(guards = {
                     "cachedFD == frameToMaterialize.getFrameDescriptor()", //
@@ -188,25 +225,20 @@ public abstract class MaterializeFrameNode extends Node {
     private static void processBytecodeFrame(Frame frameToMaterialize, PFrame pyFrame, Node location) {
         Object info = frameToMaterialize.getFrameDescriptor().getInfo();
         if (info == null) {
+            pyFrame.setLocation(location);
             return;
         }
         if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
             BytecodeNode bytecodeNode;
-            if (location instanceof PBytecodeDSLRootNode dslRootNode) {
-                bytecodeNode = dslRootNode.getBytecodeNode();
-            } else {
-                bytecodeNode = BytecodeNode.get(location);
-            }
-            if (bytecodeNode == null) {
-                /*
-                 * Sometimes we don't have a precise location (see {@link
-                 * ReadCallerFrameNode#getFrame}). Set bci to -1 to mark the location as unknown.
-                 */
-                pyFrame.setBci(-1);
-                pyFrame.setLocation(location);
-            } else {
+            assert !(location instanceof PBytecodeDSLRootNode); // we need BytecodeNode or its child
+            bytecodeNode = BytecodeNode.get(location);
+            if (bytecodeNode != null) {
                 pyFrame.setBci(bytecodeNode.getBytecodeIndex(frameToMaterialize));
                 pyFrame.setLocation(bytecodeNode);
+            } else {
+                assert false : String.format("%s, root: %s", location, location != null ? location.getRootNode() : "null");
+                pyFrame.setBci(-1);
+                pyFrame.setLocation(location);
             }
         } else {
             BytecodeFrameInfo bytecodeFrameInfo = (BytecodeFrameInfo) info;

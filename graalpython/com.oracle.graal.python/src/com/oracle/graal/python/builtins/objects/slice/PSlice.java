@@ -38,6 +38,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
+import com.oracle.truffle.api.nodes.Node;
 
 public abstract class PSlice extends PythonBuiltinObject {
 
@@ -129,7 +130,7 @@ public abstract class PSlice extends PythonBuiltinObject {
         return n == 0 ? 0 : n < 0 ? -1 : 1;
     }
 
-    public static SliceInfo computeIndices(Object startIn, Object stopIn, Object stepIn, int length) {
+    public static SliceInfo computeIndices(Node nodeForRaise, Object startIn, Object stopIn, Object stepIn, int length) {
         assert length >= 0;
         boolean stepIsNegative;
         int lower, upper;
@@ -142,7 +143,7 @@ public abstract class PSlice extends PythonBuiltinObject {
             stepIsNegative = pySign(step) < 0;
             if (pySign(step) == 0) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw PRaiseNode.raiseStatic(null, ValueError, ErrorMessages.SLICE_STEP_CANNOT_BE_ZERO);
+                throw PRaiseNode.raiseStatic(nodeForRaise, ValueError, ErrorMessages.SLICE_STEP_CANNOT_BE_ZERO);
             }
         }
 

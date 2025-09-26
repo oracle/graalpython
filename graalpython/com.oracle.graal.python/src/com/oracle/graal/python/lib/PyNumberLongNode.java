@@ -63,7 +63,7 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.MaybeBindDescriptorNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -244,12 +244,12 @@ public abstract class PyNumberLongNode extends PNodeWithContext {
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached PyLongFromUnicodeObject fromString,
-                        @Cached(value = "createFor($node)") IndirectCallData indirectCallData,
+                        @Cached(value = "createFor($node)") InteropCallData callData,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
             Object buffer;
             try {
-                buffer = acquireLib.acquireReadonly(object, frame, indirectCallData);
+                buffer = acquireLib.acquireReadonly(object, frame, callData);
             } catch (AbstractTruffleException e) {
                 return null;
             }

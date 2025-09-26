@@ -99,6 +99,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -444,10 +445,11 @@ public final class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         @Specialization
         TruffleString getpreferredencoding(VirtualFrame frame,
                         @Bind Node inliningTarget,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached PyObjectCallMethodObjArgs callMethodNode,
                         @Cached PyObjectStrAsTruffleStringNode strNode) {
 
-            Object locale = AbstractImportNode.importModule(BuiltinNames.T_LOCALE);
+            Object locale = AbstractImportNode.importModule(frame, boundaryCallData, BuiltinNames.T_LOCALE);
             Object e = callMethodNode.execute(frame, inliningTarget, locale, T_GETENCODING);
             return strNode.execute(frame, inliningTarget, e);
         }

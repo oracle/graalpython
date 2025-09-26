@@ -30,9 +30,9 @@ import static com.oracle.graal.python.builtins.objects.PythonAbstractObject.obje
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -99,7 +99,7 @@ public final class FrameBuiltins extends PythonBuiltins {
                         @Cached MaterializeFrameNode materializeFrameNode,
                         @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             PCode code = getCodeNode.executeObject(frame, self);
-            LinenoNode.syncLocationIfNeeded(frame, self, this, inliningTarget, profile, materializeFrameNode);
+            LinenoNode.syncLocationIfNeeded(frame, self, inliningTarget, profile, materializeFrameNode);
             int lineno = self.getLine();
             return simpleTruffleStringFormatNode.format("<frame at 0x%s, file '%s', line %d, code %s>",
                             objectHashCodeAsHexString(self), code.getFilename(), lineno, code.getName());
@@ -169,17 +169,17 @@ public final class FrameBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached @Cached.Exclusive InlinedConditionProfile profile,
                         @Cached @Cached.Exclusive MaterializeFrameNode frameNode) {
-            syncLocationIfNeeded(frame, self, this, inliningTarget, profile, frameNode);
+            syncLocationIfNeeded(frame, self, inliningTarget, profile, frameNode);
             return self.getLine();
         }
 
-        static void syncLocationIfNeeded(VirtualFrame frame, PFrame self, Node location, Node inliningTarget, InlinedConditionProfile isCurrentFrameProfile, MaterializeFrameNode materializeNode) {
+        static void syncLocationIfNeeded(VirtualFrame frame, PFrame self, Node inliningTarget, InlinedConditionProfile isCurrentFrameProfile, MaterializeFrameNode materializeNode) {
             // Special case because this builtin can be called without going through an invoke node:
             // we need to sync the location of the frame if and only if 'self' represents the
             // current frame. If 'self' represents another frame on the stack, the location is
             // already set
             if (isCurrentFrameProfile.profile(inliningTarget, frame != null && PArguments.getCurrentFrameInfo(frame) == self.getRef())) {
-                PFrame pyFrame = materializeNode.execute(frame, location, false, false);
+                PFrame pyFrame = materializeNode.executeOnStack(false, false, frame);
                 assert pyFrame == self;
             }
         }
@@ -193,7 +193,7 @@ public final class FrameBuiltins extends PythonBuiltins {
                         @Cached @Cached.Exclusive PRaiseNode raise,
                         @Cached PyLongCheckExactNode isLong,
                         @Cached PyLongAsLongAndOverflowNode toLong) {
-            syncLocationIfNeeded(frame, self, this, inliningTarget, isCurrentFrameProfile, materializeNode);
+            syncLocationIfNeeded(frame, self, inliningTarget, isCurrentFrameProfile, materializeNode);
             if (self.isTraceArgument()) {
                 if (isLong.execute(inliningTarget, newLineno)) {
                     try {

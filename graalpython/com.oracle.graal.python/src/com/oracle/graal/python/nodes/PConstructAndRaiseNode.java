@@ -255,7 +255,7 @@ public abstract class PConstructAndRaiseNode extends Node {
         return raiseSSLError(frame, message, PythonUtils.EMPTY_OBJECT_ARRAY);
     }
 
-    private PException raiseSSLError(Frame frame, TruffleString message, Object... formatArgs) {
+    public final PException raiseSSLError(Frame frame, TruffleString message, Object... formatArgs) {
         return raise(frame, PythonBuiltinClassType.SSLError, message, formatArgs);
     }
 

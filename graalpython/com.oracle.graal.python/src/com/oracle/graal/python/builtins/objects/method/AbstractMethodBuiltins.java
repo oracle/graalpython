@@ -42,10 +42,10 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -79,8 +79,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -226,7 +226,7 @@ public final class AbstractMethodBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNoValue(none)")
         static Object getModule(VirtualFrame frame, PBuiltinMethod self, @SuppressWarnings("unused") PNone none,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached PyObjectLookupAttr lookup,
                         @Cached ReadAttributeFromPythonObjectNode readAttrNode) {
             // No profiling, performance here is not very important
@@ -237,11 +237,11 @@ public final class AbstractMethodBuiltins extends PythonBuiltins {
             if (self.getSelf() instanceof PythonModule) {
                 PythonContext context = PythonContext.get(inliningTarget);
                 PythonLanguage language = context.getLanguage(inliningTarget);
-                Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
+                Object state = BoundaryCallContext.enter(frame, language, context, boundaryCallData);
                 try {
                     return lookup.execute(null, inliningTarget, self.getSelf(), T___NAME__);
                 } finally {
-                    IndirectCallContext.exit(frame, language, context, state);
+                    BoundaryCallContext.exit(frame, language, context, state);
                 }
             }
             return PNone.NONE;

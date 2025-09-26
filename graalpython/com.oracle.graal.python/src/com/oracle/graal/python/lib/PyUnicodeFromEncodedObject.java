@@ -51,7 +51,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
@@ -105,7 +105,7 @@ public abstract class PyUnicodeFromEncodedObject extends PNodeWithContext {
     @Specialization(guards = {"!isPBytes(object)", "!isString(object)"}, limit = "3")
     static Object doBuffer(VirtualFrame frame, Node inliningTarget, Object object, Object encoding, Object errors,
                     @Bind PythonLanguage language,
-                    @Cached("createFor($node)") IndirectCallData indirectCallNode,
+                    @Cached("createFor($node)") InteropCallData indirectCallNode,
                     @Exclusive @Cached InlinedConditionProfile emptyStringProfile,
                     @CachedLibrary("object") PythonBufferAcquireLibrary bufferAcquireLib,
                     @Exclusive @Cached PyUnicodeDecode decode,

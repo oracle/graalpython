@@ -27,8 +27,7 @@ package com.oracle.graal.python.builtins.objects.traceback;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.builtins.objects.generator.PGenerator.getDSLGeneratorFrame;
-import static com.oracle.graal.python.builtins.objects.generator.PGenerator.isDSLGeneratorTracebackElement;
+import static com.oracle.graal.python.builtins.objects.generator.PGenerator.unwrapContinuationRoot;
 import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.J_TB_FRAME;
 import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.J_TB_LASTI;
 import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.J_TB_LINENO;
@@ -50,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.traceback.TracebackBuiltinsClinicProviders.TracebackTypeNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -64,13 +64,15 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleStackTrace;
 import com.oracle.truffle.api.TruffleStackTraceElement;
-import com.oracle.truffle.api.bytecode.ContinuationRootNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -82,6 +84,7 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.FrameInstance.FrameAccess;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -218,18 +221,15 @@ public final class TracebackBuiltins extends PythonBuiltins {
         private static PFrame materializeFrame(TruffleStackTraceElement element, MaterializeFrameNode materializeFrameNode) {
             Node location = element.getLocation();
             RootNode rootNode = element.getTarget().getRootNode();
-            if (rootNode instanceof PBytecodeRootNode || rootNode instanceof PBytecodeGeneratorRootNode ||
-                            rootNode instanceof PBytecodeDSLRootNode) {
+            if (rootNode instanceof PBytecodeRootNode || rootNode instanceof PBytecodeGeneratorRootNode) {
                 location = rootNode;
             }
-            if (rootNode instanceof ContinuationRootNode continuationRoot) {
-                location = continuationRoot.getRootNode();
-            }
+            // We must have a callNode for Bytecode DSL root nodes. If this assertion fires,
+            // it can be because of missing BoundaryCallContext.enter/exit around
+            // @TruffleBoundary calls that may call back into Python code.
+            assert !PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER || !(unwrapContinuationRoot(rootNode) instanceof PBytecodeDSLRootNode) || location != null : rootNode;
             // create the PFrame and refresh frame values
-            Frame frame = element.getFrame();
-            if (isDSLGeneratorTracebackElement(element)) {
-                frame = getDSLGeneratorFrame(element);
-            }
+            Frame frame = PGenerator.unwrapDSLGeneratorFrame(element);
             return materializeFrameNode.execute(location, false, true, frame);
         }
     }
@@ -270,14 +270,16 @@ public final class TracebackBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached MaterializeFrameNode materializeNode,
                         @Cached ReadCallerFrameNode readCallerFrame,
+                        @Cached InlinedConditionProfile hasFrameProfile,
                         @Cached InlinedConditionProfile isCurFrameProfile) {
             Reference frameInfo = tb.getFrameInfo();
             assert frameInfo.isEscaped() : "cannot create traceback for non-escaped frame";
 
-            PFrame escapedFrame;
+            PFrame escapedFrame = null;
 
             // case 2.1: the frame info refers to the current frame
-            if (isCurFrameProfile.profile(inliningTarget, PArguments.getCurrentFrameInfo(frame) == frameInfo)) {
+            boolean hasFrame = hasFrameProfile.profile(inliningTarget, frame != null);
+            if (hasFrame && isCurFrameProfile.profile(inliningTarget, PArguments.getCurrentFrameInfo(frame) == frameInfo)) {
                 /*
                  * materialize the current frame; marking is not necessary (already done);
                  * refreshing values is also not necessary (will be done on access to the locals or
@@ -285,9 +287,24 @@ public final class TracebackBuiltins extends PythonBuiltins {
                  */
                 escapedFrame = materializeNode.executeOnStack(false, false, frame);
             } else {
-                // case 2.2: the frame info does not refer to the current frame
+                // case 2.2: the frame info does not refer to the current frame, or we do not have a
+                // frame
+                PFrame.Reference topFrameInfo;
+                if (hasFrame) {
+                    topFrameInfo = PArguments.getCurrentFrameInfo(frame);
+                } else {
+                    // we are inside BoundaryCallContext.enter/exit
+                    topFrameInfo = PythonContext.get(inliningTarget).peekTopFrameInfo(PythonLanguage.get(inliningTarget));
+                    if (topFrameInfo == null) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        // This should invalidate the "pass frame" assumption for the
+                        // BoundaryCallContext.enter
+                        Frame currentFrame = ReadCallerFrameNode.getCurrentFrame(inliningTarget, FrameAccess.READ_ONLY);
+                        topFrameInfo = PArguments.getCurrentFrameInfo(currentFrame);
+                    }
+                }
                 for (int i = 0;; i++) {
-                    escapedFrame = readCallerFrame.executeWith(frame, i);
+                    escapedFrame = readCallerFrame.executeWith(topFrameInfo, i);
                     if (escapedFrame == null || escapedFrame.getRef() == frameInfo) {
                         break;
                     }

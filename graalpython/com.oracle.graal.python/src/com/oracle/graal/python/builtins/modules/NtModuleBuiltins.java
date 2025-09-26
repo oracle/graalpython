@@ -74,6 +74,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -99,18 +100,23 @@ public final class NtModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetfullpathnameNode extends PythonUnaryBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        Object getfullpathname(Object path,
+        Object getfullpathname(VirtualFrame frame, Object path,
                         @Bind Node inliningTarget,
                         @Cached PyOSFSPathNode fsPathNode,
                         @Cached CastToJavaStringNode castStr) {
             // TODO should call win api
+            String fspath;
             try {
-                String fspath = castStr.execute(fsPathNode.execute(null, inliningTarget, path));
-                return PythonUtils.toTruffleStringUncached(getContext().getEnv().getPublicTruffleFile(fspath).getAbsoluteFile().toString());
+                fspath = castStr.execute(fsPathNode.execute(frame, inliningTarget, path));
             } catch (CannotCastException e) {
                 return path;
             }
+            return getTruffleStringPath(fspath);
+        }
+
+        @TruffleBoundary
+        private TruffleString getTruffleStringPath(String fspath) {
+            return PythonUtils.toTruffleStringUncached(getContext().getEnv().getPublicTruffleFile(fspath).getAbsoluteFile().toString());
         }
     }
 

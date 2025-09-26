@@ -59,7 +59,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -133,7 +133,7 @@ public final class DigestObjectBuiltins extends PythonBuiltins {
         @Specialization(limit = "3")
         static PNone update(VirtualFrame frame, DigestObject self, Object buffer,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached PRaiseNode raiseNode) {
             if (self.wasReset()) {
@@ -142,7 +142,7 @@ public final class DigestObjectBuiltins extends PythonBuiltins {
             try {
                 self.update(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer));
             } finally {
-                bufferLib.release(buffer, frame, indirectCallData);
+                bufferLib.release(buffer, frame, callData);
             }
             return PNone.NONE;
         }

@@ -64,8 +64,8 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
@@ -173,14 +173,14 @@ public abstract class PyObjectHashNode extends PNodeWithContext {
                     @Cached GetCachedTpSlotsNode getSlotsNode,
                     @Cached CStructAccess.ReadI64Node readTypeObjectFieldNode,
                     @Cached InlinedConditionProfile typeIsNotReadyProfile,
-                    @Cached("createFor($node)") IndirectCallData indirectCallData,
+                    @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                     @Cached CallSlotHashFunNode callHashFun,
                     @Cached PRaiseNode raiseNode) {
         Object klass = getClassNode.execute(inliningTarget, object);
         TpSlots slots = getSlotsNode.execute(inliningTarget, klass);
         if (slots.tp_hash() == null) {
             slots = handleNoHash(frame, inliningTarget, object, readTypeObjectFieldNode,
-                            typeIsNotReadyProfile, indirectCallData, raiseNode, klass, slots);
+                            typeIsNotReadyProfile, boundaryCallData, raiseNode, klass, slots);
         }
         return callHashFun.execute(frame, inliningTarget, slots.tp_hash(), object);
     }
@@ -188,7 +188,7 @@ public abstract class PyObjectHashNode extends PNodeWithContext {
     @InliningCutoff
     private static TpSlots handleNoHash(VirtualFrame frame, Node inliningTarget, Object object, ReadI64Node readTypeObjectFieldNode,
                     InlinedConditionProfile typeIsNotReadyProfile,
-                    IndirectCallData indirectCallData, PRaiseNode raiseNode, Object klass, TpSlots slots) {
+                    BoundaryCallData boundaryCallData, PRaiseNode raiseNode, Object klass, TpSlots slots) {
         boolean initialized = false;
         if (klass instanceof PythonAbstractNativeObject nativeKlass) {
             // Comment from CPython:
@@ -199,12 +199,12 @@ public abstract class PyObjectHashNode extends PNodeWithContext {
              */
             long flags = readTypeObjectFieldNode.readFromObj(nativeKlass, CFields.PyTypeObject__tp_flags);
             if (typeIsNotReadyProfile.profile(inliningTarget, (flags & TypeFlags.READY) == 0)) {
-                Object savedState = IndirectCallContext.enter(frame, inliningTarget, indirectCallData);
+                Object savedState = BoundaryCallContext.enter(frame, boundaryCallData);
                 try {
                     slots = callTypeReady(inliningTarget, object, nativeKlass);
                     initialized = true;
                 } finally {
-                    IndirectCallContext.exit(frame, inliningTarget, indirectCallData, savedState);
+                    BoundaryCallContext.exit(frame, boundaryCallData, savedState);
                 }
             }
         }

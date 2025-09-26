@@ -222,9 +222,13 @@ public class PGenerator extends PythonBuiltinObject {
                         cr.getSourceRootNode() instanceof PBytecodeDSLRootNode;
     }
 
-    public static Frame getDSLGeneratorFrame(TruffleStackTraceElement element) {
-        assert isDSLGeneratorTracebackElement(element);
-        return (Frame) element.getFrame().getArguments()[0];
+    public static Frame unwrapDSLGeneratorFrame(TruffleStackTraceElement element) {
+        if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+            if (isDSLGeneratorTracebackElement(element)) {
+                return (Frame) element.getFrame().getArguments()[0];
+            }
+        }
+        return element.getFrame();
     }
 
     public static Frame getDSLGeneratorFrame(Object[] continuationCallArguments) {

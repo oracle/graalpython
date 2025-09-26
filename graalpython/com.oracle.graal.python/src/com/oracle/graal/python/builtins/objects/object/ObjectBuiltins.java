@@ -60,10 +60,10 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -143,8 +143,8 @@ import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -854,7 +854,7 @@ public final class ObjectBuiltins extends PythonBuiltins {
         @Specialization
         static Object dir(VirtualFrame frame, Object obj,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached SetBuiltins.UpdateSingleNode updateSetNode,
                         @Cached PyObjectLookupAttr lookupAttrNode,
                         @Cached GetClassNode getClassNode,
@@ -868,11 +868,11 @@ public final class ObjectBuiltins extends PythonBuiltins {
             }
             Object klass = lookupAttrNode.execute(frame, inliningTarget, obj, T___CLASS__);
             if (klass != PNone.NO_VALUE) {
-                Object state = IndirectCallContext.enter(frame, inliningTarget, indirectCallData);
+                Object state = BoundaryCallContext.enter(frame, boundaryCallData);
                 try {
                     TypeBuiltins.DirNode.dir(names, klass);
                 } finally {
-                    IndirectCallContext.exit(frame, inliningTarget, indirectCallData, state);
+                    BoundaryCallContext.exit(frame, boundaryCallData, state);
                 }
             }
             return constructListNode.execute(frame, names);

@@ -83,7 +83,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.NFIZlibSupport;
 import com.oracle.graal.python.runtime.NativeLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -504,7 +504,7 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") InteropCallData callData,
                         @Cached CompressInnerNode innerNode) {
             try {
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
@@ -512,7 +512,7 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
                 byte[] resultArray = innerNode.execute(inliningTarget, bytes, len, level, wbits);
                 return PFactory.createBytes(language, resultArray);
             } finally {
-                bufferLib.release(buffer, frame, indirectCallData);
+                bufferLib.release(buffer, frame, callData);
             }
         }
 
@@ -568,7 +568,7 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") InteropCallData callData,
                         @Cached DecompressInnerNode innerNode,
                         @Cached PRaiseNode raiseNode) {
             try {
@@ -580,7 +580,7 @@ public final class ZLibModuleBuiltins extends PythonBuiltins {
                 byte[] resultArray = innerNode.execute(inliningTarget, bytes, len, wbits, bufsize);
                 return PFactory.createBytes(language, resultArray);
             } finally {
-                bufferLib.release(buffer, frame, indirectCallData);
+                bufferLib.release(buffer, frame, callData);
             }
         }
 

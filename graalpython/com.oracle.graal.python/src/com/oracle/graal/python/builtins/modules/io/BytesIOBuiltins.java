@@ -81,10 +81,10 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -117,7 +117,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.ArrayBuilder;
@@ -382,7 +382,7 @@ public final class BytesIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.hasBuf()")
         static Object readinto(VirtualFrame frame, PBytesIO self, Object buffer,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
             try {
                 /* adjust invalid sizes */
@@ -402,7 +402,7 @@ public final class BytesIOBuiltins extends PythonBuiltins {
 
                 return len;
             } finally {
-                bufferLib.release(buffer, frame, indirectCallData);
+                bufferLib.release(buffer, frame, callData);
             }
         }
 
@@ -461,12 +461,12 @@ public final class BytesIOBuiltins extends PythonBuiltins {
         static Object doWrite(VirtualFrame frame, PBytesIO self, Object b,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary("b") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
                         @Cached PRaiseNode raiseNode) {
             self.checkExports(inliningTarget, raiseNode);
-            Object buffer = acquireLib.acquireReadonly(b, frame, indirectCallData);
+            Object buffer = acquireLib.acquireReadonly(b, frame, callData);
             try {
                 int len = bufferLib.getBufferLength(buffer);
                 if (len == 0) {
@@ -482,7 +482,7 @@ public final class BytesIOBuiltins extends PythonBuiltins {
                 }
                 return len;
             } finally {
-                bufferLib.release(buffer, frame, indirectCallData);
+                bufferLib.release(buffer, frame, callData);
             }
         }
     }
@@ -675,7 +675,7 @@ public final class BytesIOBuiltins extends PythonBuiltins {
             SequenceStorage storage = state.getSequenceStorage();
             Object[] array = getArray.execute(inliningTarget, storage);
             if (storage.length() < 3) {
-                return notTuple(self, state, raiseNode);
+                return notTuple(self, state, inliningTarget);
             }
             /*
              * Reset the object to its default state. This is only needed to handle the case of

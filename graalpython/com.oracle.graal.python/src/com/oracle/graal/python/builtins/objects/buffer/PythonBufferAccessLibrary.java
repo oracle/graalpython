@@ -46,8 +46,8 @@ import java.nio.ByteOrder;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.ExecutionContext.InteropCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -104,10 +104,10 @@ public abstract class PythonBufferAccessLibrary extends Library {
     /**
      * Release the buffer. Equivalent of CPython's {@code PyBuffer_Release}, but must not be called
      * multiple times on the same buffer. If the caller has access to a VirtualFrame
-     * {@link #release(Object, VirtualFrame, IndirectCallData)} or
-     * {@link #release(Object, VirtualFrame, PythonContext, PythonLanguage, IndirectCallData)}
-     * should be used. If the caller doesn't have access to a VirtualFrame it must be ensured that
-     * an IndirectCallContext was already created in the call path.
+     * {@link #release(Object, VirtualFrame, InteropCallData)} or
+     * {@link #release(Object, VirtualFrame, PythonContext, PythonLanguage, InteropCallData)} should
+     * be used. If the caller doesn't have access to a VirtualFrame it must be ensured that an
+     * IndirectCallContext was already created in the call path.
      */
     public void release(@SuppressWarnings("unused") Object receiver) {
     }
@@ -116,12 +116,12 @@ public abstract class PythonBufferAccessLibrary extends Library {
      * Release the buffer. Equivalent of CPython's {@code PyBuffer_Release}, but must not be called
      * multiple times on the same buffer.
      */
-    public final void release(Object receiver, VirtualFrame frame, IndirectCallData indirectCallData) {
-        Object savedState = IndirectCallContext.enter(frame, this, indirectCallData);
+    public final void release(Object receiver, VirtualFrame frame, InteropCallData callData) {
+        Object savedState = InteropCallContext.enter(frame, this, callData);
         try {
             release(receiver);
         } finally {
-            IndirectCallContext.exit(frame, this, indirectCallData, savedState);
+            InteropCallContext.exit(frame, this, callData, savedState);
         }
     }
 
@@ -129,12 +129,12 @@ public abstract class PythonBufferAccessLibrary extends Library {
      * Release the buffer. Equivalent of CPython's {@code PyBuffer_Release}, but must not be called
      * multiple times on the same buffer.
      */
-    public final void release(Object receiver, VirtualFrame frame, PythonContext context, PythonLanguage language, IndirectCallData indirectCallData) {
-        Object savedState = IndirectCallContext.enter(frame, language, context, indirectCallData);
+    public final void release(Object receiver, VirtualFrame frame, PythonContext context, PythonLanguage language, InteropCallData callData) {
+        Object savedState = InteropCallContext.enter(frame, language, context, callData);
         try {
             release(receiver);
         } finally {
-            IndirectCallContext.exit(frame, language, context, savedState);
+            InteropCallContext.exit(frame, language, context, savedState);
         }
     }
 

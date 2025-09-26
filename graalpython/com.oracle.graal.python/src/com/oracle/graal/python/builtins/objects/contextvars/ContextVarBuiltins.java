@@ -50,10 +50,10 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -66,6 +66,8 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
@@ -74,6 +76,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -134,13 +137,19 @@ public final class ContextVarBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SetNode extends PythonBinaryBuiltinNode {
         @Specialization
-        static Object set(PContextVar self, Object value,
+        static Object set(VirtualFrame frame, PContextVar self, Object value,
                         @Bind Node inliningTarget,
-                        @Bind PythonContext context) {
+                        @Bind PythonContext context,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
             PythonLanguage language = context.getLanguage(inliningTarget);
             PythonContext.PythonThreadState threadState = context.getThreadState(language);
             Object oldValue = self.getValue(inliningTarget, threadState);
-            self.setValue(inliningTarget, threadState, value);
+            Object saved = BoundaryCallContext.enter(frame, boundaryCallData);
+            try {
+                self.setValue(inliningTarget, threadState, value);
+            } finally {
+                BoundaryCallContext.exit(frame, boundaryCallData, saved);
+            }
             return PFactory.createContextVarsToken(language, self, oldValue);
         }
     }
@@ -149,18 +158,24 @@ public final class ContextVarBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ResetNode extends PythonBinaryBuiltinNode {
         @Specialization
-        static Object reset(PContextVar self, PContextVarsToken token,
+        static Object reset(VirtualFrame frame, PContextVar self, PContextVarsToken token,
                         @Bind Node inliningTarget,
                         @Bind PythonContext pythonContext,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Shared @Cached PRaiseNode raise) {
             if (self == token.getVar()) {
                 token.use(inliningTarget, raise);
                 PythonContext.PythonThreadState threadState = pythonContext.getThreadState(pythonContext.getLanguage(inliningTarget));
-                if (token.getOldValue() == null) {
-                    PContextVarsContext context = threadState.getContextVarsContext(inliningTarget);
-                    context.contextVarValues = context.contextVarValues.without(self, self.getHash());
-                } else {
-                    self.setValue(inliningTarget, threadState, token.getOldValue());
+                Object saved = BoundaryCallContext.enter(frame, boundaryCallData);
+                try {
+                    if (token.getOldValue() == null) {
+                        PContextVarsContext context = threadState.getContextVarsContext(inliningTarget);
+                        context.contextVarValues = context.contextVarValues.without(self, self.getHash());
+                    } else {
+                        self.setValue(inliningTarget, threadState, token.getOldValue());
+                    }
+                } finally {
+                    BoundaryCallContext.exit(frame, boundaryCallData, saved);
                 }
             } else {
                 throw raise.raise(inliningTarget, ValueError, ErrorMessages.TOKEN_FOR_DIFFERENT_CONTEXTVAR, token);

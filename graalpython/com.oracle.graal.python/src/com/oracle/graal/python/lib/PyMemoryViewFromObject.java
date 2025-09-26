@@ -62,7 +62,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
@@ -130,7 +130,7 @@ public abstract class PyMemoryViewFromObject extends PNodeWithContext {
     @Fallback
     static PMemoryView fromManaged(VirtualFrame frame, Object object,
                     @Bind Node inliningTarget,
-                    @Cached("createFor($node)") IndirectCallData indirectCallData,
+                    @Cached("createFor($node)") InteropCallData interopCallData,
                     @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                     @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                     @Cached InlinedConditionProfile hasSlotProfile,
@@ -187,7 +187,7 @@ public abstract class PyMemoryViewFromObject extends PNodeWithContext {
                             format, cBuffer.getDims(), cBuffer.getBuf(), 0, shape, strides, suboffsets, flags);
         } else if (bufferAcquireLib.hasBuffer(object)) {
             // Managed object that implements PythonBufferAcquireLibrary
-            Object buffer = bufferAcquireLib.acquire(object, BufferFlags.PyBUF_FULL_RO, frame, indirectCallData);
+            Object buffer = bufferAcquireLib.acquire(object, BufferFlags.PyBUF_FULL_RO, frame, interopCallData);
             return PFactory.createMemoryViewForManagedObject(context.getLanguage(inliningTarget), buffer, bufferLib.getOwner(buffer), bufferLib.getItemSize(buffer), bufferLib.getBufferLength(buffer),
                             bufferLib.isReadonly(buffer),
                             bufferLib.getFormatString(buffer), lengthNode, atIndexNode);

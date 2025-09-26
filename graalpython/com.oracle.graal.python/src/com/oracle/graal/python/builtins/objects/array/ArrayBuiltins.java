@@ -124,7 +124,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassExactProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -1205,7 +1205,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
         @Specialization
         static Object frombytes(VirtualFrame frame, PArray self, Object buffer,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached ArrayNodes.EnsureCapacityNode ensureCapacityNode,
                         @Cached ArrayNodes.SetLengthNode setLengthNode,
@@ -1229,7 +1229,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                 }
                 return PNone.NONE;
             } finally {
-                bufferLib.release(buffer, frame, indirectCallData);
+                bufferLib.release(buffer, frame, callData);
             }
         }
 

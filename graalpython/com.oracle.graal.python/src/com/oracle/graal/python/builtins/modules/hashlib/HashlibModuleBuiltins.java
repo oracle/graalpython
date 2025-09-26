@@ -103,7 +103,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -223,23 +223,23 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isString(a) || !isString(b)"})
         static boolean cmpBuffers(VirtualFrame frame, Object a, Object b,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary accessLib,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             if (acquireLib.hasBuffer(a) && acquireLib.hasBuffer(b)) {
-                Object bufferA = acquireLib.acquireReadonly(a, frame, indirectCallData);
+                Object bufferA = acquireLib.acquireReadonly(a, frame, callData);
                 try {
-                    Object bufferB = acquireLib.acquireReadonly(b, frame, indirectCallData);
+                    Object bufferB = acquireLib.acquireReadonly(b, frame, callData);
                     try {
                         byte[] bytesA = accessLib.getInternalOrCopiedByteArray(bufferA);
                         byte[] bytesB = accessLib.getInternalOrCopiedByteArray(bufferB);
                         return cmp(bytesA, bytesB);
                     } finally {
-                        accessLib.release(bufferB, frame, indirectCallData);
+                        accessLib.release(bufferB, frame, callData);
                     }
                 } finally {
-                    accessLib.release(bufferA, frame, indirectCallData);
+                    accessLib.release(bufferA, frame, callData);
                 }
             } else {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_OR_COMBINATION_OF_TYPES, a, b);
@@ -368,7 +368,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object doIt(VirtualFrame frame, Node inliningTarget, PythonBuiltinClassType type, String pythonName, String javaName, Object value,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary(limit = "2") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
                         @Cached PRaiseNode raise) {
@@ -376,7 +376,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
             if (value instanceof PNone) {
                 buffer = null;
             } else if (acquireLib.hasBuffer(value)) {
-                buffer = acquireLib.acquireReadonly(value, frame, indirectCallData);
+                buffer = acquireLib.acquireReadonly(value, frame, callData);
             } else {
                 throw raise.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, value);
             }
@@ -392,7 +392,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                 return PFactory.createDigestObject(PythonLanguage.get(inliningTarget), type, pythonName, digest);
             } finally {
                 if (buffer != null) {
-                    bufferLib.release(buffer, frame, indirectCallData);
+                    bufferLib.release(buffer, frame, callData);
                 }
             }
         }

@@ -69,6 +69,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.formatting.FloatFormatter;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -76,9 +78,11 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
@@ -162,13 +166,23 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        protected PTuple call(PJSONEncoder self, Object obj, @SuppressWarnings("unused") int indent,
-                        @Bind PythonLanguage language) {
-            return PFactory.createTuple(language, new Object[]{jsonEncode(self, obj)});
+        protected PTuple call(VirtualFrame frame, PJSONEncoder self, Object obj, @SuppressWarnings("unused") int indent,
+                        @Bind PythonLanguage language,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
+            return PFactory.createTuple(language, new Object[]{jsonEncode(frame, boundaryCallData, self, obj)});
+        }
+
+        private TruffleString jsonEncode(VirtualFrame frame, BoundaryCallData boundaryCallData, PJSONEncoder encoder, Object obj) {
+            Object saved = BoundaryCallContext.enter(frame, boundaryCallData);
+            try {
+                return jsonEncodeBoundary(encoder, obj);
+            } finally {
+                BoundaryCallContext.exit(frame, boundaryCallData, saved);
+            }
         }
 
         @TruffleBoundary
-        private TruffleString jsonEncode(PJSONEncoder encoder, Object obj) {
+        private TruffleString jsonEncodeBoundary(PJSONEncoder encoder, Object obj) {
             TruffleStringBuilderUTF32 builder = PythonUtils.createStringBuilder();
             appendListObj(encoder, builder, obj);
             return TruffleStringBuilder.ToStringNode.getUncached().execute(builder);

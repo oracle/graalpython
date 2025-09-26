@@ -77,6 +77,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 
+import org.graalvm.polyglot.Value;
+import org.graalvm.polyglot.proxy.ProxyExecutable;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Builtin;
@@ -151,6 +154,10 @@ import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.ToNativePrimitiveStorageNode;
 import com.oracle.graal.python.runtime.ExecutionContext;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
+import com.oracle.graal.python.runtime.ExecutionContext.InteropCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
+import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonImageBuildOptions;
@@ -167,12 +174,14 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -180,11 +189,13 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -214,6 +225,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         super.initialize(core);
         addBuiltinConstant("is_native", TruffleOptions.AOT);
         addBuiltinConstant("is_bytecode_dsl_interpreter", PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER);
+        addBuiltinConstant("truffle_runtime", PythonUtils.toTruffleStringUncached(Truffle.getRuntime().getName()));
         PythonContext ctx = core.getContext();
         TruffleString encodingOpt = ctx.getLanguage().getEngineOption(PythonOptions.StandardStreamEncoding);
         TruffleString standardStreamEncoding = null;
@@ -307,8 +319,18 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         public static final TruffleString T_RUNPY = tsLiteral("runpy");
 
         @Specialization
+        PNone run(VirtualFrame frame,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
+            Object saved = BoundaryCallContext.enter(frame, boundaryCallData);
+            try {
+                return runBoundary();
+            } finally {
+                BoundaryCallContext.exit(frame, boundaryCallData, saved);
+            }
+        }
+
         @TruffleBoundary
-        PNone run() {
+        PNone runBoundary() {
             /*
              * This node handles the part of pymain_run_python where the filename is not null. The
              * other paths through pymain_run_python are handled in GraalPythonMain and the path
@@ -525,6 +547,108 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "indirect_call_tester", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class IndirectCallTesterNode extends PythonBinaryBuiltinNode {
+        // Synchronize with constants of the same name in Python tests
+        static final int TYPE_INDIRECT_BOUNDARY = 1;
+        static final int TYPE_INDIRECT_INTEROP_CALL = 2;
+        static final int TYPE_INDIRECT_INTEROP = 3;
+        static final int TYPE_INDIRECT_BOUNDARY_UNCACHED_INTEROP = 4;
+
+        @Specialization(guards = "type == TYPE_INDIRECT_BOUNDARY")
+        public Object doBoundary(VirtualFrame frame, Object arg, int type,
+                        @Exclusive @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
+            Object state = BoundaryCallContext.enter(frame, boundaryCallData);
+            try {
+                return truffleBoundaryCall(arg);
+            } finally {
+                BoundaryCallContext.exit(frame, boundaryCallData, state);
+            }
+        }
+
+        @Specialization(guards = "type == TYPE_INDIRECT_INTEROP_CALL")
+        public Object doInteropCall(VirtualFrame frame, Object arg, int type,
+                        @Cached CallNode callNode) {
+            Object hostFun = ForwardingExecutable.asGuestObject(this);
+            return callNode.execute(frame, hostFun, arg);
+        }
+
+        @Specialization(guards = "type == TYPE_INDIRECT_INTEROP")
+        public Object doInterop(VirtualFrame frame, Object arg, int type,
+                        @Exclusive @Cached("createFor($node)") InteropCallData callData,
+                        @CachedLibrary(limit = "1") InteropLibrary interop) {
+            Object hostFun = ForwardingExecutable.asGuestObject(this);
+            Object state = InteropCallContext.enter(frame, this, callData);
+            try {
+                return interop.execute(hostFun, arg);
+            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            } finally {
+                InteropCallContext.exit(frame, this, callData, state);
+            }
+        }
+
+        @Specialization(guards = "type == TYPE_INDIRECT_BOUNDARY_UNCACHED_INTEROP")
+        public Object doBoundaryInterop(VirtualFrame frame, Object arg, int type,
+                        @Exclusive @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
+            Object hostFun = ForwardingExecutable.asGuestObject(this);
+            Object state = BoundaryCallContext.enter(frame, boundaryCallData);
+            try {
+                return truffleBoundaryInteropCall(hostFun, arg);
+            } finally {
+                BoundaryCallContext.exit(frame, boundaryCallData, state);
+            }
+        }
+
+        @TruffleBoundary
+        private Object truffleBoundaryCall(Object arg) {
+            return CallNode.executeUncached(arg);
+        }
+
+        @TruffleBoundary
+        private Object truffleBoundaryInteropCall(Object callable, Object arg) {
+            try {
+                return InteropLibrary.getUncached().execute(callable, arg);
+            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
+
+        public static final class ForwardingExecutable implements ProxyExecutable {
+            static Object asGuestObject(Node n) {
+                return PythonContext.get(n).getEnv().asGuestValue(new ForwardingExecutable());
+            }
+
+            @Override
+            public Object execute(Value... arguments) {
+                return arguments[0].execute();
+            }
+        }
+    }
+
+    @Builtin(name = "was_stack_walk", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class WasStackWalkNode extends PythonUnaryBuiltinNode {
+        @TruffleBoundary
+        @Specialization
+        @SuppressWarnings("AssertWithSideEffects")
+        public Object doBoundary(Object value) {
+            boolean assertionsEnabled = false;
+            assert assertionsEnabled = true;
+            if (!assertionsEnabled) {
+                // It does not make sense to run with if assertions are not enabled
+                throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.SystemError);
+            }
+
+            boolean prev = PythonContext.get(this).wasStackWalk;
+            if (value instanceof Boolean b) {
+                PythonContext.get(this).wasStackWalk = b;
+            }
+            return prev;
+        }
+    }
+
     @Builtin(name = "builtin", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class BuiltinNode extends PythonUnaryBuiltinNode {
@@ -609,13 +733,23 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         };
 
         @Specialization
-        static PDict doGeneric(@SuppressWarnings("unused") Object unused,
-                        @Bind PythonLanguage language) {
-            return PFactory.createDict(language, fromToolchain());
+        static PDict doGeneric(VirtualFrame frame, @SuppressWarnings("unused") Object unused,
+                        @Bind PythonLanguage language,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
+            return PFactory.createDict(language, fromToolchain(frame, boundaryCallData));
+        }
+
+        private static PKeyword[] fromToolchain(VirtualFrame frame, BoundaryCallData boundaryCallData) {
+            Object saved = BoundaryCallContext.enter(frame, boundaryCallData);
+            try {
+                return fromToolchainBoundary();
+            } finally {
+                BoundaryCallContext.exit(frame, boundaryCallData, saved);
+            }
         }
 
         @TruffleBoundary
-        private static PKeyword[] fromToolchain() {
+        private static PKeyword[] fromToolchainBoundary() {
             PKeyword[] result = GENERIC_TOOLCHAIN;
             int id = which();
             if (id >= 0) {
@@ -630,7 +764,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         private static int which() {
             CompilerAsserts.neverPartOfCompilation();
             Env env = PythonContext.get(null).getEnv();
-            TruffleString tspath = OsEnvironGetNode.executeUncached(T_PATH);
+            TruffleString tspath = OsEnvironGetNode.lookupUncached(T_PATH);
             if (tspath == null) {
                 return -1;
             }

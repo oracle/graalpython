@@ -102,6 +102,7 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -668,11 +669,11 @@ public final class PicklerNodes {
             return Pair.create(moduleName, globalName);
         }
 
-        public Object findClass(VirtualFrame frame, Python3Core core, PUnpickler self, Object moduleName, Object globalName) {
-            return findClass(frame, core, self, castToString(moduleName), castToString(globalName));
+        public Object findClass(VirtualFrame frame, BoundaryCallData boundaryCallData, Python3Core core, PUnpickler self, Object moduleName, Object globalName) {
+            return findClass(frame, boundaryCallData, core, self, castToString(moduleName), castToString(globalName));
         }
 
-        public Object findClass(VirtualFrame frame, Python3Core core, PUnpickler self, TruffleString moduleName, TruffleString globalName) {
+        public Object findClass(VirtualFrame frame, BoundaryCallData boundaryCallData, Python3Core core, PUnpickler self, TruffleString moduleName, TruffleString globalName) {
             // Try to map the old names used in Python 2.x to the new ones used in Python 3.x. We do
             // this only with old pickle protocols and when the user has not disabled the feature.
             TruffleString mName = moduleName;
@@ -685,7 +686,7 @@ public final class PicklerNodes {
 
             // we don't use PyImport_GetModule here, because it can return partially-initialised
             // modules, which then cause the getattribute to fail.
-            Object module = importModule(mName);
+            Object module = importModule(frame, boundaryCallData, mName);
             return getattribute(frame, module, gName, self.getProto() >= 4);
         }
 

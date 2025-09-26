@@ -67,11 +67,11 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.HashNotImplemented;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -132,6 +132,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
@@ -304,12 +305,15 @@ public final class DequeBuiltins extends PythonBuiltins {
     public abstract static class DequeCountNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        @TruffleBoundary
-        int doGeneric(PDeque self, Object value) {
+        int doGeneric(VirtualFrame frame, PDeque self, Object value,
+                        @Bind Node inliningTarget,
+                        @Cached PyObjectRichCompareBool richCompare) {
             int n = 0;
             int startState = self.getState();
-            for (Object item : self.data) {
-                if (PyObjectRichCompareBool.executeUncached(item, value, RichCmpOp.Py_EQ)) {
+            Iterator<Object> iterator = self.getIteratorBoundary();
+            Object item;
+            while ((item = PDeque.iteratorNextBoundary(iterator)) != null) {
+                if (richCompare.execute(frame, inliningTarget, item, value, RichCmpOp.Py_EQ)) {
                     n++;
                 }
                 if (startState != self.getState()) {
@@ -551,15 +555,18 @@ public final class DequeBuiltins extends PythonBuiltins {
     public abstract static class DequeRemoveNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        @TruffleBoundary
-        Object doGeneric(PDeque self, Object value) {
+        Object doGeneric(VirtualFrame frame, PDeque self, Object value,
+                        @Bind Node inliningTarget,
+                        @Cached InlinedBranchProfile errorProfile,
+                        @Cached PyObjectRichCompareBool richcmpNode,
+                        @Cached PRaiseNode raiseNode) {
             // CPython captures the size before iteration
             int n = self.getSize();
             for (int i = 0; i < n; i++) {
                 try {
-                    boolean result = PyObjectRichCompareBool.executeUncached(self.peekLeft(), value, RichCmpOp.Py_EQ);
+                    boolean result = richcmpNode.execute(frame, inliningTarget, self.peekLeft(), value, RichCmpOp.Py_EQ);
                     if (n != self.getSize()) {
-                        throw PRaiseNode.raiseStatic(this, IndexError, DEQUE_MUTATED_DURING_REMOVE);
+                        throw raiseNode.raise(inliningTarget, IndexError, DEQUE_MUTATED_DURING_REMOVE);
                     }
                     if (result) {
                         Object removed = self.popLeft();
@@ -575,11 +582,12 @@ public final class DequeBuiltins extends PythonBuiltins {
                      * In case of an error during comparison, we need to restore the original deque
                      * by rotating.
                      */
+                    errorProfile.enter(inliningTarget);
                     DequeRotateNode.doRight(self, i);
                     throw e;
                 }
             }
-            throw PRaiseNode.raiseStatic(this, ValueError, DEQUE_REMOVE_X_NOT_IN_DEQUE);
+            throw raiseNode.raise(inliningTarget, ValueError, DEQUE_REMOVE_X_NOT_IN_DEQUE);
         }
     }
 
@@ -792,11 +800,14 @@ public final class DequeBuiltins extends PythonBuiltins {
     public abstract static class DequeContainsNode extends SqContainsBuiltinNode {
 
         @Specialization
-        @TruffleBoundary
-        boolean doGeneric(PDeque self, Object value) {
+        boolean doGeneric(VirtualFrame frame, PDeque self, Object value,
+                        @Bind Node inliningTarget,
+                        @Cached PyObjectRichCompareBool compareBool) {
             int startState = self.getState();
-            for (Object item : self.data) {
-                if (PyObjectRichCompareBool.executeUncached(item, value, RichCmpOp.Py_EQ)) {
+            Iterator<Object> iterator = self.getIteratorBoundary();
+            Object item;
+            while ((item = PDeque.iteratorNextBoundary(iterator)) != null) {
+                if (compareBool.execute(frame, inliningTarget, item, value, RichCmpOp.Py_EQ)) {
                     return true;
                 }
                 if (startState != self.getState()) {

@@ -74,10 +74,13 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.ThreadLocalAction;
+import com.oracle.truffle.api.ThreadLocalAction.Access;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.debug.Debugger;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 
 /**
@@ -89,7 +92,7 @@ public class AsyncHandler {
      * An action to be run triggered by an asynchronous event.
      */
     public interface AsyncAction {
-        void execute(PythonContext context);
+        void execute(PythonContext context, Access access);
     }
 
     public abstract static class AsyncPythonAction implements AsyncAction {
@@ -126,7 +129,7 @@ public class AsyncHandler {
         }
 
         @Override
-        public final void execute(PythonContext context) {
+        public final void execute(PythonContext context, Access access) {
             Debugger debugger = null;
             PythonContext.PythonThreadState threadState = null;
             PythonLanguage language = context.getLanguage();
@@ -158,9 +161,23 @@ public class AsyncHandler {
                     if (debugger != null) {
                         debugger.disableStepping();
                     }
+                    Node prev = null;
+                    Node location = access.getLocation();
+                    boolean locationAdoptable = location.isAdoptable();
+                    if (locationAdoptable) {
+                        // If the location is not adoptable, then we are in
+                        // IndirectCallContext and SimpleIndirectInvokeNode will do
+                        // IndirectCalleeContext.enter and transfer the state from thread state to
+                        // the frame. If we were woken-up in middle of Python frame code, we will
+                        // have to do a stack walk, but we still need the location
+                        prev = EncapsulatingNodeReference.getCurrent().set(location);
+                    }
                     try {
                         CallDispatchers.SimpleIndirectInvokeNode.executeUncached(context.getAsyncHandler().callTarget, args);
                     } catch (PException e) {
+                        if (locationAdoptable) {
+                            EncapsulatingNodeReference.getCurrent().set(prev);
+                        }
                         handleException(e);
                     } finally {
                         if (debugger != null) {
@@ -223,7 +240,7 @@ public class AsyncHandler {
                                             GilNode gil = GilNode.getUncached();
                                             boolean mustRelease = gil.acquire();
                                             try {
-                                                action.execute(ctx);
+                                                action.execute(ctx, access);
                                             } finally {
                                                 gil.release(mustRelease);
                                             }
@@ -519,7 +536,7 @@ public class AsyncHandler {
             }
 
             @Override
-            public void execute(PythonContext context) {
+            public void execute(PythonContext context, Access access) {
                 LOGGER.severe(String.format("Error during async action for %s caused by %s", referece.getClass().getSimpleName(), exception.getMessage()));
             }
         }
@@ -531,10 +548,10 @@ public class AsyncHandler {
                 this.array = array;
             }
 
-            public void execute(PythonContext context) {
+            public void execute(PythonContext context, Access access) {
                 for (AsyncAction action : array) {
                     try {
-                        action.execute(context);
+                        action.execute(context, access);
                     } catch (RuntimeException e) {
                         ExceptionUtils.printPythonLikeStackTrace(e);
                     }

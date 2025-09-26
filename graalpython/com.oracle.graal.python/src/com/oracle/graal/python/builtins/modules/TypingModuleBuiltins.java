@@ -74,6 +74,7 @@ import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -169,8 +170,9 @@ public class TypingModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object doCall(VirtualFrame frame, Node inliningTarget, TruffleString name, Object[] args,
                         @Cached PyObjectGetAttr getAttrNode,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached(inline = false) CallNode callNode) {
-            PythonModule typing = AbstractImportNode.importModule(T_TYPING);
+            PythonModule typing = AbstractImportNode.importModule(frame, boundaryCallData, T_TYPING);
             Object func = getAttrNode.execute(frame, inliningTarget, typing, name);
             return callNode.execute(frame, func, args);
         }
@@ -187,8 +189,9 @@ public class TypingModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object doCall(VirtualFrame frame, Node inliningTarget, TruffleString name, Object cls, Object[] args, PKeyword[] keywords,
                         @Cached PyObjectGetAttr getAttrNode,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached(inline = false) CallNode callNode) {
-            PythonModule typing = AbstractImportNode.importModule(T_TYPING);
+            PythonModule typing = AbstractImportNode.importModule(frame, boundaryCallData, T_TYPING);
             Object func = getAttrNode.execute(frame, inliningTarget, typing, name);
             Object[] args2 = new Object[args.length + 1];
             args2[0] = cls;
@@ -233,8 +236,9 @@ public class TypingModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object doUnpack(VirtualFrame frame, Node inliningTarget, Object tvt,
                         @Cached PyObjectGetAttr getAttrNode,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached PyObjectGetItem getItemNode) {
-            PythonModule typing = AbstractImportNode.importModule(T_TYPING);
+            PythonModule typing = AbstractImportNode.importModule(frame, boundaryCallData, T_TYPING);
             Object unpack = getAttrNode.execute(frame, inliningTarget, typing, T_UNPACK);
             return getItemNode.execute(frame, inliningTarget, unpack, tvt);
         }

@@ -90,6 +90,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -348,11 +349,16 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
     abstract static class SignalNode extends PythonTernaryBuiltinNode {
 
         @Specialization
+        static Object signalHandler(VirtualFrame frame, PythonModule self, Object signal, Object handler,
+                        @Bind Node inliningTarget,
+                        @Cached PyNumberAsSizeNode asSizeNode) {
+            int signum = asSizeNode.executeExact(frame, inliningTarget, signal);
+            return signalHandlerBoundary(self, handler, inliningTarget, signum);
+        }
+
         @TruffleBoundary
-        static Object signalHandler(PythonModule self, Object signal, Object handler,
-                        @Bind Node inliningTarget) {
+        private static Object signalHandlerBoundary(PythonModule self, Object handler, Node inliningTarget, int signum) {
             ModuleData data = self.getModuleState(ModuleData.class);
-            int signum = PyNumberAsSizeNode.executeExactUncached(signal);
             if (PyCallableCheckNode.executeUncached(handler)) {
                 return signal(inliningTarget, signum, handler, data);
             } else {
@@ -370,8 +376,8 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        @TruffleBoundary
         static Object signal(Node raisingNode, int signum, Object handler, ModuleData data) {
+            CompilerAsserts.neverPartOfCompilation();
             SignalHandler oldHandler;
             SignalTriggerAction signalTrigger = new SignalTriggerAction(handler, signum);
             try {
@@ -387,8 +393,8 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
             return result;
         }
 
-        @TruffleBoundary
         private static Object signal(Node raisingNode, int signum, int id, ModuleData data) {
+            CompilerAsserts.neverPartOfCompilation();
             SignalHandler oldHandler;
             try {
                 if (id == Signals.SIG_DFL && data.defaultSignalHandlers.containsKey(signum)) {

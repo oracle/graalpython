@@ -188,7 +188,7 @@ public abstract class SSLOperationNode extends PNodeWithContext {
         PythonContext context = PythonContext.get(inliningTarget);
         while (true) {
             try {
-                status = loop(socket, appInput, targetBuffer, operation);
+                status = loop(inliningTarget, constructAndRaiseNode, socket, appInput, targetBuffer, operation);
                 switch (status) {
                     case COMPLETE:
                         return;
@@ -283,7 +283,7 @@ public abstract class SSLOperationNode extends PNodeWithContext {
         prepare(socket);
         SSLOperationStatus status;
         try {
-            status = loop(socket, appInput, targetBuffer, operation);
+            status = loop(inliningTarget, constructAndRaiseNode, socket, appInput, targetBuffer, operation);
             switch (status) {
                 case COMPLETE:
                     return;
@@ -338,7 +338,7 @@ public abstract class SSLOperationNode extends PNodeWithContext {
     }
 
     @TruffleBoundary
-    private static SSLOperationStatus loop(PSSLSocket socket, ByteBuffer appInput, ByteBuffer targetBuffer, SSLOperation op)
+    private static SSLOperationStatus loop(Node inliningTarget, PConstructAndRaiseNode.Lazy raiseNode, PSSLSocket socket, ByteBuffer appInput, ByteBuffer targetBuffer, SSLOperation op)
                     throws SSLException, OverflowException {
         PMemoryBIO applicationInboundBIO = socket.getApplicationInboundBIO();
         PMemoryBIO networkInboundBIO = socket.getNetworkInboundBIO();
@@ -445,7 +445,7 @@ public abstract class SSLOperationNode extends PNodeWithContext {
                     case WRITE:
                     case HANDSHAKE:
                         // Write and handshake operations need to fail loudly
-                        throw PConstructAndRaiseNode.raiseUncachedSSLError(SSLErrorCode.ERROR_ZERO_RETURN, ErrorMessages.SSL_SESSION_CLOSED);
+                        throw raiseNode.get(inliningTarget).raiseSSLError(null, SSLErrorCode.ERROR_ZERO_RETURN, ErrorMessages.SSL_SESSION_CLOSED);
                 }
                 throw CompilerDirectives.shouldNotReachHere();
             }

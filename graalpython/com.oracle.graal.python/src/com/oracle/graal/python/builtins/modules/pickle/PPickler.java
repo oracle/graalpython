@@ -106,7 +106,8 @@ import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.IsNode;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
+import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -938,9 +939,9 @@ public class PPickler extends PythonBuiltinObject {
         }
 
         // save methods
-        private void handleReduce(VirtualFrame frame, PythonContext ctx, PPickler pickler, Object obj, Object reduceValue) {
+        private void handleReduce(VirtualFrame frame, BoundaryCallData boundaryCallData, PythonContext ctx, PPickler pickler, Object obj, Object reduceValue) {
             if (PGuards.isString(reduceValue)) {
-                saveGlobal(frame, ctx, pickler, obj, reduceValue);
+                saveGlobal(frame, boundaryCallData, ctx, pickler, obj, reduceValue);
                 return;
             }
 
@@ -1306,8 +1307,8 @@ public class PPickler extends PythonBuiltinObject {
             }
         }
 
-        private void saveBytes(VirtualFrame frame, PythonContext ctx, PPickler pickler, Object obj, IndirectCallData indirectCallData) {
-            Object buffer = getBufferAcquireLibrary().acquireReadonly(obj, frame, indirectCallData);
+        private void saveBytes(VirtualFrame frame, PythonContext ctx, PPickler pickler, Object obj, InteropCallData interopCallData) {
+            Object buffer = getBufferAcquireLibrary().acquireReadonly(obj, frame, interopCallData);
             try {
                 if (pickler.proto < 3) {
                     // Older pickle protocols do not have an opcode for pickling bytes objects.
@@ -1336,7 +1337,7 @@ public class PPickler extends PythonBuiltinObject {
                     saveBytesData(frame, pickler, obj, bytes, bytes.length);
                 }
             } finally {
-                getBufferLibrary().release(buffer, frame, indirectCallData);
+                getBufferLibrary().release(buffer, frame, interopCallData);
             }
         }
 
@@ -1749,8 +1750,8 @@ public class PPickler extends PythonBuiltinObject {
             memoPut(pickler, obj);
         }
 
-        private void saveBytearray(VirtualFrame frame, Node inliningTarget, PythonContext ctx, PPickler pickler, Object obj, IndirectCallData indirectCallData) {
-            Object buffer = getBufferAcquireLibrary().acquireReadonly(obj, frame, indirectCallData);
+        private void saveBytearray(VirtualFrame frame, Node inliningTarget, PythonContext ctx, PPickler pickler, Object obj, InteropCallData interopCallData) {
+            Object buffer = getBufferAcquireLibrary().acquireReadonly(obj, frame, interopCallData);
             try {
                 if (pickler.proto < 5) {
                     // Older pickle protocols do not have an opcode for pickling bytearrays.
@@ -1770,7 +1771,7 @@ public class PPickler extends PythonBuiltinObject {
                     saveBytearrayData(frame, pickler, obj, getBufferLibrary().getCopiedByteArray(buffer), length(frame, obj));
                 }
             } finally {
-                getBufferLibrary().release(buffer, frame, indirectCallData);
+                getBufferLibrary().release(buffer, frame, interopCallData);
             }
         }
 
@@ -1812,7 +1813,7 @@ public class PPickler extends PythonBuiltinObject {
             saveReduce(frame, ctx, pickler, reduceValue, obj);
         }
 
-        private void saveType(VirtualFrame frame, PythonContext ctx, PPickler pickler, Object obj) {
+        private void saveType(VirtualFrame frame, BoundaryCallData boundaryCallData, PythonContext ctx, PPickler pickler, Object obj) {
             if (isBuiltinClass(obj, PythonBuiltinClassType.PNone)) {
                 saveSingletonType(frame, ctx, pickler, obj, PNone.NONE);
             } else if (isBuiltinClass(obj, PythonBuiltinClassType.PEllipsis)) {
@@ -1821,11 +1822,11 @@ public class PPickler extends PythonBuiltinObject {
                 saveSingletonType(frame, ctx, pickler, obj, PNotImplemented.NOT_IMPLEMENTED);
             } else {
                 Object type = (obj instanceof PythonBuiltinClassType) ? ctx.getCore().lookupType((PythonBuiltinClassType) obj) : obj;
-                saveGlobal(frame, ctx, pickler, type, null);
+                saveGlobal(frame, boundaryCallData, ctx, pickler, type, null);
             }
         }
 
-        private void saveGlobal(VirtualFrame frame, PythonContext ctx, PPickler pickler, Object obj, Object name) {
+        private void saveGlobal(VirtualFrame frame, BoundaryCallData boundaryCallData, PythonContext ctx, PPickler pickler, Object obj, Object name) {
             PickleState st = getGlobalState(ctx.getCore());
             Object gName;
             if (name != null) {
@@ -1843,7 +1844,7 @@ public class PPickler extends PythonBuiltinObject {
 
             Object module;
             try {
-                module = importModule(moduleName);
+                module = importModule(frame, boundaryCallData, moduleName);
             } catch (PException e) {
                 throw raise(PicklingError, ErrorMessages.CANT_PICKLE_P_IMPORT_OF_MODULE_S_FAILED, obj, moduleName);
             }
@@ -1965,7 +1966,8 @@ public class PPickler extends PythonBuiltinObject {
         @Specialization
         void saveGeneric(VirtualFrame frame, PPickler pickler, Object objArg, int persSave,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
+                        @Cached("createFor($node)") InteropCallData interopCallData,
                         @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Cached CallNode callNode,
                         @Cached PyObjectCallMethodObjArgs callMethod) {
@@ -2016,7 +2018,7 @@ public class PPickler extends PythonBuiltinObject {
             PythonContext ctx = PythonContext.get(this);
 
             if (isBuiltinClass(type, PythonBuiltinClassType.PBytes)) {
-                saveBytes(frame, ctx, pickler, obj, indirectCallData);
+                saveBytes(frame, ctx, pickler, obj, interopCallData);
                 return;
             } else if (isBuiltinClass(type, PythonBuiltinClassType.PString)) {
                 saveUnicode(frame, pickler, obj);
@@ -2037,7 +2039,7 @@ public class PPickler extends PythonBuiltinObject {
                 saveTuple(frame, pickler, obj);
                 return;
             } else if (isBuiltinClass(type, PythonBuiltinClassType.PByteArray)) {
-                saveBytearray(frame, inliningTarget, ctx, pickler, obj, indirectCallData);
+                saveBytearray(frame, inliningTarget, ctx, pickler, obj, interopCallData);
                 return;
             } else if (obj instanceof PPickleBuffer buffer) {
                 savePicklebuffer(frame, pickler, buffer);
@@ -2049,16 +2051,16 @@ public class PPickler extends PythonBuiltinObject {
             if (pickler.reducerOverride != null) {
                 Object reduceValue = callNode.execute(frame, pickler.reducerOverride, obj);
                 if (reduceValue != PNotImplemented.NOT_IMPLEMENTED) {
-                    handleReduce(frame, ctx, pickler, obj, reduceValue);
+                    handleReduce(frame, boundaryCallData, ctx, pickler, obj, reduceValue);
                     return;
                 }
             }
 
             if (isBuiltinClass(type, PythonBuiltinClassType.PythonClass)) {
-                saveType(frame, ctx, pickler, obj);
+                saveType(frame, boundaryCallData, ctx, pickler, obj);
                 return;
             } else if (isBuiltinClass(type, PythonBuiltinClassType.PFunction)) {
-                saveGlobal(frame, ctx, pickler, obj, null);
+                saveGlobal(frame, boundaryCallData, ctx, pickler, obj, null);
                 return;
             }
 
@@ -2081,7 +2083,7 @@ public class PPickler extends PythonBuiltinObject {
             if (reduceFunc != null) {
                 reduceValue = callNode.execute(frame, reduceFunc, obj);
             } else if (isSubType(type, PythonBuiltinClassType.PythonClass)) {
-                saveGlobal(frame, ctx, pickler, obj, null);
+                saveGlobal(frame, boundaryCallData, ctx, pickler, obj, null);
                 return;
             } else {
                 // XXX: If the __reduce__ method is defined, __reduce_ex__ is automatically defined
@@ -2105,7 +2107,7 @@ public class PPickler extends PythonBuiltinObject {
                 }
             }
 
-            handleReduce(frame, ctx, pickler, obj, reduceValue);
+            handleReduce(frame, boundaryCallData, ctx, pickler, obj, reduceValue);
         }
     }
 

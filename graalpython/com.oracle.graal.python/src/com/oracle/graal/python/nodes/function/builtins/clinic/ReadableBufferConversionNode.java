@@ -43,7 +43,7 @@ package com.oracle.graal.python.nodes.function.builtins.clinic;
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -62,9 +62,9 @@ public abstract class ReadableBufferConversionNode extends ObjectConversionBaseN
     Object doObject(VirtualFrame frame, Object value,
                     @Bind Node inliningTarget,
                     @Bind PythonContext context,
-                    @Cached("createFor($node)") IndirectCallData indirectCallData,
+                    @Cached("createFor($node)") InteropCallData callData,
                     @CachedLibrary("value") PythonBufferAcquireLibrary acquireLib) {
-        return acquireLib.acquireReadonly(value, frame, context, context.getLanguage(inliningTarget), indirectCallData);
+        return acquireLib.acquireReadonly(value, frame, context, context.getLanguage(inliningTarget), callData);
     }
 
     @ClinicConverterFactory

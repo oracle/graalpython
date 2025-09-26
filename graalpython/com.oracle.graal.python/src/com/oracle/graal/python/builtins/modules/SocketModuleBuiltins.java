@@ -103,7 +103,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixSupport;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
@@ -813,13 +813,13 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
         @Specialization(limit = "3")
         static TruffleString doGeneric(VirtualFrame frame, Object addr,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary("addr") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PRaiseNode raiseNode) {
-            Object buffer = bufferAcquireLib.acquireReadonly(addr, frame, indirectCallData);
+            Object buffer = bufferAcquireLib.acquireReadonly(addr, frame, callData);
             try {
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                 int len = bufferLib.getBufferLength(buffer);
@@ -830,7 +830,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                 Object result = posixLib.inet_ntoa(posixSupport, ByteArraySupport.bigEndian().getInt(bytes, 0));
                 return posixLib.getPathAsString(posixSupport, result);
             } finally {
-                bufferLib.release(buffer, frame, indirectCallData);
+                bufferLib.release(buffer, frame, callData);
             }
         }
     }
@@ -871,14 +871,14 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
         @Specialization(limit = "3")
         static TruffleString doGeneric(VirtualFrame frame, int family, Object obj,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary("obj") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode raiseNode) {
-            Object buffer = bufferAcquireLib.acquireReadonly(obj, frame, indirectCallData);
+            Object buffer = bufferAcquireLib.acquireReadonly(obj, frame, callData);
             try {
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                 int len = bufferLib.getBufferLength(buffer);
@@ -901,7 +901,7 @@ public final class SocketModuleBuiltins extends PythonBuiltins {
                     throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
                 }
             } finally {
-                bufferLib.release(buffer, frame, indirectCallData);
+                bufferLib.release(buffer, frame, callData);
             }
         }
 

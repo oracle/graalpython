@@ -58,6 +58,8 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -144,13 +146,18 @@ public final class BuiltinFunctionBuiltins extends PythonBuiltins {
     public abstract static class SignatureNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        @TruffleBoundary
-        static Object doIt(PBuiltinFunction fun,
-                        @Bind Node inliningTarget) {
+        static Object doIt(VirtualFrame frame, PBuiltinFunction fun,
+                        @Bind Node inliningTarget,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
             if (fun.getSignature().isHidden()) {
                 throw PRaiseNode.raiseStatic(inliningTarget, AttributeError, ErrorMessages.HAS_NO_ATTR, fun, T___SIGNATURE__);
             }
-            return createInspectSignature(fun.getSignature(), false);
+            Object saved = BoundaryCallContext.enter(frame, boundaryCallData);
+            try {
+                return createInspectSignature(fun.getSignature(), false);
+            } finally {
+                BoundaryCallContext.exit(frame, boundaryCallData, saved);
+            }
         }
 
         private enum ParameterKinds {

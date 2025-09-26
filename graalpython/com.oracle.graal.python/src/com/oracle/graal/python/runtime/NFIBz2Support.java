@@ -43,6 +43,7 @@ package com.oracle.graal.python.runtime;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.ThreadLocalAction.Access;
 import com.oracle.truffle.api.TruffleLogger;
 
 /*-
@@ -181,7 +182,7 @@ public class NFIBz2Support {
         }
 
         @Override
-        public void execute(PythonContext context) {
+        public void execute(PythonContext context, Access access) {
             synchronized (pointer) {
                 if (pointer.isReleased()) {
                     return;

@@ -76,7 +76,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -122,13 +122,13 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isNoValue(bufferObj)", limit = "3")
         static Object readInto(VirtualFrame frame, PSSLSocket self, int len, Object bufferObj,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary("bufferObj") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Shared @Cached SSLOperationNode sslOperationNode,
                         // unused node to avoid mixing shared and non-shared inlined nodes
                         @SuppressWarnings("unused") @Shared @Cached PRaiseNode raiseNode) {
-            Object buffer = bufferAcquireLib.acquireWritableWithTypeError(bufferObj, "read", frame, indirectCallData);
+            Object buffer = bufferAcquireLib.acquireWritableWithTypeError(bufferObj, "read", frame, callData);
             try {
                 int bufferLen = bufferLib.getBufferLength(buffer);
                 int toReadLen = len;
@@ -154,7 +154,7 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
                 }
                 return readBytes;
             } finally {
-                bufferLib.release(buffer, frame, indirectCallData);
+                bufferLib.release(buffer, frame, callData);
             }
         }
 
@@ -171,7 +171,7 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
         @Specialization(limit = "3")
         static Object write(VirtualFrame frame, PSSLSocket self, Object buffer,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached SSLOperationNode sslOperationNode) {
             try {
@@ -181,7 +181,7 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
                 sslOperationNode.write(frame, inliningTarget, self, input);
                 return length;
             } finally {
-                bufferLib.release(buffer, frame, indirectCallData);
+                bufferLib.release(buffer, frame, callData);
             }
         }
 
@@ -340,6 +340,7 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
         static PDict getPeerCertDict(PSSLSocket self, @SuppressWarnings("unused") boolean der,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Shared @Cached PRaiseNode raiseNode) {
             if (!self.isHandshakeComplete()) {
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.HANDSHAKE_NOT_DONE_YET);
@@ -347,7 +348,7 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
             Certificate certificate = getCertificate(self.getEngine());
             if (certificate instanceof X509Certificate) {
                 try {
-                    return CertUtils.decodeCertificate((X509Certificate) certificate, language);
+                    return CertUtils.decodeCertificate(inliningTarget, constructAndRaiseNode, (X509Certificate) certificate, language);
                 } catch (CertificateParsingException e) {
                     return PFactory.createDict(language);
                 }

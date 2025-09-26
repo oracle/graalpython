@@ -57,8 +57,8 @@ import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorFunctionRootNode
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
 import com.oracle.graal.python.nodes.util.BadOPCodeNode;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -84,10 +84,9 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class CodeNodes {
 
+    @SuppressWarnings("this-escape")
     public static class CreateCodeNode extends PNodeWithContext {
-        @SuppressWarnings("this-escape") // we only need the reference, doesn't matter that the
-                                         // object may not yet be fully constructed
-        private final IndirectCallData indirectCallData = IndirectCallData.createFor(this);
+        @Child private BoundaryCallData boundaryCallData = BoundaryCallData.createFor(this);
 
         public PCode execute(VirtualFrame frame, int argcount,
                         int posonlyargcount, int kwonlyargcount,
@@ -99,14 +98,14 @@ public abstract class CodeNodes {
 
             PythonContext context = PythonContext.get(this);
             PythonLanguage language = context.getLanguage(this);
-            Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
+            Object state = BoundaryCallContext.enter(frame, language, context, boundaryCallData);
             try {
                 return createCode(language, context, argcount,
                                 posonlyargcount, kwonlyargcount, nlocals, stacksize, flags, codedata,
                                 constants, names, varnames, freevars, cellvars,
                                 filename, name, qualname, firstlineno, linetable);
             } finally {
-                IndirectCallContext.exit(frame, language, context, state);
+                BoundaryCallContext.exit(frame, language, context, state);
             }
         }
 

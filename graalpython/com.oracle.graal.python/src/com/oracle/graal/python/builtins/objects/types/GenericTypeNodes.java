@@ -78,6 +78,8 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.IsNode;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -86,6 +88,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
@@ -135,9 +138,18 @@ public abstract class GenericTypeNodes {
         sb.appendStringUncached(PyObjectReprAsTruffleStringNode.executeUncached(obj));
     }
 
+    static Object[] makeParameters(VirtualFrame frame, BoundaryCallData boundaryCallData, PTuple args) {
+        Object saved = BoundaryCallContext.enter(frame, boundaryCallData);
+        try {
+            return makeParametersUncached(args);
+        } finally {
+            BoundaryCallContext.exit(frame, boundaryCallData, saved);
+        }
+    }
+
     // Equivalent of _Py_make_parameters
     @TruffleBoundary
-    static Object[] makeParameters(PTuple args) {
+    static Object[] makeParametersUncached(PTuple args) {
         PyObjectLookupAttr lookup = PyObjectLookupAttr.getUncached();
         SequenceStorage argsStorage = args.getSequenceStorage();
         int nargs = argsStorage.length();
@@ -259,7 +271,7 @@ public abstract class GenericTypeNodes {
 
     // Equivalent of _Py_subs_parameters
     @TruffleBoundary
-    static Object[] subsParameters(Node node, Object self, PTuple args, PTuple parameters, Object item) {
+    static Object[] subsParametersUncached(Node node, Object self, PTuple args, PTuple parameters, Object item) {
         PythonLanguage language = PythonLanguage.get(null);
         SequenceStorage paramsStorage = parameters.getSequenceStorage();
         int nparams = paramsStorage.length();
@@ -345,14 +357,21 @@ public abstract class GenericTypeNodes {
 
     @GenerateInline(false)       // footprint reduction 36 -> 20
     public abstract static class UnionTypeOrNode extends PNodeWithContext {
-        public abstract Object execute(Object self, Object other);
+        public abstract Object execute(VirtualFrame frame, Object self, Object other);
 
         @Specialization(guards = {"isUnionable(inliningTarget, typeCheck, self)", "isUnionable(inliningTarget, typeCheck, other)"}, limit = "1")
-        static Object union(Object self, Object other,
+        static Object union(VirtualFrame frame, Object self, Object other,
                         @SuppressWarnings("unused") @Bind Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @SuppressWarnings("unused") @Cached PyObjectTypeCheck typeCheck,
-                        @Bind PythonLanguage language) {
-            Object[] args = dedupAndFlattenArgs(new Object[]{self, other});
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
+            Object[] args;
+            Object saved = BoundaryCallContext.enter(frame, boundaryCallData);
+            try {
+                args = dedupAndFlattenArgs(new Object[]{self, other});
+            } finally {
+                BoundaryCallContext.exit(frame, boundaryCallData, saved);
+            }
             if (args.length == 1) {
                 return args[0];
             }

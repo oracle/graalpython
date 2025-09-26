@@ -63,8 +63,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.ExecutionContext.InteropCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -146,7 +146,7 @@ public final class OperatorModuleBuiltins extends PythonBuiltins {
         @Specialization
         static boolean compare(VirtualFrame frame, Object left, Object right,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") InteropCallData callData,
                         @Cached CastToJavaStringNode cast,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
@@ -159,7 +159,7 @@ public final class OperatorModuleBuiltins extends PythonBuiltins {
                 if (!bufferAcquireLib.hasBuffer(left) || !bufferAcquireLib.hasBuffer(right)) {
                     throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.UNSUPPORTED_OPERAND_TYPES_OR_COMBINATION_OF_TYPES, left, right);
                 }
-                Object savedState = IndirectCallContext.enter(frame, inliningTarget, indirectCallData);
+                Object savedState = InteropCallContext.enter(frame, inliningTarget, callData);
                 Object leftBuffer = bufferAcquireLib.acquireReadonly(left);
                 try {
                     Object rightBuffer = bufferAcquireLib.acquireReadonly(right);
@@ -170,7 +170,7 @@ public final class OperatorModuleBuiltins extends PythonBuiltins {
                     }
                 } finally {
                     bufferLib.release(leftBuffer);
-                    IndirectCallContext.exit(frame, inliningTarget, indirectCallData, savedState);
+                    InteropCallContext.exit(frame, inliningTarget, callData, savedState);
                 }
             }
         }

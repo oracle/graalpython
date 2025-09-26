@@ -67,12 +67,16 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -90,17 +94,28 @@ public final class AbcModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "_abc_init", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class AbcInitCollectionFlagsNode extends PythonUnaryBuiltinNode {
-        @TruffleBoundary
         @Specialization
-        static Object init(Object object,
-                        @Bind Node inliningTarget) {
+        static Object init(VirtualFrame frame, Object object,
+                        @Bind Node inliningTarget,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
+            Object saved = BoundaryCallContext.enter(frame, boundaryCallData);
+            try {
+                initBoundary(inliningTarget, object);
+            } finally {
+                BoundaryCallContext.exit(frame, boundaryCallData, saved);
+            }
+            return PNone.NONE;
+        }
+
+        @TruffleBoundary
+        private static void initBoundary(Node inliningTarget, Object object) {
             if (TypeNodes.IsTypeNode.executeUncached(object)) {
                 Object flags = PyObjectLookupAttr.executeUncached(object, ABC_TPFLAGS);
                 long val;
                 try {
                     val = CastToJavaLongLossyNode.executeUncached(flags);
                 } catch (CannotCastException ex) {
-                    return PNone.NONE;
+                    return;
                 }
                 if ((val & COLLECTION_FLAGS) == COLLECTION_FLAGS) {
                     throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.ABC_FLAGS_CANNOT_BE_SEQUENCE_AND_MAPPING);
@@ -117,7 +132,6 @@ public final class AbcModuleBuiltins extends PythonBuiltins {
                 HiddenAttr.WriteNode.executeUncached(type, HiddenAttr.FLAGS, tpFlags);
                 PyObjectSetAttr.deleteUncached(object, ABC_TPFLAGS);
             }
-            return PNone.NONE;
         }
     }
 
@@ -125,9 +139,21 @@ public final class AbcModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "_abc_register", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class RegisterCollectionFlagsNode extends PythonBinaryBuiltinNode {
-        @TruffleBoundary
         @Specialization
-        static Object register(Object self, Object subclass) {
+        static Object register(VirtualFrame frame, Object self, Object subclass,
+                        @Bind Node inliningTarget,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
+            Object saved = BoundaryCallContext.enter(frame, boundaryCallData);
+            try {
+                registerBoundary(self, subclass);
+            } finally {
+                BoundaryCallContext.exit(frame, boundaryCallData, saved);
+            }
+            return PNone.NONE;
+        }
+
+        @TruffleBoundary
+        private static void registerBoundary(Object self, Object subclass) {
             if (TypeNodes.IsTypeNode.executeUncached(self)) {
                 long tpFlags = TypeNodes.GetTypeFlagsNode.executeUncached(self);
                 long collectionFlag = tpFlags & COLLECTION_FLAGS;
@@ -135,7 +161,6 @@ public final class AbcModuleBuiltins extends PythonBuiltins {
                     setCollectionFlagRecursive(subclass, collectionFlag);
                 }
             }
-            return PNone.NONE;
         }
 
         private static void setCollectionFlagRecursive(Object child, long flag) {
