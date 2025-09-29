@@ -42,6 +42,9 @@ package com.oracle.graal.python.nfi;
 
 import java.lang.invoke.MethodHandle;
 
+import org.graalvm.nativeimage.ForeignFunctions;
+import org.graalvm.nativeimage.ImageInfo;
+
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.ArityException;
@@ -66,7 +69,11 @@ public final class NfiBoundFunction {
     @TruffleBoundary
     public Object invoke(Object... args) throws UnsupportedTypeException, ArityException {
         try {
-            return signature.convertResult(boundHandle.invokeExact(signature.convertArgs(args)));
+            if (ImageInfo.inImageCode()) {
+                return signature.convertResult(ForeignFunctions.invoke(signature.downcallDescriptor, ptr, signature.convertArgs(args)));
+            } else {
+                return signature.convertResult(boundHandle.invokeExact(signature.convertArgs(args)));
+            }
         } catch (Throwable e) {
             // TODO(NFI2) proper exception handling
             throw CompilerDirectives.shouldNotReachHere(e);

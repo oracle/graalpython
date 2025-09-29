@@ -49,6 +49,10 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 
+import org.graalvm.nativeimage.DowncallDescriptor;
+import org.graalvm.nativeimage.ForeignFunctions;
+import org.graalvm.nativeimage.ImageInfo;
+
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -69,10 +73,16 @@ public final class NfiSignature {
     private FunctionDescriptor functionDescriptor;
     private MethodType interopUpcallMethodType;
     private MethodType directUpcallMethodType;
+    final DowncallDescriptor downcallDescriptor;
 
     NfiSignature(NfiType resType, NfiType[] argTypes) {
         this.resType = resType;
         this.argTypes = argTypes;
+        if (ImageInfo.inImageCode()) {
+            downcallDescriptor = ForeignFunctions.getDowncallDescriptor(getFunctionDescriptor());
+        } else {
+            downcallDescriptor = null;
+        }
     }
 
     NfiType getResType() {
@@ -99,6 +109,9 @@ public final class NfiSignature {
     }
 
     public NfiBoundFunction bind(long pointer) {
+        if (ImageInfo.inImageCode()) {
+            return new NfiBoundFunction(pointer, null, this);
+        }
         return new NfiBoundFunction(pointer, getDowncallMethodHandle().bindTo(MemorySegment.ofAddress(pointer)), this);
     }
 
@@ -124,7 +137,11 @@ public final class NfiSignature {
     @TruffleBoundary
     public Object invokeUncached(long function, Object... args) throws ArityException, UnsupportedTypeException {
         try {
-            return convertResult(getDowncallMethodHandle().invokeExact(MemorySegment.ofAddress(function), convertArgs(args)));
+            if (ImageInfo.inImageCode()) {
+                return convertResult(ForeignFunctions.invoke(downcallDescriptor, function, convertArgs(args)));
+            } else {
+                return convertResult(getDowncallMethodHandle().invokeExact(MemorySegment.ofAddress(function), convertArgs(args)));
+            }
         } catch (Throwable e) {
             // TODO(NFI2) proper exception handling
             throw CompilerDirectives.shouldNotReachHere(e);

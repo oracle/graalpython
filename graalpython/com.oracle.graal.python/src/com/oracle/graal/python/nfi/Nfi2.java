@@ -42,10 +42,15 @@ package com.oracle.graal.python.nfi;
 
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.Linker;
+import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
+
+import org.graalvm.nativeimage.DowncallDescriptor;
+import org.graalvm.nativeimage.ForeignFunctions;
+import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -55,36 +60,52 @@ import sun.misc.Unsafe;
 
 public final class Nfi2 {
 
+    private static final FunctionDescriptor DLOPEN_FUNCTION_DESCRIPTOR = FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG, ValueLayout.JAVA_INT);
+    private static final FunctionDescriptor DLSYM_FUNCTION_DESCRIPTOR = FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG);
+    private static final DowncallDescriptor dlopenDescriptor;
+    private static final DowncallDescriptor dlsymDescriptor;
+
     private static MethodHandle dlopen;
     private static MethodHandle dlsym;
 
-    // TODO(NFI2) error handling
-    @SuppressWarnings("restricted")
-    private static MethodHandle ensureDlopenHandle() {
-        if (dlopen == null) {
-            dlopen = Linker.nativeLinker().downcallHandle(
-                            Linker.nativeLinker().defaultLookup().find("dlopen").get(),
-                            FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG, ValueLayout.JAVA_INT));
+    private static MemorySegment dlopenPtr;
+    private static MemorySegment dlsymPtr;
+
+    static {
+        if (ImageInfo.inImageCode()) {
+            dlopenDescriptor = ForeignFunctions.getDowncallDescriptor(DLOPEN_FUNCTION_DESCRIPTOR);
+            dlsymDescriptor = ForeignFunctions.getDowncallDescriptor(DLSYM_FUNCTION_DESCRIPTOR);
+        } else {
+            dlopenDescriptor = null;
+            dlsymDescriptor = null;
         }
-        return dlopen;
     }
 
+    // TODO(NFI2) error handling
     @SuppressWarnings("restricted")
-    private static MethodHandle ensureDlsymHandle() {
-        if (dlsym == null) {
-            dlsym = Linker.nativeLinker().downcallHandle(
-                            Linker.nativeLinker().defaultLookup().find("dlsym").get(),
-                            FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG));
+    private static void ensureDlopenDlsym() {
+        if (dlopenPtr != null) {
+            return;
         }
-        return dlsym;
+        dlopenPtr = Linker.nativeLinker().defaultLookup().find("dlopen").get();
+        dlsymPtr = Linker.nativeLinker().defaultLookup().find("dlsym").get();
+        if (!ImageInfo.inImageCode()) {
+            dlopen = Linker.nativeLinker().downcallHandle(dlopenPtr, DLOPEN_FUNCTION_DESCRIPTOR);
+            dlsym = Linker.nativeLinker().downcallHandle(dlsymPtr, DLSYM_FUNCTION_DESCRIPTOR);
+        }
     }
 
     public static long loadLibraryUncached(String name, int flags) {
         long lib;
         long nativeName = javaStringToNativeUtf8(name);
         try {
+            ensureDlopenDlsym();
             // TODO(NFI2) only add RTLD_LAZY flag if actually needed
-            lib = (long) ensureDlopenHandle().invokeExact(nativeName, flags | PosixConstants.RTLD_LAZY.value);
+            if (ImageInfo.inImageCode()) {
+                lib = (long) ForeignFunctions.invoke(dlopenDescriptor, dlopenPtr.address(), nativeName, flags | PosixConstants.RTLD_LAZY.value);
+            } else {
+                lib = (long) dlopen.invokeExact(nativeName, flags | PosixConstants.RTLD_LAZY.value);
+            }
         } catch (Throwable e) {
             // TODO(NFI2) proper exception handling
             throw CompilerDirectives.shouldNotReachHere(e);
@@ -101,7 +122,12 @@ public final class Nfi2 {
         long symbol;
         long nativeName = javaStringToNativeUtf8(name);
         try {
-            symbol = (long) ensureDlsymHandle().invokeExact(library, nativeName);
+            ensureDlopenDlsym();
+            if (ImageInfo.inImageCode()) {
+                symbol = (long) ForeignFunctions.invoke(dlsymDescriptor, dlsymPtr.address(), library, nativeName);
+            } else {
+                symbol = (long) dlsym.invokeExact(library, nativeName);
+            }
         } catch (Throwable e) {
             throw CompilerDirectives.shouldNotReachHere(e);
         } finally {
