@@ -33,6 +33,7 @@ import java.util.Arrays;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.BoundBuiltinCallable;
 import com.oracle.graal.python.annotations.Builtin;
+import com.oracle.graal.python.builtins.CachedLazyCalltargetSupplier;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -49,6 +50,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -75,7 +77,8 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     private final PString name;
     private final TruffleString qualname;
     private final Object enclosingType;
-    private final RootCallTarget callTarget;
+    @CompilationFinal private RootCallTarget callTarget;
+    private final CachedLazyCalltargetSupplier callTargetSupplier;
     private final Signature signature;
     private final int flags;
     private final TpSlot slot;
@@ -83,7 +86,7 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     @CompilationFinal(dimensions = 1) private final Object[] defaults;
     @CompilationFinal(dimensions = 1) private final PKeyword[] kwDefaults;
 
-    public PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags, RootCallTarget callTarget,
+    public PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, Signature signature, int flags, RootCallTarget callTarget, CachedLazyCalltargetSupplier callTargetSupplier,
                     TpSlot slot, PExternalFunctionWrapper slotWrapper) {
         super(cls, shape);
         this.name = PythonUtils.toPString(name);
@@ -94,16 +97,27 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         }
         this.enclosingType = enclosingType;
         this.callTarget = callTarget;
-        this.signature = ((PRootNode) callTarget.getRootNode()).getSignature();
+        this.signature = signature;
         this.flags = flags;
         this.defaults = defaults;
         this.kwDefaults = kwDefaults != null ? kwDefaults : generateKwDefaults(signature);
         this.slot = slot;
         this.slotWrapper = slotWrapper;
+        this.callTargetSupplier = callTargetSupplier;
+
+        /* If the call target supplier has already been run, then don't wait until the first time the InternalMethod is
+         * asked for the call target, because can cause deoptimization in getCallTarget(). */
+        if (callTarget == null && callTargetSupplier != null) {
+            this.callTarget = callTargetSupplier.getIfExists();
+        }
     }
 
     public PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags, RootCallTarget callTarget) {
-        this(cls, shape, name, enclosingType, defaults, kwDefaults, flags, callTarget, null, null);
+        this(cls, shape, name, enclosingType, defaults, kwDefaults, ((PRootNode) callTarget.getRootNode()).getSignature(), flags, callTarget, null, null, null);
+    }
+
+    public PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, Signature signature, int flags, CachedLazyCalltargetSupplier callTargetSupplier) {
+        this(cls, shape, name, enclosingType, defaults, kwDefaults, signature, flags, null, callTargetSupplier, null, null);
     }
 
     public static PKeyword[] generateKwDefaults(Signature signature) {
@@ -129,7 +143,7 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     }
 
     public RootNode getFunctionRootNode() {
-        return callTarget.getRootNode();
+        return getCallTarget().getRootNode();
     }
 
     /**
@@ -211,6 +225,10 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     }
 
     public RootCallTarget getCallTarget() {
+        if  (callTarget == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            callTarget = callTargetSupplier.get();
+        }
         return callTarget;
     }
 

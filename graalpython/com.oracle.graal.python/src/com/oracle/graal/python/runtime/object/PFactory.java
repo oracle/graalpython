@@ -37,6 +37,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.CachedLazyCalltargetSupplier;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixFileHandle;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2Object;
@@ -239,6 +240,7 @@ import com.oracle.graal.python.builtins.objects.typing.PTypeAliasType;
 import com.oracle.graal.python.builtins.objects.typing.PTypeVar;
 import com.oracle.graal.python.builtins.objects.typing.PTypeVarTuple;
 import com.oracle.graal.python.compiler.BytecodeCodeUnit;
+import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
@@ -543,6 +545,11 @@ public final class PFactory {
         return trace(language, new PFunction(language, name, qualname, code, globals, defaultValues, kwDefaultValues, closure, codeStableAssumption));
     }
 
+    public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, TruffleString name, int numDefaults, Signature signature, int flags, CachedLazyCalltargetSupplier callTargetSupplier) {
+        return trace(language, new PBuiltinFunction(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape(language), name, null,
+                PBuiltinFunction.generateDefaults(numDefaults), null, signature, flags, callTargetSupplier));
+    }
+
     public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, TruffleString name, Object type, int numDefaults, int flags, RootCallTarget callTarget) {
         return trace(language, new PBuiltinFunction(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape(language), name, type,
                         PBuiltinFunction.generateDefaults(numDefaults), null, flags, callTarget));
@@ -556,13 +563,13 @@ public final class PFactory {
     public static PBuiltinFunction createWrapperDescriptor(PythonLanguage language, TruffleString name, Object type, int numDefaults, int flags, RootCallTarget callTarget, TpSlot slot,
                     PExternalFunctionWrapper slotWrapper) {
         return trace(language, new PBuiltinFunction(PythonBuiltinClassType.WrapperDescriptor, PythonBuiltinClassType.WrapperDescriptor.getInstanceShape(language), name, type,
-                        PBuiltinFunction.generateDefaults(numDefaults), null, flags, callTarget, slot, slotWrapper));
+                        PBuiltinFunction.generateDefaults(numDefaults), null, ((PRootNode) callTarget.getRootNode()).getSignature(), flags, callTarget, null, slot, slotWrapper));
     }
 
     public static PBuiltinFunction createWrapperDescriptor(PythonLanguage language, TruffleString name, Object type, Object[] defaults, PKeyword[] kw, int flags, RootCallTarget callTarget,
                     TpSlot slot, PExternalFunctionWrapper slotWrapper) {
-        return trace(language, new PBuiltinFunction(PythonBuiltinClassType.WrapperDescriptor, PythonBuiltinClassType.WrapperDescriptor.getInstanceShape(language), name, type, defaults, kw, flags,
-                        callTarget, slot, slotWrapper));
+        return trace(language, new PBuiltinFunction(PythonBuiltinClassType.WrapperDescriptor, PythonBuiltinClassType.WrapperDescriptor.getInstanceShape(language), name, type, defaults, kw, ((PRootNode) callTarget.getRootNode()).getSignature(), flags,
+                        callTarget, null, slot, slotWrapper));
     }
 
     public static PBuiltinMethod createNewWrapper(PythonLanguage language, Object type, Object[] defaults, PKeyword[] kwdefaults, RootCallTarget callTarget, TpSlot slot) {
@@ -574,7 +581,7 @@ public final class PFactory {
     public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, PBuiltinFunction function, Object klass) {
         PythonBuiltinClassType type = (PythonBuiltinClassType) function.getPythonClass();
         return trace(language, new PBuiltinFunction(type, type.getInstanceShape(language), function.getName(), klass,
-                        function.getDefaults(), function.getKwDefaults(), function.getFlags(), function.getCallTarget(),
+                        function.getDefaults(), function.getKwDefaults(), function.getSignature(), function.getFlags(), function.getCallTarget(), null,
                         function.getSlot(), function.getSlotWrapper()));
     }
 
