@@ -50,5 +50,6 @@ The implementation also relies on `venv` to work, even if you are not using exte
 To support creating multiple GraalPy contexts that access native modules within the same JVM or Native Image, we need to isolate them from each other.
 The current strategy for this is to copy the libraries and modify them such that the dynamic library loader of the operating system will isolate them for us.
 To do this, all GraalPy contexts in the same process (not just those in the same engine!) must set the `python.IsolateNativeModules` option to `true`.
+You should test your applications thoroughly if you want to use this feature, as there are many possiblities for native code to sidestep the library isolation through other process-wide global state.
 
 For more details on this, see [our implementation details](https://github.com/oracle/graalpython/blob/master/docs/contributor/IMPLEMENTATION_DETAILS.md#c-extension-copying).
