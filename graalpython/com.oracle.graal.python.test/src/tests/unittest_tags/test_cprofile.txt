@@ -1,7 +1,7 @@
 test.test_cprofile.CProfileTest.test_output_file_when_changing_directory @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 # transient: inconsistent running time [GR-67706]
 !test.test_cprofile.CProfileTest.test_run_profile_as_module @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_cprofile.CProfileTest.test_throw @ darwin-arm64,darwin-x86_64,linux-x86_64,win32-AMD64
+test.test_cprofile.CProfileTest.test_throw @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_cprofile.TestCommandLine.test_sort @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_profile.ProfileTest.test_calling_conventions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_profile.ProfileTest.test_cprofile @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

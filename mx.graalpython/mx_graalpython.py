@@ -1014,24 +1014,50 @@ def make_coverage_launcher_if_needed(launcher):
         agent_args = ' '.join(graalvm_vm_arg(arg) for arg in mx_gate.get_jacoco_agent_args() or [])
 
         # We need to make sure the arguments get passed to subprocesses, so we create a temporary launcher
-        # with the arguments. We also disable compilation, it hardly helps for this use case
+        # with the arguments.
         original_launcher = os.path.abspath(os.path.realpath(launcher))
         if sys.platform != 'win32':
-            coverage_launcher = original_launcher + '.sh'
-            preamble = '#!/bin/sh'
-            pass_args = '"$@"'
+            coverage_launcher = original_launcher + "_cov"
+            c_launcher_source = coverage_launcher + ".c"
+            exe_arg = f"--python.Executable={coverage_launcher}"
+            agent_args_list = shlex.split(agent_args)
+            extra_args_c = []
+            for i, arg in enumerate(agent_args_list):
+                extra_args_c.append(f'new_args[{i + 3}] = "' + arg.replace("\"", r"\"") + '";')
+            extra_args_c = ' '.join(extra_args_c)
+            c_code = dedent(f"""\
+                    #include <stdio.h>
+                    #include <stdlib.h>
+                    #include <unistd.h>
+
+                    int main(int argc, char **argv) {{
+                        char *new_args[argc + 3 + {len(agent_args_list)}];
+                        new_args[0] = "{original_launcher}";
+                        new_args[1] = "--jvm";
+                        new_args[2] = "{exe_arg}";
+                        {extra_args_c}
+                        for (int i = 1; i < argc; i++) {{
+                            new_args[i + 3 + {len(agent_args_list)}] = argv[i];
+                        }}
+                        new_args[argc + 3 + {len(agent_args_list)}] = NULL;
+                        execvp("{original_launcher}", new_args);
+                        perror("execvp failed");
+                        return 1;
+                    }}
+            """)
+            with open(c_launcher_source, "w") as f:
+                f.write(c_code)
+            compile_cmd = ["cc", c_launcher_source, "-o", coverage_launcher]
+            subprocess.check_call(compile_cmd)
+            os.chmod(coverage_launcher, 0o775)
         else:
             coverage_launcher = original_launcher.replace('.exe', '.cmd')
             # Windows looks for libraries on PATH, we need to add the jvm bin dir there or it won't find the instrumentation dlls
             jvm_bindir = os.path.join(os.path.dirname(os.path.dirname(original_launcher)), 'jvm', 'bin')
-            preamble = f'@echo off\nset PATH=%PATH%;{jvm_bindir}'
-            pass_args = '%*'
-        with open(coverage_launcher, "w") as f:
-            f.write(f'{preamble}\n')
-            exe_arg = quote(f"--python.Executable={coverage_launcher}")
-            f.write(f'{original_launcher} --jvm {exe_arg} {agent_args} {pass_args}\n')
-        if sys.platform != 'win32':
-            os.chmod(coverage_launcher, 0o775)
+            with open(coverage_launcher, "w") as f:
+                f.write(f'@echo off\nset PATH=%PATH%;{jvm_bindir}\n')
+                exe_arg = quote(f"--python.Executable={coverage_launcher}")
+                f.write(f'{original_launcher} --jvm {exe_arg} {agent_args} %*\n')
         mx.log(f"Replaced {launcher} with {coverage_launcher} to collect coverage")
         launcher = coverage_launcher
     return launcher

@@ -66,7 +66,7 @@ img.pylogo {
 <script>
     DB.ANY_VERSION = "any";
     DB.INSTALLS_BUT_FAILS_TESTS = "The package installs, but the test suite was not set up for GraalPy.";
-    DB.FAILS_TO_INSTALL = "The package fails to build or install.";
+    DB.FAILS_TO_INSTALL = "We have been unable to build, install, or run tests for this package.";
     DB.UNSUPPORTED = "The package is unsupported.";
     DB.PERCENT_PASSING = (pct) => `${pct}% of the tests are passing on GraalPy.`;
     const PATCH_AVAILABLE = "GraalPy will automatically apply a patch when installing this package to improve compatibility.";
