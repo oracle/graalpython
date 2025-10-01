@@ -49,7 +49,6 @@ public class CachedLazyCalltargetSupplier {
     private volatile RootCallTarget callTarget = null;
     private Supplier<RootCallTarget> supplier;
 
-
     public CachedLazyCalltargetSupplier(Supplier<RootCallTarget> supplier) {
         this.supplier = supplier;
     }

@@ -95,21 +95,13 @@ public abstract class PythonBuiltins {
             }
             TruffleString tsName = toTruffleStringUncached(builtin.name());
             PythonLanguage language = core.getLanguage();
-            boolean lazyCallTargets = core.getContext().getOption(PythonOptions.BuiltinLazyCallTargets);
             PBuiltinFunction function;
-            if (lazyCallTargets) {
-                Signature signature = BuiltinFunctionRootNode.createSignature(factory, builtin, declaresExplicitSelf, false);
-                int flags = PBuiltinFunction.getFlags(builtin, signature);
-                var callTargetSupplier = new CachedLazyCalltargetSupplier(() -> language.initBuiltinCallTarget(l -> new BuiltinFunctionRootNode(l, signature, builtin, factory, declaresExplicitSelf, null), factory.getNodeClass(),
-                        builtin.name()));
-                function = PFactory.createBuiltinFunction(language, tsName, numDefaults(builtin),signature, flags, callTargetSupplier);
-            } else {
-                RootCallTarget callTarget = language.initBuiltinCallTarget(l -> new BuiltinFunctionRootNode(l, builtin, factory, declaresExplicitSelf), factory.getNodeClass(),
-                        builtin.name());
-                int flags = PBuiltinFunction.getFlags(builtin, callTarget);
-                function = PFactory.createBuiltinFunction(language, tsName, null, numDefaults(builtin), flags, callTarget);
-            }
-
+            Signature signature = BuiltinFunctionRootNode.createSignature(factory, builtin, declaresExplicitSelf, false);
+            int flags = PBuiltinFunction.getFlags(builtin, signature);
+            var callTargetSupplier = new CachedLazyCalltargetSupplier(
+                            () -> language.initBuiltinCallTarget(l -> new BuiltinFunctionRootNode(l, signature, builtin, factory, declaresExplicitSelf, null), factory.getNodeClass(),
+                                            builtin.name()));
+            function = PFactory.createBuiltinFunction(language, tsName, numDefaults(builtin), signature, flags, callTargetSupplier);
             Object builtinDoc = builtin.doc().isEmpty() ? PNone.NONE : toTruffleStringUncached(builtin.doc());
             function.setAttribute(T___DOC__, builtinDoc);
             BoundBuiltinCallable<?> callable = function;
