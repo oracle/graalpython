@@ -1296,8 +1296,7 @@ public abstract class CExtCommonNodes {
      * {@code NFI} pointer.
      * </p>
      */
-    // TODO(NFI2) callers should use direct Nfi2 invoke
-    // TODO(NFI2) accept long parameter only instead of interop ptr? Review all usages.
+    // TODO(NFI2) review first arg after RAWPOINTER migration (should be just a long)
     @TruffleBoundary
     public static NfiBoundFunction ensureExecutableUncached(Object callable, NativeCExtSymbol descriptor) {
         PythonContext pythonContext = PythonContext.get(null);

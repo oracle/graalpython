@@ -725,15 +725,15 @@ public abstract class ExternalFunctionNodes {
     @GenerateCached(false)
     @GenerateInline
     public abstract static class ExternalFunctionInvokeNode extends PNodeWithContext {
-        abstract Object execute(VirtualFrame frame, Node inliningTarget, PythonThreadState threadState, CApiTiming timing, TruffleString name, Object callable, Object[] cArguments);
+        abstract Object execute(VirtualFrame frame, Node inliningTarget, PythonThreadState threadState, CApiTiming timing, TruffleString name, NfiBoundFunction callable, Object[] cArguments);
 
-        public final Object call(VirtualFrame frame, Node inliningTarget, PythonThreadState threadState, CApiTiming timing, TruffleString name, Object callable, Object... cArguments) {
+        public final Object call(VirtualFrame frame, Node inliningTarget, PythonThreadState threadState, CApiTiming timing, TruffleString name, NfiBoundFunction callable, Object... cArguments) {
             return execute(frame, inliningTarget, threadState, timing, name, callable, cArguments);
         }
 
         @Specialization
         static Object invoke(VirtualFrame frame, Node inliningTarget, PythonThreadState threadState, CApiTiming timing, TruffleString name, NfiBoundFunction callable, Object[] cArguments,
-                        @Shared @Cached(value = "createFor($node)", uncached = "getUncached()") IndirectCallData indirectCallData) {
+                        @Cached(value = "createFor($node)", uncached = "getUncached()") IndirectCallData indirectCallData) {
 
             // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store
             // it to the context since we cannot propagate it through the native frames.
@@ -769,51 +769,6 @@ public abstract class ExternalFunctionNodes {
                 IndirectCallContext.exit(frame, threadState, state);
             }
         }
-
-        // TODO(NFI2) remove this once all callers use NfiBoundFunction
-        @Specialization(guards = "!isNfi(callable)")
-        static Object invokeGeneric(VirtualFrame frame, Node inliningTarget, PythonThreadState threadState, CApiTiming timing, TruffleString name, Object callable, Object[] cArguments,
-                        @Shared @Cached("createFor($node)") InteropCallData boundaryCallData,
-                        @CachedLibrary(limit = "2") InteropLibrary lib) {
-
-            // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store
-            // it to the context since we cannot propagate it through the native frames.
-            Object state = InteropCallContext.enter(frame, threadState, boundaryCallData);
-
-            CApiTiming.enter();
-            try {
-                return lib.execute(callable, cArguments);
-            } catch (UnsupportedTypeException | UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CALLING_NATIVE_FUNC_FAILED, name, e);
-            } catch (ArityException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CALLING_NATIVE_FUNC_EXPECTED_ARGS, name, e.getExpectedMinArity(), e.getActualArity());
-            } catch (Throwable exception) {
-                /*
-                 * Always re-acquire the GIL here. This is necessary because it could happen that C
-                 * extensions are releasing the GIL and if then an LLVM exception occurs, C code
-                 * wouldn't re-acquire it (unexpectedly).
-                 */
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                GilNode.uncachedAcquire();
-                throw exception;
-            } finally {
-                CApiTiming.exit(timing);
-                /*
-                 * Special case after calling a C function: transfer caught exception back to frame
-                 * to simulate the global state semantics.
-                 */
-                if (frame != null && threadState.getCaughtException() != null) {
-                    PArguments.setException(frame, threadState.getCaughtException());
-                }
-                InteropCallContext.exit(frame, threadState, state);
-            }
-        }
-
-        static boolean isNfi(Object o) {
-            return o instanceof NfiBoundFunction;
-        }
     }
 
     /**
@@ -823,7 +778,7 @@ public abstract class ExternalFunctionNodes {
      */
     @GenerateInline(false)
     public abstract static class ExternalFunctionWrapperInvokeNode extends PNodeWithContext {
-        public abstract Object execute(VirtualFrame frame, PExternalFunctionWrapper provider, CApiTiming timing, TruffleString name, Object callable, Object[] cArguments);
+        public abstract Object execute(VirtualFrame frame, PExternalFunctionWrapper provider, CApiTiming timing, TruffleString name, NfiBoundFunction callable, Object[] cArguments);
 
         @NeverDefault
         static CheckFunctionResultNode createCheckResultNode(PExternalFunctionWrapper provider) {
@@ -837,7 +792,7 @@ public abstract class ExternalFunctionNodes {
         }
 
         @Specialization
-        static Object invokeCached(VirtualFrame frame, PExternalFunctionWrapper provider, CApiTiming timing, TruffleString name, Object callable, Object[] cArguments,
+        static Object invokeCached(VirtualFrame frame, PExternalFunctionWrapper provider, CApiTiming timing, TruffleString name, NfiBoundFunction callable, Object[] cArguments,
                         @Bind Node inliningTarget,
                         @Cached("createCheckResultNode(provider)") CheckFunctionResultNode checkResultNode,
                         @SuppressWarnings("truffle-neverdefault") @Cached("provider.createConvertRetNode()") CExtToJavaNode convertReturnValue,
@@ -849,7 +804,7 @@ public abstract class ExternalFunctionNodes {
             return invoke(frame, ctx, timing, name, callable, cArguments, inliningTarget, checkResultNode, convertReturnValue, fromForeign, getThreadStateNode, invokeNode);
         }
 
-        private static Object invoke(VirtualFrame frame, PythonContext ctx, CApiTiming timing, TruffleString name, Object callable, Object[] cArguments, Node inliningTarget,
+        private static Object invoke(VirtualFrame frame, PythonContext ctx, CApiTiming timing, TruffleString name, NfiBoundFunction callable, Object[] cArguments, Node inliningTarget,
                         CheckFunctionResultNode checkResultNode, CExtToJavaNode convertReturnValue, PForeignToPTypeNode fromForeign, GetThreadStateNode getThreadStateNode,
                         ExternalFunctionInvokeNode invokeNode) {
             PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, ctx);
@@ -866,7 +821,7 @@ public abstract class ExternalFunctionNodes {
             private static final ExternalFunctionWrapperInvokeNodeUncached INSTANCE = new ExternalFunctionWrapperInvokeNodeUncached();
 
             @Override
-            public Object execute(VirtualFrame frame, PExternalFunctionWrapper provider, CApiTiming timing, TruffleString name, Object callable, Object[] cArguments) {
+            public Object execute(VirtualFrame frame, PExternalFunctionWrapper provider, CApiTiming timing, TruffleString name, NfiBoundFunction callable, Object[] cArguments) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 PythonContext ctx = PythonContext.get(null);
                 return invoke(frame, ctx, timing, name, callable, cArguments, null, getUncachedCheckResultNode(provider), provider.getUncachedConvertRetNode(), PForeignToPTypeNode.getUncached(),
@@ -923,11 +878,14 @@ public abstract class ExternalFunctionNodes {
             calleeContext.enter(frame, this);
             try {
                 Object callable = ensureReadCallableNode().execute(frame);
+                if (!(callable instanceof NfiBoundFunction boundFunction)) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
                 Object[] cArguments = prepareCArguments(frame);
                 prepareArguments(cArguments);
                 try {
                     assert this.provider != null : "the provider cannot be null";
-                    return externalInvokeNode.execute(frame, provider, timing, name, callable, cArguments);
+                    return externalInvokeNode.execute(frame, provider, timing, name, boundFunction, cArguments);
                 } finally {
                     postprocessCArguments(frame, cArguments);
                 }
