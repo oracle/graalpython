@@ -389,9 +389,6 @@ public final class PythonOptions {
     @EngineOption @Option(category = OptionCategory.INTERNAL, usageSyntax = "true|false", help = "If true, uses native storage strategy for primitive types") //
     public static final OptionKey<Boolean> UseNativePrimitiveStorageStrategy = new OptionKey<>(false);
 
-    @Option(category = OptionCategory.INTERNAL, usageSyntax = "true|false", help = "If true, CallTargets for builtins are initialized lazily") //
-    public static final OptionKey<Boolean> BuiltinLazyCallTargets = new OptionKey<>(true);
-
     @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Print warnings when using experimental features at runtime.", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> WarnExperimentalFeatures = new OptionKey<>(true);
 

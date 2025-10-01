@@ -545,9 +545,10 @@ public final class PFactory {
         return trace(language, new PFunction(language, name, qualname, code, globals, defaultValues, kwDefaultValues, closure, codeStableAssumption));
     }
 
-    public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, TruffleString name, int numDefaults, Signature signature, int flags, CachedLazyCalltargetSupplier callTargetSupplier) {
+    public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, TruffleString name, int numDefaults, Signature signature, int flags,
+                    CachedLazyCalltargetSupplier callTargetSupplier) {
         return trace(language, new PBuiltinFunction(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape(language), name, null,
-                PBuiltinFunction.generateDefaults(numDefaults), null, signature, flags, callTargetSupplier));
+                        PBuiltinFunction.generateDefaults(numDefaults), null, signature, flags, callTargetSupplier));
     }
 
     public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, TruffleString name, Object type, int numDefaults, int flags, RootCallTarget callTarget) {
@@ -568,8 +569,10 @@ public final class PFactory {
 
     public static PBuiltinFunction createWrapperDescriptor(PythonLanguage language, TruffleString name, Object type, Object[] defaults, PKeyword[] kw, int flags, RootCallTarget callTarget,
                     TpSlot slot, PExternalFunctionWrapper slotWrapper) {
-        return trace(language, new PBuiltinFunction(PythonBuiltinClassType.WrapperDescriptor, PythonBuiltinClassType.WrapperDescriptor.getInstanceShape(language), name, type, defaults, kw, ((PRootNode) callTarget.getRootNode()).getSignature(), flags,
-                        callTarget, null, slot, slotWrapper));
+        return trace(language,
+                        new PBuiltinFunction(PythonBuiltinClassType.WrapperDescriptor, PythonBuiltinClassType.WrapperDescriptor.getInstanceShape(language), name, type, defaults, kw,
+                                        ((PRootNode) callTarget.getRootNode()).getSignature(), flags,
+                                        callTarget, null, slot, slotWrapper));
     }
 
     public static PBuiltinMethod createNewWrapper(PythonLanguage language, Object type, Object[] defaults, PKeyword[] kwdefaults, RootCallTarget callTarget, TpSlot slot) {

@@ -86,7 +86,8 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     @CompilationFinal(dimensions = 1) private final Object[] defaults;
     @CompilationFinal(dimensions = 1) private final PKeyword[] kwDefaults;
 
-    public PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, Signature signature, int flags, RootCallTarget callTarget, CachedLazyCalltargetSupplier callTargetSupplier,
+    public PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, Signature signature, int flags,
+                    RootCallTarget callTarget, CachedLazyCalltargetSupplier callTargetSupplier,
                     TpSlot slot, PExternalFunctionWrapper slotWrapper) {
         super(cls, shape);
         this.name = PythonUtils.toPString(name);
@@ -105,8 +106,11 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         this.slotWrapper = slotWrapper;
         this.callTargetSupplier = callTargetSupplier;
 
-        /* If the call target supplier has already been run, then don't wait until the first time the InternalMethod is
-         * asked for the call target, because can cause deoptimization in getCallTarget(). */
+        /*
+         * If the call target supplier has already been run, then don't wait until the first time
+         * the InternalMethod is asked for the call target, because can cause deoptimization in
+         * getCallTarget().
+         */
         if (callTarget == null && callTargetSupplier != null) {
             this.callTarget = callTargetSupplier.getIfExists();
         }
@@ -116,7 +120,8 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         this(cls, shape, name, enclosingType, defaults, kwDefaults, ((PRootNode) callTarget.getRootNode()).getSignature(), flags, callTarget, null, null, null);
     }
 
-    public PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, Signature signature, int flags, CachedLazyCalltargetSupplier callTargetSupplier) {
+    public PBuiltinFunction(PythonBuiltinClassType cls, Shape shape, TruffleString name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, Signature signature, int flags,
+                    CachedLazyCalltargetSupplier callTargetSupplier) {
         this(cls, shape, name, enclosingType, defaults, kwDefaults, signature, flags, null, callTargetSupplier, null, null);
     }
 
@@ -225,7 +230,7 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     }
 
     public RootCallTarget getCallTarget() {
-        if  (callTarget == null) {
+        if (callTarget == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             callTarget = callTargetSupplier.get();
         }
