@@ -186,6 +186,7 @@ MICRO_BENCHMARKS_SMALL = {
     'c-issubtype-monorphic': ITER_5 + ['200000'],
     'c-call-method': ITER_5 + ['50000'],
     'c-call-method-int-float': ITER_5 + ['500000'],
+    'startup': ITER_5 + ['50'],
 }
 
 def _pickling_benchmarks(module='pickle'):
