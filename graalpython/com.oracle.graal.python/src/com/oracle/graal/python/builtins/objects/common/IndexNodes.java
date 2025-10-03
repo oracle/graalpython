@@ -44,8 +44,10 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.common.IndexNodesFactory.NormalizeIndexWithBoundsCheckNodeGen;
 import com.oracle.graal.python.builtins.objects.common.IndexNodesFactory.NormalizeIndexWithoutBoundsCheckNodeGen;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.runtime.sequence.PTupleListBase;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
@@ -157,6 +159,16 @@ public abstract class IndexNodes {
         @NeverDefault
         public static NormalizeIndexWithBoundsCheckNode getUncached() {
             return NormalizeIndexWithBoundsCheckNodeGen.getUncached();
+        }
+
+        public static int normalizeIntIndex(Node inliningTarget, int index, int length, PTupleListBase container,
+                        InlinedConditionProfile negativeIndexProfile, PRaiseNode raiseNode) {
+            int normalizedIndex = index;
+            if (negativeIndexProfile.profile(inliningTarget, normalizedIndex < 0)) {
+                normalizedIndex += length;
+            }
+            checkBounds(inliningTarget, raiseNode, container, normalizedIndex, length);
+            return normalizedIndex;
         }
 
         @Specialization
@@ -322,6 +334,12 @@ public abstract class IndexNodes {
         }
     }
 
+    public static void checkBounds(Node inliningTarget, PRaiseNode raiseNode, PTupleListBase container, int idx, int length) {
+        if (idx < 0 || idx >= length) {
+            raiseIndexError(inliningTarget, container, raiseNode);
+        }
+    }
+
     public static void checkBounds(Node inliningTarget, PRaiseNode raiseNode, TruffleString errorMessage, int idx, int length) {
         if (idx < 0 || idx >= length) {
             raiseIndexError(inliningTarget, errorMessage, raiseNode);
@@ -338,6 +356,12 @@ public abstract class IndexNodes {
         if (idx < 0 || idx >= length) {
             raiseIndexError(inliningTarget, errorMessage, raiseNode);
         }
+    }
+
+    @InliningCutoff
+    private static void raiseIndexError(Node inliningTarget, PTupleListBase container, PRaiseNode raiseNode) {
+        TruffleString errorMessage = container instanceof PList ? ErrorMessages.LIST_INDEX_OUT_OF_RANGE : ErrorMessages.TUPLE_OUT_OF_BOUNDS;
+        raiseIndexError(inliningTarget, errorMessage, raiseNode);
     }
 
     @InliningCutoff

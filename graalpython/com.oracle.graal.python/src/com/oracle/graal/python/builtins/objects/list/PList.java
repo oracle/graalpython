@@ -34,7 +34,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.sequence.PSequenceWithStorage;
+import com.oracle.graal.python.runtime.sequence.PTupleListBase;
 import com.oracle.graal.python.runtime.sequence.storage.ArrayBasedSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
@@ -57,7 +57,7 @@ import com.oracle.truffle.api.source.SourceSection;
 
 @SuppressWarnings("truffle-abstract-export")
 @ExportLibrary(InteropLibrary.class)
-public final class PList extends PSequenceWithStorage {
+public final class PList extends PTupleListBase {
     private final ListOrigin origin;
 
     public PList(Object cls, Shape instanceShape, SequenceStorage store) {

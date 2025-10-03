@@ -27,7 +27,7 @@ package com.oracle.graal.python.builtins.objects.tuple;
 
 import static com.oracle.graal.python.util.PythonUtils.builtinClassToType;
 
-import com.oracle.graal.python.runtime.sequence.PSequenceWithStorage;
+import com.oracle.graal.python.runtime.sequence.PTupleListBase;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -40,7 +40,7 @@ import com.oracle.truffle.api.object.Shape;
 
 @SuppressWarnings("truffle-abstract-export")
 @ExportLibrary(InteropLibrary.class)
-public final class PTuple extends PSequenceWithStorage {
+public final class PTuple extends PTupleListBase {
 
     private long hash = -1;
 

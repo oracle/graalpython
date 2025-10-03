@@ -270,6 +270,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             mod.setAttribute(tsLiteral("dump_truffle_ast"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("tdebug"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("set_storage_strategy"), PNone.NO_VALUE);
+            mod.setAttribute(tsLiteral("get_storage_strategy"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("storage_to_native"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("dump_heap"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("is_native_object"), PNone.NO_VALUE);
@@ -693,7 +694,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         }
     }
 
-// Internal builtin used for testing: changes strategy of newly allocated set or map
+    // Internal builtin used for testing: changes strategy of newly allocated set or map
     @Builtin(name = "set_storage_strategy", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class SetStorageStrategyNode extends PythonBinaryBuiltinNode {
@@ -731,6 +732,16 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             if (HashingStorageLen.executeUncached(dictStorage) != 0) {
                 throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.ValueError, ErrorMessages.SHOULD_BE_USED_ONLY_NEW_SETS);
             }
+        }
+    }
+
+    @Builtin(name = "get_storage_strategy", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class GetStorageStrategyNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        TruffleString doSet(PSequence seq) {
+            return PythonUtils.toTruffleStringUncached(seq.getSequenceStorage().getClass().getSimpleName());
         }
     }
 
