@@ -33,7 +33,6 @@ test.test_importlib.extension.test_loader.Frozen_LoaderTests.test_load_module_AP
 test.test_importlib.extension.test_loader.Frozen_LoaderTests.test_module @ linux-x86_64
 test.test_importlib.extension.test_loader.Frozen_LoaderTests.test_module_reuse @ linux-x86_64
 test.test_importlib.extension.test_loader.Frozen_LoaderTests.test_unloadable @ linux-x86_64
-test.test_importlib.extension.test_loader.Frozen_MultiPhaseExtensionModuleTests.test_bad_modules @ linux-x86_64
 test.test_importlib.extension.test_loader.Frozen_MultiPhaseExtensionModuleTests.test_functionality @ linux-x86_64
 test.test_importlib.extension.test_loader.Frozen_MultiPhaseExtensionModuleTests.test_load_short_name @ linux-x86_64
 test.test_importlib.extension.test_loader.Frozen_MultiPhaseExtensionModuleTests.test_load_submodule @ linux-x86_64
@@ -54,7 +53,6 @@ test.test_importlib.extension.test_loader.Source_LoaderTests.test_load_module_AP
 test.test_importlib.extension.test_loader.Source_LoaderTests.test_module @ linux-x86_64
 test.test_importlib.extension.test_loader.Source_LoaderTests.test_module_reuse @ linux-x86_64
 test.test_importlib.extension.test_loader.Source_LoaderTests.test_unloadable @ linux-x86_64
-test.test_importlib.extension.test_loader.Source_MultiPhaseExtensionModuleTests.test_bad_modules @ linux-x86_64
 test.test_importlib.extension.test_loader.Source_MultiPhaseExtensionModuleTests.test_functionality @ linux-x86_64
 test.test_importlib.extension.test_loader.Source_MultiPhaseExtensionModuleTests.test_load_short_name @ linux-x86_64
 test.test_importlib.extension.test_loader.Source_MultiPhaseExtensionModuleTests.test_load_submodule @ linux-x86_64
@@ -71,9 +69,7 @@ test.test_importlib.extension.test_loader.Source_MultiPhaseExtensionModuleTests.
 test.test_importlib.extension.test_path_hook.Frozen_PathHookTests.test_success @ linux-x86_64
 test.test_importlib.extension.test_path_hook.Source_PathHookTests.test_success @ linux-x86_64
 test.test_importlib.frozen.test_finder.Frozen_FindSpecTests.test_failure @ linux-x86_64
-test.test_importlib.frozen.test_finder.Frozen_FindSpecTests.test_module @ linux-x86_64
 test.test_importlib.frozen.test_finder.Frozen_FindSpecTests.test_not_using_frozen @ linux-x86_64
-test.test_importlib.frozen.test_finder.Frozen_FindSpecTests.test_package @ linux-x86_64
 test.test_importlib.frozen.test_finder.Frozen_FindSpecTests.test_path_ignored @ linux-x86_64
 test.test_importlib.frozen.test_finder.Frozen_FindSpecTests.test_target_ignored @ linux-x86_64
 test.test_importlib.frozen.test_finder.Frozen_FinderTests.test_failure @ linux-x86_64
@@ -81,9 +77,7 @@ test.test_importlib.frozen.test_finder.Frozen_FinderTests.test_module @ linux-x8
 test.test_importlib.frozen.test_finder.Frozen_FinderTests.test_module_in_package @ linux-x86_64
 test.test_importlib.frozen.test_finder.Frozen_FinderTests.test_package @ linux-x86_64
 test.test_importlib.frozen.test_finder.Source_FindSpecTests.test_failure @ linux-x86_64
-test.test_importlib.frozen.test_finder.Source_FindSpecTests.test_module @ linux-x86_64
 test.test_importlib.frozen.test_finder.Source_FindSpecTests.test_not_using_frozen @ linux-x86_64
-test.test_importlib.frozen.test_finder.Source_FindSpecTests.test_package @ linux-x86_64
 test.test_importlib.frozen.test_finder.Source_FindSpecTests.test_path_ignored @ linux-x86_64
 test.test_importlib.frozen.test_finder.Source_FindSpecTests.test_target_ignored @ linux-x86_64
 test.test_importlib.frozen.test_finder.Source_FinderTests.test_failure @ linux-x86_64

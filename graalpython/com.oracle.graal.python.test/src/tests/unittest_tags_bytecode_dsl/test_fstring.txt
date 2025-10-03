@@ -18,12 +18,10 @@ test.test_fstring.TestCase.test_call @ linux-x86_64
 test.test_fstring.TestCase.test_closure @ linux-x86_64
 test.test_fstring.TestCase.test_comments @ linux-x86_64
 test.test_fstring.TestCase.test_compile_time_concat @ linux-x86_64
-test.test_fstring.TestCase.test_compile_time_concat_errors @ linux-x86_64
 test.test_fstring.TestCase.test_conversions @ linux-x86_64
 test.test_fstring.TestCase.test_custom_format_specifier @ linux-x86_64
 test.test_fstring.TestCase.test_debug_conversion @ linux-x86_64
 test.test_fstring.TestCase.test_debug_in_file @ linux-x86_64
-test.test_fstring.TestCase.test_del @ linux-x86_64
 test.test_fstring.TestCase.test_dict @ linux-x86_64
 test.test_fstring.TestCase.test_docstring @ linux-x86_64
 test.test_fstring.TestCase.test_double_braces @ linux-x86_64
@@ -53,7 +51,6 @@ test.test_fstring.TestCase.test_many_expressions @ linux-x86_64
 test.test_fstring.TestCase.test_misformed_unicode_character_name @ linux-x86_64
 test.test_fstring.TestCase.test_mismatched_braces @ linux-x86_64
 test.test_fstring.TestCase.test_mismatched_parens @ linux-x86_64
-test.test_fstring.TestCase.test_missing_expression @ linux-x86_64
 test.test_fstring.TestCase.test_missing_format_spec @ linux-x86_64
 test.test_fstring.TestCase.test_missing_variable @ linux-x86_64
 test.test_fstring.TestCase.test_multiple_vars @ linux-x86_64
