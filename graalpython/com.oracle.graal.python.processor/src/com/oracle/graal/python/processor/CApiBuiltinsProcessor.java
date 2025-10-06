@@ -698,7 +698,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                                 }
 
                                 public static boolean reallyHasMember(long capiLibrary, String name) {
-                                    return Nfi.lookupOptionalSymbolUncached(capiLibrary, name) != 0L;
+                                    return Nfi.lookupOptionalSymbol(capiLibrary, name) != 0L;
                                 }
 
                                 /**

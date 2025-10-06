@@ -80,8 +80,8 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuil
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
@@ -569,7 +569,7 @@ public final class CApiContext extends CExtContext {
     private static NfiBoundFunction lookupNativeSymbol(NfiBoundFunction[] nativeSymbolCache, NativeCAPISymbol symbol) {
         CompilerAsserts.neverPartOfCompilation();
         String name = symbol.getName();
-        long nativeSymbolPtr = Nfi.lookupSymbolUncached(PythonContext.get(null).getCApiContext().getLibrary(), name);
+        long nativeSymbolPtr = Nfi.lookupSymbol(PythonContext.get(null).getCApiContext().getLibrary(), name);
         NfiBoundFunction nativeSymbol = symbol.getSignature().bind(nativeSymbolPtr);
         VarHandle.storeStoreFence();
         return nativeSymbolCache[symbol.ordinal()] = nativeSymbol;
@@ -891,8 +891,8 @@ public final class CApiContext extends CExtContext {
             context.ensureNFILanguage(node, "allowNativeAccess", "true");
             int dlopenFlags = isolateNative ? PosixConstants.RTLD_LOCAL.value : PosixConstants.RTLD_GLOBAL.value;
             LOGGER.config(() -> "loading CAPI from " + loc.getCapiLibrary() + " as native");
-            long capiLibrary = Nfi.loadLibraryUncached(loc.getCapiLibrary(), dlopenFlags);
-            long initFunction = Nfi.lookupSymbolUncached(capiLibrary, "initialize_graal_capi");
+            long capiLibrary = Nfi.loadLibrary(loc.getCapiLibrary(), dlopenFlags);
+            long initFunction = Nfi.lookupSymbol(capiLibrary, "initialize_graal_capi");
             CApiContext cApiContext = new CApiContext(context, capiLibrary, loc);
             context.setCApiContext(cApiContext);
             context.setCApiState(PythonContext.CApiState.INITIALIZING);
@@ -912,10 +912,10 @@ public final class CApiContext extends CExtContext {
                     CApiBuiltinExecutable builtin = PythonCextBuiltinRegistry.builtins[id];
                     CStructAccess.WritePointerNode.writeArrayElementUncached(builtinArrayPtr, id, builtin.getNativePointer());
                 }
-                NfiSignature initSignature = Nfi.createSignatureUncached(NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER);
+                NfiSignature initSignature = Nfi.createSignature(NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER);
                 // TODO(NFI2) ENV parameter
                 // TODO(NFI2) unwrap gcState, should just be a long
-                Object nativeThreadLocalVarPointer = initSignature.invokeUncached(initFunction, 0L, builtinArrayPtr, ((NativePointer) gcState).asPointer(), ((NativePointer) nativeThreadState).asPointer());
+                Object nativeThreadLocalVarPointer = initSignature.invoke(initFunction, 0L, builtinArrayPtr, ((NativePointer) gcState).asPointer(), ((NativePointer) nativeThreadState).asPointer());
                 assert InteropLibrary.getUncached().isPointer(nativeThreadLocalVarPointer);
                 assert !InteropLibrary.getUncached().isNull(nativeThreadLocalVarPointer);
                 currentThreadState.setNativeThreadLocalVarPointer(nativeThreadLocalVarPointer);
@@ -934,8 +934,8 @@ public final class CApiContext extends CExtContext {
              * it during context exit, but when the VM is terminated by a signal, the context exit
              * is skipped. For that case we set up the shutdown hook.
              */
-            long finalizeFunction = Nfi.lookupSymbolUncached(capiLibrary, "GraalPyPrivate_GetFinalizeCApiPointer");
-            long finalizingPointer = (long) Nfi.createSignatureUncached(NfiType.RAW_POINTER).invokeUncached(finalizeFunction);
+            long finalizeFunction = Nfi.lookupSymbol(capiLibrary, "GraalPyPrivate_GetFinalizeCApiPointer");
+            long finalizingPointer = (long) Nfi.createSignature(NfiType.RAW_POINTER).invoke(finalizeFunction);
             try {
                 cApiContext.addNativeFinalizer(context, finalizingPointer);
             } catch (RuntimeException e) {

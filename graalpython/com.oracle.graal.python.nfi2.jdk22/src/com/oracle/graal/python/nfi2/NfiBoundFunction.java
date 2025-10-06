@@ -48,24 +48,22 @@ import org.graalvm.nativeimage.ImageInfo;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
-final class NfiBoundFunctionImpl extends NfiBoundFunction {
+public final class NfiBoundFunction {
     private final long ptr;
     private final MethodHandle boundHandle;
-    private final NfiSignatureImpl signature;
+    private final NfiSignature signature;
 
-    NfiBoundFunctionImpl(long ptr, MethodHandle boundHandle, NfiSignatureImpl signature) {
+    NfiBoundFunction(long ptr, MethodHandle boundHandle, NfiSignature signature) {
         this.ptr = ptr;
         this.boundHandle = boundHandle;
         this.signature = signature;
     }
 
-    @Override
     public long getAddress() {
         return ptr;
     }
 
-    // TODO(NFI2) duplicate code with NfiSignature.invokeUncached
-    @Override
+    // TODO(NFI2) duplicate code with NfiSignature.invoke
     @TruffleBoundary
     public Object invoke(Object... args) {
         try {
@@ -75,7 +73,6 @@ final class NfiBoundFunctionImpl extends NfiBoundFunction {
                 return signature.convertResult(boundHandle.invokeExact(signature.convertArgs(args)));
             }
         } catch (Throwable e) {
-            // TODO(NFI2) proper exception handling
             throw CompilerDirectives.shouldNotReachHere(e);
         }
     }

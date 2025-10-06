@@ -158,7 +158,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
         for (int i = 0; i < arguments.length; i++) {
             nfiTypes[i] = arguments[i].getNFI2Type();
         }
-        this.signature = Nfi.createSignatureUncached(returnValue.getNFI2Type(), nfiTypes);
+        this.signature = Nfi.createSignature(returnValue.getNFI2Type(), nfiTypes);
     }
 
     NativeCAPISymbol(String name) {

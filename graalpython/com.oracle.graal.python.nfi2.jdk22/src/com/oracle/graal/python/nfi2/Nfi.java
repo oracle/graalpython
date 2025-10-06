@@ -79,6 +79,7 @@ public final class Nfi {
     }
 
     // TODO(NFI2) error handling
+    // TODO(NFI2) Windows LoadLibrary/GetProcAddress
     @SuppressWarnings("restricted")
     private static void ensureDlopenDlsym() {
         if (dlopenPtr != null) {
@@ -92,15 +93,15 @@ public final class Nfi {
         }
     }
 
-    public static long lookupSymbolUncached(long library, String name) {
-        long symbol = lookupOptionalSymbolUncached(library, name);
+    public static long lookupSymbol(long library, String name) {
+        long symbol = lookupOptionalSymbol(library, name);
         if (symbol == 0) {
             throw CompilerDirectives.shouldNotReachHere("symbol not found: " + name);
         }
         return symbol;
     }
 
-    public static long loadLibraryUncached(String name, int flags) {
+    public static long loadLibrary(String name, int flags) {
         long lib;
         long nativeName = NativeMemory.javaStringToNativeUtf8(name);
         try {
@@ -112,7 +113,6 @@ public final class Nfi {
                 lib = (long) dlopen.invokeExact(nativeName, flags | RTLD_LAZY);
             }
         } catch (Throwable e) {
-            // TODO(NFI2) proper exception handling
             throw CompilerDirectives.shouldNotReachHere(e);
         } finally {
             NativeMemory.free(nativeName);
@@ -123,7 +123,7 @@ public final class Nfi {
         return lib;
     }
 
-    public static long lookupOptionalSymbolUncached(long library, String name) {
+    public static long lookupOptionalSymbol(long library, String name) {
         long nativeName = NativeMemory.javaStringToNativeUtf8(name);
         try {
             ensureDlopenDlsym();
@@ -139,7 +139,7 @@ public final class Nfi {
         }
     }
 
-    public static NfiSignature createSignatureUncached(NfiType resType, NfiType... argTypes) {
-        return new NfiSignatureImpl(resType, argTypes);
+    public static NfiSignature createSignature(NfiType resType, NfiType... argTypes) {
+        return new NfiSignature(resType, argTypes);
     }
 }

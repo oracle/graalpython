@@ -141,7 +141,7 @@ public class TpSlotsTests {
     // verify that the slot values were properly assigned to the right fields of TpSlots
     // record
     private static TpSlotNative createCExtSlot(TpSlotMeta def) {
-        return TpSlotNative.createCExtSlot(Nfi.createSignatureUncached(NfiType.VOID).bind(def.ordinal()));
+        return TpSlotNative.createCExtSlot(Nfi.createSignature(NfiType.VOID).bind(def.ordinal()));
     }
 
     private static void checkSlotValue(TpSlotMeta def, TpSlot slotValue) {

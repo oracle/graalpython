@@ -40,12 +40,18 @@
  */
 package com.oracle.graal.python.nfi2;
 
-public abstract class NfiBoundFunction {
+public final class NfiBoundFunction {
 
-    protected NfiBoundFunction() {
+    // never instantiated on JDK <= 21
+    private NfiBoundFunction() {
     }
 
-    public abstract long getAddress();
+    public long getAddress() {
+        throw new UnsupportedOperationException();
+    }
 
-    public abstract Object invoke(Object... args);
+    @SuppressWarnings("unused")
+    public Object invoke(Object... args) {
+        throw new UnsupportedOperationException();
+    }
 }

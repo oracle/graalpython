@@ -42,42 +42,24 @@ package com.oracle.graal.python.nfi2;
 
 import java.lang.invoke.MethodHandle;
 
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+public final class NfiSignature {
 
-public class NfiSignature {
-
-    final NfiType resType;
-    final NfiType[] argTypes;
-
+    @SuppressWarnings("unused")
     NfiSignature(NfiType resType, NfiType[] argTypes) {
-        this.resType = resType;
-        this.argTypes = argTypes;
     }
 
+    @SuppressWarnings("unused")
     public NfiBoundFunction bind(long pointer) {
         throw new UnsupportedOperationException();
     }
 
-    public Object invokeUncached(long function, Object... args) {
+    @SuppressWarnings("unused")
+    public Object invoke(long function, Object... args) {
         throw new UnsupportedOperationException();
     }
 
-    public long createDirectClosureUncached(MethodHandle staticMethodHandle) {
+    @SuppressWarnings("unused")
+    public long createClosure(MethodHandle staticMethodHandle) {
         throw new UnsupportedOperationException();
-    }
-
-    @Override
-    @TruffleBoundary
-    public String toString() {
-        StringBuilder sb = new StringBuilder("(");
-        for (int i = 0; i < argTypes.length; i++) {
-            if (i > 0) {
-                sb.append(", ");
-            }
-            sb.append(argTypes[i]);
-        }
-        sb.append("): ");
-        sb.append(resType);
-        return sb.toString();
     }
 }

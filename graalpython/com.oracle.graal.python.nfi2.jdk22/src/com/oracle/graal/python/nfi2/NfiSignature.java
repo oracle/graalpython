@@ -59,18 +59,21 @@ import org.graalvm.nativeimage.ImageInfo;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
-final class NfiSignatureImpl extends NfiSignature {
+public final class NfiSignature {
 
     static final MethodType DIRECT_METHOD_TYPE = MethodType.methodType(Object.class, Object[].class);
     static final MethodType DOWNCALL_METHOD_TYPE = MethodType.methodType(Object.class, new Class<?>[]{MemorySegment.class, Object[].class});
 
+    private final NfiType resType;
+    private final NfiType[] argTypes;
     private MethodHandle downcallMethodHandle;
     private FunctionDescriptor functionDescriptor;
     private MethodType directUpcallMethodType;
     final DowncallDescriptor downcallDescriptor;
 
-    NfiSignatureImpl(NfiType resType, NfiType[] argTypes) {
-        super(resType, argTypes);
+    NfiSignature(NfiType resType, NfiType[] argTypes) {
+        this.resType = resType;
+        this.argTypes = argTypes;
         if (ImageInfo.inImageCode()) {
             downcallDescriptor = ForeignFunctions.getDowncallDescriptor(getFunctionDescriptor());
         } else {
@@ -79,11 +82,25 @@ final class NfiSignatureImpl extends NfiSignature {
     }
 
     @Override
+    @TruffleBoundary
+    public String toString() {
+        StringBuilder sb = new StringBuilder("(");
+        for (int i = 0; i < argTypes.length; i++) {
+            if (i > 0) {
+                sb.append(", ");
+            }
+            sb.append(argTypes[i]);
+        }
+        sb.append("): ");
+        sb.append(resType);
+        return sb.toString();
+    }
+
     public NfiBoundFunction bind(long pointer) {
         if (ImageInfo.inImageCode()) {
-            return new NfiBoundFunctionImpl(pointer, null, this);
+            return new NfiBoundFunction(pointer, null, this);
         }
-        return new NfiBoundFunctionImpl(pointer, getDowncallMethodHandle().bindTo(MemorySegment.ofAddress(pointer)), this);
+        return new NfiBoundFunction(pointer, getDowncallMethodHandle().bindTo(MemorySegment.ofAddress(pointer)), this);
     }
 
     Object[] convertArgs(Object[] args) {
@@ -105,9 +122,8 @@ final class NfiSignatureImpl extends NfiSignature {
         return r;
     }
 
-    @Override
     @TruffleBoundary
-    public Object invokeUncached(long function, Object... args) {
+    public Object invoke(long function, Object... args) {
         try {
             if (ImageInfo.inImageCode()) {
                 return convertResult(ForeignFunctions.invoke(downcallDescriptor, function, convertArgs(args)));
@@ -119,10 +135,9 @@ final class NfiSignatureImpl extends NfiSignature {
         }
     }
 
-    @Override
     @SuppressWarnings("restricted")
     @TruffleBoundary
-    public long createDirectClosureUncached(MethodHandle staticMethodHandle) {
+    public long createClosure(MethodHandle staticMethodHandle) {
         MethodHandle handle = handle_closureWrapper.bindTo(this).bindTo(staticMethodHandle);
         handle = handle.asType(DIRECT_METHOD_TYPE).asVarargsCollector(Object[].class);
         if (directUpcallMethodType == null) {
@@ -137,7 +152,7 @@ final class NfiSignatureImpl extends NfiSignature {
         return Linker.nativeLinker().upcallStub(handle, getFunctionDescriptor(), Arena.global()).address();
     }
 
-    private static Object closureWrapper(NfiSignatureImpl signature, MethodHandle inner, Object[] args) {
+    private static Object closureWrapper(NfiSignature signature, MethodHandle inner, Object[] args) {
         try {
             // TODO(NFI2) get rid of this wrapper once we don't need to widen the return values
             return signature.resType.getConvertArgJavaToNativeNodeUncached().execute(inner.invoke(args));
@@ -184,9 +199,9 @@ final class NfiSignatureImpl extends NfiSignature {
     static final MethodHandle handle_closureWrapper;
 
     static {
-        MethodType callType = MethodType.methodType(Object.class, NfiSignatureImpl.class, MethodHandle.class, Object[].class);
+        MethodType callType = MethodType.methodType(Object.class, NfiSignature.class, MethodHandle.class, Object[].class);
         try {
-            handle_closureWrapper = MethodHandles.lookup().findStatic(NfiSignatureImpl.class, "closureWrapper", callType);
+            handle_closureWrapper = MethodHandles.lookup().findStatic(NfiSignature.class, "closureWrapper", callType);
         } catch (NoSuchMethodException | IllegalAccessException ex) {
             throw CompilerDirectives.shouldNotReachHere(ex);
         }

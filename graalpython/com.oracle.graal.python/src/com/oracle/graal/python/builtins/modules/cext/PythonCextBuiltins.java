@@ -683,9 +683,9 @@ public final class PythonCextBuiltins {
                     for (int i = 0; i < args.length; i++) {
                         argTypes[i] = args[i].getNFI2Type();
                     }
-                    NfiSignature signature = Nfi.createSignatureUncached(ret.getNFI2Type(), argTypes);
+                    NfiSignature signature = Nfi.createSignature(ret.getNFI2Type(), argTypes);
 
-                    pointer = signature.createDirectClosureUncached(handle_executeBuiltinWrapper.bindTo(new ExecuteCApiBuiltinRootNode(this).getCallTarget()));
+                    pointer = signature.createClosure(handle_executeBuiltinWrapper.bindTo(new ExecuteCApiBuiltinRootNode(this).getCallTarget()));
                     context.getCApiContext().setClosurePointer(null, null, this, pointer);
                     LOGGER.finer(CApiBuiltinExecutable.class.getSimpleName() + " toNative: " + id + " / " + name() + " -> " + pointer);
                 } catch (Throwable t) {

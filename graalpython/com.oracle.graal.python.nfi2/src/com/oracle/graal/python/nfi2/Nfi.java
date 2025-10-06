@@ -42,19 +42,19 @@ package com.oracle.graal.python.nfi2;
 
 public final class Nfi {
 
-    public static long loadLibraryUncached(String name, int flags) {
+    public static long loadLibrary(String name, int flags) {
         throw new UnsupportedOperationException();
     }
 
-    public static long lookupSymbolUncached(long library, String name) {
+    public static long lookupSymbol(long library, String name) {
         throw new UnsupportedOperationException();
     }
 
-    public static long lookupOptionalSymbolUncached(long library, String name) {
+    public static long lookupOptionalSymbol(long library, String name) {
         throw new UnsupportedOperationException();
     }
 
-    public static NfiSignature createSignatureUncached(NfiType resType, NfiType... argTypes) {
+    public static NfiSignature createSignature(NfiType resType, NfiType... argTypes) {
         // TODO(NFI2) should we cache signatures?
         return new NfiSignature(resType, argTypes);
     }
