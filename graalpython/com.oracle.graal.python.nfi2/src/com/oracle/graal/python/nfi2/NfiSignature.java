@@ -40,10 +40,9 @@
  */
 package com.oracle.graal.python.nfi2;
 
-import java.util.function.Supplier;
+import java.lang.invoke.MethodHandle;
 
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleLanguage;
 
 public class NfiSignature {
 
@@ -63,7 +62,7 @@ public class NfiSignature {
         throw new UnsupportedOperationException();
     }
 
-    public long createDirectClosureUncached(TruffleLanguage<?> language, Supplier<NfiClosureBaseNode> closureNode) {
+    public long createDirectClosureUncached(MethodHandle staticMethodHandle) {
         throw new UnsupportedOperationException();
     }
 

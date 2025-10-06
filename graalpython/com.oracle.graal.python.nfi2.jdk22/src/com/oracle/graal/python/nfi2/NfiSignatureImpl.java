@@ -51,17 +51,13 @@ import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.util.function.Supplier;
 
 import org.graalvm.nativeimage.DowncallDescriptor;
 import org.graalvm.nativeimage.ForeignFunctions;
 import org.graalvm.nativeimage.ImageInfo;
 
-import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleLanguage;
-import com.oracle.truffle.api.nodes.RootNode;
 
 final class NfiSignatureImpl extends NfiSignature {
 
@@ -126,10 +122,8 @@ final class NfiSignatureImpl extends NfiSignature {
     @Override
     @SuppressWarnings("restricted")
     @TruffleBoundary
-    public long createDirectClosureUncached(TruffleLanguage<?> language, Supplier<NfiClosureBaseNode> closureNode) {
-        RootNode rootNode = new NfiDirectClosureRootNode(language, closureNode, this);
-        // TODO(NFI2) SVM needs this handle to be a static method
-        MethodHandle handle = handle_CallTarget_call.bindTo(rootNode.getCallTarget());
+    public long createDirectClosureUncached(MethodHandle staticMethodHandle) {
+        MethodHandle handle = handle_closureWrapper.bindTo(this).bindTo(staticMethodHandle);
         handle = handle.asType(DIRECT_METHOD_TYPE).asVarargsCollector(Object[].class);
         if (directUpcallMethodType == null) {
             Class<?>[] javaArgTypes = new Class<?>[argTypes.length];
@@ -141,6 +135,15 @@ final class NfiSignatureImpl extends NfiSignature {
         handle = handle.asType(directUpcallMethodType);
         // TODO(NFI2) per-context or closure-specific Arena
         return Linker.nativeLinker().upcallStub(handle, getFunctionDescriptor(), Arena.global()).address();
+    }
+
+    private static Object closureWrapper(NfiSignatureImpl signature, MethodHandle inner, Object[] args) {
+        try {
+            // TODO(NFI2) get rid of this wrapper once we don't need to widen the return values
+            return signature.resType.getConvertArgJavaToNativeNodeUncached().execute(inner.invoke(args));
+        } catch (Throwable e) {
+            throw CompilerDirectives.shouldNotReachHere(e);
+        }
     }
 
     @SuppressWarnings("restricted")
@@ -178,12 +181,12 @@ final class NfiSignatureImpl extends NfiSignature {
         };
     }
 
-    static final MethodHandle handle_CallTarget_call;
+    static final MethodHandle handle_closureWrapper;
 
     static {
-        MethodType callType = MethodType.methodType(Object.class, Object[].class);
+        MethodType callType = MethodType.methodType(Object.class, NfiSignatureImpl.class, MethodHandle.class, Object[].class);
         try {
-            handle_CallTarget_call = MethodHandles.lookup().findVirtual(CallTarget.class, "call", callType);
+            handle_closureWrapper = MethodHandles.lookup().findStatic(NfiSignatureImpl.class, "closureWrapper", callType);
         } catch (NoSuchMethodException | IllegalAccessException ex) {
             throw CompilerDirectives.shouldNotReachHere(ex);
         }

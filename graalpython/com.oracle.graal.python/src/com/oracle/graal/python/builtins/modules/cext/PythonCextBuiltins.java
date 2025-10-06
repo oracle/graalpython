@@ -93,6 +93,9 @@ import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -164,7 +167,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.nfi2.Nfi;
-import com.oracle.graal.python.nfi2.NfiClosureBaseNode;
 import com.oracle.graal.python.nfi2.NfiSignature;
 import com.oracle.graal.python.nfi2.NfiType;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -224,6 +226,7 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -682,9 +685,7 @@ public final class PythonCextBuiltins {
                     }
                     NfiSignature signature = Nfi.createSignatureUncached(ret.getNFI2Type(), argTypes);
 
-                    // TODO(NFI2) use static methods for builtins closures instead of interop
-                    // executable
-                    pointer = signature.createDirectClosureUncached(PythonLanguage.get(null), () -> ExecuteCApiBuiltinNode.create(this));
+                    pointer = signature.createDirectClosureUncached(handle_executeBuiltinWrapper.bindTo(new ExecuteCApiBuiltinRootNode(this).getCallTarget()));
                     context.getCApiContext().setClosurePointer(null, null, this, pointer);
                     LOGGER.finer(CApiBuiltinExecutable.class.getSimpleName() + " toNative: " + id + " / " + name() + " -> " + pointer);
                 } catch (Throwable t) {
@@ -701,7 +702,49 @@ public final class PythonCextBuiltins {
         }
     }
 
-    static final class ExecuteCApiBuiltinNode extends NfiClosureBaseNode {
+    static final MethodHandle handle_executeBuiltinWrapper;
+
+    static {
+        MethodType callType = MethodType.methodType(Object.class, CallTarget.class, Object[].class);
+        try {
+            handle_executeBuiltinWrapper = MethodHandles.lookup().findStatic(PythonCextBuiltins.class, "executeBuiltinWrapper", callType);
+        } catch (NoSuchMethodException | IllegalAccessException ex) {
+            throw CompilerDirectives.shouldNotReachHere(ex);
+        }
+    }
+
+    // TODO(NFI2) generate a static method for each builtin with concrete arg conversions, get rid
+    // of this wrapper and RootNode
+    static Object executeBuiltinWrapper(CallTarget callTarget, Object[] args) {
+        return callTarget.call(args);
+    }
+
+    static final class ExecuteCApiBuiltinRootNode extends RootNode {
+
+        final CApiBuiltinExecutable self;
+        @Child ExecuteCApiBuiltinNode executeBuiltinNode;
+
+        ExecuteCApiBuiltinRootNode(CApiBuiltinExecutable self) {
+            super(PythonLanguage.get(null));
+            this.self = self;
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            if (executeBuiltinNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                executeBuiltinNode = insert(ExecuteCApiBuiltinNode.create(self));
+            }
+            try {
+                Object[] args = frame.getArguments();
+                return executeBuiltinNode.execute(args);
+            } catch (Throwable e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
+    }
+
+    static final class ExecuteCApiBuiltinNode extends Node {
 
         private final CApiBuiltinExecutable cachedSelf;
         @Child private GilNode gilNode = GilNode.create();
@@ -728,7 +771,6 @@ public final class PythonCextBuiltins {
             this.builtinNode = cachedSelf.createBuiltinNode();
         }
 
-        @Override
         public Object execute(Object[] arguments) {
             CApiBuiltinExecutable self = cachedSelf;
             boolean wasAcquired = self.acquireGil() && gilNode.acquire();
@@ -779,7 +821,12 @@ public final class PythonCextBuiltins {
         @ExplodeLoop
         private void castArguments(Object[] arguments, Object[] argCast) {
             for (int i = 0; i < argNodes.length; i++) {
-                argCast[i] = argNodes[i] == null ? arguments[i] : argNodes[i].execute(arguments[i]);
+                Object arg = arguments[i];
+                // TODO(NFI2) remove wrapping after migration to RAWPOINTER
+                if (cachedSelf.args[i].getNFI2Type() == NfiType.POINTER) {
+                    arg = new NativePointer((long) arg);
+                }
+                argCast[i] = argNodes[i] == null ? arg : argNodes[i].execute(arg);
             }
         }
     }
