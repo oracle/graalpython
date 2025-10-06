@@ -45,11 +45,15 @@ if sys.implementation.name == "graalpy":
 
     def check_strategy(container, expected):
         actual = __graalpython__.get_storage_strategy(container)
-        assert actual == expected, f"Container '{container}', wrong storage strategy: '{actual}' != '{expected}'"
+        assert actual == expected, f"Container '{container}', wrong storage strategy : {actual=} != {expected=}"
+
+    LITERAL_INT_STORAGE = "NativeIntSequenceStorage" if __graalpython__.using_native_primitive_storage_strategy else "IntSequenceStorage"
 else:
     # For CPython, just to verify other test results
     def check_strategy(container, expected):
         pass
+
+    LITERAL_INT_STORAGE = "dummy"
 
 
 def test_appending_ints():
@@ -90,7 +94,7 @@ def test_generator_double():
 def test_literal_int():
     l = [1,2,3,4,5]
     assert l[4] == 5
-    check_strategy(l, "IntSequenceStorage")
+    check_strategy(l, LITERAL_INT_STORAGE)
 
 
 def test_literal_double():
