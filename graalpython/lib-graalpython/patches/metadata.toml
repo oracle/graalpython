@@ -875,3 +875,13 @@ url = 'https://github.com/piskvorky/gensim/archive/refs/tags/4.3.3.tar.gz'
 
 [[gensim.rules]]
 version = '== 4.3.3'
+
+[[easyocr.rules]]
+version = '== 1.7.2'
+patch = 'easyocr.patch'
+license = 'Apache-2.0'
+
+[[opencv-python-headless.rules]]
+version = '== 4.12.0.88'
+patch = 'opencv-python-headless.patch'
+dist-type = 'sdist'

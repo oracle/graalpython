@@ -1,0 +1,13 @@
+diff --git a/easyocr/utils.py b/easyocr/utils.py
+index 5dee1b7..de7af43 100644
+--- a/easyocr/utils.py
++++ b/easyocr/utils.py
+@@ -329,7 +329,7 @@ import stat
+         texts = []
+         index = 0
+         for l in length:
+-            t = text_index[index:index + l]
++            t = text_index[index:int(index + l)]
+             # Returns a boolean array where true is when the value is not repeated
+             a = np.insert(~((t[1:]==t[:-1])),0,True)
+             # Returns a boolean array where true is when the value is not in the ignore_idx list
