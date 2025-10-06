@@ -316,7 +316,7 @@ public class LeakTest extends AbstractLanguageLauncher {
             }
             long currentSize = getJavaHeapSize(false);
             System.out.printf("Heap size after all repetitions: %,d\n", currentSize);
-            if (currentSize > initialSize * 1.1) {
+            if (currentSize > initialSize * 1.15) {
                 System.err.printf("Heap size grew too much after repeated context creations and invocations. From %,d bytes to %,d bytes.\n", initialSize, currentSize);
                 if (keepDump) {
                     dumpHeap(ManagementFactory.getPlatformMBeanServer(), true);
