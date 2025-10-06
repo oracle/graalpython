@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,18 +38,46 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cext.common;
+package com.oracle.graal.python.nfi2;
 
-import com.oracle.graal.python.nfi2.NfiSignature;
-import com.oracle.truffle.api.strings.TruffleString;
+import java.util.function.Supplier;
 
-public interface NativeCExtSymbol {
-    String getName();
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.RootNode;
 
-    TruffleString getTsName();
+final class NfiDirectClosureRootNode extends RootNode {
 
-    /**
-     * Returns the NFI signature.
-     */
-    NfiSignature getSignature();
+    final Supplier<NfiClosureBaseNode> closureBaseNodeSupplier;
+    final NfiSignatureImpl signature;
+    @Child NfiClosureBaseNode closureNode;
+
+    NfiDirectClosureRootNode(TruffleLanguage<?> language, Supplier<NfiClosureBaseNode> closureNode, NfiSignatureImpl signature) {
+        super(language);
+        this.closureBaseNodeSupplier = closureNode;
+        this.signature = signature;
+    }
+
+    @Override
+    public Object execute(VirtualFrame frame) {
+        if (closureNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            closureNode = insert(closureBaseNodeSupplier.get());
+        }
+        try {
+            Object[] args = frame.getArguments();
+            Object[] convertedArgs = new Object[args.length];
+            for (int i = 0; i < args.length; i++) {
+                convertedArgs[i] = args[i];
+                // TODO(NFI2) remove wrapping after migration to RAWPOINTER
+                if (signature.argTypes[i] == NfiType.POINTER) {
+                    convertedArgs[i] = new NativePointer((long) convertedArgs[i]);
+                }
+            }
+            return signature.resType.getConvertArgJavaToNativeNodeUncached().execute(closureNode.execute(convertedArgs));
+        } catch (Throwable e) {
+            throw CompilerDirectives.shouldNotReachHere(e);
+        }
+    }
 }

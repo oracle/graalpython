@@ -38,41 +38,51 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nfi;
+package com.oracle.graal.python.nfi2;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
-final class NfiInteropClosureRootNode extends RootNode {
+@ExportLibrary(InteropLibrary.class)
+final class NativePointer implements TruffleObject {
 
-    @Child InteropLibrary interop;
-    final NfiSignature signature;
+    final long nativePointer;
 
-    NfiInteropClosureRootNode(NfiSignature signature) {
-        super(PythonLanguage.get(null));
-        this.signature = signature;
-        interop = InteropLibrary.getFactory().createDispatched(3);
+    NativePointer(long nativePointer) {
+        this.nativePointer = nativePointer;
+    }
+
+    static Object create(long nativePointer) {
+        return new NativePointer(nativePointer);
     }
 
     @Override
-    public Object execute(VirtualFrame frame) {
-        try {
-            Object receiver = frame.getArguments()[0];
-            Object[] args = (Object[]) frame.getArguments()[1];
-            Object[] convertedArgs = new Object[args.length];
-            for (int i = 0; i < args.length; i++) {
-                convertedArgs[i] = args[i];
-                // TODO(NFI2) remove wrapping after migration to RAWPOINTER
-                if (signature.getArgTypes()[i] == NfiType.POINTER) {
-                    convertedArgs[i] = new NativePointer((long) convertedArgs[i]);
-                }
-            }
-            return signature.getResType().getConvertArgJavaToNativeNodeUncached().execute(interop.execute(receiver, convertedArgs));
-        } catch (Throwable e) {
-            throw CompilerDirectives.shouldNotReachHere(e);
-        }
+    public String toString() {
+        return String.valueOf(nativePointer);
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean isPointer() {
+        return true;
+    }
+
+    @ExportMessage
+    long asPointer() {
+        return nativePointer;
+    }
+
+    @ExportMessage
+    boolean isNull() {
+        return nativePointer == 0;
+    }
+
+    @ExportMessage
+    @TruffleBoundary
+    Object toDisplayString(@SuppressWarnings("unused") boolean allowSideEffects) {
+        return "NativePointer(" + nativePointer + ")";
     }
 }

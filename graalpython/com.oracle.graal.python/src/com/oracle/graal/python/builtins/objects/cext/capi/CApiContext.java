@@ -102,10 +102,11 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
-import com.oracle.graal.python.nfi.Nfi2;
-import com.oracle.graal.python.nfi.NfiBoundFunction;
-import com.oracle.graal.python.nfi.NfiSignature;
-import com.oracle.graal.python.nfi.NfiType;
+import com.oracle.graal.python.nfi2.NativeMemory;
+import com.oracle.graal.python.nfi2.Nfi;
+import com.oracle.graal.python.nfi2.NfiBoundFunction;
+import com.oracle.graal.python.nfi2.NfiSignature;
+import com.oracle.graal.python.nfi2.NfiType;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -569,7 +570,7 @@ public final class CApiContext extends CExtContext {
         CompilerAsserts.neverPartOfCompilation();
         String name = symbol.getName();
         try {
-            long nativeSymbolPtr = Nfi2.lookupSymbolUncached(PythonContext.get(null).getCApiContext().getLibrary(), name);
+            long nativeSymbolPtr = Nfi.lookupSymbolUncached(PythonContext.get(null).getCApiContext().getLibrary(), name);
             NfiBoundFunction nativeSymbol = symbol.getSignature().bind(nativeSymbolPtr);
             VarHandle.storeStoreFence();
             return nativeSymbolCache[symbol.ordinal()] = nativeSymbol;
@@ -777,23 +778,9 @@ public final class CApiContext extends CExtContext {
         return ensureCapiWasLoaded(node, context, name, path, null);
     }
 
-    // TODO(NFI2) debugging only, remove this
-    public static CApiContext ensureCapiWasLoaded(Node node, PythonContext context, TruffleString name, TruffleString path, String reason) throws IOException, ImportException, ApiInitException {
-        boolean b = context.hasCApiContext();
-        long startTime = System.nanoTime();
-        try {
-            return ensureCapiWasLoaded0(node, context, name, path, reason);
-        } finally {
-            long endTime = System.nanoTime();
-            if (!b) {
-                System.err.println("@@@@@@@@@@@@@@@@@@@@@@@ CAPI loaded in " + (endTime - startTime) / 1000000.0 + "ms");
-            }
-        }
-    }
-
     @TruffleBoundary
     @SuppressWarnings("try")
-    public static CApiContext ensureCapiWasLoaded0(Node node, PythonContext context, TruffleString name, TruffleString path, String reason) throws IOException, ImportException, ApiInitException {
+    public static CApiContext ensureCapiWasLoaded(Node node, PythonContext context, TruffleString name, TruffleString path, String reason) throws IOException, ImportException, ApiInitException {
         assert PythonContext.get(null).ownsGil(); // unsafe lazy initialization
         // The initialization may run Python code (e.g., module import in
         // GraalPyPrivate_InitBuiltinTypesAndStructs), so just holding the GIL is not enough
@@ -908,8 +895,8 @@ public final class CApiContext extends CExtContext {
             context.ensureNFILanguage(node, "allowNativeAccess", "true");
             int dlopenFlags = isolateNative ? PosixConstants.RTLD_LOCAL.value : PosixConstants.RTLD_GLOBAL.value;
             LOGGER.config(() -> "loading CAPI from " + loc.getCapiLibrary() + " as native");
-            long capiLibrary = Nfi2.loadLibraryUncached(loc.getCapiLibrary(), dlopenFlags);
-            long initFunction = Nfi2.lookupSymbolUncached(capiLibrary, "initialize_graal_capi");
+            long capiLibrary = Nfi.loadLibraryUncached(loc.getCapiLibrary(), dlopenFlags);
+            long initFunction = Nfi.lookupSymbolUncached(capiLibrary, "initialize_graal_capi");
             CApiContext cApiContext = new CApiContext(context, capiLibrary, loc);
             context.setCApiContext(cApiContext);
             context.setCApiState(PythonContext.CApiState.INITIALIZING);
@@ -923,13 +910,13 @@ public final class CApiContext extends CExtContext {
             PythonThreadState currentThreadState = context.getThreadState(context.getLanguage());
             Object nativeThreadState = PThreadState.getOrCreateNativeThreadState(currentThreadState);
 
-            long builtinArrayPtr = Nfi2.malloc(PythonCextBuiltinRegistry.builtins.length * CStructAccess.POINTER_SIZE);
+            long builtinArrayPtr = NativeMemory.malloc(PythonCextBuiltinRegistry.builtins.length * CStructAccess.POINTER_SIZE);
             try {
                 for (int id = 0; id < PythonCextBuiltinRegistry.builtins.length; id++) {
                     CApiBuiltinExecutable builtin = PythonCextBuiltinRegistry.builtins[id];
                     CStructAccess.WritePointerNode.writeArrayElementUncached(builtinArrayPtr, id, builtin.getNativePointer());
                 }
-                NfiSignature initSignature = Nfi2.createSignatureUncached(NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER);
+                NfiSignature initSignature = Nfi.createSignatureUncached(NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER);
                 // TODO(NFI2) ENV parameter
                 // TODO(NFI2) unwrap gcState, should just be a long
                 Object nativeThreadLocalVarPointer = initSignature.invokeUncached(initFunction, 0L, builtinArrayPtr, ((NativePointer) gcState).asPointer(), ((NativePointer) nativeThreadState).asPointer());
@@ -937,7 +924,7 @@ public final class CApiContext extends CExtContext {
                 assert !InteropLibrary.getUncached().isNull(nativeThreadLocalVarPointer);
                 currentThreadState.setNativeThreadLocalVarPointer(nativeThreadLocalVarPointer);
             } finally {
-                Nfi2.free(builtinArrayPtr);
+                NativeMemory.free(builtinArrayPtr);
             }
 
             assert PythonCApiAssertions.assertBuiltins(capiLibrary);
@@ -951,8 +938,8 @@ public final class CApiContext extends CExtContext {
              * it during context exit, but when the VM is terminated by a signal, the context exit
              * is skipped. For that case we set up the shutdown hook.
              */
-            long finalizeFunction = Nfi2.lookupSymbolUncached(capiLibrary, "GraalPyPrivate_GetFinalizeCApiPointer");
-            long finalizingPointer = (long) Nfi2.createSignatureUncached(NfiType.RAW_POINTER).invokeUncached(finalizeFunction);
+            long finalizeFunction = Nfi.lookupSymbolUncached(capiLibrary, "GraalPyPrivate_GetFinalizeCApiPointer");
+            long finalizingPointer = (long) Nfi.createSignatureUncached(NfiType.RAW_POINTER).invokeUncached(finalizeFunction);
             try {
                 cApiContext.addNativeFinalizer(context, finalizingPointer);
             } catch (RuntimeException e) {

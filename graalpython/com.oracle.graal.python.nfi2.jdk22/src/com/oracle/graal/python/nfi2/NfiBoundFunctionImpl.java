@@ -38,45 +38,56 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nfi;
+package com.oracle.graal.python.nfi2;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.util.Supplier;
+import java.lang.invoke.MethodHandle;
+
+import org.graalvm.nativeimage.ForeignFunctions;
+import org.graalvm.nativeimage.ImageInfo;
+
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
 
-public final class NfiDirectClosureRootNode extends RootNode {
+final class NfiBoundFunctionImpl extends NfiBoundFunction {
+    private final long ptr;
+    private final MethodHandle boundHandle;
+    private final NfiSignatureImpl signature;
 
-    final Supplier<NfiClosureBaseNode> closureBaseNodeSupplier;
-    final NfiSignature signature;
-    @Child NfiClosureBaseNode closureNode;
-
-    NfiDirectClosureRootNode(Supplier<NfiClosureBaseNode> closureNode, NfiSignature signature) {
-        super(PythonLanguage.get(null));
-        this.closureBaseNodeSupplier = closureNode;
+    NfiBoundFunctionImpl(long ptr, MethodHandle boundHandle, NfiSignatureImpl signature) {
+        this.ptr = ptr;
+        this.boundHandle = boundHandle;
         this.signature = signature;
     }
 
     @Override
-    public Object execute(VirtualFrame frame) {
-        if (closureNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            closureNode = insert(closureBaseNodeSupplier.get());
-        }
+    public long getAddress() {
+        return ptr;
+    }
+
+    // TODO(NFI2) duplicate code with NfiSignature.invokeUncached
+    @Override
+    @TruffleBoundary
+    public Object invoke(Object... args) throws UnsupportedTypeException, ArityException {
         try {
-            Object[] args = frame.getArguments();
-            Object[] convertedArgs = new Object[args.length];
-            for (int i = 0; i < args.length; i++) {
-                convertedArgs[i] = args[i];
-                // TODO(NFI2) remove wrapping after migration to RAWPOINTER
-                if (signature.getArgTypes()[i] == NfiType.POINTER) {
-                    convertedArgs[i] = new NativePointer((long) convertedArgs[i]);
-                }
+            if (ImageInfo.inImageCode()) {
+                return signature.convertResult(ForeignFunctions.invoke(signature.downcallDescriptor, ptr, signature.convertArgs(args)));
+            } else {
+                return signature.convertResult(boundHandle.invokeExact(signature.convertArgs(args)));
             }
-            return signature.getResType().getConvertArgJavaToNativeNodeUncached().execute(closureNode.execute(convertedArgs));
         } catch (Throwable e) {
+            // TODO(NFI2) proper exception handling
             throw CompilerDirectives.shouldNotReachHere(e);
         }
+    }
+
+    @Override
+    @TruffleBoundary
+    public String toString() {
+        return "NfiBoundFunction[" +
+                        "ptr=" + ptr + ", " +
+                        "boundHandle=" + boundHandle + ", " +
+                        "signature=" + signature + ']';
     }
 }

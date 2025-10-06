@@ -38,27 +38,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nfi;
+package com.oracle.graal.python.nfi2;
 
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.Linker;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
-import java.lang.reflect.Field;
-import java.nio.charset.StandardCharsets;
 
 import org.graalvm.nativeimage.DowncallDescriptor;
 import org.graalvm.nativeimage.ForeignFunctions;
 import org.graalvm.nativeimage.ImageInfo;
 
-import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 
-import sun.misc.Unsafe;
+public final class Nfi {
 
-public final class Nfi2 {
+    // TODO(NFI2) platform-specific values for RTLD_* constants
+    private static final int RTLD_LAZY = 1;
 
     private static final FunctionDescriptor DLOPEN_FUNCTION_DESCRIPTOR = FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG, ValueLayout.JAVA_INT);
     private static final FunctionDescriptor DLSYM_FUNCTION_DESCRIPTOR = FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG);
@@ -97,20 +95,20 @@ public final class Nfi2 {
 
     public static long loadLibraryUncached(String name, int flags) {
         long lib;
-        long nativeName = javaStringToNativeUtf8(name);
+        long nativeName = NativeMemory.javaStringToNativeUtf8(name);
         try {
             ensureDlopenDlsym();
             // TODO(NFI2) only add RTLD_LAZY flag if actually needed
             if (ImageInfo.inImageCode()) {
-                lib = (long) ForeignFunctions.invoke(dlopenDescriptor, dlopenPtr.address(), nativeName, flags | PosixConstants.RTLD_LAZY.value);
+                lib = (long) ForeignFunctions.invoke(dlopenDescriptor, dlopenPtr.address(), nativeName, flags | RTLD_LAZY);
             } else {
-                lib = (long) dlopen.invokeExact(nativeName, flags | PosixConstants.RTLD_LAZY.value);
+                lib = (long) dlopen.invokeExact(nativeName, flags | RTLD_LAZY);
             }
         } catch (Throwable e) {
             // TODO(NFI2) proper exception handling
             throw CompilerDirectives.shouldNotReachHere(e);
         } finally {
-            free(nativeName);
+            NativeMemory.free(nativeName);
         }
         if (lib == 0) {
             throw CompilerDirectives.shouldNotReachHere("Failed to load library " + name);
@@ -120,7 +118,7 @@ public final class Nfi2 {
 
     public static long lookupSymbolUncached(long library, String name) throws UnknownIdentifierException {
         long symbol;
-        long nativeName = javaStringToNativeUtf8(name);
+        long nativeName = NativeMemory.javaStringToNativeUtf8(name);
         try {
             ensureDlopenDlsym();
             if (ImageInfo.inImageCode()) {
@@ -131,7 +129,7 @@ public final class Nfi2 {
         } catch (Throwable e) {
             throw CompilerDirectives.shouldNotReachHere(e);
         } finally {
-            free(nativeName);
+            NativeMemory.free(nativeName);
         }
         if (symbol == 0) {
             throw UnknownIdentifierException.create("symbol " + name + " not found");
@@ -140,42 +138,6 @@ public final class Nfi2 {
     }
 
     public static NfiSignature createSignatureUncached(NfiType resType, NfiType... argTypes) {
-        // TODO(NFI2) should we cache signatures?
-        return new NfiSignature(resType, argTypes);
-    }
-
-    static final Unsafe UNSAFE = initUnsafe();
-
-    private static Unsafe initUnsafe() {
-        try {
-            // Fast path when we are trusted.
-            return Unsafe.getUnsafe();
-        } catch (SecurityException se) {
-            // Slow path when we are not trusted.
-            try {
-                Field theUnsafe = Unsafe.class.getDeclaredField("theUnsafe");
-                theUnsafe.setAccessible(true);
-                return (Unsafe) theUnsafe.get(Unsafe.class);
-            } catch (Exception e) {
-                throw CompilerDirectives.shouldNotReachHere("exception while trying to get Unsafe", e);
-            }
-        }
-    }
-
-    static long javaStringToNativeUtf8(String s) {
-        byte[] utf8 = s.getBytes(StandardCharsets.UTF_8);
-        long ptr = malloc(utf8.length + 1);
-        UNSAFE.copyMemory(utf8, UNSAFE.arrayBaseOffset(byte[].class), null, ptr, utf8.length);
-        UNSAFE.putByte(ptr + utf8.length, (byte) 0);
-        return ptr;
-    }
-
-    public static long malloc(long size) {
-        assert size > 0;
-        return UNSAFE.allocateMemory(size);
-    }
-
-    public static void free(long ptr) {
-        UNSAFE.freeMemory(ptr);
+        return new NfiSignatureImpl(resType, argTypes);
     }
 }

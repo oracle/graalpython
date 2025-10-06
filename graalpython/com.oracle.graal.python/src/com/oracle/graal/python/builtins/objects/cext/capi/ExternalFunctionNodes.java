@@ -103,10 +103,10 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
 import com.oracle.graal.python.lib.RichCmpOp;
-import com.oracle.graal.python.nfi.Nfi2;
-import com.oracle.graal.python.nfi.NfiBoundFunction;
-import com.oracle.graal.python.nfi.NfiSignature;
-import com.oracle.graal.python.nfi.NfiType;
+import com.oracle.graal.python.nfi2.Nfi;
+import com.oracle.graal.python.nfi2.NfiBoundFunction;
+import com.oracle.graal.python.nfi2.NfiSignature;
+import com.oracle.graal.python.nfi2.NfiType;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -400,7 +400,7 @@ public abstract class ExternalFunctionNodes {
             for (int i = 0; i < arguments.length; i++) {
                 nfiTypes[i] = arguments[i].getNFI2Type();
             }
-            this.signature = Nfi2.createSignatureUncached(returnValue.getNFI2Type(), nfiTypes);
+            this.signature = Nfi.createSignatureUncached(returnValue.getNFI2Type(), nfiTypes);
             this.numDefaults = numDefaults;
         }
 

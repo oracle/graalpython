@@ -98,7 +98,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyDictGetItem;
 import com.oracle.graal.python.lib.PyDictSetDefault;
 import com.oracle.graal.python.lib.PyDictSetItem;
-import com.oracle.graal.python.nfi.NfiBoundFunction;
+import com.oracle.graal.python.nfi2.NfiBoundFunction;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;

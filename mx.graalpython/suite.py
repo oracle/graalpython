@@ -241,7 +241,7 @@ suite = {
         "com.oracle.graal.python.pegparser": {
             "subDir": "graalpython",
             "sourceDirs": ["src"],
-            "javaCompliance": "22+",
+            "javaCompliance": "17+",
             "dependencies": [
                 "truffle:TRUFFLE_ICU4J",
             ],
@@ -255,7 +255,7 @@ suite = {
             "subDir": "graalpython",
             "sourceDirs": ["src"],
             "testProject": True,
-            "javaCompliance": "22+",
+            "javaCompliance": "17+",
             "dependencies": [
                 "com.oracle.graal.python.pegparser",
                 "mx:JUNIT",
@@ -288,7 +288,7 @@ suite = {
                 "java.xml",
             ],
             "jacoco": "include",
-            "javaCompliance": "22+",
+            "javaCompliance": "17+",
             "checkstyle": "com.oracle.graal.python",
         },
 
@@ -296,7 +296,7 @@ suite = {
             "subDir": "graalpython",
             "sourceDirs": ["src"],
             "jacoco": "include",
-            "javaCompliance": "22+",
+            "javaCompliance": "17+",
             "checkstyle": "com.oracle.graal.python",
         },
 
@@ -312,7 +312,7 @@ suite = {
                 "jdk.compiler",
             ],
             "jacoco": "exclude",
-            "javaCompliance": "22+",
+            "javaCompliance": "17+",
             "checkstyle": "com.oracle.graal.python",
         },
 
@@ -359,6 +359,44 @@ suite = {
             ],
         },
 
+        # New version of NFI which uses panama directly, available for JDK22+ only
+        "com.oracle.graal.python.nfi2": {
+            "subDir": "graalpython",
+            "sourceDirs": ["src"],
+            "dependencies": [
+                "truffle:TRUFFLE_API",
+            ],
+            "requires": [
+                "java.base",
+                "java.logging",
+                "jdk.unsupported",
+            ],
+            "javaCompliance": "17+",
+            "checkstyle": "com.oracle.graal.python",
+            "annotationProcessors": [
+                "truffle:TRUFFLE_DSL_PROCESSOR"
+            ],
+            "workingSets": "Truffle,Python",
+            "spotbugsIgnoresGenerated": True,
+        },
+
+        "com.oracle.graal.python.nfi2.jdk22": {
+            "overlayTarget": "com.oracle.graal.python.nfi2",
+            "multiReleaseJarVersion": "22",
+            "subDir": "graalpython",
+            "sourceDirs": ["src"],
+            "dependencies": [
+                "com.oracle.graal.python.nfi2",
+            ],
+            "javaCompliance": "22+",
+            "checkstyle": "com.oracle.graal.python",
+            "annotationProcessors": [
+                "truffle:TRUFFLE_DSL_PROCESSOR"
+            ],
+            "workingSets": "Truffle,Python",
+            "spotbugsIgnoresGenerated": True,
+        },
+
         "com.oracle.graal.python.resources": {
             "subDir": "graalpython",
             "sourceDirs": ["src"],
@@ -366,7 +404,7 @@ suite = {
                 "truffle:TRUFFLE_API",
             ],
             "jacoco": "include",
-            "javaCompliance": "22+",
+            "javaCompliance": "17+",
             "checkstyle": "com.oracle.graal.python",
             "annotationProcessors": [
                 "truffle:TRUFFLE_DSL_PROCESSOR"
@@ -383,6 +421,7 @@ suite = {
             "dependencies": [
                 "com.oracle.graal.python.annotations",
                 "com.oracle.graal.python.pegparser",
+                "com.oracle.graal.python.nfi2",
                 "truffle:TRUFFLE_API",
                 "truffle:TRUFFLE_NFI",
                 "tools:TRUFFLE_PROFILER",
@@ -400,7 +439,7 @@ suite = {
                 "jdk.security.auth",
             ],
             "jacoco": "include",
-            "javaCompliance": "22+",
+            "javaCompliance": "17+",
             "checkstyleVersion": "10.7.0",
             "annotationProcessors": [
                 "GRAALPYTHON_PROCESSOR",
@@ -454,7 +493,7 @@ suite = {
             ],
             "jacoco": "exclude",
             "checkstyle": "com.oracle.graal.python",
-            "javaCompliance": "22+",
+            "javaCompliance": "17+",
             "annotationProcessors": [
                 "GRAALPYTHON_PROCESSOR",
                 "truffle:TRUFFLE_DSL_PROCESSOR"
@@ -484,7 +523,7 @@ suite = {
             ],
             "jacoco": "exclude",
             "checkstyle": "com.oracle.graal.python",
-            "javaCompliance": "22+",
+            "javaCompliance": "17+",
             "workingSets": "Truffle,Python",
             "testProject": True,
         },
@@ -504,7 +543,7 @@ suite = {
             ],
             "jacoco": "exclude",
             "checkstyle": "com.oracle.graal.python",
-            "javaCompliance": "22+",
+            "javaCompliance": "17+",
             "annotationProcessors": ["mx:JMH_1_21"],
             "workingSets": "Truffle,Python",
             "spotbugsIgnoresGenerated": True,
@@ -519,7 +558,7 @@ suite = {
                 "mx:JUNIT"
             ],
             "checkstyle": "com.oracle.graal.python",
-            "javaCompliance": "22+",
+            "javaCompliance": "17+",
             "workingSets": "Truffle,Python",
             "jacoco": "exclude",
         },
@@ -1023,6 +1062,26 @@ suite = {
             "maven": False,
         },
 
+        "GRAALPYTHON_NFI2": {
+            "moduleInfo": {
+                "name": "org.graalvm.py.nfi2",
+                "exports": [
+                    "com.oracle.graal.python.nfi2",
+                ],
+            },
+            "dependencies": [
+                "com.oracle.graal.python.nfi2",
+            ],
+            "distDependencies": [
+                "truffle:TRUFFLE_API",
+            ],
+            "requires": [
+                "java.base",
+                "java.logging",
+                "jdk.unsupported",
+            ],
+        },
+
         "GRAALPYTHON_RESOURCES": {
             "platformDependent": False,
             "moduleInfo": {
@@ -1108,6 +1167,7 @@ suite = {
                 "com.oracle.graal.python.frozen",
             ],
             "distDependencies": [
+                "GRAALPYTHON_NFI2",
                 "truffle:TRUFFLE_API",
                 "tools:TRUFFLE_PROFILER",
                 "regex:TREGEX",

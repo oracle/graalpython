@@ -211,7 +211,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.TpSlotN
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.TpSlotVarargsBuiltin;
 import com.oracle.graal.python.lib.PyDictGetItem;
 import com.oracle.graal.python.lib.PyDictSetItem;
-import com.oracle.graal.python.nfi.NfiBoundFunction;
+import com.oracle.graal.python.nfi2.NfiBoundFunction;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;

@@ -38,12 +38,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nfi;
+package com.oracle.graal.python.nfi2;
 
-import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
 
-public abstract class NfiClosureBaseNode extends Node {
+public final class Nfi {
 
-    public abstract Object execute(Object[] args);
+    public static long loadLibraryUncached(String name, int flags) {
+        throw new UnsupportedOperationException();
+    }
 
+    public static long lookupSymbolUncached(long library, String name) throws UnknownIdentifierException {
+        throw new UnsupportedOperationException();
+    }
+
+    public static NfiSignature createSignatureUncached(NfiType resType, NfiType... argTypes) {
+        // TODO(NFI2) should we cache signatures?
+        return new NfiSignature(resType, argTypes);
+    }
 }

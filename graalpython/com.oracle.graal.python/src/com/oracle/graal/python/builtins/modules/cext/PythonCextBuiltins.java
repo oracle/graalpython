@@ -163,10 +163,10 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
-import com.oracle.graal.python.nfi.Nfi2;
-import com.oracle.graal.python.nfi.NfiClosureBaseNode;
-import com.oracle.graal.python.nfi.NfiSignature;
-import com.oracle.graal.python.nfi.NfiType;
+import com.oracle.graal.python.nfi2.Nfi;
+import com.oracle.graal.python.nfi2.NfiClosureBaseNode;
+import com.oracle.graal.python.nfi2.NfiSignature;
+import com.oracle.graal.python.nfi2.NfiType;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
@@ -680,11 +680,11 @@ public final class PythonCextBuiltins {
                     for (int i = 0; i < args.length; i++) {
                         argTypes[i] = args[i].getNFI2Type();
                     }
-                    NfiSignature signature = Nfi2.createSignatureUncached(ret.getNFI2Type(), argTypes);
+                    NfiSignature signature = Nfi.createSignatureUncached(ret.getNFI2Type(), argTypes);
 
                     // TODO(NFI2) use static methods for builtins closures instead of interop
                     // executable
-                    pointer = signature.createDirectClosureUncached(() -> ExecuteCApiBuiltinNode.create(this));
+                    pointer = signature.createDirectClosureUncached(PythonLanguage.get(null), () -> ExecuteCApiBuiltinNode.create(this));
                     context.getCApiContext().setClosurePointer(null, null, this, pointer);
                     LOGGER.finer(CApiBuiltinExecutable.class.getSimpleName() + " toNative: " + id + " / " + name() + " -> " + pointer);
                 } catch (Throwable t) {

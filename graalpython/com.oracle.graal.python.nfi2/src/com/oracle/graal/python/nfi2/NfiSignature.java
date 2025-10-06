@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,18 +38,49 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cext.common;
+package com.oracle.graal.python.nfi2;
 
-import com.oracle.graal.python.nfi2.NfiSignature;
-import com.oracle.truffle.api.strings.TruffleString;
+import java.util.function.Supplier;
 
-public interface NativeCExtSymbol {
-    String getName();
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
 
-    TruffleString getTsName();
+public class NfiSignature {
 
-    /**
-     * Returns the NFI signature.
-     */
-    NfiSignature getSignature();
+    final NfiType resType;
+    final NfiType[] argTypes;
+
+    NfiSignature(NfiType resType, NfiType[] argTypes) {
+        this.resType = resType;
+        this.argTypes = argTypes;
+    }
+
+    public NfiBoundFunction bind(long pointer) {
+        throw new UnsupportedOperationException();
+    }
+
+    public Object invokeUncached(long function, Object... args) throws UnsupportedTypeException, ArityException {
+        throw new UnsupportedOperationException();
+    }
+
+    public long createDirectClosureUncached(TruffleLanguage<?> language, Supplier<NfiClosureBaseNode> closureNode) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    @TruffleBoundary
+    public String toString() {
+        StringBuilder sb = new StringBuilder("(");
+        for (int i = 0; i < argTypes.length; i++) {
+            if (i > 0) {
+                sb.append(", ");
+            }
+            sb.append(argTypes[i]);
+        }
+        sb.append("): ");
+        sb.append(resType);
+        return sb.toString();
+    }
 }

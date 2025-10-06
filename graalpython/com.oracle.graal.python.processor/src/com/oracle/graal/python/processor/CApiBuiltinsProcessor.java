@@ -686,7 +686,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                             package %s;
 
                             import java.util.TreeSet;
-                            import com.oracle.graal.python.nfi.Nfi2;
+                            import com.oracle.graal.python.nfi2.Nfi;
                             import com.oracle.truffle.api.CompilerDirectives;
                             import com.oracle.truffle.api.interop.InteropLibrary;
                             import com.oracle.truffle.api.interop.UnknownIdentifierException;
@@ -700,7 +700,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
 
                                 public static boolean reallyHasMember(long capiLibrary, String name) {
                                     try {
-                                        Nfi2.lookupSymbolUncached(capiLibrary, name);
+                                        Nfi.lookupSymbolUncached(capiLibrary, name);
                                     } catch (UnknownIdentifierException e) {
                                         return false;
                                     }

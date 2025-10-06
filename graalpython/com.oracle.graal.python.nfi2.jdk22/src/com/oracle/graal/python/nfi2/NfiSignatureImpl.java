@@ -38,46 +38,45 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nfi;
+package com.oracle.graal.python.nfi2;
+
+import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.Linker;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.util.function.Supplier;
 
 import org.graalvm.nativeimage.DowncallDescriptor;
 import org.graalvm.nativeimage.ForeignFunctions;
 import org.graalvm.nativeimage.ImageInfo;
 
-import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.RootNode;
 
-public final class NfiSignature {
+final class NfiSignatureImpl extends NfiSignature {
 
-    static final MethodType INTEROP_METHOD_TYPE = MethodType.methodType(Object.class, Object.class, Object[].class);
     static final MethodType DIRECT_METHOD_TYPE = MethodType.methodType(Object.class, Object[].class);
     static final MethodType DOWNCALL_METHOD_TYPE = MethodType.methodType(Object.class, new Class<?>[]{MemorySegment.class, Object[].class});
 
-    private final NfiType resType;
-    private final NfiType[] argTypes;
     private MethodHandle downcallMethodHandle;
     private FunctionDescriptor functionDescriptor;
-    private MethodType interopUpcallMethodType;
     private MethodType directUpcallMethodType;
     final DowncallDescriptor downcallDescriptor;
 
-    NfiSignature(NfiType resType, NfiType[] argTypes) {
-        this.resType = resType;
-        this.argTypes = argTypes;
+    NfiSignatureImpl(NfiType resType, NfiType[] argTypes) {
+        super(resType, argTypes);
         if (ImageInfo.inImageCode()) {
             downcallDescriptor = ForeignFunctions.getDowncallDescriptor(getFunctionDescriptor());
         } else {
@@ -85,34 +84,12 @@ public final class NfiSignature {
         }
     }
 
-    NfiType getResType() {
-        return resType;
-    }
-
-    NfiType[] getArgTypes() {
-        return argTypes;
-    }
-
     @Override
-    @TruffleBoundary
-    public String toString() {
-        StringBuilder sb = new StringBuilder("(");
-        for (int i = 0; i < argTypes.length; i++) {
-            if (i > 0) {
-                sb.append(", ");
-            }
-            sb.append(argTypes[i]);
-        }
-        sb.append("): ");
-        sb.append(resType);
-        return sb.toString();
-    }
-
     public NfiBoundFunction bind(long pointer) {
         if (ImageInfo.inImageCode()) {
-            return new NfiBoundFunction(pointer, null, this);
+            return new NfiBoundFunctionImpl(pointer, null, this);
         }
-        return new NfiBoundFunction(pointer, getDowncallMethodHandle().bindTo(MemorySegment.ofAddress(pointer)), this);
+        return new NfiBoundFunctionImpl(pointer, getDowncallMethodHandle().bindTo(MemorySegment.ofAddress(pointer)), this);
     }
 
     Object[] convertArgs(Object[] args) throws ArityException, UnsupportedTypeException {
@@ -134,6 +111,7 @@ public final class NfiSignature {
         return r;
     }
 
+    @Override
     @TruffleBoundary
     public Object invokeUncached(long function, Object... args) throws ArityException, UnsupportedTypeException {
         try {
@@ -148,33 +126,11 @@ public final class NfiSignature {
         }
     }
 
+    @Override
     @SuppressWarnings("restricted")
     @TruffleBoundary
-    public long createInteropClosureUncached(Object executable) {
-        // TODO(NFI2) remove once we are sure that all closures are direct nodes instead of interop
-        // executables
-        RootNode rootNode = new NfiInteropClosureRootNode(this);
-        // TODO(NFI2) SVM needs this handle to be a static method
-        MethodHandle handle = handle_CallTarget_call.bindTo(rootNode.getCallTarget());
-        handle = handle.asCollector(Object[].class, 2).asType(INTEROP_METHOD_TYPE).asVarargsCollector(Object[].class);
-        if (interopUpcallMethodType == null) {
-            Class<?>[] javaArgTypes = new Class<?>[argTypes.length + 1];
-            javaArgTypes[0] = Object.class;
-            for (int i = 0; i < argTypes.length; i++) {
-                javaArgTypes[i + 1] = argTypes[i].asJavaType();
-            }
-            interopUpcallMethodType = MethodType.methodType(resType.asJavaType(), javaArgTypes);
-        }
-        handle = handle.asType(interopUpcallMethodType);
-        handle = handle.bindTo(executable);
-        // TODO(NFI2) per-context or closure-specific Arena
-        return Linker.nativeLinker().upcallStub(handle, getFunctionDescriptor(), Arena.global()).address();
-    }
-
-    @SuppressWarnings("restricted")
-    @TruffleBoundary
-    public long createDirectClosureUncached(Supplier<NfiClosureBaseNode> closureNode) {
-        RootNode rootNode = new NfiDirectClosureRootNode(closureNode, this);
+    public long createDirectClosureUncached(TruffleLanguage<?> language, Supplier<NfiClosureBaseNode> closureNode) {
+        RootNode rootNode = new NfiDirectClosureRootNode(language, closureNode, this);
         // TODO(NFI2) SVM needs this handle to be a static method
         MethodHandle handle = handle_CallTarget_call.bindTo(rootNode.getCallTarget());
         handle = handle.asType(DIRECT_METHOD_TYPE).asVarargsCollector(Object[].class);
@@ -205,11 +161,24 @@ public final class NfiSignature {
         if (functionDescriptor == null) {
             MemoryLayout[] argLayouts = new MemoryLayout[argTypes.length];
             for (int i = 0; i < argTypes.length; i++) {
-                argLayouts[i] = argTypes[i].asLayout();
+                argLayouts[i] = asLayout(argTypes[i]);
             }
-            functionDescriptor = resType == NfiType.VOID ? FunctionDescriptor.ofVoid(argLayouts) : FunctionDescriptor.of(resType.asLayout(), argLayouts);
+            functionDescriptor = resType == NfiType.VOID ? FunctionDescriptor.ofVoid(argLayouts) : FunctionDescriptor.of(asLayout(resType), argLayouts);
         }
         return functionDescriptor;
+    }
+
+    private static MemoryLayout asLayout(NfiType type) {
+        return switch (type) {
+            case VOID -> throw shouldNotReachHere("VOID has no layout");
+            case SINT8 -> ValueLayout.JAVA_BYTE;
+            case SINT16 -> ValueLayout.JAVA_SHORT;
+            case SINT32 -> ValueLayout.JAVA_INT;
+            case SINT64 -> ValueLayout.JAVA_LONG;
+            case FLOAT -> ValueLayout.JAVA_FLOAT;
+            case DOUBLE -> ValueLayout.JAVA_DOUBLE;
+            case POINTER, RAW_POINTER -> ValueLayout.JAVA_LONG;
+        };
     }
 
     static final MethodHandle handle_CallTarget_call;

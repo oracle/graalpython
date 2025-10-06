@@ -65,7 +65,7 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactor
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.WriteIntNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.WriteLongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.WritePointerNodeGen;
-import com.oracle.graal.python.nfi.NfiBoundFunction;
+import com.oracle.graal.python.nfi2.NfiBoundFunction;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;

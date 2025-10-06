@@ -56,9 +56,9 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
-import com.oracle.graal.python.nfi.Nfi2;
-import com.oracle.graal.python.nfi.NfiSignature;
-import com.oracle.graal.python.nfi.NfiType;
+import com.oracle.graal.python.nfi2.Nfi;
+import com.oracle.graal.python.nfi2.NfiSignature;
+import com.oracle.graal.python.nfi2.NfiType;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -158,7 +158,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
         for (int i = 0; i < arguments.length; i++) {
             nfiTypes[i] = arguments[i].getNFI2Type();
         }
-        this.signature = Nfi2.createSignatureUncached(returnValue.getNFI2Type(), nfiTypes);
+        this.signature = Nfi.createSignatureUncached(returnValue.getNFI2Type(), nfiTypes);
     }
 
     NativeCAPISymbol(String name) {

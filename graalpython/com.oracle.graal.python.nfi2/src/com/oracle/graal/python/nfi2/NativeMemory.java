@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,18 +38,52 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cext.common;
+package com.oracle.graal.python.nfi2;
 
-import com.oracle.graal.python.nfi2.NfiSignature;
-import com.oracle.truffle.api.strings.TruffleString;
+import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
 
-public interface NativeCExtSymbol {
-    String getName();
+import com.oracle.truffle.api.CompilerDirectives;
 
-    TruffleString getTsName();
+import sun.misc.Unsafe;
 
-    /**
-     * Returns the NFI signature.
-     */
-    NfiSignature getSignature();
+public final class NativeMemory {
+
+    static final Unsafe UNSAFE = initUnsafe();
+
+    private NativeMemory() {
+    }
+
+    public static long malloc(long size) {
+        assert size > 0;
+        return UNSAFE.allocateMemory(size);
+    }
+
+    public static void free(long ptr) {
+        UNSAFE.freeMemory(ptr);
+    }
+
+    public static long javaStringToNativeUtf8(String s) {
+        byte[] utf8 = s.getBytes(StandardCharsets.UTF_8);
+        long ptr = NativeMemory.malloc(utf8.length + 1);
+        UNSAFE.copyMemory(utf8, UNSAFE.arrayBaseOffset(byte[].class), null, ptr, utf8.length);
+        UNSAFE.putByte(ptr + utf8.length, (byte) 0);
+        return ptr;
+    }
+
+    private static Unsafe initUnsafe() {
+        try {
+            // Fast path when we are trusted.
+            return Unsafe.getUnsafe();
+        } catch (SecurityException se) {
+            // Slow path when we are not trusted.
+            try {
+                Field theUnsafe = Unsafe.class.getDeclaredField("theUnsafe");
+                theUnsafe.setAccessible(true);
+                return (Unsafe) theUnsafe.get(Unsafe.class);
+            } catch (Exception e) {
+                throw CompilerDirectives.shouldNotReachHere("exception while trying to get Unsafe", e);
+            }
+        }
+    }
 }

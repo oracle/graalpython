@@ -38,54 +38,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nfi;
+package com.oracle.graal.python.nfi2;
 
-import java.lang.invoke.MethodHandle;
-
-import org.graalvm.nativeimage.ForeignFunctions;
-import org.graalvm.nativeimage.ImageInfo;
-
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 
-public final class NfiBoundFunction {
-    private final long ptr;
-    private final MethodHandle boundHandle;
-    private final NfiSignature signature;
+public abstract class NfiBoundFunction {
 
-    NfiBoundFunction(long ptr, MethodHandle boundHandle, NfiSignature signature) {
-        this.ptr = ptr;
-        this.boundHandle = boundHandle;
-        this.signature = signature;
+    protected NfiBoundFunction() {
     }
 
-    public long getAddress() {
-        return ptr;
-    }
+    public abstract long getAddress();
 
-    // TODO(NFI2) duplicate code with NfiSignature.invokeUncached
-    @TruffleBoundary
-    public Object invoke(Object... args) throws UnsupportedTypeException, ArityException {
-        try {
-            if (ImageInfo.inImageCode()) {
-                return signature.convertResult(ForeignFunctions.invoke(signature.downcallDescriptor, ptr, signature.convertArgs(args)));
-            } else {
-                return signature.convertResult(boundHandle.invokeExact(signature.convertArgs(args)));
-            }
-        } catch (Throwable e) {
-            // TODO(NFI2) proper exception handling
-            throw CompilerDirectives.shouldNotReachHere(e);
-        }
-    }
-
-    @Override
-    @TruffleBoundary
-    public String toString() {
-        return "NfiBoundFunction[" +
-                        "ptr=" + ptr + ", " +
-                        "boundHandle=" + boundHandle + ", " +
-                        "signature=" + signature + ']';
-    }
+    public abstract Object invoke(Object... args) throws UnsupportedTypeException, ArityException;
 }

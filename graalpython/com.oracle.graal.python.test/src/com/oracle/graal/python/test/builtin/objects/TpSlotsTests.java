@@ -51,8 +51,8 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots.TpSlotGroup;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.TpSlotMeta;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
-import com.oracle.graal.python.nfi.Nfi2;
-import com.oracle.graal.python.nfi.NfiType;
+import com.oracle.graal.python.nfi2.Nfi;
+import com.oracle.graal.python.nfi2.NfiType;
 import com.oracle.graal.python.util.Function;
 
 public class TpSlotsTests {
@@ -141,7 +141,7 @@ public class TpSlotsTests {
     // verify that the slot values were properly assigned to the right fields of TpSlots
     // record
     private static TpSlotNative createCExtSlot(TpSlotMeta def) {
-        return TpSlotNative.createCExtSlot(Nfi2.createSignatureUncached(NfiType.VOID).bind(def.ordinal()));
+        return TpSlotNative.createCExtSlot(Nfi.createSignatureUncached(NfiType.VOID).bind(def.ordinal()));
     }
 
     private static void checkSlotValue(TpSlotMeta def, TpSlot slotValue) {

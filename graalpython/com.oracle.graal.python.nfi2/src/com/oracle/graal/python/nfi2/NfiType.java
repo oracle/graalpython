@@ -38,12 +38,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nfi;
-
-import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
-
-import java.lang.foreign.MemoryLayout;
-import java.lang.foreign.ValueLayout;
+package com.oracle.graal.python.nfi2;
 
 public enum NfiType {
     VOID,
@@ -55,19 +50,6 @@ public enum NfiType {
     DOUBLE,
     POINTER,        // arg can be interop pointer, retval is wrapped in NativePointer
     RAW_POINTER;    // arg must be long, retval is long
-
-    MemoryLayout asLayout() {
-        return switch (this) {
-            case VOID -> throw shouldNotReachHere("VOID has no layout");
-            case SINT8 -> ValueLayout.JAVA_BYTE;
-            case SINT16 -> ValueLayout.JAVA_SHORT;
-            case SINT32 -> ValueLayout.JAVA_INT;
-            case SINT64 -> ValueLayout.JAVA_LONG;
-            case FLOAT -> ValueLayout.JAVA_FLOAT;
-            case DOUBLE -> ValueLayout.JAVA_DOUBLE;
-            case POINTER, RAW_POINTER -> ValueLayout.JAVA_LONG;
-        };
-    }
 
     Class<?> asJavaType() {
         return switch (this) {

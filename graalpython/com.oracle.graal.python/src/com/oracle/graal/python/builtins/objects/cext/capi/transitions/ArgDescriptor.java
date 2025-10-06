@@ -57,7 +57,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
-import com.oracle.graal.python.nfi.NfiType;
+import com.oracle.graal.python.nfi2.NfiType;
 import com.oracle.graal.python.util.Supplier;
 
 enum ArgBehavior {
