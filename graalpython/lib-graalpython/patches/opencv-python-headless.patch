@@ -1,0 +1,13 @@
+diff --git a/opencv/modules/python/package/cv2/__init__.py b/opencv/modules/python/package/cv2/__init__.py
+index 5dee1b7..de7af43 100644
+--- a/opencv/modules/python/package/cv2/__init__.py
++++ b/opencv/modules/python/package/cv2/__init__.py
+@@ -149,6 +149,8 @@ import stat
+     if DEBUG: print("Relink everything from native cv2 module to cv2 package")
+ 
+     py_module = sys.modules.pop("cv2")
++    if os.path.exists(os.path.join(*py_module.__path__, "cv2.abi3.so")):
++        os.rename(os.path.join(*py_module.__path__, "cv2.abi3.so"), os.path.join(*py_module.__path__, "cv2.so"))
+ 
+     native_module = importlib.import_module("cv2")
+ 
