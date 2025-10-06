@@ -51,7 +51,6 @@ import org.graalvm.nativeimage.ForeignFunctions;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
 
 public final class Nfi {
 
@@ -93,6 +92,14 @@ public final class Nfi {
         }
     }
 
+    public static long lookupSymbolUncached(long library, String name) {
+        long symbol = lookupOptionalSymbolUncached(library, name);
+        if (symbol == 0) {
+            throw CompilerDirectives.shouldNotReachHere("symbol not found: " + name);
+        }
+        return symbol;
+    }
+
     public static long loadLibraryUncached(String name, int flags) {
         long lib;
         long nativeName = NativeMemory.javaStringToNativeUtf8(name);
@@ -116,25 +123,20 @@ public final class Nfi {
         return lib;
     }
 
-    public static long lookupSymbolUncached(long library, String name) throws UnknownIdentifierException {
-        long symbol;
+    public static long lookupOptionalSymbolUncached(long library, String name) {
         long nativeName = NativeMemory.javaStringToNativeUtf8(name);
         try {
             ensureDlopenDlsym();
             if (ImageInfo.inImageCode()) {
-                symbol = (long) ForeignFunctions.invoke(dlsymDescriptor, dlsymPtr.address(), library, nativeName);
+                return (long) ForeignFunctions.invoke(dlsymDescriptor, dlsymPtr.address(), library, nativeName);
             } else {
-                symbol = (long) dlsym.invokeExact(library, nativeName);
+                return (long) dlsym.invokeExact(library, nativeName);
             }
         } catch (Throwable e) {
             throw CompilerDirectives.shouldNotReachHere(e);
         } finally {
             NativeMemory.free(nativeName);
         }
-        if (symbol == 0) {
-            throw UnknownIdentifierException.create("symbol " + name + " not found");
-        }
-        return symbol;
     }
 
     public static NfiSignature createSignatureUncached(NfiType resType, NfiType... argTypes) {

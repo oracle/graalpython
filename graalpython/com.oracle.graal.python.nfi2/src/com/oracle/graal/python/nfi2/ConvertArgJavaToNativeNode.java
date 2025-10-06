@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.nfi2;
 
+import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
+
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -47,7 +49,6 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
@@ -55,7 +56,7 @@ import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 // TODO(NFI2) remove or replace with a simple function, we probably use interop only for widening conversions
 abstract class ConvertArgJavaToNativeNode extends Node {
 
-    abstract Object execute(Object originalArg) throws UnsupportedTypeException;
+    abstract Object execute(Object originalArg);
 
     @GenerateUncached
     @GenerateInline(false)
@@ -78,11 +79,11 @@ abstract class ConvertArgJavaToNativeNode extends Node {
 
         @Specialization(limit = "3")
         long doConvert(Object value,
-                        @CachedLibrary("value") InteropLibrary interop) throws UnsupportedTypeException {
+                        @CachedLibrary("value") InteropLibrary interop) {
             try {
                 return interop.asLong(value);
             } catch (UnsupportedMessageException ex) {
-                throw UnsupportedTypeException.create(new Object[]{value});
+                throw shouldNotReachHere(ex);
             }
         }
     }
@@ -98,11 +99,11 @@ abstract class ConvertArgJavaToNativeNode extends Node {
 
         @Specialization(limit = "3")
         byte doConvert(Object value,
-                        @CachedLibrary("value") InteropLibrary interop) throws UnsupportedTypeException {
+                        @CachedLibrary("value") InteropLibrary interop) {
             try {
                 return interop.asByte(value);
             } catch (UnsupportedMessageException ex) {
-                throw UnsupportedTypeException.create(new Object[]{value});
+                throw shouldNotReachHere(ex);
             }
         }
     }
@@ -118,11 +119,11 @@ abstract class ConvertArgJavaToNativeNode extends Node {
 
         @Specialization(limit = "3")
         short doConvert(Object value,
-                        @CachedLibrary("value") InteropLibrary interop) throws UnsupportedTypeException {
+                        @CachedLibrary("value") InteropLibrary interop) {
             try {
                 return interop.asShort(value);
             } catch (UnsupportedMessageException ex) {
-                throw UnsupportedTypeException.create(new Object[]{value});
+                throw shouldNotReachHere(ex);
             }
         }
     }
@@ -138,11 +139,11 @@ abstract class ConvertArgJavaToNativeNode extends Node {
 
         @Specialization(limit = "3")
         int doConvert(Object value,
-                        @CachedLibrary("value") InteropLibrary interop) throws UnsupportedTypeException {
+                        @CachedLibrary("value") InteropLibrary interop) {
             try {
                 return interop.asInt(value);
             } catch (UnsupportedMessageException ex) {
-                throw UnsupportedTypeException.create(new Object[]{value});
+                throw shouldNotReachHere(ex);
             }
         }
     }
@@ -158,11 +159,11 @@ abstract class ConvertArgJavaToNativeNode extends Node {
 
         @Specialization(limit = "3")
         long doConvert(Object value,
-                        @CachedLibrary("value") InteropLibrary interop) throws UnsupportedTypeException {
+                        @CachedLibrary("value") InteropLibrary interop) {
             try {
                 return interop.asLong(value);
             } catch (UnsupportedMessageException ex) {
-                throw UnsupportedTypeException.create(new Object[]{value});
+                throw shouldNotReachHere(ex);
             }
         }
     }
@@ -178,11 +179,11 @@ abstract class ConvertArgJavaToNativeNode extends Node {
 
         @Specialization(limit = "3")
         float doConvert(Object value,
-                        @CachedLibrary("value") InteropLibrary interop) throws UnsupportedTypeException {
+                        @CachedLibrary("value") InteropLibrary interop) {
             try {
                 return interop.asFloat(value);
             } catch (UnsupportedMessageException ex) {
-                throw UnsupportedTypeException.create(new Object[]{value});
+                throw shouldNotReachHere(ex);
             }
         }
     }
@@ -198,11 +199,11 @@ abstract class ConvertArgJavaToNativeNode extends Node {
 
         @Specialization(limit = "3")
         double doConvert(Object value,
-                        @CachedLibrary("value") InteropLibrary interop) throws UnsupportedTypeException {
+                        @CachedLibrary("value") InteropLibrary interop) {
             try {
                 return interop.asDouble(value);
             } catch (UnsupportedMessageException ex) {
-                throw UnsupportedTypeException.create(new Object[]{value});
+                throw shouldNotReachHere(ex);
             }
         }
     }
@@ -210,8 +211,6 @@ abstract class ConvertArgJavaToNativeNode extends Node {
     @GenerateUncached
     @GenerateInline(false)
     abstract static class ToPointerNode extends ConvertArgJavaToNativeNode {
-
-        abstract long executeLong(Object value) throws UnsupportedTypeException;
 
         @Specialization
         long doLong(long value) {
@@ -239,7 +238,7 @@ abstract class ConvertArgJavaToNativeNode extends Node {
         static long putGeneric(Object arg,
                         @Bind Node node,
                         @CachedLibrary("arg") InteropLibrary interop,
-                        @Cached InlinedBranchProfile exception) throws UnsupportedTypeException {
+                        @Cached InlinedBranchProfile exception) {
             try {
                 if (!interop.isPointer(arg)) {
                     interop.toNative(arg);
@@ -262,7 +261,7 @@ abstract class ConvertArgJavaToNativeNode extends Node {
                     // fallthrough
                 }
             }
-            throw UnsupportedTypeException.create(new Object[]{arg});
+            throw shouldNotReachHere();
         }
     }
 

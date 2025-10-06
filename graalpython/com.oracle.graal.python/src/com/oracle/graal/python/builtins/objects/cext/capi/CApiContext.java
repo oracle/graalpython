@@ -569,14 +569,10 @@ public final class CApiContext extends CExtContext {
     private static NfiBoundFunction lookupNativeSymbol(NfiBoundFunction[] nativeSymbolCache, NativeCAPISymbol symbol) {
         CompilerAsserts.neverPartOfCompilation();
         String name = symbol.getName();
-        try {
-            long nativeSymbolPtr = Nfi.lookupSymbolUncached(PythonContext.get(null).getCApiContext().getLibrary(), name);
-            NfiBoundFunction nativeSymbol = symbol.getSignature().bind(nativeSymbolPtr);
-            VarHandle.storeStoreFence();
-            return nativeSymbolCache[symbol.ordinal()] = nativeSymbol;
-        } catch (UnknownIdentifierException e) {
-            throw CompilerDirectives.shouldNotReachHere(e);
-        }
+        long nativeSymbolPtr = Nfi.lookupSymbolUncached(PythonContext.get(null).getCApiContext().getLibrary(), name);
+        NfiBoundFunction nativeSymbol = symbol.getSignature().bind(nativeSymbolPtr);
+        VarHandle.storeStoreFence();
+        return nativeSymbolCache[symbol.ordinal()] = nativeSymbol;
     }
 
     @SuppressWarnings("unused")
@@ -953,7 +949,7 @@ public final class CApiContext extends CExtContext {
              * Python exceptions that occur during the C API initialization are just passed through
              */
             throw e;
-        } catch (RuntimeException | ArityException | UnknownIdentifierException | UnsupportedTypeException e) {
+        } catch (RuntimeException e) {
             // we cannot really check if we truly need native access, so
             // when the abi contains "managed" we assume we do not
             if (!libName.contains("managed") && !context.isNativeAccessAllowed()) {

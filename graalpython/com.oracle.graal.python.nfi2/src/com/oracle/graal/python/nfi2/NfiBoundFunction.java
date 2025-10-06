@@ -40,9 +40,6 @@
  */
 package com.oracle.graal.python.nfi2;
 
-import com.oracle.truffle.api.interop.ArityException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
-
 public abstract class NfiBoundFunction {
 
     protected NfiBoundFunction() {
@@ -50,5 +47,5 @@ public abstract class NfiBoundFunction {
 
     public abstract long getAddress();
 
-    public abstract Object invoke(Object... args) throws UnsupportedTypeException, ArityException;
+    public abstract Object invoke(Object... args);
 }

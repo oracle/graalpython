@@ -47,8 +47,6 @@ import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.interop.ArityException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
 
 final class NfiBoundFunctionImpl extends NfiBoundFunction {
     private final long ptr;
@@ -69,7 +67,7 @@ final class NfiBoundFunctionImpl extends NfiBoundFunction {
     // TODO(NFI2) duplicate code with NfiSignature.invokeUncached
     @Override
     @TruffleBoundary
-    public Object invoke(Object... args) throws UnsupportedTypeException, ArityException {
+    public Object invoke(Object... args) {
         try {
             if (ImageInfo.inImageCode()) {
                 return signature.convertResult(ForeignFunctions.invoke(signature.downcallDescriptor, ptr, signature.convertArgs(args)));

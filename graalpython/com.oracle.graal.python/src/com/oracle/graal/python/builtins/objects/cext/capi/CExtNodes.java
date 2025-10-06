@@ -238,13 +238,9 @@ public abstract class CExtNodes {
                         @Cached PythonToNativeNode toSulongNode,
                         @Cached NativeToPythonTransferNode toJavaNode) {
             assert TypeNodes.NeedsNativeAllocationNode.executeUncached(object);
-            try {
-                NfiBoundFunction callable = CApiContext.getNativeSymbol(inliningTarget, getFunction());
-                Object result = callable.invoke(toSulongNode.execute(object), arg);
-                return toJavaNode.execute(result);
-            } catch (UnsupportedTypeException | ArityException e) {
-                throw shouldNotReachHere("C subtype_new function failed", e);
-            }
+            NfiBoundFunction callable = CApiContext.getNativeSymbol(inliningTarget, getFunction());
+            Object result = callable.invoke(toSulongNode.execute(object), arg);
+            return toJavaNode.execute(result);
         }
     }
 
@@ -616,12 +612,8 @@ public abstract class CExtNodes {
             CompilerAsserts.partialEvaluationConstant(op);
             long ptrA = normalizeA.execute(inliningTarget, a);
             long ptrB = normalizeB.execute(inliningTarget, b);
-            try {
-                NfiBoundFunction sym = CApiContext.getNativeSymbol(inliningTarget, FUN_PTR_COMPARE);
-                return (int) sym.invoke(ptrA, ptrB, op.asNative()) != 0;
-            } catch (UnsupportedTypeException | ArityException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
+            NfiBoundFunction sym = CApiContext.getNativeSymbol(inliningTarget, FUN_PTR_COMPARE);
+            return (int) sym.invoke(ptrA, ptrB, op.asNative()) != 0;
         }
 
         @TypeSystemReference(PythonIntegerTypes.class)
@@ -845,20 +837,15 @@ public abstract class CExtNodes {
         static Object doWithoutContext(NativeCAPISymbol symbol, Object[] args,
                         @Bind Node inliningTarget,
                         @Cached EnsureTruffleStringNode ensureTruffleStringNode) {
-            try {
-                PythonContext pythonContext = PythonContext.get(inliningTarget);
+            PythonContext pythonContext = PythonContext.get(inliningTarget);
                 PythonContext.CApiState capiState = pythonContext.getCApiState();
                 if (capiState != PythonContext.CApiState.INITIALIZING && capiState != PythonContext.CApiState.INITIALIZED) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    CApiContext.ensureCapiWasLoaded("call internal native GraalPy function");
-                }
-                // TODO review EnsureTruffleStringNode with GR-37896
-                NfiBoundFunction callable = CApiContext.getNativeSymbol(inliningTarget, symbol);
-                return ensureTruffleStringNode.execute(inliningTarget, callable.invoke(args));
-            } catch (UnsupportedTypeException | ArityException e) {
-                // consider these exceptions to be fatal internal errors
-                throw shouldNotReachHere(e);
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                CApiContext.ensureCapiWasLoaded("call internal native GraalPy function");
             }
+            // TODO review EnsureTruffleStringNode with GR-37896
+            NfiBoundFunction callable = CApiContext.getNativeSymbol(inliningTarget, symbol);
+            return ensureTruffleStringNode.execute(inliningTarget, callable.invoke(args));
         }
 
         @NeverDefault

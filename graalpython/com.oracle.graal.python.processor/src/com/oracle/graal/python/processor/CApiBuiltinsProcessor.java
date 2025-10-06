@@ -689,7 +689,6 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                             import com.oracle.graal.python.nfi2.Nfi;
                             import com.oracle.truffle.api.CompilerDirectives;
                             import com.oracle.truffle.api.interop.InteropLibrary;
-                            import com.oracle.truffle.api.interop.UnknownIdentifierException;
                             import com.oracle.truffle.api.interop.UnsupportedMessageException;
 
                             public abstract class PythonCApiAssertions {
@@ -699,12 +698,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                                 }
 
                                 public static boolean reallyHasMember(long capiLibrary, String name) {
-                                    try {
-                                        Nfi.lookupSymbolUncached(capiLibrary, name);
-                                    } catch (UnknownIdentifierException e) {
-                                        return false;
-                                    }
-                                    return true;
+                                    return Nfi.lookupOptionalSymbolUncached(capiLibrary, name) != 0L;
                                 }
 
                                 /**

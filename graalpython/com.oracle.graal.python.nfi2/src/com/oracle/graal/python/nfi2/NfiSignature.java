@@ -44,8 +44,6 @@ import java.util.function.Supplier;
 
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage;
-import com.oracle.truffle.api.interop.ArityException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
 
 public class NfiSignature {
 
@@ -61,7 +59,7 @@ public class NfiSignature {
         throw new UnsupportedOperationException();
     }
 
-    public Object invokeUncached(long function, Object... args) throws UnsupportedTypeException, ArityException {
+    public Object invokeUncached(long function, Object... args) {
         throw new UnsupportedOperationException();
     }
 

@@ -61,8 +61,6 @@ import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage;
-import com.oracle.truffle.api.interop.ArityException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.RootNode;
 
 final class NfiSignatureImpl extends NfiSignature {
@@ -92,9 +90,9 @@ final class NfiSignatureImpl extends NfiSignature {
         return new NfiBoundFunctionImpl(pointer, getDowncallMethodHandle().bindTo(MemorySegment.ofAddress(pointer)), this);
     }
 
-    Object[] convertArgs(Object[] args) throws ArityException, UnsupportedTypeException {
+    Object[] convertArgs(Object[] args) {
         if (args.length != argTypes.length) {
-            throw ArityException.create(argTypes.length, argTypes.length, args.length);
+            throw shouldNotReachHere("invalid number of arguments");
         }
         Object[] convertedArgs = new Object[args.length];
         for (int i = 0; i < args.length; i++) {
@@ -113,7 +111,7 @@ final class NfiSignatureImpl extends NfiSignature {
 
     @Override
     @TruffleBoundary
-    public Object invokeUncached(long function, Object... args) throws ArityException, UnsupportedTypeException {
+    public Object invokeUncached(long function, Object... args) {
         try {
             if (ImageInfo.inImageCode()) {
                 return convertResult(ForeignFunctions.invoke(downcallDescriptor, function, convertArgs(args)));
@@ -121,7 +119,6 @@ final class NfiSignatureImpl extends NfiSignature {
                 return convertResult(getDowncallMethodHandle().invokeExact(MemorySegment.ofAddress(function), convertArgs(args)));
             }
         } catch (Throwable e) {
-            // TODO(NFI2) proper exception handling
             throw CompilerDirectives.shouldNotReachHere(e);
         }
     }

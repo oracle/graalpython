@@ -40,15 +40,17 @@
  */
 package com.oracle.graal.python.nfi2;
 
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
-
 public final class Nfi {
 
     public static long loadLibraryUncached(String name, int flags) {
         throw new UnsupportedOperationException();
     }
 
-    public static long lookupSymbolUncached(long library, String name) throws UnknownIdentifierException {
+    public static long lookupSymbolUncached(long library, String name) {
+        throw new UnsupportedOperationException();
+    }
+
+    public static long lookupOptionalSymbolUncached(long library, String name) {
         throw new UnsupportedOperationException();
     }
 

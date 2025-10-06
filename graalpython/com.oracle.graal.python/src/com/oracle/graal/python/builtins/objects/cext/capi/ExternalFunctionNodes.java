@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper.MANAGED_REFCNT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.InitResult;
@@ -155,10 +154,8 @@ import com.oracle.truffle.api.dsl.InlineSupport.StateField;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
@@ -732,7 +729,7 @@ public abstract class ExternalFunctionNodes {
         }
 
         @Specialization
-        static Object invoke(VirtualFrame frame, Node inliningTarget, PythonThreadState threadState, CApiTiming timing, TruffleString name, NfiBoundFunction callable, Object[] cArguments,
+        static Object invoke(VirtualFrame frame, PythonThreadState threadState, CApiTiming timing, @SuppressWarnings("unused") TruffleString name, NfiBoundFunction callable, Object[] cArguments,
                         @Cached(value = "createFor($node)", uncached = "getUncached()") IndirectCallData indirectCallData) {
 
             // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store
@@ -742,12 +739,6 @@ public abstract class ExternalFunctionNodes {
             CApiTiming.enter();
             try {
                 return callable.invoke(cArguments);
-            } catch (UnsupportedTypeException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CALLING_NATIVE_FUNC_FAILED, name, e);
-            } catch (ArityException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CALLING_NATIVE_FUNC_EXPECTED_ARGS, name, e.getExpectedMinArity(), e.getActualArity());
             } catch (Throwable exception) {
                 /*
                  * Always re-acquire the GIL here. This is necessary because it could happen that C
