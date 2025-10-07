@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -36,9 +36,9 @@ public final class EmptySequenceStorage extends SequenceStorage {
         final ArrayBasedSequenceStorage generalized;
 
         if (value instanceof Byte) {
-            generalized = new ByteSequenceStorage(16);
+            generalized = new ByteSequenceStorage();
         } else if (value instanceof Boolean) {
-            generalized = new BoolSequenceStorage(16);
+            generalized = new BoolSequenceStorage();
         } else if (value instanceof Integer) {
             generalized = new IntSequenceStorage();
         } else if (value instanceof Long) {

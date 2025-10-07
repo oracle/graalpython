@@ -40,6 +40,11 @@ public final class ByteSequenceStorage extends ArrayBasedSequenceStorage {
 
     private byte[] values;
 
+    public ByteSequenceStorage() {
+        this.values = new byte[DEFAULT_CAPACITY];
+        this.capacity = values.length;
+    }
+
     public ByteSequenceStorage(byte[] elements) {
         this(elements, elements.length);
     }

@@ -2825,8 +2825,6 @@ public abstract class SequenceStorageNodes {
             }
         };
 
-        private static final int DEFAULT_CAPACITY = 8;
-
         @Override
         public final SequenceStorage executeCached(SequenceStorage toGeneralize, Object indicationValue) {
             return execute(this, toGeneralize, indicationValue);
@@ -2842,17 +2840,22 @@ public abstract class SequenceStorageNodes {
         @Specialization
         static SequenceStorage doEmptyStorage(Node inliningTarget, @SuppressWarnings("unused") EmptySequenceStorage s, ArrayBasedSequenceStorage other,
                         @Exclusive @Cached InlinedExactClassProfile otherProfile) {
-            return otherProfile.profile(inliningTarget, other).createEmpty(DEFAULT_CAPACITY);
+            return otherProfile.profile(inliningTarget, other).createEmpty(ArrayBasedSequenceStorage.DEFAULT_CAPACITY);
         }
 
         @Specialization
         static ByteSequenceStorage doEmptyByte(@SuppressWarnings("unused") EmptySequenceStorage s, @SuppressWarnings("unused") byte val) {
-            return new ByteSequenceStorage(DEFAULT_CAPACITY);
+            return new ByteSequenceStorage();
         }
 
         @Specialization
         static IntSequenceStorage doEmptyInteger(@SuppressWarnings("unused") EmptySequenceStorage s, @SuppressWarnings("unused") int val) {
             return new IntSequenceStorage();
+        }
+
+        @Specialization
+        static BoolSequenceStorage doEmptyBoolean(@SuppressWarnings("unused") EmptySequenceStorage s, @SuppressWarnings("unused") boolean val) {
+            return new BoolSequenceStorage();
         }
 
         @Specialization
@@ -2871,7 +2874,7 @@ public abstract class SequenceStorageNodes {
 
         @Specialization(guards = "!isKnownType(val)")
         static ObjectSequenceStorage doEmptyObject(@SuppressWarnings("unused") EmptySequenceStorage s, @SuppressWarnings("unused") Object val) {
-            return new ObjectSequenceStorage(DEFAULT_CAPACITY);
+            return new ObjectSequenceStorage();
         }
 
         @Specialization

@@ -35,7 +35,8 @@ public final class IntSequenceStorage extends ArrayBasedSequenceStorage {
     private int[] values;
 
     public IntSequenceStorage() {
-        values = new int[]{};
+        this.values = new int[DEFAULT_CAPACITY];
+        this.capacity = values.length;
     }
 
     public IntSequenceStorage(int[] elements) {
