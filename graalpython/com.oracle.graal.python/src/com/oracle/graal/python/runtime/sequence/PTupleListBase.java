@@ -44,10 +44,10 @@ import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.object.Shape;
 
-public abstract class PSequenceWithStorage extends PSequence {
+public abstract class PTupleListBase extends PSequence {
     protected SequenceStorage store;
 
-    public PSequenceWithStorage(Object cls, Shape instanceShape) {
+    public PTupleListBase(Object cls, Shape instanceShape) {
         super(cls, instanceShape);
     }
 

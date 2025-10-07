@@ -217,9 +217,10 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.PSequenceWithStorage;
+import com.oracle.graal.python.runtime.sequence.PTupleListBase;
 import com.oracle.graal.python.runtime.sequence.storage.BoolSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
@@ -1636,7 +1637,16 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
     @Operation(storeBytecodeIndex = false)
     public static final class MakeList {
-        @Specialization
+        @Specialization(guards = "elements.length == 0")
+        public static PList doEmpty(@Variadic Object[] elements,
+                        @Bind PBytecodeDSLRootNode rootNode) {
+            // Common pattern is to create an empty list and then add items.
+            // We need to start from empty storage, so that we can specialize to, say, int storage
+            // if only ints are appended to this list
+            return PFactory.createList(rootNode.getLanguage(), EmptySequenceStorage.INSTANCE);
+        }
+
+        @Specialization(guards = "elements.length > 0")
         public static PList perform(@Variadic Object[] elements,
                         @Bind PBytecodeDSLRootNode rootNode) {
             return PFactory.createList(rootNode.getLanguage(), elements);
@@ -3209,45 +3219,51 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation(storeBytecodeIndex = true)
     @ImportStatic(PGuards.class)
     public static final class BinarySubscript {
-        static boolean isBuiltinListOrTuple(PSequenceWithStorage s) {
-            return PGuards.isBuiltinTuple(s) && PGuards.isBuiltinList(s);
+        static boolean isBuiltinListOrTuple(PTupleListBase s) {
+            return PGuards.isBuiltinTuple(s) || PGuards.isBuiltinList(s);
         }
 
-        public static boolean isIntBuiltinListOrTuple(PSequenceWithStorage s) {
+        public static boolean isIntBuiltinListOrTuple(PTupleListBase s) {
             return isBuiltinListOrTuple(s) && s.getSequenceStorage() instanceof IntSequenceStorage;
         }
 
         @Specialization(guards = "isIntBuiltinListOrTuple(list)")
-        public static int doIntStorage(PSequenceWithStorage list, int index,
-                        @Shared @Cached NormalizeIndexWithBoundsCheckNode normalizeIndexNode) {
+        public static int doIntStorage(PTupleListBase list, int index,
+                        @Bind Node inliningTarget,
+                        @Shared @Cached InlinedConditionProfile negativeIndexProfile,
+                        @Shared @Cached PRaiseNode raiseNode) {
             IntSequenceStorage storage = (IntSequenceStorage) list.getSequenceStorage();
-            int normalizedIndex = normalizeIndexNode.execute(index, storage.length(), ErrorMessages.LIST_INDEX_OUT_OF_RANGE);
+            int normalizedIndex = NormalizeIndexWithBoundsCheckNode.normalizeIntIndex(inliningTarget, index, storage.length(), list, negativeIndexProfile, raiseNode);
             return storage.getIntItemNormalized(normalizedIndex);
         }
 
-        public static boolean isDoubleBuiltinListOrTuple(PSequenceWithStorage s) {
+        public static boolean isDoubleBuiltinListOrTuple(PTupleListBase s) {
             return isBuiltinListOrTuple(s) && s.getSequenceStorage() instanceof DoubleSequenceStorage;
         }
 
         @Specialization(guards = "isDoubleBuiltinListOrTuple(list)")
-        public static double doDoubleStorage(PSequenceWithStorage list, int index,
-                        @Shared @Cached NormalizeIndexWithBoundsCheckNode normalizeIndexNode) {
+        public static double doDoubleStorage(PTupleListBase list, int index,
+                        @Bind Node inliningTarget,
+                        @Shared @Cached InlinedConditionProfile negativeIndexProfile,
+                        @Shared @Cached PRaiseNode raiseNode) {
             DoubleSequenceStorage storage = (DoubleSequenceStorage) list.getSequenceStorage();
-            int normalizedIndex = normalizeIndexNode.execute(index, storage.length(), ErrorMessages.LIST_INDEX_OUT_OF_RANGE);
+            int normalizedIndex = NormalizeIndexWithBoundsCheckNode.normalizeIntIndex(inliningTarget, index, storage.length(), list, negativeIndexProfile, raiseNode);
             return storage.getDoubleItemNormalized(normalizedIndex);
         }
 
         @Specialization(replaces = {"doIntStorage", "doDoubleStorage"}, guards = "isBuiltinListOrTuple(list)")
-        public static Object doObjectStorage(PSequenceWithStorage list, int index,
+        public static Object doGenericStorage(PTupleListBase list, int index,
                         @Bind Node inliningTarget,
-                        @Shared @Cached NormalizeIndexWithBoundsCheckNode normalizeIndexNode,
+                        @Exclusive @Cached InlinedConditionProfile negativeIndexProfile,
+                        @Exclusive @Cached PRaiseNode raiseNode,
                         @Cached GetItemScalarNode getItemScalarNode) {
             SequenceStorage storage = list.getSequenceStorage();
-            int normalizedIndex = normalizeIndexNode.execute(index, storage.length(), ErrorMessages.LIST_INDEX_OUT_OF_RANGE);
+            int normalizedIndex = NormalizeIndexWithBoundsCheckNode.normalizeIntIndex(inliningTarget, index, storage.length(), list, negativeIndexProfile, raiseNode);
             return getItemScalarNode.execute(inliningTarget, storage, normalizedIndex);
         }
 
         @Fallback
+        @InliningCutoff
         public static Object doOther(VirtualFrame frame, Object receiver, Object key,
                         @Bind Node inliningTarget,
                         @Cached GetObjectSlotsNode getSlotsNode,
