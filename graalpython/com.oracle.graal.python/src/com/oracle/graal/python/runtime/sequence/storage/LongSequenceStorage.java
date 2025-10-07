@@ -35,7 +35,8 @@ public final class LongSequenceStorage extends ArrayBasedSequenceStorage {
     private long[] values;
 
     public LongSequenceStorage() {
-        values = new long[]{};
+        this.values = new long[DEFAULT_CAPACITY];
+        this.capacity = values.length;
     }
 
     public LongSequenceStorage(long[] elements) {

@@ -35,7 +35,8 @@ public final class DoubleSequenceStorage extends ArrayBasedSequenceStorage {
     private double[] values;
 
     public DoubleSequenceStorage() {
-        values = new double[]{};
+        this.values = new double[DEFAULT_CAPACITY];
+        this.capacity = values.length;
     }
 
     public DoubleSequenceStorage(double[] elements) {

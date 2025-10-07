@@ -33,7 +33,8 @@ public final class BoolSequenceStorage extends ArrayBasedSequenceStorage {
     private boolean[] values;
 
     public BoolSequenceStorage() {
-        values = new boolean[]{};
+        this.values = new boolean[DEFAULT_CAPACITY];
+        this.capacity = values.length;
     }
 
     public BoolSequenceStorage(boolean[] elements) {

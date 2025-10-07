@@ -72,6 +72,14 @@ def test_appending_doubles():
     check_strategy(l, "DoubleSequenceStorage")
 
 
+def test_appending_bools():
+    l = list()
+    for i in range(10):
+        l.append(i * 0.1)
+    assert l[5] == 0.5
+    check_strategy(l, "DoubleSequenceStorage")
+
+
 def test_generator_int():
     l = [x for x in range(10)]
     assert l[5] == 5
@@ -84,11 +92,10 @@ def test_generator_double():
     check_strategy(l, "DoubleSequenceStorage")
 
 
-# GR-70364
-# def test_generator_bool():
-#     l = [x >= 5 for x in range(10)]
-#     assert l[5] == True
-#     check_strategy(l, "BoolSequenceStorage")
+def test_generator_bool():
+    l = [x >= 5 for x in range(10)]
+    assert l[5] == True
+    check_strategy(l, "BoolSequenceStorage")
 
 
 def test_literal_int():
@@ -101,6 +108,12 @@ def test_literal_double():
     l = [1.1,2.2,3.3,4.4,0.5]
     assert l[4] == 0.5
     check_strategy(l, "DoubleSequenceStorage")
+
+
+def test_literal_bool():
+    l = [True, False, True]
+    assert l[0]
+    check_strategy(l, "BoolSequenceStorage")
 
 
 def test_literal_mixed():
