@@ -76,18 +76,6 @@ def downstream_test_hpy(graalpy, testdir=None, args=None, env=None, check=True, 
     hpy_test_root = hpy_root / "test"
     venv = testdir / 'hpy_venv'
     run([graalpy, "-m", "venv", str(venv)])
-    if graalpy.endswith('.sh'):
-        # Workaround jacoco launcher creating broken venv
-        venv_launcher_path = venv / "bin" / "graalpy.sh"
-        launcher = venv_launcher_path.read_text()
-        venv_launcher_path.unlink()
-        launcher = launcher.replace(
-            '--python.Executable=',
-            f'--python.Executable={venv_launcher_path.absolute()} --python.BaseExecutable=',
-        )
-        venv_launcher_path.write_text(launcher)
-        venv_launcher_path.chmod(0o755)
-        run([str(venv_launcher_path), '-m', 'ensurepip', '--default-pip'])
     run_in_venv(venv, ["pip", "install", "pytest", "pytest-xdist", "pytest-rerunfailures!=16.0", "filelock"])
     env = env or os.environ.copy()
     env["SETUPTOOLS_SCM_PRETEND_VERSION"] = "0.9.0"
