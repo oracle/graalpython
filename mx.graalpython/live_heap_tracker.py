@@ -88,7 +88,7 @@ def main():
             proc = subprocess.Popen(benchmark)
             ppid = proc.pid
             while proc.poll() is None:
-                time.sleep(0.3)
+                time.sleep(0.1)
                 uss_bytes = uss(ppid)
                 heap_bytes = jmap(jmap_binary, ppid)
                 f.write(f"{heap_bytes} {uss_bytes}\n")
