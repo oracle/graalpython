@@ -122,6 +122,9 @@ MICRO_BENCHMARKS = {
 
 # For benchmarking the interpreter with --engine.Compilation=false
 MICRO_BENCHMARKS_SMALL = {
+    'nano-arith': ITER_6 + WARMUP_2,
+    'nano-loop': ITER_6 + WARMUP_2,
+    'nano-if': ITER_6 + WARMUP_2,
     'arith-modulo-sized': ITER_6 + WARMUP_2 + ['1'],
     'if-generic': ITER_10 + WARMUP_2 + ['500000'],
     'if-generic-non-builtin': ITER_10 + WARMUP_2 + ['500000'],
