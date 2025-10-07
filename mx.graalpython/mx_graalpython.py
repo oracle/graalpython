@@ -1019,7 +1019,6 @@ def make_coverage_launcher_if_needed(launcher):
         if sys.platform != 'win32':
             coverage_launcher = original_launcher + "_cov"
             c_launcher_source = coverage_launcher + ".c"
-            exe_arg = f"--python.Executable={coverage_launcher}"
             agent_args_list = shlex.split(agent_args)
             extra_args_c = []
             for arg in agent_args_list:
@@ -1033,9 +1032,8 @@ def make_coverage_launcher_if_needed(launcher):
                     int main(int argc, char **argv) {{
                         char *new_args[argc + 3 + {len(agent_args_list)}];
                         int arg_index = 0;
-                        new_args[arg_index++] = "{original_launcher}";
+                        new_args[arg_index++] = argv[0];
                         new_args[arg_index++] = "--jvm";
-                        new_args[arg_index++] = "{exe_arg}";
                         {extra_args_c}
                         for (int i = 1; i < argc; i++) {{
                             new_args[arg_index++] = argv[i];
