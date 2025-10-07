@@ -266,6 +266,13 @@ class GraalPythonVm(AbstractPythonIterationsControlVm):
         super().__init__(VM_NAME_GRAALPYTHON, config_name, options=options, iterations=iterations)
         self._extra_polyglot_args = extra_polyglot_args or []
 
+    def override_iterations(self, requested_iterations):
+        # If we are native and without JIT, half as many iterations should be enough
+        if self.launcher_type == "native" and "interpreter" in self.config_name():
+            return int(requested_iterations / 2)
+        else:
+            return requested_iterations
+
     @property
     @functools.lru_cache
     def launcher_type(self):
