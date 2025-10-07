@@ -993,32 +993,33 @@ class LiveHeapTracker(mx_benchmark.Tracker):
                 suite = suite[:-len("-heap")]
             benchmark = f"{suite}.{self.tracker.bmSuite.currently_running_benchmark()}"
             vm_flags = ' '.join(self.tracker.bmSuite.vmArgs(self.bmSuiteArgs))
-            return [
-                PythonBaseBenchmarkSuite.with_branch_and_commit_dict({
-                    "benchmark": benchmark,
-                    "bench-suite": suite,
-                    "config.vm-flags": vm_flags,
-                    "metric.name": "allocated-memory",
-                    "metric.value": heap_deciles[-1],
-                    "metric.unit": "MB",
-                    "metric.type": "numeric",
-                    "metric.score-function": "id",
-                    "metric.better": "lower",
-                    "metric.iteration": 0
-                }),
-                PythonBaseBenchmarkSuite.with_branch_and_commit_dict({
-                    "benchmark": benchmark,
-                    "bench-suite": suite,
-                    "config.vm-flags": vm_flags,
-                    "metric.name": "memory",
-                    "metric.value": uss_deciles[-1],
-                    "metric.unit": "MB",
-                    "metric.type": "numeric",
-                    "metric.score-function": "id",
-                    "metric.better": "lower",
-                    "metric.iteration": 0
-                })
-            ]
+            return (
+                [
+                    PythonBaseBenchmarkSuite.with_branch_and_commit_dict({
+                        "benchmark": benchmark,
+                        "bench-suite": suite,
+                        "config.vm-flags": vm_flags,
+                        "metric.name": "allocated-memory",
+                        "metric.value": heap_deciles[-1],
+                        "metric.unit": "MB",
+                        "metric.type": "numeric",
+                        "metric.score-function": "id",
+                        "metric.better": "lower",
+                        "metric.iteration": 0
+                    })
+                ] if heap_deciles[-1] != 0 else []
+            ) + [PythonBaseBenchmarkSuite.with_branch_and_commit_dict({
+                "benchmark": benchmark,
+                "bench-suite": suite,
+                "config.vm-flags": vm_flags,
+                "metric.name": "memory",
+                "metric.value": uss_deciles[-1],
+                "metric.unit": "MB",
+                "metric.type": "numeric",
+                "metric.score-function": "id",
+                "metric.better": "lower",
+                "metric.iteration": 0
+            })]
 
 
 class PythonHeapBenchmarkSuite(PythonBaseBenchmarkSuite):
