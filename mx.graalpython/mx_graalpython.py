@@ -1022,8 +1022,8 @@ def make_coverage_launcher_if_needed(launcher):
             exe_arg = f"--python.Executable={coverage_launcher}"
             agent_args_list = shlex.split(agent_args)
             extra_args_c = []
-            for i, arg in enumerate(agent_args_list):
-                extra_args_c.append(f'new_args[{i + 3}] = "' + arg.replace("\"", r"\"") + '";')
+            for arg in agent_args_list:
+                extra_args_c.append('new_args[arg_index++] = "' + arg.replace("\"", r"\"") + '";')
             extra_args_c = ' '.join(extra_args_c)
             c_code = dedent(f"""\
                     #include <stdio.h>
@@ -1032,14 +1032,15 @@ def make_coverage_launcher_if_needed(launcher):
 
                     int main(int argc, char **argv) {{
                         char *new_args[argc + 3 + {len(agent_args_list)}];
-                        new_args[0] = "{original_launcher}";
-                        new_args[1] = "--jvm";
-                        new_args[2] = "{exe_arg}";
+                        int arg_index = 0;
+                        new_args[arg_index++] = "{original_launcher}";
+                        new_args[arg_index++] = "--jvm";
+                        new_args[arg_index++] = "{exe_arg}";
                         {extra_args_c}
                         for (int i = 1; i < argc; i++) {{
-                            new_args[i + 3 + {len(agent_args_list)}] = argv[i];
+                            new_args[arg_index++] = argv[i];
                         }}
-                        new_args[argc + 3 + {len(agent_args_list)}] = NULL;
+                        new_args[arg_index] = NULL;
                         execvp("{original_launcher}", new_args);
                         perror("execvp failed");
                         return 1;
