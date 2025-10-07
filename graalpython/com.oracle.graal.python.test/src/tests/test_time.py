@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -36,10 +36,14 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
-import time
 import calendar
+import os
+import subprocess
+import sys
+import time
 import unittest
+from textwrap import dedent
+
 
 def test_sleep():
     start = time.time()
@@ -72,7 +76,7 @@ class StructTimeTests(unittest.TestCase):
         self.assertEqual(t.tm_mday, 26)
         self.assertEqual(t[2], 26)
         self.assertEqual(t.tm_zone, None)
-        
+
         self.assertRaises(TypeError, time.struct_time, (2018, 11, 26, 17, 34, 12, 0, 340))
         self.assertRaises(TypeError, time.struct_time, (2018, 11, 26, 17, 34, 12, 0, 340, 9, 10, 11, 12))
 
@@ -80,11 +84,11 @@ class StructTimeTests(unittest.TestCase):
         gt = time.gmtime()
         self.assertNotEqual(gt.tm_zone, None)
         self.assertNotEqual(gt.tm_gmtoff, None)
-        
+
         lt = time.localtime()
         self.assertNotEqual(lt.tm_zone, None)
         self.assertNotEqual(lt.tm_gmtoff, None)
-        
+
     def test_destructuring_assignment(self):
         t = time.struct_time((1,2,3,4,5,6,7,8,9))
         y,m,d,h,mi,s,wd,yd,dst = t
@@ -93,7 +97,7 @@ class StructTimeTests(unittest.TestCase):
         self.assertEqual(dst, 9)
         self.assertEqual(t.tm_zone, None)
         self.assertEqual(t.tm_gmtoff, None)
-        
+
         t = time.struct_time((11,12,13,14,15,16,17,18,19,20, 21))
         y,m,d,h,mi,s,wd,yd,dst = t
         self.assertEqual(y, 11)
@@ -234,7 +238,7 @@ class StrftimeTests(unittest.TestCase):
         self.check_format("%y", (2018, 11, 28, 10, 0, 0, -1, 1, 0), '18')
         self.check_format("%y", (18, 11, 28, 10, 0, 0, 0, 1, 0), '18')
         self.check_format("%y", (0, 11, 25, 11, 12, 2, 3, 1, 0), '00')
-        # This is failing on CPython, which return '35' 
+        # This is failing on CPython, which return '35'
         #self.check_format("%y", (-365, 11, 24, 23, 20, 61, 6, 1, 0), '65')
         self.check_format("%y", (17829, 11, 24, 23, 20, 61, 7, 1, 0), '29')
 
@@ -280,3 +284,28 @@ class StrftimeTests(unittest.TestCase):
         self.check_format("%Y-%b-%d-%j", (2018, 8, 8, 15, 24, 10, 3, 55, 0), '2018-Aug-08-055')
         self.check_format("%Y-%b-%-d-%-j", (2018, 8, 8, 15, 24, 10, 3, 5, 0), '2018-Aug-8-5')
         self.check_format("%Y-%b-%-d-%-j", (2018, 8, 8, 15, 24, 10, 3, 55, 0), '2018-Aug-8-55')
+
+    @unittest.skipIf(sys.platform == 'win32', "Cannot change timezone per-process on Windows")
+    def test_default_tz_dst_no_dst(self):
+        env = os.environ.copy()
+        testdate = '1994-11-15 12:45:26'
+        for tz, expected in [
+            ('UTC', f"tzname=('UTC', 'UTC'), timezone=0, altzone=0, daylight=0, testdate={testdate}"),
+            ('Europe/Prague', f"tzname=('CET', 'CEST'), timezone=-3600, altzone=-7200, daylight=1, testdate={testdate}"),
+            ('Australia/Sydney', f"tzname=('AEST', 'AEDT'), timezone=-36000, altzone=-39600, daylight=1, testdate={testdate}"),
+        ]:
+            env['TZ'] = tz
+            env['LC_ALL'] = 'C'
+            script = dedent('''\
+                from time import *
+                from datetime import datetime
+                # Regression test for issue #532
+                testdate = datetime.strptime('Tue, 15 Nov 1994 12:45:26 GMT', '%a, %d %b %Y %H:%M:%S %Z')
+                print(f'{tzname=}, {timezone=}, {altzone=}, {daylight=}, {testdate=!s}')
+                ''')
+            out = subprocess.check_output(
+                [sys.executable, '-c', script],
+                env=env,
+                text=True,
+            ).strip()
+            self.assertEqual(expected, out)
