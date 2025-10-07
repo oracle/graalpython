@@ -148,10 +148,10 @@ index 6617644..ad52082 100644
          return self._ireq
 diff --git a/pip/_internal/utils/graalpy.py b/pip/_internal/utils/graalpy.py
 new file mode 100644
-index 0000000..9e79fb0
+index 0000000..cdc4852
 --- /dev/null
 +++ b/pip/_internal/utils/graalpy.py
-@@ -0,0 +1,334 @@
+@@ -0,0 +1,354 @@
 +import abc
 +import logging
 +import os
@@ -179,6 +179,7 @@ index 0000000..9e79fb0
 +DEFAULT_PATCHES_URL = f'https://raw.githubusercontent.com/oracle/graalpython/refs/heads/github/patches/{VERSION_PARAMETER}/graalpython/lib-graalpython/patches/'
 +
 +PATCHES_URL = os.environ.get('PIP_GRAALPY_PATCHES_URL', DEFAULT_PATCHES_URL)
++DISABLED_PATCHES_URL = 'disabled'
 +DISABLE_PATCHING = os.environ.get('PIP_GRAALPY_DISABLE_PATCHING', '').lower() in ('true', '1')
 +DISABLE_VERSION_SELECTION = os.environ.get('PIP_GRAALPY_DISABLE_VERSION_SELECTION', '').lower() in ('true', '1')
 +
@@ -194,6 +195,10 @@ index 0000000..9e79fb0
 +
 +
 +class RepositoryException(Exception):
++    pass
++
++
++class RepositoryNotFound(RepositoryException):
 +    pass
 +
 +
@@ -262,13 +267,14 @@ index 0000000..9e79fb0
 +    def __init__(self, patches_path: Path, repository_data: dict):
 +        super().__init__(repository_data)
 +        self.patches_path = patches_path
-+        logger.debug("Loaded GraalPy patch repository from %s", patches_path)
 +
 +    @classmethod
 +    def from_path(cls, patches_path: Path):
 +        try:
 +            with open(patches_path / METADATA_FILENAME) as f:
 +                metadata_content = f.read()
++        except FileNotFoundError:
++            raise RepositoryNotFound(f"'{METADATA_FILENAME}' does not exist")
 +        except OSError as e:
 +            raise RepositoryException(f"'{METADATA_FILENAME}' cannot be read: {e}")
 +        return cls(patches_path, cls.metadata_from_string(metadata_content))
@@ -282,7 +288,6 @@ index 0000000..9e79fb0
 +    def __init__(self, patches_url: str, repository_data: dict):
 +        super().__init__(repository_data)
 +        self.patches_url = patches_url
-+        logger.debug("Loaded GraalPy patch repository from %s", patches_url)
 +
 +    @staticmethod
 +    def get_session():
@@ -294,10 +299,14 @@ index 0000000..9e79fb0
 +        try:
 +            url = url_for_file(patches_url, METADATA_FILENAME)
 +            response = cls.get_session().get(url)
++            if response.status_code == 404:
++                raise RepositoryNotFound(f"'{METADATA_FILENAME}' not found")
 +            response.raise_for_status()
-+            metadata_content = response.content.decode('utf-8')
++            if not response.encoding:
++                response.encoding = 'utf-8'
++            metadata_content = response.text
 +        except Exception as e:
-+            raise RepositoryException(f"'{METADATA_FILENAME} cannot be retrieved': {e}")
++            raise RepositoryException(f"'{METADATA_FILENAME}' cannot be retrieved': {e}")
 +        return cls(patches_url, cls.metadata_from_string(metadata_content))
 +
 +    @contextmanager
@@ -310,9 +319,11 @@ index 0000000..9e79fb0
 +            yield None
 +        else:
 +            with tempfile.TemporaryDirectory() as tempdir:
++                if not response.encoding:
++                    response.encoding = 'utf-8'
 +                patch_file = Path(tempdir) / patch_name
-+                with open(patch_file, 'wb') as f:
-+                    f.write(response.content)
++                with open(patch_file, 'w') as f:
++                    f.write(response.text)
 +                yield patch_file
 +
 +
@@ -339,12 +350,19 @@ index 0000000..9e79fb0
 +        else:
 +            logger.debug("Skipping versioned GraalPy patch repository on snapshot build")
 +            patches_url = None
-+    if patches_url:
++    if patches_url and patches_url != DISABLED_PATCHES_URL:
++        logger.info(
++            "Loading GraalPy post-release patch repository from %s. "
++            "This can be controlled with PIP_GRAALPY_PATCHES_URL environment variable. Set to '%s' to disable",
++            patches_url, DISABLED_PATCHES_URL)
 +        try:
 +            return repository_from_url_or_path(patches_url)
 +        except RepositoryException as e:
-+            logger.warning("Failed to load GraalPy patch repository from %s: %s", patches_url, e)
-+            logger.warning("Falling back to internal GraalPy patch repository")
++            if patches_url == DEFAULT_PATCHES_URL and isinstance(e, RepositoryNotFound):
++                logger.info("No post-release patch repository published yet")
++            else:
++                logger.warning("Failed to load GraalPy patch repository: %s", e)
++                logger.warning("Falling back to bundled GraalPy patch repository")
 +    try:
 +        return LocalPatchRepository.from_path(DEFAULT_PATCHES_PATH)
 +    except RepositoryException as e:
@@ -421,6 +439,8 @@ index 0000000..9e79fb0
 +                        "WARNING: GraalPy needs the 'patch' utility to apply compatibility patches. Please install it using your system's package manager.")
 +                except subprocess.CalledProcessError:
 +                    logger.warning(f"Applying GraalPy patch failed for {name}. The package may still work.")
++                except Exception:
++                    logger.exception(f"Failed to execute patch utility")
 +    elif version_specs := repository.get_suggested_version_specs(name):
 +        logger.info("We have patches to make this package work on GraalVM for some version(s).")
 +        logger.info("If installing or running fails, consider using one of the versions that we have patches for:")
