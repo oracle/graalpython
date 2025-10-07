@@ -170,6 +170,7 @@ MICRO_BENCHMARKS_SMALL = {
     'with-exception': ITER_6 + WARMUP_2 + ['5_000_000'],
     'tuple-indexing-from-constructor': ITER_6 + WARMUP_2 + ['250_000'],
     'tuple-indexing-from-literal': ITER_6 + WARMUP_2 + ['400_000'],
+    'unmarshal-pyc': ITER_5 + WARMUP_2 + ['50'],
     'c-member-access': ITER_5 + ['30'],
     'c-list-iterating-obj': ITER_5 + ['500000'],
     'c-magic-bool': ITER_5 + ['1000000'],
