@@ -1,4 +1,4 @@
-# Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -43,26 +43,15 @@ import marshal
 import os
 
 
-PYC_BYTES = []
-
-
-def initialize_pyc_bytes():
-    dirname = os.path.dirname(__file__)
-    for filename in os.listdir(dirname):
-        if filename.endswith(".py"):
-            filepath = os.path.join(dirname, filename)
-            with io.open_code(filepath) as f:
-                PYC_BYTES.append(marshal.dumps(compile(f.read(), filename, "exec")))
-
-
-initialize_pyc_bytes()
-del initialize_pyc_bytes
+with io.open_code(os.path.join(os.path.dirname(__file__), "unmarshal-pyc.txt")) as f:
+    PYC_BYTES = marshal.dumps(compile(f.read() * 1000, "pyc", "exec"))
 
 
 def measure(inner_iterations=1):
-    for _ in range(inner_iterations):
-        for pyc_bytes in PYC_BYTES:
-            marshal.loads(pyc_bytes)
+    pyc_bytes = PYC_BYTES
+    while inner_iterations > 0:
+        marshal.loads(pyc_bytes)
+        inner_iterations -= 1
 
 
 def __benchmark__(inner_iterations=1):

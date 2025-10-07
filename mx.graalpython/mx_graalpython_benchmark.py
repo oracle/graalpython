@@ -266,6 +266,13 @@ class GraalPythonVm(AbstractPythonIterationsControlVm):
         super().__init__(VM_NAME_GRAALPYTHON, config_name, options=options, iterations=iterations)
         self._extra_polyglot_args = extra_polyglot_args or []
 
+    def override_iterations(self, requested_iterations):
+        # If we are native and without JIT, half as many iterations should be enough
+        if self.launcher_type == "native" and "interpreter" in self.config_name():
+            return int(requested_iterations / 2)
+        else:
+            return requested_iterations
+
     @property
     @functools.lru_cache
     def launcher_type(self):
@@ -986,32 +993,33 @@ class LiveHeapTracker(mx_benchmark.Tracker):
                 suite = suite[:-len("-heap")]
             benchmark = f"{suite}.{self.tracker.bmSuite.currently_running_benchmark()}"
             vm_flags = ' '.join(self.tracker.bmSuite.vmArgs(self.bmSuiteArgs))
-            return [
-                PythonBaseBenchmarkSuite.with_branch_and_commit_dict({
-                    "benchmark": benchmark,
-                    "bench-suite": suite,
-                    "config.vm-flags": vm_flags,
-                    "metric.name": "allocated-memory",
-                    "metric.value": heap_deciles[-1],
-                    "metric.unit": "MB",
-                    "metric.type": "numeric",
-                    "metric.score-function": "id",
-                    "metric.better": "lower",
-                    "metric.iteration": 0
-                }),
-                PythonBaseBenchmarkSuite.with_branch_and_commit_dict({
-                    "benchmark": benchmark,
-                    "bench-suite": suite,
-                    "config.vm-flags": vm_flags,
-                    "metric.name": "memory",
-                    "metric.value": uss_deciles[-1],
-                    "metric.unit": "MB",
-                    "metric.type": "numeric",
-                    "metric.score-function": "id",
-                    "metric.better": "lower",
-                    "metric.iteration": 0
-                })
-            ]
+            return (
+                [
+                    PythonBaseBenchmarkSuite.with_branch_and_commit_dict({
+                        "benchmark": benchmark,
+                        "bench-suite": suite,
+                        "config.vm-flags": vm_flags,
+                        "metric.name": "allocated-memory",
+                        "metric.value": heap_deciles[-1],
+                        "metric.unit": "MB",
+                        "metric.type": "numeric",
+                        "metric.score-function": "id",
+                        "metric.better": "lower",
+                        "metric.iteration": 0
+                    })
+                ] if heap_deciles[-1] != 0 else []
+            ) + [PythonBaseBenchmarkSuite.with_branch_and_commit_dict({
+                "benchmark": benchmark,
+                "bench-suite": suite,
+                "config.vm-flags": vm_flags,
+                "metric.name": "memory",
+                "metric.value": uss_deciles[-1],
+                "metric.unit": "MB",
+                "metric.type": "numeric",
+                "metric.score-function": "id",
+                "metric.better": "lower",
+                "metric.iteration": 0
+            })]
 
 
 class PythonHeapBenchmarkSuite(PythonBaseBenchmarkSuite):
