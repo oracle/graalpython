@@ -241,6 +241,7 @@
         name: "bisect-benchmark",
         targets: ['bench'],
         logs +: logs(self.os, self.arch),
+        deploysArtifacts: true,
         packages +: packages(self.os, self.arch) + {
             "apache/ant": ">=1.9.4",
             libyaml: "==0.2.5",
