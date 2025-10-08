@@ -3,6 +3,18 @@
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
  */
+#if 1 // GraalPy change to support _Py_ID usages in this file
+#ifdef MS_WIN32
+#define _Py_ID(name) PyUnicode_FromString(#name)
+#else
+// This is a GCC extension
+#define _Py_ID(name) ({                                                 \
+            static PyObject *name ## _id = NULL;                        \
+            if (!name ## _id) name ## _id = PyUnicode_FromString(#name); \
+            name ## _id; })
+#endif
+#endif
+
 #if defined (__SVR4) && defined (__sun)
 #   include <alloca.h>
 #endif

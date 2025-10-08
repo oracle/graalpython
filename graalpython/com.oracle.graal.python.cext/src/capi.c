@@ -257,23 +257,6 @@ PyAPI_FUNC(void) GraalPyPrivate_MMap_InitBufferProtocol(PyObject* mmap_type) {
 	((PyTypeObject*) mmap_type)->tp_as_buffer = &mmap_as_buffer;
 }
 
-static int cdata_getbuffer(PyObject* type, Py_buffer* view, int flags) {
-    return GraalPyPrivate_CData_NewGetBuffer(type, view, flags);
-}
-
-static void cdata_releasebuffer(PyObject* obj, Py_buffer* view) {
-    GraalPyPrivate_CData_ReleaseBuffer(obj, view);
-}
-
-PyAPI_FUNC(void) GraalPyPrivate_CData_InitBufferProtocol(PyObject* type) {
-    static PyBufferProcs cdata_as_buffer = {
-        cdata_getbuffer,
-        cdata_releasebuffer,
-    };
-    GraalPyPrivate_Type_SetBufferProcs(((PyTypeObject*) type), &cdata_as_buffer);
-    ((PyTypeObject*) type)->tp_as_buffer = &cdata_as_buffer;
-}
-
 struct _longobject* _Py_FalseStructReference;
 struct _longobject* _Py_TrueStructReference;
 PyObject* _Py_EllipsisObjectReference;

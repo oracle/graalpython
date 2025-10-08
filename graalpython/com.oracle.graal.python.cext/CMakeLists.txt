@@ -370,6 +370,11 @@ set(CTYPES_SRC
 )
 native_module("_ctypes" TRUE "${CTYPES_SRC}")
 target_include_directories("_ctypes" PUBLIC "${SRC_DIR}/modules/_ctypes")
+find_library(FFI_LIBRARY NAMES ffi)
+if (NOT FFI_LIBRARY)
+  message(FATAL_ERROR "libffi not found")
+endif()
+target_link_libraries("_ctypes" PRIVATE ${FFI_LIBRARY})
 if(WIN32)
     target_compile_definitions("_ctypes" PRIVATE
         MS_WIN32
