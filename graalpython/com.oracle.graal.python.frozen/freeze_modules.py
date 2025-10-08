@@ -13,7 +13,7 @@ import os
 import posixpath
 import shutil
 import sys
-from _sha256 import sha256
+from hashlib import sha256
 from collections import namedtuple
 
 FROZEN_ONLY = os.path.join(os.path.dirname(__file__), "flag.py")

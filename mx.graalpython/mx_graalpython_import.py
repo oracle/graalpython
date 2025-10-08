@@ -211,22 +211,12 @@ CPYTHON_SOURCES_MAPPING = {
     "graalpython/com.oracle.graal.python.test/src/tests": Ignore(),
 }
 
-PYPY_SOURCES_MAPPING = {
-    "graalpython/lib-python/3/_md5.py": CopyFrom("lib_pypy/_md5.py"),
-    "graalpython/lib-python/3/_sha1.py": CopyFrom("lib_pypy/_sha1.py"),
-    "graalpython/lib-python/3/_sha256.py": CopyFrom("lib_pypy/_sha256.py"),
-    "graalpython/lib-python/3/_sha512.py": CopyFrom("lib_pypy/_sha512.py"),
-    "graalpython/com.oracle.graal.python.benchmarks": Ignore(),
-}
-
-
 def import_python_sources(args):
     parser = argparse.ArgumentParser(
         prog='mx python-src-import',
-        description="Update the inlined files from PyPy and CPython. Refer to the docs on Confluence.",
+        description="Update the inlined files from CPython. Refer to the docs on Confluence.",
     )
     parser.add_argument('--cpython', action='store', help='Path to CPython sources', required=True)
-    parser.add_argument('--pypy', action='store', help='Path to PyPy sources', required=True)
     parser.add_argument('--python-version', action='store',
                         help='Python version to be updated to (used for commit message)', required=True)
     args = parser.parse_args(args)
@@ -235,7 +225,6 @@ def import_python_sources(args):
         entries = [line.strip().split(',') for line in f if ',' in line]
         cpython_files = [file for file, license in entries if
                          license == "python.copyright" and not file.endswith('.java')]
-        pypy_files = [file for file, license in entries if license == "pypy.copyright"]
 
     import_dir = os.path.abspath(os.path.join(SUITE.dir, 'python-import'))
     shutil.rmtree(import_dir, ignore_errors=True)
@@ -256,7 +245,6 @@ def import_python_sources(args):
             sys.exit(f"ERROR: The following files were not matched by any rule:\n{lines}")
 
     copy_inlined_files(CPYTHON_SOURCES_MAPPING, args.cpython, cpython_files)
-    copy_inlined_files(PYPY_SOURCES_MAPPING, args.pypy, pypy_files)
 
     # Commit and fetch changes back into the main repository
     SUITE.vc.git_command(import_dir, ["add", "."])
