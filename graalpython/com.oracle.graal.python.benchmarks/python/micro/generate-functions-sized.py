@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -59,3 +59,18 @@ def measure(num):
 def __benchmark__(num=10000):
     return measure(num)
 
+
+def run():
+    __benchmark__(num=400000)
+
+
+def warmupIterations():
+    return 25
+
+
+def summary():
+    return {
+        "name": "OutlierRemovalAverageSummary",
+        "lower-threshold": 0.1,
+        "upper-threshold": 0.8,
+    }

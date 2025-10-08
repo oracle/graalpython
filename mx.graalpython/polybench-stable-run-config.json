@@ -1,0 +1,226 @@
+{
+  "interpreter/sieve.py": {
+    "builds": {
+      "count": 3,
+      "lower-percentile": 0,
+      "upper-percentile": 0.33
+    },
+    "run-forks": {
+      "count": 2,
+      "lower-percentile": 0,
+      "upper-percentile": 0.5
+    }
+  },
+  "interpreter/fibonacci.py": {
+    "builds": {
+      "count": 5,
+      "lower-percentile": 0,
+      "upper-percentile": 0.4
+    },
+    "run-forks": {
+      "count": 5,
+      "lower-percentile": 0,
+      "upper-percentile": 0.4
+    }
+  },
+  "interpreter/deltablue.py": {
+    "builds": {
+      "count": 5,
+      "lower-percentile": 0,
+      "upper-percentile": 0.4
+    },
+    "run-forks": {
+      "count": 5,
+      "lower-percentile": 0,
+      "upper-percentile": 0.4
+    }
+  },
+  "interpreter/richards.py": {
+    "builds": {
+      "count": 5,
+      "lower-percentile": 0,
+      "upper-percentile": 0.4
+    },
+    "run-forks": {
+      "count": 5,
+      "lower-percentile": 0,
+      "upper-percentile": 0.4
+    }
+  },
+  "interpreter/arith-binop.py": {
+    "builds": {
+      "count": 2,
+      "lower-percentile": 0,
+      "upper-percentile": 0.5
+    },
+    "run-forks": {
+      "count": 2,
+      "lower-percentile": 0,
+      "upper-percentile": 0.5
+    }
+  },
+  "interpreter/arith-modulo-sized.py": {
+    "builds": {
+      "count": 2,
+      "lower-percentile": 0,
+      "upper-percentile": 0.5
+    },
+    "run-forks": {
+      "count": 3,
+      "lower-percentile": 0,
+      "upper-percentile": 0.66
+    }
+  },
+  "interpreter/attribute-access.py": {
+    "builds": {
+      "count": 5,
+      "lower-percentile": 0.2,
+      "upper-percentile": 0.6
+    },
+    "run-forks": {
+      "count": 3,
+      "lower-percentile": 0.33,
+      "upper-percentile": 0.66
+    }
+  },
+  "interpreter/attribute-access-polymorphic.py": {
+    "builds": {
+      "count": 3,
+      "lower-percentile": 0,
+      "upper-percentile": 0.33
+    },
+    "run-forks": {
+      "count": 3,
+      "lower-percentile": 0,
+      "upper-percentile": 0.33
+    }
+  },
+  "interpreter/attribute-access-super.py": {
+    "builds": {
+      "count": 3,
+      "lower-percentile": 0.33,
+      "upper-percentile": 0.66
+    },
+    "run-forks": {
+      "count": 2,
+      "lower-percentile": 0,
+      "upper-percentile": 0.5
+    }
+  },
+  "interpreter/attribute-bool.py": {
+    "builds": {
+      "count": 4,
+      "lower-percentile": 0.25,
+      "upper-percentile": 0.50
+    },
+    "run-forks": {
+      "count": 3,
+      "lower-percentile": 0.33,
+      "upper-percentile": 0.66
+    }
+  },
+  "interpreter/boolean-logic-sized.py": {
+    "builds": {
+      "count": 5,
+      "lower-percentile": 0,
+      "upper-percentile": 0.4
+    },
+    "run-forks": {
+      "count": 3,
+      "lower-percentile": 0,
+      "upper-percentile": 0.33
+    }
+  },
+  "interpreter/builtin-len.py": {
+    "builds": {
+      "count": 5,
+      "lower-percentile": 0,
+      "upper-percentile": 0.4
+    },
+    "run-forks": {
+      "count": 3,
+      "lower-percentile": 0,
+      "upper-percentile": 0.33
+    }
+  },
+  "interpreter/builtin-len-tuple-sized.py": {
+    "builds": {
+      "count": 4,
+      "lower-percentile": 0,
+      "upper-percentile": 0.5
+    },
+    "run-forks": {
+      "count": 4,
+      "lower-percentile": 0,
+      "upper-percentile": 0.5
+    }
+  },
+  "interpreter/call-classmethod-sized.py": {
+    "builds": {
+      "count": 4,
+      "lower-percentile": 0.25,
+      "upper-percentile": 0.50
+    },
+    "run-forks": {
+      "count": 4,
+      "lower-percentile": 0.25,
+      "upper-percentile": 0.50
+    }
+  },
+  "interpreter/call-method-polymorphic.py": {
+    "builds": {
+      "count": 5,
+      "lower-percentile": 0.2,
+      "upper-percentile": 0.6
+    },
+    "run-forks": {
+      "count": 3,
+      "lower-percentile": 0.33,
+      "upper-percentile": 0.66
+    }
+  },
+  "interpreter/bytecode-benchmark.py": {
+    "builds": {
+      "count": 4,
+      "lower-percentile": 0.25,
+      "upper-percentile": 0.50
+    },
+    "run-forks": {
+      "count": 3,
+      "lower-percentile": 0.33,
+      "upper-percentile": 0.66
+    }
+  },
+  "interpreter/for-range.py": {
+    "builds": {
+      "count": 4,
+      "lower-percentile": 0,
+      "upper-percentile": 0.5
+    },
+    "run-forks": {
+      "count": 2,
+      "lower-percentile": 0,
+      "upper-percentile": 0.5
+    }
+  },
+  "interpreter/generate-functions-sized.py": {
+    "builds": {
+      "count": 3,
+      "lower-percentile": 0.33,
+      "upper-percentile": 0.66
+    },
+    "run-forks": {
+      "count": 2,
+      "lower-percentile": 0,
+      "upper-percentile": 0.5
+    }
+  },
+  "interpreter/pyinit.py": {
+    "builds": {
+      "count": 0
+    },
+    "run-forks": {
+      "count": 0
+    }
+  }
+}

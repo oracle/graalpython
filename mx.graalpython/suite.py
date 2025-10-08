@@ -5,7 +5,7 @@ suite = {
     #  METADATA
     #
     # --------------------------------------------------------------------------------------------------------------
-    "mxversion": "7.45.0",
+    "mxversion": "7.67.0",
     "name": "graalpython",
     "versionConflictResolution": "latest",
 
@@ -1496,6 +1496,20 @@ suite = {
             "layout": {
                 "./interpreter/": [
                     "file:benchmarks/interpreter/*.py",
+                    "file:graalpython/com.oracle.graal.python.benchmarks/python/micro/arith-binop.py",
+                    "file:graalpython/com.oracle.graal.python.benchmarks/python/micro/arith-modulo-sized.py",
+                    "file:graalpython/com.oracle.graal.python.benchmarks/python/micro/attribute-access.py",
+                    "file:graalpython/com.oracle.graal.python.benchmarks/python/micro/attribute-access-polymorphic.py",
+                    "file:graalpython/com.oracle.graal.python.benchmarks/python/micro/attribute-access-super.py",
+                    "file:graalpython/com.oracle.graal.python.benchmarks/python/micro/attribute-bool.py",
+                    "file:graalpython/com.oracle.graal.python.benchmarks/python/micro/boolean-logic-sized.py",
+                    "file:graalpython/com.oracle.graal.python.benchmarks/python/micro/builtin-len.py",
+                    "file:graalpython/com.oracle.graal.python.benchmarks/python/micro/builtin-len-tuple-sized.py",
+                    "file:graalpython/com.oracle.graal.python.benchmarks/python/micro/call-classmethod-sized.py",
+                    "file:graalpython/com.oracle.graal.python.benchmarks/python/micro/call-method-polymorphic.py",
+                    "file:graalpython/com.oracle.graal.python.benchmarks/python/micro/bytecode-benchmark.py",
+                    "file:graalpython/com.oracle.graal.python.benchmarks/python/micro/for-range.py",
+                    "file:graalpython/com.oracle.graal.python.benchmarks/python/micro/generate-functions-sized.py",
                 ],
                 "./warmup/": [
                     "file:benchmarks/warmup/*.py",
