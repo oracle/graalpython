@@ -1,3 +1,8 @@
+/* Copyright (c) 2025, Oracle and/or its affiliates.
+ * Copyright (C) 1996-2025 Python Software Foundation
+ *
+ * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
+ */
 /*
  * History: First version dated from 3/97, derived from my SCMLIB version
  * for win16.

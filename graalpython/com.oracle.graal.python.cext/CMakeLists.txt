@@ -323,7 +323,6 @@ if(WIN32)
 endif()
 simple_native_module("_testmultiphase")
 simple_native_module("_testsinglephase")
-simple_native_module("_ctypes_test")
 
 if(NOT WIN32)
     ###################### BZIP2 ########################
@@ -358,6 +357,33 @@ target_compile_definitions(${TARGET_PYEXPAT} PRIVATE
     XML_DTD=1
 )
 
+###################### CTYPES ######################
+native_module("_ctypes_test" TRUE "${SRC_DIR}/modules/_ctypes/_ctypes_test.c")
+set(CTYPES_SRC
+    "${SRC_DIR}/modules/_ctypes/_ctypes.c"
+    "${SRC_DIR}/modules/_ctypes/callbacks.c"
+    "${SRC_DIR}/modules/_ctypes/callproc.c"
+    "${SRC_DIR}/modules/_ctypes/cfield.c"
+    "${SRC_DIR}/modules/_ctypes/ctypes.h"
+    "${SRC_DIR}/modules/_ctypes/malloc_closure.c"
+    "${SRC_DIR}/modules/_ctypes/stgdict.c"
+)
+native_module("_ctypes" TRUE "${CTYPES_SRC}")
+target_include_directories("_ctypes" PUBLIC "${SRC_DIR}/modules/_ctypes")
+if(WIN32)
+    target_compile_definitions("_ctypes" PRIVATE
+        MS_WIN32
+        MS_WIN64
+        _WIN64
+    )
+else()
+    target_compile_definitions("_ctypes" PRIVATE
+        HAVE_DECL_RTLD_LOCAL
+        HAVE_DECL_RTLD_GLOBAL
+    )
+endif()
+
+###################### LIBPYTHON ######################
 target_sources(${TARGET_LIBPYTHON} PRIVATE ${SRC_FILES})
 target_include_directories(${TARGET_LIBPYTHON} PRIVATE
     "${SRC_DIR}/include/internal"

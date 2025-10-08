@@ -140,7 +140,6 @@ CPYTHON_SOURCES_MAPPING = {
     # Different copyright
     "graalpython/com.oracle.graal.python.cext/include/dynamic_annotations.h": CopyFrom("Include/dynamic_annotations.h"),
     "graalpython/com.oracle.graal.python.cext/expat": CopyFromWithOverrides("Modules/expat"),
-    "graalpython/com.oracle.graal.python.cext/_ctypes": CopyFrom("Modules/_ctypes"),
     "graalpython/com.oracle.graal.python.cext/modules/_sqlite": CopyFrom("Modules/_sqlite"),
 	"graalpython/com.oracle.graal.python.cext/modules/_hacl/Hacl_Hash_SHA3.c": CopyFrom("Modules/_hacl/Hacl_Hash_SHA3.c"),
 	"graalpython/com.oracle.graal.python.cext/modules/_hacl/Hacl_Hash_SHA3.h": CopyFrom("Modules/_hacl/Hacl_Hash_SHA3.h"),
@@ -157,8 +156,6 @@ CPYTHON_SOURCES_MAPPING = {
     "graalpython/com.oracle.graal.python.cext/modules/_cpython_unicodedata.c": CopyFrom("Modules/unicodedata.c"),
     "graalpython/com.oracle.graal.python.cext/modules/_bz2.c": CopyFrom("Modules/_bz2module.c"),
     "graalpython/com.oracle.graal.python.cext/modules/_testcapi.c": CopyFrom("Modules/_testcapimodule.c"),
-    "graalpython/com.oracle.graal.python.cext/modules/_ctypes_test.h": CopyFrom("Modules/_ctypes/_ctypes_test.h"),
-    "graalpython/com.oracle.graal.python.cext/modules/_ctypes_test.c": CopyFrom("Modules/_ctypes/_ctypes_test.c"),
     "graalpython/com.oracle.graal.python.cext/modules/clinic/_struct.c.h": CopyFrom("Modules/clinic/_struct.c.h"),
     "graalpython/com.oracle.graal.python.cext/modules/_cpython_struct.c": CopyFrom("Modules/_struct.c"),
     "graalpython/com.oracle.graal.python.cext/modules/clinic/memoryobject.c.h": CopyFrom("Objects/clinic/memoryobject.c.h"),

@@ -1,3 +1,8 @@
+/* Copyright (c) 2025, Oracle and/or its affiliates.
+ * Copyright (C) 1996-2025 Python Software Foundation
+ *
+ * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
+ */
 #if defined (__SVR4) && defined (__sun)
 #   include <alloca.h>
 #endif
