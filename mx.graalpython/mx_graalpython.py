@@ -281,10 +281,7 @@ def libpythonvm_build_args():
     ):
         vc = SUITE.vc
         commit = str(vc.tip(SUITE.dir)).strip()
-        try:
-            branch = str(vc.active_branch(SUITE.dir)).strip()
-        except Exception: # pylint: disable=broad-except
-            branch = "master"
+        branch = str(vc.active_branch(SUITE.dir, abortOnError=False) or 'master').strip()
 
         if script := os.environ.get("ARTIFACT_DOWNLOAD_SCRIPT"):
             # This is always available in the GraalPy CI
