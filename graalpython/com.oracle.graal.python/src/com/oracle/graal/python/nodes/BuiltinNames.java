@@ -405,9 +405,6 @@ public abstract class BuiltinNames {
     public static final String J_ARRAY = "array";
     public static final TruffleString T_ARRAY = tsLiteral(J_ARRAY);
 
-    public static final String J__CTYPES = "_ctypes";
-    public static final TruffleString T__CTYPES = tsLiteral(J__CTYPES);
-
     public static final String J__SOCKET = "_socket";
     public static final TruffleString T__SOCKET = tsLiteral(J__SOCKET);
 

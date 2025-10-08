@@ -338,9 +338,6 @@ public abstract class TypeNodes {
         private static long defaultBuiltinFlags(PythonBuiltinClassType clazz) {
             long result;
             switch (clazz) {
-                case DictRemover:
-                case StructParam:
-                case CArgObject:
                 case MultibyteCodec:
                 case PEllipsis:
                 case PNotImplemented:
@@ -348,20 +345,10 @@ public abstract class TypeNodes {
                     result = DEFAULT;
                     break;
                 case PythonObject:
-                case StgDict:
-                case PyCData:
-                case PyCArray:
-                case PyCPointer:
-                case PyCFuncPtr:
-                case Structure:
-                case Union:
-                case SimpleCData:
                 case MultibyteIncrementalEncoder:
                 case MultibyteIncrementalDecoder:
                 case MultibyteStreamReader:
                 case MultibyteStreamWriter:
-                case PyCSimpleType:
-                case PyCFuncPtrType:
                     result = DEFAULT | BASETYPE;
                     break;
                 case PArray:
@@ -382,10 +369,6 @@ public abstract class TypeNodes {
                 case PReverseIterator:
                 case PCycle:
                 case PEnumerate:
-                case PyCStructType:
-                case PyCPointerType:
-                case PyCArrayType:
-                case UnionType:
                 case PBaseException:
                     result = DEFAULT | HAVE_GC | BASETYPE;
                     break;
@@ -419,8 +402,6 @@ public abstract class TypeNodes {
                 case PTraceback:
                 case PDequeIter:
                 case PDequeRevIter:
-                case CField:
-                case CThunkObject:
                 case PArrayIterator:
                 case PAsyncGenerator:
                 case PCell:

@@ -66,7 +66,6 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactor
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.WriteLongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.WritePointerNodeGen;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
@@ -76,7 +75,6 @@ import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
-import com.oracle.truffle.api.dsl.NonIdempotent;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -124,16 +122,7 @@ public class CStructAccess {
             return execute(1, size, allocatePyMem);
         }
 
-        /*
-         * This guard is nonIdempotent because 'isNativeAccessAllowed' may be different for each
-         * context.
-         */
-        @NonIdempotent
-        final boolean nativeAccess() {
-            return PythonContext.get(this).isNativeAccessAllowed();
-        }
-
-        @Specialization(guards = {"!allocatePyMem", "nativeAccess()"})
+        @Specialization(guards = "!allocatePyMem")
         static Object allocLong(long count, long size, @SuppressWarnings("unused") boolean allocatePyMem,
                         @Bind Node inliningTarget,
                         @Cached InlinedBranchProfile overflowProfile) {
@@ -151,17 +140,9 @@ public class CStructAccess {
             }
         }
 
-        @Specialization(guards = {"!allocatePyMem", "!nativeAccess()"})
-        static Object allocLong(long count, long size, @SuppressWarnings("unused") boolean allocatePyMem,
-                        @Shared @Cached PCallCapiFunction call) {
-            assert size >= 0;
-            // non-zero size to get unique pointers
-            return call.call(NativeCAPISymbol.FUN_CALLOC, count, size == 0 ? 1 : size);
-        }
-
         @Specialization(guards = "allocatePyMem")
         static Object allocLongPyMem(long count, long elsize, @SuppressWarnings("unused") boolean allocatePyMem,
-                        @Shared @Cached PCallCapiFunction call) {
+                        @Cached PCallCapiFunction call) {
             assert elsize >= 0;
             return call.call(NativeCAPISymbol.FUN_PYMEM_ALLOC, count, elsize);
         }
@@ -211,14 +192,6 @@ public class CStructAccess {
         static void freePointer(Object pointer,
                         @CachedLibrary("pointer") InteropLibrary lib) {
             UNSAFE.freeMemory(asPointer(pointer, lib));
-        }
-
-        @Specialization(guards = {"!isLong(pointer)", "!lib.isPointer(pointer)"})
-        static void freeManaged(Object pointer,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached PCallCapiFunction call) {
-            assert validPointer(pointer);
-            call.call(NativeCAPISymbol.FUN_FREE, pointer);
         }
 
         @NeverDefault

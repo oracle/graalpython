@@ -126,23 +126,13 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_UNICODE_SUBTYPE_NEW("GraalPyPrivate_Unicode_SubtypeNew", PyObjectTransfer, PyTypeObject, PyObject),
     FUN_CHECK_BASICSIZE_FOR_GETSTATE("GraalPyPrivate_CheckBasicsizeForGetstate", Int, PyTypeObject, Int),
     FUN_MMAP_INIT_BUFFERPROTOCOL("GraalPyPrivate_MMap_InitBufferProtocol", ArgDescriptor.Void, PyTypeObject),
-    FUN_PY_TRUFFLE_CDATA_INIT_BUFFER_PROTOCOL("GraalPyPrivate_CData_InitBufferProtocol", ArgDescriptor.Void, PyTypeObject),
     FUN_TRUFFLE_CHECK_TYPE_READY("GraalPyPrivate_CheckTypeReady", ArgDescriptor.Void, PyTypeObject),
     FUN_GRAALPY_GC_COLLECT("GraalPyPrivate_GC_Collect", Py_ssize_t, Int),
     FUN_SUBTYPE_TRAVERSE("GraalPyPrivate_SubtypeTraverse", Int, PyObject, Pointer, Pointer),
 
     /* PyDateTime_CAPI */
 
-    FUN_INIT_NATIVE_DATETIME("GraalPyPrivate_InitNativeDateTime", ArgDescriptor.Void),
-
-    // ctypes
-    FUN_FREE("free", Void, Pointer),
-    FUN_MEMMOVE("memmove", Pointer, Pointer, Pointer, SIZE_T),
-    FUN_MEMSET("memset", Pointer, Pointer, Int, SIZE_T),
-    FUN_CALLOC("calloc", Pointer, SIZE_T),
-    FUN_STRING_AT("string_at"),
-    FUN_CAST("cast"),
-    FUN_WSTRING_AT("wstring_at");
+    FUN_INIT_NATIVE_DATETIME("GraalPyPrivate_InitNativeDateTime", ArgDescriptor.Void);
 
     private final String name;
     private final TruffleString tsName;

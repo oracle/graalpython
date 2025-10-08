@@ -144,25 +144,6 @@ import com.oracle.graal.python.builtins.modules.csv.CSVDialectBuiltins;
 import com.oracle.graal.python.builtins.modules.csv.CSVModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.csv.CSVReaderBuiltins;
 import com.oracle.graal.python.builtins.modules.csv.CSVWriterBuiltins;
-import com.oracle.graal.python.builtins.modules.ctypes.CArgObjectBuiltins;
-import com.oracle.graal.python.builtins.modules.ctypes.CDataBuiltins;
-import com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins;
-import com.oracle.graal.python.builtins.modules.ctypes.CDataTypeSequenceBuiltins;
-import com.oracle.graal.python.builtins.modules.ctypes.CFieldBuiltins;
-import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.ctypes.PyCArrayBuiltins;
-import com.oracle.graal.python.builtins.modules.ctypes.PyCArrayTypeBuiltins;
-import com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrBuiltins;
-import com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrTypeBuiltins;
-import com.oracle.graal.python.builtins.modules.ctypes.PyCPointerBuiltins;
-import com.oracle.graal.python.builtins.modules.ctypes.PyCPointerTypeBuiltins;
-import com.oracle.graal.python.builtins.modules.ctypes.PyCSimpleTypeBuiltins;
-import com.oracle.graal.python.builtins.modules.ctypes.PyCStructTypeBuiltins;
-import com.oracle.graal.python.builtins.modules.ctypes.SimpleCDataBuiltins;
-import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins;
-import com.oracle.graal.python.builtins.modules.ctypes.StructUnionTypeBuiltins;
-import com.oracle.graal.python.builtins.modules.ctypes.StructureBuiltins;
-import com.oracle.graal.python.builtins.modules.ctypes.UnionTypeBuiltins;
 import com.oracle.graal.python.builtins.modules.functools.FunctoolsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.functools.KeyWrapperBuiltins;
 import com.oracle.graal.python.builtins.modules.functools.LruCacheWrapperBuiltins;
@@ -778,27 +759,6 @@ public abstract class Python3Core {
 
                         // _ast
                         new AstBuiltins(),
-
-                        // ctypes
-                        new CArgObjectBuiltins(),
-                        new CDataTypeBuiltins(),
-                        new CDataTypeSequenceBuiltins(),
-                        new CFieldBuiltins(),
-                        new CtypesModuleBuiltins(),
-                        new PyCArrayTypeBuiltins(),
-                        new PyCFuncPtrBuiltins(),
-                        new PyCFuncPtrTypeBuiltins(),
-                        new PyCPointerTypeBuiltins(),
-                        new PyCSimpleTypeBuiltins(),
-                        new PyCStructTypeBuiltins(),
-                        new StgDictBuiltins(),
-                        new StructUnionTypeBuiltins(),
-                        new StructureBuiltins(),
-                        new UnionTypeBuiltins(),
-                        new SimpleCDataBuiltins(),
-                        new PyCArrayBuiltins(),
-                        new PyCPointerBuiltins(),
-                        new CDataBuiltins(),
 
                         new StructModuleBuiltins(),
                         new StructBuiltins(),

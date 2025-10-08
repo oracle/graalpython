@@ -51,13 +51,6 @@ import com.oracle.graal.python.builtins.modules.csv.CSVDialect;
 import com.oracle.graal.python.builtins.modules.csv.CSVReader;
 import com.oracle.graal.python.builtins.modules.csv.CSVWriter;
 import com.oracle.graal.python.builtins.modules.csv.QuoteStyle;
-import com.oracle.graal.python.builtins.modules.ctypes.CDataObject;
-import com.oracle.graal.python.builtins.modules.ctypes.CFieldObject;
-import com.oracle.graal.python.builtins.modules.ctypes.CThunkObject;
-import com.oracle.graal.python.builtins.modules.ctypes.PyCArgObject;
-import com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrObject;
-import com.oracle.graal.python.builtins.modules.ctypes.StgDictObject;
-import com.oracle.graal.python.builtins.modules.ctypes.memory.Pointer;
 import com.oracle.graal.python.builtins.modules.functools.LruCacheObject;
 import com.oracle.graal.python.builtins.modules.functools.PKeyWrapper;
 import com.oracle.graal.python.builtins.modules.functools.PPartial;
@@ -1420,44 +1413,6 @@ public final class PFactory {
 
     public static PRWPair createRWPair(Object cls, Shape shape) {
         return new PRWPair(cls, shape);
-    }
-
-    public static PyCArgObject createCArgObject(PythonLanguage language) {
-        return new PyCArgObject(PythonBuiltinClassType.CArgObject, PythonBuiltinClassType.CArgObject.getInstanceShape(language));
-    }
-
-    public static CThunkObject createCThunkObject(PythonLanguage language, int nArgs) {
-        return createCThunkObject(PythonBuiltinClassType.CThunkObject, PythonBuiltinClassType.CThunkObject.getInstanceShape(language), nArgs);
-    }
-
-    public static CThunkObject createCThunkObject(Object cls, Shape shape, int nArgs) {
-        return new CThunkObject(cls, shape, nArgs);
-    }
-
-    // Don't use directly, use CtypesNodes.CreateCDataObjectNode
-    public static CDataObject createCDataObject(Object cls, Shape shape, Pointer b_ptr, int b_size, boolean b_needsfree) {
-        return new CDataObject(cls, shape, b_ptr, b_size, b_needsfree);
-    }
-
-    // Don't use directly, use CtypesNodes.CreateCDataObjectNode
-    public static PyCFuncPtrObject createPyCFuncPtrObject(Object cls, Shape shape, Pointer b_ptr, int b_size, boolean b_needsfree) {
-        return new PyCFuncPtrObject(cls, shape, b_ptr, b_size, b_needsfree);
-    }
-
-    public static CFieldObject createCFieldObject(PythonLanguage language) {
-        return createCFieldObject(PythonBuiltinClassType.CField, PythonBuiltinClassType.CField.getInstanceShape(language));
-    }
-
-    public static CFieldObject createCFieldObject(Object cls, Shape shape) {
-        return new CFieldObject(cls, shape);
-    }
-
-    public static StgDictObject createStgDictObject(PythonLanguage language) {
-        return createStgDictObject(PythonBuiltinClassType.StgDict, PythonBuiltinClassType.StgDict.getInstanceShape(language));
-    }
-
-    public static StgDictObject createStgDictObject(Object cls, Shape shape) {
-        return new StgDictObject(cls, shape);
     }
 
     public static PSSLContext createSSLContext(Object cls, Shape shape, SSLMethod method, int verifyFlags, boolean checkHostname, int verifyMode, SSLContext context) {

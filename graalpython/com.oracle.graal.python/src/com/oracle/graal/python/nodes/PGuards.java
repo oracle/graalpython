@@ -44,9 +44,6 @@ import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelper
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.ctypes.CDataObject;
-import com.oracle.graal.python.builtins.modules.ctypes.PyCArgObject;
-import com.oracle.graal.python.builtins.modules.ctypes.StgDictObject;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.array.PArray;
@@ -158,10 +155,6 @@ public abstract class PGuards {
 
     public static boolean isCode(Object object) {
         return object instanceof PCode;
-    }
-
-    public static boolean isStgDict(Object dict) {
-        return dict instanceof StgDictObject;
     }
 
     @Idempotent
@@ -422,14 +415,6 @@ public abstract class PGuards {
 
     public static boolean isPSlice(Object obj) {
         return obj instanceof PSlice;
-    }
-
-    public static boolean isPyCArg(Object obj) {
-        return obj instanceof PyCArgObject;
-    }
-
-    public static boolean isCDataObject(Object obj) {
-        return obj instanceof CDataObject;
     }
 
     public static boolean expectBoolean(Object result) throws UnexpectedResultException {
