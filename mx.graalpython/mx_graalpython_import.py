@@ -132,6 +132,9 @@ CPYTHON_SOURCES_MAPPING = {
     # Standard library
     "graalpython/lib-python/3": CopyFrom("Lib"),
 
+    # hand written based on the original
+    "graalpython/lib-graalpython/modules/graalpy-config.py": Ignore(),
+
     # C API
     "graalpython/com.oracle.graal.python.cext/include": CopyFromWithOverrides("Include"),
     # Different copyright
