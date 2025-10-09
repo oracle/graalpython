@@ -51,6 +51,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbo
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TYPE_GENERIC_ALLOC;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_SUBTYPE_TRAVERSE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper.IMMORTAL_REFCNT;
+import static com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper.MANAGED_REFCNT;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CConstants.PYLONG_BITS_IN_DIGIT;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyFloatObject__ob_fval;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMethodDef__ml_doc;
@@ -122,6 +123,7 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -211,8 +213,6 @@ import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 public abstract class CExtNodes {
 
-    private static final String J_UNICODE = "unicode";
-    private static final String J_SUBTYPE_NEW = "_subtype_new";
     private static final long SIZEOF_PY_OBJECT_PTR = Long.BYTES;
 
     /**
@@ -310,6 +310,26 @@ public abstract class CExtNodes {
 
         public static StringSubtypeNew create() {
             return CExtNodesFactory.StringSubtypeNewNodeGen.create();
+        }
+    }
+
+    @GenerateInline(true)
+    @GenerateCached(false)
+    @GenerateUncached(false)
+    public abstract static class DictSubtypeNew extends Node {
+        public abstract PDict execute(Node node, Object cls, PDict managedSide);
+
+        @Specialization
+        static PDict allocateNativePart(Object cls, PDict managedSide,
+                        @Cached PythonToNativeNode toNative,
+                        @Cached PCallCapiFunction call) {
+            assert managedSide.getNativeWrapper() == null;
+            var nativeWrapper = new PythonObjectNativeWrapper(managedSide);
+            managedSide.setNativeWrapper(nativeWrapper);
+            long nativeObject = (long) call.call(NativeCAPISymbol.FUN_PY_TYPE_GENERIC_NEW_RAW, toNative.execute(cls), 0L, 0L);
+            CApiTransitions.writeNativeRefCount(nativeObject, MANAGED_REFCNT);
+            CApiTransitions.createReference(nativeWrapper, nativeObject, true);
+            return managedSide;
         }
     }
 

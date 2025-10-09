@@ -3562,6 +3562,7 @@ Py_ssize_t
 _PyDict_SizeOf(PyDictObject *mp)
 {
     size_t res = _PyObject_SIZE(Py_TYPE(mp));
+
     if (mp->ma_values) {
         res += shared_keys_usable_size(mp->ma_keys) * sizeof(PyObject*);
     }

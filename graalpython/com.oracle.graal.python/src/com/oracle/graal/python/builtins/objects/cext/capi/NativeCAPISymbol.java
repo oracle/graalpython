@@ -96,6 +96,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_PY_TYPE_READY("PyType_Ready", Int, PyTypeObject),
     FUN_PY_OBJECT_FREE("PyObject_Free", Void, Pointer),
     FUN_PY_OBJECT_GENERIC_SET_DICT("PyObject_GenericSetDict", Int, PyObject, PyObject, Pointer),
+    FUN_PY_TYPE_GENERIC_NEW_RAW("PyType_GenericNew", ArgDescriptor.UINTPTR_T, PyTypeObject, ArgDescriptor.UINTPTR_T, ArgDescriptor.UINTPTR_T),
     FUN_PY_TYPE_GENERIC_ALLOC("PyType_GenericAlloc", PyObjectTransfer, PyTypeObject, Py_ssize_t),
     FUN_PY_OBJECT_GET_DICT_PTR("_PyObject_GetDictPtr", Pointer, PyObject),
     FUN_PY_UNICODE_GET_LENGTH("PyUnicode_GetLength", Py_ssize_t, PyObject),

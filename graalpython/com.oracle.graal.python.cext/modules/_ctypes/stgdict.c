@@ -67,7 +67,8 @@ PyCStgDict_sizeof(StgDictObject *self, void *unused)
 {
     Py_ssize_t res;
 
-    res = _PyDict_SizeOf((PyDictObject *)self);
+    // GraalPy change: _PyDict_SizeOf -> PyObject_SIZE
+    res = _PyObject_SIZE(Py_TYPE(self));
     res += sizeof(StgDictObject) - sizeof(PyDictObject);
     if (self->format)
         res += strlen(self->format) + 1;
