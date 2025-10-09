@@ -49,6 +49,7 @@ from os.path import abspath, dirname, join
 
 def ensure_installed(name, *extra):
     import importlib
+
     try:
         return importlib.import_module(name)
     except ImportError:
