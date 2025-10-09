@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.modules.cext;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.T__WEAKREF;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_PROXY_TYPE;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
@@ -52,10 +54,15 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBina
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType;
 import com.oracle.graal.python.builtins.objects.referencetype.ReferenceTypeBuiltins.ReferenceTypeNode;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 
 public final class PythonCextWeakrefBuiltins {
 
@@ -74,6 +81,17 @@ public final class PythonCextWeakrefBuiltins {
         static Object refType(Object object, Object callback,
                         @Cached ReferenceTypeNode referenceType) {
             return referenceType.execute(PythonBuiltinClassType.PReferenceType, object, callback);
+        }
+    }
+
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
+    abstract static class PyWeakref_NewProxy extends CApiBinaryBuiltinNode {
+        @Specialization
+        static Object refType(Object object, Object callback,
+                        @Bind Node inliningTarget,
+                        @Cached PyObjectCallMethodObjArgs call) {
+            PythonModule weakrefModule = PythonContext.get(inliningTarget).lookupBuiltinModule(T__WEAKREF);
+            return call.execute(null, inliningTarget, weakrefModule, T_PROXY_TYPE, object, callback == PNone.NO_VALUE ? PNone.NONE : callback);
         }
     }
 

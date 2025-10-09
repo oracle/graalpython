@@ -43,9 +43,10 @@ package com.oracle.graal.python.builtins.modules;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.removeNativeWeakRef;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__WEAKREF;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__WEAKREF;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_PROXY_TYPE;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_CALLABLE_PROXY_TYPE;
 import static com.oracle.graal.python.nodes.HiddenAttr.WEAK_REF_QUEUE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_REF;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
@@ -77,7 +78,6 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = J__WEAKREF, isEager = true)
 public final class WeakRefModuleBuiltins extends PythonBuiltins {
@@ -169,9 +169,6 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
             WriteUnraisableNode.getUncached().execute(e.getEscapedException(), null, callable());
         }
     }
-
-    private static final TruffleString T_PROXY_TYPE = tsLiteral("ProxyType");
-    private static final TruffleString T_CALLABLE_PROXY_TYPE = tsLiteral("CallableProxyType");
 
     @Override
     public void postInitialize(Python3Core core) {
