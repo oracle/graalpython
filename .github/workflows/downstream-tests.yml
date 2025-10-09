@@ -54,7 +54,7 @@ jobs:
         echo "$HOME/.local/bin" >> $GITHUB_PATH
 
     - name: Checkout main repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Get GraalPy EA build
       run: |
