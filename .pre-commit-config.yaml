@@ -39,3 +39,7 @@ repos:
     types: [text]
     files: '\.(java|py|md|c|h|sh)$'
     exclude: '^graalpython/lib-python/.*'
+  - id: check-toml
+    exclude: '^graalpython/lib-python/.*'
+  - id: check-added-large-files
+  - id: check-symlinks
