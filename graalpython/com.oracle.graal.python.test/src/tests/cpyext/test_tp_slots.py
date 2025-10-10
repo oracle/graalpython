@@ -1076,6 +1076,10 @@ def test_nb_slot_calls():
                 }
             #define proxy_nb_ternary_slot(slot) \
                 static PyObject* proxy_##slot(PyObject *a, PyObject *b, PyObject* c) { \
+                    if (c == NULL) { \
+                        PyErr_SetString(PyExc_AssertionError, "modulus in NULL"); \
+                        return NULL; \
+                    } \
                     if (Py_TYPE(a) == &NativeNbSlotProxyType) { \
                         PyObject* delegate = get_delegate(a); \
                         return Py_TYPE(delegate)->tp_as_number->slot(delegate, b, c); \
@@ -1089,6 +1093,10 @@ def test_nb_slot_calls():
                 }
             #define proxy_nb_ternary_inplace_slot(slot) \
                 static PyObject* proxy_##slot(PyObject *self, PyObject *b, PyObject* c) { \
+                    if (c == NULL) { \
+                        PyErr_SetString(PyExc_AssertionError, "modulus in NULL"); \
+                        return NULL; \
+                    } \
                     PyObject* delegate = get_delegate(self); \
                     PyObject* result = Py_TYPE(delegate)->tp_as_number->slot(delegate, b, c); \
                     if (!result) \
@@ -1176,6 +1184,8 @@ def test_nb_slot_calls():
         assert divmod(2, obj) == (0, 2)
         assert obj ** 2 == 9
         assert 2 ** obj == 8
+        assert pow(obj, 2) == 9
+        assert pow(2, obj) == 8
         assert pow(obj, 2, 2) == 1
         if isinstance(obj.delegate, int):  # pow doesn't call __rpow__
             assert pow(2, obj, 2) == 0
