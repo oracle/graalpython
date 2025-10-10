@@ -788,14 +788,14 @@ public final class PythonCextAbstractBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
     abstract static class PyMapping_Keys extends CApiUnaryBuiltinNode {
-        @Specialization
+        @Specialization(guards = "isBuiltinDict(obj)")
         Object keys(PDict obj,
                         @Cached KeysNode keysNode,
                         @Shared @Cached ConstructListNode listNode) {
             return listNode.execute(null, keysNode.execute(null, obj));
         }
 
-        @Specialization(guards = "!isDict(obj)")
+        @Fallback
         Object keys(Object obj,
                         @Bind Node inliningTarget,
                         @Cached PyObjectGetAttr getAttrNode,
@@ -811,17 +811,16 @@ public final class PythonCextAbstractBuiltins {
         return listNode.execute(frame, callNode.execute(frame, attr));
     }
 
-    @CApiBuiltin(name = "PyDict_Items", ret = PyObjectTransfer, args = {PyObject}, call = Direct)
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
     abstract static class PyMapping_Items extends CApiUnaryBuiltinNode {
-        @Specialization
+        @Specialization(guards = "isBuiltinDict(obj)")
         static Object items(PDict obj,
                         @Cached ItemsNode itemsNode,
                         @Shared @Cached ConstructListNode listNode) {
             return listNode.execute(null, itemsNode.execute(null, obj));
         }
 
-        @Specialization(guards = "!isDict(obj)")
+        @Fallback
         static Object items(Object obj,
                         @Bind Node inliningTarget,
                         @Cached PyObjectGetAttr getAttrNode,
@@ -834,14 +833,14 @@ public final class PythonCextAbstractBuiltins {
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
     abstract static class PyMapping_Values extends CApiUnaryBuiltinNode {
-        @Specialization
+        @Specialization(guards = "isBuiltinDict(obj)")
         static Object values(PDict obj,
                         @Shared @Cached ConstructListNode listNode,
                         @Cached ValuesNode valuesNode) {
             return listNode.execute(null, valuesNode.execute(null, obj));
         }
 
-        @Specialization(guards = "!isDict(obj)")
+        @Fallback
         static Object values(Object obj,
                         @Bind Node inliningTarget,
                         @Cached PyObjectGetAttr getAttrNode,
