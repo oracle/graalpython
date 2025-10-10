@@ -550,7 +550,8 @@ StructUnionType_new(PyTypeObject *type, PyObject *args, PyObject *kwds, int isSt
         Py_DECREF((PyObject *)dict);
         return NULL;
     }
-    Py_SETREF(result->tp_dict, (PyObject *)dict);
+    result->tp_dict = (PyObject *)dict; // GraalPy change: do not use Py_SETREF
+    PyType_Modified(result); // GraalPy change: sync tp_dict change to managed
     dict->format = _ctypes_alloc_format_string(NULL, "B");
     if (dict->format == NULL) {
         Py_DECREF(result);
@@ -1152,7 +1153,8 @@ PyCPointerType_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
         Py_DECREF((PyObject *)stgdict);
         return NULL;
     }
-    Py_SETREF(result->tp_dict, (PyObject *)stgdict);
+    result->tp_dict = (PyObject *)stgdict; // GraalPy change: do not use Py_SETREF
+    PyType_Modified(result); // GraalPy change: sync tp_dict change to managed
 
     return (PyObject *)result;
 }
@@ -1588,7 +1590,8 @@ PyCArrayType_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
     /* replace the class dict by our updated spam dict */
     if (-1 == PyDict_Update((PyObject *)stgdict, result->tp_dict))
         goto error;
-    Py_SETREF(result->tp_dict, (PyObject *)stgdict);  /* steal the reference */
+    result->tp_dict = (PyObject *)stgdict; // GraalPy change: do not use Py_SETREF
+    PyType_Modified(result); // GraalPy change: sync tp_dict change to managed
     stgdict = NULL;
 
     /* Special case for character arrays.
@@ -2002,7 +2005,8 @@ static PyObject *CreateSwappedType(PyTypeObject *type, PyObject *args, PyObject 
         Py_DECREF((PyObject *)stgdict);
         return NULL;
     }
-    Py_SETREF(result->tp_dict, (PyObject *)stgdict);
+    result->tp_dict = (PyObject *)stgdict; // GraalPy change: do not use Py_SETREF
+    PyType_Modified(result); // GraalPy change: sync tp_dict change to managed
 
     return (PyObject *)result;
 }
@@ -2131,7 +2135,8 @@ PyCSimpleType_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
         Py_DECREF((PyObject *)stgdict);
         return NULL;
     }
-    Py_SETREF(result->tp_dict, (PyObject *)stgdict);
+    result->tp_dict = (PyObject *)stgdict; // GraalPy change: do not use Py_SETREF
+    PyType_Modified(result); // GraalPy change: sync tp_dict change to managed
 
     /* Install from_param class methods in ctypes base classes.
        Overrides the PyCSimpleType_from_param generic method.
@@ -2573,7 +2578,8 @@ PyCFuncPtrType_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
         Py_DECREF((PyObject *)stgdict);
         return NULL;
     }
-    Py_SETREF(result->tp_dict, (PyObject *)stgdict);
+    result->tp_dict = (PyObject *)stgdict; // GraalPy change: do not use Py_SETREF
+    PyType_Modified(result); // GraalPy change: sync tp_dict change to managed
 
     if (-1 == make_funcptrtype_dict(stgdict)) {
         Py_DECREF(result);
