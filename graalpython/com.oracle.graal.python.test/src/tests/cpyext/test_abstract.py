@@ -40,13 +40,15 @@
 import array
 import collections
 import mmap
-import os
 import sys
 import unittest
-from unittest import skipIf
+from collections import OrderedDict
 
 from . import CPyExtTestCase, CPyExtFunction, CPyExtType, unhandled_error_compare
 
+ORDERED_DICT = OrderedDict({'c': 3, 'a': 1, 'b': 2})
+ORDERED_DICT.move_to_end('c')
+assert list(ORDERED_DICT.items()) == [('a', 1), ('b', 2), ('c', 3)]
 
 def _safe_check(v, type_check):
     try:
@@ -110,58 +112,58 @@ def raise_type_error():
 
 def _reference_seq_size(args):
     seq = args[0]
-           
+
     if istypeof(seq, [dict, type(type.__dict__)]):
-        # checking for the exact type 
+        # checking for the exact type
         # even if a dict or mappingproxy isn't accepted
-        # a subclass with overriden __len__ is 
-        raise_type_error()  
-        
+        # a subclass with overriden __len__ is
+        raise_type_error()
+
     return len(seq)
 
 def _reference_mapping_size(args):
     m = args[0]
-    
+
     if istypeof(m, [set, frozenset, collections.deque]):
-        # checking for the exact type 
+        # checking for the exact type
         # even if a set or deque isn't accepted
-        # a subclass with overriden __len__ is 
-        raise_type_error()            
-    
+        # a subclass with overriden __len__ is
+        raise_type_error()
+
     try:
-        return len(m)    
+        return len(m)
     except:
         pass
-    
+
     raise_type_error()
-        
+
 def _reference_object_size(args):
-    obj = args[0]        
-    
+    obj = args[0]
+
     try:
         return len(obj)
     except:
         pass
-    
+
     raise_type_error()
 
 def _reference_sequence_check(args):
     obj = args[0]
 
     if isinstanceof(obj, [dict, type(type.__dict__), set, frozenset]):
-        return False  
-    
+        return False
+
     return hasattr(obj, '__getitem__')
 
 def _reference_mapping_check(args):
     obj = args[0]
-    
+
     if isinstanceof(obj, [collections.deque]):
-        return False  
-    
+        return False
+
     if isinstanceof(obj, [array.array, bytearray, bytes, dict, type(type.__dict__), list, memoryview, range]):
         return True
-    
+
     return hasattr(obj, '__getitem__')
 
 def isinstanceof(obj, types):
@@ -257,37 +259,37 @@ class DummySequence():
 
     def __getitem__(self, idx):
         raise IndexError
-    
+
 class DummyLen():
     def __len__(self):
         return 42
-    
+
 class DummyDict(dict):
     pass
 
-class DummyDictLen(dict):    
+class DummyDictLen(dict):
     def __len__(self):
         return 42
-    
+
 
 class DummyListSubclass(list):
     pass
 
-class DummyListLen(list):    
+class DummyListLen(list):
     def __len__(self):
         return 42
-    
-class DummySet(set):    
+
+class DummySet(set):
     pass
-    
-class DummySetLen(set):    
+
+class DummySetLen(set):
     def __len__(self):
         return 42
-    
-class DummyDeque(set):    
+
+class DummyDeque(set):
     pass
-    
-class DummyDequeLen(set):    
+
+class DummyDequeLen(set):
     def __len__(self):
         return 42
 
@@ -401,7 +403,7 @@ def _size_and_check_args():
             (DummySet([1,2,3]),),
             (DummySetLen(),),
             (DummySetLen([1,2,3]),),
-            ({1,2,3},),            
+            ({1,2,3},),
             (frozenset({1,2,3}),),
             (dict(),),
             ({'a':0, 'b':1},),
@@ -417,14 +419,14 @@ def _size_and_check_args():
             (bytearray(b'abc'),),
             (memoryview(b'abc'),),
             (array.array('I', [1,2,3]),),
-            (collections.deque([1,2,3,]),),  
-            (DummyDeque(),),  
-            (DummyDeque([1,2,3]),),  
-            (DummyDequeLen(),),  
+            (collections.deque([1,2,3,]),),
+            (DummyDeque(),),
+            (DummyDeque([1,2,3]),),
+            (DummyDequeLen(),),
             (DummyDequeLen([1,2,3]),),
             (DictSubclassWithSequenceMethods(),),
         )
-        
+
 class TestAbstractWithNative(unittest.TestCase):
     def test_sequence_check(self):
         TestSequenceCheck = CPyExtType("TestSequenceCheck",
@@ -462,7 +464,7 @@ class TestAbstractWithNative(unittest.TestCase):
         )
         tester = TestSequenceSize()
         assert tester.callSize(tester) == 10
-        
+
     def test_sequence_size_err(self):
         TestSequenceSizeErr = CPyExtType("TestSequenceSizeErr",
                              """
@@ -481,14 +483,14 @@ class TestAbstractWithNative(unittest.TestCase):
                              tp_methods='{"callSize", (PyCFunction)callSize, METH_O, ""}',
                              sq_length="&test_sq_length",
         )
-        tester = TestSequenceSizeErr()        
+        tester = TestSequenceSizeErr()
         try:
             tester.callSize(tester)
         except TypeError:
             assert True
         else:
             assert False
-            
+
     def test_sequence_size_err2(self):
         TestSequenceSizeErr2 = CPyExtType("TestSequenceSizeErr2",
                              """
@@ -507,14 +509,14 @@ class TestAbstractWithNative(unittest.TestCase):
                              tp_methods='{"callSize", (PyCFunction)callSize, METH_O, ""}',
                              sq_length="&test_sq_length",
         )
-        tester = TestSequenceSizeErr2()        
+        tester = TestSequenceSizeErr2()
         try:
             tester.callSize(tester)
         except TypeError:
             assert True
         else:
-            assert False            
-        
+            assert False
+
     def test_mapping_check(self):
         TestMappingCheck = CPyExtType("TestMappingCheck",
                              """
@@ -531,7 +533,7 @@ class TestAbstractWithNative(unittest.TestCase):
         )
         tester = TestMappingCheck()
         assert tester.callCheck(tester)
-        
+
     def test_mapping_size(self):
         TestMappingSize = CPyExtType("TestMappingSize",
                              """
@@ -551,7 +553,7 @@ class TestAbstractWithNative(unittest.TestCase):
         )
         tester = TestMappingSize()
         assert tester.callSize(tester) == 11
-        
+
     def test_mapping_size_err(self):
         TestMappingSizeErr = CPyExtType("TestMappingSizeErr",
                              """
@@ -570,14 +572,14 @@ class TestAbstractWithNative(unittest.TestCase):
                              tp_methods='{"callSize", (PyCFunction)callSize, METH_O, ""}',
                              mp_length="&test_mp_length",
         )
-        tester = TestMappingSizeErr()   
+        tester = TestMappingSizeErr()
         try:
             tester.callSize(tester)
         except TypeError:
             assert True
         else:
             assert False
-        
+
     def test_object_size_sq(self):
         TestObjectSizeSQ = CPyExtType("TestObjectSizeSQ",
                              """
@@ -597,7 +599,7 @@ class TestAbstractWithNative(unittest.TestCase):
         )
         tester = TestObjectSizeSQ()
         assert tester.callSize(tester) == 12
-        
+
     def test_object_size_mp(self):
         TestObjectSizeMP = CPyExtType("TestObjectSizeMP",
                              """
@@ -616,8 +618,8 @@ class TestAbstractWithNative(unittest.TestCase):
                              mp_length="&test_sq_length",
         )
         tester = TestObjectSizeMP()
-        assert tester.callSize(tester) == 13            
-        
+        assert tester.callSize(tester) == 13
+
     def test_object_size_err(self):
         TestObjectSizeErr = CPyExtType("TestObjectSizeErr",
                              """
@@ -1085,7 +1087,7 @@ class TestAbstract(CPyExtTestCase):
 
     test_PySequence_Fast_GET_SIZE = CPyExtFunction(
         lambda args: len(args[0]),
-        lambda: (    
+        lambda: (
             (tuple(),),
             (list(),),
             ((1, 2, 3),),
@@ -1240,7 +1242,7 @@ class TestAbstract(CPyExtTestCase):
         arguments=["PyObject* sequence", "Py_ssize_t ilow", "Py_ssize_t ihigh"],
         cmpfunc=unhandled_error_compare
     )
-    
+
     test_PySequence_Contains = CPyExtFunction(
         lambda args: args[1] in args[0],
         lambda: (
@@ -1422,7 +1424,7 @@ class TestAbstract(CPyExtTestCase):
         arguments=["PyObject* sequence"],
         cmpfunc=unhandled_error_compare
     )
-    
+
     test_PySequence_List = CPyExtFunction(
         lambda args: list(args[0]),
         lambda: (
@@ -1528,7 +1530,7 @@ class TestAbstract(CPyExtTestCase):
         argspec='O',
         arguments=["PyObject* mapping"],
     )
-    
+
     test_PyMapping_Size = CPyExtFunction(
         _reference_mapping_size,
         _size_and_check_args,
@@ -1536,8 +1538,44 @@ class TestAbstract(CPyExtTestCase):
         argspec='O',
         arguments=["PyObject* mapping"],
         cmpfunc=unhandled_error_compare
-    )    
-    
+    )
+
+    test_PyMapping_Keys = CPyExtFunction(
+        lambda args: list(args[0].keys()),
+        lambda: (
+            ({'a': 1, 'b': 2},),
+            (ORDERED_DICT,),
+        ),
+        argspec='O',
+        resultspec='O',
+        arguments=["PyObject* mapping"],
+        cmpfunc=unhandled_error_compare,
+    )
+
+    test_PyMapping_Values = CPyExtFunction(
+        lambda args: list(args[0].values()),
+        lambda: (
+            ({'a': 1, 'b': 2},),
+            (ORDERED_DICT,),
+        ),
+        argspec='O',
+        resultspec='O',
+        arguments=["PyObject* mapping"],
+        cmpfunc=unhandled_error_compare,
+    )
+
+    test_PyMapping_Items = CPyExtFunction(
+        lambda args: list(args[0].items()),
+        lambda: (
+            ({'a': 1, 'b': 2},),
+            (ORDERED_DICT,),
+        ),
+        argspec='O',
+        resultspec='O',
+        arguments=["PyObject* mapping"],
+        cmpfunc=unhandled_error_compare,
+    )
+
     test_PyIndex_Check = CPyExtFunction(
         lambda args: hasattr(args[0], "__index__"),
         lambda: (
