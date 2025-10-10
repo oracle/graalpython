@@ -8,7 +8,7 @@ jobs:
   centos-ppc64le-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Build maven artifacts
         run: |
@@ -24,7 +24,7 @@ jobs:
           mv mxbuild/jdk*/mx.graalpython/public-maven-repo m2repo
 
       - name: Install OpenJ9 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'semeru'
           java-version: '17'
