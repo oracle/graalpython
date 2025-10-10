@@ -371,10 +371,9 @@ public abstract class ObjectNodes {
         static Object id(PString self,
                         @Bind Node inliningTarget,
                         @Exclusive @Cached ObjectNodes.GetObjectIdNode getObjectIdNode,
-                        @Cached StringNodes.IsInternedStringNode isInternedStringNode,
-                        @Cached StringNodes.StringMaterializeNode materializeNode) {
+                        @Cached StringNodes.IsInternedStringNode isInternedStringNode) {
             if (isInternedStringNode.execute(inliningTarget, self)) {
-                return id(materializeNode.execute(inliningTarget, self), inliningTarget);
+                return id(self.getMaterialized(), inliningTarget);
             }
             return getObjectIdNode.execute(inliningTarget, self);
         }

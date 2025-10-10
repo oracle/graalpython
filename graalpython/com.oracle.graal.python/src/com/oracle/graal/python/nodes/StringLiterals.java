@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes;
 
+import static com.oracle.graal.python.util.PythonUtils.tsInternedLiteral;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.truffle.api.strings.TruffleString;
@@ -92,8 +93,8 @@ public abstract class StringLiterals {
     public static final TruffleString T_TIME = tsLiteral("time");
     public static final String J_GET_ = "get_";
     public static final String J_SET_ = "set_";
-    public static final TruffleString T_NAME = tsLiteral("name");
-    public static final TruffleString T_PATH = tsLiteral("path");
+    public static final TruffleString T_NAME = tsInternedLiteral("name");
+    public static final TruffleString T_PATH = tsInternedLiteral("path");
     public static final TruffleString T_UTF8 = tsLiteral("utf-8");
     public static final TruffleString T_UTF_UNDERSCORE_8 = tsLiteral("utf_8");
     public static final String J_STRICT = "strict";

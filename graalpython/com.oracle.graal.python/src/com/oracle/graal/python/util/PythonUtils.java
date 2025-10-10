@@ -149,6 +149,8 @@ public final class PythonUtils {
     public static final Assumption[] EMPTY_ASSUMPTION_ARRAY = new Assumption[0];
     public static final ByteSequence EMPTY_BYTE_SEQUENCE = ByteSequence.create(EMPTY_BYTE_ARRAY);
 
+    private static final ConcurrentWeakSet<TruffleString> TRUFFLE_STRING_INTERNING_CACHE = new ConcurrentWeakSet<>();
+
     /**
      * Returns an estimate for the initial capacity of a
      * {@link com.oracle.truffle.api.strings.TruffleStringBuilder}.
@@ -162,9 +164,41 @@ public final class PythonUtils {
     }
 
     /**
+     * Intern the given string, returning a TruffleString in the cache. It is correct if the passed
+     * string is a lazy substring, because it will be copied before it is added to the map.
+     */
+    @TruffleBoundary
+    public static TruffleString internString(TruffleString string) {
+        assert string.isCompatibleToUncached(TS_ENCODING);
+
+        TruffleString interned = TRUFFLE_STRING_INTERNING_CACHE.intern(string, s -> {
+            // Use materializeSubstringUncached() to ensure the TruffleString in the cache does not
+            // hold onto more bytes than necessary
+            return s.asManagedTruffleStringUncached(TS_ENCODING).materializeSubstringUncached(TS_ENCODING);
+        });
+        assert interned.equals(string);
+        return interned;
+    }
+
+    @TruffleBoundary
+    public static boolean isInterned(TruffleString string) {
+        return TRUFFLE_STRING_INTERNING_CACHE.isInterned(string);
+    }
+
+    @TruffleBoundary
+    public static boolean isInterned(TruffleString[] strings) {
+        for (TruffleString string : strings) {
+            if (!isInterned(string)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
      * Uncached conversion of {@link String} to {@link TruffleString}. The intended use of this
      * method is in static initializers where the argument is a string literal (or a static final
-     * constant).
+     * constant). Consider using {@link #tsInternedLiteral(String)}.
      */
     @TruffleBoundary
     public static TruffleString tsLiteral(String s) {
@@ -172,14 +206,25 @@ public final class PythonUtils {
         return TruffleString.fromConstant(s, TS_ENCODING);
     }
 
+    @TruffleBoundary
+    public static TruffleString tsInternedLiteral(String s) {
+        return internString(tsLiteral(s));
+    }
+
     /**
-     * Uncached conversion of {@link String} to {@link TruffleString}. The intended use of this
-     * method is in slow-path where the argument is a variable as a shortcut for
+     * Consider using {@link #toInternedTruffleStringUncached(String)}. Uncached conversion of
+     * {@link String} to {@link TruffleString}. The intended use of this method is in slow-path
+     * where the argument is a variable as a shortcut for
      * {@link TruffleString#fromJavaStringUncached(String, Encoding)}.
      */
     @TruffleBoundary
     public static TruffleString toTruffleStringUncached(String s) {
         return s == null ? null : TruffleString.fromJavaStringUncached(s, TS_ENCODING);
+    }
+
+    @TruffleBoundary
+    public static TruffleString toInternedTruffleStringUncached(String s) {
+        return s == null ? null : internString(toTruffleStringUncached(s));
     }
 
     public static PString toPString(TruffleString name) {
@@ -202,7 +247,8 @@ public final class PythonUtils {
 
     /**
      * Creates an array of {@link TruffleString}s using uncached conversion. The intended use of
-     * this method is in slow-path where the argument is a variable.
+     * this method is in slow-path where the argument is a variable. Consider using
+     * {@link #toInternedTruffleStringArrayUncached}.
      */
     @TruffleBoundary
     public static TruffleString[] toTruffleStringArrayUncached(String[] s) {
@@ -215,6 +261,21 @@ public final class PythonUtils {
         TruffleString[] result = new TruffleString[s.length];
         for (int i = 0; i < result.length; ++i) {
             result[i] = toTruffleStringUncached(s[i]);
+        }
+        return result;
+    }
+
+    @TruffleBoundary
+    public static TruffleString[] toInternedTruffleStringArrayUncached(String[] s) {
+        if (s == null) {
+            return null;
+        }
+        if (s.length == 0) {
+            return EMPTY_TRUFFLESTRING_ARRAY;
+        }
+        TruffleString[] result = new TruffleString[s.length];
+        for (int i = 0; i < result.length; ++i) {
+            result[i] = toInternedTruffleStringUncached(s[i]);
         }
         return result;
     }
@@ -237,9 +298,18 @@ public final class PythonUtils {
         return result;
     }
 
+    /**
+     * Consider using {@link #codePointsToInternedTruffleString(CodePoints)} instead.
+     */
     @TruffleBoundary
     public static TruffleString codePointsToTruffleString(CodePoints cp) {
         return TruffleString.fromIntArrayUTF32Uncached(cp.getBuffer(), cp.getOffset(), cp.getLength()).switchEncodingUncached(TS_ENCODING);
+    }
+
+    @TruffleBoundary
+    public static TruffleString codePointsToInternedTruffleString(CodePoints cp) {
+        TruffleString ts = codePointsToTruffleString(cp);
+        return internString(ts);
     }
 
     @TruffleBoundary
@@ -718,7 +788,7 @@ public final class PythonUtils {
     public static PBuiltinFunction createMethod(Object klass, Builtin builtin, RootCallTarget callTarget, Object type, int numDefaults) {
         assert callTarget.getRootNode() instanceof BuiltinFunctionRootNode r && r.getBuiltin() == builtin;
         int flags = PBuiltinFunction.getFlags(builtin, callTarget);
-        TruffleString name = toTruffleStringUncached(builtin.name());
+        TruffleString name = toInternedTruffleStringUncached(builtin.name());
         PBuiltinFunction function = PFactory.createBuiltinFunction(PythonLanguage.get(null), name, type, numDefaults, flags, callTarget);
         if (klass != null) {
             WriteAttributeToObjectNode.getUncached().execute(klass, name, function);
@@ -746,7 +816,7 @@ public final class PythonUtils {
         }
         TruffleString[] result = new TruffleString[array.length];
         for (int i = 0; i < array.length; i++) {
-            result[i] = cast.execute(inliningTarget, array[i]);
+            result[i] = PythonUtils.internString(cast.execute(inliningTarget, array[i]));
         }
         return result;
     }
@@ -851,7 +921,7 @@ public final class PythonUtils {
             case BYTES:
                 return PFactory.createBytes(PythonLanguage.get(null), v.getBytes());
             case CODEPOINTS:
-                return codePointsToTruffleString(v.getCodePoints());
+                return codePointsToInternedTruffleString(v.getCodePoints());
             case TUPLE:
             case FROZENSET:
                 // These cases cannot happen:

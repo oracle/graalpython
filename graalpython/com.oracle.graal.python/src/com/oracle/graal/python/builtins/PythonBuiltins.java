@@ -28,6 +28,7 @@ package com.oracle.graal.python.builtins;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.assertNoJavaString;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.ensureNoJavaString;
+import static com.oracle.graal.python.util.PythonUtils.toInternedTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.util.HashMap;
@@ -91,7 +92,7 @@ public abstract class PythonBuiltins {
             } else {
                 declaresExplicitSelf = true;
             }
-            TruffleString tsName = toTruffleStringUncached(builtin.name());
+            TruffleString tsName = toInternedTruffleStringUncached(builtin.name());
             PythonLanguage language = core.getLanguage();
             RootCallTarget callTarget = language.initBuiltinCallTarget(l -> new BuiltinFunctionRootNode(l, builtin, factory, declaresExplicitSelf), factory.getNodeClass(),
                             builtin.name());
@@ -111,7 +112,7 @@ public abstract class PythonBuiltins {
             } else if (builtin.isStaticmethod()) {
                 callable = PFactory.createStaticmethodFromCallableObj(language, function);
             }
-            builtinFunctions.put(toTruffleStringUncached(builtin.name()), callable);
+            builtinFunctions.put(tsName, callable);
         });
     }
 
@@ -170,7 +171,7 @@ public abstract class PythonBuiltins {
      * instead in {@link #postInitialize}.
      */
     protected final void addBuiltinConstant(String name, Object value) {
-        addBuiltinConstant(toTruffleStringUncached(name), value);
+        addBuiltinConstant(toInternedTruffleStringUncached(name), value);
     }
 
     /**

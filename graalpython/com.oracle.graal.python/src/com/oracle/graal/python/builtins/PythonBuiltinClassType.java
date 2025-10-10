@@ -69,6 +69,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J__SSL;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__STRUCT;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__THREAD;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__TYPING;
+import static com.oracle.graal.python.util.PythonUtils.toInternedTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.lang.reflect.Field;
@@ -1545,10 +1546,10 @@ public enum PythonBuiltinClassType implements TruffleObject {
     private final TpSlots slots;
 
     PythonBuiltinClassType(String name, PythonBuiltinClassType base, TypeBuilder builder) {
-        this.name = toTruffleStringUncached(name);
+        this.name = toInternedTruffleStringUncached(name);
         this.base = base;
-        this.publishInModule = toTruffleStringUncached(builder.publishInModule);
-        this.moduleName = builder.moduleName != null ? toTruffleStringUncached(builder.moduleName) : null;
+        this.publishInModule = toInternedTruffleStringUncached(builder.publishInModule);
+        this.moduleName = builder.moduleName != null ? toInternedTruffleStringUncached(builder.moduleName) : null;
         if (builder.moduleName != null && !J_BUILTINS.equals(builder.moduleName)) {
             printName = toTruffleStringUncached(builder.moduleName + "." + name);
         } else {

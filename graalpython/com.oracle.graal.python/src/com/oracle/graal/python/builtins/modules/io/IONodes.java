@@ -147,7 +147,7 @@ public class IONodes {
     public static final TruffleString T_CLOSED = tsLiteral(J_CLOSED);
 
     public static final String J_NAME = "name";
-    public static final TruffleString T_NAME = tsLiteral(J_NAME);
+    public static final TruffleString T_NAME = StringLiterals.T_NAME;
 
     public static final String J_MODE = "mode";
     public static final TruffleString T_MODE = tsLiteral(J_MODE);

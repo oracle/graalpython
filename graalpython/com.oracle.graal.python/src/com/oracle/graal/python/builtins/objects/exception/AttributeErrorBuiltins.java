@@ -42,8 +42,9 @@ package com.oracle.graal.python.builtins.objects.exception;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETSTATE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_NAME;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+import static com.oracle.graal.python.util.PythonUtils.tsInternedLiteral;
 
 import java.util.List;
 
@@ -101,8 +102,7 @@ public final class AttributeErrorBuiltins extends PythonBuiltins {
     private static final int IDX_OBJ = 1;
     private static final int NUM_ATTRS = IDX_OBJ + 1;
 
-    private static final TruffleString T_NAME = tsLiteral("name");
-    private static final TruffleString T_OBJ = tsLiteral("obj");
+    private static final TruffleString T_OBJ = tsInternedLiteral("obj");
 
     private static final BaseExceptionAttrNode.StorageFactory ATTR_FACTORY = (args) -> new Object[NUM_ATTRS];
 

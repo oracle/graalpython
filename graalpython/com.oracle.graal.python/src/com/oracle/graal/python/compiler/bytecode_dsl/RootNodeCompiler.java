@@ -59,7 +59,9 @@ import static com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompilerU
 import static com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompilerUtils.len;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___TYPE_PARAMS__;
+import static com.oracle.graal.python.util.PythonUtils.codePointsToInternedTruffleString;
 import static com.oracle.graal.python.util.PythonUtils.codePointsToTruffleString;
+import static com.oracle.graal.python.util.PythonUtils.toInternedTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import java.util.ArrayList;
@@ -363,7 +365,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
     }
 
     private static TruffleString[] orderedTruffleStringArray(HashMap<String, Integer> map) {
-        return orderedKeys(map, new TruffleString[0], PythonUtils::toTruffleStringUncached);
+        return orderedKeys(map, PythonUtils.EMPTY_TRUFFLESTRING_ARRAY, PythonUtils::toInternedTruffleStringUncached);
     }
 
     private String getNewScopeQualName(String name, CompilationScope scopeType) {
@@ -431,7 +433,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             }
         }
 
-        BytecodeDSLCodeUnit codeUnit = new BytecodeDSLCodeUnit(toTruffleStringUncached(name), toTruffleStringUncached(qualName),
+        BytecodeDSLCodeUnit codeUnit = new BytecodeDSLCodeUnit(toInternedTruffleStringUncached(name), toInternedTruffleStringUncached(qualName),
                         argumentInfo.argCount, argumentInfo.kwOnlyArgCount, argumentInfo.positionalOnlyArgCount,
                         flags, orderedTruffleStringArray(names),
                         orderedTruffleStringArray(varnames),
@@ -2070,7 +2072,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                     b.emitLoadBigInt(value.getBigInteger());
                     break;
                 case CODEPOINTS:
-                    emitPythonConstant(codePointsToTruffleString(value.getCodePoints()), b);
+                    emitPythonConstant(codePointsToInternedTruffleString(value.getCodePoints()), b);
                     break;
                 case BYTES:
                     addConstant(value.getBytes());

@@ -51,6 +51,8 @@ import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.api.strings.TruffleString;
 
+import static com.oracle.graal.python.util.PythonUtils.isInterned;
+
 /**
  * A context-independent representation of code for bytecode interpreter. Contains the actual
  * bytecode and all the related data, like constants or exception handler ranges. It doesn't contain
@@ -85,15 +87,21 @@ public abstract class CodeUnit {
                     TruffleString[] names, TruffleString[] varnames, TruffleString[] cellvars,
                     TruffleString[] freevars, int[] cell2arg, Object[] constants, int startLine, int startColumn,
                     int endLine, int endColumn) {
+        assert isInterned(name);
         this.name = name;
+        assert qualname == null || isInterned(qualname);
         this.qualname = qualname != null ? qualname : name;
         this.argCount = argCount;
         this.kwOnlyArgCount = kwOnlyArgCount;
         this.positionalOnlyArgCount = positionalOnlyArgCount;
         this.flags = flags;
+        assert isInterned(names);
         this.names = names;
+        assert isInterned(varnames);
         this.varnames = varnames;
+        assert isInterned(cellvars);
         this.cellvars = cellvars;
+        assert isInterned(freevars);
         this.freevars = freevars;
         this.cell2arg = cell2arg;
         int[] arg2cellValue = null;

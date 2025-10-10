@@ -134,7 +134,7 @@ public final class TpSlotVarargs {
         protected TpSlotVarargsBuiltin(NodeFactory<T> nodeFactory, String name, boolean takesClass) {
             super(nodeFactory);
             this.name = name;
-            this.tsName = PythonUtils.tsLiteral(name);
+            this.tsName = PythonUtils.toInternedTruffleStringUncached(name);
             Class<T> nodeClass = nodeFactory.getNodeClass();
             SlotSignature slotSignature = nodeClass.getAnnotation(SlotSignature.class);
             Slot2Builtin builtin = new Slot2Builtin(slotSignature, name, null);

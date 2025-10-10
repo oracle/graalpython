@@ -39,10 +39,10 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -52,7 +52,6 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.code.CodeBuiltinsClinicProviders.CodeConstructorNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
-import com.oracle.graal.python.builtins.objects.str.StringNodes.InternStringNode;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -174,9 +173,8 @@ public final class CodeBuiltins extends PythonBuiltins {
     public abstract static class GetFreeVarsNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object get(PCode self,
-                        @Bind Node inliningTarget,
-                        @Cached InternStringNode internStringNode) {
-            return internStrings(inliningTarget, self.getFreeVars(), internStringNode);
+                        @Bind Node inliningTarget) {
+            return createStringsTuple(inliningTarget, self.getFreeVars());
         }
     }
 
@@ -185,9 +183,8 @@ public final class CodeBuiltins extends PythonBuiltins {
     public abstract static class GetCellVarsNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object get(PCode self,
-                        @Bind Node inliningTarget,
-                        @Cached InternStringNode internStringNode) {
-            return internStrings(inliningTarget, self.getCellVars(), internStringNode);
+                        @Bind Node inliningTarget) {
+            return createStringsTuple(inliningTarget, self.getCellVars());
         }
     }
 
@@ -195,12 +192,10 @@ public final class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetFilenameNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object get(PCode self,
-                        @Bind Node inliningTarget,
-                        @Cached InternStringNode internStringNode) {
+        static Object get(PCode self) {
             TruffleString filename = self.getFilename();
             if (filename != null) {
-                return internStringNode.execute(inliningTarget, filename);
+                return filename;
             }
             return PNone.NONE;
         }
@@ -219,10 +214,8 @@ public final class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetNameNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object get(PCode self,
-                        @Bind Node inliningTarget,
-                        @Cached InternStringNode internStringNode) {
-            return internStringNode.execute(inliningTarget, self.co_name());
+        static Object get(PCode self) {
+            return self.co_name();
         }
     }
 
@@ -230,10 +223,8 @@ public final class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetQualNameNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object get(PCode self,
-                        @Bind Node inliningTarget,
-                        @Cached InternStringNode internStringNode) {
-            return internStringNode.execute(inliningTarget, self.co_qualname());
+        static Object get(PCode self) {
+            return self.co_qualname();
         }
     }
 
@@ -306,9 +297,8 @@ public final class CodeBuiltins extends PythonBuiltins {
     public abstract static class GetConstsNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object get(PCode self,
-                        @Bind Node inliningTarget,
-                        @Cached InternStringNode internStringNode) {
-            return internStrings(inliningTarget, self.getConstants(), internStringNode);
+                        @Bind PythonLanguage language) {
+            return PFactory.createTuple(language, PythonUtils.arrayCopyOf(self.getConstants(), self.getConstants().length));
         }
     }
 
@@ -317,9 +307,8 @@ public final class CodeBuiltins extends PythonBuiltins {
     public abstract static class GetNamesNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object get(PCode self,
-                        @Bind Node inliningTarget,
-                        @Cached InternStringNode internStringNode) {
-            return internStrings(inliningTarget, self.getNames(), internStringNode);
+                        @Bind Node inliningTarget) {
+            return createStringsTuple(inliningTarget, self.getNames());
         }
     }
 
@@ -328,9 +317,8 @@ public final class CodeBuiltins extends PythonBuiltins {
     public abstract static class GetVarNamesNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object get(PCode self,
-                        @Bind Node inliningTarget,
-                        @Cached InternStringNode internStringNode) {
-            return internStrings(inliningTarget, self.getVarnames(), internStringNode);
+                        @Bind Node inliningTarget) {
+            return createStringsTuple(inliningTarget, self.getVarnames());
         }
     }
 
@@ -681,33 +669,11 @@ public final class CodeBuiltins extends PythonBuiltins {
         }
     }
 
-    private static boolean hasStrings(Object[] values) {
-        for (Object o : values) {
-            if (o instanceof TruffleString) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static PTuple internStrings(Node inliningTarget, Object[] values, InternStringNode internStringNode) {
+    private static PTuple createStringsTuple(Node inliningTarget, TruffleString[] values) {
         PythonLanguage language = PythonLanguage.get(inliningTarget);
         if (values == null) {
             return PFactory.createEmptyTuple(language);
         }
-        Object[] result;
-        if (!hasStrings(values)) {
-            result = values;
-        } else {
-            result = new Object[values.length];
-            for (int i = 0; i < values.length; ++i) {
-                if (values[i] instanceof TruffleString) {
-                    result[i] = internStringNode.execute(inliningTarget, values[i]);
-                } else {
-                    result[i] = values[i];
-                }
-            }
-        }
-        return PFactory.createTuple(language, result);
+        return PFactory.createTuple(language, PythonUtils.arrayCopyOf(values, values.length));
     }
 }

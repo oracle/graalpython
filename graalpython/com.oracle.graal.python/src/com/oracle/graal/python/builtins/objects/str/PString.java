@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.str;
 
+import static com.oracle.graal.python.nodes.PGuards.isBuiltinPString;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.builtinClassToType;
 
@@ -35,6 +36,7 @@ import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -100,6 +102,14 @@ public final class PString extends PythonBuiltinObject {
     public void setMaterialized(TruffleString materialized) {
         assert !isMaterialized();
         materializedValue = materialized;
+    }
+
+    @TruffleBoundary
+    public void intern() {
+        assert isBuiltinPString(this);
+        TruffleString ts = getValueUncached();
+        TruffleString interned = PythonUtils.internString(ts);
+        materializedValue = interned;
     }
 
     @Override

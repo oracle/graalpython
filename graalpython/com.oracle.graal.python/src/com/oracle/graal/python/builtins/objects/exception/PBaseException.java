@@ -41,7 +41,7 @@
 package com.oracle.graal.python.builtins.objects.exception;
 
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.assertContainsNoJavaString;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+import static com.oracle.graal.python.util.PythonUtils.tsInternedLiteral;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -80,7 +80,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @ExportLibrary(InteropLibrary.class)
 public class PBaseException extends PythonObject {
-    public static final TruffleString T_CODE = tsLiteral("code");
+    public static final TruffleString T_CODE = tsInternedLiteral("code");
 
     private PTuple args; // can be null for lazily generated message
 

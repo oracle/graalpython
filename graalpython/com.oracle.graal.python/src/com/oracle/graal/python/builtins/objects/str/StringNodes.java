@@ -49,7 +49,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsbCapacity;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
@@ -79,10 +78,10 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
@@ -589,26 +588,21 @@ public abstract class StringNodes {
     @GenerateInline
     @GenerateCached(false)
     public abstract static class InternStringNode extends Node {
-        public abstract PString execute(Node inliningTarget, Object string);
+        public abstract Object execute(Node inliningTarget, Object string);
 
-        public static PString executeUncached(Object string) {
+        public static Object executeUncached(Object string) {
             return StringNodesFactory.InternStringNodeGen.getUncached().execute(null, string);
         }
 
         @Specialization
-        static PString doString(Node inliningTarget, TruffleString string,
-                        @Bind PythonLanguage language,
-                        @Shared @Cached HiddenAttr.WriteNode writeNode) {
-            final PString interned = PFactory.createString(language, string);
-            writeNode.execute(inliningTarget, interned, HiddenAttr.INTERNED, true);
-            return interned;
+        static TruffleString doString(TruffleString string) {
+            return PythonUtils.internString(string);
         }
 
         @Specialization
-        static PString doPString(Node inliningTarget, PString string,
-                        @Shared @Cached HiddenAttr.WriteNode writeNode) {
+        static PString doPString(PString string) {
             if (isBuiltinPString(string)) {
-                writeNode.execute(inliningTarget, string, HiddenAttr.INTERNED, true);
+                string.intern();
                 return string;
             }
             return null;
@@ -625,16 +619,20 @@ public abstract class StringNodes {
     @GenerateCached(false)
     @ImportStatic(PGuards.class)
     public abstract static class IsInternedStringNode extends Node {
-        public abstract boolean execute(Node inliningTarget, PString string);
+        public abstract boolean execute(Node inliningTarget, Object string);
 
-        public static boolean executeUncached(PString string) {
+        public static boolean executeUncached(Object string) {
             return IsInternedStringNodeGen.getUncached().execute(null, string);
         }
 
         @Specialization
-        static boolean doIt(Node inliningTarget, PString string,
-                        @Cached HiddenAttr.ReadNode readNode) {
-            return (boolean) readNode.execute(inliningTarget, string, HiddenAttr.INTERNED, Boolean.FALSE);
+        static boolean doString(TruffleString string) {
+            return PythonUtils.isInterned(string);
+        }
+
+        @Specialization
+        static boolean doPString(PString string) {
+            return isBuiltinPString(string) && string.isMaterialized() && PythonUtils.isInterned(string.getMaterialized());
         }
     }
 

@@ -41,6 +41,7 @@
 package com.oracle.graal.python.util;
 
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toInternedTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -177,7 +178,7 @@ public class CharsetMapping {
                     }
                 }
             }
-            return toStringNode.execute(str);
+            return PythonUtils.internString(toStringNode.execute(str));
         }
     }
 
@@ -215,7 +216,7 @@ public class CharsetMapping {
     }
 
     private static void addAlias(String alias, String pythonName) {
-        TruffleString normalized = normalizeUncached(toTruffleStringUncached(pythonName));
+        TruffleString normalized = normalizeUncached(toInternedTruffleStringUncached(pythonName));
         assert CHARSET_NAME_MAP.containsKey(normalized) : normalized;
         CHARSET_NAME_MAP.put(normalizeUncached(toTruffleStringUncached(alias)), CHARSET_NAME_MAP.get(normalized));
     }

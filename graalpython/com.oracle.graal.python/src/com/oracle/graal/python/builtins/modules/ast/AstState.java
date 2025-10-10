@@ -46,6 +46,7 @@
 package com.oracle.graal.python.builtins.modules.ast;
 
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsInternedLiteral;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -56,13 +57,13 @@ import com.oracle.truffle.api.strings.TruffleString;
 final class AstState {
 
     static final TruffleString T_F_ANNOTATION = tsLiteral("annotation");
-    static final TruffleString T_F_ARG = tsLiteral("arg");
-    static final TruffleString T_F_ARGS = tsLiteral("args");
+    static final TruffleString T_F_ARG = tsInternedLiteral("arg");
+    static final TruffleString T_F_ARGS = tsInternedLiteral("args");
     static final TruffleString T_F_ARGTYPES = tsLiteral("argtypes");
     static final TruffleString T_F_ASNAME = tsLiteral("asname");
-    static final TruffleString T_F_ATTR = tsLiteral("attr");
+    static final TruffleString T_F_ATTR = tsInternedLiteral("attr");
     static final TruffleString T_F_BASES = tsLiteral("bases");
-    static final TruffleString T_F_BODY = tsLiteral("body");
+    static final TruffleString T_F_BODY = tsInternedLiteral("body");
     static final TruffleString T_F_BOUND = tsLiteral("bound");
     static final TruffleString T_F_CASES = tsLiteral("cases");
     static final TruffleString T_F_CAUSE = tsLiteral("cause");
@@ -88,12 +89,12 @@ final class AstState {
     static final TruffleString T_F_ID = tsLiteral("id");
     static final TruffleString T_F_IFS = tsLiteral("ifs");
     static final TruffleString T_F_IS_ASYNC = tsLiteral("is_async");
-    static final TruffleString T_F_ITEMS = tsLiteral("items");
-    static final TruffleString T_F_ITER = tsLiteral("iter");
-    static final TruffleString T_F_KEY = tsLiteral("key");
-    static final TruffleString T_F_KEYS = tsLiteral("keys");
-    static final TruffleString T_F_KEYWORDS = tsLiteral("keywords");
-    static final TruffleString T_F_KIND = tsLiteral("kind");
+    static final TruffleString T_F_ITEMS = tsInternedLiteral("items");
+    static final TruffleString T_F_ITER = tsInternedLiteral("iter");
+    static final TruffleString T_F_KEY = tsInternedLiteral("key");
+    static final TruffleString T_F_KEYS = tsInternedLiteral("keys");
+    static final TruffleString T_F_KEYWORDS = tsInternedLiteral("keywords");
+    static final TruffleString T_F_KIND = tsInternedLiteral("kind");
     static final TruffleString T_F_KW_DEFAULTS = tsLiteral("kw_defaults");
     static final TruffleString T_F_KWARG = tsLiteral("kwarg");
     static final TruffleString T_F_KWD_ATTRS = tsLiteral("kwd_attrs");
@@ -103,10 +104,10 @@ final class AstState {
     static final TruffleString T_F_LEVEL = tsLiteral("level");
     static final TruffleString T_F_LINENO = tsLiteral("lineno");
     static final TruffleString T_F_LOWER = tsLiteral("lower");
-    static final TruffleString T_F_MODULE = tsLiteral("module");
+    static final TruffleString T_F_MODULE = tsInternedLiteral("module");
     static final TruffleString T_F_MSG = tsLiteral("msg");
-    static final TruffleString T_F_NAME = tsLiteral("name");
-    static final TruffleString T_F_NAMES = tsLiteral("names");
+    static final TruffleString T_F_NAME = tsInternedLiteral("name");
+    static final TruffleString T_F_NAMES = tsInternedLiteral("names");
     static final TruffleString T_F_OP = tsLiteral("op");
     static final TruffleString T_F_OPERAND = tsLiteral("operand");
     static final TruffleString T_F_OPS = tsLiteral("ops");
@@ -126,13 +127,13 @@ final class AstState {
     static final TruffleString T_F_TARGET = tsLiteral("target");
     static final TruffleString T_F_TARGETS = tsLiteral("targets");
     static final TruffleString T_F_TEST = tsLiteral("test");
-    static final TruffleString T_F_TYPE = tsLiteral("type");
+    static final TruffleString T_F_TYPE = tsInternedLiteral("type");
     static final TruffleString T_F_TYPE_COMMENT = tsLiteral("type_comment");
     static final TruffleString T_F_TYPE_IGNORES = tsLiteral("type_ignores");
     static final TruffleString T_F_TYPE_PARAMS = tsLiteral("type_params");
     static final TruffleString T_F_UPPER = tsLiteral("upper");
-    static final TruffleString T_F_VALUE = tsLiteral("value");
-    static final TruffleString T_F_VALUES = tsLiteral("values");
+    static final TruffleString T_F_VALUE = tsInternedLiteral("value");
+    static final TruffleString T_F_VALUES = tsInternedLiteral("values");
     static final TruffleString T_F_VARARG = tsLiteral("vararg");
     static final TruffleString T_C_ADD = tsLiteral("Add");
     static final TruffleString T_C_AND = tsLiteral("And");

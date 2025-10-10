@@ -45,7 +45,7 @@ import static com.oracle.graal.python.util.PythonUtils.EMPTY_INT_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_LONG_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
-import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.toInternedTruffleStringUncached;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayDeque;
@@ -342,11 +342,12 @@ public final class CompilationUnit {
                 generalizeVarsIndices[varCount] = generalizeVarsIndex;
             }
         }
-        return new BytecodeCodeUnit(toTruffleStringUncached(name), toTruffleStringUncached(qualName),
+        return new BytecodeCodeUnit(toInternedTruffleStringUncached(name), toInternedTruffleStringUncached(qualName),
                         argCount, kwOnlyArgCount, positionalOnlyArgCount, flags,
-                        orderedKeys(names, EMPTY_TRUFFLESTRING_ARRAY, PythonUtils::toTruffleStringUncached), orderedKeys(varnames, EMPTY_TRUFFLESTRING_ARRAY, PythonUtils::toTruffleStringUncached),
-                        orderedKeys(cellvars, EMPTY_TRUFFLESTRING_ARRAY, PythonUtils::toTruffleStringUncached),
-                        orderedKeys(freevars, EMPTY_TRUFFLESTRING_ARRAY, cellvars.size(), PythonUtils::toTruffleStringUncached),
+                        orderedKeys(names, EMPTY_TRUFFLESTRING_ARRAY, PythonUtils::toInternedTruffleStringUncached),
+                        orderedKeys(varnames, EMPTY_TRUFFLESTRING_ARRAY, PythonUtils::toInternedTruffleStringUncached),
+                        orderedKeys(cellvars, EMPTY_TRUFFLESTRING_ARRAY, PythonUtils::toInternedTruffleStringUncached),
+                        orderedKeys(freevars, EMPTY_TRUFFLESTRING_ARRAY, cellvars.size(), PythonUtils::toInternedTruffleStringUncached),
                         cell2arg,
                         orderedKeys(constants, EMPTY_OBJECT_ARRAY),
                         startLocation.startLine,

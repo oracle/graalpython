@@ -39,4 +39,4 @@
 
 #!/bin/bash
 unset GIT_DIR # workaround for git worktrees
-mx -v python-checkcopyrights --assumed-modified --fix --files "${@}"
+mx python-checkcopyrights --fix --files "${@}"
