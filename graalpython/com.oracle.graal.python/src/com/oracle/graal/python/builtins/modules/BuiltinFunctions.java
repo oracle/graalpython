@@ -237,6 +237,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
@@ -2029,13 +2030,19 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     @Builtin(name = J_POW, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 0, parameterNames = {"base", "exp", "mod"})
+    @ArgumentClinic(name = "mod", defaultValue = "PNone.NONE")
     @GenerateNodeFactory
-    public abstract static class PowNode extends PythonTernaryBuiltinNode {
+    public abstract static class PowNode extends PythonTernaryClinicBuiltinNode {
 
         @Specialization
         Object ternary(VirtualFrame frame, Object x, Object y, Object z,
                         @Cached PyNumberPowerNode power) {
             return power.execute(frame, x, y, z);
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return BuiltinFunctionsClinicProviders.PowNodeClinicProviderGen.INSTANCE;
         }
     }
 
