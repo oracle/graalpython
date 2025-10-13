@@ -41,6 +41,7 @@
 package com.oracle.graal.python.nfi2;
 
 import java.lang.invoke.MethodHandle;
+import java.lang.ref.Reference;
 
 import org.graalvm.nativeimage.ForeignFunctions;
 import org.graalvm.nativeimage.ImageInfo;
@@ -74,6 +75,8 @@ public final class NfiBoundFunction {
             }
         } catch (Throwable e) {
             throw CompilerDirectives.shouldNotReachHere(e);
+        } finally {
+            Reference.reachabilityFence(args);
         }
     }
 

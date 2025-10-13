@@ -42,7 +42,6 @@ package com.oracle.graal.python.nfi2;
 
 import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
-import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.Linker;
 import java.lang.foreign.MemoryLayout;
@@ -51,6 +50,7 @@ import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.lang.ref.Reference;
 
 import org.graalvm.nativeimage.DowncallDescriptor;
 import org.graalvm.nativeimage.ForeignFunctions;
@@ -132,12 +132,14 @@ public final class NfiSignature {
             }
         } catch (Throwable e) {
             throw CompilerDirectives.shouldNotReachHere(e);
+        } finally {
+            Reference.reachabilityFence(args);
         }
     }
 
     @SuppressWarnings("restricted")
     @TruffleBoundary
-    public long createClosure(MethodHandle staticMethodHandle) {
+    public long createClosure(NfiContext context, MethodHandle staticMethodHandle) {
         MethodHandle handle = handle_closureWrapper.bindTo(this).bindTo(staticMethodHandle);
         handle = handle.asType(DIRECT_METHOD_TYPE).asVarargsCollector(Object[].class);
         if (directUpcallMethodType == null) {
@@ -148,10 +150,10 @@ public final class NfiSignature {
             directUpcallMethodType = MethodType.methodType(resType.asJavaType(), javaArgTypes);
         }
         handle = handle.asType(directUpcallMethodType);
-        // TODO(NFI2) per-context or closure-specific Arena
-        return Linker.nativeLinker().upcallStub(handle, getFunctionDescriptor(), Arena.global()).address();
+        return Linker.nativeLinker().upcallStub(handle, getFunctionDescriptor(), context.arena).address();
     }
 
+    @SuppressWarnings("unused")
     private static Object closureWrapper(NfiSignature signature, MethodHandle inner, Object[] args) {
         try {
             // TODO(NFI2) get rid of this wrapper once we don't need to widen the return values

@@ -139,6 +139,16 @@ public final class Nfi {
         }
     }
 
+    public static NfiContext createContext() {
+        return new NfiContext();
+    }
+
+    // TODO(NFI2) should this unload all libraries?
+    public static void closeContext(NfiContext context) {
+        context.arena.close();
+    }
+
+    // TODO(NFI2) move all the static methods into NfiContext?
     public static NfiSignature createSignature(NfiType resType, NfiType... argTypes) {
         return new NfiSignature(resType, argTypes);
     }

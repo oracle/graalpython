@@ -105,6 +105,7 @@ import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.nfi2.NativeMemory;
 import com.oracle.graal.python.nfi2.Nfi;
 import com.oracle.graal.python.nfi2.NfiBoundFunction;
+import com.oracle.graal.python.nfi2.NfiContext;
 import com.oracle.graal.python.nfi2.NfiSignature;
 import com.oracle.graal.python.nfi2.NfiType;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -194,6 +195,7 @@ public final class CApiContext extends CExtContext {
 
     public Object timezoneType;
     private PyCapsule pyDateTimeCAPICapsule;
+    public final NfiContext nfiContext;
 
     /**
      * Same as {@link #nativeSymbolCache} if there is only one context per JVM (i.e. just one engine
@@ -313,10 +315,11 @@ public final class CApiContext extends CExtContext {
         return PythonLanguage.getLogger(LOGGER_CAPI_NAME + "." + clazz.getSimpleName());
     }
 
-    public CApiContext(PythonContext context, long library, NativeLibraryLocator locator) {
+    public CApiContext(PythonContext context, NfiContext nfiContext, long library, NativeLibraryLocator locator) {
         super(context, library, locator.getCapiLibrary());
         this.nativeSymbolCache = new NfiBoundFunction[NativeCAPISymbol.values().length];
         this.nativeLibraryLocator = locator;
+        this.nfiContext = nfiContext;
 
         /*
          * Publish the native symbol cache to the static field if following is given: (1) The static
@@ -893,7 +896,7 @@ public final class CApiContext extends CExtContext {
             LOGGER.config(() -> "loading CAPI from " + loc.getCapiLibrary() + " as native");
             long capiLibrary = Nfi.loadLibrary(loc.getCapiLibrary(), dlopenFlags);
             long initFunction = Nfi.lookupSymbol(capiLibrary, "initialize_graal_capi");
-            CApiContext cApiContext = new CApiContext(context, capiLibrary, loc);
+            CApiContext cApiContext = new CApiContext(context, Nfi.createContext(), capiLibrary, loc);
             context.setCApiContext(cApiContext);
             context.setCApiState(PythonContext.CApiState.INITIALIZING);
 
@@ -1189,6 +1192,7 @@ public final class CApiContext extends CExtContext {
         if (nativeLibraryLocator != null) {
             nativeLibraryLocator.close();
         }
+        Nfi.closeContext(nfiContext);
     }
 
     @TruffleBoundary

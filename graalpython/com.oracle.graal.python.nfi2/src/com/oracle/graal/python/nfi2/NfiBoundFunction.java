@@ -46,11 +46,12 @@ public final class NfiBoundFunction {
     private NfiBoundFunction() {
     }
 
+    @SuppressWarnings("static-method")
     public long getAddress() {
         throw new UnsupportedOperationException();
     }
 
-    @SuppressWarnings("unused")
+    @SuppressWarnings({"unused", "static-method"})
     public Object invoke(Object... args) {
         throw new UnsupportedOperationException();
     }

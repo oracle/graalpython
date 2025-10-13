@@ -48,18 +48,18 @@ public final class NfiSignature {
     NfiSignature(NfiType resType, NfiType[] argTypes) {
     }
 
-    @SuppressWarnings("unused")
+    @SuppressWarnings({"unused", "static-method"})
     public NfiBoundFunction bind(long pointer) {
         throw new UnsupportedOperationException();
     }
 
-    @SuppressWarnings("unused")
+    @SuppressWarnings({"unused", "static-method"})
     public Object invoke(long function, Object... args) {
         throw new UnsupportedOperationException();
     }
 
-    @SuppressWarnings("unused")
-    public long createClosure(MethodHandle staticMethodHandle) {
+    @SuppressWarnings({"unused", "static-method"})
+    public long createClosure(NfiContext context, MethodHandle staticMethodHandle) {
         throw new UnsupportedOperationException();
     }
 }
