@@ -1080,6 +1080,11 @@ suite = {
                 "java.logging",
                 "jdk.unsupported",
             ],
+            "maven": {
+                "artifactId": "nfi2",
+                "groupId": "org.graalvm.python",
+                "tag": ["default", "public"],
+            },
         },
 
         "GRAALPYTHON_RESOURCES": {
