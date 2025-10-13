@@ -227,7 +227,10 @@ class ArrayTestCase(unittest.TestCase):
         # The overflow check in PyCArrayType_new() could cause signed integer
         # overflow.
         with self.assertRaises(OverflowError):
-            c_char * sys.maxsize * 2
+            # GraalPy change, use sizeof pointer for overflow, our sys.maxsize is 32bits
+            # c_char * sys.maxsize * 2
+            import struct
+            c_char * (256**struct.calcsize('P')//2-1) * 2
 
     @unittest.skipUnless(sys.maxsize > 2**32, 'requires 64bit platform')
     @bigmemtest(size=_2G, memuse=1, dry_run=False)
