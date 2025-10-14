@@ -96,9 +96,9 @@ public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWr
     }
 
     /**
-     * Creates a wrapper that uses an existing native object as native replacement object.
+     * Creates a wrapper that uses existing native memory as native replacement object.
      */
-    public static void wrapNative(PythonManagedClass clazz, TruffleString name, Object pointer) {
+    public static void wrapStaticTypeStructForManagedClass(PythonManagedClass clazz, TruffleString name, Object pointer) {
         /*
          * This *MUST NOT* happen, otherwise we would allocate a fresh native type store and then
          * the native pointer of the wrapper would not be equal to the corresponding native global
