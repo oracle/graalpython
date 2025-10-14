@@ -40,7 +40,6 @@ import static com.oracle.graal.python.util.PythonUtils.EMPTY_SHORT_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInput;
 import java.io.DataInputStream;
@@ -51,6 +50,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -147,7 +147,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.InternalByteArray;
@@ -349,10 +348,6 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         private static final int MARSHAL_SHIFT = 15;
         private static final BigInteger MARSHAL_BASE = BigInteger.valueOf(1 << MARSHAL_SHIFT);
 
-        private static final int BYTES_PER_LONG = Long.SIZE / Byte.SIZE;
-        private static final int BYTES_PER_INT = Integer.SIZE / Byte.SIZE;
-        private static final int BYTES_PER_SHORT = Short.SIZE / Byte.SIZE;
-
         /**
          * This class exists to throw errors out of the (un)marshalling code, without having to
          * construct Python exceptions (yet). Since the (un)marshalling code does not have nodes or
@@ -463,9 +458,6 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         final int version;
         final PInt pyTrue;
         final PInt pyFalse;
-        // CPython's marshal code is little endian
-        final ByteArraySupport baSupport = ByteArraySupport.littleEndian();
-        byte[] buffer = new byte[Long.BYTES];
         int depth = 0;
         /*
          * A DSL node needs access to its Source during deserialization, but we do not wish to
@@ -499,7 +491,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         Marshal(PythonContext context, byte[] in, int length) {
-            this(context, new DataInputStream(new ByteArrayInputStream(in, 0, length)), null);
+            this(context, SerializationUtils.createDataInput(ByteBuffer.wrap(in, 0, length)), null);
         }
 
         Marshal(PythonContext context, Object in) {
@@ -581,10 +573,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             if (sz == 0) {
                 return PythonUtils.EMPTY_BYTE_ARRAY;
             } else {
-                if (buffer.length < sz) {
-                    buffer = new byte[sz];
-                }
-                return readNBytes(sz, buffer);
+                return readNBytes(sz, new byte[sz]);
             }
         }
 
@@ -620,11 +609,25 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         private int readInt() {
-            return baSupport.getInt(readNBytes(BYTES_PER_INT), 0);
+            try {
+                int val = in.readInt();
+                return ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? Integer.reverseBytes(val) : val;
+            } catch (EOFException e) {
+                throw new MarshalError(PythonBuiltinClassType.EOFError, ErrorMessages.BAD_MARSHAL_DATA_EOF);
+            } catch (IOException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
         }
 
         private short readShort() {
-            return baSupport.getShort(readNBytes(BYTES_PER_SHORT), 0);
+            try {
+                short val = in.readShort();
+                return ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? Short.reverseBytes(val) : val;
+            } catch (EOFException e) {
+                throw new MarshalError(PythonBuiltinClassType.EOFError, ErrorMessages.BAD_MARSHAL_DATA_EOF);
+            } catch (IOException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
         }
 
         private void writeLong(long v) {
@@ -634,7 +637,14 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         private long readLong() {
-            return baSupport.getLong(readNBytes(BYTES_PER_LONG), 0);
+            try {
+                long val = in.readLong();
+                return ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? Long.reverseBytes(val) : val;
+            } catch (EOFException e) {
+                throw new MarshalError(PythonBuiltinClassType.EOFError, ErrorMessages.BAD_MARSHAL_DATA_EOF);
+            } catch (IOException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
         }
 
         private void writeBigInteger(BigInteger v) {
@@ -662,6 +672,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         private BigInteger readBigInteger() {
             boolean negative;
+            // size is in shorts
             int sz = readInt();
             if (sz < 0) {
                 negative = true;
@@ -670,21 +681,11 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 negative = false;
             }
 
-            // size is in shorts
-            sz *= 2;
-
-            byte[] data = readNBytes(sz);
-
-            int i = 0;
-            int digit = baSupport.getShort(data, i);
-            i += 2;
+            int digit = readShort();
             BigInteger result = BigInteger.valueOf(digit);
-
-            while (i < sz) {
-                int power = i / 2;
-                digit = baSupport.getShort(data, i);
-                i += 2;
-                result = result.add(BigInteger.valueOf(digit).multiply(MARSHAL_BASE.pow(power)));
+            for (int i = 1; i < sz; i++) {
+                digit = readShort();
+                result = result.add(BigInteger.valueOf(digit).multiply(MARSHAL_BASE.pow(i)));
             }
             if (negative) {
                 return result.negate();
@@ -1169,7 +1170,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             if (sz == 0) {
                 return StringLiterals.T_EMPTY_STRING;
             }
-            var utf8String = TruffleString.fromByteArrayUncached(readNBytes(sz), 0, sz, Encoding.UTF_8, true);
+            var utf8String = TruffleString.fromByteArrayUncached(readNBytes(sz), 0, sz, Encoding.UTF_8, false);
             var value = utf8String.switchEncodingUncached(TS_ENCODING, TranscodingErrorHandler.DEFAULT_KEEP_SURROGATES_IN_UTF8);
             if (intern) {
                 return PythonUtils.internString(value);
@@ -1189,12 +1190,12 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         private TruffleString readShortString() {
             int sz = readByteSize();
             byte[] bytes = readNBytes(sz);
-            return TruffleString.fromByteArrayUncached(bytes, 0, sz, Encoding.ISO_8859_1, true).switchEncodingUncached(TS_ENCODING);
+            return TruffleString.fromByteArrayUncached(bytes, 0, sz, Encoding.ISO_8859_1, false).switchEncodingUncached(TS_ENCODING);
         }
 
-        private Object readAscii(long sz, boolean intern) {
-            byte[] bytes = readNBytes((int) sz);
-            TruffleString value = TruffleString.fromByteArrayUncached(bytes, 0, (int) sz, Encoding.US_ASCII, true).switchEncodingUncached(TS_ENCODING);
+        private Object readAscii(int sz, boolean intern) {
+            byte[] bytes = readNBytes(sz);
+            TruffleString value = TruffleString.fromByteArrayUncached(bytes, 0, sz, Encoding.US_ASCII, false).switchEncodingUncached(TS_ENCODING);
             if (intern) {
                 return PythonUtils.internString(value);
             } else {
