@@ -1121,7 +1121,7 @@ public final class CApiContext extends CExtContext {
                  * lookup table and may otherwise be double-freed.
                  */
                 CApiTransitions.freeNativeObjectStubs(handleContext);
-                CApiTransitions.freeClassReplacements(handleContext);
+                CApiTransitions.freeNativeReplacementStructs(handleContext);
                 CApiTransitions.freeNativeStorages(handleContext);
             }
             if (pyDateTimeCAPICapsule != null) {

@@ -131,6 +131,41 @@ bytes(cdata)
 
 #include "pycore_long.h"          // _PyLong_GetZero()
 
+#if 1 // GraalPy change
+// Assign a stgdict to type's tp_dict slot. In GraalPy we do not track our
+// builtin dicts, and type dicts for managed classes actually have no tp_dict
+// with an extra native ref, they are kept alive by the type only and their
+// handles are collected by the GC or on context shutdown. So when we assign a
+// fresh stgdict to the type's tp_dict, we make it also have only
+// MANAGED_REFCOUNT and let it be collected when the type is collected.
+#define set_graalpy_tp_dict(type, stgdict)                              \
+    {                                                                   \
+        PyObject *__stgdict = (PyObject *)(stgdict);                    \
+        PyTypeObject *__type = (PyTypeObject *)(type);                  \
+        PyObject_GC_UnTrack(__stgdict);                                 \
+        if (points_to_py_handle_space(__type)) {                        \
+            _PyObject_ASSERT_FAILED_MSG((PyObject*) __type,             \
+                                        "type dict has increased refcnt, " \
+                                        "something changed in how GraalPy " \
+                                        "marries classes to native structs"); \
+        }                                                               \
+        if (Py_REFCNT(__type->tp_dict) != MANAGED_REFCNT) {             \
+            _PyObject_ASSERT_FAILED_MSG((PyObject*) __type,             \
+                                        "type dict has increased refcnt, " \
+                                        "something changed in how GraalPy " \
+                                        "marries classes to native structs"); \
+        }                                                               \
+        if (Py_REFCNT(__stgdict) != MANAGED_REFCNT + 1) {               \
+            _PyObject_ASSERT_FAILED_MSG(__stgdict,                      \
+                                        "new stgdict has incorrect refcnt, " \
+                                        "something changed in GraalPy"); \
+        }                                                               \
+        __type->tp_dict = (PyObject *)__stgdict;                        \
+        PyType_Modified(__type);                                        \
+        Py_DecRef(__stgdict);                                           \
+    }
+#endif
+
 ctypes_state global_state;
 
 PyObject *PyExc_ArgError = NULL;
@@ -550,8 +585,7 @@ StructUnionType_new(PyTypeObject *type, PyObject *args, PyObject *kwds, int isSt
         Py_DECREF((PyObject *)dict);
         return NULL;
     }
-    result->tp_dict = (PyObject *)dict; // GraalPy change: do not use Py_SETREF
-    PyType_Modified(result); // GraalPy change: sync tp_dict change to managed
+    set_graalpy_tp_dict(result, dict);  // GraalPy change: do not use Py_SETREF
     dict->format = _ctypes_alloc_format_string(NULL, "B");
     if (dict->format == NULL) {
         Py_DECREF(result);
@@ -1153,8 +1187,7 @@ PyCPointerType_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
         Py_DECREF((PyObject *)stgdict);
         return NULL;
     }
-    result->tp_dict = (PyObject *)stgdict; // GraalPy change: do not use Py_SETREF
-    PyType_Modified(result); // GraalPy change: sync tp_dict change to managed
+    set_graalpy_tp_dict(result, stgdict);  // GraalPy change: do not use Py_SETREF
 
     return (PyObject *)result;
 }
@@ -1590,8 +1623,7 @@ PyCArrayType_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
     /* replace the class dict by our updated spam dict */
     if (-1 == PyDict_Update((PyObject *)stgdict, result->tp_dict))
         goto error;
-    result->tp_dict = (PyObject *)stgdict; // GraalPy change: do not use Py_SETREF
-    PyType_Modified(result); // GraalPy change: sync tp_dict change to managed
+    set_graalpy_tp_dict(result, stgdict);  // GraalPy change: do not use Py_SETREF
     stgdict = NULL;
 
     /* Special case for character arrays.
@@ -2005,8 +2037,7 @@ static PyObject *CreateSwappedType(PyTypeObject *type, PyObject *args, PyObject 
         Py_DECREF((PyObject *)stgdict);
         return NULL;
     }
-    result->tp_dict = (PyObject *)stgdict; // GraalPy change: do not use Py_SETREF
-    PyType_Modified(result); // GraalPy change: sync tp_dict change to managed
+    set_graalpy_tp_dict(result, stgdict);  // GraalPy change: do not use Py_SETREF
 
     return (PyObject *)result;
 }
@@ -2135,8 +2166,7 @@ PyCSimpleType_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
         Py_DECREF((PyObject *)stgdict);
         return NULL;
     }
-    result->tp_dict = (PyObject *)stgdict; // GraalPy change: do not use Py_SETREF
-    PyType_Modified(result); // GraalPy change: sync tp_dict change to managed
+    set_graalpy_tp_dict(result, stgdict);  // GraalPy change: do not use Py_SETREF
 
     /* Install from_param class methods in ctypes base classes.
        Overrides the PyCSimpleType_from_param generic method.
@@ -2578,8 +2608,7 @@ PyCFuncPtrType_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
         Py_DECREF((PyObject *)stgdict);
         return NULL;
     }
-    result->tp_dict = (PyObject *)stgdict; // GraalPy change: do not use Py_SETREF
-    PyType_Modified(result); // GraalPy change: sync tp_dict change to managed
+    set_graalpy_tp_dict(result, stgdict);  // GraalPy change: do not use Py_SETREF
 
     if (-1 == make_funcptrtype_dict(stgdict)) {
         Py_DECREF(result);

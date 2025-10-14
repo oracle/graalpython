@@ -622,7 +622,7 @@ public abstract class CApiTransitions {
         return true;
     }
 
-    public static void freeClassReplacements(HandleContext handleContext) {
+    public static void freeNativeReplacementStructs(HandleContext handleContext) {
         assert PythonContext.get(null).ownsGil();
         handleContext.nativeLookup.forEach((l, ref) -> {
             if (ref instanceof PythonObjectReference reference) {
