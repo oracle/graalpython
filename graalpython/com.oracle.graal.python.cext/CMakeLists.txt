@@ -365,16 +365,39 @@ set(CTYPES_SRC
     "${SRC_DIR}/modules/_ctypes/callproc.c"
     "${SRC_DIR}/modules/_ctypes/cfield.c"
     "${SRC_DIR}/modules/_ctypes/ctypes.h"
-    "${SRC_DIR}/modules/_ctypes/malloc_closure.c"
     "${SRC_DIR}/modules/_ctypes/stgdict.c"
 )
 native_module("_ctypes" TRUE "${CTYPES_SRC}")
 target_include_directories("_ctypes" PUBLIC "${SRC_DIR}/modules/_ctypes")
-find_library(FFI_LIBRARY NAMES ffi)
-if (NOT FFI_LIBRARY)
-  message(FATAL_ERROR "libffi not found")
-endif()
+find_library(FFI_LIBRARY
+  NAMES "ffi.lib" "libffi.a"
+  PATHS "${LIBFFI_DIST}"
+  REQUIRED
+  NO_DEFAULT_PATH
+  NO_PACKAGE_ROOT_PATH
+  NO_CMAKE_PATH
+  NO_CMAKE_ENVIRONMENT_PATH
+  NO_SYSTEM_ENVIRONMENT_PATH
+  NO_CMAKE_SYSTEM_PATH
+  NO_CMAKE_INSTALL_PREFIX
+)
+find_path(FFI_INCLUDE
+  NAMES "ffi.h"
+  PATHS "${LIBFFI_DIST}"
+  PATH_SUFFIXES "include"
+  REQUIRED
+  NO_DEFAULT_PATH
+  NO_PACKAGE_ROOT_PATH
+  NO_CMAKE_PATH
+  NO_CMAKE_ENVIRONMENT_PATH
+  NO_SYSTEM_ENVIRONMENT_PATH
+  NO_CMAKE_SYSTEM_PATH
+  NO_CMAKE_INSTALL_PREFIX
+)
 target_link_libraries("_ctypes" PRIVATE ${FFI_LIBRARY})
+
+target_include_directories("_ctypes" BEFORE PRIVATE ${FFI_INCLUDE})
+
 if(WIN32)
     target_compile_definitions("_ctypes" PRIVATE
         MS_WIN32
