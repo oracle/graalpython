@@ -71,7 +71,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
-import com.oracle.graal.python.builtins.objects.code.CodeNodes.CreateCodeNode;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -120,7 +119,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
@@ -131,9 +129,11 @@ import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.bytecode.BytecodeConfig;
 import com.oracle.truffle.api.bytecode.BytecodeRootNodes;
 import com.oracle.truffle.api.bytecode.serialization.BytecodeDeserializer;
@@ -261,20 +261,28 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "loads", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"bytes"})
+    // cache_key is a GraalPy-specific keyword
+    @Builtin(name = "loads", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"bytes"}, keywordOnlyNames = {"cache_key"})
     @ArgumentClinic(name = "bytes", conversion = ClinicConversion.ReadableBuffer)
+    @ArgumentClinic(name = "cache_key", conversion = ClinicConversion.Long, defaultValue = "0")
     @GenerateNodeFactory
-    abstract static class LoadsNode extends PythonUnaryClinicBuiltinNode {
+    abstract static class LoadsNode extends PythonBinaryClinicBuiltinNode {
 
         @Specialization
-        static Object doit(VirtualFrame frame, Object buffer,
+        static Object doit(VirtualFrame frame, Object buffer, long cacheKey,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached PRaiseNode raiseNode) {
+            PythonLanguage language = context.getLanguage(inliningTarget);
             try {
-                return Marshal.load(context, bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer));
+                byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
+                int length = bufferLib.getBufferLength(buffer);
+                if (!language.isSingleContext() && cacheKey < 0) {
+                    cacheKey = language.cacheKeyForBytecode(bytes, length);
+                }
+                return Marshal.load(context, bytes, length, cacheKey);
             } catch (NumberFormatException e) {
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.BAD_MARSHAL_DATA_S, e.getMessage());
             } catch (Marshal.MarshalError me) {
@@ -384,8 +392,8 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        static Object load(PythonContext context, byte[] ary, int length) throws NumberFormatException, MarshalError {
-            Marshal inMarshal = new Marshal(context, ary, length);
+        static Object load(PythonContext context, byte[] ary, int length, long cacheKey) throws NumberFormatException, MarshalError {
+            Marshal inMarshal = new Marshal(context, ary, length, cacheKey);
             Object result = inMarshal.readObject();
             if (result == null) {
                 throw new MarshalError(PythonBuiltinClassType.TypeError, ErrorMessages.BAD_MARSHAL_DATA_NULL);
@@ -459,6 +467,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         final PInt pyTrue;
         final PInt pyFalse;
         int depth = 0;
+        long cacheKey;
         /*
          * A DSL node needs access to its Source during deserialization, but we do not wish to
          * actually encode it in the serialized representation. Instead, we supply a Source to the
@@ -490,8 +499,9 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             this.refList = null;
         }
 
-        Marshal(PythonContext context, byte[] in, int length) {
+        Marshal(PythonContext context, byte[] in, int length, long cacheKey) {
             this(context, SerializationUtils.createDataInput(ByteBuffer.wrap(in, 0, length)), null);
+            this.cacheKey = cacheKey;
         }
 
         Marshal(PythonContext context, Object in) {
@@ -908,14 +918,13 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                     writeByte(TYPE_ARRAY | flag);
                     writeByte(ARRAY_TYPE_OBJECT);
                     writeObjectArray((Object[]) v);
-                } else if (v instanceof PCode) {
+                } else if (v instanceof PCode c) {
                     // we always store code objects in our format, CPython will not read our
                     // marshalled data when that contains code objects
-                    PCode c = (PCode) v;
                     writeByte(TYPE_GRAALPYTHON_CODE | flag);
                     writeString(c.getFilename());
                     writeInt(c.getFlags());
-                    writeBytes(c.getCodestring());
+                    writeCodeUnit(c.getCodeUnit());
                     writeInt(c.getFirstLineNo());
                     byte[] lnotab = c.getLinetable();
                     if (lnotab == null) {
@@ -1507,21 +1516,23 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         private PCode readCode() {
             TruffleString fileName = readString(true);
             int flags = readInt();
-
-            int codeLen = readSize();
-            byte[] codeString = new byte[codeLen + Long.BYTES];
-            try {
-                in.readFully(codeString, 0, codeLen);
-            } catch (IOException e) {
-                throw CompilerDirectives.shouldNotReachHere();
-            }
-            // get a new ID every time we deserialize the same filename in the same context. We use
-            // slow-path context lookup, since this code is likely dominated by the deserialization
-            // time
-            ByteBuffer.wrap(codeString).putLong(codeLen, context.getDeserializationId(fileName));
+            CodeUnit code = readCodeUnit();
             int firstLineNo = readInt();
             byte[] lnoTab = readBytes();
-            return CreateCodeNode.createCode(context, flags, codeString, fileName, firstLineNo, lnoTab);
+            com.oracle.graal.python.util.Supplier<CallTarget> supplier = () -> {
+                String jFilename = fileName.toJavaStringUncached();
+                Source subSource = Source.newBuilder(PythonLanguage.ID, "", jFilename).content(Source.CONTENT_NONE).build();
+                return PythonLanguage.callTargetFromBytecode(context, subSource, code);
+            };
+            CallTarget callTarget;
+            if (context.getLanguage().isSingleContext() || cacheKey == 0) {
+                callTarget = supplier.get();
+            } else {
+                // get a new ID every time we deserialize the same filename in the same context
+                long fullCacheKey = cacheKey + context.getDeserializationId(fileName);
+                callTarget = context.getLanguage().cacheCode(new PythonLanguage.CodeCacheKey(fileName, fullCacheKey), supplier);
+            }
+            return PFactory.createCode(context.getLanguage(), (RootCallTarget) callTarget, flags, firstLineNo, lnoTab, fileName);
         }
     }
 
@@ -1541,7 +1552,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
     @TruffleBoundary
     public static CodeUnit deserializeCodeUnit(Node node, PythonContext context, byte[] bytes) {
         try {
-            Marshal marshal = new Marshal(context, bytes, bytes.length);
+            Marshal marshal = new Marshal(context, bytes, bytes.length, 0);
             return marshal.readCodeUnit();
         } catch (Marshal.MarshalError me) {
             throw PRaiseNode.raiseStatic(node, me.type, me.message, me.arguments);

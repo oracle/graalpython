@@ -42,8 +42,6 @@ package com.oracle.graal.python.builtins.objects.code;
 
 import java.util.Arrays;
 
-import org.graalvm.polyglot.io.ByteSequence;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.code.CodeNodesFactory.GetCodeRootNodeGen;
@@ -64,8 +62,6 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.LazySource;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.graal.python.util.Supplier;
-import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -79,7 +75,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class CodeNodes {
@@ -146,7 +141,7 @@ public abstract class CodeNodes {
                                 parameterNames,
                                 kwOnlyNames);
             } else {
-                ct = create().deserializeForBytecodeInterpreter(language, context, codedata, cellvars, freevars);
+                ct = deserializeForBytecodeInterpreter(context, codedata, cellvars, freevars);
                 signature = ((PRootNode) ct.getRootNode()).getSignature();
             }
             if (filename != null) {
@@ -155,10 +150,9 @@ public abstract class CodeNodes {
             return PFactory.createCode(language, ct, signature, nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars, filename, name, qualname, firstlineno, linetable);
         }
 
-        @SuppressWarnings("static-method")
-        private RootCallTarget deserializeForBytecodeInterpreter(PythonLanguage language, PythonContext context, byte[] data, TruffleString[] cellvars, TruffleString[] freevars) {
+        private static RootCallTarget deserializeForBytecodeInterpreter(PythonContext context, byte[] data, TruffleString[] cellvars, TruffleString[] freevars) {
             CodeUnit codeUnit = MarshalModuleBuiltins.deserializeCodeUnit(null, context, data);
-            RootNode rootNode = null;
+            RootNode rootNode;
 
             if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
                 BytecodeDSLCodeUnit code = (BytecodeDSLCodeUnit) codeUnit;
@@ -180,25 +174,6 @@ public abstract class CodeNodes {
                 }
             }
             return PythonUtils.getOrCreateCallTarget(rootNode);
-        }
-
-        @TruffleBoundary
-        public static PCode createCode(PythonContext context, int flags, byte[] codedata, TruffleString filename, int firstlineno, byte[] lnotab) {
-            boolean isNotAModule = (flags & PCode.CO_GRAALPYHON_MODULE) == 0;
-            String jFilename = filename.toJavaStringUncached();
-            PythonLanguage language = context.getLanguage();
-            Supplier<CallTarget> createCode = () -> {
-                ByteSequence bytes = ByteSequence.create(codedata);
-                Source source = Source.newBuilder(PythonLanguage.ID, bytes, jFilename).mimeType(PythonLanguage.MIME_TYPE_BYTECODE).cached(!language.isSingleContext()).build();
-                return context.getEnv().parsePublic(source);
-            };
-
-            if (context.isCoreInitialized() || isNotAModule) {
-                return PFactory.createCode(language, (RootCallTarget) createCode.get(), flags, firstlineno, lnotab, filename);
-            } else {
-                RootCallTarget ct = (RootCallTarget) language.cacheCode(filename, createCode);
-                return PFactory.createCode(language, ct, flags, firstlineno, lnotab, filename);
-            }
         }
 
         @NeverDefault

@@ -484,7 +484,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                 Object code = null;
 
                 try {
-                    code = MarshalModuleBuiltins.Marshal.load(context, bytes, size);
+                    code = MarshalModuleBuiltins.Marshal.load(context, bytes, size, 0);
                 } catch (MarshalError | NumberFormatException e) {
                     raiseFrozenError(inliningTarget, raiseNode, FROZEN_INVALID, name);
                 }
