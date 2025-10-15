@@ -62,7 +62,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 public enum NativeCAPISymbol implements NativeCExtSymbol {
 
     FUN_VA_ARG_POINTER("GraalPyPrivate_VaArgPointer", Pointer, Pointer),
-    FUN_CONVERT_POINTER("GraalPyPrivate_ConvertPointer", Pointer, Py_ssize_t),
     FUN_NO_OP_CLEAR("GraalPyPrivate_NoOpClear", Int, PyObject),
     FUN_NO_OP_TRAVERSE("GraalPyPrivate_NoOpTraverse", Int, PyObject, Pointer, Pointer),
 

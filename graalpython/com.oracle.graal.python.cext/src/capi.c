@@ -408,10 +408,25 @@ PyAPI_FUNC(Py_ssize_t)
 GraalPyPrivate_BulkDealloc(intptr_t ptrArray[], int64_t len)
 {
     for (int i = 0; i < len; i++) {
-        PyObject *obj = (PyObject*)ptrArray[i];
-        GraalPyPrivate_Log(PY_TRUFFLE_LOG_FINER, "%s: _Py_Dealloc(0x%zx)",
-                __func__, obj);
-        _Py_Dealloc(obj);
+        PyObject *obj = (PyObject *)ptrArray[i];
+        if (!obj->ob_type) {
+            GraalPyPrivate_Log(PY_TRUFFLE_LOG_FINER,
+                               "%s: Object: 0x%zx has no type anymore, we have "
+                               "no idea what it is, we will just free it",
+                               __func__, obj);
+            free(obj);
+        } else if (obj->ob_refcnt == _Py_IMMORTAL_REFCNT) {
+            GraalPyPrivate_Log(PY_TRUFFLE_LOG_FINER,
+                               "%s: Not deallocating immortal object: 0x%zx (%s%s)",
+                               __func__, obj,
+                               PyType_Check(obj) ? "class " : "a ",
+                               PyType_Check(obj) ? ((PyTypeObject*)obj)->tp_name : Py_TYPE(obj)->tp_name);
+        } else {
+            GraalPyPrivate_Log(PY_TRUFFLE_LOG_FINER,
+                               "%s: _Py_Dealloc(0x%zx)",
+                               __func__, obj);
+            _Py_Dealloc(obj);
+        }
     }
     return 0;
 }
@@ -619,10 +634,6 @@ PyAPI_FUNC(void) GraalPyPrivate_CheckTypeReady(PyTypeObject* type) {
 
 PyAPI_FUNC(void*) GraalPyPrivate_VaArgPointer(va_list* va) {
 	return va_arg(*va, void*);
-}
-
-PyAPI_FUNC(void*) GraalPyPrivate_ConvertPointer(Py_ssize_t value) {
-	return (void*) value;
 }
 
 PyAPI_FUNC(int) GraalPyPrivate_NoOpClear(PyObject* o) {

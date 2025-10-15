@@ -1120,8 +1120,8 @@ public final class CApiContext extends CExtContext {
                  * and the singleton wrappers were cleared because they might also end up in the
                  * lookup table and may otherwise be double-freed.
                  */
+                CApiTransitions.freeNativeReplacementStructs(context, handleContext);
                 CApiTransitions.freeNativeObjectStubs(handleContext);
-                CApiTransitions.freeNativeReplacementStructs(handleContext);
                 CApiTransitions.freeNativeStorages(handleContext);
             }
             if (pyDateTimeCAPICapsule != null) {

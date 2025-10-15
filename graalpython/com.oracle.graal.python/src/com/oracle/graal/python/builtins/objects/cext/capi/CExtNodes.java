@@ -328,7 +328,7 @@ public abstract class CExtNodes {
             managedSide.setNativeWrapper(nativeWrapper);
             long nativeObject = (long) call.call(NativeCAPISymbol.FUN_PY_TYPE_GENERIC_NEW_RAW, toNative.execute(cls), 0L, 0L);
             CApiTransitions.writeNativeRefCount(nativeObject, MANAGED_REFCNT);
-            CApiTransitions.createReference(nativeWrapper, nativeObject, true);
+            CApiTransitions.createReference(nativeWrapper, nativeObject, false);
             return managedSide;
         }
     }

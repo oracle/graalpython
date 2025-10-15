@@ -76,7 +76,10 @@ public final class PThreadState extends PythonStructNativeWrapper {
     @TruffleBoundary
     private PThreadState(PythonThreadState threadState) {
         super(threadState, true);
-        // 'registerReplacement' will set the native pointer if not running LLVM managed mode.
+        // TODO: this passes false for allocatedFromJava although we actually do allocate it from
+        // Java, but we currently free it on context exit using a call to
+        // FUN_PY_GC_COLLECT_NO_FAIL, which can bite us when we change allocators for the Java
+        // side...
         replacement = registerReplacement(allocateCLayout(threadState), false, InteropLibrary.getUncached());
     }
 

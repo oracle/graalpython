@@ -151,6 +151,9 @@ public final class PyMemoryViewWrapper extends PythonAbstractObjectNativeWrapper
     public Object getReplacement(InteropLibrary lib) {
         if (replacement == null) {
             Object pointerObject = allocate((PMemoryView) getDelegate());
+            // TODO: this passes "false" for allocatedFromJava, although it actually is. The
+            // problem, however, is that this struct contains nested allocations from Java. This
+            // needs to be cleaned up...
             replacement = registerReplacement(pointerObject, false, lib);
         }
         return replacement;

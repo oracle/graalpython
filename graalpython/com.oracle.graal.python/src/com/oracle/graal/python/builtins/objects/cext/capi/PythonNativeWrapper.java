@@ -40,10 +40,10 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonObjectReference;
+import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -136,30 +136,19 @@ public abstract class PythonNativeWrapper implements TruffleObject {
     }
 
     @TruffleBoundary
-    public final Object registerReplacement(Object pointer, boolean freeAtCollection, InteropLibrary lib) {
+    public final Object registerReplacement(Object pointer, boolean wasAllocatedFromJava, InteropLibrary lib) {
         LOGGER.finest(() -> PythonUtils.formatJString("assigning %s with %s", getDelegate(), pointer));
         Object result;
         if (pointer instanceof Long lptr) {
-            // need to convert to actual pointer
-            result = PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_CONVERT_POINTER, lptr);
-            CApiTransitions.createReference(this, lptr, freeAtCollection);
+            // need to convert to interop pointer for NFI
+            result = new NativePointer(lptr);
+            CApiTransitions.createReference(this, lptr, wasAllocatedFromJava);
         } else {
             result = pointer;
-            if (lib.isPointer(pointer)) {
-                assert CApiContext.isPointerObject(pointer);
-                try {
-                    CApiTransitions.createReference(this, lib.asPointer(pointer), freeAtCollection);
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
-                }
-            } else {
-                /*
-                 * This branch is required for LLVM managed mode where we will never have a native
-                 * pointer (i.e. an address pointing into off-heap memory) but a managed pointer to
-                 * some object emulating the native memory.
-                 */
-                assert pointer.getClass().getSimpleName().contains("LLVMPointer");
-                CApiTransitions.createManagedReference(getDelegate(), pointer);
+            try {
+                CApiTransitions.createReference(this, lib.asPointer(pointer), wasAllocatedFromJava);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
             }
         }
         return result;
