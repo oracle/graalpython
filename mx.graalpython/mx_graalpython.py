@@ -1738,7 +1738,10 @@ def _get_output_root(projectname):
             continue
         for p in itertools.chain(suite.projects, suite.dists):
             if p.name == suffix:
-                return p.get_output_root()
+                try:
+                    return p.get_output_root()
+                except:
+                    return p.get_output()
     mx.abort("Could not find out dir for project %s" % projectname)
 
 # We use the ordinal value of this character and add it to the version parts to
