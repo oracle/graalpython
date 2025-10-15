@@ -45,6 +45,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWra
 
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -166,7 +167,7 @@ public abstract class CApiTransitions {
             nativeStubLookupFreeStack.pushRange(1, DEFAULT_CAPACITY);
         }
 
-        public final NativeObjectReferenceArrayWrapper referencesToBeFreed = new NativeObjectReferenceArrayWrapper();
+        public final ArrayList<Long> referencesToBeFreed = new ArrayList<>();
         public final HashMap<Long, IdReference<?>> nativeLookup = new HashMap<>();
         public final ConcurrentHashMap<Long, Long> nativeWeakRef = new ConcurrentHashMap<>();
         public final WeakHashMap<Object, WeakReference<Object>> managedNativeLookup = new WeakHashMap<>();
@@ -417,7 +418,7 @@ public abstract class CApiTransitions {
                 ReferenceQueue<Object> queue = handleContext.referenceQueue;
                 int count = 0;
                 long start = 0;
-                NativeObjectReferenceArrayWrapper referencesToBeFreed = handleContext.referencesToBeFreed;
+                ArrayList<Long> referencesToBeFreed = handleContext.referencesToBeFreed;
                 while (true) {
                     Object entry = queue.poll();
                     if (entry == null) {
@@ -509,7 +510,7 @@ public abstract class CApiTransitions {
      * to be freed. Therefore, this method neither frees any native memory nor runs any object
      * destructor (guest code).
      */
-    private static void processNativeObjectReference(NativeObjectReference reference, NativeObjectReferenceArrayWrapper referencesToBeFreed) {
+    private static void processNativeObjectReference(NativeObjectReference reference, ArrayList<Long> referencesToBeFreed) {
         LOGGER.fine(() -> PythonUtils.formatJString("releasing %s", reference.toString()));
         if (subNativeRefCount(reference.pointer, MANAGED_REFCNT) == 0) {
             referencesToBeFreed.add(reference.pointer);
@@ -548,13 +549,13 @@ public abstract class CApiTransitions {
      * element. This method may therefore run arbitrary guest code and strictly requires the GIL to
      * be held at the time of invocation.
      */
-    private static void releaseNativeObjects(PythonContext context, NativeObjectReferenceArrayWrapper referencesToBeFreed) {
+    private static void releaseNativeObjects(PythonContext context, ArrayList<Long> referencesToBeFreed) {
         if (!referencesToBeFreed.isEmpty()) {
             /*
              * This needs the GIL because this will call the native objects' destructors which can
              * be arbitrary guest code.
              */
-            assert PythonContext.get(null).ownsGil();
+            assert context.ownsGil();
             PythonContext.PythonThreadState threadState = context.getThreadState(context.getLanguage());
             /*
              * There can be an active exception. Since we might be calling arbitary python, we need
@@ -562,12 +563,15 @@ public abstract class CApiTransitions {
              */
             Object savedException = CExtCommonNodes.ReadAndClearNativeException.executeUncached(threadState);
             try {
-                LOGGER.fine(() -> PythonUtils.formatJString("releasing %d NativeObjectReference instances", referencesToBeFreed.getArraySize()));
-                Object array = AllocateNode.allocUncached(referencesToBeFreed.getArraySize() * Long.BYTES);
-                CStructAccess.WriteLongNode.getUncached().writeLongArray(array, referencesToBeFreed.getArray(), (int) referencesToBeFreed.getArraySize(), 0, 0);
-                PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_BULK_DEALLOC, array, referencesToBeFreed.getArraySize());
-                FreeNode.executeUncached(array);
-                referencesToBeFreed.reset();
+                int size = referencesToBeFreed.size();
+                LOGGER.fine(() -> PythonUtils.formatJString("releasing %d NativeObjectReference instances", size));
+                long pointer = AllocateNode.allocUncachedPointer(size * Long.BYTES);
+                for (int i = 0; i < size; i++) {
+                    CStructAccess.WriteLongNode.writeLong(pointer, i * Long.BYTES, referencesToBeFreed.get(i));
+                }
+                PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_BULK_DEALLOC, pointer, size);
+                FreeNode.freeLong(pointer);
+                referencesToBeFreed.clear();
             } finally {
                 CExtCommonNodes.ReadAndClearNativeException.executeUncached(threadState);
                 if (savedException != PNone.NO_VALUE) {

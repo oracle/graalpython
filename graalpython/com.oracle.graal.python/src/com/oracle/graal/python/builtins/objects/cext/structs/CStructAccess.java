@@ -131,8 +131,7 @@ public class CStructAccess {
             // non-zero size to get unique pointers
             try {
                 long totalSize = Math.multiplyExact(count, size);
-                long memory = UNSAFE.allocateMemory(totalSize == 0 ? 1 : totalSize);
-                UNSAFE.setMemory(memory, totalSize, (byte) 0);
+                long memory = allocUncachedPointer(totalSize);
                 return new NativePointer(memory);
             } catch (ArithmeticException e) {
                 overflowProfile.enter(inliningTarget);
@@ -159,6 +158,12 @@ public class CStructAccess {
             return AllocateNodeGen.getUncached().alloc(size);
         }
 
+        public static long allocUncachedPointer(long size) {
+            long memory = UNSAFE.allocateMemory(size == 0 ? 1 : size);
+            UNSAFE.setMemory(memory, size, (byte) 0);
+            return memory;
+        }
+
         public static Object callocUncached(long count, long elSize) {
             return AllocateNodeGen.getUncached().calloc(count, elSize);
         }
@@ -179,7 +184,7 @@ public class CStructAccess {
         }
 
         @Specialization
-        static void freeLong(long pointer) {
+        public static void freeLong(long pointer) {
             UNSAFE.freeMemory(pointer);
         }
 
@@ -1104,16 +1109,6 @@ public class CStructAccess {
             execute(pointer, 0, value);
         }
 
-        public final void writeLongArray(Object pointer, long[] values) {
-            writeLongArray(pointer, values, values.length, 0, 0);
-        }
-
-        public final void writeLongArray(Object pointer, long[] values, int length, int sourceOffset, long targetOffset) {
-            for (int i = 0; i < length; i++) {
-                execute(pointer, (i + targetOffset) * Long.BYTES, values[i + sourceOffset]);
-            }
-        }
-
         public final void writeIntArray(Object pointer, int[] values) {
             writeIntArray(pointer, values, values.length, 0, 0);
         }
@@ -1129,7 +1124,7 @@ public class CStructAccess {
         }
 
         @Specialization
-        static void writeLong(long pointer, long offset, long value) {
+        public static void writeLong(long pointer, long offset, long value) {
             assert offset >= 0;
             UNSAFE.putLong(pointer + offset, value);
         }
