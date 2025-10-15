@@ -120,11 +120,11 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -261,7 +261,10 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    // cache_key is a GraalPy-specific keyword
+    /*
+     * cache_key is a GraalPy-specific keyword used in the code cache in multi-context mode,
+     * together with the filename from the unmarshalled code
+     */
     @Builtin(name = "loads", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"bytes"}, keywordOnlyNames = {"cache_key"})
     @ArgumentClinic(name = "bytes", conversion = ClinicConversion.ReadableBuffer)
     @ArgumentClinic(name = "cache_key", conversion = ClinicConversion.Long, defaultValue = "0")

@@ -650,9 +650,11 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
     }
 
     private static RootCallTarget createCallTarget(PythonContext context, FrozenInfo info) {
-        String name = PythonLanguage.FROZEN_FILENAME_PREFIX + info.name + PythonLanguage.FROZEN_FILENAME_SUFFIX;
-        Source source = Source.newBuilder("python", "", name).content(Source.CONTENT_NONE).build();
-        return context.getLanguage().callTargetFromBytecode(context, source, info.code);
+        return (RootCallTarget) context.getLanguage().cacheCode(new PythonLanguage.CodeCacheKey(info.origName, System.identityHashCode(info.code)), () -> {
+            String name = PythonLanguage.FROZEN_FILENAME_PREFIX + info.name + PythonLanguage.FROZEN_FILENAME_SUFFIX;
+            Source source = Source.newBuilder("python", "", name).content(Source.CONTENT_NONE).build();
+            return PythonLanguage.callTargetFromBytecode(context, source, info.code);
+        });
     }
 
     /*
