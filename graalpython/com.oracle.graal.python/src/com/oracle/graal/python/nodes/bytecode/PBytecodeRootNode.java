@@ -6160,7 +6160,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @Override
     protected RootNode cloneUninitialized() {
-        return new PBytecodeRootNode(getLanguage(), getFrameDescriptor(), getSignature(), co, lazySource, internal, parserCallbacks);
+        // Note: the bytecode might be quickened already, it's not practical to undo it
+        PBytecodeRootNode rootNode = new PBytecodeRootNode(getLanguage(), getFrameDescriptor(), getSignature(), co, lazySource, internal, parserCallbacks);
+        rootNode.variableTypes = variableTypes;
+        return rootNode;
     }
 
     public void triggerDeferredDeprecationWarnings() {
