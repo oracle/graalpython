@@ -266,6 +266,9 @@ def _bisect_benchmark(argv, bisect_id, email_to):
         args = parser.parse_args(argv)
 
     def checkout(repo_path: Path, commit):
+        if 'CI' in os.environ:
+            # discard any changes made by the previous build before checkout
+            GIT.run(['git', 'reset', '--hard', 'HEAD'], nonZeroIsFatal=True, cwd=repo_path)
         GIT.update_to_branch(repo_path, commit)
         if repo_path == DIR:
             mx.run_mx(['sforceimports'], suite=str(DIR))
