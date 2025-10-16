@@ -399,10 +399,15 @@ target_link_libraries("_ctypes" PRIVATE ${FFI_LIBRARY})
 target_include_directories("_ctypes" BEFORE PRIVATE ${FFI_INCLUDE})
 
 if(WIN32)
+    target_compile_options("_ctypes" PRIVATE
+        /wd4201 # ffi.h(332): warning C4201: nonstandard extension used: nameless struct/union
+        /wd4457 # _ctypes.c(4783): warning C4457: declaration of 'item' hides function parameter
+    )
     target_compile_definitions("_ctypes" PRIVATE
         MS_WIN32
         MS_WIN64
         _WIN64
+        FFI_STATIC_BUILD
     )
 else()
     target_compile_definitions("_ctypes" PRIVATE

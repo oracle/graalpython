@@ -673,6 +673,7 @@ suite = {
                             "TRUFFLE_NFI_H_INC": "<path:com.oracle.truffle.nfi.native>/include",
                             "GRAALPY_PARENT_DIR": "<suite_parent:graalpython>",
                             "GRAALPY_EXT": "<graalpy_ext>",
+                            "LIBFFI_DIST": "<output_root:truffle:LIBFFI_DIST>/<os>-<arch>/<multitarget_libc_selection>/"
                         },
                         "results": [
                             "bin/<lib:python-native>",
