@@ -183,11 +183,10 @@ public abstract class TextIOWrapperNodes {
         static void checkGeneric(VirtualFrame frame, PTextIO self,
                         @Bind Node inliningTarget,
                         @Cached PyObjectGetAttr getAttr,
-                        @Cached PyObjectIsTrueNode isTrueNode,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PyObjectIsTrueNode isTrueNode) {
             Object res = getAttr.execute(frame, inliningTarget, self.getBuffer(), T_CLOSED);
             if (isTrueNode.execute(frame, res)) {
-                error(self, raiseNode);
+                error(self, inliningTarget);
             }
         }
     }
