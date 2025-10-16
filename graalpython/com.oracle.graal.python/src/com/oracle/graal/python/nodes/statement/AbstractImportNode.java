@@ -457,6 +457,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
         @Specialization
         TruffleString resolveName(VirtualFrame frame, TruffleString name, Object globals, int level,
                         @Bind Node inliningTarget,
+                        @Cached PConstructAndRaiseNode constructAndRaiseNode,
                         @Cached GetDictFromGlobalsNode getDictNode,
                         @Cached PyDictGetItem getPackageOrNameNode,
                         @Cached PyDictGetItem getSpecNode,
@@ -549,7 +550,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
                 if (path == null) {
                     int dotIdx = indexOfCodePointNode.execute(pkgString, '.', 0, codePointLengthNode.execute(pkgString, TS_ENCODING), TS_ENCODING);
                     if (dotIdx < 0) {
-                        throw noParentError(frame);
+                        throw noParentError(frame, constructAndRaiseNode);
                     }
                     pkgString = substringNode.execute(pkgString, 0, dotIdx, TS_ENCODING, true);
                 }
@@ -557,7 +558,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
 
             int lastDotIdx = codePointLengthNode.execute(pkgString, TS_ENCODING);
             if (lastDotIdx == 0) {
-                throw noParentError(frame);
+                throw noParentError(frame, constructAndRaiseNode);
             }
 
             for (int levelUp = 1; levelUp < level; levelUp += 1) {
@@ -579,8 +580,8 @@ public abstract class AbstractImportNode extends PNodeWithContext {
             return toStringNode.execute(sb);
         }
 
-        private static RuntimeException noParentError(VirtualFrame frame) {
-            throw PConstructAndRaiseNode.getUncached().raiseImportError(frame, ATTEMPTED_RELATIVE_IMPORT_BEYOND_TOPLEVEL);
+        private static RuntimeException noParentError(VirtualFrame frame, PConstructAndRaiseNode raiseNode) {
+            throw raiseNode.raiseImportError(frame, ATTEMPTED_RELATIVE_IMPORT_BEYOND_TOPLEVEL);
         }
     }
 
