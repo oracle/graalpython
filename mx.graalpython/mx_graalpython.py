@@ -282,15 +282,16 @@ def libpythonvm_build_args():
         vc = SUITE.vc
         commit = str(vc.tip(SUITE.dir)).strip()
         branch = str(vc.active_branch(SUITE.dir, abortOnError=False) or 'master').strip()
+        dsl_suffix = '' if not BYTECODE_DSL_INTERPRETER else '-bytecode-dsl'
 
         if script := os.environ.get("ARTIFACT_DOWNLOAD_SCRIPT"):
             # This is always available in the GraalPy CI
-            profile = "cached_profile.iprof.gz"
+            profile = f"cached_profile{dsl_suffix}.iprof.gz"
             run(
                 [
                     sys.executable,
                     script,
-                    f"graalpy/{commit}",
+                    f"graalpy/pgo{dsl_suffix}-{commit}",
                     profile,
                 ],
                 nonZeroIsFatal=False,
@@ -299,21 +300,23 @@ def libpythonvm_build_args():
             # Locally, we try to get a reasonable profile
             get_profile = mx.command_function('python-get-latest-profile', fatalIfMissing=False)
             if get_profile:
-                for b in set([branch, "master"]):
+                for b in [branch, "master"]:
                     if not profile:
                         try:
                             profile = get_profile(["--branch", b])
+                            if profile and dsl_suffix not in profile:
+                                mx.warn("PGO profile seems mismatched, you need newer graal-enterprise")
                         except BaseException:
                             pass
 
-        if CI and not os.path.isfile(profile or ""):
+        if CI and (not profile or not os.path.isfile(profile)):
             mx.log("No profile in CI job")
             # When running on a release branch or attempting to merge into
             # a release branch, make sure we can use a PGO profile, and
             # when running in the CI on a bench runner, ensure a PGO profile
             if (
                     any(b.startswith("release/") for b in [branch, os.environ.get("TO_BRANCH", "")])
-                    or (",bench," in os.environ.get("LABELS", ""))
+                    or os.environ.get('BUILD_NAME', '').startswith('pybench-')
             ):
                 mx.warn("PGO profile must exist for benchmarking and release, creating one now...")
                 profile = graalpy_native_pgo_build_and_test()
@@ -361,10 +364,13 @@ def graalpy_native_pgo_build_and_test(args=None):
                 GRAALPY_HOME=instrumented_home,
         ):
             graalpytest(["--python", instrumented_launcher, "test_venv.py"])
-            mx.command_function('benchmark')(["meso-small:*", "--", "--python-vm", "graalpython", "--python-vm-config", "custom"])
-
-        iprof_path = Path(SUITE.dir) / 'default.iprof'
-        lcov_path = Path(SUITE.dir) / 'default.lcov'
+            python_vm_config = 'custom'
+            if BYTECODE_DSL_INTERPRETER:
+                python_vm_config += '-bc-dsl'
+            mx.command_function('benchmark')(["meso-small:*", "--", "--python-vm", "graalpython", "--python-vm-config", python_vm_config])
+        dsl_suffix = '' if not BYTECODE_DSL_INTERPRETER else '-bytecode-dsl'
+        iprof_path = Path(SUITE.dir) / f'default{dsl_suffix}.iprof'
+        lcov_path = Path(SUITE.dir) / f'default{dsl_suffix}.lcov'
 
         run([
             os.path.join(
@@ -411,17 +417,19 @@ def graalpy_native_pgo_build_and_test(args=None):
     mx.log(mx.colorize(f"[PGO] Gzipped profile at: {iprof_gz_path}", color="yellow"))
 
     if script := os.environ.get("ARTIFACT_UPLOADER_SCRIPT"):
+        commit = str(SUITE.vc.tip(SUITE.dir)).strip()
         run(
             [
                 sys.executable,
                 script,
                 iprof_gz_path,
-                str(SUITE.vc.tip(SUITE.dir)).strip(),
+                f"pgo{dsl_suffix}-{commit}",
                 "graalpy",
                 "--lifecycle",
                 "cache",
                 "--artifact-repo-key",
                 os.environ.get("ARTIFACT_REPO_KEY_LOCATION"),
+                '--skip-existing',
             ],
         )
 
