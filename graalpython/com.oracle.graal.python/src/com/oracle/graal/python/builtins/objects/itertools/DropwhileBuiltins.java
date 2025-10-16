@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.itertools;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.warnPickleDeprecated;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_ARGS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
@@ -51,13 +50,15 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETSTATE__;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.DeprecatedReduceBuiltin;
+import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.DeprecatedSetStateBuiltin;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -73,7 +74,6 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -172,14 +172,11 @@ public final class DropwhileBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
+    public abstract static class ReduceNode extends DeprecatedReduceBuiltin {
         @Specialization
-        static Object reduce(PDropwhile self,
-                        @Bind Node inliningTarget,
-                        @Cached GetClassNode getClassNode,
-                        @Bind PythonLanguage language) {
-            warnPickleDeprecated();
-            Object type = getClassNode.execute(inliningTarget, self);
+        static Object reduce(PDropwhile self) {
+            PythonLanguage language = PythonLanguage.get(null);
+            Object type = GetClassNode.executeUncached(self);
             PTuple tuple = PFactory.createTuple(language, new Object[]{self.getPredicate(), self.getIterable()});
             return PFactory.createTuple(language, new Object[]{type, tuple, self.isDoneDropping()});
         }
@@ -187,17 +184,14 @@ public final class DropwhileBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___SETSTATE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
+    public abstract static class SetStateNode extends DeprecatedSetStateBuiltin {
         @Specialization
         static Object setState(PDropwhile self, Object state,
-                        @Bind Node inliningTarget,
-                        @Cached CastToJavaBooleanNode castToBoolean,
-                        @Cached PRaiseNode raiseNode) {
-            warnPickleDeprecated();
+                        @Bind Node inliningTarget) {
             try {
-                self.setDoneDropping(castToBoolean.execute(inliningTarget, state));
+                self.setDoneDropping(CastToJavaBooleanNode.executeUncached(state));
             } catch (CannotCastException e) {
-                throw raiseNode.raise(inliningTarget, ValueError, INVALID_ARGS, T___SETSTATE__);
+                throw PRaiseNode.raiseStatic(inliningTarget, ValueError, INVALID_ARGS, T___SETSTATE__);
             }
             return PNone.NONE;
         }

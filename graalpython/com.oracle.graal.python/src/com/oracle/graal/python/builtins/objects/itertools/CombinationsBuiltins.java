@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.itertools;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.warnPickleDeprecated;
 import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_NON_NEGATIVE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
@@ -52,13 +51,15 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.DeprecatedReduceBuiltin;
+import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.DeprecatedSetStateBuiltin;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
@@ -70,7 +71,6 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIter
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
@@ -249,21 +249,16 @@ public final class CombinationsBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
+    public abstract static class ReduceNode extends DeprecatedReduceBuiltin {
 
         @Specialization
-        static Object reduce(PAbstractCombinations self,
-                        @Bind Node inliningTarget,
-                        @Cached InlinedConditionProfile hasNoLastResultProfile,
-                        @Cached InlinedConditionProfile stoppedProfile,
-                        @Cached GetClassNode getClassNode,
-                        @Bind PythonLanguage language) {
-            warnPickleDeprecated();
-            Object type = getClassNode.execute(inliningTarget, self);
-            if (hasNoLastResultProfile.profile(inliningTarget, self.getLastResult() == null)) {
+        static Object reduce(PAbstractCombinations self) {
+            Object type = GetClassNode.executeUncached(self);
+            PythonLanguage language = PythonLanguage.get(null);
+            if (self.getLastResult() == null) {
                 PTuple args = PFactory.createTuple(language, new Object[]{PFactory.createTuple(language, self.getPool()), self.getR()});
                 return PFactory.createTuple(language, new Object[]{type, args});
-            } else if (stoppedProfile.profile(inliningTarget, self.isStopped())) {
+            } else if (self.isStopped()) {
                 PTuple args = PFactory.createTuple(language, new Object[]{PFactory.createEmptyTuple(language), self.getR()});
                 return PFactory.createTuple(language, new Object[]{type, args});
             }
@@ -275,21 +270,17 @@ public final class CombinationsBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___SETSTATE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
+    public abstract static class SetStateNode extends DeprecatedSetStateBuiltin {
 
         @Specialization
         static Object setState(PAbstractCombinations self, Object stateObj,
-                        @Bind Node inliningTarget,
-                        @Cached CastToJavaIntExactNode cast,
-                        @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
-                        @Cached PRaiseNode raiseNode) {
-            warnPickleDeprecated();
+                        @Bind Node inliningTarget) {
             int n = self.getPool().length;
             if (stateObj instanceof PTuple state && state.getSequenceStorage().length() == self.getR()) {
                 SequenceStorage storage = state.getSequenceStorage();
                 try {
                     for (int i = 0; i < self.getR(); i++) {
-                        int index = cast.execute(inliningTarget, getItemNode.execute(inliningTarget, storage, i));
+                        int index = CastToJavaIntExactNode.executeUncached(SequenceStorageNodes.GetItemScalarNode.executeUncached(storage, i));
                         int max = i + n - self.getR();
                         if (index > max) {
                             index = max;
@@ -300,7 +291,7 @@ public final class CombinationsBuiltins extends PythonBuiltins {
                         self.getIndices()[i] = index;
                     }
                 } catch (CannotCastException e) {
-                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.INTEGER_REQUIRED);
+                    throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.INTEGER_REQUIRED);
                 }
                 Object[] result = new Object[self.getR()];
                 for (int i = 0; i < self.getR(); i++) {
@@ -309,7 +300,7 @@ public final class CombinationsBuiltins extends PythonBuiltins {
                 self.setLastResult(result);
                 return PNone.NONE;
             } else {
-                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.INVALID_ARGS, T___SETSTATE__);
+                throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.INVALID_ARGS, T___SETSTATE__);
             }
         }
     }

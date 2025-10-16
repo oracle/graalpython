@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.itertools;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.warnPickleDeprecated;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_ARGS;
 import static com.oracle.graal.python.nodes.ErrorMessages.ISLICE_WRONG_ARGS;
 import static com.oracle.graal.python.nodes.ErrorMessages.STEP_FOR_ISLICE_MUST_BE;
@@ -55,13 +54,15 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETSTATE__;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.DeprecatedReduceBuiltin;
+import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.DeprecatedSetStateBuiltin;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -78,7 +79,6 @@ import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -88,7 +88,6 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -269,26 +268,20 @@ public final class IsliceBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
+    public abstract static class ReduceNode extends DeprecatedReduceBuiltin {
         @Specialization(guards = "isNone(self.getIterable())")
-        static Object reduceNoIterable(VirtualFrame frame, PIslice self,
-                        @Bind Node inliningTarget,
-                        @Exclusive @Cached GetClassNode getClassNode,
-                        @Cached PyObjectGetIter getIter,
-                        @Bind PythonLanguage language) {
-            warnPickleDeprecated();
+        static Object reduceNoIterable(PIslice self) {
             // return type(self), (iter([]), 0), 0
-            Object type = getClassNode.execute(inliningTarget, self);
-            PTuple tuple = PFactory.createTuple(language, new Object[]{getIter.execute(frame, inliningTarget, PFactory.createList(language)), 0});
+            Object type = GetClassNode.executeUncached(self);
+            PythonLanguage language = PythonLanguage.get(null);
+            PTuple tuple = PFactory.createTuple(language, new Object[]{PyObjectGetIter.executeUncached(PFactory.createList(language)), 0});
             return PFactory.createTuple(language, new Object[]{type, tuple, 0});
         }
 
         @Specialization(guards = "!isNone(self.getIterable())")
-        static Object reduce(PIslice self,
-                        @Bind Node inliningTarget,
-                        @Exclusive @Cached GetClassNode getClassNode,
-                        @Bind PythonLanguage language) {
-            Object type = getClassNode.execute(inliningTarget, self);
+        static Object reduce(PIslice self) {
+            PythonLanguage language = PythonLanguage.get(null);
+            Object type = GetClassNode.executeUncached(self);
             Object stop = (self.getStop() == -1) ? PNone.NONE : self.getStop();
             PTuple tuple = PFactory.createTuple(language, new Object[]{self.getIterable(), self.getNext(), stop, self.getStep()});
             return PFactory.createTuple(language, new Object[]{type, tuple, self.getCnt()});
@@ -297,17 +290,14 @@ public final class IsliceBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___SETSTATE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
+    public abstract static class SetStateNode extends DeprecatedSetStateBuiltin {
         @Specialization
         static Object setState(PIslice self, Object state,
-                        @Bind Node inliningTarget,
-                        @Cached CastToJavaIntLossyNode castInt,
-                        @Cached PRaiseNode raiseNode) {
-            warnPickleDeprecated();
+                        @Bind Node inliningTarget) {
             try {
-                self.setCnt(castInt.execute(inliningTarget, state));
+                self.setCnt(CastToJavaIntLossyNode.executeUncached(state));
             } catch (CannotCastException e) {
-                throw raiseNode.raise(inliningTarget, ValueError, INVALID_ARGS, T___SETSTATE__);
+                throw PRaiseNode.raiseStatic(inliningTarget, ValueError, INVALID_ARGS, T___SETSTATE__);
             }
             return PNone.NONE;
         }

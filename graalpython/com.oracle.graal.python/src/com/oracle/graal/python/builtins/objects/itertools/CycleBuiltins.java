@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.itertools;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.warnPickleDeprecated;
 import static com.oracle.graal.python.nodes.ErrorMessages.IS_NOT_A;
 import static com.oracle.graal.python.nodes.ErrorMessages.STATE_ARGUMENT_D_MUST_BE_A_S;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
@@ -53,20 +52,20 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.DeprecatedReduceBuiltin;
+import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.DeprecatedSetStateBuiltin;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToArrayNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.GetItemNode;
-import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.LenNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
@@ -75,21 +74,20 @@ import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyTupleGetItem;
+import com.oracle.graal.python.lib.PyTupleSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -205,35 +203,25 @@ public final class CycleBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
+    public abstract static class ReduceNode extends DeprecatedReduceBuiltin {
         @Specialization(guards = "hasIterable(self)")
-        static Object reduce(PCycle self,
-                        @Bind Node inliningTarget,
-                        @Exclusive @Cached GetClassNode getClass,
-                        @Bind PythonLanguage language) {
-            warnPickleDeprecated();
-            Object type = getClass.execute(inliningTarget, self);
+        static Object reduce(PCycle self) {
+            PythonLanguage language = PythonLanguage.get(null);
+            Object type = GetClassNode.executeUncached(self);
             PTuple iterableTuple = PFactory.createTuple(language, new Object[]{self.getIterable()});
             PTuple tuple = PFactory.createTuple(language, new Object[]{getSavedList(self, language), self.isFirstpass()});
             return PFactory.createTuple(language, new Object[]{type, iterableTuple, tuple});
         }
 
         @Specialization(guards = "!hasIterable(self)")
-        static Object reduceNoIterable(VirtualFrame frame, PCycle self,
-                        @Bind Node inliningTarget,
-                        @Exclusive @Cached GetClassNode getClass,
-                        @Cached PyObjectLookupAttr lookupAttrNode,
-                        @Cached CallUnaryMethodNode callNode,
-                        @Cached PyObjectGetIter getIterNode,
-                        @Cached InlinedBranchProfile indexProfile,
-                        @Bind PythonLanguage language) {
-            Object type = getClass.execute(inliningTarget, self);
+        static Object reduceNoIterable(PCycle self) {
+            PythonLanguage language = PythonLanguage.get(null);
+            Object type = GetClassNode.executeUncached(self);
             PList savedList = getSavedList(self, language);
-            Object it = getIterNode.execute(frame, inliningTarget, savedList);
+            Object it = PyObjectGetIter.executeUncached(savedList);
             if (self.getIndex() > 0) {
-                indexProfile.enter(inliningTarget);
-                Object setStateCallable = lookupAttrNode.execute(frame, inliningTarget, it, T___SETSTATE__);
-                callNode.executeObject(frame, setStateCallable, self.getIndex());
+                Object setStateCallable = PyObjectLookupAttr.executeUncached(it, T___SETSTATE__);
+                CallUnaryMethodNode.getUncached().executeObject(setStateCallable, self.getIndex());
             }
             PTuple iteratorTuple = PFactory.createTuple(language, new Object[]{it});
             PTuple tuple = PFactory.createTuple(language, new Object[]{savedList, true});
@@ -241,12 +229,8 @@ public final class CycleBuiltins extends PythonBuiltins {
         }
 
         static PList getSavedList(PCycle self, PythonLanguage language) {
-            return PFactory.createList(language, toArray(self.getSaved()));
-        }
-
-        @TruffleBoundary
-        private static Object[] toArray(List<Object> l) {
-            return l.toArray(new Object[l.size()]);
+            List<Object> l = self.getSaved();
+            return PFactory.createList(language, l.toArray(new Object[l.size()]));
         }
 
         protected boolean hasIterable(PCycle self) {
@@ -256,44 +240,31 @@ public final class CycleBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___SETSTATE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
+    public abstract static class SetStateNode extends DeprecatedSetStateBuiltin {
         @Specialization
-        static Object setState(VirtualFrame frame, PCycle self, Object state,
-                        @Bind Node inliningTarget,
-                        @Cached LenNode lenNode,
-                        @Cached GetItemNode getItemNode,
-                        @Cached IsBuiltinObjectProfile isTypeErrorProfile,
-                        @Cached ToArrayNode toArrayNode,
-                        @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached PRaiseNode raiseNode) {
-            warnPickleDeprecated();
-            if (!((state instanceof PTuple) && ((int) lenNode.execute(frame, state) == 2))) {
-                throw raiseNode.raise(inliningTarget, TypeError, IS_NOT_A, "state", "2-tuple");
+        static Object setState(PCycle self, Object state,
+                        @Bind Node inliningTarget) {
+            if (!((state instanceof PTuple) && (PyTupleSizeNode.executeUncached(state) == 2))) {
+                throw PRaiseNode.raiseStatic(inliningTarget, TypeError, IS_NOT_A, "state", "2-tuple");
             }
-            Object obj = getItemNode.execute(frame, state, 0);
+            Object obj = PyTupleGetItem.executeUncached(state, 0);
             if (!(obj instanceof PList)) {
-                throw raiseNode.raise(inliningTarget, TypeError, STATE_ARGUMENT_D_MUST_BE_A_S, 1, "Plist");
+                throw PRaiseNode.raiseStatic(inliningTarget, TypeError, STATE_ARGUMENT_D_MUST_BE_A_S, 1, "Plist");
             }
             PList saved = (PList) obj;
 
             boolean firstPass;
             try {
-                firstPass = asSizeNode.executeLossy(frame, inliningTarget, getItemNode.execute(frame, state, 1)) != 0;
+                firstPass = PyNumberAsSizeNode.getUncached().executeLossy(null, null, PyTupleGetItem.executeUncached(state, 1)) != 0;
             } catch (PException e) {
-                e.expectTypeError(inliningTarget, isTypeErrorProfile);
-                throw raiseNode.raise(inliningTarget, TypeError, STATE_ARGUMENT_D_MUST_BE_A_S, 2, "int");
+                throw PRaiseNode.raiseStatic(inliningTarget, TypeError, STATE_ARGUMENT_D_MUST_BE_A_S, 2, "int");
             }
 
-            Object[] savedArray = toArrayNode.execute(inliningTarget, saved.getSequenceStorage());
-            self.setSaved(toList(savedArray));
+            Object[] savedArray = ToArrayNode.executeUncached(saved.getSequenceStorage());
+            self.setSaved(new ArrayList<>(Arrays.asList(savedArray)));
             self.setFirstpass(firstPass);
             self.setIndex(0);
             return PNone.NONE;
-        }
-
-        @TruffleBoundary
-        private static ArrayList<Object> toList(Object[] savedArray) {
-            return new ArrayList<>(Arrays.asList(savedArray));
         }
     }
 }

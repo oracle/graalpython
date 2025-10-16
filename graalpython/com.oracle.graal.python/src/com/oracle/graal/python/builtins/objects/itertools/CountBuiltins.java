@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
-import static com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.warnPickleDeprecated;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.ErrorMessages.NUMBER_IS_REQUIRED;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
@@ -50,13 +49,14 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.DeprecatedReduceBuiltin;
 import com.oracle.graal.python.builtins.objects.itertools.CountBuiltinsClinicProviders.CountNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -86,7 +86,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PCount})
@@ -183,20 +182,13 @@ public final class CountBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
+    public abstract static class ReduceNode extends DeprecatedReduceBuiltin {
         @Specialization
-        static Object reducePos(PCount self,
-                        @Bind Node inliningTarget,
-                        @Cached GetClassNode getClassNode,
-                        @Cached CastToJavaLongExactNode castLongNode,
-                        @Cached PyObjectTypeCheck typeCheckNode,
-                        @Cached InlinedConditionProfile hasDefaultStep,
-                        @Bind PythonLanguage language) {
-            warnPickleDeprecated();
-            Object type = getClassNode.execute(inliningTarget, self);
+        static Object reducePos(PCount self) {
+            Object type = GetClassNode.executeUncached(self);
+            PythonLanguage language = PythonLanguage.get(null);
             PTuple tuple;
-            if (hasDefaultStep.profile(inliningTarget,
-                            !typeCheckNode.execute(inliningTarget, self.getStep(), PythonBuiltinClassType.PInt) || castLongNode.execute(inliningTarget, self.getStep()) != 1)) {
+            if (!PyObjectTypeCheck.executeUncached(self.getStep(), PythonBuiltinClassType.PInt) || CastToJavaLongExactNode.executeUncached(self.getStep()) != 1) {
                 tuple = PFactory.createTuple(language, new Object[]{self.getCnt(), self.getStep()});
             } else {
                 tuple = PFactory.createTuple(language, new Object[]{self.getCnt()});

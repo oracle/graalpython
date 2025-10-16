@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.itertools;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.warnPickleDeprecated;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_INT_AS_R;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_ARGS;
 import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_NON_NEGATIVE;
@@ -54,28 +53,30 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.DeprecatedReduceBuiltin;
+import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.DeprecatedSetStateBuiltin;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
 import com.oracle.graal.python.builtins.objects.itertools.PermutationsBuiltinsClinicProviders.PermutationsNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.GetItemNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.lib.PyTupleCheckNode;
+import com.oracle.graal.python.lib.PyTupleGetItem;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
@@ -86,7 +87,6 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -259,14 +259,11 @@ public final class PermutationsBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
+    public abstract static class ReduceNode extends DeprecatedReduceBuiltin {
         @Specialization(guards = "!self.isRaisedStopIteration()")
-        static Object reduce(PPermutations self,
-                        @Bind Node inliningTarget,
-                        @Shared @Cached GetClassNode getClassNode,
-                        @Bind PythonLanguage language) {
-            warnPickleDeprecated();
-            Object type = getClassNode.execute(inliningTarget, self);
+        static Object reduce(PPermutations self) {
+            PythonLanguage language = PythonLanguage.get(null);
+            Object type = GetClassNode.executeUncached(self);
             PList poolList = PFactory.createList(language, self.getPool());
             PTuple tuple = PFactory.createTuple(language, new Object[]{poolList, self.getR()});
 
@@ -281,10 +278,9 @@ public final class PermutationsBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.isRaisedStopIteration()")
         static Object reduceStopped(PPermutations self,
-                        @Bind Node inliningTarget,
-                        @Shared @Cached GetClassNode getClassNode,
-                        @Bind PythonLanguage language) {
-            Object type = getClassNode.execute(inliningTarget, self);
+                        @Bind Node inliningTarget) {
+            PythonLanguage language = PythonLanguage.get(null);
+            Object type = GetClassNode.executeUncached(self);
             PTuple tuple = PFactory.createTuple(language, new Object[]{PFactory.createEmptyTuple(language), self.getR()});
             Object[] result = new Object[]{type, tuple};
             return PFactory.createTuple(language, result);
@@ -293,34 +289,28 @@ public final class PermutationsBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___SETSTATE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
+    public abstract static class SetStateNode extends DeprecatedSetStateBuiltin {
 
         @Specialization
-        static Object setState(VirtualFrame frame, PPermutations self, Object state,
-                        @Bind Node inliningTarget,
-                        @Cached PyObjectSizeNode sizeNode,
-                        @Cached GetItemNode getItemNode,
-                        @Cached InlinedLoopConditionProfile indicesProfile,
-                        @Cached InlinedLoopConditionProfile cyclesProfile,
-                        @Cached CastToJavaBooleanNode castBoolean,
-                        @Cached CastToJavaIntExactNode castInt,
-                        @Cached PRaiseNode raiseNode) {
-            warnPickleDeprecated();
+        static Object setState(PPermutations self, Object state,
+                        @Bind Node inliningTarget) {
             try {
-                if (sizeNode.execute(frame, inliningTarget, state) != 3) {
-                    throw raiseNode.raise(inliningTarget, ValueError, INVALID_ARGS, T___SETSTATE__);
+                if (PyObjectSizeNode.executeUncached(state) != 3) {
+                    throw PRaiseNode.raiseStatic(inliningTarget, ValueError, INVALID_ARGS, T___SETSTATE__);
                 }
-                Object indices = getItemNode.execute(frame, state, 0);
-                Object cycles = getItemNode.execute(frame, state, 1);
+                Object indices = PyTupleGetItem.executeUncached(state, 0);
+                Object cycles = PyTupleGetItem.executeUncached(state, 1);
+
                 int poolLen = self.getPool().length;
-                if (sizeNode.execute(frame, inliningTarget, indices) != poolLen || sizeNode.execute(frame, inliningTarget, cycles) != self.getR()) {
-                    throw raiseNode.raise(inliningTarget, ValueError, INVALID_ARGS, T___SETSTATE__);
+                if (!PyTupleCheckNode.executeUncached(indices) || !PyTupleCheckNode.executeUncached(cycles) ||
+                                PyObjectSizeNode.executeUncached(indices) != poolLen ||
+                                PyObjectSizeNode.executeUncached(cycles) != self.getR()) {
+                    throw PRaiseNode.raiseStatic(inliningTarget, ValueError, INVALID_ARGS, T___SETSTATE__);
                 }
 
-                self.setStarted(castBoolean.execute(inliningTarget, getItemNode.execute(frame, state, 2)));
-                indicesProfile.profileCounted(inliningTarget, poolLen);
-                for (int i = 0; indicesProfile.inject(inliningTarget, i < poolLen); i++) {
-                    int index = castInt.execute(inliningTarget, getItemNode.execute(frame, indices, i));
+                self.setStarted(CastToJavaBooleanNode.executeUncached(PyTupleGetItem.executeUncached(state, 2)));
+                for (int i = 0; i < poolLen; i++) {
+                    int index = CastToJavaIntExactNode.executeUncached(PyTupleGetItem.executeUncached(indices, i));
                     if (index < 0) {
                         index = 0;
                     } else if (index > poolLen - 1) {
@@ -329,9 +319,8 @@ public final class PermutationsBuiltins extends PythonBuiltins {
                     self.getIndices()[i] = index;
                 }
 
-                cyclesProfile.profileCounted(inliningTarget, self.getR());
-                for (int i = 0; cyclesProfile.inject(inliningTarget, i < self.getR()); i++) {
-                    int index = castInt.execute(inliningTarget, getItemNode.execute(frame, cycles, i));
+                for (int i = 0; i < self.getR(); i++) {
+                    int index = CastToJavaIntExactNode.executeUncached(PyTupleGetItem.executeUncached(cycles, i));
                     if (index < 1) {
                         index = 1;
                     } else if (index > poolLen - i) {
@@ -342,7 +331,7 @@ public final class PermutationsBuiltins extends PythonBuiltins {
 
                 return PNone.NONE;
             } catch (CannotCastException e) {
-                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.INTEGER_REQUIRED);
+                throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.INTEGER_REQUIRED);
             }
         }
     }

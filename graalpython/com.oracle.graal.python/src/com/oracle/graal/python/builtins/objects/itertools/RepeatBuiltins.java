@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.itertools;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.warnPickleDeprecated;
 import static com.oracle.graal.python.nodes.ErrorMessages.LEN_OF_UNSIZED_OBJECT;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LENGTH_HINT__;
@@ -50,13 +49,14 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.DeprecatedReduceBuiltin;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -81,7 +81,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PRepeat})
@@ -164,17 +163,13 @@ public final class RepeatBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
+    public abstract static class ReduceNode extends DeprecatedReduceBuiltin {
         @Specialization
-        static Object reduce(PRepeat self,
-                        @Bind Node inliningTarget,
-                        @Cached InlinedConditionProfile negativeCountProfile,
-                        @Cached GetClassNode getClass,
-                        @Bind PythonLanguage language) {
-            warnPickleDeprecated();
-            Object type = getClass.execute(inliningTarget, self);
+        static Object reduce(PRepeat self) {
+            PythonLanguage language = PythonLanguage.get(null);
+            Object type = GetClassNode.executeUncached(self);
             Object[] tupleElements;
-            if (negativeCountProfile.profile(inliningTarget, self.getCnt() < 0)) {
+            if (self.getCnt() < 0) {
                 tupleElements = new Object[]{self.getElement()};
             } else {
                 tupleElements = new Object[]{self.getElement(), self.getCnt()};

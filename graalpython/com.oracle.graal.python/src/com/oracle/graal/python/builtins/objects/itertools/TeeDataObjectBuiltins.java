@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.itertools;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.warnPickleDeprecated;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARG_D_MUST_BE_S_NOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_MUST_BE_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.TDATAOBJECT_SHOULDNT_HAVE_NEXT;
@@ -53,14 +52,15 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.LenNode;
+import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.DeprecatedReduceBuiltin;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -73,7 +73,6 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -192,19 +191,16 @@ public final class TeeDataObjectBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
+    public abstract static class ReduceNode extends DeprecatedReduceBuiltin {
         abstract Object execute(VirtualFrame frame, PythonObject self);
 
         @Specialization
-        static Object reduce(PTeeDataObject self,
-                        @Bind Node inliningTarget,
-                        @Cached GetClassNode getClass,
-                        @Bind PythonLanguage language) {
-            warnPickleDeprecated();
+        static Object reduce(PTeeDataObject self) {
+            PythonLanguage language = PythonLanguage.get(null);
             int numread = self.getNumread();
             Object[] values = new Object[numread];
             PythonUtils.arraycopy(self.getValues(), 0, values, 0, numread);
-            Object type = getClass.execute(inliningTarget, self);
+            Object type = GetClassNode.executeUncached(self);
             Object nextlink = self.getNextlink();
             PTuple tuple = PFactory.createTuple(language, new Object[]{self.getIt(), PFactory.createList(language, values), nextlink == null ? PNone.NONE : nextlink});
             return PFactory.createTuple(language, new Object[]{type, tuple});
