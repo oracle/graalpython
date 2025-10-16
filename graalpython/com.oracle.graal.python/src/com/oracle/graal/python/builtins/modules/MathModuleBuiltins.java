@@ -1043,10 +1043,12 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         abstract Object execute(VirtualFrame frame, Object a, Object b);
 
         private static long count(long a, long b) {
-            if (b == 0) {
-                return a;
+            while (b != 0) {
+                long tmp = b;
+                b = a % b;
+                a = tmp;
             }
-            return count(b, a % b);
+            return a;
         }
 
         @Specialization

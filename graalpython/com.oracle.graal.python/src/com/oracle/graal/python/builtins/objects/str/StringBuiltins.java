@@ -76,6 +76,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.TRegexUtil;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
@@ -185,11 +186,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.ArityException;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
@@ -1494,73 +1490,16 @@ public final class StringBuiltins extends PythonBuiltins {
         @GenerateCached(false)
         @GenerateInline
         @GenerateUncached
-        public abstract static class InvokeExecMethodNode extends Node {
-            static final String EXEC = "exec";
-
-            public abstract Object execute(Node inliningTarget, Object compiledRegex, TruffleString input, int fromIndex);
-
-            @Specialization(guards = "objs.isMemberInvocable(compiledRegex, EXEC)", limit = "3")
-            static Object exec(Object compiledRegex, TruffleString input, int fromIndex,
-                            @CachedLibrary("compiledRegex") InteropLibrary objs) {
-                try {
-                    return objs.invokeMember(compiledRegex, EXEC, input, fromIndex);
-                } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException | UnknownIdentifierException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
-                }
-            }
-        }
-
-        @GenerateCached(false)
-        @GenerateInline
-        @GenerateUncached
-        public abstract static class ReadIsMatchNode extends Node {
-            static final String IS_MATCH = "isMatch";
-
-            public abstract boolean execute(Node inliningTarget, Object regexResult);
-
-            @Specialization(guards = "objs.isMemberReadable(regexResult, IS_MATCH)", limit = "3")
-            static boolean read(Object regexResult, @CachedLibrary("regexResult") InteropLibrary objs) {
-                try {
-                    return (boolean) objs.readMember(regexResult, IS_MATCH);
-                } catch (UnsupportedMessageException | UnknownIdentifierException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
-                }
-            }
-        }
-
-        @GenerateCached(false)
-        @GenerateInline
-        @GenerateUncached
-        public abstract static class InvokeGetGroupBoundariesMethodNode extends Node {
-            static final String GET_START = "getStart";
-            static final String GET_END = "getEnd";
-
-            public abstract int execute(Node inliningTarget, Object regexResult, Object method, int groupNumber);
-
-            @Specialization(guards = "objs.isMemberInvocable(regexResult, method)", limit = "3")
-            static int exec(Object regexResult, String method, int groupNumber,
-                            @CachedLibrary("regexResult") InteropLibrary objs) {
-                try {
-                    return (int) objs.invokeMember(regexResult, method, groupNumber);
-                } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException | UnknownIdentifierException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
-                }
-            }
-        }
-
-        @GenerateCached(false)
-        @GenerateInline
-        @GenerateUncached
         abstract static class SplitLinesInnerNode extends Node {
 
             abstract PList execute(Node inliningTarget, TruffleString selfTs, boolean keepends);
 
             @Specialization
             static PList doStringKeepends(Node inliningTarget, TruffleString self, boolean keepends,
-                            @Cached InvokeExecMethodNode invokeExecMethodNode,
-                            @Cached ReadIsMatchNode readIsMatchNode,
-                            @Cached InvokeGetGroupBoundariesMethodNode getStartNode,
-                            @Cached InvokeGetGroupBoundariesMethodNode getEndNode,
+                            @Cached TRegexUtil.InvokeExecMethodNode invokeExecMethodNode,
+                            @Cached TRegexUtil.ReadIsMatchNode readIsMatchNode,
+                            @Cached TRegexUtil.InvokeGetGroupBoundariesMethodNode getStartNode,
+                            @Cached TRegexUtil.InvokeGetGroupBoundariesMethodNode getEndNode,
                             @Cached TruffleString.SubstringByteIndexNode substringNode,
                             @Cached AppendNode appendNode) {
                 Object lineBreakRegex = PythonLanguage.get(inliningTarget).getCachedTRegexLineBreakRegex(PythonContext.get(inliningTarget));
@@ -1575,11 +1514,11 @@ public final class StringBuiltins extends PythonBuiltins {
                     final int substringStartByteIndex = asByteIndex(lastEnd);
                     final int substringByteLength;
                     if (matchFound) {
-                        int end = getEndNode.execute(inliningTarget, regexResult, InvokeGetGroupBoundariesMethodNode.GET_END, 0);
+                        int end = TRegexUtil.TRegexResultAccessor.captureGroupEnd(regexResult, 0, inliningTarget, getEndNode);
                         if (keepends) {
                             substringByteLength = asByteIndex(end - lastEnd);
                         } else {
-                            int start = getStartNode.execute(inliningTarget, regexResult, InvokeGetGroupBoundariesMethodNode.GET_START, 0);
+                            int start = TRegexUtil.TRegexResultAccessor.captureGroupStart(regexResult, 0, inliningTarget, getStartNode);
                             substringByteLength = asByteIndex(start - lastEnd);
                         }
                         assert end > lastEnd : String.format("end: %d, lastEnd: %d", end, lastEnd);

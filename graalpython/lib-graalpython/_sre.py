@@ -62,10 +62,7 @@ def _normalize_bounds(string, pos, endpos):
         pos = 0
     elif pos > endpos:
         pos = endpos
-    substring = string
-    if endpos != strlen:
-        substring = string[:endpos]
-    return substring, pos, endpos
+    return pos, endpos
 
 def _is_bytes_like(object):
     return isinstance(object, (bytes, bytearray, memoryview, array, mmap))
@@ -331,15 +328,15 @@ class Pattern():
     def _search(self, string, pos, endpos, method=_METHOD_SEARCH, must_advance=False):
         return tregex_search(self, string, pos, endpos, method, must_advance)
 
-    @__graalpython__.force_split_direct_calls
+    # @__graalpython__.force_split_direct_calls
     def search(self, string, pos=0, endpos=maxsize):
         return self._search(string, pos, endpos, method=_METHOD_SEARCH)
 
-    @__graalpython__.force_split_direct_calls
+    # @__graalpython__.force_split_direct_calls
     def match(self, string, pos=0, endpos=maxsize):
         return self._search(string, pos, endpos, method=_METHOD_MATCH)
 
-    @__graalpython__.force_split_direct_calls
+    # @__graalpython__.force_split_direct_calls
     def fullmatch(self, string, pos=0, endpos=maxsize):
         return self._search(string, pos, endpos, method=_METHOD_FULLMATCH)
 
@@ -353,21 +350,21 @@ class Pattern():
         else:
             return str(elem)
 
-    @__graalpython__.force_split_direct_calls
+    # @__graalpython__.force_split_direct_calls
     def finditer(self, string, pos=0, endpos=maxsize):
         for must_advance in [False, True]:
             if tregex_compile(self, _METHOD_SEARCH, must_advance) is None:
                 return self.__fallback_compile().finditer(string, pos=pos, endpos=endpos)
         _check_pos(pos)
         self.__check_input_type(string)
-        substring, pos, endpos = _normalize_bounds(string, pos, endpos)
-        return self.__finditer_gen(string, substring, pos, endpos)
+        pos, endpos = _normalize_bounds(string, pos, endpos)
+        return self.__finditer_gen(string, pos, endpos)
 
-    def __finditer_gen(self, string, substring, pos, endpos):
+    def __finditer_gen(self, string, pos, endpos):
         must_advance = False
         while pos <= endpos:
             compiled_regex = tregex_compile(self, _METHOD_SEARCH, must_advance)
-            result = tregex_call_exec(compiled_regex, substring, pos)
+            result = tregex_call_exec(compiled_regex, string, pos, endpos)
             if not result.isMatch:
                 break
             else:
@@ -376,19 +373,19 @@ class Pattern():
             must_advance = (result.getStart(0) == result.getEnd(0))
         return
 
-    @__graalpython__.force_split_direct_calls
+    # @__graalpython__.force_split_direct_calls
     def findall(self, string, pos=0, endpos=maxsize):
         for must_advance in [False, True]:
             if tregex_compile(self, _METHOD_SEARCH, must_advance) is None:
                 return self.__fallback_compile().findall(string, pos=pos, endpos=endpos)
         _check_pos(pos)
         self.__check_input_type(string)
-        substring, pos, endpos = _normalize_bounds(string, pos, endpos)
+        pos, endpos = _normalize_bounds(string, pos, endpos)
         matchlist = []
         must_advance = False
         while pos <= endpos:
             compiled_regex = tregex_compile(self, _METHOD_SEARCH, must_advance)
-            result = tregex_call_exec(compiled_regex, substring, pos)
+            result = tregex_call_exec(compiled_regex, string, pos, endpos)
             if not result.isMatch:
                 break
             elif self.groups == 0:
@@ -401,11 +398,11 @@ class Pattern():
             must_advance = (result.getStart(0) == result.getEnd(0))
         return matchlist
 
-    @__graalpython__.force_split_direct_calls
+    # @__graalpython__.force_split_direct_calls
     def sub(self, repl, string, count=0):
         return self.subn(repl, string, count)[0]
 
-    @__graalpython__.force_split_direct_calls
+    # @__graalpython__.force_split_direct_calls
     def subn(self, repl, string, count=0):
         for must_advance in [False, True]:
             if tregex_compile(self, _METHOD_SEARCH, must_advance) is None:
@@ -428,9 +425,11 @@ class Pattern():
                 repl = re._compile_template(self, repl)
                 template = True
 
-        while (count == 0 or n < count) and pos <= len(string):
-            compiled_regex = tregex_compile(self, _METHOD_SEARCH, must_advance)
-            match_result = tregex_call_exec(compiled_regex, string, pos)
+        strlen = len(string)
+        compiled_regex = tregex_compile(self, _METHOD_SEARCH, False)
+        compiled_regex_must_advance = tregex_compile(self, _METHOD_SEARCH, True)
+        while (count == 0 or n < count) and pos <= strlen:
+            match_result = tregex_call_exec(compiled_regex_must_advance, string, pos, strlen) if must_advance else tregex_call_exec(compiled_regex, string, pos, strlen)
             if not match_result.isMatch:
                 break
             n += 1
@@ -458,7 +457,7 @@ class Pattern():
         else:
             return "".join(result), n
 
-    @__graalpython__.force_split_direct_calls
+    # @__graalpython__.force_split_direct_calls
     def split(self, string, maxsplit=0):
         for must_advance in [False, True]:
             if tregex_compile(self, _METHOD_SEARCH, must_advance) is None:
@@ -468,9 +467,10 @@ class Pattern():
         collect_pos = 0
         search_pos = 0
         must_advance = False
-        while (maxsplit == 0 or n < maxsplit) and search_pos <= len(string):
+        strlen = len(string)
+        while (maxsplit == 0 or n < maxsplit) and search_pos <= strlen:
             compiled_regex = tregex_compile(self, _METHOD_SEARCH, must_advance)
-            match_result = tregex_call_exec(compiled_regex, string, search_pos)
+            match_result = tregex_call_exec(compiled_regex, string, search_pos, strlen)
             if not match_result.isMatch:
                 break
             n += 1
@@ -519,11 +519,11 @@ class SREScanner(object):
             self.__must_advance = match.start() == self.__start
         return match
 
-    @__graalpython__.force_split_direct_calls
+    # @__graalpython__.force_split_direct_calls
     def match(self):
         return self.__match_search(_METHOD_MATCH)
 
-    @__graalpython__.force_split_direct_calls
+    # @__graalpython__.force_split_direct_calls
     def search(self):
         return self.__match_search(_METHOD_SEARCH)
 
@@ -567,33 +567,33 @@ def compile(pattern, flags, code, groups, groupindex, indexgroup):
     return _cpython_sre.compile(pattern, flags, code, groups, groupindex, indexgroup)
 
 
-@__graalpython__.builtin
+# @__graalpython__.builtin
 def getcodesize(module, *args, **kwargs):
     raise NotImplementedError("_sre.getcodesize is not yet implemented")
 
 
-@__graalpython__.builtin
+# @__graalpython__.builtin
 def getlower(module, char_ord, flags):
     import _cpython_sre
     return _cpython_sre.getlower(char_ord, flags)
 
 
-@__graalpython__.builtin
+# @__graalpython__.builtin
 def unicode_iscased(module, codepoint):
     ch = chr(codepoint)
     return ch != ch.lower() or ch != ch.upper()
 
 
-@__graalpython__.builtin
+# @__graalpython__.builtin
 def unicode_tolower(module, codepoint):
     return ord(chr(codepoint).lower())
 
 
-@__graalpython__.builtin
+# @__graalpython__.builtin
 def ascii_iscased(module, codepoint):
     return codepoint < 128 and chr(codepoint).isalpha()
 
 
-@__graalpython__.builtin
+# @__graalpython__.builtin
 def ascii_tolower(module, codepoint):
     return ord(chr(codepoint).lower()) if codepoint < 128 else codepoint
