@@ -71,7 +71,7 @@ final class AstTypeFactory {
     }
 
     PythonClass makeType(TruffleString name, PythonAbstractClass base, TruffleString[] fields, TruffleString[] attributes, TruffleString[] optional, TruffleString docString) {
-        PythonClass newType = PFactory.createPythonClassAndFixupSlots(language, name, base, new PythonAbstractClass[]{base});
+        PythonClass newType = PFactory.createPythonClassAndFixupSlots(null, language, name, base, new PythonAbstractClass[]{base});
         newType.setAttribute(T___MODULE__, T_AST);
         newType.setAttribute(T___DOC__, docString);
         newType.setAttribute(T__FIELDS, PFactory.createTuple(language, convertToObjectArray(fields)));

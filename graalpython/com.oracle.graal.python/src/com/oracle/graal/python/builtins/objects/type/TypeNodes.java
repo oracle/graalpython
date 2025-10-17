@@ -2172,7 +2172,7 @@ public abstract class TypeNodes {
 
             // 1.) create class, but avoid calling mro method - it might try to access __dict__ so
             // we have to copy dict slots first
-            PythonClass pythonClass = PFactory.createPythonClass(language, metaclass, getInstanceShape.execute(metaclass), name, false, base, basesArray);
+            PythonClass pythonClass = PFactory.createPythonClass(inliningTarget, language, metaclass, getInstanceShape.execute(metaclass), name, false, base, basesArray);
 
             // 2.) copy the dictionary slots
             copyDictSlots(frame, inliningTarget, language, ctx, pythonClass, namespace, setHashingStorageItem,
