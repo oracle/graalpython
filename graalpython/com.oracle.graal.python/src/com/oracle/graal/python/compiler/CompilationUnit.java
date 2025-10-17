@@ -335,7 +335,7 @@ public final class CompilationUnit {
                     for (int j = 0; j < stores.size(); j++) {
                         generalizeVarsValues[generalizeVarsIndex++] = stores.get(j).bodyBci();
                     }
-                    if (boxingMetric[i] <= 0) {
+                    if (boxingMetric[i] < 0) {
                         shouldUnboxVariable[i] = 0;
                     }
                 }
