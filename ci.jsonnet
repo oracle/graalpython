@@ -75,16 +75,15 @@
     local bench_task(bench=null, benchmarks=BENCHMARKS) = super.bench_task(bench=bench, benchmarks=benchmarks),
     local bisect_bench_task     = self.bisect_bench_task,
 
-    local bytecode_dsl_gate(name) = task_spec({
+    local bytecode_dsl_env = task_spec({
         environment +: {
             BYTECODE_DSL_INTERPRETER: "true"
         },
+    }),
+    local bytecode_dsl_gate(name) = bytecode_dsl_env + task_spec({
         tags :: name,
     }),
-    local bytecode_dsl_bench = task_spec({
-        environment +: {
-            BYTECODE_DSL_INTERPRETER: "true"
-        },
+    local bytecode_dsl_bench = bytecode_dsl_env + task_spec({
         name_suffix +:: ["bytecode-dsl"],
     }),
 
@@ -209,6 +208,15 @@
                 logs+: [
                     "default.iprof.gz",
                     "default.lcov",
+                ],
+            }),
+        }),
+        "python-pgo-profile-bytecode-dsl": gpgate_ee + bytecode_dsl_env + platform_spec(no_jobs) + platform_spec({
+            "linux:amd64:jdk-latest"     : post_merge + t("01:30:00") + task_spec({
+                run: [["mx", "python-native-pgo"]],
+                logs+: [
+                    "default-bytecode-dsl.iprof.gz",
+                    "default-bytecode-dsl.lcov",
                 ],
             }),
         }),
