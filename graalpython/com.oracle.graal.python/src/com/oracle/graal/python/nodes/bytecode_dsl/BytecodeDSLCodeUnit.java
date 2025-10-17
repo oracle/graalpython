@@ -53,6 +53,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.bytecode.BytecodeRootNodes;
 import com.oracle.truffle.api.bytecode.serialization.BytecodeSerializer;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -130,13 +131,21 @@ public final class BytecodeDSLCodeUnit extends CodeUnit {
     }
 
     @Override
-    protected void dumpBytecode(StringBuilder sb, boolean optimized) {
-        for (int i = 0; i < nodes.count(); i++) {
-            if (i != 0) {
+    protected void dumpBytecode(StringBuilder sb, boolean optimized, RootNode rootNode) {
+        if (nodes == null) {
+            if (rootNode instanceof PBytecodeDSLRootNode dslRoot) {
+                sb.append(dslRoot.dump());
                 sb.append('\n');
             }
-            sb.append(nodes.getNode(i).dump());
-            sb.append('\n'); // dump does not print newline at the end
+            sb.append("bytecode not available\n");
+        } else {
+            for (int i = 0; i < nodes.count(); i++) {
+                if (i != 0) {
+                    sb.append('\n');
+                }
+                sb.append(nodes.getNode(i).dump());
+                sb.append('\n'); // dump does not print newline at the end
+            }
         }
     }
 }
