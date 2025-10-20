@@ -1050,6 +1050,10 @@ public final class SysModuleBuiltins extends PythonBuiltins {
             executeInternal(inliningTarget, event, arguments);
         }
 
+        public static void auditUncached(String event, Object... arguments) {
+            SysModuleBuiltinsFactory.AuditNodeGen.getUncached().executeInternal(null, event, arguments);
+        }
+
         public void audit(Node inliningTarget, TruffleString event, Object... arguments) {
             executeInternal(inliningTarget, event, arguments);
         }

@@ -89,6 +89,10 @@ public abstract class PyObjectStrAsObjectNode extends PNodeWithContext {
         return execute(null, inliningTarget, object);
     }
 
+    public static Object executeUncached(Object object) {
+        return getUncached().execute(null, null, object);
+    }
+
     @Specialization
     static Object str(TruffleString obj) {
         return obj;

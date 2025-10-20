@@ -951,6 +951,10 @@ public abstract class BytesNodes {
     public abstract static class GetBytesStorage extends Node {
         public abstract SequenceStorage execute(Node inliningTarget, Object bytes);
 
+        public static SequenceStorage executeUncached(Object bytes) {
+            return BytesNodesFactory.GetBytesStorageNodeGen.getUncached().execute(null, bytes);
+        }
+
         @Specialization
         SequenceStorage getManaged(PBytesLike bytes) {
             return bytes.getSequenceStorage();

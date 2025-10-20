@@ -106,6 +106,14 @@ public abstract class CastToTruffleStringNode extends PNodeWithContext {
         }
     }
 
+    public static TruffleString castKnownStringUncached(Object x) {
+        try {
+            return executeUncached(x);
+        } catch (CannotCastException ex) {
+            throw CompilerDirectives.shouldNotReachHere(ex);
+        }
+    }
+
     @Specialization
     static TruffleString doTruffleString(TruffleString x) {
         return x;

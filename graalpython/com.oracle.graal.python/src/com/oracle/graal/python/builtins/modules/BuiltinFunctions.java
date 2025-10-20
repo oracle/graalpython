@@ -2618,78 +2618,75 @@ public final class BuiltinFunctions extends PythonBuiltins {
         static Object input(VirtualFrame frame, Object prompt,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @Cached PyObjectCallMethodObjArgs callMethod,
-                        @Cached PyObjectStrAsObjectNode strNode,
-                        @Cached PyObjectLookupAttr lookupAttr,
-                        @Cached PyBytesCheckNode bytesCheck,
-                        @Cached PyUnicodeCheckNode unicodeCheck,
-                        @Cached CastToTruffleStringNode castToTruffleStringNode,
-                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
-                        @Cached TruffleString.SubstringNode substringNode,
-                        @Cached BytesNodes.ToBytesNode toBytesNode,
-                        @Cached PRaiseNode raiseLostNode,
-                        @Cached PRaiseNode raiseEOFNode,
-                        @Cached PRaiseNode raiseWrongType) {
+                        @Cached("createFor($node)") IndirectCallData indirectCallData) {
+            Object savedState = IndirectCallContext.enter(frame, inliningTarget, indirectCallData);
+            try {
+                return doInput(prompt, inliningTarget, context);
+            } finally {
+                IndirectCallContext.exit(frame, inliningTarget, indirectCallData, savedState);
+            }
+        }
+
+        @TruffleBoundary
+        private static Object doInput(Object prompt, Node inliningTarget, PythonContext context) {
             PythonModule sysModule = context.getSysModule();
-            Object stdin = lookupAttr.execute(frame, inliningTarget, sysModule, T_STDIN);
-            Object stdout = lookupAttr.execute(frame, inliningTarget, sysModule, T_STDOUT);
-            Object stderr = lookupAttr.execute(frame, inliningTarget, sysModule, T_STDERR);
+            Object stdin = PyObjectLookupAttr.executeUncached(sysModule, T_STDIN);
+            Object stdout = PyObjectLookupAttr.executeUncached(sysModule, T_STDOUT);
+            Object stderr = PyObjectLookupAttr.executeUncached(sysModule, T_STDERR);
 
             if (stdin instanceof PNone) {
-                throw raiseLostNode.raise(inliningTarget, RuntimeError, ErrorMessages.INPUT_LOST_SYS_S, T_STDIN);
+                throw PRaiseNode.raiseStatic(inliningTarget, RuntimeError, ErrorMessages.INPUT_LOST_SYS_S, T_STDIN);
             }
             if (stdout instanceof PNone) {
-                throw raiseLostNode.raise(inliningTarget, RuntimeError, ErrorMessages.INPUT_LOST_SYS_S, T_STDOUT);
+                throw PRaiseNode.raiseStatic(inliningTarget, RuntimeError, ErrorMessages.INPUT_LOST_SYS_S, T_STDOUT);
             }
             if (stderr instanceof PNone) {
-                throw raiseLostNode.raise(inliningTarget, RuntimeError, ErrorMessages.INPUT_LOST_SYS_S, T_STDERR);
+                throw PRaiseNode.raiseStatic(inliningTarget, RuntimeError, ErrorMessages.INPUT_LOST_SYS_S, T_STDERR);
             }
 
-            auditNode.audit(inliningTarget, "builtins.input", prompt != NO_VALUE ? prompt : NONE);
+            SysModuleBuiltins.AuditNode.auditUncached("builtins.input", prompt != NO_VALUE ? prompt : NONE);
 
             try {
-                callMethod.execute(frame, inliningTarget, stderr, T_FLUSH);
+                PyObjectCallMethodObjArgs.executeUncached(stderr, T_FLUSH);
             } catch (AbstractTruffleException e) {
                 // Ignore
             }
 
             if (!(prompt instanceof PNone)) {
-                Object promptStr = strNode.execute(frame, inliningTarget, prompt);
-                callMethod.execute(frame, inliningTarget, stdout, T_WRITE, promptStr);
+                Object promptStr = PyObjectStrAsObjectNode.executeUncached(prompt);
+                PyObjectCallMethodObjArgs.executeUncached(stdout, T_WRITE, promptStr);
                 try {
-                    callMethod.execute(frame, inliningTarget, stdout, T_FLUSH);
+                    PyObjectCallMethodObjArgs.executeUncached(stdout, T_FLUSH);
                 } catch (AbstractTruffleException e) {
                     // Ignore
                 }
             }
 
-            Object line = callMethod.execute(frame, inliningTarget, stdin, T_READLINE);
-            if (unicodeCheck.execute(inliningTarget, line)) {
-                TruffleString strLine = castToTruffleStringNode.castKnownString(inliningTarget, line);
-                int len = codePointLengthNode.execute(strLine, TS_ENCODING);
+            Object line = PyObjectCallMethodObjArgs.executeUncached(stdin, T_READLINE);
+            if (PyUnicodeCheckNode.executeUncached(line)) {
+                TruffleString strLine = CastToTruffleStringNode.castKnownStringUncached(line);
+                int len = strLine.codePointLengthUncached(TS_ENCODING);
                 if (len == 0) {
-                    throw raiseEOFNode.raise(inliningTarget, EOFError, ErrorMessages.EOF_WHEN_READING_A_LINE);
+                    throw PRaiseNode.raiseStatic(inliningTarget, EOFError, ErrorMessages.EOF_WHEN_READING_A_LINE);
                 }
-                int lastChar = codePointAtIndexNode.execute(strLine, len - 1, TS_ENCODING);
+                int lastChar = strLine.codePointAtIndexUncached(len - 1, TS_ENCODING);
                 if (lastChar == '\n') {
-                    strLine = substringNode.execute(strLine, 0, len - 1, TS_ENCODING, false);
+                    strLine = strLine.substringUncached(0, len - 1, TS_ENCODING, false);
                 }
                 return strLine;
-            } else if (bytesCheck.execute(inliningTarget, line)) {
-                byte[] bytesLine = toBytesNode.execute(frame, line);
+            } else if (PyBytesCheckNode.executeUncached(line)) {
+                byte[] bytesLine = PythonBufferAccessLibrary.getUncached().getCopiedByteArray(BytesNodes.GetBytesStorage.executeUncached(line));
                 if (bytesLine.length == 0) {
-                    throw raiseEOFNode.raise(inliningTarget, EOFError, ErrorMessages.EOF_WHEN_READING_A_LINE);
+                    throw PRaiseNode.raiseStatic(inliningTarget, EOFError, ErrorMessages.EOF_WHEN_READING_A_LINE);
                 }
-                PythonLanguage language = context.getLanguage(inliningTarget);
+                PythonLanguage language = context.getLanguage();
                 if (bytesLine[bytesLine.length - 1] == '\n') {
                     return PFactory.createBytes(language, bytesLine, bytesLine.length - 1);
                 } else {
                     return PFactory.createBytes(language, bytesLine);
                 }
             } else {
-                throw raiseWrongType.raise(inliningTarget, TypeError, ErrorMessages.OBJECT_READLINE_RETURNED_NON_STRING);
+                throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.OBJECT_READLINE_RETURNED_NON_STRING);
             }
         }
     }
