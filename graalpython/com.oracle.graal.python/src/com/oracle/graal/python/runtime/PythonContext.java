@@ -483,8 +483,11 @@ public final class PythonContext extends Python3Core {
                 }
             }
             dict = null;
-            if (nativeWrapper != null && nativeWrapper.ref == null) {
-                CApiTransitions.releaseNativeWrapperUncached(nativeWrapper);
+            if (nativeWrapper != null) {
+                if (nativeWrapper.ref == null) {
+                    // There is no PythonObjectReference, this will not be collected anywhere else
+                    CApiTransitions.releaseNativeWrapperUncached(nativeWrapper);
+                }
                 nativeWrapper = null;
             }
             /*

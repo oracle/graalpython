@@ -409,13 +409,7 @@ GraalPyPrivate_BulkDealloc(intptr_t ptrArray[], int64_t len)
 {
     for (int i = 0; i < len; i++) {
         PyObject *obj = (PyObject *)ptrArray[i];
-        if (!obj->ob_type) {
-            GraalPyPrivate_Log(PY_TRUFFLE_LOG_FINER,
-                               "%s: Object: 0x%zx has no type anymore, we have "
-                               "no idea what it is, we will just free it",
-                               __func__, obj);
-            free(obj);
-        } else if (obj->ob_refcnt == _Py_IMMORTAL_REFCNT) {
+        if (obj->ob_refcnt == _Py_IMMORTAL_REFCNT) {
             GraalPyPrivate_Log(PY_TRUFFLE_LOG_FINER,
                                "%s: Not deallocating immortal object: 0x%zx (%s%s)",
                                __func__, obj,

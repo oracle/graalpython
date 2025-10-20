@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
+import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.GetElementPtrNode;
@@ -59,19 +60,15 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
 
 /**
  * Wrapper object for {@code PMemoryView}.
  */
-@ExportLibrary(InteropLibrary.class)
 public final class PyMemoryViewWrapper extends PythonAbstractObjectNativeWrapper {
-
     private Object replacement;
 
     public PyMemoryViewWrapper(PythonObject delegate) {
-        super(delegate, true);
+        super(delegate);
         assert delegate instanceof PMemoryView;
     }
 
@@ -82,16 +79,15 @@ public final class PyMemoryViewWrapper extends PythonAbstractObjectNativeWrapper
     }
 
     @TruffleBoundary
-    private static Object allocate(PMemoryView object) {
+    private static long allocate(PMemoryView object) {
         GetElementPtrNode getElementNode = GetElementPtrNode.getUncached();
         CStructAccess.WritePointerNode writePointerNode = CStructAccess.WritePointerNode.getUncached();
         CStructAccess.WriteLongNode writeI64Node = CStructAccess.WriteLongNode.getUncached();
         CStructAccess.WriteIntNode writeI32Node = CStructAccess.WriteIntNode.getUncached();
         CExtNodes.AsCharPointerNode asCharPointerNode = CExtNodes.AsCharPointerNode.getUncached();
 
-        Object mem;
         long taggedPointer = CApiTransitions.FirstToNativeNode.executeUncached(object.getNativeWrapper(), true /*- TODO: immortal for now */);
-        mem = CApiTransitions.HandlePointerConverter.pointerToStub(taggedPointer);
+        long mem = CApiTransitions.HandlePointerConverter.pointerToStub(taggedPointer);
         writeI32Node.write(mem, PyMemoryViewObject__flags, object.getFlags());
         writeI64Node.write(mem, PyMemoryViewObject__exports, object.getExports().get());
         // TODO: ignoring mbuf, hash and weakreflist for now
@@ -150,37 +146,14 @@ public final class PyMemoryViewWrapper extends PythonAbstractObjectNativeWrapper
 
     public Object getReplacement(InteropLibrary lib) {
         if (replacement == null) {
-            Object pointerObject = allocate((PMemoryView) getDelegate());
+            long ptr = allocate((PMemoryView) getDelegate());
+            // TODO: need to convert to interop pointer for NFI for now
+            replacement = new NativePointer(ptr);
             // TODO: this passes "false" for allocatedFromJava, although it actually is. The
             // problem, however, is that this struct contains nested allocations from Java. This
             // needs to be cleaned up...
-            replacement = registerReplacement(pointerObject, false, lib);
+            CApiTransitions.createReference(this, ptr, false);
         }
         return replacement;
-    }
-
-    @ExportMessage
-    boolean isPointer() {
-        return isNative();
-    }
-
-    @ExportMessage
-    long asPointer() throws UnsupportedMessageException {
-        if (!isNative()) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw UnsupportedMessageException.create();
-        }
-        return getNativePointer();
-    }
-
-    @ExportMessage
-    void toNative() {
-        if (!isNative()) {
-            /*
-             * This is a wrapper that is eagerly transformed to its C layout in the Python-to-native
-             * transition. Therefore, the wrapper is expected to be native already.
-             */
-            throw CompilerDirectives.shouldNotReachHere();
-        }
     }
 }

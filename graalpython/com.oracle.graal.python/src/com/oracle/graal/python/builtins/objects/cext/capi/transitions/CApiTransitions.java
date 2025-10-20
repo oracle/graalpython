@@ -216,7 +216,6 @@ public abstract class CApiTransitions {
      * A weak and unique reference to a native wrapper of a reference counted managed object.
      */
     public static final class PythonObjectReference extends IdReference<PythonNativeWrapper> {
-
         /**
          * This reference forces the wrapper to remain alive, and can be set to null when the
          * refcount falls to {@link PythonAbstractObjectNativeWrapper#MANAGED_REFCNT}.
@@ -266,13 +265,19 @@ public abstract class CApiTransitions {
             }
         }
 
-        static PythonObjectReference create(HandleContext handleContext, PythonAbstractObjectNativeWrapper referent, boolean strong, long pointer, int idx, boolean gc) {
+        static PythonObjectReference createStub(HandleContext handleContext, PythonAbstractObjectNativeWrapper referent, boolean strong, long pointer, int idx, boolean gc) {
             assert HandlePointerConverter.pointsToPyHandleSpace(pointer);
+            assert idx >= 0;
             return new PythonObjectReference(handleContext, referent, strong, pointer, idx, true, gc);
         }
 
-        static PythonObjectReference create(HandleContext handleContext, PythonNativeWrapper referent, long pointer, boolean allocatedFromJava) {
+        static PythonObjectReference createReplacement(HandleContext handleContext, PythonNativeWrapper referent, long pointer, boolean allocatedFromJava) {
+            assert !HandlePointerConverter.pointsToPyHandleSpace(pointer);
             return new PythonObjectReference(handleContext, referent, true, pointer, -1, allocatedFromJava, false);
+        }
+
+        public boolean isStubReference() {
+            return handleTableIndex >= 0;
         }
 
         public boolean isStrongReference() {
@@ -1149,7 +1154,7 @@ public abstract class CApiTransitions {
                 // accidentally maps to some valid object.
                 assert idx > 0;
                 writeIntNode.write(stubPointer, CFields.GraalPyObject__handle_table_index, idx);
-                PythonObjectReference ref = PythonObjectReference.create(handleContext, wrapper, immortal, taggedPointer, idx, gc);
+                PythonObjectReference ref = PythonObjectReference.createStub(handleContext, wrapper, immortal, taggedPointer, idx, gc);
                 nativeStubLookupPut(handleContext, ref);
             } catch (OverflowException e) {
                 /*
@@ -1169,11 +1174,6 @@ public abstract class CApiTransitions {
     /**
      * Creates a {@link PythonObjectReference} to {@code delegate} and connects that to the given
      * native {@code pointer} such that the {@code pointer} can be resolved to the {@code delegate}.
-     * <p>
-     * This is used in LLVM managed mode where we will not have real native pointers (i.e. addresses
-     * pointing into off-heap memory) but managed pointers to objects emulating the native memory.
-     * We still need to be able to resolve those managed pointers to our objects.
-     * </p>
      */
     @TruffleBoundary
     @SuppressWarnings("try")
@@ -1188,7 +1188,7 @@ public abstract class CApiTransitions {
                 obj.setNativePointer(ptr);
                 pollReferenceQueue();
                 HandleContext context = getContext();
-                nativeLookupPut(context, ptr, PythonObjectReference.create(context, obj, ptr, allocatedFromJava));
+                nativeLookupPut(context, ptr, PythonObjectReference.createReplacement(context, obj, ptr, allocatedFromJava));
             }
         }
     }
@@ -2103,24 +2103,6 @@ public abstract class CApiTransitions {
             } else {
                 return object;
             }
-        }
-    }
-
-    @GenerateUncached
-    @GenerateInline(false)
-    public abstract static class WrappedPointerToNativeNode extends CExtToNativeNode {
-        @Specialization
-        static Object doGeneric(Object object,
-                        @Bind Node inliningTarget,
-                        @Cached InlinedConditionProfile isWrapperProfile,
-                        @Cached GetReplacementNode getReplacementNode) {
-            if (isWrapperProfile.profile(inliningTarget, object instanceof PythonNativeWrapper)) {
-                Object replacement = getReplacementNode.execute(inliningTarget, (PythonNativeWrapper) object);
-                if (replacement != null) {
-                    return replacement;
-                }
-            }
-            return object;
         }
     }
 

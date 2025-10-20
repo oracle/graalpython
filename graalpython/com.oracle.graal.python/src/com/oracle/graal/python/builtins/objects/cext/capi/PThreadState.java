@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.Py
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
@@ -66,6 +67,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
  * </p>
  */
 public final class PThreadState extends PythonStructNativeWrapper {
+    private final Object replacement;
 
     /** Same as _PY_NSMALLNEGINTS */
     public static final int PY_NSMALLNEGINTS = 5;
@@ -75,12 +77,11 @@ public final class PThreadState extends PythonStructNativeWrapper {
 
     @TruffleBoundary
     private PThreadState(PythonThreadState threadState) {
-        super(threadState, true);
-        // TODO: this passes false for allocatedFromJava although we actually do allocate it from
-        // Java, but we currently free it on context exit using a call to
-        // FUN_PY_GC_COLLECT_NO_FAIL, which can bite us when we change allocators for the Java
-        // side...
-        replacement = registerReplacement(allocateCLayout(threadState), false, InteropLibrary.getUncached());
+        super(threadState);
+        long ptr = allocateCLayout(threadState);
+        CApiTransitions.createReference(this, ptr, true);
+        // TODO: wrap in NativePointer for NFI
+        replacement = new NativePointer(ptr);
     }
 
     public static Object getOrCreateNativeThreadState(PythonLanguage language, PythonContext context) {
@@ -109,10 +110,10 @@ public final class PThreadState extends PythonStructNativeWrapper {
     }
 
     @TruffleBoundary
-    private static Object allocateCLayout(PythonThreadState threadState) {
+    private static long allocateCLayout(PythonThreadState threadState) {
         PythonToNativeNode toNative = PythonToNativeNodeGen.getUncached();
 
-        Object ptr = CStructAccess.AllocateNode.allocUncached(CStructs.PyThreadState);
+        long ptr = CStructAccess.AllocateNode.allocUncachedPointer(CStructs.PyThreadState.size());
         CStructAccess.WritePointerNode writePtrNode = CStructAccess.WritePointerNode.getUncached();
         PythonContext pythonContext = PythonContext.get(null);
         PDict threadStateDict = threadState.getDict();
