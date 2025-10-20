@@ -120,12 +120,12 @@ public abstract class SSLOperationNode extends PNodeWithContext {
      * Errors are wrapped into Python exceptions. Requests for IO in non-blocking modes are
      * indicated using Python exceptions ({@code SSLErrorWantRead}, {@code SSLErrorWantWrite}).
      */
-    public void handshake(VirtualFrame frame, Node inliningTarget, PSSLSocket socket) {
+    public void handshake(VirtualFrame frame, Node inliningTarget, PConstructAndRaiseNode.Lazy constructAndRaiseNode, PSSLSocket socket) {
         if (!socket.isHandshakeComplete()) {
             try {
                 beginHandshake(socket);
             } catch (SSLException e) {
-                throw handleSSLException(e);
+                throw handleSSLException(inliningTarget, e, constructAndRaiseNode);
             }
             execute(frame, inliningTarget, socket, SSLOperationNode.EMPTY_BUFFER, SSLOperationNode.EMPTY_BUFFER, SSLOperation.HANDSHAKE);
         }
@@ -268,7 +268,7 @@ public abstract class SSLOperationNode extends PNodeWithContext {
                         break;
                 }
             } catch (SSLException e) {
-                throw handleSSLException(e);
+                throw handleSSLException(inliningTarget, e, constructAndRaiseNode);
             } catch (OverflowException | OutOfMemoryError node) {
                 throw raiseNode.raise(inliningTarget, MemoryError);
             }
@@ -310,7 +310,7 @@ public abstract class SSLOperationNode extends PNodeWithContext {
                     throw CompilerDirectives.shouldNotReachHere("MemoryBIO-based socket operation returned WANTS_WRITE");
             }
         } catch (SSLException e) {
-            throw handleSSLException(e);
+            throw handleSSLException(inliningTarget, e, constructAndRaiseNode);
         } catch (OverflowException | OutOfMemoryError node) {
             throw raiseNode.raise(inliningTarget, MemoryError);
         }
@@ -550,10 +550,10 @@ public abstract class SSLOperationNode extends PNodeWithContext {
     }
 
     @TruffleBoundary
-    private static PException handleSSLException(SSLException e) {
+    private static PException handleSSLException(Node inliningTarget, SSLException e, PConstructAndRaiseNode.Lazy raiseNode) {
         if (e.getCause() instanceof CertificateException) {
-            throw PConstructAndRaiseNode.raiseUncachedSSLError(SSLErrorCode.ERROR_CERT_VERIFICATION, ErrorMessages.CERTIFICATE_VERIFY_FAILED, e.toString());
+            throw raiseNode.get(inliningTarget).raiseSSLError(null, SSLErrorCode.ERROR_CERT_VERIFICATION, ErrorMessages.CERTIFICATE_VERIFY_FAILED, e.toString());
         }
-        throw PConstructAndRaiseNode.raiseUncachedSSLError(SSLErrorCode.ERROR_SSL, toTruffleStringUncached(e.toString()));
+        throw raiseNode.get(inliningTarget).raiseSSLError(null, SSLErrorCode.ERROR_SSL, toTruffleStringUncached(e.toString()));
     }
 }

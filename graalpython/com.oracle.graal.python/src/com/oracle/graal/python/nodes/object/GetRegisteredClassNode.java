@@ -191,7 +191,7 @@ public abstract class GetRegisteredClassNode extends PNodeWithContext {
         PythonClass pythonClass;
         try {
             // The call might not succeed if, for instance, the MRO can't be constructed
-            pythonClass = PFactory.createPythonClassAndFixupSlots(context.getLanguage(), className, bases[0], basesWithForeign);
+            pythonClass = PFactory.createPythonClassAndFixupSlots(inliningTarget, context.getLanguage(), className, bases[0], basesWithForeign);
         } catch (PException e) {
             // Catch the error to additionally print the collected classes and specify the error
             // occurred during class creation

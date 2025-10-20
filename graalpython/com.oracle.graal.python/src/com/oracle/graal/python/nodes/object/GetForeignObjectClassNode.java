@@ -253,7 +253,7 @@ public abstract class GetForeignObjectClassNode extends PNodeWithContext {
 
         PythonModule polyglotModule = context.lookupBuiltinModule(T_POLYGLOT);
 
-        PythonClass pythonClass = PFactory.createPythonClassAndFixupSlots(context.getLanguage(), name, base, bases);
+        PythonClass pythonClass = PFactory.createPythonClassAndFixupSlots(null, context.getLanguage(), name, base, bases);
         pythonClass.setAttribute(T___MODULE__, T_POLYGLOT);
         if (!Trait.INSTANTIABLE.isSet(traits)) {
             pythonClass.setTpSlots(pythonClass.getTpSlots().copy().set(TpSlots.TpSlotMeta.TP_NEW, null).build());

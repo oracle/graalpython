@@ -165,7 +165,7 @@ public final class CodecsTruffleModuleBuiltins extends PythonBuiltins {
     }
 
     private static PythonClass initClass(TruffleString className, PythonAbstractClass superClass, BuiltinDescr[] descrs, PythonModule codecsTruffleModule, PythonLanguage language) {
-        PythonClass clazz = PFactory.createPythonClassAndFixupSlots(language, className, superClass, new PythonAbstractClass[]{superClass});
+        PythonClass clazz = PFactory.createPythonClassAndFixupSlots(null, language, className, superClass, new PythonAbstractClass[]{superClass});
         for (BuiltinDescr d : descrs) {
             PythonUtils.createMethod(language, clazz, d.nodeFactory(), d.enclosingType ? clazz : null, 1);
         }

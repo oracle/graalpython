@@ -59,6 +59,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class BytecodeCodeUnit extends CodeUnit {
@@ -149,7 +150,7 @@ public final class BytecodeCodeUnit extends CodeUnit {
     }
 
     @Override
-    protected void dumpBytecode(StringBuilder sb, boolean quickened) {
+    protected void dumpBytecode(StringBuilder sb, boolean quickened, RootNode rootNode) {
         int bci = 0;
         int oparg = 0;
         SourceMap map = getSourceMap();

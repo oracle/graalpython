@@ -79,13 +79,14 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     public PTuple basesTuple;
 
     @TruffleBoundary
-    protected PythonManagedClass(PythonLanguage lang, Object typeClass, Shape classShape, Shape instanceShape, TruffleString name, Object base, PythonAbstractClass[] baseClasses, TpSlots slots) {
-        this(lang, typeClass, classShape, instanceShape, name, true, true, base, baseClasses, slots);
+    protected PythonManagedClass(Node location, PythonLanguage lang, Object typeClass, Shape classShape, Shape instanceShape, TruffleString name, Object base, PythonAbstractClass[] baseClasses,
+                    TpSlots slots) {
+        this(location, lang, typeClass, classShape, instanceShape, name, true, true, base, baseClasses, slots);
     }
 
     @TruffleBoundary
     @SuppressWarnings("this-escape")
-    protected PythonManagedClass(PythonLanguage lang, Object typeClass, Shape classShape, Shape instanceShape, TruffleString name, boolean invokeMro, boolean initDocAttr,
+    protected PythonManagedClass(Node location, PythonLanguage lang, Object typeClass, Shape classShape, Shape instanceShape, TruffleString name, boolean invokeMro, boolean initDocAttr,
                     Object base, PythonAbstractClass[] baseClasses, TpSlots slots) {
         super(typeClass, classShape);
         this.name = name;
@@ -101,8 +102,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
             unsafeSetSuperClass(baseClasses);
         }
 
-        // TODO should pass node for exception location
-        this.setMRO(ComputeMroNode.doSlowPath(null, this, invokeMro));
+        this.setMRO(ComputeMroNode.doSlowPath(location, this, invokeMro));
         if (invokeMro) {
             mroInitialized = true;
         }

@@ -2478,9 +2478,12 @@ class GraalpythonFrozenModuleBuildTask(GraalpythonBuildTask):
         # We freeze modules twice: once for the manual Bytecode interpreter and once for the DSL interpreter.
         args = [mx_subst.path_substitutions.substitute(a, dependency=self) for a in cast(GraalpythonProject, self.subject).args]
 
+        manual_vm_args = ["-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:8000"] if 'DEBUG_FROZEN' in os.environ else []
+        dsl_vm_args = ["-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:8000"] if 'DEBUG_FROZEN_BCI' in os.environ else []
+
         return bool(
-            self.run_for(args, "manual bytecode") or
-            self.run_for(args, "dsl", extra_vm_args=["-Dpython.EnableBytecodeDSLInterpreter=true"])
+            self.run_for(args, "manual bytecode", extra_vm_args=manual_vm_args) or
+            self.run_for(args, "dsl", extra_vm_args=dsl_vm_args + ["-Dpython.EnableBytecodeDSLInterpreter=true"])
         )
 
     def run_for(self, args, interpreter_kind, extra_vm_args=None):

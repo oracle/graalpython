@@ -28,7 +28,6 @@ package com.oracle.graal.python.builtins.objects.type;
 import java.lang.ref.WeakReference;
 import java.util.ArrayDeque;
 import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicReference;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -41,9 +40,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.util.SuppressFBWarnings;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -69,7 +66,6 @@ public final class PythonClass extends PythonManagedClass {
     private static final int MRO_SUBTYPES_MAX = 64;
     private static final int MRO_SHAPE_INVALIDATIONS_MAX = 5;
 
-    private final AtomicReference<Assumption> slotsFinalAssumption = new AtomicReference<>();
     private MroShape mroShape;  // only set if there's no inheritance from native types
     /**
      * Array of all classes that contain this class in their MRO and that have non-null mroShape,
@@ -80,30 +76,12 @@ public final class PythonClass extends PythonManagedClass {
     private TruffleWeakReference<PythonClass>[] mroShapeSubTypes;
     private byte mroShapeInvalidationsCount;
 
-    public PythonClass(PythonLanguage lang, Object typeClass, Shape classShape, TruffleString name, Object base, PythonAbstractClass[] baseClasses) {
-        super(lang, typeClass, classShape, null, name, base, baseClasses, null);
+    public PythonClass(Node location, PythonLanguage lang, Object typeClass, Shape classShape, TruffleString name, Object base, PythonAbstractClass[] baseClasses) {
+        super(location, lang, typeClass, classShape, null, name, base, baseClasses, null);
     }
 
-    public PythonClass(PythonLanguage lang, Object typeClass, Shape classShape, TruffleString name, boolean invokeMro, Object base, PythonAbstractClass[] baseClasses) {
-        super(lang, typeClass, classShape, null, name, invokeMro, false, base, baseClasses, null);
-    }
-
-    public Assumption getSlotsFinalAssumption() {
-        Assumption result = slotsFinalAssumption.get();
-        if (result == null) {
-            result = Truffle.getRuntime().createAssumption("slots");
-            if (!slotsFinalAssumption.compareAndSet(null, result)) {
-                result = slotsFinalAssumption.get();
-            }
-        }
-        return result;
-    }
-
-    public void invalidateSlotsFinalAssumption() {
-        Assumption assumption = slotsFinalAssumption.get();
-        if (assumption != null) {
-            assumption.invalidate();
-        }
+    public PythonClass(Node location, PythonLanguage lang, Object typeClass, Shape classShape, TruffleString name, boolean invokeMro, Object base, PythonAbstractClass[] baseClasses) {
+        super(location, lang, typeClass, classShape, null, name, invokeMro, false, base, baseClasses, null);
     }
 
     public void setTpSlots(TpSlots tpSlots) {
@@ -114,10 +92,6 @@ public final class PythonClass extends PythonManagedClass {
     @TruffleBoundary
     @SuppressFBWarnings(value = "UR_UNINIT_READ_CALLED_FROM_SUPER_CONSTRUCTOR")
     public void setAttribute(TruffleString key, Object value) {
-        if (slotsFinalAssumption != null) {
-            // It is OK when slotsFinalAssumption is null during the super ctor call
-            invalidateSlotsFinalAssumption();
-        }
         super.setAttribute(key, value);
         invalidateMroShapeSubTypes();
     }

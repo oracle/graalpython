@@ -463,12 +463,13 @@ public final class PFactory {
         return trace(language, new PythonModule(cls, shape));
     }
 
-    public static PythonClass createPythonClassAndFixupSlots(PythonLanguage language, TruffleString name, Object base, PythonAbstractClass[] bases) {
-        return createPythonClassAndFixupSlots(language, PythonBuiltinClassType.PythonClass, PythonBuiltinClassType.PythonClass.getInstanceShape(language), name, base, bases);
+    public static PythonClass createPythonClassAndFixupSlots(Node location, PythonLanguage language, TruffleString name, Object base, PythonAbstractClass[] bases) {
+        return createPythonClassAndFixupSlots(location, language, PythonBuiltinClassType.PythonClass, PythonBuiltinClassType.PythonClass.getInstanceShape(language), name, base, bases);
     }
 
-    public static PythonClass createPythonClassAndFixupSlots(PythonLanguage language, Object metaclass, Shape metaclassShape, TruffleString name, Object base, PythonAbstractClass[] bases) {
-        PythonClass result = trace(language, new PythonClass(language, metaclass, metaclassShape, name, base, bases));
+    public static PythonClass createPythonClassAndFixupSlots(Node location, PythonLanguage language, Object metaclass, Shape metaclassShape, TruffleString name, Object base,
+                    PythonAbstractClass[] bases) {
+        PythonClass result = trace(language, new PythonClass(location, language, metaclass, metaclassShape, name, base, bases));
         // Fixup tp slots
         MroSequenceStorage mro = GetMroStorageNode.executeUncached(result);
         TpSlots.inherit(result, null, mro, true);
@@ -477,8 +478,9 @@ public final class PFactory {
         return result;
     }
 
-    public static PythonClass createPythonClass(PythonLanguage language, Object metaclass, Shape metaclassShape, TruffleString name, boolean invokeMro, Object base, PythonAbstractClass[] bases) {
-        return trace(language, new PythonClass(language, metaclass, metaclassShape, name, invokeMro, base, bases));
+    public static PythonClass createPythonClass(Node location, PythonLanguage language, Object metaclass, Shape metaclassShape, TruffleString name, boolean invokeMro, Object base,
+                    PythonAbstractClass[] bases) {
+        return trace(language, new PythonClass(location, language, metaclass, metaclassShape, name, invokeMro, base, bases));
     }
 
     public static PMemoryView createMemoryView(PythonLanguage language, PythonContext context, BufferLifecycleManager bufferLifecycleManager, Object buffer, Object owner,

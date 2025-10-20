@@ -47,6 +47,7 @@ import java.util.List;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -180,16 +181,18 @@ public abstract class CodeUnit {
 
     @Override
     public String toString() {
-        return toString(false);
+        return toString(false, null);
     }
 
-    protected abstract void dumpBytecode(StringBuilder sb, boolean optimized);
+    protected abstract void dumpBytecode(StringBuilder sb, boolean optimized, RootNode rootNode);
 
     /**
      * @param optimized Whether to print the initial state of the bytecode or current state, if
      *            available, where some instructions may be transformed, e.g., quickened.
+     * @param rootNode The root node if available (Bytecode DSL code unit may contain just
+     *            serialized code).
      */
-    public String toString(boolean optimized) {
+    public String toString(boolean optimized, RootNode rootNode) {
         StringBuilder sb = new StringBuilder();
 
         sb.append("Disassembly of ").append(qualname).append(":\n");
@@ -208,12 +211,12 @@ public abstract class CodeUnit {
             sb.append("Flags: ").append(String.join(" | ", flagNames)).append("\n");
         }
 
-        dumpBytecode(sb, optimized);
+        dumpBytecode(sb, optimized, rootNode);
 
         for (Object c : constants) {
             if (c instanceof CodeUnit cd) {
                 sb.append('\n');
-                sb.append(cd.toString(optimized));
+                sb.append(cd.toString(optimized, null));
             }
         }
 
