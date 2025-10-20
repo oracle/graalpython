@@ -62,7 +62,6 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStr
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked1Node;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
-import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSlotDescrGet;
@@ -139,8 +138,10 @@ public final class ThreadLocalBuiltins extends PythonBuiltins {
         @Child private CallSlotDescrGet callGetNode;
 
         /**
-         * Keep in sync with {@link ObjectBuiltins.GetAttributeNode} and
-         * {@link TypeBuiltins.GetattributeNode} and {@link MergedObjectTypeModuleGetAttributeNode}
+         * Keep in sync with
+         * {@link com.oracle.graal.python.builtins.objects.object.ObjectBuiltins.GetAttributeNode}
+         * and {@link com.oracle.graal.python.builtins.objects.type.TypeBuiltins.GetattributeNode}
+         * and {@link MergedObjectTypeModuleGetAttributeNode}
          */
         @Specialization
         Object doIt(VirtualFrame frame, PThreadLocal object, Object keyObj,

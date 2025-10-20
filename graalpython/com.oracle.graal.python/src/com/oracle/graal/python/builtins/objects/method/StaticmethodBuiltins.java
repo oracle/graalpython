@@ -122,7 +122,7 @@ public final class StaticmethodBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetNode extends DescrGetBuiltinNode {
         /**
-         * @see ClassmethodBuiltins.GetNode#getCached
+         * @see ClassmethodCommonBuiltins.GetNode#getCached
          */
         @Specialization(guards = {"isSingleContext()", "cachedSelf == self", "cachedCallable != null"}, limit = "3")
         static Object getCached(@SuppressWarnings("unused") PDecoratedMethod self, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") Object type,

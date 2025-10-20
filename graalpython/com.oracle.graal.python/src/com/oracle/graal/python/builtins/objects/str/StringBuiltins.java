@@ -206,8 +206,7 @@ import com.oracle.truffle.api.strings.TruffleStringIterator;
 
 /**
  * NOTE: self can either be a TruffleString, PString, PythonNativeObject string or a foreign string
- * (isString()). Use {@link CastToTruffleStringCheckedNode} or {@link CastToTruffleStringNode} to
- * convert to TruffleString.
+ * (isString()). Use {@link CastToTruffleStringNode} to convert to TruffleString.
  */
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PString)
 public final class StringBuiltins extends PythonBuiltins {

@@ -586,9 +586,9 @@ public final class StringUtils {
     }
 
     /**
-     * Like {@link TruffleString.EqualNode} but with the proper {@link InliningCutoff} since
-     * {@link TruffleString.EqualNode} is too big for host inlining, at least when used in node
-     * guards.
+     * Like {@link com.oracle.truffle.api.strings.TruffleString.EqualNode} but with the proper
+     * {@link InliningCutoff} since {@link com.oracle.truffle.api.strings.TruffleString.EqualNode}
+     * is too big for host inlining, at least when used in node guards.
      */
     @GenerateInline
     @GenerateCached(false)
