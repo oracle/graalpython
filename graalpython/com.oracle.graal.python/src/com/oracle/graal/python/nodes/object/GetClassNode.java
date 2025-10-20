@@ -173,7 +173,7 @@ public abstract class GetClassNode extends PNodeWithContext {
 
     @Specialization
     static Object getPBCT(PythonBuiltinClassType object) {
-        return object.getType();
+        return PythonBuiltinClassType.PythonClass;
     }
 
     @Specialization

@@ -1473,7 +1473,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
     private final TruffleString doc;
 
     // initialized in static constructor
-    @CompilationFinal private PythonBuiltinClassType type;
     @CompilationFinal private int weaklistoffset;
 
     /**
@@ -1539,10 +1538,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
         return printName;
     }
 
-    public PythonBuiltinClassType getType() {
-        return type;
-    }
-
     public PythonBuiltinClassType getBase() {
         return base;
     }
@@ -1596,30 +1591,13 @@ public enum PythonBuiltinClassType implements TruffleObject {
     @CompilationFinal(dimensions = 1) public static final PythonBuiltinClassType[] VALUES = Arrays.copyOf(values(), values().length);
 
     static {
-        PythonObject.type = PythonClass;
-
         boolean assertionsEnabled = false;
         assert (assertionsEnabled = true) == true;
         HashSet<String> set = assertionsEnabled ? new HashSet<>() : null;
         for (PythonBuiltinClassType type : VALUES) {
             // check uniqueness
             assert set.add("" + type.moduleName + "." + type.name) : type.name();
-
-            /*
-             * Now the only way base can still be null is if type is PythonObject.
-             */
-            if (type.type == null && type.base != null) {
-                type.type = type.base.type;
-            }
-
             type.weaklistoffset = WeakRefModuleBuiltins.getBuiltinTypeWeaklistoffset(type);
-        }
-
-        // Finally, we set all remaining types to PythonClass.
-        for (PythonBuiltinClassType type : VALUES) {
-            if (type.type == null) {
-                type.type = PythonClass;
-            }
         }
     }
 
