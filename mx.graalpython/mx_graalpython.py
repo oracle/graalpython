@@ -297,16 +297,21 @@ def libpythonvm_build_args():
     if graalos := ("musl" in mx_subst.path_substitutions.substitute("<multitarget_libc_selection>")):
         build_args += ['-H:+GraalOS']
     else:
-        build_args += ["-Dpolyglot.image-build-time.PreinitializeContexts=python"]
+        build_args += [
+            "-Dpolyglot.image-build-time.PreinitializeContexts=python",
+            "-H:+UnlockExperimentalVMOptions",
+            '-H:+RelativeCodePointers',
+            '-H:+CompactingOldGen',
+            "-H:-UnlockExperimentalVMOptions",
+        ]
 
     if (
-            mx.is_linux()
-            and not graalos
+            not graalos
             and mx_sdk_vm_ng.is_nativeimage_ee()
             and not os.environ.get('NATIVE_IMAGE_AUXILIARY_ENGINE_CACHE')
             and not _is_overridden_native_image_arg("--gc")
     ):
-        build_args += ['--gc=G1', '-H:-ProtectionKeys']
+        build_args += ['-H:-ProtectionKeys']
 
     profile = None
     if (
