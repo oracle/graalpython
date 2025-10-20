@@ -55,6 +55,7 @@ test.test_capi.test_dict.CAPITest.test_dict_contains @ darwin-arm64,darwin-x86_6
 test.test_capi.test_dict.CAPITest.test_dict_copy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_capi.test_dict.CAPITest.test_dict_delitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_capi.test_dict.CAPITest.test_dict_getitemwitherror @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_capi.test_dict.CAPITest.test_dict_keys_valuesitems_bad_arg @ darwin-arm64,linux-x86_64,win32-AMD64
 test.test_capi.test_dict.CAPITest.test_dict_new @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_capi.test_dict.CAPITest.test_dict_next @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_capi.test_dict.CAPITest.test_dict_setitem @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
