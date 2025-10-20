@@ -40,20 +40,21 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
-import static com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.warnPickleDeprecated;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.DeprecatedReduceBuiltin;
+import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.DeprecatedSetStateBuiltin;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -67,7 +68,6 @@ import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -157,41 +157,29 @@ public final class AccumulateBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
+    public abstract static class ReduceNode extends DeprecatedReduceBuiltin {
 
         @Specialization
-        static Object reduceNoFunc(VirtualFrame frame, PAccumulate self,
-                        @Bind Node inliningTarget,
-                        @Cached GetClassNode getClassNode,
-                        @Cached InlinedBranchProfile hasInitialProfile,
-                        @Cached InlinedBranchProfile totalNoneProfile,
-                        @Cached InlinedBranchProfile totalMarkerProfile,
-                        @Cached InlinedBranchProfile elseProfile,
-                        @Cached PyObjectGetIter getIter,
-                        @Bind PythonLanguage language) {
-            warnPickleDeprecated();
+        static Object reduceNoFunc(PAccumulate self) {
+            PythonLanguage language = PythonLanguage.get(null);
             Object func = self.getFunc();
             if (func == null) {
                 func = PNone.NONE;
             }
             if (self.getInitial() != null) {
-                hasInitialProfile.enter(inliningTarget);
-
-                Object type = getClassNode.execute(inliningTarget, self);
+                Object type = GetClassNode.executeUncached(self);
                 PChain chain = PFactory.createChain(language);
-                chain.setSource(getIter.execute(frame, inliningTarget, PFactory.createList(language, new Object[]{self.getIterable()})));
+                chain.setSource(PyObjectGetIter.executeUncached(PFactory.createList(language, new Object[]{self.getIterable()})));
                 PTuple initialTuple = PFactory.createTuple(language, new Object[]{self.getInitial()});
-                chain.setActive(getIter.execute(frame, inliningTarget, initialTuple));
+                chain.setActive(PyObjectGetIter.executeUncached(initialTuple));
 
                 PTuple tuple = PFactory.createTuple(language, new Object[]{chain, func});
                 return PFactory.createTuple(language, new Object[]{type, tuple, PNone.NONE});
             } else if (self.getTotal() == PNone.NONE) {
-                totalNoneProfile.enter(inliningTarget);
-
                 PChain chain = PFactory.createChain(language);
                 PList noneList = PFactory.createList(language, new Object[]{PNone.NONE});
-                Object noneIter = getIter.execute(frame, inliningTarget, noneList);
-                chain.setSource(getIter.execute(frame, inliningTarget, PFactory.createList(language, new Object[]{noneIter, self.getIterable()})));
+                Object noneIter = PyObjectGetIter.executeUncached(noneList);
+                chain.setSource(PyObjectGetIter.executeUncached(PFactory.createList(language, new Object[]{noneIter, self.getIterable()})));
                 chain.setActive(PNone.NONE);
                 PAccumulate accumulate = PFactory.createAccumulate(language);
                 accumulate.setIterable(chain);
@@ -200,15 +188,11 @@ public final class AccumulateBuiltins extends PythonBuiltins {
                 PTuple tuple = PFactory.createTuple(language, new Object[]{accumulate, 1, PNone.NONE});
                 return PFactory.createTuple(language, new Object[]{PythonBuiltinClassType.PIslice, tuple});
             } else if (self.getTotal() != null) {
-                totalMarkerProfile.enter(inliningTarget);
-
-                Object type = getClassNode.execute(inliningTarget, self);
+                Object type = GetClassNode.executeUncached(self);
                 PTuple tuple = PFactory.createTuple(language, new Object[]{self.getIterable(), func});
                 return PFactory.createTuple(language, new Object[]{type, tuple, self.getTotal()});
             } else {
-                elseProfile.enter(inliningTarget);
-
-                Object type = getClassNode.execute(inliningTarget, self);
+                Object type = GetClassNode.executeUncached(self);
                 PTuple tuple = PFactory.createTuple(language, new Object[]{self.getIterable(), func});
                 return PFactory.createTuple(language, new Object[]{type, tuple});
             }
@@ -218,10 +202,9 @@ public final class AccumulateBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___SETSTATE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
+    public abstract static class SetStateNode extends DeprecatedSetStateBuiltin {
         @Specialization
         static Object setState(PAccumulate self, Object state) {
-            warnPickleDeprecated();
             self.setTotal(state);
             return PNone.NONE;
         }

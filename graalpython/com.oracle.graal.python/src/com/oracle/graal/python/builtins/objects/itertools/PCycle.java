@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,14 +40,14 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
-import java.util.List;
+import java.util.ArrayList;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.object.Shape;
 
 public final class PCycle extends PythonBuiltinObject {
 
-    private List<Object> saved;
+    private ArrayList<Object> saved;
     private Object iterable;
     private int index;
     private boolean firstpass;
@@ -56,11 +56,11 @@ public final class PCycle extends PythonBuiltinObject {
         super(cls, instanceShape);
     }
 
-    public List<Object> getSaved() {
+    public ArrayList<Object> getSaved() {
         return saved;
     }
 
-    public void setSaved(List<Object> saved) {
+    public void setSaved(ArrayList<Object> saved) {
         this.saved = saved;
     }
 

@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
-import static com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.warnPickleDeprecated;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_ITER;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
@@ -48,13 +47,14 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.DeprecatedReduceBuiltin;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -71,6 +71,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -157,25 +158,21 @@ public final class GrouperBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
+    public abstract static class ReduceNode extends DeprecatedReduceBuiltin {
         @Specialization(guards = "currValueIsSelf(self)")
-        static Object reduce(PGrouper self,
-                        @Bind Node inliningTarget,
-                        @Cached GetClassNode getClassNode,
-                        @Bind PythonLanguage language) {
-            warnPickleDeprecated();
-            Object type = getClassNode.execute(inliningTarget, self);
+        static Object reduce(PGrouper self) {
+            PythonLanguage language = PythonLanguage.get(null);
+            Object type = GetClassNode.executeUncached(self);
             PTuple tuple = PFactory.createTuple(language, new Object[]{self.getParent(), self.getTgtKey()});
             return PFactory.createTuple(language, new Object[]{type, tuple});
         }
 
         @Specialization(guards = "!currValueIsSelf(self)")
-        Object reduceCurrNotSelf(VirtualFrame frame, @SuppressWarnings("unused") PGrouper self,
-                        @Bind Node inliningTarget,
-                        @Cached PyObjectGetAttr getAttrNode,
-                        @Bind PythonLanguage language) {
-            PythonModule builtins = getContext().getCore().lookupBuiltinModule(BuiltinNames.T_BUILTINS);
-            Object iterCallable = getAttrNode.execute(frame, inliningTarget, builtins, T_ITER);
+        Object reduceCurrNotSelf(@SuppressWarnings("unused") PGrouper self) {
+            PythonContext ctx = PythonContext.get(null);
+            PythonLanguage language = ctx.getLanguage();
+            PythonModule builtins = ctx.lookupBuiltinModule(BuiltinNames.T_BUILTINS);
+            Object iterCallable = PyObjectGetAttr.executeUncached(builtins, T_ITER);
             // return Py_BuildValue("N(())", _PyEval_GetBuiltinId(&PyId_iter));
             return PFactory.createTuple(language, new Object[]{iterCallable, PFactory.createTuple(language, new Object[]{PFactory.createEmptyTuple(language)})});
         }

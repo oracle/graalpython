@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.itertools;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.warnPickleDeprecated;
 import static com.oracle.graal.python.builtins.objects.itertools.TeeDataObjectBuiltins.LINKCELLS;
 import static com.oracle.graal.python.nodes.ErrorMessages.INDEX_OUT_OF_RANGE;
 import static com.oracle.graal.python.nodes.ErrorMessages.INTEGER_REQUIRED_GOT;
@@ -55,21 +54,23 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___COPY__;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.DeprecatedReduceBuiltin;
+import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.DeprecatedSetStateBuiltin;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
-import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.LenNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.lib.PyTupleGetItem;
+import com.oracle.graal.python.lib.PyTupleSizeNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -167,16 +168,13 @@ public final class TeeBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
+    public abstract static class ReduceNode extends DeprecatedReduceBuiltin {
 
         @Specialization
-        static Object reduce(PTee self,
-                        @Bind Node inliningTarget,
-                        @Cached GetClassNode getClass,
-                        @Bind PythonLanguage language) {
-            warnPickleDeprecated();
+        static Object reduce(PTee self) {
+            PythonLanguage language = PythonLanguage.get(null);
             // return type(self), ((),), (self.dataobj, self.index)
-            Object type = getClass.execute(inliningTarget, self);
+            Object type = GetClassNode.executeUncached(self);
             PTuple tuple1 = PFactory.createTuple(language, new Object[]{PFactory.createEmptyTuple(language)});
             PTuple tuple2 = PFactory.createTuple(language, new Object[]{self.getDataobj(), self.getIndex()});
             return PFactory.createTuple(language, new Object[]{type, tuple1, tuple2});
@@ -185,34 +183,29 @@ public final class TeeBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___SETSTATE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
+    public abstract static class SetStateNode extends DeprecatedSetStateBuiltin {
 
         @Specialization
-        static Object setState(VirtualFrame frame, PTee self, Object state,
-                        @Bind Node inliningTarget,
-                        @Cached LenNode lenNode,
-                        @Cached TupleBuiltins.GetItemNode getItemNode,
-                        @Cached CastToJavaIntLossyNode castToIntNode,
-                        @Cached PRaiseNode raiseNode) {
+        static Object setState(PTee self, Object state,
+                        @Bind Node inliningTarget) {
 
-            warnPickleDeprecated();
-            if (!(state instanceof PTuple) || (int) lenNode.execute(frame, state) != 2) {
-                throw raiseNode.raise(inliningTarget, TypeError, IS_NOT_A, "state", "2-tuple");
+            if (!(state instanceof PTuple) || PyTupleSizeNode.executeUncached(state) != 2) {
+                throw PRaiseNode.raiseStatic(inliningTarget, TypeError, IS_NOT_A, "state", "2-tuple");
             }
-            Object dataObject = getItemNode.execute(frame, state, 0);
+            Object dataObject = PyTupleGetItem.executeUncached(state, 0);
             if (!(dataObject instanceof PTeeDataObject)) {
-                throw raiseNode.raise(inliningTarget, TypeError, IS_NOT_A, "state", "_tee_dataobject");
+                throw PRaiseNode.raiseStatic(inliningTarget, TypeError, IS_NOT_A, "state", "_tee_dataobject");
             }
             self.setDataObj((PTeeDataObject) dataObject);
-            Object secondElement = getItemNode.execute(frame, state, 1);
+            Object secondElement = PyTupleGetItem.executeUncached(state, 1);
             int index = 0;
             try {
-                index = castToIntNode.execute(inliningTarget, secondElement);
+                index = CastToJavaIntLossyNode.executeUncached(secondElement);
             } catch (CannotCastException e) {
-                throw raiseNode.raise(inliningTarget, TypeError, INTEGER_REQUIRED_GOT, secondElement);
+                throw PRaiseNode.raiseStatic(inliningTarget, TypeError, INTEGER_REQUIRED_GOT, secondElement);
             }
             if (index < 0 || index > LINKCELLS) {
-                throw raiseNode.raise(inliningTarget, ValueError, INDEX_OUT_OF_RANGE);
+                throw PRaiseNode.raiseStatic(inliningTarget, ValueError, INDEX_OUT_OF_RANGE);
             }
             self.setIndex(index);
             return PNone.NONE;

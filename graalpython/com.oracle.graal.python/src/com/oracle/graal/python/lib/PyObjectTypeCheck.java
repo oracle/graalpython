@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -59,6 +59,10 @@ import com.oracle.truffle.api.nodes.Node;
 @GenerateInline(inlineByDefault = true)
 public abstract class PyObjectTypeCheck extends PNodeWithContext {
     public abstract boolean execute(Node inliningTarget, Object object, Object type);
+
+    public static boolean executeUncached(Object object, Object type) {
+        return PyObjectTypeCheckNodeGen.getUncached().execute(null, object, type);
+    }
 
     public final boolean executeCached(Object object, Object type) {
         return execute(this, object, type);

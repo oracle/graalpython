@@ -42,8 +42,12 @@ import com.oracle.graal.python.builtins.objects.itertools.TeeBuiltins;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -64,9 +68,54 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
         return ItertoolsModuleBuiltinsFactory.getFactories();
     }
 
-    @TruffleBoundary
-    public static void warnPickleDeprecated() {
+    private static void warnPickleDeprecated() {
         WarningsModuleBuiltins.WarnNode.getUncached().warnEx(null, DeprecationWarning, PICKLE_ITERTOOLS_IN_PYTHON_3_14, 1);
+    }
+
+    @SuppressWarnings("this-escape")
+    public abstract static class DeprecatedReduceBuiltin extends PythonUnaryBuiltinNode {
+        private final IndirectCallData indirectCallData = IndirectCallData.createFor(this);
+
+        @Override
+        public final Object execute(VirtualFrame frame, Object arg) {
+            Object saved = IndirectCallContext.enter(frame, this, indirectCallData);
+            try {
+                return warnAndExecute(arg);
+            } finally {
+                IndirectCallContext.exit(frame, this, indirectCallData, saved);
+            }
+        }
+
+        @TruffleBoundary
+        private Object warnAndExecute(Object arg) {
+            warnPickleDeprecated();
+            return executeImpl(arg);
+        }
+
+        protected abstract Object executeImpl(Object arg);
+    }
+
+    @SuppressWarnings("this-escape")
+    public abstract static class DeprecatedSetStateBuiltin extends PythonBinaryBuiltinNode {
+        private final IndirectCallData indirectCallData = IndirectCallData.createFor(this);
+
+        @Override
+        public final Object execute(VirtualFrame frame, Object arg1, Object arg2) {
+            Object saved = IndirectCallContext.enter(frame, this, indirectCallData);
+            try {
+                return warnAndExecute(arg1, arg2);
+            } finally {
+                IndirectCallContext.exit(frame, this, indirectCallData, saved);
+            }
+        }
+
+        @TruffleBoundary
+        private Object warnAndExecute(Object arg1, Object arg2) {
+            warnPickleDeprecated();
+            return executeImpl(arg1, arg2);
+        }
+
+        protected abstract Object executeImpl(Object arg1, Object arg2);
     }
 
     @Builtin(name = "tee", minNumOfPositionalArgs = 1, parameterNames = {"iterable", "n"})

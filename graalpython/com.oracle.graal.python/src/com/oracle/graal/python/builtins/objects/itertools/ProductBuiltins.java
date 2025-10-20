@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
-import static com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.warnPickleDeprecated;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARG_CANNOT_BE_NEGATIVE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
@@ -49,13 +48,15 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.DeprecatedReduceBuiltin;
+import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.DeprecatedSetStateBuiltin;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -64,12 +65,11 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
-import com.oracle.graal.python.lib.PyObjectGetItem;
+import com.oracle.graal.python.lib.PyTupleGetItem;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -308,23 +308,18 @@ public final class ProductBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
+    public abstract static class ReduceNode extends DeprecatedReduceBuiltin {
 
         @Specialization
-        static Object reduce(PProduct self,
-                        @Bind Node inliningTarget,
-                        @Cached InlinedConditionProfile stoppedProfile,
-                        @Cached InlinedConditionProfile noLstProfile,
-                        @Cached GetClassNode getClassNode,
-                        @Bind PythonLanguage language) {
-            warnPickleDeprecated();
-            Object type = getClassNode.execute(inliningTarget, self);
-            if (stoppedProfile.profile(inliningTarget, self.isStopped())) {
+        static Object reduce(PProduct self) {
+            PythonLanguage language = PythonLanguage.get(null);
+            Object type = GetClassNode.executeUncached(self);
+            if (self.isStopped()) {
                 PTuple empty = PFactory.createEmptyTuple(language);
                 return PFactory.createTuple(language, new Object[]{type, PFactory.createTuple(language, new Object[]{empty})});
             }
             PTuple gearTuples = createGearTuple(self, language);
-            if (noLstProfile.profile(inliningTarget, self.getLst() == null)) {
+            if (self.getLst() == null) {
                 return PFactory.createTuple(language, new Object[]{type, gearTuples});
             }
             PTuple indicesTuple = PFactory.createTuple(language, PythonUtils.arrayCopyOf(self.getIndices(), self.getIndices().length));
@@ -342,30 +337,21 @@ public final class ProductBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___SETSTATE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
+    public abstract static class SetStateNode extends DeprecatedSetStateBuiltin {
         @Specialization
-        static Object setState(VirtualFrame frame, PProduct self, Object state,
-                        @Bind Node inliningTarget,
-                        @Cached PyObjectGetItem getItemNode,
-                        @Cached InlinedLoopConditionProfile loopProfile,
-                        @Cached PyLongAsIntNode pyLongAsIntNode,
-                        @Cached InlinedBranchProfile stoppedProfile,
-                        @Cached InlinedConditionProfile indexProfile) {
-            warnPickleDeprecated();
+        static Object setState(PProduct self, Object state) {
             Object[][] gears = self.getGears();
             Object[] lst = new Object[gears.length];
             int[] indices = self.getIndices();
-            loopProfile.profileCounted(inliningTarget, gears.length);
-            for (int i = 0; loopProfile.inject(inliningTarget, i < gears.length); i++) {
-                Object o = getItemNode.execute(frame, inliningTarget, state, i);
-                int index = pyLongAsIntNode.execute(frame, inliningTarget, o);
+            for (int i = 0; i < gears.length; i++) {
+                Object o = PyTupleGetItem.executeUncached(state, i);
+                int index = PyLongAsIntNode.executeUncached(o);
                 int gearSize = gears[i].length;
                 if (indices == null || gearSize == 0) {
-                    stoppedProfile.enter(inliningTarget);
                     self.setStopped(true);
                     return PNone.NONE;
                 }
-                if (indexProfile.profile(inliningTarget, index < 0)) {
+                if (index < 0) {
                     index = 0;
                 } else if (index > gearSize - 1) {
                     index = gearSize - 1;

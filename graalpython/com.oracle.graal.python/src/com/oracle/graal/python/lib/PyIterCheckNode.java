@@ -61,6 +61,10 @@ import com.oracle.truffle.api.nodes.Node;
 public abstract class PyIterCheckNode extends PNodeWithContext {
     public abstract boolean execute(Node inliningTarget, Object object);
 
+    public static boolean executeUncached(Object object) {
+        return PyIterCheckNodeGen.getUncached().execute(null, object);
+    }
+
     public final boolean executeCached(Object object) {
         return execute(this, object);
     }

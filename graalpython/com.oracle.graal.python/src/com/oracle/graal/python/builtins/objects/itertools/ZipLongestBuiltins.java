@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.itertools;
 
-import static com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.warnPickleDeprecated;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
@@ -48,13 +47,15 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.DeprecatedReduceBuiltin;
+import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.DeprecatedSetStateBuiltin;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -68,7 +69,6 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -201,26 +201,19 @@ public final class ZipLongestBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
+    public abstract static class ReduceNode extends DeprecatedReduceBuiltin {
         @Specialization
-        static Object reduce(PZipLongest self,
-                        @Bind Node inliningTarget,
-                        @Cached GetClassNode getClass,
-                        @Cached InlinedConditionProfile noFillValueProfile,
-                        @Cached InlinedLoopConditionProfile loopProfile,
-                        @Cached InlinedConditionProfile noItProfile,
-                        @Bind PythonLanguage language) {
-            warnPickleDeprecated();
+        static Object reduce(PZipLongest self) {
+            PythonLanguage language = PythonLanguage.get(null);
             Object fillValue = self.getFillValue();
-            if (noFillValueProfile.profile(inliningTarget, fillValue == null)) {
+            if (fillValue == null) {
                 fillValue = PNone.NONE;
             }
-            Object type = getClass.execute(inliningTarget, self);
+            Object type = GetClassNode.executeUncached(self);
             Object[] its = new Object[self.getItTuple().length];
-            loopProfile.profileCounted(inliningTarget, its.length);
-            for (int i = 0; loopProfile.profile(inliningTarget, i < its.length); i++) {
+            for (int i = 0; i < its.length; i++) {
                 Object it = self.getItTuple()[i];
-                if (noItProfile.profile(inliningTarget, it == PNone.NONE)) {
+                if (it == PNone.NONE) {
                     its[i] = PFactory.createEmptyTuple(language);
                 } else {
                     its[i] = it;
@@ -233,10 +226,9 @@ public final class ZipLongestBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___SETSTATE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
+    public abstract static class SetStateNode extends DeprecatedSetStateBuiltin {
         @Specialization
         static Object setState(PZipLongest self, Object state) {
-            warnPickleDeprecated();
             self.setFillValue(state);
             return PNone.NONE;
         }

@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.itertools;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.warnPickleDeprecated;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARGUMENTS_MUST_BE_ITERATORS;
 import static com.oracle.graal.python.nodes.ErrorMessages.IS_NOT_A;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
@@ -51,18 +50,18 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETSTATE__;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.DeprecatedReduceBuiltin;
+import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins.DeprecatedSetStateBuiltin;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.GetItemNode;
-import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.LenNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
@@ -70,6 +69,8 @@ import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyIterCheckNode;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
+import com.oracle.graal.python.lib.PyTupleGetItem;
+import com.oracle.graal.python.lib.PyTupleSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -87,7 +88,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PChain})
@@ -195,19 +195,14 @@ public final class ChainBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
+    public abstract static class ReduceNode extends DeprecatedReduceBuiltin {
         @Specialization
-        static Object reducePos(PChain self,
-                        @Bind Node inliningTarget,
-                        @Cached GetClassNode getClass,
-                        @Cached InlinedConditionProfile hasSourceProfile,
-                        @Cached InlinedConditionProfile hasActiveProfile,
-                        @Bind PythonLanguage language) {
-            warnPickleDeprecated();
-            Object type = getClass.execute(inliningTarget, self);
+        static Object reducePos(PChain self) {
+            Object type = GetClassNode.executeUncached(self);
+            PythonLanguage language = PythonLanguage.get(null);
             PTuple empty = PFactory.createEmptyTuple(language);
-            if (hasSourceProfile.profile(inliningTarget, self.getSource() != PNone.NONE)) {
-                if (hasActiveProfile.profile(inliningTarget, self.getActive() != PNone.NONE)) {
+            if (self.getSource() != PNone.NONE) {
+                if (self.getActive() != PNone.NONE) {
                     PTuple tuple = PFactory.createTuple(language, new Object[]{self.getSource(), self.getActive()});
                     return PFactory.createTuple(language, new Object[]{type, empty, tuple});
                 } else {
@@ -222,38 +217,31 @@ public final class ChainBuiltins extends PythonBuiltins {
 
     @Builtin(name = J___SETSTATE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class SetStateNode extends PythonBinaryBuiltinNode {
+    public abstract static class SetStateNode extends DeprecatedSetStateBuiltin {
         @Specialization
-        static Object setState(VirtualFrame frame, PChain self, Object state,
-                        @Bind Node inliningTarget,
-                        @Cached LenNode lenNode,
-                        @Cached GetItemNode getItemNode,
-                        @Cached InlinedBranchProfile len2Profile,
-                        @Cached PyIterCheckNode iterCheckNode,
-                        @Cached PRaiseNode raiseNode) {
-            warnPickleDeprecated();
+        static Object setState(PChain self, Object state,
+                        @Bind Node node) {
             if (!(state instanceof PTuple)) {
-                throw raiseNode.raise(inliningTarget, TypeError, IS_NOT_A, "state", "a length 1 or 2 tuple");
+                throw PRaiseNode.raiseStatic(node, TypeError, IS_NOT_A, "state", "a length 1 or 2 tuple");
             }
-            int len = (int) lenNode.execute(frame, state);
+            int len = PyTupleSizeNode.executeUncached(state);
             if (len < 1 || len > 2) {
-                throw raiseNode.raise(inliningTarget, TypeError, IS_NOT_A, "state", "a length 1 or 2 tuple");
+                throw PRaiseNode.raiseStatic(node, TypeError, IS_NOT_A, "state", "a length 1 or 2 tuple");
             }
-            Object source = getItemNode.execute(frame, state, 0);
-            checkIterator(inliningTarget, iterCheckNode, source, raiseNode);
+            Object source = PyTupleGetItem.executeUncached(state, 0);
+            checkIterator(node, source);
             self.setSource(source);
             if (len == 2) {
-                len2Profile.enter(inliningTarget);
-                Object active = getItemNode.execute(frame, state, 1);
-                checkIterator(inliningTarget, iterCheckNode, active, raiseNode);
+                Object active = PyTupleGetItem.executeUncached(state, 1);
+                checkIterator(node, active);
                 self.setActive(active);
             }
             return PNone.NONE;
         }
 
-        private static void checkIterator(Node inliningTarget, PyIterCheckNode iterCheckNode, Object obj, PRaiseNode raiseNode) throws PException {
-            if (!iterCheckNode.execute(inliningTarget, obj)) {
-                throw raiseNode.raise(inliningTarget, TypeError, ARGUMENTS_MUST_BE_ITERATORS);
+        private static void checkIterator(Node node, Object obj) throws PException {
+            if (!PyIterCheckNode.executeUncached(obj)) {
+                throw PRaiseNode.raiseStatic(node, TypeError, ARGUMENTS_MUST_BE_ITERATORS);
             }
         }
     }
