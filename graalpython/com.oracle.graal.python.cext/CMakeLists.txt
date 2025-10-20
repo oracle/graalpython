@@ -409,6 +409,13 @@ if(WIN32)
         _WIN64
         FFI_STATIC_BUILD
     )
+elseif(APPLE)
+    target_compile_definitions("_ctypes" PRIVATE
+        HAVE_DECL_RTLD_LOCAL
+        HAVE_DECL_RTLD_GLOBAL
+        HAVE_DYLD_SHARED_CACHE_CONTAINS_PATH
+        HAVE_BUILTIN_AVAILABLE
+    )
 else()
     target_compile_definitions("_ctypes" PRIVATE
         HAVE_DECL_RTLD_LOCAL
