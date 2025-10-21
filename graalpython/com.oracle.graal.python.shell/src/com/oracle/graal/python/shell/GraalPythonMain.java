@@ -33,6 +33,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
@@ -56,6 +57,7 @@ import org.graalvm.options.OptionCategory;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Context.Builder;
 import org.graalvm.polyglot.Engine;
+import org.graalvm.polyglot.HostAccess;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
@@ -826,6 +828,11 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
             contextBuilder.engine(Engine.newBuilder().allowExperimentalOptions(true).options(enginePolyglotOptions).build());
         }
 
+        if (GraalPythonMain.class.getModule().isNamed()) {
+            // Needed so that we can access JLine callback via interop
+            contextBuilder.extendHostAccess(HostAccess.ALL, builder -> builder.useModuleLookup(MethodHandles.lookup()));
+        }
+
         int rc = 1;
         try (Context context = contextBuilder.build()) {
             runVersionAction(versionAction, context.getEngine());
@@ -1201,6 +1208,7 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
         try {
             setupREPL(context, consoleHandler);
             Value sys = evalInternal(context, "import sys; sys");
+            sys.putMember("_console_handler", consoleHandler);
 
             while (true) { // processing inputs
                 boolean doEcho = doEcho(context);

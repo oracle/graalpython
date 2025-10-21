@@ -26,6 +26,8 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.EOFError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.KeyboardInterrupt;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OSError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SyntaxError;
@@ -86,6 +88,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T___DEBUG__;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___GRAALPYTHON__;
 import static com.oracle.graal.python.nodes.PGuards.isNoValue;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DICT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T_FILENO;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MRO_ENTRIES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ROUND__;
@@ -178,6 +181,7 @@ import com.oracle.graal.python.lib.PyEvalGetGlobals;
 import com.oracle.graal.python.lib.PyEvalGetLocals;
 import com.oracle.graal.python.lib.PyIterCheckNode;
 import com.oracle.graal.python.lib.PyIterNextNode;
+import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyMappingCheckNode;
 import com.oracle.graal.python.lib.PyNumberAbsoluteNode;
 import com.oracle.graal.python.lib.PyNumberAddNode;
@@ -258,7 +262,9 @@ import com.oracle.graal.python.pegparser.ParserCallbacks;
 import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -298,6 +304,7 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -2628,20 +2635,21 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static Object doInput(Object prompt, Node inliningTarget, PythonContext context) {
+        @SuppressWarnings("try")
+        private static Object doInput(Object prompt, Node node, PythonContext context) {
             PythonModule sysModule = context.getSysModule();
             Object stdin = PyObjectLookupAttr.executeUncached(sysModule, T_STDIN);
             Object stdout = PyObjectLookupAttr.executeUncached(sysModule, T_STDOUT);
             Object stderr = PyObjectLookupAttr.executeUncached(sysModule, T_STDERR);
 
             if (stdin instanceof PNone) {
-                throw PRaiseNode.raiseStatic(inliningTarget, RuntimeError, ErrorMessages.INPUT_LOST_SYS_S, T_STDIN);
+                throw PRaiseNode.raiseStatic(node, RuntimeError, ErrorMessages.INPUT_LOST_SYS_S, T_STDIN);
             }
             if (stdout instanceof PNone) {
-                throw PRaiseNode.raiseStatic(inliningTarget, RuntimeError, ErrorMessages.INPUT_LOST_SYS_S, T_STDOUT);
+                throw PRaiseNode.raiseStatic(node, RuntimeError, ErrorMessages.INPUT_LOST_SYS_S, T_STDOUT);
             }
             if (stderr instanceof PNone) {
-                throw PRaiseNode.raiseStatic(inliningTarget, RuntimeError, ErrorMessages.INPUT_LOST_SYS_S, T_STDERR);
+                throw PRaiseNode.raiseStatic(node, RuntimeError, ErrorMessages.INPUT_LOST_SYS_S, T_STDERR);
             }
 
             SysModuleBuiltins.AuditNode.auditUncached("builtins.input", prompt != NO_VALUE ? prompt : NONE);
@@ -2650,6 +2658,51 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 PyObjectCallMethodObjArgs.executeUncached(stderr, T_FLUSH);
             } catch (AbstractTruffleException e) {
                 // Ignore
+            }
+
+            Object consoleHandler = PyObjectLookupAttr.executeUncached(sysModule, tsLiteral("_console_handler"));
+            if (!(consoleHandler instanceof PNone)) {
+                boolean tty = false;
+                try {
+                    long fileno = PyLongAsLongNode.executeUncached(PyObjectCallMethodObjArgs.executeUncached(stdin, T_FILENO));
+                    if (fileno == 0) {
+                        tty = PosixSupportLibrary.getUncached().isatty(context.getPosixSupport(), 0);
+                    }
+                } catch (AbstractTruffleException e) {
+                    // not a tty
+                }
+                if (tty) {
+                    InteropLibrary lib = InteropLibrary.getUncached();
+                    try {
+                        boolean havePrompt = !(prompt instanceof PNone);
+                        if (havePrompt) {
+                            TruffleString promptStr = PyObjectStrAsTruffleStringNode.executeUncached(prompt);
+                            lib.invokeMember(consoleHandler, "setPrompt", promptStr);
+                        }
+                        try (var gil = GilNode.uncachedRelease()) {
+                            // TODO can we make it interruptible?
+                            Object line;
+                            try {
+                                line = lib.invokeMember(consoleHandler, "readLine", havePrompt);
+                            } catch (AbstractTruffleException e) {
+                                try {
+                                    if ("UserInterruptException".equals(lib.asString(lib.getMetaSimpleName(lib.getMetaObject(e))))) {
+                                        throw PRaiseNode.raiseStatic(node, KeyboardInterrupt);
+                                    }
+                                } catch (InteropException ex) {
+                                    // Fallthrough
+                                }
+                                throw PRaiseNode.raiseStatic(node, OSError, ErrorMessages.M, e);
+                            }
+                            if (lib.isNull(line)) {
+                                throw PRaiseNode.raiseStatic(node, EOFError);
+                            }
+                            return lib.asTruffleString(line).switchEncodingUncached(TS_ENCODING);
+                        }
+                    } catch (InteropException e) {
+                        // fall back to simple read
+                    }
+                }
             }
 
             if (!(prompt instanceof PNone)) {
@@ -2667,7 +2720,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 TruffleString strLine = CastToTruffleStringNode.castKnownStringUncached(line);
                 int len = strLine.codePointLengthUncached(TS_ENCODING);
                 if (len == 0) {
-                    throw PRaiseNode.raiseStatic(inliningTarget, EOFError, ErrorMessages.EOF_WHEN_READING_A_LINE);
+                    throw PRaiseNode.raiseStatic(node, EOFError, ErrorMessages.EOF_WHEN_READING_A_LINE);
                 }
                 int lastChar = strLine.codePointAtIndexUncached(len - 1, TS_ENCODING);
                 if (lastChar == '\n') {
@@ -2677,7 +2730,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             } else if (PyBytesCheckNode.executeUncached(line)) {
                 byte[] bytesLine = PythonBufferAccessLibrary.getUncached().getCopiedByteArray(BytesNodes.GetBytesStorage.executeUncached(line));
                 if (bytesLine.length == 0) {
-                    throw PRaiseNode.raiseStatic(inliningTarget, EOFError, ErrorMessages.EOF_WHEN_READING_A_LINE);
+                    throw PRaiseNode.raiseStatic(node, EOFError, ErrorMessages.EOF_WHEN_READING_A_LINE);
                 }
                 PythonLanguage language = context.getLanguage();
                 if (bytesLine[bytesLine.length - 1] == '\n') {
@@ -2686,7 +2739,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     return PFactory.createBytes(language, bytesLine);
                 }
             } else {
-                throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.OBJECT_READLINE_RETURNED_NON_STRING);
+                throw PRaiseNode.raiseStatic(node, TypeError, ErrorMessages.OBJECT_READLINE_RETURNED_NON_STRING);
             }
         }
     }
