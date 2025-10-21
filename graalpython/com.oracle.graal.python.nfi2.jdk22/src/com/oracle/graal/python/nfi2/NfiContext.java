@@ -40,14 +40,133 @@
  */
 package com.oracle.graal.python.nfi2;
 
+import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
+
 import java.lang.foreign.Arena;
+import java.lang.foreign.FunctionDescriptor;
+import java.lang.foreign.Linker;
+import java.lang.foreign.MemoryLayout;
+import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
+import java.lang.invoke.MethodHandle;
+
+import org.graalvm.nativeimage.DowncallDescriptor;
+import org.graalvm.nativeimage.ForeignFunctions;
+import org.graalvm.nativeimage.ImageInfo;
+
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public final class NfiContext {
 
     final Arena arena;
 
+    @TruffleBoundary
     NfiContext() {
         // TODO(NFI2) is shared Arena OK?
         arena = Arena.ofShared();
+    }
+
+    public void close() {
+        // TODO(NFI2) dlclose all libraries
+        arena.close();
+    }
+
+    public NfiLibrary loadLibrary(String name, int flags) {
+        long lib;
+        long nativeName = NativeMemory.javaStringToNativeUtf8(name);
+        try {
+            ensureDlopenDlsym();
+            // TODO(NFI2) only add RTLD_LAZY flag if actually needed
+            if (ImageInfo.inImageCode()) {
+                lib = (long) ForeignFunctions.invoke(dlopenDescriptor, dlopenPtr.address(), nativeName, flags | RTLD_LAZY);
+            } else {
+                lib = (long) dlopen.invokeExact(nativeName, flags | RTLD_LAZY);
+            }
+        } catch (Throwable e) {
+            throw CompilerDirectives.shouldNotReachHere(e);
+        } finally {
+            NativeMemory.free(nativeName);
+        }
+        if (lib == 0) {
+            throw CompilerDirectives.shouldNotReachHere("Failed to load library " + name);
+        }
+        return new NfiLibrary(this, lib);
+    }
+
+    long lookupOptionalSymbol(long library, String name) {
+        // TODO(NFI2) if logging enabled, keep track of ptr->name mappings
+        long nativeName = NativeMemory.javaStringToNativeUtf8(name);
+        try {
+            if (ImageInfo.inImageCode()) {
+                return (long) ForeignFunctions.invoke(dlsymDescriptor, dlsymPtr.address(), library, nativeName);
+            } else {
+                return (long) dlsym.invokeExact(library, nativeName);
+            }
+        } catch (Throwable e) {
+            throw CompilerDirectives.shouldNotReachHere(e);
+        } finally {
+            NativeMemory.free(nativeName);
+        }
+    }
+
+    // TODO(NFI2) platform-specific values for RTLD_* constants
+    private static final int RTLD_LAZY = 1;
+
+    private static final FunctionDescriptor DLOPEN_FUNCTION_DESCRIPTOR = FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG, ValueLayout.JAVA_INT);
+    private static final FunctionDescriptor DLSYM_FUNCTION_DESCRIPTOR = FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG);
+    private static final DowncallDescriptor dlopenDescriptor;
+    private static final DowncallDescriptor dlsymDescriptor;
+
+    private static MethodHandle dlopen;
+    private static MethodHandle dlsym;
+
+    private static MemorySegment dlopenPtr;
+    private static MemorySegment dlsymPtr;
+
+    static {
+        if (ImageInfo.inImageCode()) {
+            dlopenDescriptor = ForeignFunctions.getDowncallDescriptor(DLOPEN_FUNCTION_DESCRIPTOR);
+            dlsymDescriptor = ForeignFunctions.getDowncallDescriptor(DLSYM_FUNCTION_DESCRIPTOR);
+        } else {
+            dlopenDescriptor = null;
+            dlsymDescriptor = null;
+        }
+    }
+
+    // TODO(NFI2) error handling
+    // TODO(NFI2) Windows LoadLibrary/GetProcAddress
+    @SuppressWarnings("restricted")
+    private static void ensureDlopenDlsym() {
+        if (dlopenPtr != null) {
+            return;
+        }
+        dlopenPtr = Linker.nativeLinker().defaultLookup().find("dlopen").get();
+        dlsymPtr = Linker.nativeLinker().defaultLookup().find("dlsym").get();
+        if (!ImageInfo.inImageCode()) {
+            dlopen = Linker.nativeLinker().downcallHandle(dlopenPtr, DLOPEN_FUNCTION_DESCRIPTOR);
+            dlsym = Linker.nativeLinker().downcallHandle(dlsymPtr, DLSYM_FUNCTION_DESCRIPTOR);
+        }
+    }
+
+    static FunctionDescriptor createFunctionDescriptor(NfiType resType, NfiType[] argTypes) {
+        MemoryLayout[] argLayouts = new MemoryLayout[argTypes.length];
+        for (int i = 0; i < argTypes.length; i++) {
+            argLayouts[i] = asLayout(argTypes[i]);
+        }
+        return resType == NfiType.VOID ? FunctionDescriptor.ofVoid(argLayouts) : FunctionDescriptor.of(asLayout(resType), argLayouts);
+    }
+
+    private static MemoryLayout asLayout(NfiType type) {
+        return switch (type) {
+            case VOID -> throw shouldNotReachHere("VOID has no layout");
+            case SINT8 -> ValueLayout.JAVA_BYTE;
+            case SINT16 -> ValueLayout.JAVA_SHORT;
+            case SINT32 -> ValueLayout.JAVA_INT;
+            case SINT64 -> ValueLayout.JAVA_LONG;
+            case FLOAT -> ValueLayout.JAVA_FLOAT;
+            case DOUBLE -> ValueLayout.JAVA_DOUBLE;
+            case POINTER, RAW_POINTER -> ValueLayout.JAVA_LONG;
+        };
     }
 }

@@ -42,7 +42,9 @@ package com.oracle.graal.python.test.builtin.objects;
 
 import java.util.EnumSet;
 
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -52,10 +54,23 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots.TpSlotMeta;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
 import com.oracle.graal.python.nfi2.Nfi;
+import com.oracle.graal.python.nfi2.NfiContext;
 import com.oracle.graal.python.nfi2.NfiType;
 import com.oracle.graal.python.util.Function;
 
 public class TpSlotsTests {
+    private NfiContext nfiContext;
+
+    @Before
+    public void setUp() {
+        nfiContext = Nfi.createContext();
+    }
+
+    @After
+    public void tearDown() {
+        nfiContext.close();
+    }
+
     @Test
     public void testBuilderBasic() {
         Builder builder = TpSlots.newBuilder();
@@ -140,8 +155,8 @@ public class TpSlotsTests {
     // Use the TpSlotMeta's ordinal value as a pointer for creating a dummy bound function to
     // verify that the slot values were properly assigned to the right fields of TpSlots
     // record
-    private static TpSlotNative createCExtSlot(TpSlotMeta def) {
-        return TpSlotNative.createCExtSlot(Nfi.createSignature(NfiType.VOID).bind(def.ordinal()));
+    private TpSlotNative createCExtSlot(TpSlotMeta def) {
+        return TpSlotNative.createCExtSlot(Nfi.createDowncallSignature(NfiType.VOID).bind(nfiContext, def.ordinal()));
     }
 
     private static void checkSlotValue(TpSlotMeta def, TpSlot slotValue) {

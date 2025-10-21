@@ -45,4 +45,14 @@ public final class NfiContext {
     // never instantiated on JDK <= 21
     private NfiContext() {
     }
+
+    @SuppressWarnings("static-method")
+    public void close() {
+        throw new UnsupportedOperationException();
+    }
+
+    @SuppressWarnings({"unused", "static-method"})
+    public NfiLibrary loadLibrary(String name, int flags) {
+        throw new UnsupportedOperationException();
+    }
 }

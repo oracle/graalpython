@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.common;
 
-import com.oracle.graal.python.nfi2.NfiSignature;
+import com.oracle.graal.python.nfi2.NfiDowncallSignature;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public interface NativeCExtSymbol {
@@ -51,5 +51,5 @@ public interface NativeCExtSymbol {
     /**
      * Returns the NFI signature.
      */
-    NfiSignature getSignature();
+    NfiDowncallSignature getSignature();
 }

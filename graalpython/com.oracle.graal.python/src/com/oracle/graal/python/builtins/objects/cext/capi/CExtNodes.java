@@ -70,7 +70,6 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyOb
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_as_buffer;
 import static com.oracle.graal.python.nodes.HiddenAttr.METHOD_DEF_PTR;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___COMPLEX__;
-import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.coerceToLong;
@@ -147,7 +146,10 @@ import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.RichCmpOp;
+import com.oracle.graal.python.nfi2.Nfi;
 import com.oracle.graal.python.nfi2.NfiBoundFunction;
+import com.oracle.graal.python.nfi2.NfiDowncallSignature;
+import com.oracle.graal.python.nfi2.NfiType;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
@@ -171,7 +173,6 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -204,10 +205,8 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
-import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
-import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 public abstract class CExtNodes {
 
@@ -1634,10 +1633,7 @@ public abstract class CExtNodes {
     private static final int SLOT_PY_MOD_EXEC = 2;
     private static final int SLOT_PY_MOD_MULTIPLE_INTERPRETERS = 3;
 
-    private static final String NFI_CREATE_NAME = "create";
-    private static final String NFI_CREATE_SRC = "(POINTER,POINTER):POINTER";
-    private static final Source NFI_LIBFFI_CREATE = Source.newBuilder(J_NFI_LANGUAGE, NFI_CREATE_SRC, NFI_CREATE_NAME).build();
-    private static final Source NFI_PANAMA_CREATE = Source.newBuilder(J_NFI_LANGUAGE, "with panama " + NFI_CREATE_SRC, NFI_CREATE_NAME).build();
+    private static final NfiDowncallSignature CREATE_SIGNATURE = Nfi.createDowncallSignature(NfiType.POINTER, NfiType.POINTER, NfiType.POINTER);
 
     /**
      * Equivalent of {@code PyModule_FromDefAndSpec}. Creates a Python module from a module
@@ -1720,10 +1716,12 @@ public abstract class CExtNodes {
             try {
                 Object result;
                 if (!interopLib.isExecutable(createFunction)) {
-                    boolean panama = context.getOption(PythonOptions.UsePanama);
-                    Object signature = context.getEnv().parseInternal(panama ? NFI_PANAMA_CREATE : NFI_LIBFFI_CREATE).call();
-                    result = interopLib.execute(SignatureLibrary.getUncached().bind(signature, createFunction), cArguments);
+                    if (!interopLib.isPointer(createFunction)) {
+                        interopLib.toNative(createFunction);
+                    }
+                    result = CREATE_SIGNATURE.invoke(context.ensureNfiContext(), interopLib.asPointer(createFunction), cArguments);
                 } else {
+                    // TODO(NFI2) can this really happen?
                     result = interopLib.execute(createFunction, cArguments);
                 }
                 PythonThreadState threadState = context.getThreadState(context.getLanguage());
@@ -1774,9 +1772,7 @@ public abstract class CExtNodes {
         return module;
     }
 
-    private static final String NFI_EXEC_SRC = "(POINTER):SINT32";
-    private static final Source NFI_LIBFFI_EXEC = Source.newBuilder(J_NFI_LANGUAGE, NFI_EXEC_SRC, "exec").build();
-    private static final Source NFI_PANAMA_EXEC = Source.newBuilder(J_NFI_LANGUAGE, "with panama " + NFI_EXEC_SRC, "exec").build();
+    private static final NfiDowncallSignature EXEC_SIGNATURE = Nfi.createDowncallSignature(NfiType.SINT32, NfiType.POINTER);
 
     /**
      * Equivalent of {@code PyModule_ExecDef}.
@@ -1820,12 +1816,10 @@ public abstract class CExtNodes {
                     case SLOT_PY_MOD_EXEC:
                         Object execFunction = CStructAccess.ReadPointerNode.getUncached().readStructArrayElement(slotDefinitions, i, PyModuleDef_Slot__value);
                         PythonContext context = capiContext.getContext();
-                        if (!interopLib.isExecutable(execFunction)) {
-                            boolean panama = context.getOption(PythonOptions.UsePanama);
-                            Object signature = context.getEnv().parseInternal(panama ? NFI_PANAMA_EXEC : NFI_LIBFFI_EXEC).call();
-                            execFunction = SignatureLibrary.getUncached().bind(signature, execFunction);
+                        if (!interopLib.isPointer(execFunction)) {
+                            interopLib.toNative(execFunction);
                         }
-                        Object result = interopLib.execute(execFunction, PythonToNativeNode.executeUncached(module));
+                        Object result = EXEC_SIGNATURE.invoke(context.ensureNfiContext(), interopLib.asPointer(execFunction), PythonToNativeNode.executeUncached(module));
                         int iResult = interopLib.asInt(result);
                         /*
                          * It's a bit counterintuitive that we use 'isPrimitiveValue = false' but
@@ -1846,7 +1840,7 @@ public abstract class CExtNodes {
                         throw PRaiseNode.raiseStatic(node, SystemError, ErrorMessages.MODULE_INITIALIZED_WITH_UNKNOWN_SLOT, mName, slotId);
                 }
             }
-        } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException e) {
+        } catch (UnsupportedMessageException e) {
             throw shouldNotReachHere();
         }
 

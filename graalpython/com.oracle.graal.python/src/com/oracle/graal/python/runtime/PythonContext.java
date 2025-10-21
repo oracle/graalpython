@@ -147,6 +147,8 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.nfi2.Nfi;
+import com.oracle.graal.python.nfi2.NfiContext;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
@@ -749,6 +751,7 @@ public final class PythonContext extends Python3Core {
     private final ReentrantLock cApiInitializationLock = new ReentrantLock(false);
     @CompilationFinal private CApiContext cApiContext;
     @CompilationFinal private boolean nativeAccessAllowed;
+    @CompilationFinal private NfiContext nfiContext;
 
     private TruffleString soABI;
 
@@ -2114,6 +2117,9 @@ public final class PythonContext extends Python3Core {
             if (cApiContext != null) {
                 cApiContext.finalizeCApi();
             }
+            if (nfiContext != null) {
+                nfiContext.close();
+            }
             // destroy thread state data, if anything is still running, it will crash now
             disposeThreadStates();
         }
@@ -2782,6 +2788,15 @@ public final class PythonContext extends Python3Core {
         assert this.cApiContext == null : "tried to create new C API context but it was already created";
         assert getCApiState() == CApiState.UNINITIALIZED;
         this.cApiContext = capiContext;
+    }
+
+    public NfiContext ensureNfiContext() {
+        if (nfiContext == null) {
+            // TODO(NFI2) check native access allowed
+            nfiContext = Nfi.createContext();
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+        }
+        return nfiContext;
     }
 
     public void runCApiHooks() {

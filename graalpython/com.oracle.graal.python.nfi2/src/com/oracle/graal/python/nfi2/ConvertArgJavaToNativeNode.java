@@ -137,6 +137,12 @@ abstract class ConvertArgJavaToNativeNode extends Node {
             return value;
         }
 
+        @Specialization
+        int doBool(boolean value) {
+            // TODO(NFI2) some closure returns bool instead of SINT32
+            return value ? 1 : 0;
+        }
+
         @Specialization(limit = "3")
         int doConvert(Object value,
                         @CachedLibrary("value") InteropLibrary interop) {

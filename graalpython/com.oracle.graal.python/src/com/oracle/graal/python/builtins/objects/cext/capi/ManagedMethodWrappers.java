@@ -48,6 +48,9 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformPExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.nfi2.Nfi;
+import com.oracle.graal.python.nfi2.NfiType;
+import com.oracle.graal.python.nfi2.NfiUpcallSignature;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -62,11 +65,9 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 /**
  * Wrappers for methods used by native code.
@@ -92,15 +93,14 @@ public abstract class ManagedMethodWrappers {
 
         @ExportMessage
         @TruffleBoundary
-        public void toNative(
-                        @CachedLibrary(limit = "1") SignatureLibrary signatureLibrary) {
+        public void toNative() {
             if (!isPointer()) {
                 CApiContext cApiContext = PythonContext.get(null).getCApiContext();
-                setNativePointer(cApiContext.registerClosure(getSignature(), this, getDelegate(), signatureLibrary));
+                setNativePointer(cApiContext.registerClosure(getClass().getSimpleName(), getSignature(), this, getDelegate()));
             }
         }
 
-        protected abstract String getSignature();
+        protected abstract NfiUpcallSignature getSignature();
     }
 
     @ExportLibrary(InteropLibrary.class)
@@ -162,8 +162,8 @@ public abstract class ManagedMethodWrappers {
         }
 
         @Override
-        protected String getSignature() {
-            return "(POINTER,POINTER,POINTER):POINTER";
+        protected NfiUpcallSignature getSignature() {
+            return Nfi.createUpcallSignature(NfiType.POINTER, NfiType.POINTER, NfiType.POINTER, NfiType.POINTER);
         }
     }
 

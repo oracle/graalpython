@@ -50,6 +50,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.nfi2.NfiLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
@@ -78,10 +79,10 @@ public abstract class CExtContext {
     private final PythonContext context;
 
     /** The library object representing 'libpython.*.so' or similar. */
-    private final long library;
+    private final NfiLibrary library;
     private final String libraryName;
 
-    public CExtContext(PythonContext context, long library, String libraryName) {
+    public CExtContext(PythonContext context, NfiLibrary library, String libraryName) {
         this.context = context;
         this.library = library;
         this.libraryName = libraryName;
@@ -91,7 +92,7 @@ public abstract class CExtContext {
         return context;
     }
 
-    public final long getLibrary() {
+    public final NfiLibrary getLibrary() {
         return library;
     }
 

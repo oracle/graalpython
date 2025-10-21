@@ -105,7 +105,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
 import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nfi2.Nfi;
 import com.oracle.graal.python.nfi2.NfiBoundFunction;
-import com.oracle.graal.python.nfi2.NfiSignature;
+import com.oracle.graal.python.nfi2.NfiDowncallSignature;
 import com.oracle.graal.python.nfi2.NfiType;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -384,7 +384,7 @@ public abstract class ExternalFunctionNodes {
         @CompilationFinal(dimensions = 1) private static final PExternalFunctionWrapper[] VALUES = values();
         @CompilationFinal(dimensions = 1) private static final PExternalFunctionWrapper[] BY_ID = new PExternalFunctionWrapper[51];
 
-        public final NfiSignature signature;
+        public final NfiDowncallSignature signature;
         public final ArgDescriptor returnValue;
         public final ArgDescriptor[] arguments;
         public final int numDefaults;
@@ -398,7 +398,7 @@ public abstract class ExternalFunctionNodes {
             for (int i = 0; i < arguments.length; i++) {
                 nfiTypes[i] = arguments[i].getNFI2Type();
             }
-            this.signature = Nfi.createSignature(returnValue.getNFI2Type(), nfiTypes);
+            this.signature = Nfi.createDowncallSignature(returnValue.getNFI2Type(), nfiTypes);
             this.numDefaults = numDefaults;
         }
 
@@ -674,7 +674,7 @@ public abstract class ExternalFunctionNodes {
         }
 
         @Override
-        public NfiSignature getSignature() {
+        public NfiDowncallSignature getSignature() {
             return signature;
         }
     }

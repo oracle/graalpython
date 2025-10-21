@@ -40,26 +40,18 @@
  */
 package com.oracle.graal.python.nfi2;
 
-import java.lang.invoke.MethodHandle;
+public final class NfiDowncallSignature {
 
-public final class NfiSignature {
-
-    @SuppressWarnings("unused")
-    NfiSignature(NfiType resType, NfiType[] argTypes) {
+    NfiDowncallSignature() {
     }
 
     @SuppressWarnings({"unused", "static-method"})
-    public NfiBoundFunction bind(long pointer) {
+    public NfiBoundFunction bind(NfiContext context, long pointer) {
         throw new UnsupportedOperationException();
     }
 
     @SuppressWarnings({"unused", "static-method"})
-    public Object invoke(long function, Object... args) {
-        throw new UnsupportedOperationException();
-    }
-
-    @SuppressWarnings({"unused", "static-method"})
-    public long createClosure(NfiContext context, MethodHandle staticMethodHandle) {
+    public Object invoke(NfiContext context, long function, Object... args) {
         throw new UnsupportedOperationException();
     }
 }

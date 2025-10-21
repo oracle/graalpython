@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,56 +38,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.test.builtin.objects.cext;
+package com.oracle.graal.python.nfi2;
 
-import static org.junit.Assert.assertEquals;
+import java.lang.invoke.MethodHandle;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+public final class NfiUpcallSignature {
 
-import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
-import com.oracle.graal.python.nfi2.NfiLibrary;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.test.PythonTests;
-import com.oracle.truffle.api.strings.TruffleString;
-
-public class CExtContextTest {
-
-    @Before
-    public void setUp() {
-        PythonTests.enterContext();
+    NfiUpcallSignature() {
     }
 
-    @After
-    public void tearDown() {
-        PythonTests.closeContext();
+    @SuppressWarnings({"unused", "static-method"})
+    public long createClosure(NfiContext context, String name, MethodHandle staticMethodHandle) {
+        throw new UnsupportedOperationException();
     }
-
-    static TruffleString ts(String s) {
-        return TruffleString.fromJavaStringUncached(s, TruffleString.Encoding.UTF_8);
-    }
-
-    @Test
-    public void testGetBaseName() {
-        assertEquals(ts(""), TestCExtContext.getBN(ts("")));
-        assertEquals(ts("a"), TestCExtContext.getBN(ts("a")));
-        assertEquals(ts("aa"), TestCExtContext.getBN(ts("aa")));
-        assertEquals(ts("aa"), TestCExtContext.getBN(ts("a.aa")));
-        assertEquals(ts("bb"), TestCExtContext.getBN(ts("a.aa.bb")));
-        assertEquals(ts(""), TestCExtContext.getBN(ts("a.aa.bb.")));
-        assertEquals(ts("b"), TestCExtContext.getBN(ts("a.b")));
-        assertEquals(ts(""), TestCExtContext.getBN(ts("a.b.")));
-    }
-
-    private static class TestCExtContext extends CExtContext {
-        public TestCExtContext(PythonContext context, NfiLibrary library) {
-            super(context, library, null);
-        }
-
-        public static TruffleString getBN(TruffleString s) {
-            return getBaseName(s);
-        }
-    }
-
 }

@@ -52,9 +52,9 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 public final class NfiBoundFunction {
     private final long ptr;
     private final MethodHandle boundHandle;
-    private final NfiSignature signature;
+    private final NfiDowncallSignature signature;
 
-    NfiBoundFunction(long ptr, MethodHandle boundHandle, NfiSignature signature) {
+    NfiBoundFunction(long ptr, MethodHandle boundHandle, NfiDowncallSignature signature) {
         this.ptr = ptr;
         this.boundHandle = boundHandle;
         this.signature = signature;
@@ -64,20 +64,23 @@ public final class NfiBoundFunction {
         return ptr;
     }
 
-    // TODO(NFI2) duplicate code with NfiSignature.invoke
     @TruffleBoundary
     public Object invoke(Object... args) {
+        Object[] convertedArgs = signature.convertArgs(args);
+        Object result;
         try {
             if (ImageInfo.inImageCode()) {
-                return signature.convertResult(ForeignFunctions.invoke(signature.downcallDescriptor, ptr, signature.convertArgs(args)));
+                result = ForeignFunctions.invoke(signature.downcallDescriptor, ptr, convertedArgs);
             } else {
-                return signature.convertResult(boundHandle.invokeExact(signature.convertArgs(args)));
+                result = boundHandle.invokeExact(convertedArgs);
             }
         } catch (Throwable e) {
             throw CompilerDirectives.shouldNotReachHere(e);
         } finally {
+            Reference.reachabilityFence(convertedArgs);
             Reference.reachabilityFence(args);
         }
+        return signature.convertResult(result);
     }
 
     @Override

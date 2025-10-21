@@ -52,6 +52,9 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.nfi2.Nfi;
+import com.oracle.graal.python.nfi2.NfiType;
+import com.oracle.graal.python.nfi2.NfiUpcallSignature;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
@@ -71,12 +74,10 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 /**
  * A wrapper class for managed functions such that they can be called with native function pointers
@@ -130,7 +131,7 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
         return callTarget;
     }
 
-    abstract String getSignature();
+    abstract NfiUpcallSignature getSignature();
 
     @ExportMessage
     boolean isExecutable() {
@@ -145,11 +146,10 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
 
     @ExportMessage
     @TruffleBoundary
-    protected void toNative(
-                    @CachedLibrary(limit = "1") SignatureLibrary signatureLibrary) {
+    protected void toNative() {
         if (pointer == 0) {
             CApiContext cApiContext = PythonContext.get(null).getCApiContext();
-            pointer = cApiContext.registerClosure(getSignature(), this, getDelegate(), signatureLibrary);
+            pointer = cApiContext.registerClosure(getClass().getSimpleName(), getSignature(), this, getDelegate());
         }
     }
 
@@ -249,8 +249,8 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
         }
 
         @Override
-        protected String getSignature() {
-            return "(POINTER):POINTER";
+        protected NfiUpcallSignature getSignature() {
+            return Nfi.createUpcallSignature(NfiType.POINTER, NfiType.POINTER);
         }
 
         @Override
@@ -303,8 +303,8 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
         }
 
         @Override
-        protected String getSignature() {
-            return "(POINTER,POINTER):POINTER";
+        protected NfiUpcallSignature getSignature() {
+            return Nfi.createUpcallSignature(NfiType.POINTER, NfiType.POINTER, NfiType.POINTER);
         }
 
         @Override
@@ -359,8 +359,8 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
         }
 
         @Override
-        protected String getSignature() {
-            return "(POINTER,POINTER):POINTER";
+        protected NfiUpcallSignature getSignature() {
+            return Nfi.createUpcallSignature(NfiType.POINTER, NfiType.POINTER, NfiType.POINTER);
         }
 
         @Override
@@ -418,8 +418,8 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
         }
 
         @Override
-        protected String getSignature() {
-            return "(POINTER,POINTER,POINTER):POINTER";
+        protected NfiUpcallSignature getSignature() {
+            return Nfi.createUpcallSignature(NfiType.POINTER, NfiType.POINTER, NfiType.POINTER, NfiType.POINTER);
         }
 
         @Override

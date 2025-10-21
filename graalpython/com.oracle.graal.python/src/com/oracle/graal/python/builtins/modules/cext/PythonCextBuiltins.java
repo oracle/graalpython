@@ -167,8 +167,8 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.nfi2.Nfi;
-import com.oracle.graal.python.nfi2.NfiSignature;
 import com.oracle.graal.python.nfi2.NfiType;
+import com.oracle.graal.python.nfi2.NfiUpcallSignature;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
@@ -683,9 +683,8 @@ public final class PythonCextBuiltins {
                     for (int i = 0; i < args.length; i++) {
                         argTypes[i] = args[i].getNFI2Type();
                     }
-                    NfiSignature signature = Nfi.createSignature(ret.getNFI2Type(), argTypes);
-
-                    pointer = signature.createClosure(context.getCApiContext().nfiContext, handle_executeBuiltinWrapper.bindTo(new ExecuteCApiBuiltinRootNode(this).getCallTarget()));
+                    NfiUpcallSignature signature = Nfi.createUpcallSignature(ret.getNFI2Type(), argTypes);
+                    pointer = signature.createClosure(context.ensureNfiContext(), name, handle_executeBuiltinWrapper.bindTo(new ExecuteCApiBuiltinRootNode(this).getCallTarget()));
                     context.getCApiContext().setClosurePointer(null, null, this, pointer);
                     LOGGER.finer(CApiBuiltinExecutable.class.getSimpleName() + " toNative: " + id + " / " + name() + " -> " + pointer);
                 } catch (Throwable t) {
@@ -822,10 +821,6 @@ public final class PythonCextBuiltins {
         private void castArguments(Object[] arguments, Object[] argCast) {
             for (int i = 0; i < argNodes.length; i++) {
                 Object arg = arguments[i];
-                // TODO(NFI2) remove wrapping after migration to RAWPOINTER
-                if (cachedSelf.args[i].getNFI2Type() == NfiType.POINTER) {
-                    arg = new NativePointer((long) arg);
-                }
                 argCast[i] = argNodes[i] == null ? arg : argNodes[i].execute(arg);
             }
         }

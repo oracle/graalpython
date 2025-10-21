@@ -40,116 +40,20 @@
  */
 package com.oracle.graal.python.nfi2;
 
-import java.lang.foreign.FunctionDescriptor;
-import java.lang.foreign.Linker;
-import java.lang.foreign.MemorySegment;
-import java.lang.foreign.ValueLayout;
-import java.lang.invoke.MethodHandle;
-
-import org.graalvm.nativeimage.DowncallDescriptor;
-import org.graalvm.nativeimage.ForeignFunctions;
-import org.graalvm.nativeimage.ImageInfo;
-
-import com.oracle.truffle.api.CompilerDirectives;
-
 public final class Nfi {
 
-    // TODO(NFI2) platform-specific values for RTLD_* constants
-    private static final int RTLD_LAZY = 1;
-
-    private static final FunctionDescriptor DLOPEN_FUNCTION_DESCRIPTOR = FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG, ValueLayout.JAVA_INT);
-    private static final FunctionDescriptor DLSYM_FUNCTION_DESCRIPTOR = FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG);
-    private static final DowncallDescriptor dlopenDescriptor;
-    private static final DowncallDescriptor dlsymDescriptor;
-
-    private static MethodHandle dlopen;
-    private static MethodHandle dlsym;
-
-    private static MemorySegment dlopenPtr;
-    private static MemorySegment dlsymPtr;
-
-    static {
-        if (ImageInfo.inImageCode()) {
-            dlopenDescriptor = ForeignFunctions.getDowncallDescriptor(DLOPEN_FUNCTION_DESCRIPTOR);
-            dlsymDescriptor = ForeignFunctions.getDowncallDescriptor(DLSYM_FUNCTION_DESCRIPTOR);
-        } else {
-            dlopenDescriptor = null;
-            dlsymDescriptor = null;
-        }
-    }
-
-    // TODO(NFI2) error handling
-    // TODO(NFI2) Windows LoadLibrary/GetProcAddress
-    @SuppressWarnings("restricted")
-    private static void ensureDlopenDlsym() {
-        if (dlopenPtr != null) {
-            return;
-        }
-        dlopenPtr = Linker.nativeLinker().defaultLookup().find("dlopen").get();
-        dlsymPtr = Linker.nativeLinker().defaultLookup().find("dlsym").get();
-        if (!ImageInfo.inImageCode()) {
-            dlopen = Linker.nativeLinker().downcallHandle(dlopenPtr, DLOPEN_FUNCTION_DESCRIPTOR);
-            dlsym = Linker.nativeLinker().downcallHandle(dlsymPtr, DLSYM_FUNCTION_DESCRIPTOR);
-        }
-    }
-
-    public static long lookupSymbol(long library, String name) {
-        long symbol = lookupOptionalSymbol(library, name);
-        if (symbol == 0) {
-            throw CompilerDirectives.shouldNotReachHere("symbol not found: " + name);
-        }
-        return symbol;
-    }
-
-    public static long loadLibrary(String name, int flags) {
-        long lib;
-        long nativeName = NativeMemory.javaStringToNativeUtf8(name);
-        try {
-            ensureDlopenDlsym();
-            // TODO(NFI2) only add RTLD_LAZY flag if actually needed
-            if (ImageInfo.inImageCode()) {
-                lib = (long) ForeignFunctions.invoke(dlopenDescriptor, dlopenPtr.address(), nativeName, flags | RTLD_LAZY);
-            } else {
-                lib = (long) dlopen.invokeExact(nativeName, flags | RTLD_LAZY);
-            }
-        } catch (Throwable e) {
-            throw CompilerDirectives.shouldNotReachHere(e);
-        } finally {
-            NativeMemory.free(nativeName);
-        }
-        if (lib == 0) {
-            throw CompilerDirectives.shouldNotReachHere("Failed to load library " + name);
-        }
-        return lib;
-    }
-
-    public static long lookupOptionalSymbol(long library, String name) {
-        long nativeName = NativeMemory.javaStringToNativeUtf8(name);
-        try {
-            ensureDlopenDlsym();
-            if (ImageInfo.inImageCode()) {
-                return (long) ForeignFunctions.invoke(dlsymDescriptor, dlsymPtr.address(), library, nativeName);
-            } else {
-                return (long) dlsym.invokeExact(library, nativeName);
-            }
-        } catch (Throwable e) {
-            throw CompilerDirectives.shouldNotReachHere(e);
-        } finally {
-            NativeMemory.free(nativeName);
-        }
-    }
-
     public static NfiContext createContext() {
+        // TODO(NFI2) check native access allowed? Or is the caller responsible for checking that?
         return new NfiContext();
     }
 
-    // TODO(NFI2) should this unload all libraries?
-    public static void closeContext(NfiContext context) {
-        context.arena.close();
+    // note: this must stay independent of the context, signatures are created in static
+    // initializers and shared between contexts
+    public static NfiDowncallSignature createDowncallSignature(NfiType resType, NfiType... argTypes) {
+        return new NfiDowncallSignature(resType, argTypes);
     }
 
-    // TODO(NFI2) move all the static methods into NfiContext?
-    public static NfiSignature createSignature(NfiType resType, NfiType... argTypes) {
-        return new NfiSignature(resType, argTypes);
+    public static NfiUpcallSignature createUpcallSignature(NfiType resType, NfiType... argTypes) {
+        return new NfiUpcallSignature(resType, argTypes);
     }
 }

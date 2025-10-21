@@ -82,6 +82,9 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.CallSlo
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.CallSlotTpNewNode;
 import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.RichCmpOp;
+import com.oracle.graal.python.nfi2.Nfi;
+import com.oracle.graal.python.nfi2.NfiType;
+import com.oracle.graal.python.nfi2.NfiUpcallSignature;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
@@ -113,7 +116,6 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
-import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 @ExportLibrary(InteropLibrary.class)
 public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
@@ -163,15 +165,14 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
         return PythonContext.get(null).getCApiContext().getClosurePointer(this);
     }
 
-    protected abstract String getSignature();
+    protected abstract NfiUpcallSignature getSignature();
 
     @ExportMessage
     @TruffleBoundary
-    protected void toNative(
-                    @CachedLibrary(limit = "1") SignatureLibrary signatureLibrary) {
+    protected void toNative() {
         if (!isPointer(null)) {
             CApiContext cApiContext = PythonContext.get(null).getCApiContext();
-            long pointer = cApiContext.registerClosure(getSignature(), this, getDelegate(), signatureLibrary);
+            long pointer = cApiContext.registerClosure(getClass().getSimpleName(), getSignature(), this, getDelegate());
             if (PythonLanguage.get(null).isSingleContext()) {
                 setNativePointer(pointer);
             }
@@ -226,8 +227,8 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
         }
 
         @Override
-        protected String getSignature() {
-            return "(POINTER,POINTER):POINTER";
+        protected NfiUpcallSignature getSignature() {
+            return Nfi.createUpcallSignature(NfiType.POINTER, NfiType.POINTER, NfiType.POINTER);
         }
 
         @Override
@@ -273,8 +274,8 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
         }
 
         @Override
-        protected String getSignature() {
-            return "(POINTER,POINTER):POINTER";
+        protected NfiUpcallSignature getSignature() {
+            return Nfi.createUpcallSignature(NfiType.POINTER, NfiType.POINTER, NfiType.POINTER);
         }
     }
 
@@ -321,8 +322,8 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
         }
 
         @Override
-        protected String getSignature() {
-            return "(POINTER,POINTER):POINTER";
+        protected NfiUpcallSignature getSignature() {
+            return Nfi.createUpcallSignature(NfiType.POINTER, NfiType.POINTER, NfiType.POINTER);
         }
     }
 
@@ -433,8 +434,8 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
         }
 
         @Override
-        protected String getSignature() {
-            return "(POINTER,POINTER):POINTER";
+        protected NfiUpcallSignature getSignature() {
+            return Nfi.createUpcallSignature(NfiType.POINTER, NfiType.POINTER, NfiType.POINTER);
         }
     }
 
@@ -479,8 +480,8 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
         }
 
         @Override
-        protected String getSignature() {
-            return "(POINTER):POINTER";
+        protected NfiUpcallSignature getSignature() {
+            return Nfi.createUpcallSignature(NfiType.POINTER, NfiType.POINTER);
         }
     }
 
@@ -523,8 +524,8 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
         }
 
         @Override
-        protected String getSignature() {
-            return "(POINTER):POINTER";
+        protected NfiUpcallSignature getSignature() {
+            return Nfi.createUpcallSignature(NfiType.POINTER, NfiType.POINTER);
         }
     }
 
@@ -572,8 +573,8 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
         }
 
         @Override
-        protected String getSignature() {
-            return "(POINTER):POINTER";
+        protected NfiUpcallSignature getSignature() {
+            return Nfi.createUpcallSignature(NfiType.POINTER, NfiType.POINTER);
         }
     }
 
@@ -612,8 +613,8 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
         }
 
         @Override
-        protected String getSignature() {
-            return "(POINTER):SINT32";
+        protected NfiUpcallSignature getSignature() {
+            return Nfi.createUpcallSignature(NfiType.SINT32, NfiType.POINTER);
         }
 
         @Override
@@ -653,8 +654,8 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
         }
 
         @Override
-        protected String getSignature() {
-            return "(POINTER,POINTER):SINT32";
+        protected NfiUpcallSignature getSignature() {
+            return Nfi.createUpcallSignature(NfiType.SINT32, NfiType.POINTER, NfiType.POINTER);
         }
 
         @Override
@@ -706,8 +707,8 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
         }
 
         @Override
-        protected String getSignature() {
-            return "(POINTER,POINTER,POINTER):SINT32";
+        protected NfiUpcallSignature getSignature() {
+            return Nfi.createUpcallSignature(NfiType.SINT32, NfiType.POINTER, NfiType.POINTER, NfiType.POINTER);
         }
     }
 
@@ -748,8 +749,8 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
         }
 
         @Override
-        protected String getSignature() {
-            return "(POINTER,POINTER,POINTER):SINT32";
+        protected NfiUpcallSignature getSignature() {
+            return Nfi.createUpcallSignature(NfiType.SINT32, NfiType.POINTER, NfiType.POINTER, NfiType.POINTER);
         }
 
         @Override
@@ -794,8 +795,8 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
         }
 
         @Override
-        protected String getSignature() {
-            return "(POINTER,POINTER,POINTER):SINT32";
+        protected NfiUpcallSignature getSignature() {
+            return Nfi.createUpcallSignature(NfiType.SINT32, NfiType.POINTER, NfiType.POINTER, NfiType.POINTER);
         }
 
         @Override
@@ -851,8 +852,8 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
         }
 
         @Override
-        protected String getSignature() {
-            return "(POINTER,POINTER,POINTER):SINT32";
+        protected NfiUpcallSignature getSignature() {
+            return Nfi.createUpcallSignature(NfiType.SINT32, NfiType.POINTER, NfiType.POINTER, NfiType.POINTER);
         }
     }
 
@@ -908,8 +909,8 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
         }
 
         @Override
-        protected String getSignature() {
-            return "(POINTER,POINTER,POINTER):POINTER";
+        protected NfiUpcallSignature getSignature() {
+            return Nfi.createUpcallSignature(NfiType.POINTER, NfiType.POINTER, NfiType.POINTER, NfiType.POINTER);
         }
     }
 
@@ -961,8 +962,8 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
         }
 
         @Override
-        protected String getSignature() {
-            return "(POINTER,POINTER,POINTER):POINTER";
+        protected NfiUpcallSignature getSignature() {
+            return Nfi.createUpcallSignature(NfiType.POINTER, NfiType.POINTER, NfiType.POINTER, NfiType.POINTER);
         }
     }
 
@@ -1017,8 +1018,8 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
         }
 
         @Override
-        protected String getSignature() {
-            return "(POINTER,POINTER,POINTER):POINTER";
+        protected NfiUpcallSignature getSignature() {
+            return Nfi.createUpcallSignature(NfiType.POINTER, NfiType.POINTER, NfiType.POINTER, NfiType.POINTER);
         }
     }
 
@@ -1065,8 +1066,8 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
         }
 
         @Override
-        protected String getSignature() {
-            return "(POINTER,POINTER,POINTER):POINTER";
+        protected NfiUpcallSignature getSignature() {
+            return Nfi.createUpcallSignature(NfiType.POINTER, NfiType.POINTER, NfiType.POINTER, NfiType.POINTER);
         }
     }
 
@@ -1118,8 +1119,8 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
         }
 
         @Override
-        protected String getSignature() {
-            return "(POINTER,POINTER,SINT32):POINTER";
+        protected NfiUpcallSignature getSignature() {
+            return Nfi.createUpcallSignature(NfiType.POINTER, NfiType.POINTER, NfiType.POINTER, NfiType.SINT32);
         }
     }
 
@@ -1162,8 +1163,8 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
         }
 
         @Override
-        protected String getSignature() {
-            return "(POINTER,SINT64):POINTER";
+        protected NfiUpcallSignature getSignature() {
+            return Nfi.createUpcallSignature(NfiType.POINTER, NfiType.POINTER, NfiType.SINT64);
         }
     }
 
@@ -1212,8 +1213,8 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
         }
 
         @Override
-        protected String getSignature() {
-            return "(POINTER,SINT64):POINTER";
+        protected NfiUpcallSignature getSignature() {
+            return Nfi.createUpcallSignature(NfiType.POINTER, NfiType.POINTER, NfiType.SINT64);
         }
     }
 
@@ -1297,8 +1298,8 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
         }
 
         @Override
-        protected String getSignature() {
-            return "(POINTER,SINT64,POINTER):SINT32";
+        protected NfiUpcallSignature getSignature() {
+            return Nfi.createUpcallSignature(NfiType.SINT32, NfiType.POINTER, NfiType.SINT64, NfiType.POINTER);
         }
     }
 
@@ -1337,8 +1338,8 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
         }
 
         @Override
-        protected String getSignature() {
-            return "(POINTER):SINT64";
+        protected NfiUpcallSignature getSignature() {
+            return Nfi.createUpcallSignature(NfiType.SINT64, NfiType.POINTER);
         }
 
         @Override
@@ -1387,8 +1388,8 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
         }
 
         @Override
-        protected String getSignature() {
-            return "(POINTER):SINT64";
+        protected NfiUpcallSignature getSignature() {
+            return Nfi.createUpcallSignature(NfiType.SINT64, NfiType.POINTER);
         }
 
         @Override
@@ -1450,8 +1451,8 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
         }
 
         @Override
-        protected String getSignature() {
-            return "(POINTER,POINTER,POINTER):POINTER";
+        protected NfiUpcallSignature getSignature() {
+            return Nfi.createUpcallSignature(NfiType.POINTER, NfiType.POINTER, NfiType.POINTER, NfiType.POINTER);
         }
 
         @Override

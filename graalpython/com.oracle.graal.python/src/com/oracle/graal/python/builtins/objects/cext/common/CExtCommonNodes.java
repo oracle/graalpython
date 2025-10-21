@@ -1315,7 +1315,7 @@ public abstract class CExtCommonNodes {
             throw shouldNotReachHere();
         }
         try {
-            return descriptor.getSignature().bind(lib.asPointer(callable));
+            return descriptor.getSignature().bind(pythonContext.ensureNfiContext(), lib.asPointer(callable));
         } catch (UnsupportedMessageException e) {
             throw shouldNotReachHere();
         }

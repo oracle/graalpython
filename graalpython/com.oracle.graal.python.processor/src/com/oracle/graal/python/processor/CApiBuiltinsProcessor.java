@@ -686,7 +686,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                             package %s;
 
                             import java.util.TreeSet;
-                            import com.oracle.graal.python.nfi2.Nfi;
+                            import com.oracle.graal.python.nfi2.NfiLibrary;
                             import com.oracle.truffle.api.CompilerDirectives;
                             import com.oracle.truffle.api.interop.InteropLibrary;
                             import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -697,14 +697,14 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                                     // no instances
                                 }
 
-                                public static boolean reallyHasMember(long capiLibrary, String name) {
-                                    return Nfi.lookupOptionalSymbol(capiLibrary, name) != 0L;
+                                public static boolean reallyHasMember(NfiLibrary capiLibrary, String name) {
+                                    return capiLibrary.lookupOptionalSymbol(name) != 0L;
                                 }
 
                                 /**
                                  * Checks whether the expected builtins exist in the library.
                                  */
-                                public static boolean assertBuiltins(long capiLibrary) {
+                                public static boolean assertBuiltins(NfiLibrary capiLibrary) {
                                     boolean hasMember = false;
                                     TreeSet<String> messages = new TreeSet<>();
                                     %s

@@ -42,28 +42,17 @@ package com.oracle.graal.python.nfi2;
 
 public final class Nfi {
 
-    public static long loadLibrary(String name, int flags) {
-        throw new UnsupportedOperationException();
-    }
-
-    public static long lookupSymbol(long library, String name) {
-        throw new UnsupportedOperationException();
-    }
-
-    public static long lookupOptionalSymbol(long library, String name) {
-        throw new UnsupportedOperationException();
-    }
-
     public static NfiContext createContext() {
         throw new UnsupportedOperationException();
     }
 
-    public static void closeContext(NfiContext context) {
-        throw new UnsupportedOperationException();
+    @SuppressWarnings("unused")
+    public static NfiDowncallSignature createDowncallSignature(NfiType resType, NfiType... argTypes) {
+        return new NfiDowncallSignature();
     }
 
-    public static NfiSignature createSignature(NfiType resType, NfiType... argTypes) {
-        // TODO(NFI2) should we cache signatures?
-        return new NfiSignature(resType, argTypes);
+    @SuppressWarnings("unused")
+    public static NfiUpcallSignature createUpcallSignature(NfiType resType, NfiType... argTypes) {
+        return new NfiUpcallSignature();
     }
 }
