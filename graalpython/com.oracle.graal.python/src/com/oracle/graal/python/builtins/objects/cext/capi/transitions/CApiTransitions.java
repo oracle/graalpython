@@ -49,6 +49,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
@@ -643,26 +645,34 @@ public abstract class CApiTransitions {
         return true;
     }
 
-    public static void freeNativeReplacementStructs(PythonContext context, HandleContext handleContext) {
+    public static void deallocNativeReplacements(PythonContext context, HandleContext handleContext) {
         assert context.ownsGil();
         ArrayList<Long> referencesToBeFreed = new ArrayList<>();
+        Iterator<Entry<Long, IdReference<?>>> iterator = handleContext.nativeLookup.entrySet().iterator();
+        while (iterator.hasNext()) {
+            IdReference<?> ref = iterator.next().getValue();
+            if (ref instanceof PythonObjectReference reference) {
+                if (!reference.isAllocatedFromJava()) {
+                    // This memory must be free from C
+                    referencesToBeFreed.add(reference.pointer);
+                    iterator.remove();
+                }
+            }
+        }
+        releaseNativeObjects(context, referencesToBeFreed);
+    }
+
+    public static void freeNativeReplacementStructs(PythonContext context, HandleContext handleContext) {
+        assert context.ownsGil();
         handleContext.nativeLookup.forEach((l, ref) -> {
             if (ref instanceof PythonObjectReference reference) {
                 // We don't expect references to wrappers that would have a native object stub.
                 assert reference.handleTableIndex == -1;
-                /*
-                 * The ref may denote: (a) class wrappers, where some of them are backed by static
-                 * native memory and some of them were allocated in heap, and (b) struct wrappers,
-                 * which may be freed manually in a separate step.
-                 */
-                if (reference.isAllocatedFromJava()) {
-                    freeNativeStruct(reference);
-                } else {
-                    referencesToBeFreed.add(reference.pointer);
-                }
+                // We expect at this point that there are only references allocated from Java
+                assert reference.isAllocatedFromJava();
+                freeNativeStruct(reference);
             }
         });
-        releaseNativeObjects(context, referencesToBeFreed);
         handleContext.nativeLookup.clear();
     }
 
