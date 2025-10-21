@@ -35,7 +35,6 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import java.nio.ByteOrder;
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -151,11 +150,11 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
             if (machineFormat != null) {
                 PArray array;
                 if (machineFormat == MachineFormat.forFormat(format)) {
-                    array = PFactory.createArray(PythonLanguage.get(inliningTarget), arrayType, getInstanceShape.execute(arrayType), typeCode, machineFormat.format);
+                    array = PFactory.createArray(arrayType, getInstanceShape.execute(arrayType), typeCode, machineFormat.format);
                     fromBytesNode.executeWithoutClinic(frame, array, bytes);
                 } else {
                     TruffleString newTypeCode = machineFormat.format == format ? typeCode : machineFormat.format.baseTypeCode;
-                    array = PFactory.createArray(PythonLanguage.get(inliningTarget), arrayType, getInstanceShape.execute(arrayType), newTypeCode, machineFormat.format);
+                    array = PFactory.createArray(arrayType, getInstanceShape.execute(arrayType), newTypeCode, machineFormat.format);
                     if (machineFormat.unicodeEncoding != null) {
                         Object decoded = callDecode.execute(frame, inliningTarget, bytes, T_DECODE, machineFormat.unicodeEncoding);
                         fromUnicodeNode.execute(frame, array, decoded);

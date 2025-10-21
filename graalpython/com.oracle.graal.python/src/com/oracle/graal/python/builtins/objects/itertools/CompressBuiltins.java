@@ -98,13 +98,12 @@ public final class CompressBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PRaiseNode raiseNode) {
             if (!isTypeNode.execute(inliningTarget, cls)) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
             }
-            PCompress self = PFactory.createCompress(language, cls, getInstanceShape.execute(cls));
+            PCompress self = PFactory.createCompress(cls, getInstanceShape.execute(cls));
             self.setData(getIter.execute(frame, inliningTarget, data));
             self.setSelectors(getIter.execute(frame, inliningTarget, selectors));
             return self;

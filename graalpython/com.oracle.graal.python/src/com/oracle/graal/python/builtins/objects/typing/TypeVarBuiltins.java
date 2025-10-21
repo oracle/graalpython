@@ -148,7 +148,7 @@ public final class TypeVarBuiltins extends PythonBuiltins {
             }
             Object module = callerNode.execute(frame, inliningTarget);
 
-            PTypeVar result = PFactory.createTypeVar(language, cls, getInstanceShape.execute(cls), name, boundChecked, null, constraintsTuple, null, covariant, contravariant, inferVariance);
+            PTypeVar result = PFactory.createTypeVar(cls, getInstanceShape.execute(cls), name, boundChecked, null, constraintsTuple, null, covariant, contravariant, inferVariance);
             setAttrNode.execute(frame, inliningTarget, result, T___MODULE__, module);
             return result;
         }

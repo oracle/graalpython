@@ -119,7 +119,7 @@ public final class LZMACompressorBuiltins extends PythonBuiltins {
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             // data filled in subsequent __init__ call - see LZMACompressorBuiltins.InitNode
             PythonContext context = getContext();
-            return PFactory.createLZMACompressor(context.getLanguage(this), cls, getInstanceShape.execute(cls), context.getNFILZMASupport().isAvailable());
+            return PFactory.createLZMACompressor(cls, getInstanceShape.execute(cls), context.getNFILZMASupport().isAvailable());
         }
     }
 

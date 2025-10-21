@@ -162,6 +162,6 @@ abstract class Sst2ObjVisitorBase implements SSTreeVisitor<Object> {
     }
 
     protected PythonObject createPythonObject(PythonClass cls) {
-        return PFactory.createPythonObject(language, cls, cls.getInstanceShape());
+        return PFactory.createPythonObject(cls, cls.getInstanceShape());
     }
 }

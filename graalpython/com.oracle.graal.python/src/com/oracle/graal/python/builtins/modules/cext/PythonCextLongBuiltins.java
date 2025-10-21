@@ -296,17 +296,16 @@ public final class PythonCextLongBuiltins {
 
         @Specialization(guards = "!isInteger(pointer)", limit = "2")
         static Object doPointer(Object pointer,
-                        @CachedLibrary("pointer") InteropLibrary lib,
-                        @Bind PythonLanguage language) {
+                        @CachedLibrary("pointer") InteropLibrary lib) {
             // We capture the native pointer at the time when we create the wrapper if it exists.
             if (lib.isPointer(pointer)) {
                 try {
-                    return PFactory.createNativeVoidPtr(language, pointer, lib.asPointer(pointer));
+                    return PFactory.createNativeVoidPtr(pointer, lib.asPointer(pointer));
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
                 }
             }
-            return PFactory.createNativeVoidPtr(language, pointer);
+            return PFactory.createNativeVoidPtr(pointer);
         }
     }
 
@@ -336,17 +335,16 @@ public final class PythonCextLongBuiltins {
 
         @Specialization(guards = "!isInteger(pointer)", limit = "2")
         static Object doPointer(Object pointer,
-                        @CachedLibrary("pointer") InteropLibrary lib,
-                        @Bind PythonLanguage language) {
+                        @CachedLibrary("pointer") InteropLibrary lib) {
             // We capture the native pointer at the time when we create the wrapper if it exists.
             if (lib.isPointer(pointer)) {
                 try {
-                    return PFactory.createNativeVoidPtr(language, pointer, lib.asPointer(pointer));
+                    return PFactory.createNativeVoidPtr(pointer, lib.asPointer(pointer));
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
                 }
             }
-            return PFactory.createNativeVoidPtr(language, pointer);
+            return PFactory.createNativeVoidPtr(pointer);
         }
 
         @TruffleBoundary

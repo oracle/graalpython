@@ -52,7 +52,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
@@ -111,7 +110,6 @@ public final class MultibyteStreamReaderBuiltins extends PythonBuiltins {
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached TruffleString.EqualNode isEqual,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PRaiseNode raiseNode) { // "O|s:StreamReader"
 
@@ -120,7 +118,7 @@ public final class MultibyteStreamReaderBuiltins extends PythonBuiltins {
                 errors = castToStringNode.execute(inliningTarget, err);
             }
 
-            MultibyteStreamReaderObject self = PFactory.createMultibyteStreamReaderObject(language, type, getInstanceShape.execute(type));
+            MultibyteStreamReaderObject self = PFactory.createMultibyteStreamReaderObject(type, getInstanceShape.execute(type));
             Object codec = getAttr.execute(frame, inliningTarget, type, StringLiterals.T_CODEC);
             if (!(codec instanceof MultibyteCodecObject)) {
                 throw raiseNode.raise(inliningTarget, TypeError, CODEC_IS_UNEXPECTED_TYPE);

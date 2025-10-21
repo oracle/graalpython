@@ -123,11 +123,10 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
     public abstract static class IncrementalNewlineDecoderNode extends PythonBuiltinNode {
         @Specialization
         static PNLDecoder doNew(Object cls, @SuppressWarnings("unused") Object arg,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             // data filled in subsequent __init__ call - see
             // IncrementalNewlineDecoderBuiltins.InitNode
-            return PFactory.createNLDecoder(language, cls, getInstanceShape.execute(cls));
+            return PFactory.createNLDecoder(cls, getInstanceShape.execute(cls));
         }
     }
 

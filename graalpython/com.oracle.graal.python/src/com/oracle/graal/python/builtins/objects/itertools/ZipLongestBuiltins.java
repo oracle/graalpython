@@ -107,7 +107,6 @@ public final class ZipLongestBuiltins extends PythonBuiltins {
                         @Cached InlinedLoopConditionProfile loopProfile,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
                         @Cached InlinedBranchProfile errorProfile,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PRaiseNode raiseNode) {
             if (!isTypeNode.execute(inliningTarget, cls)) {
@@ -121,7 +120,7 @@ public final class ZipLongestBuiltins extends PythonBuiltins {
                 fillValue = null;
             }
 
-            PZipLongest self = PFactory.createZipLongest(language, cls, getInstanceShape.execute(cls));
+            PZipLongest self = PFactory.createZipLongest(cls, getInstanceShape.execute(cls));
             self.setFillValue(fillValue);
             self.setNumActive(args.length);
 

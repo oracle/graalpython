@@ -44,7 +44,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBufferedR
 
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
@@ -83,10 +82,9 @@ public final class BufferedRandomBuiltins extends AbstractBufferedIOBuiltins {
     public abstract static class BufferedRandomNode extends PythonBuiltinNode {
         @Specialization
         static PBuffered doNew(Object cls, @SuppressWarnings("unused") Object arg,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             // data filled in subsequent __init__ call - see BufferedRandomBuiltins.InitNode
-            return PFactory.createBufferedRandom(language, cls, getInstanceShape.execute(cls));
+            return PFactory.createBufferedRandom(cls, getInstanceShape.execute(cls));
         }
     }
 

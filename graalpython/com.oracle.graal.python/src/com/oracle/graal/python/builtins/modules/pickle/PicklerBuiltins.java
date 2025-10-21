@@ -119,9 +119,8 @@ public class PicklerBuiltins extends PythonBuiltins {
     abstract static class ConstructPicklerNode extends PythonVarargsBuiltinNode {
         @Specialization
         PPickler construct(Object cls, @SuppressWarnings("unused") Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createPickler(language, cls, getInstanceShape.execute(cls));
+            return PFactory.createPickler(cls, getInstanceShape.execute(cls));
         }
     }
 

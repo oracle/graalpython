@@ -123,10 +123,9 @@ public final class BufferedRWPairBuiltins extends PythonBuiltins {
     public abstract static class BufferedRWPairNode extends PythonBuiltinNode {
         @Specialization
         static PRWPair doNew(Object cls, @SuppressWarnings("unused") Object arg,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             // data filled in subsequent __init__ call - see BufferedRWPairBuiltins.InitNode
-            return PFactory.createRWPair(language, cls, getInstanceShape.execute(cls));
+            return PFactory.createRWPair(cls, getInstanceShape.execute(cls));
         }
     }
 

@@ -291,7 +291,7 @@ public final class MMapBuiltins extends PythonBuiltins {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
             PythonContext context = PythonContext.get(inliningTarget);
-            return PFactory.createMMap(context.getLanguage(inliningTarget), context, clazz, getInstanceShape.execute(clazz), mmapHandle, dupFd, length, access);
+            return PFactory.createMMap(context, clazz, getInstanceShape.execute(clazz), mmapHandle, dupFd, length, access);
         }
 
         @Specialization(guards = "isIllegal(fd)")

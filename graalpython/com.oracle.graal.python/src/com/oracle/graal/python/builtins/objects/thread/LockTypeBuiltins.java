@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.thread;
 
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
@@ -54,7 +53,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -76,9 +74,8 @@ public class LockTypeBuiltins extends PythonBuiltins {
     public abstract static class ConstructLockNode extends PythonUnaryBuiltinNode {
         @Specialization
         PLock construct(Object cls,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createLock(language, cls, getInstanceShape.execute(cls));
+            return PFactory.createLock(cls, getInstanceShape.execute(cls));
         }
     }
 }

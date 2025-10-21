@@ -191,7 +191,7 @@ public final class PartialBuiltins extends PythonBuiltins {
                 funcKwDict = PFactory.createDict(language);
             }
 
-            return PFactory.createPartial(language, cls, getInstanceShape.execute(cls), function.getFn(), funcArgs, funcKwDict);
+            return PFactory.createPartial(cls, getInstanceShape.execute(cls), function.getFn(), funcArgs, funcKwDict);
         }
 
         @Specialization(guards = {"atLeastOneArg(args)", "isPartialWithoutDict(inliningTarget, getDict, args, lenNode, true)", "!withKeywords(keywords)"}, limit = "1")
@@ -206,7 +206,7 @@ public final class PartialBuiltins extends PythonBuiltins {
             assert args[0] instanceof PPartial;
             final PPartial function = (PPartial) args[0];
             Object[] funcArgs = getNewPartialArgs(function, args, inliningTarget, hasArgsProfile, 1);
-            return PFactory.createPartial(language, cls, getInstanceShape.execute(cls), function.getFn(), funcArgs, function.getKwCopy(inliningTarget, language, copyNode));
+            return PFactory.createPartial(cls, getInstanceShape.execute(cls), function.getFn(), funcArgs, function.getKwCopy(inliningTarget, language, copyNode));
         }
 
         @Specialization(guards = {"atLeastOneArg(args)", "isPartialWithoutDict(inliningTarget, getDict, args, lenNode, true)", "withKeywords(keywords)"}, limit = "1")
@@ -228,7 +228,7 @@ public final class PartialBuiltins extends PythonBuiltins {
             PDict result = PFactory.createDict(language, storage);
             addAllToOtherNode.execute(frame, inliningTarget, initNode.execute(frame, PNone.NO_VALUE, keywords), result);
 
-            return PFactory.createPartial(language, cls, getInstanceShape.execute(cls), function.getFn(), funcArgs, result);
+            return PFactory.createPartial(cls, getInstanceShape.execute(cls), function.getFn(), funcArgs, result);
         }
 
         @Specialization(guards = {"atLeastOneArg(args)", "!isPartialWithoutDict(getDict, args)"}, limit = "1")
@@ -252,7 +252,7 @@ public final class PartialBuiltins extends PythonBuiltins {
             } else {
                 funcKwDict = PFactory.createDict(language);
             }
-            return PFactory.createPartial(language, cls, getInstanceShape.execute(cls), function, funcArgs, funcKwDict);
+            return PFactory.createPartial(cls, getInstanceShape.execute(cls), function, funcArgs, funcKwDict);
         }
 
         @Specialization(guards = "!atLeastOneArg(args)")

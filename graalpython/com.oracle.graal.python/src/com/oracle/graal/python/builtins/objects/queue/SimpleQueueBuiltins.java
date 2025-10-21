@@ -105,9 +105,8 @@ public final class SimpleQueueBuiltins extends PythonBuiltins {
 
         @Specialization
         static PSimpleQueue doGeneric(Object cls,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createSimpleQueue(language, cls, getInstanceShape.execute(cls));
+            return PFactory.createSimpleQueue(cls, getInstanceShape.execute(cls));
         }
     }
 

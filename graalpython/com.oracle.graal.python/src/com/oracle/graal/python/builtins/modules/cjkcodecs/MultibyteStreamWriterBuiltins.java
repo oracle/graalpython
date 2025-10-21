@@ -53,7 +53,6 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
@@ -111,7 +110,6 @@ public final class MultibyteStreamWriterBuiltins extends PythonBuiltins {
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached TruffleString.EqualNode isEqual,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PRaiseNode raiseNode) { // "O|s:StreamWriter"
             TruffleString errors = null;
@@ -119,7 +117,7 @@ public final class MultibyteStreamWriterBuiltins extends PythonBuiltins {
                 errors = castToStringNode.execute(inliningTarget, err);
             }
 
-            MultibyteStreamWriterObject self = PFactory.createMultibyteStreamWriterObject(language, type, getInstanceShape.execute(type));
+            MultibyteStreamWriterObject self = PFactory.createMultibyteStreamWriterObject(type, getInstanceShape.execute(type));
 
             Object codec = getAttr.execute(frame, inliningTarget, type, StringLiterals.T_CODEC);
             if (!(codec instanceof MultibyteCodecObject)) {

@@ -227,10 +227,9 @@ public final class FileIOBuiltins extends PythonBuiltins {
     public abstract static class FileIONode extends PythonBuiltinNode {
         @Specialization
         static PFileIO doNew(Object cls, @SuppressWarnings("unused") Object arg,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             // data filled in subsequent __init__ call - see FileIOBuiltins.InitNode
-            return PFactory.createFileIO(language, cls, getInstanceShape.execute(cls));
+            return PFactory.createFileIO(cls, getInstanceShape.execute(cls));
         }
     }
 

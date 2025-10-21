@@ -186,30 +186,29 @@ public final class CodecsTruffleModuleBuiltins extends PythonBuiltins {
             initCodecClasses(self, codecsModule, context);
         }
 
-        PythonLanguage language = context.getLanguage();
         // encode/decode methods for codecs.CodecInfo
-        PythonObject truffleCodec = createPythonObject(language, codecsTruffleBuiltins.truffleCodecClass);
+        PythonObject truffleCodec = createPythonObject(codecsTruffleBuiltins.truffleCodecClass);
         truffleCodec.setAttribute(T_ATTR_ENCODING, encoding);
         Object encodeMethod = PyObjectGetAttr.executeUncached(truffleCodec, T_ENCODE);
         Object decodeMethod = PyObjectGetAttr.executeUncached(truffleCodec, T_DECODE);
 
         // incrementalencoder factory function for codecs.CodecInfo
-        PythonObject tie = createPythonObject(language, codecsTruffleBuiltins.applyEncodingClass);
+        PythonObject tie = createPythonObject(codecsTruffleBuiltins.applyEncodingClass);
         tie.setAttribute(T_ATTR_FN, codecsTruffleBuiltins.truffleIncrementalEncoderClass);
         tie.setAttribute(T_ATTR_ENCODING, encoding);
 
         // incrementaldecoder factory function for codecs.CodecInfo
-        PythonObject tid = createPythonObject(language, codecsTruffleBuiltins.applyEncodingClass);
+        PythonObject tid = createPythonObject(codecsTruffleBuiltins.applyEncodingClass);
         tid.setAttribute(T_ATTR_FN, codecsTruffleBuiltins.truffleIncrementalDecoderClass);
         tid.setAttribute(T_ATTR_ENCODING, encoding);
 
         // streamwriter factory function for codecs.CodecInfo
-        PythonObject sr = createPythonObject(language, codecsTruffleBuiltins.applyEncodingClass);
+        PythonObject sr = createPythonObject(codecsTruffleBuiltins.applyEncodingClass);
         sr.setAttribute(T_ATTR_FN, codecsTruffleBuiltins.truffleStreamReaderClass);
         sr.setAttribute(T_ATTR_ENCODING, encoding);
 
         // streamreader factory function for codecs.CodecInfo
-        PythonObject sw = createPythonObject(language, codecsTruffleBuiltins.applyEncodingClass);
+        PythonObject sw = createPythonObject(codecsTruffleBuiltins.applyEncodingClass);
         sw.setAttribute(T_ATTR_FN, codecsTruffleBuiltins.truffleStreamWriterClass);
         sw.setAttribute(T_ATTR_ENCODING, encoding);
 
@@ -218,8 +217,8 @@ public final class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         return (PTuple) CallNode.getUncached().execute(null, codecInfoClass, new Object[]{}, createCodecInfoArgs(encoding, encodeMethod, decodeMethod, tie, tid, sr, sw));
     }
 
-    private static PythonObject createPythonObject(PythonLanguage language, PythonClass cls) {
-        return PFactory.createPythonObject(language, cls, cls.getInstanceShape());
+    private static PythonObject createPythonObject(PythonClass cls) {
+        return PFactory.createPythonObject(cls, cls.getInstanceShape());
     }
 
     private static PKeyword[] createCodecInfoArgs(TruffleString encoding, Object encodeMethod, Object decodeMethod, PythonObject tie, PythonObject tid, PythonObject sr, PythonObject sw) {

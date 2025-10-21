@@ -88,9 +88,8 @@ public final class RLockBuiltins extends PythonBuiltins {
     public abstract static class ConstructRLockNode extends PythonUnaryBuiltinNode {
         @Specialization
         PRLock construct(Object cls,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createRLock(language, cls, getInstanceShape.execute(cls));
+            return PFactory.createRLock(cls, getInstanceShape.execute(cls));
         }
     }
 

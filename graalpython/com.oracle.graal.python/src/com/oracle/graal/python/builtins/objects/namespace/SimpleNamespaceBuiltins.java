@@ -127,9 +127,8 @@ public final class SimpleNamespaceBuiltins extends PythonBuiltins {
     public abstract static class SimpleNamespaceNode extends PythonVarargsBuiltinNode {
         @Specialization
         static PSimpleNamespace doit(Object cls, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createSimpleNamespace(language, cls, getInstanceShape.execute(cls));
+            return PFactory.createSimpleNamespace(cls, getInstanceShape.execute(cls));
         }
     }
 

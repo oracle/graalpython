@@ -49,7 +49,6 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
@@ -98,9 +97,8 @@ public final class ParamSpecArgsBuiltins extends PythonBuiltins {
 
         @Specialization
         static PParamSpecArgs newParamSpecArgs(Object cls, Object origin,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createParamSpecArgs(language, cls, getInstanceShape.execute(cls), origin);
+            return PFactory.createParamSpecArgs(cls, getInstanceShape.execute(cls), origin);
         }
     }
 

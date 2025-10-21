@@ -129,7 +129,6 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.instrumentation.AllocationReporter;
 import com.oracle.truffle.api.instrumentation.ProvidedTags;
 import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -396,7 +395,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @CompilationFinal(dimensions = 1) private volatile Object[] engineOptionsStorage;
     @CompilationFinal private volatile OptionValues engineOptions;
-    @CompilationFinal private AllocationReporter allocationReporter;
 
     /** For fast access to the PythonThreadState object by the owning thread. */
     private final ContextThreadLocal<PythonThreadState> threadState = locals.createContextThreadLocal(PythonContext.PythonThreadState::new);
@@ -491,11 +489,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
     }
 
-    public AllocationReporter getAllocationReporter() {
-        assert allocationReporter != null;
-        return allocationReporter;
-    }
-
     @Override
     protected OptionDescriptors getOptionDescriptors() {
         return PythonOptions.DESCRIPTORS;
@@ -504,12 +497,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     protected void initializeContext(PythonContext context) {
         if (!isLanguageInitialized) {
-            if (allocationReporter == null) {
-                allocationReporter = context.getEnv().lookup(AllocationReporter.class);
-            } else {
-                // GR-61960
-                // assert allocationReporter == env.lookup(AllocationReporter.class);
-            }
             initializeLanguage();
         }
         if (PythonOS.isUnsupported() && context.getEnv().isNativeAccessAllowed()) {

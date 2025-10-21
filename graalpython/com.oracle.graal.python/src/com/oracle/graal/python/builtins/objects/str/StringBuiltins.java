@@ -379,7 +379,7 @@ public final class StringBuiltins extends PythonBuiltins {
             if (isPrimitiveProfile.profileClass(inliningTarget, cls, PythonBuiltinClassType.PString)) {
                 return str;
             } else {
-                return PFactory.createString(PythonLanguage.get(inliningTarget), cls, getInstanceShape.execute(cls), str);
+                return PFactory.createString(cls, getInstanceShape.execute(cls), str);
             }
         }
 

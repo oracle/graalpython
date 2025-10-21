@@ -92,7 +92,6 @@ public final class PairwiseBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PRaiseNode raiseNode) {
             if (!isTypeNode.execute(inliningTarget, cls)) {
@@ -100,7 +99,7 @@ public final class PairwiseBuiltins extends PythonBuiltins {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
             }
 
-            PPairwise self = PFactory.createPairwise(language, cls, getInstanceShape.execute(cls));
+            PPairwise self = PFactory.createPairwise(cls, getInstanceShape.execute(cls));
             self.setIterable(getIter.execute(frame, inliningTarget, iterable));
             return self;
         }

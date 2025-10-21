@@ -115,7 +115,6 @@ public final class CountBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached PyNumberCheckNode checkNode,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PRaiseNode raiseNode) {
             if (!isTypeNode.execute(inliningTarget, cls)) {
@@ -127,7 +126,7 @@ public final class CountBuiltins extends PythonBuiltins {
             if (!checkNode.execute(inliningTarget, step)) {
                 throw raiseNode.raise(inliningTarget, TypeError, NUMBER_IS_REQUIRED);
             }
-            PCount self = PFactory.createCount(language, cls, getInstanceShape.execute(cls));
+            PCount self = PFactory.createCount(cls, getInstanceShape.execute(cls));
             self.setCnt(start);
             self.setStep(step);
             return self;

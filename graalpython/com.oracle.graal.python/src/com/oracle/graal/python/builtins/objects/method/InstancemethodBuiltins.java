@@ -108,9 +108,8 @@ public final class InstancemethodBuiltins extends PythonBuiltins {
     public abstract static class InstancemethodNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object doObjectIndirect(Object cls, @SuppressWarnings("unused") Object callable,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createInstancemethod(language, cls, getInstanceShape.execute(cls));
+            return PFactory.createInstancemethod(cls, getInstanceShape.execute(cls));
         }
     }
 

@@ -108,9 +108,8 @@ public final class AstBuiltins extends PythonBuiltins {
 
         @Specialization
         static PythonObject generic(Object cls, @SuppressWarnings("unused") Object[] varargs, @SuppressWarnings("unused") PKeyword[] kwargs,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createPythonObject(language, cls, getInstanceShape.execute(cls));
+            return PFactory.createPythonObject(cls, getInstanceShape.execute(cls));
         }
     }
 

@@ -101,10 +101,9 @@ public final class RepeatBuiltins extends PythonBuiltins {
         @Specialization
         static Object construct(VirtualFrame frame, Object cls, Object object, Object timesObj,
                         @Bind Node inliningTarget,
-                        @Bind PythonLanguage language,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            PRepeat self = PFactory.createRepeat(language, cls, getInstanceShape.execute(cls));
+            PRepeat self = PFactory.createRepeat(cls, getInstanceShape.execute(cls));
             self.setElement(object);
             if (timesObj != PNone.NO_VALUE) {
                 int times = asSizeNode.executeExact(frame, inliningTarget, timesObj);

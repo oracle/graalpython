@@ -151,9 +151,8 @@ public final class SocketBuiltins extends PythonBuiltins {
         // All the "real" work is done by __init__
         @Specialization
         Object socket(Object cls,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createSocket(language, cls, getInstanceShape.execute(cls));
+            return PFactory.createSocket(cls, getInstanceShape.execute(cls));
         }
     }
 

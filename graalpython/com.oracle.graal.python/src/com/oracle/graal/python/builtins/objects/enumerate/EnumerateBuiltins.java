@@ -87,36 +87,32 @@ public final class EnumerateBuiltins extends PythonBuiltins {
         static PEnumerate doNone(VirtualFrame frame, Object cls, Object iterable, @SuppressWarnings("unused") PNone keywordArg,
                         @Bind Node inliningTarget,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
-                        @Bind PythonLanguage language,
                         @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createEnumerate(language, cls, getInstanceShape.execute(cls), getIter.execute(frame, inliningTarget, iterable), 0);
+            return PFactory.createEnumerate(cls, getInstanceShape.execute(cls), getIter.execute(frame, inliningTarget, iterable), 0);
         }
 
         @Specialization
         static PEnumerate doInt(VirtualFrame frame, Object cls, Object iterable, int start,
                         @Bind Node inliningTarget,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
-                        @Bind PythonLanguage language,
                         @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createEnumerate(language, cls, getInstanceShape.execute(cls), getIter.execute(frame, inliningTarget, iterable), start);
+            return PFactory.createEnumerate(cls, getInstanceShape.execute(cls), getIter.execute(frame, inliningTarget, iterable), start);
         }
 
         @Specialization
         static PEnumerate doLong(VirtualFrame frame, Object cls, Object iterable, long start,
                         @Bind Node inliningTarget,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
-                        @Bind PythonLanguage language,
                         @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createEnumerate(language, cls, getInstanceShape.execute(cls), getIter.execute(frame, inliningTarget, iterable), start);
+            return PFactory.createEnumerate(cls, getInstanceShape.execute(cls), getIter.execute(frame, inliningTarget, iterable), start);
         }
 
         @Specialization
         static PEnumerate doPInt(VirtualFrame frame, Object cls, Object iterable, PInt start,
                         @Bind Node inliningTarget,
                         @Shared("getIter") @Cached PyObjectGetIter getIter,
-                        @Bind PythonLanguage language,
                         @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createEnumerate(language, cls, getInstanceShape.execute(cls), getIter.execute(frame, inliningTarget, iterable), start);
+            return PFactory.createEnumerate(cls, getInstanceShape.execute(cls), getIter.execute(frame, inliningTarget, iterable), start);
         }
 
         static boolean isIntegerIndex(Object idx) {

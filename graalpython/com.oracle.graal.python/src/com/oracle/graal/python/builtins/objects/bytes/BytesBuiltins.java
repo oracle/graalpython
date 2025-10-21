@@ -182,9 +182,8 @@ public class BytesBuiltins extends PythonBuiltins {
             @Specialization(guards = "!needsNativeAllocationNode.execute(inliningTarget, cls)")
             static PBytes doManaged(@SuppressWarnings("unused") Node inliningTarget, Object cls, byte[] bytes,
                             @SuppressWarnings("unused") @Shared @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
-                            @Bind PythonLanguage language,
                             @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-                return PFactory.createBytes(language, cls, getInstanceShape.execute(cls), bytes);
+                return PFactory.createBytes(cls, getInstanceShape.execute(cls), bytes);
             }
 
             @Specialization(guards = "needsNativeAllocationNode.execute(inliningTarget, cls)")

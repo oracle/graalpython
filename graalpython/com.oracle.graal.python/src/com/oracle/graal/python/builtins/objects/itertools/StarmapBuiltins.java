@@ -99,7 +99,6 @@ public final class StarmapBuiltins extends PythonBuiltins {
                         @Cached(inline = false /* uncommon path */) TypeNodes.HasObjectInitNode hasObjectInitNode,
                         @Cached PyObjectGetIter getIter,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PRaiseNode raiseNode) {
             if (!isTypeNode.execute(inliningTarget, cls)) {
@@ -113,7 +112,7 @@ public final class StarmapBuiltins extends PythonBuiltins {
             }
             Object fun = args[0];
             Object iterable = args[1];
-            PStarmap self = PFactory.createStarmap(language, cls, getInstanceShape.execute(cls));
+            PStarmap self = PFactory.createStarmap(cls, getInstanceShape.execute(cls));
             self.setFun(fun);
             self.setIterable(getIter.execute(frame, inliningTarget, iterable));
             return self;

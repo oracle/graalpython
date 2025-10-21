@@ -45,7 +45,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DICT__;
 
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
@@ -110,7 +109,6 @@ public final class ThreadLocalBuiltins extends PythonBuiltins {
         @Specialization
         static PThreadLocal construct(Object cls, Object[] args, PKeyword[] keywordArgs,
                         @Bind Node inliningTarget,
-                        @Bind PythonLanguage language,
                         @Cached TpSlots.GetCachedTpSlotsNode getSlots,
                         @Cached PRaiseNode raiseNode,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
@@ -120,7 +118,7 @@ public final class ThreadLocalBuiltins extends PythonBuiltins {
                     throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.INITIALIZATION_ARGUMENTS_ARE_NOT_SUPPORTED);
                 }
             }
-            return PFactory.createThreadLocal(language, cls, getInstanceShape.execute(cls), args, keywordArgs);
+            return PFactory.createThreadLocal(cls, getInstanceShape.execute(cls), args, keywordArgs);
         }
     }
 

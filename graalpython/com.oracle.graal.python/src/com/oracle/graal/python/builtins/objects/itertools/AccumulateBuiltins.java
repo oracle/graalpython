@@ -99,10 +99,9 @@ public final class AccumulateBuiltins extends PythonBuiltins {
         @Specialization
         protected static PAccumulate construct(VirtualFrame frame, Object cls, Object iterable, Object func, Object initial,
                         @Bind Node inliningTarget,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PyObjectGetIter getIter) {
-            PAccumulate self = PFactory.createAccumulate(language, cls, getInstanceShape.execute(cls));
+            PAccumulate self = PFactory.createAccumulate(cls, getInstanceShape.execute(cls));
             self.setIterable(getIter.execute(frame, inliningTarget, iterable));
             self.setFunc(func instanceof PNone ? null : func);
             self.setTotal(null);

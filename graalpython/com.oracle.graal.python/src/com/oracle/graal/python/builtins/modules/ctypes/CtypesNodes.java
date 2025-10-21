@@ -78,7 +78,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -346,13 +345,12 @@ public class CtypesNodes {
         @Specialization
         static CDataObject doCreate(Node inliningTarget, Object type, Pointer pointer, int size, boolean needsfree,
                         @Cached(inline = false) IsSubtypeNode isSubtypeNode,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape,
-                        @Bind PythonLanguage language) {
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             CDataObject result;
             if (isSubtypeNode.execute(type, PyCFuncPtr)) {
-                result = PFactory.createPyCFuncPtrObject(language, type, getInstanceShape.execute(type), pointer, size, needsfree);
+                result = PFactory.createPyCFuncPtrObject(type, getInstanceShape.execute(type), pointer, size, needsfree);
             } else {
-                result = PFactory.createCDataObject(language, type, getInstanceShape.execute(type), pointer, size, needsfree);
+                result = PFactory.createCDataObject(type, getInstanceShape.execute(type), pointer, size, needsfree);
             }
             if (needsfree) {
                 new PointerReference(result, pointer, PythonContext.get(inliningTarget).getSharedFinalizer());

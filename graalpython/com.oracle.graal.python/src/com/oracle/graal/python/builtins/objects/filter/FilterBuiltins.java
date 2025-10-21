@@ -100,7 +100,6 @@ public final class FilterBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached(inline = false) TypeNodes.HasObjectInitNode hasObjectInitNode,
                         @Cached PyObjectGetIter getIter,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PRaiseNode raiseNode) {
             if (keywords.length > 0 && hasObjectInitNode.executeCached(cls)) {
@@ -109,7 +108,7 @@ public final class FilterBuiltins extends PythonBuiltins {
             if (args.length != 2) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_EXPECTED_D_ARGUMENTS_GOT_D, J_FILTER, 2, args.length);
             }
-            PFilter filter = PFactory.createFilter(language, cls, getInstanceShape.execute(cls));
+            PFilter filter = PFactory.createFilter(cls, getInstanceShape.execute(cls));
             filter.setFunction(args[0]);
             filter.setIterator(getIter.execute(frame, inliningTarget, args[1]));
             return filter;

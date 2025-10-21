@@ -123,7 +123,6 @@ public final class TokenizerIterBuiltins extends PythonBuiltins {
 
         @Specialization
         static PTokenizerIter tokenizerIterStr(Object cls, Object readline, boolean extraTokens, @SuppressWarnings("unused") PNone encoding,
-                        @Bind PythonLanguage language,
                         @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             Supplier<int[]> inputSupplier = () -> {
                 Object o;
@@ -141,13 +140,12 @@ public final class TokenizerIterBuiltins extends PythonBuiltins {
                 }
                 return getCodePoints(line);
             };
-            return PFactory.createTokenizerIter(language, cls, getInstanceShape.execute(cls), inputSupplier, extraTokens);
+            return PFactory.createTokenizerIter(cls, getInstanceShape.execute(cls), inputSupplier, extraTokens);
         }
 
         @Specialization
         static PTokenizerIter tokenizerIterBytes(Object cls, Object readline, boolean extraTokens, TruffleString encoding,
                         @Bind Node inliningTarget,
-                        @Bind PythonLanguage language,
                         @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PRaiseNode raiseNode) {
             Charset charset;
@@ -187,7 +185,7 @@ public final class TokenizerIterBuiltins extends PythonBuiltins {
                 String line = charset.decode(ByteBuffer.wrap(bytes, 0, len)).toString();
                 return getCodePoints(TruffleString.fromJavaStringUncached(line, TS_ENCODING));
             };
-            return PFactory.createTokenizerIter(language, cls, getInstanceShape.execute(cls), inputSupplier, extraTokens);
+            return PFactory.createTokenizerIter(cls, getInstanceShape.execute(cls), inputSupplier, extraTokens);
         }
 
         @TruffleBoundary

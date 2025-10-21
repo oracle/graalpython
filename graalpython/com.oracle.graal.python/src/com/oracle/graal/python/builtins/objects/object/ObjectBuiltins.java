@@ -299,24 +299,22 @@ public final class ObjectBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!self.needsNativeAllocation()"})
         Object doManagedObject(VirtualFrame frame, PythonManagedClass self, Object[] varargs, PKeyword[] kwargs,
                         @Bind Node inliningTarget,
-                        @Bind PythonLanguage language,
                         @Shared @Cached CheckExcessArgsNode checkExcessArgsNode,
                         @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             checkExcessArgsNode.execute(inliningTarget, self, varargs, kwargs);
             if (self.isAbstractClass()) {
                 throw reportAbstractClass(frame, self);
             }
-            return PFactory.createPythonObject(language, self, getInstanceShape.execute(self));
+            return PFactory.createPythonObject(self, getInstanceShape.execute(self));
         }
 
         @Specialization
         static Object doBuiltinTypeType(PythonBuiltinClassType self, Object[] varargs, PKeyword[] kwargs,
                         @Bind Node inliningTarget,
-                        @Bind PythonLanguage language,
                         @Shared @Cached CheckExcessArgsNode checkExcessArgsNode,
                         @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             checkExcessArgsNode.execute(inliningTarget, self, varargs, kwargs);
-            return PFactory.createPythonObject(language, self, getInstanceShape.execute(self));
+            return PFactory.createPythonObject(self, getInstanceShape.execute(self));
         }
 
         @Specialization(guards = "self.needsNativeAllocation()")

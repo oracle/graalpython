@@ -86,7 +86,7 @@ final class AstTypeFactory {
         return newType;
     }
 
-    PythonObject createSingleton(PythonClass cls) {
-        return PFactory.createPythonObject(language, cls, cls.getInstanceShape());
+    static PythonObject createSingleton(PythonClass cls) {
+        return PFactory.createPythonObject(cls, cls.getInstanceShape());
     }
 }

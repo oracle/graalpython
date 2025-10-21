@@ -116,7 +116,6 @@ public final class MultibyteIncrementalDecoderBuiltins extends PythonBuiltins {
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached TruffleString.EqualNode isEqual,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PRaiseNode raiseNode) { // "|s:IncrementalDecoder"
             TruffleString errors = null;
@@ -124,7 +123,7 @@ public final class MultibyteIncrementalDecoderBuiltins extends PythonBuiltins {
                 errors = castToStringNode.execute(inliningTarget, err);
             }
 
-            MultibyteIncrementalDecoderObject self = PFactory.createMultibyteIncrementalDecoderObject(language, type, getInstanceShape.execute(type));
+            MultibyteIncrementalDecoderObject self = PFactory.createMultibyteIncrementalDecoderObject(type, getInstanceShape.execute(type));
 
             Object codec = getAttr.execute(frame, inliningTarget, type, StringLiterals.T_CODEC);
             if (!(codec instanceof MultibyteCodecObject)) {

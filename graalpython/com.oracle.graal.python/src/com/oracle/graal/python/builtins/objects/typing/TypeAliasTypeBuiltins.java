@@ -120,13 +120,12 @@ public final class TypeAliasTypeBuiltins extends PythonBuiltins {
         @Specialization
         static PTypeAliasType newTypeAliasType(VirtualFrame frame, Object cls, TruffleString name, Object value, Object typeParams,
                         @Bind Node inliningTarget,
-                        @Bind PythonLanguage language,
                         @Cached CheckTypeParamsNode checkNode,
                         @Cached CallerNode callerNode,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             PTuple typeParamsTuple = checkNode.execute(inliningTarget, typeParams);
             Object module = callerNode.execute(frame, inliningTarget);
-            return PFactory.createTypeAliasType(language, cls, getInstanceShape.execute(cls), name, typeParamsTuple, null, value, module);
+            return PFactory.createTypeAliasType(cls, getInstanceShape.execute(cls), name, typeParamsTuple, null, value, module);
         }
 
         @GenerateInline

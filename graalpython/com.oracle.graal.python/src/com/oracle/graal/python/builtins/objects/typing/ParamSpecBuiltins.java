@@ -117,7 +117,6 @@ public final class ParamSpecBuiltins extends PythonBuiltins {
         @Specialization
         static PParamSpec newParamSpec(VirtualFrame frame, Object cls, TruffleString name, Object bound, boolean covariant, boolean contravariant, boolean inferVariance,
                         @Bind Node inliningTarget,
-                        @Bind PythonLanguage language,
                         @Cached CheckBoundNode checkBoundNode,
                         @Cached CallerNode callerNode,
                         @Cached PRaiseNode raiseNode,
@@ -135,7 +134,7 @@ public final class ParamSpecBuiltins extends PythonBuiltins {
 
             Object module = callerNode.execute(frame, inliningTarget);
 
-            PParamSpec result = PFactory.createParamSpec(language, cls, getInstanceShape.execute(cls), name, boundChecked, covariant, contravariant, inferVariance);
+            PParamSpec result = PFactory.createParamSpec(cls, getInstanceShape.execute(cls), name, boundChecked, covariant, contravariant, inferVariance);
             setAttrNode.execute(frame, inliningTarget, result, T___MODULE__, module);
             return result;
         }

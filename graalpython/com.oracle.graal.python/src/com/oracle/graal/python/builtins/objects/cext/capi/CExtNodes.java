@@ -1742,7 +1742,7 @@ public abstract class CExtNodes {
                 ((PythonModule) module).setNativeModuleDef(moduleDef);
             }
         } else {
-            PythonModule pythonModule = PFactory.createPythonModule(context.getLanguage(), mName);
+            PythonModule pythonModule = PFactory.createPythonModule(mName);
             pythonModule.setNativeModuleDef(moduleDef);
             module = pythonModule;
         }

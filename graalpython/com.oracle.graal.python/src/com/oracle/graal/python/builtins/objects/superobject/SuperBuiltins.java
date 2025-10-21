@@ -210,9 +210,8 @@ public final class SuperBuiltins extends PythonBuiltins {
 
         @Fallback
         static Object doOther(Object cls, @SuppressWarnings("unused") Object type, @SuppressWarnings("unused") Object object,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createSuperObject(language, cls, getInstanceShape.execute(cls));
+            return PFactory.createSuperObject(cls, getInstanceShape.execute(cls));
         }
 
         protected static boolean isBuiltinSuper(Object cls) {
@@ -455,10 +454,9 @@ public final class SuperBuiltins extends PythonBuiltins {
                         @Cached GetTypeNode getType,
                         @Cached(inline = false) SuperInitNode superInit,
                         @Cached GetClassNode getClass,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             Object cls = getClass.execute(inliningTarget, self);
-            SuperObject newSuper = PFactory.createSuperObject(language, cls, getInstanceShape.execute(cls));
+            SuperObject newSuper = PFactory.createSuperObject(cls, getInstanceShape.execute(cls));
             superInit.execute(null, newSuper, getType.execute(inliningTarget, self), obj);
             return newSuper;
         }

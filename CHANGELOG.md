@@ -5,6 +5,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 
 ## Version 25.1.0
 * Intern string literals in source files
+* Allocation reporting via Truffle has been removed. Python object sizes were never reported correctly, so the data was misleading and there was a non-neglible overhead for object allocations even when reporting was inactive.
 
 ## Version 25.0.1
 * Allow users to keep going on unsupported JDK/OS/ARCH combinations at their own risk by opting out of early failure using `-Dtruffle.UseFallbackRuntime=true`, `-Dpolyglot.engine.userResourceCache=/set/to/a/writeable/dir`, `-Dpolyglot.engine.allowUnsupportedPlatform=true`, and `-Dpolyglot.python.UnsupportedPlatformEmulates=[linux|macos|windows]` and `-Dorg.graalvm.python.resources.exclude=native.files`.

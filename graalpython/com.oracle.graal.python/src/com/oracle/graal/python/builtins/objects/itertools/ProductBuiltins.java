@@ -107,9 +107,8 @@ public final class ProductBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Bind Node inliningTarget,
                         @Cached.Shared @Cached IteratorNodes.ToArrayNode toArrayNode,
                         @SuppressWarnings("unused") @Cached.Shared("typeNode") @Cached TypeNodes.IsTypeNode isTypeNode,
-                        @Bind PythonLanguage language,
                         @Cached.Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            PProduct self = PFactory.createProduct(language, cls, getInstanceShape.execute(cls));
+            PProduct self = PFactory.createProduct(cls, getInstanceShape.execute(cls));
             constructOneRepeat(frame, self, iterables, toArrayNode);
             return self;
         }
@@ -119,9 +118,8 @@ public final class ProductBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Bind Node inliningTarget,
                         @Cached.Shared @Cached IteratorNodes.ToArrayNode toArrayNode,
                         @SuppressWarnings("unused") @Exclusive @Cached TypeNodes.IsTypeNode isTypeNode,
-                        @Bind PythonLanguage language,
                         @Cached.Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            PProduct self = PFactory.createProduct(language, cls, getInstanceShape.execute(cls));
+            PProduct self = PFactory.createProduct(cls, getInstanceShape.execute(cls));
             constructOneRepeat(frame, self, iterables, toArrayNode);
             return self;
         }
@@ -132,7 +130,6 @@ public final class ProductBuiltins extends PythonBuiltins {
                         @Cached.Shared @Cached IteratorNodes.ToArrayNode toArrayNode,
                         @Cached InlinedLoopConditionProfile loopProfile,
                         @SuppressWarnings("unused") @Exclusive @Cached TypeNodes.IsTypeNode isTypeNode,
-                        @Bind PythonLanguage language,
                         @Cached.Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             Object[][] lists = unpackIterables(frame, iterables, toArrayNode);
             Object[][] gears = new Object[lists.length * repeat][];
@@ -141,7 +138,7 @@ public final class ProductBuiltins extends PythonBuiltins {
             for (int i = 0; loopProfile.inject(inliningTarget, i < repeat); i++) {
                 PythonUtils.arraycopy(lists, 0, gears, i * lists.length, lists.length);
             }
-            PProduct self = PFactory.createProduct(language, cls, getInstanceShape.execute(cls));
+            PProduct self = PFactory.createProduct(cls, getInstanceShape.execute(cls));
             construct(self, gears);
             return self;
         }
@@ -150,9 +147,8 @@ public final class ProductBuiltins extends PythonBuiltins {
         static Object constructNoRepeat(Object cls, @SuppressWarnings("unused") Object[] iterables, @SuppressWarnings("unused") int repeat,
                         @SuppressWarnings("unused") @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Exclusive @Cached TypeNodes.IsTypeNode isTypeNode,
-                        @Bind PythonLanguage language,
                         @Cached.Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            PProduct self = PFactory.createProduct(language, cls, getInstanceShape.execute(cls));
+            PProduct self = PFactory.createProduct(cls, getInstanceShape.execute(cls));
             self.setGears(new Object[0][]);
             self.setIndices(new int[0]);
             self.setLst(null);

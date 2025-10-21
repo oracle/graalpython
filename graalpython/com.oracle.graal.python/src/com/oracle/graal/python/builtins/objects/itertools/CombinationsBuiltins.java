@@ -123,7 +123,6 @@ public final class CombinationsBuiltins extends PythonBuiltins {
                         @Cached LoopConditionProfile indicesLoopProfile,
                         @Cached InlinedConditionProfile wrongTypeProfile,
                         @Cached InlinedConditionProfile negativeProfile,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PRaiseNode raiseNode) {
             if (!wrongTypeProfile.profile(inliningTarget, isTypeNode.execute(inliningTarget, cls))) {
@@ -133,7 +132,7 @@ public final class CombinationsBuiltins extends PythonBuiltins {
                 throw raiseNode.raise(inliningTarget, ValueError, MUST_BE_NON_NEGATIVE, "r");
             }
 
-            PCombinations self = PFactory.createCombinations(language, cls, getInstanceShape.execute(cls));
+            PCombinations self = PFactory.createCombinations(cls, getInstanceShape.execute(cls));
             self.setPool(toArrayNode.execute(frame, iterable));
 
             int[] indices = new int[r];

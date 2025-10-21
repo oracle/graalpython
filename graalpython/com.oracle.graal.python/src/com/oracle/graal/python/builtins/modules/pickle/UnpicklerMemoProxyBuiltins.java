@@ -85,9 +85,8 @@ public class UnpicklerMemoProxyBuiltins extends PythonBuiltins {
     abstract static class ConstructUnpicklerMemoProxyNode extends PythonBinaryBuiltinNode {
         @Specialization
         PUnpicklerMemoProxy construct(Object cls, PUnpickler unpickler,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createUnpicklerMemoProxy(language, unpickler, cls, getInstanceShape.execute(cls));
+            return PFactory.createUnpicklerMemoProxy(unpickler, cls, getInstanceShape.execute(cls));
         }
     }
 

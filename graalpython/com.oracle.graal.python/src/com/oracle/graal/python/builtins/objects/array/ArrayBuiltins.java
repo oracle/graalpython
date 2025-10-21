@@ -220,23 +220,21 @@ public final class ArrayBuiltins extends PythonBuiltins {
             @Specialization(guards = "isNoValue(initializer)")
             static PArray array(Node inliningTarget, Object cls, TruffleString typeCode, @SuppressWarnings("unused") PNone initializer,
                             @Shared @Cached GetFormatCheckedNode getFormatCheckedNode,
-                            @Bind PythonLanguage language,
                             @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
                 BufferFormat format = getFormatCheckedNode.execute(inliningTarget, typeCode);
-                return PFactory.createArray(language, cls, getInstanceShape.execute(cls), typeCode, format);
+                return PFactory.createArray(cls, getInstanceShape.execute(cls), typeCode, format);
             }
 
             @Specialization
             @InliningCutoff
             static PArray arrayWithRangeInitializer(Node inliningTarget, Object cls, TruffleString typeCode, PIntRange range,
                             @Shared @Cached GetFormatCheckedNode getFormatCheckedNode,
-                            @Bind PythonLanguage language,
                             @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
                             @Exclusive @Cached ArrayNodes.PutValueNode putValueNode) {
                 BufferFormat format = getFormatCheckedNode.execute(inliningTarget, typeCode);
                 PArray array;
                 try {
-                    array = PFactory.createArray(language, cls, getInstanceShape.execute(cls), typeCode, format, range.getIntLength());
+                    array = PFactory.createArray(cls, getInstanceShape.execute(cls), typeCode, format, range.getIntLength());
                 } catch (OverflowException e) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw PRaiseNode.raiseStatic(inliningTarget, MemoryError);
@@ -256,11 +254,10 @@ public final class ArrayBuiltins extends PythonBuiltins {
             @Specialization
             static PArray arrayWithBytesInitializer(VirtualFrame frame, Node inliningTarget, Object cls, TruffleString typeCode, PBytesLike bytes,
                             @Shared @Cached GetFormatCheckedNode getFormatCheckedNode,
-                            @Bind PythonLanguage language,
                             @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
                             @Cached(inline = false) ArrayBuiltins.FromBytesNode fromBytesNode) {
                 BufferFormat format = getFormatCheckedNode.execute(inliningTarget, typeCode);
-                PArray array = PFactory.createArray(language, cls, getInstanceShape.execute(cls), typeCode, format);
+                PArray array = PFactory.createArray(cls, getInstanceShape.execute(cls), typeCode, format);
                 fromBytesNode.executeWithoutClinic(frame, array, bytes);
                 return array;
             }
@@ -269,7 +266,6 @@ public final class ArrayBuiltins extends PythonBuiltins {
             @InliningCutoff
             static PArray arrayWithStringInitializer(VirtualFrame frame, Node inliningTarget, Object cls, TruffleString typeCode, Object initializer,
                             @Shared @Cached GetFormatCheckedNode getFormatCheckedNode,
-                            @Bind PythonLanguage language,
                             @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
                             @Cached(inline = false) ArrayBuiltins.FromUnicodeNode fromUnicodeNode,
                             @Cached PRaiseNode raise) {
@@ -277,7 +273,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                 if (format != BufferFormat.UNICODE) {
                     throw raise.raise(inliningTarget, TypeError, ErrorMessages.CANNOT_USE_STR_TO_INITIALIZE_ARRAY, typeCode);
                 }
-                PArray array = PFactory.createArray(language, cls, getInstanceShape.execute(cls), typeCode, format);
+                PArray array = PFactory.createArray(cls, getInstanceShape.execute(cls), typeCode, format);
                 fromUnicodeNode.execute(frame, array, initializer);
                 return array;
             }
@@ -286,14 +282,13 @@ public final class ArrayBuiltins extends PythonBuiltins {
             @InliningCutoff
             static PArray arrayArrayInitializer(VirtualFrame frame, Node inliningTarget, Object cls, TruffleString typeCode, PArray initializer,
                             @Shared @Cached GetFormatCheckedNode getFormatCheckedNode,
-                            @Bind PythonLanguage language,
                             @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
                             @Exclusive @Cached ArrayNodes.PutValueNode putValueNode,
                             @Cached ArrayNodes.GetValueNode getValueNode) {
                 BufferFormat format = getFormatCheckedNode.execute(inliningTarget, typeCode);
                 try {
                     int length = initializer.getLength();
-                    PArray array = PFactory.createArray(language, cls, getInstanceShape.execute(cls), typeCode, format, length);
+                    PArray array = PFactory.createArray(cls, getInstanceShape.execute(cls), typeCode, format, length);
                     for (int i = 0; i < length; i++) {
                         putValueNode.execute(frame, inliningTarget, array, i, getValueNode.execute(inliningTarget, initializer, i));
                     }
@@ -308,7 +303,6 @@ public final class ArrayBuiltins extends PythonBuiltins {
             @InliningCutoff
             static PArray arraySequenceInitializer(VirtualFrame frame, Node inliningTarget, Object cls, TruffleString typeCode, PSequence initializer,
                             @Shared @Cached GetFormatCheckedNode getFormatCheckedNode,
-                            @Bind PythonLanguage language,
                             @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
                             @Exclusive @Cached ArrayNodes.PutValueNode putValueNode,
                             @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
@@ -317,7 +311,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                 SequenceStorage storage = getSequenceStorageNode.execute(inliningTarget, initializer);
                 int length = storage.length();
                 try {
-                    PArray array = PFactory.createArray(language, cls, getInstanceShape.execute(cls), typeCode, format, length);
+                    PArray array = PFactory.createArray(cls, getInstanceShape.execute(cls), typeCode, format, length);
                     for (int i = 0; i < length; i++) {
                         putValueNode.execute(frame, inliningTarget, array, i, getItemNode.execute(inliningTarget, storage, i));
                     }
@@ -333,7 +327,6 @@ public final class ArrayBuiltins extends PythonBuiltins {
             static PArray arrayIteratorInitializer(VirtualFrame frame, Node inliningTarget, Object cls, TruffleString typeCode, Object initializer,
                             @Cached PyObjectGetIter getIter,
                             @Shared @Cached GetFormatCheckedNode getFormatCheckedNode,
-                            @Bind PythonLanguage language,
                             @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
                             @Exclusive @Cached ArrayNodes.PutValueNode putValueNode,
                             @Cached PyIterNextNode nextNode,
@@ -342,7 +335,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                 Object iter = getIter.execute(frame, inliningTarget, initializer);
 
                 BufferFormat format = getFormatCheckedNode.execute(inliningTarget, typeCode);
-                PArray array = PFactory.createArray(language, cls, getInstanceShape.execute(cls), typeCode, format);
+                PArray array = PFactory.createArray(cls, getInstanceShape.execute(cls), typeCode, format);
 
                 int length = 0;
                 while (true) {

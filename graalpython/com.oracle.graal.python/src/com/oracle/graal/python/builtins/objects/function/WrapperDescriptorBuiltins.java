@@ -93,7 +93,7 @@ public final class WrapperDescriptorBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!isNoValue(instance)"})
         static PBuiltinMethod doBuiltinMethod(PBuiltinFunction self, Object instance, Object klass,
                         @Bind PythonLanguage language) {
-            return PFactory.createBuiltinMethod(language, PythonBuiltinClassType.MethodWrapper, PythonBuiltinClassType.MethodWrapper.getInstanceShape(language), instance, self);
+            return PFactory.createBuiltinMethod(PythonBuiltinClassType.MethodWrapper, PythonBuiltinClassType.MethodWrapper.getInstanceShape(language), instance, self);
         }
 
         @Specialization(guards = "isNoValue(instance)")

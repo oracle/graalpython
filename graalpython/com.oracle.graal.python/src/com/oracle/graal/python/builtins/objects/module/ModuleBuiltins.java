@@ -141,9 +141,8 @@ public final class ModuleBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         static PythonModule doGeneric(Object cls, Object[] varargs, PKeyword[] kwargs,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createPythonModule(language, cls, getInstanceShape.execute(cls));
+            return PFactory.createPythonModule(cls, getInstanceShape.execute(cls));
         }
     }
 

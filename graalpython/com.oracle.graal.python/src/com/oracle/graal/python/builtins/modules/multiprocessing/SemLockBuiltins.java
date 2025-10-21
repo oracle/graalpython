@@ -49,7 +49,6 @@ import static com.oracle.graal.python.runtime.PosixConstants.O_EXCL;
 
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
@@ -121,7 +120,6 @@ public class SemLockBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Bind("getPosixSupport()") PosixSupport posixSupport,
                         @CachedLibrary("posixSupport") PosixSupportLibrary posixLib,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode raiseNode) {
@@ -147,7 +145,7 @@ public class SemLockBuiltins extends PythonBuiltins {
                     throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
                 }
             }
-            return PFactory.createSemLock(language, cls, getInstanceShape.execute(cls), handle, kind, maxValue, name);
+            return PFactory.createSemLock(cls, getInstanceShape.execute(cls), handle, kind, maxValue, name);
         }
 
         @Override
@@ -423,7 +421,6 @@ public class SemLockBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Bind("getPosixSupport()") PosixSupport posixSupport,
                         @CachedLibrary("posixSupport") PosixSupportLibrary posixLib,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             Object posixName = posixLib.createPathFromString(posixSupport, name);
@@ -433,7 +430,7 @@ public class SemLockBuiltins extends PythonBuiltins {
             } catch (PosixException e) {
                 throw constructAndRaiseNode.get(inliningTarget).raiseOSErrorFromPosixException(frame, e);
             }
-            return PFactory.createSemLock(language, cls, getInstanceShape.execute(cls), handle, kind, maxValue, name);
+            return PFactory.createSemLock(cls, getInstanceShape.execute(cls), handle, kind, maxValue, name);
         }
 
         @Override

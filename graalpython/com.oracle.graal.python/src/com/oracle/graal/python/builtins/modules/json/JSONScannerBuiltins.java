@@ -49,7 +49,6 @@ import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -89,7 +88,6 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
         @Specialization
         public PJSONScanner doNew(VirtualFrame frame, Object cls, Object context,
                         @Cached PyObjectIsTrueNode castStrict,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
 
             boolean strict = castStrict.execute(frame, getStrict.execute(frame, context));
@@ -98,7 +96,7 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
             Object parseFloat = getParseFloat.execute(frame, context);
             Object parseInt = getParseInt.execute(frame, context);
             Object parseConstant = getParseConstant.execute(frame, context);
-            return PFactory.createJSONScanner(language, cls, getInstanceShape.execute(cls), strict, objectHook, objectPairsHook, parseFloat, parseInt, parseConstant);
+            return PFactory.createJSONScanner(cls, getInstanceShape.execute(cls), strict, objectHook, objectPairsHook, parseFloat, parseInt, parseConstant);
         }
     }
 

@@ -85,10 +85,9 @@ public final class BufferedWriterBuiltins extends AbstractBufferedIOBuiltins {
     public abstract static class BufferedWriterNode extends PythonBuiltinNode {
         @Specialization
         static PBuffered doNew(Object cls, @SuppressWarnings("unused") Object arg,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             // data filled in subsequent __init__ call - see BufferedWriterBuiltins.InitNode
-            return PFactory.createBufferedWriter(language, cls, getInstanceShape.execute(cls));
+            return PFactory.createBufferedWriter(cls, getInstanceShape.execute(cls));
         }
     }
 

@@ -116,7 +116,6 @@ public final class CycleBuiltins extends PythonBuiltins {
                         @Cached(inline = false /* uncommon path */) TypeNodes.HasObjectInitNode hasObjectInitNode,
                         @Cached PyObjectGetIter getIter,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PRaiseNode raiseNode) {
             if (!isTypeNode.execute(inliningTarget, cls)) {
@@ -129,7 +128,7 @@ public final class CycleBuiltins extends PythonBuiltins {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_EXPECTED_D_ARGS, "cycle", 1);
             }
             Object iterable = args[0];
-            PCycle self = PFactory.createCycle(language, cls, getInstanceShape.execute(cls));
+            PCycle self = PFactory.createCycle(cls, getInstanceShape.execute(cls));
             self.setSaved(new ArrayList<>());
             self.setIterable(getIter.execute(frame, inliningTarget, iterable));
             self.setIndex(0);

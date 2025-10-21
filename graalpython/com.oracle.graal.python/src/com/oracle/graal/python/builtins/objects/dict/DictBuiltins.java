@@ -154,15 +154,14 @@ public final class DictBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         static PDict dict(Object cls, Object[] args, PKeyword[] keywordArgs,
                         @Bind Node inliningTarget,
-                        @Bind PythonLanguage language,
                         @Cached InlinedConditionProfile orderedProfile,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             Shape shape = getInstanceShape.execute(cls);
             if (orderedProfile.profile(inliningTarget, isSubtypeNode.execute(cls, PythonBuiltinClassType.POrderedDict))) {
-                return PFactory.createOrderedDict(language, cls, shape);
+                return PFactory.createOrderedDict(cls, shape);
             }
-            return PFactory.createDict(language, cls, shape, EmptyStorage.INSTANCE);
+            return PFactory.createDict(cls, shape, EmptyStorage.INSTANCE);
         }
 
         protected static boolean isBuiltinDict(Object cls) {

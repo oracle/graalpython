@@ -46,7 +46,6 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
@@ -89,9 +88,8 @@ public final class ClassmethodBuiltins extends PythonBuiltins {
     public abstract static class ClassmethodNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object doObjectIndirect(Object cls, @SuppressWarnings("unused") Object callable,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createClassmethod(language, cls, getInstanceShape.execute(cls));
+            return PFactory.createClassmethod(cls, getInstanceShape.execute(cls));
         }
     }
 

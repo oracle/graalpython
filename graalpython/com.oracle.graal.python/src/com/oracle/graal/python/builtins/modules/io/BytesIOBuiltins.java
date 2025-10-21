@@ -188,7 +188,7 @@ public final class BytesIOBuiltins extends PythonBuiltins {
                         @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             // data filled in subsequent __init__ call - see BytesIONodeBuiltins.InitNode
-            PBytesIO bytesIO = PFactory.createBytesIO(language, cls, getInstanceShape.execute(cls));
+            PBytesIO bytesIO = PFactory.createBytesIO(cls, getInstanceShape.execute(cls));
             bytesIO.setBuf(PFactory.createByteArray(language, PythonUtils.EMPTY_BYTE_ARRAY));
             return bytesIO;
         }

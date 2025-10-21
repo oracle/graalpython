@@ -88,10 +88,9 @@ public final class BufferedReaderBuiltins extends AbstractBufferedIOBuiltins {
     public abstract static class BufferedReaderNode extends PythonBuiltinNode {
         @Specialization
         static PBuffered doNew(Object cls, @SuppressWarnings("unused") Object arg,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             // data filled in subsequent __init__ call - see BufferedReaderBuiltins.InitNode
-            return PFactory.createBufferedReader(language, cls, getInstanceShape.execute(cls));
+            return PFactory.createBufferedReader(cls, getInstanceShape.execute(cls));
         }
     }
 
