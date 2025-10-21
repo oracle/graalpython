@@ -827,8 +827,9 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
     /**
      * Creates a code unit that will create the type parameters and invoke "make function" with
-     * given code unit to create the function for the {@link StmtTy.FunctionDef} or
-     * {@link StmtTy.AsyncFunctionDef} that we are processing.
+     * given code unit to create the function for the
+     * {@link com.oracle.graal.python.pegparser.sst.StmtTy.FunctionDef} or
+     * {@link com.oracle.graal.python.pegparser.sst.StmtTy.AsyncFunctionDef} that we are processing.
      * <p/>
      * The resulting code unit will take the values of the default arguments and default keyword
      * arguments of the function we are processing as its own arguments. The values of those

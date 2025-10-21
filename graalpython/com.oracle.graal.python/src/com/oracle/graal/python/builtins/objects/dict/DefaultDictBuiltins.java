@@ -105,9 +105,8 @@ public final class DefaultDictBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         PDefaultDict doGeneric(Object cls, Object[] args, PKeyword[] kwargs,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createDefaultDict(language, cls, getInstanceShape.execute(cls));
+            return PFactory.createDefaultDict(cls, getInstanceShape.execute(cls));
         }
     }
 

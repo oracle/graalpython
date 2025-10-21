@@ -112,7 +112,6 @@ public final class GraalPySemLockBuiltins extends PythonBuiltins {
         @Specialization
         static PGraalPySemLock construct(Object cls, int kind, int value, @SuppressWarnings("unused") int maxValue, TruffleString name, boolean unlink,
                         @Bind Node inliningTarget,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PRaiseNode raiseNode) {
             if (kind != PGraalPySemLock.RECURSIVE_MUTEX && kind != PGraalPySemLock.SEMAPHORE) {
@@ -132,7 +131,7 @@ public final class GraalPySemLockBuiltins extends PythonBuiltins {
                     multiprocessing.putNamedSemaphore(name, semaphore);
                 }
             }
-            return PFactory.createGraalPySemLock(language, cls, getInstanceShape.execute(cls), name, kind, semaphore);
+            return PFactory.createGraalPySemLock(cls, getInstanceShape.execute(cls), name, kind, semaphore);
         }
 
         @TruffleBoundary

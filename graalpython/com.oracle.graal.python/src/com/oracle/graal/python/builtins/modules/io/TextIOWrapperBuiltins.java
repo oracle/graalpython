@@ -273,10 +273,9 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
     public abstract static class TextIOWrapperNode extends PythonBuiltinNode {
         @Specialization
         static PTextIO doNew(Object cls, @SuppressWarnings("unused") Object arg,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             // data filled in subsequent __init__ call - see TextIOWrapperBuiltins.InitNode
-            return PFactory.createTextIO(language, cls, getInstanceShape.execute(cls));
+            return PFactory.createTextIO(cls, getInstanceShape.execute(cls));
         }
     }
 

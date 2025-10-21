@@ -116,7 +116,7 @@ public final class LZMADecompressorBuiltins extends PythonBuiltins {
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             // data filled in subsequent __init__ call - see LZMADecompressorBuiltins.InitNode
             PythonContext context = getContext();
-            return PFactory.createLZMADecompressor(context.getLanguage(this), cls, getInstanceShape.execute(cls), context.getNFILZMASupport().isAvailable());
+            return PFactory.createLZMADecompressor(cls, getInstanceShape.execute(cls), context.getNFILZMASupport().isAvailable());
         }
     }
 

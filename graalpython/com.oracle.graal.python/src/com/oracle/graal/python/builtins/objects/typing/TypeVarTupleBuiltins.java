@@ -113,12 +113,11 @@ public final class TypeVarTupleBuiltins extends PythonBuiltins {
         @Specialization
         static PTypeVarTuple newTypeVarTuple(VirtualFrame frame, Object cls, TruffleString name,
                         @Bind Node inliningTarget,
-                        @Bind PythonLanguage language,
                         @Cached CallerNode callerNode,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PyObjectSetAttr setAttrNode) {
             Object module = callerNode.execute(frame, inliningTarget);
-            PTypeVarTuple result = PFactory.createTypeVarTuple(language, cls, getInstanceShape.execute(cls), name);
+            PTypeVarTuple result = PFactory.createTypeVarTuple(cls, getInstanceShape.execute(cls), name);
             setAttrNode.execute(frame, inliningTarget, result, T___MODULE__, module);
             return result;
         }

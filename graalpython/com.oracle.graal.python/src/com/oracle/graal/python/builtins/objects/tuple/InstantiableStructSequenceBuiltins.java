@@ -45,7 +45,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import java.util.Collections;
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -109,7 +108,6 @@ public class InstantiableStructSequenceBuiltins extends PythonBuiltins {
         @Specialization
         static PTuple withDict(VirtualFrame frame, Object cls, Object sequence, Object dict,
                         @Bind Node inliningTarget,
-                        @Bind PythonLanguage language,
                         @Cached StructSequenceBuiltins.GetSizeNode getSizeNode,
                         @Cached StructSequenceBuiltins.GetFieldNamesNode getFieldNamesNode,
                         @Cached ListNodes.FastConstructListNode fastConstructListNode,
@@ -163,7 +161,7 @@ public class InstantiableStructSequenceBuiltins extends PythonBuiltins {
                     dst[i] = PNone.NONE;
                 }
             }
-            return PFactory.createTuple(language, cls, getInstanceShape.execute(cls), new ObjectSequenceStorage(dst, minLen));
+            return PFactory.createTuple(cls, getInstanceShape.execute(cls), new ObjectSequenceStorage(dst, minLen));
         }
     }
 }

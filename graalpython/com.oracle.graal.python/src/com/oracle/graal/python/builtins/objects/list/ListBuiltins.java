@@ -171,9 +171,8 @@ public final class ListBuiltins extends PythonBuiltins {
 
         @Fallback
         protected PList constructList(Object cls, @SuppressWarnings("unused") Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createList(language, cls, getInstanceShape.execute(cls));
+            return PFactory.createList(cls, getInstanceShape.execute(cls));
         }
 
         protected static boolean isBuiltinList(Object cls) {
@@ -504,11 +503,10 @@ public final class ListBuiltins extends PythonBuiltins {
                         @Cached GetListStorageNode getStorageNode,
                         @Cached SequenceStorageNodes.CopyNode copy,
                         @Cached GetClassForNewListNode getClassForNewListNode,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             var sequenceStorage = getStorageNode.execute(inliningTarget, list);
             Object newClass = getClassForNewListNode.execute(inliningTarget, list);
-            return PFactory.createList(language, newClass, getInstanceShape.execute(newClass), copy.execute(inliningTarget, sequenceStorage));
+            return PFactory.createList(newClass, getInstanceShape.execute(newClass), copy.execute(inliningTarget, sequenceStorage));
         }
 
     }
@@ -804,7 +802,6 @@ public final class ListBuiltins extends PythonBuiltins {
                         @Cached GetListStorageNode getStorageNode,
                         @Cached GetClassForNewListNode getClassForNewListNode,
                         @Cached SequenceStorageNodes.ConcatListOrTupleNode concatNode,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PRaiseNode raiseNode) {
             if (!isListNode.execute(inliningTarget, right)) {
@@ -815,7 +812,7 @@ public final class ListBuiltins extends PythonBuiltins {
             var rightStorage = getStorageNode.execute(inliningTarget, right);
             SequenceStorage newStore = concatNode.execute(inliningTarget, leftStorage, rightStorage);
             Object newClass = getClassForNewListNode.execute(inliningTarget, left);
-            return PFactory.createList(language, newClass, getInstanceShape.execute(newClass), newStore);
+            return PFactory.createList(newClass, getInstanceShape.execute(newClass), newStore);
         }
     }
 

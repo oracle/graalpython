@@ -102,7 +102,7 @@ public final class FunctoolsModuleBuiltins extends PythonBuiltins {
                                         "\n" + //
                                         "cache_info_type:    namedtuple class with the fields:\n" + //
                                         "                        hits misses currsize maxsize\n");
-        core.lookupBuiltinModule(T_FUNCTOOLS).setModuleState(PFactory.createPythonObject(core.getLanguage(), PythonObject, PythonObject.getInstanceShape(core.getLanguage())));
+        core.lookupBuiltinModule(T_FUNCTOOLS).setModuleState(PFactory.createPythonObject(PythonObject, PythonObject.getInstanceShape(core.getLanguage())));
     }
 
     // functools.reduce(function, iterable[, initializer])

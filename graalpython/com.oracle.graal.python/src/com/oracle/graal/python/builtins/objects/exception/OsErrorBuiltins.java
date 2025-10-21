@@ -295,7 +295,7 @@ public final class OsErrorBuiltins extends PythonBuiltins {
                 }
             }
 
-            PBaseException self = PFactory.createBaseException(language, type, getInstanceShape.execute(type));
+            PBaseException self = PFactory.createBaseException(type, getInstanceShape.execute(type));
             if (!osErrorUseInit(inliningTarget, type, getSlots)) {
                 osErrorInit(frame, inliningTarget, self, type, args, parsedArgs, pyNumberCheckNode, pyNumberAsSizeNode, baseInitNode);
             } else {

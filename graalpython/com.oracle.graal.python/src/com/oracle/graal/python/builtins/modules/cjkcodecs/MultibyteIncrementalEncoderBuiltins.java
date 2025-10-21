@@ -63,7 +63,6 @@ import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
@@ -130,7 +129,6 @@ public final class MultibyteIncrementalEncoderBuiltins extends PythonBuiltins {
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached TruffleString.EqualNode isEqual,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PRaiseNode raiseNode) { // "|s:IncrementalEncoder"
 
@@ -139,7 +137,7 @@ public final class MultibyteIncrementalEncoderBuiltins extends PythonBuiltins {
                 errors = castToStringNode.execute(inliningTarget, err);
             }
 
-            MultibyteIncrementalEncoderObject self = PFactory.createMultibyteIncrementalEncoderObject(language, type, getInstanceShape.execute(type));
+            MultibyteIncrementalEncoderObject self = PFactory.createMultibyteIncrementalEncoderObject(type, getInstanceShape.execute(type));
 
             Object codec = getAttr.execute(frame, inliningTarget, type, StringLiterals.T_CODEC);
             if (!(codec instanceof MultibyteCodecObject)) {

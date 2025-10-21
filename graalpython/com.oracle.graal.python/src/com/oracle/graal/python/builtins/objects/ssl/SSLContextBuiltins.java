@@ -167,7 +167,6 @@ public final class SSLContextBuiltins extends PythonBuiltins {
         @Specialization
         static PSSLContext createContext(VirtualFrame frame, Object type, int protocol,
                         @Bind Node inliningTarget,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
                         @Cached PRaiseNode raiseNode) {
@@ -185,7 +184,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                     checkHostname = false;
                     verifyMode = SSLModuleBuiltins.SSL_CERT_NONE;
                 }
-                PSSLContext context = PFactory.createSSLContext(language, type, getInstanceShape.execute(type), method, SSLModuleBuiltins.X509_V_FLAG_TRUSTED_FIRST, checkHostname, verifyMode,
+                PSSLContext context = PFactory.createSSLContext(type, getInstanceShape.execute(type), method, SSLModuleBuiltins.X509_V_FLAG_TRUSTED_FIRST, checkHostname, verifyMode,
                                 createSSLContext());
                 long options = SSLOptions.SSL_OP_ALL;
                 if (method != SSLMethod.SSL3) {

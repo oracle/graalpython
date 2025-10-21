@@ -47,7 +47,6 @@ import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorFunctionRootNode;
@@ -290,7 +289,10 @@ public abstract class IsNode extends Node implements BinaryOp {
     }
 
     // pstring (may be interned)
-    /** See {@link StringNodes.InternStringNode} and {@link StringNodes.IsInternedStringNode} */
+    /**
+     * See {@link com.oracle.graal.python.builtins.objects.str.StringNodes.InternStringNode} and
+     * {@link com.oracle.graal.python.builtins.objects.str.StringNodes.IsInternedStringNode}
+     */
     @Specialization
     public static boolean doPString(PString left, PString right) {
         if (left == right) {

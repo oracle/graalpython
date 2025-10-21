@@ -45,7 +45,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___DICT__;
 
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
@@ -63,7 +62,6 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStr
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked1Node;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
-import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSlotDescrGet;
@@ -110,7 +108,6 @@ public final class ThreadLocalBuiltins extends PythonBuiltins {
         @Specialization
         static PThreadLocal construct(Object cls, Object[] args, PKeyword[] keywordArgs,
                         @Bind Node inliningTarget,
-                        @Bind PythonLanguage language,
                         @Cached TpSlots.GetCachedTpSlotsNode getSlots,
                         @Cached PRaiseNode raiseNode,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
@@ -120,7 +117,7 @@ public final class ThreadLocalBuiltins extends PythonBuiltins {
                     throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.INITIALIZATION_ARGUMENTS_ARE_NOT_SUPPORTED);
                 }
             }
-            return PFactory.createThreadLocal(language, cls, getInstanceShape.execute(cls), args, keywordArgs);
+            return PFactory.createThreadLocal(cls, getInstanceShape.execute(cls), args, keywordArgs);
         }
     }
 
@@ -141,8 +138,10 @@ public final class ThreadLocalBuiltins extends PythonBuiltins {
         @Child private CallSlotDescrGet callGetNode;
 
         /**
-         * Keep in sync with {@link ObjectBuiltins.GetAttributeNode} and
-         * {@link TypeBuiltins.GetattributeNode} and {@link MergedObjectTypeModuleGetAttributeNode}
+         * Keep in sync with
+         * {@link com.oracle.graal.python.builtins.objects.object.ObjectBuiltins.GetAttributeNode}
+         * and {@link com.oracle.graal.python.builtins.objects.type.TypeBuiltins.GetattributeNode}
+         * and {@link MergedObjectTypeModuleGetAttributeNode}
          */
         @Specialization
         Object doIt(VirtualFrame frame, PThreadLocal object, Object keyObj,

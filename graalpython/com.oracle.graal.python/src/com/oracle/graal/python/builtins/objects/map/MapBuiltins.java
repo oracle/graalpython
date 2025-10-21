@@ -100,7 +100,6 @@ public final class MapBuiltins extends PythonBuiltins {
                         @Cached(inline = false /* uncommon path */) TypeNodes.HasObjectInitNode hasObjectInitNode,
                         @Cached InlinedLoopConditionProfile loopProfile,
                         @Cached PyObjectGetIter getIter,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PRaiseNode raiseNode) {
             if (keywords.length > 0 && hasObjectInitNode.executeCached(cls)) {
@@ -109,7 +108,7 @@ public final class MapBuiltins extends PythonBuiltins {
             if (args.length < 2) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.MAP_MUST_HAVE_AT_LEAST_TWO_ARGUMENTS);
             }
-            PMap map = PFactory.createMap(language, cls, getInstanceShape.execute(cls));
+            PMap map = PFactory.createMap(cls, getInstanceShape.execute(cls));
             map.setFunction(args[0]);
             Object[] iterators = new Object[args.length - 1];
             loopProfile.profileCounted(inliningTarget, iterators.length);

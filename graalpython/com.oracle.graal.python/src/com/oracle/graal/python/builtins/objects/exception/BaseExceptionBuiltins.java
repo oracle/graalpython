@@ -149,7 +149,7 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
             } else {
                 argsTuple = PFactory.createTuple(language, args);
             }
-            return PFactory.createBaseException(language, cls, getInstanceShape.execute(cls), null, argsTuple);
+            return PFactory.createBaseException(cls, getInstanceShape.execute(cls), null, argsTuple);
         }
 
         @Specialization(guards = "needsNativeAllocationNode.execute(inliningTarget, cls)", limit = "1")

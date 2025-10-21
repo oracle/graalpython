@@ -86,9 +86,8 @@ public class PicklerMemoProxyBuiltins extends PythonBuiltins {
     abstract static class ConstructPicklerMemoProxyNode extends PythonBinaryBuiltinNode {
         @Specialization
         PPicklerMemoProxy construct(Object cls, PPickler pickler,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createPicklerMemoProxy(language, pickler, cls, getInstanceShape.execute(cls));
+            return PFactory.createPicklerMemoProxy(pickler, cls, getInstanceShape.execute(cls));
         }
     }
 

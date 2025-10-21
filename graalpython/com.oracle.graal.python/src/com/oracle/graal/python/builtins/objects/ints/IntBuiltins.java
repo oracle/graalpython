@@ -225,30 +225,26 @@ public final class IntBuiltins extends PythonBuiltins {
 
             @Specialization
             static Object doSubclass(Object cls, int value,
-                            @Bind PythonLanguage language,
                             @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-                return PFactory.createInt(language, cls, getInstanceShape.execute(cls), value);
+                return PFactory.createInt(cls, getInstanceShape.execute(cls), value);
             }
 
             @Specialization
             static Object doSubclass(Object cls, long value,
-                            @Bind PythonLanguage language,
                             @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-                return PFactory.createInt(language, cls, getInstanceShape.execute(cls), value);
+                return PFactory.createInt(cls, getInstanceShape.execute(cls), value);
             }
 
             @Specialization
             static Object doSubclass(Object cls, boolean value,
-                            @Bind PythonLanguage language,
                             @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-                return PFactory.createInt(language, cls, getInstanceShape.execute(cls), PInt.intValue(value));
+                return PFactory.createInt(cls, getInstanceShape.execute(cls), PInt.intValue(value));
             }
 
             @Specialization
             static Object doSubclass(Object cls, PInt value,
-                            @Bind PythonLanguage language,
                             @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-                return PFactory.createInt(language, cls, getInstanceShape.execute(cls), value.getValue());
+                return PFactory.createInt(cls, getInstanceShape.execute(cls), value.getValue());
             }
         }
 

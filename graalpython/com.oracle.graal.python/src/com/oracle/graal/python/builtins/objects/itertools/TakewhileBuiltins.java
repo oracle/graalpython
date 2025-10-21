@@ -100,7 +100,6 @@ public final class TakewhileBuiltins extends PythonBuiltins {
                         @Cached(inline = false /* uncommon path */) TypeNodes.HasObjectInitNode hasObjectInitNode,
                         @Cached PyObjectGetIter getIter,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PRaiseNode raiseNode) {
             if (!isTypeNode.execute(inliningTarget, cls)) {
@@ -114,7 +113,7 @@ public final class TakewhileBuiltins extends PythonBuiltins {
             }
             Object predicate = args[0];
             Object iterable = args[1];
-            PTakewhile self = PFactory.createTakewhile(language, cls, getInstanceShape.execute(cls));
+            PTakewhile self = PFactory.createTakewhile(cls, getInstanceShape.execute(cls));
             self.setPredicate(predicate);
             self.setIterable(getIter.execute(frame, inliningTarget, iterable));
             return self;

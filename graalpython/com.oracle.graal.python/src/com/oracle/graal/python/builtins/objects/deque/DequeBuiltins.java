@@ -154,9 +154,8 @@ public final class DequeBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         PDeque doGeneric(Object cls, Object[] args, PKeyword[] kwargs,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createDeque(language, cls, getInstanceShape.execute(cls));
+            return PFactory.createDeque(cls, getInstanceShape.execute(cls));
         }
     }
 
@@ -289,11 +288,10 @@ public final class DequeBuiltins extends PythonBuiltins {
         @Specialization
         static PDeque doGeneric(PDeque self,
                         @Bind Node inliningTarget,
-                        @Bind PythonLanguage language,
                         @Cached GetClassNode getClassNode,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             Object cls = getClassNode.execute(inliningTarget, self);
-            PDeque copy = PFactory.createDeque(language, cls, getInstanceShape.execute(cls));
+            PDeque copy = PFactory.createDeque(cls, getInstanceShape.execute(cls));
             copy.setMaxLength(self.getMaxLength());
             copy.addAll(self);
             return copy;

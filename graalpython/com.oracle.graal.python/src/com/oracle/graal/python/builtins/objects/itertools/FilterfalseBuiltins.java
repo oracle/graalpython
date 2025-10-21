@@ -105,7 +105,6 @@ public final class FilterfalseBuiltins extends PythonBuiltins {
                         @Cached(inline = false /* uncommon path */) TypeNodes.HasObjectInitNode hasObjectInitNode,
                         @Cached PyObjectGetIter getIter,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PRaiseNode raiseNode) {
             if (!isTypeNode.execute(inliningTarget, cls)) {
@@ -119,7 +118,7 @@ public final class FilterfalseBuiltins extends PythonBuiltins {
             }
             Object func = args[0];
             Object sequence = args[1];
-            PFilterfalse self = PFactory.createFilterfalse(language, cls, getInstanceShape.execute(cls));
+            PFilterfalse self = PFactory.createFilterfalse(cls, getInstanceShape.execute(cls));
             self.setFunc(PGuards.isPNone(func) ? null : func);
             self.setSequence(getIter.execute(frame, inliningTarget, sequence));
             return self;

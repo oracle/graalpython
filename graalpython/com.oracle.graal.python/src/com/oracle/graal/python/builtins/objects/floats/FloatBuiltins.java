@@ -286,21 +286,19 @@ public final class FloatBuiltins extends PythonBuiltins {
             @Specialization(guards = {"!needsNativeAllocation", "isNoValue(obj)"})
             @InliningCutoff
             static Object floatFromNoneManagedSubclass(Object cls, PNone obj, @SuppressWarnings("unused") boolean needsNativeAllocation,
-                            @Bind PythonLanguage language,
                             @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
                 Shape shape = getInstanceShape.execute(cls);
-                return PFactory.createFloat(language, cls, shape, PrimitiveFloatNode.floatFromNoValue(obj));
+                return PFactory.createFloat(cls, shape, PrimitiveFloatNode.floatFromNoValue(obj));
             }
 
             @Specialization(guards = "!needsNativeAllocation")
             @InliningCutoff
             static Object floatFromObjectManagedSubclass(VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") boolean needsNativeAllocation,
                             @Bind Node inliningTarget,
-                            @Bind PythonLanguage language,
                             @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
                             @Shared @Cached PrimitiveFloatNode recursiveCallNode) {
                 Shape shape = getInstanceShape.execute(cls);
-                return PFactory.createFloat(language, cls, shape, recursiveCallNode.execute(frame, inliningTarget, obj));
+                return PFactory.createFloat(cls, shape, recursiveCallNode.execute(frame, inliningTarget, obj));
             }
 
             // logic similar to float_subtype_new(PyTypeObject *type, PyObject *x) from CPython

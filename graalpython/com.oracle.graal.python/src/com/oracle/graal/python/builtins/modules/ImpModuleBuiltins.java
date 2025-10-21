@@ -601,7 +601,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         RootCallTarget callTarget = createCallTarget(core.getContext(), info);
-        PythonModule module = globals == null ? PFactory.createPythonModule(core.getLanguage(), name) : globals;
+        PythonModule module = globals == null ? PFactory.createPythonModule(name) : globals;
 
         if (info.isPackage) {
             /* Set __path__ to the empty list */

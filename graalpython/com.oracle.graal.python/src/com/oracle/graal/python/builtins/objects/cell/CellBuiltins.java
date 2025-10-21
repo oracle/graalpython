@@ -47,7 +47,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
@@ -120,10 +119,9 @@ public final class CellBuiltins extends PythonBuiltins {
         @Specialization
         Object newCell(@SuppressWarnings("unused") Object cls, Object contents,
                         @Bind Node inliningTarget,
-                        @Bind PythonLanguage language,
                         @Cached InlinedConditionProfile nonEmptyProfile) {
             Assumption assumption = getAssumption();
-            PCell cell = PFactory.createCell(language, assumption);
+            PCell cell = PFactory.createCell(assumption);
             if (nonEmptyProfile.profile(inliningTarget, !isNoValue(contents))) {
                 cell.setRef(contents, assumption);
             }

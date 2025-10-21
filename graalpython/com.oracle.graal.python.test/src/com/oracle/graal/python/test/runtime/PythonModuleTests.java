@@ -92,7 +92,7 @@ public class PythonModuleTests {
 
     @Test
     public void pythonModuleTest() {
-        PythonModule module = PFactory.createPythonModule(context.getLanguage(), tsLiteral("testModule"));
+        PythonModule module = PFactory.createPythonModule(tsLiteral("testModule"));
         assertEquals("testModule", module.getAttribute(T___NAME__).toString());
         assertEquals("None", module.getAttribute(T___DOC__).toString());
         assertEquals("None", module.getAttribute(T___PACKAGE__).toString());

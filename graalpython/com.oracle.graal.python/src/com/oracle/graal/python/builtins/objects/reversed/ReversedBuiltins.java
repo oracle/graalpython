@@ -160,16 +160,14 @@ public final class ReversedBuiltins extends PythonBuiltins {
         static PythonObject reversed(Object cls, PString value,
                         @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode castToStringNode,
-                        @Bind PythonLanguage language,
                         @Cached @Shared TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createStringReverseIterator(language, cls, getInstanceShape.execute(cls), castToStringNode.execute(inliningTarget, value));
+            return PFactory.createStringReverseIterator(cls, getInstanceShape.execute(cls), castToStringNode.execute(inliningTarget, value));
         }
 
         @Specialization
         static PythonObject reversed(Object cls, TruffleString value,
-                        @Bind PythonLanguage language,
                         @Cached @Shared TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createStringReverseIterator(language, cls, getInstanceShape.execute(cls), value);
+            return PFactory.createStringReverseIterator(cls, getInstanceShape.execute(cls), value);
         }
 
         @Specialization(guards = {"!isString(sequence)", "!isPRange(sequence)"})
@@ -181,7 +179,6 @@ public final class ReversedBuiltins extends PythonBuiltins {
                         @Cached PySequenceSizeNode pySequenceSizeNode,
                         @Cached InlinedConditionProfile noReversedProfile,
                         @Cached PySequenceCheckNode pySequenceCheck,
-                        @Bind PythonLanguage language,
                         @Cached @Shared TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PRaiseNode raiseNode) {
             Object sequenceKlass = getClassNode.execute(inliningTarget, sequence);
@@ -191,7 +188,7 @@ public final class ReversedBuiltins extends PythonBuiltins {
                     throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.OBJ_ISNT_REVERSIBLE, sequence);
                 } else {
                     int lengthHint = pySequenceSizeNode.execute(frame, inliningTarget, sequence);
-                    return PFactory.createSequenceReverseIterator(language, cls, getInstanceShape.execute(cls), sequence, lengthHint);
+                    return PFactory.createSequenceReverseIterator(cls, getInstanceShape.execute(cls), sequence, lengthHint);
                 }
             } else {
                 return callReversed.executeObject(frame, reversed, sequence);

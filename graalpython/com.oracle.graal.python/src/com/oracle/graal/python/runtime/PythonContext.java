@@ -195,7 +195,6 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NonIdempotent;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
-import com.oracle.truffle.api.instrumentation.AllocationReporter;
 import com.oracle.truffle.api.interop.ExceptionType;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -817,7 +816,6 @@ public final class PythonContext extends Python3Core {
     private PythonLocale currentLocale;
 
     @CompilationFinal(dimensions = 1) private Object[] optionValues;
-    private final AllocationReporter allocationReporter;
 
     /*
      * These maps are used to ensure that each "deserialization" of code in the parser gets a
@@ -1254,7 +1252,6 @@ public final class PythonContext extends Python3Core {
     public PythonContext(PythonLanguage language, TruffleLanguage.Env env) {
         super(language, env);
         this.env = env;
-        this.allocationReporter = env.lookup(AllocationReporter.class);
         this.childContextData = (ChildContextData) env.getConfig().get(CHILD_CONTEXT_DATA);
         this.sharedMultiprocessingData = this.childContextData == null ? new SharedMultiprocessingData(language.namedSemaphores) : childContextData.parentCtx.sharedMultiprocessingData;
         this.handler = new AsyncHandler(this);
@@ -1274,10 +1271,6 @@ public final class PythonContext extends Python3Core {
 
     public NativePointer getNativeNull() {
         return nativeNull;
-    }
-
-    public AllocationReporter getAllocationReporter() {
-        return allocationReporter;
     }
 
     public boolean isChildContext() {
@@ -1722,7 +1715,7 @@ public final class PythonContext extends Python3Core {
             nativeLZMA = NFILZMASupport.createNative(this, "");
         }
 
-        mainModule = PFactory.createPythonModule(getLanguage(), T___MAIN__);
+        mainModule = PFactory.createPythonModule(T___MAIN__);
         mainModule.setAttribute(T___BUILTINS__, getBuiltins());
         mainModule.setAttribute(T___ANNOTATIONS__, PFactory.createDict(getLanguage()));
         SetDictNode.executeUncached(mainModule, PFactory.createDictFixedStorage(getLanguage(), mainModule));

@@ -252,11 +252,10 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
     @Override
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
-        PythonLanguage language = core.getLanguage();
         PythonModule ctypesModule = core.lookupBuiltinModule(T__CTYPES);
-        ctypesModule.setAttribute(tsLiteral("_string_at_addr"), PFactory.createNativeVoidPtr(language, StringAtFunction.create()));
-        ctypesModule.setAttribute(tsLiteral("_cast_addr"), PFactory.createNativeVoidPtr(language, CastFunction.create()));
-        ctypesModule.setAttribute(tsLiteral("_wstring_at_addr"), PFactory.createNativeVoidPtr(language, WStringAtFunction.create()));
+        ctypesModule.setAttribute(tsLiteral("_string_at_addr"), PFactory.createNativeVoidPtr(StringAtFunction.create()));
+        ctypesModule.setAttribute(tsLiteral("_cast_addr"), PFactory.createNativeVoidPtr(CastFunction.create()));
+        ctypesModule.setAttribute(tsLiteral("_wstring_at_addr"), PFactory.createNativeVoidPtr(WStringAtFunction.create()));
         int rtldLocal = RTLD_LOCAL.getValueIfDefined();
         ctypesModule.setAttribute(tsLiteral("RTLD_LOCAL"), rtldLocal);
         ctypesModule.setAttribute(tsLiteral("RTLD_GLOBAL"), RTLD_GLOBAL.getValueIfDefined());
@@ -277,9 +276,9 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         }
         if (handle != null) {
             NativeFunction memmove = MemMoveFunction.create(handle, context);
-            ctypesModule.setAttribute(tsLiteral("_memmove_addr"), PFactory.createNativeVoidPtr(language, memmove, memmove.adr));
+            ctypesModule.setAttribute(tsLiteral("_memmove_addr"), PFactory.createNativeVoidPtr(memmove, memmove.adr));
             NativeFunction memset = MemSetFunction.create(handle, context);
-            ctypesModule.setAttribute(tsLiteral("_memset_addr"), PFactory.createNativeVoidPtr(language, memset, memset.adr));
+            ctypesModule.setAttribute(tsLiteral("_memset_addr"), PFactory.createNativeVoidPtr(memset, memset.adr));
         }
         // If handle == null, and we don't set the attributes, ctypes module is going to fail in
         // __init__.py on importing those attributes from _ctypes. This way the failure will happen
@@ -499,7 +498,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                 TruffleString buf = formatNode.format("LP_%s", name);
                 Object[] args = new Object[]{buf, PyCPointer, PFactory.createDict(language)};
                 result = callNode.execute(frame, PyCPointerType, args, PKeyword.EMPTY_KEYWORDS);
-                key = PFactory.createNativeVoidPtr(language, result);
+                key = PFactory.createNativeVoidPtr(result);
             } else if (isTypeNode.execute(inliningTarget, cls)) {
                 TruffleString buf = formatNode.format("LP_%s", getNameNode.execute(inliningTarget, cls));
                 PTuple bases = PFactory.createTuple(language, new Object[]{PyCPointer});
@@ -688,10 +687,9 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached AuditNode auditNode) {
             PythonContext context = PythonContext.get(inliningTarget);
-            PythonLanguage language = context.getLanguage(inliningTarget);
             auditNode.audit(inliningTarget, "ctypes.dlopen", name);
             if (name.isEmpty()) {
-                return PFactory.createNativeVoidPtr(language, ((CtypesModuleBuiltins) self.getBuiltins()).rtldDefault);
+                return PFactory.createNativeVoidPtr(((CtypesModuleBuiltins) self.getBuiltins()).rtldDefault);
             }
 
             // The loaded library can link against libpython, so we have to make sure it is loaded
@@ -711,7 +709,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                     if (!eqNode.execute(name, MACOS_Security_LIB, TS_ENCODING) && !eqNode.execute(name, MACOS_CoreFoundation_LIB, TS_ENCODING)) {
                         handle = loadNFILibrary(context, ctypes.backendType, name.toJavaStringUncached(), mode);
                         registerAddress(context, handle.adr, handle);
-                        return PFactory.createNativeVoidPtr(language, handle, handle.adr);
+                        return PFactory.createNativeVoidPtr(handle, handle.adr);
                     }
                 }
             } catch (Exception e) {
@@ -764,7 +762,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                 NativeFunction func = new NativeFunction(sym, adr, name, false);
                 registerAddress(context, adr, func);
                 // PyLong_FromVoidPtr(ptr);
-                return PFactory.createNativeVoidPtr(context.getLanguage(inliningTarget), func, adr);
+                return PFactory.createNativeVoidPtr(func, adr);
             } catch (UnsupportedMessageException | UnknownIdentifierException e) {
                 throw raiseNode.raise(inliningTarget, error, e);
             }
@@ -996,7 +994,6 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object doit(CDataObject obj,
                         @Bind Node inliningTarget,
-                        @Bind PythonLanguage language,
                         @Cached PyTypeCheck pyTypeCheck,
                         @Cached AuditNode auditNode,
                         @Cached PRaiseNode raiseNode) {
@@ -1004,7 +1001,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                 return error(obj, raiseNode);
             }
             auditNode.audit(inliningTarget, "ctypes.addressof", obj);
-            return PFactory.createNativeVoidPtr(language, obj.b_ptr);
+            return PFactory.createNativeVoidPtr(obj.b_ptr);
         }
 
         @Fallback
@@ -1802,7 +1799,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                 if (PGuards.isDict(result.b_objects)) {
                     // PyLong_FromVoidPtr((void *)src);
                     PDict dict = (PDict) result.b_objects;
-                    Object index = PFactory.createNativeVoidPtr(language, cdata);
+                    Object index = PFactory.createNativeVoidPtr(cdata);
                     dict.setDictStorage(setItem.execute(null, inliningTarget, dict.getDictStorage(), index, cdata));
                 }
             }
@@ -1842,10 +1839,9 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object memmove(Node inliningTarget, Pointer destPtr, Pointer srcPtr, long size,
-                        @Bind PythonLanguage language,
                         @Cached PointerNodes.MemcpyNode memcpyNode) {
             memcpyNode.execute(inliningTarget, destPtr, srcPtr, (int) size);
-            return PFactory.createNativeVoidPtr(language, destPtr);
+            return PFactory.createNativeVoidPtr(destPtr);
         }
 
     }
@@ -1904,7 +1900,6 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object memset(Node inliningTarget, Pointer ptr, int value, long size,
-                        @Bind PythonLanguage language,
                         @Cached PointerNodes.WriteLongNode writeLongNode,
                         @Cached PointerNodes.WriteByteNode writeByteNode) {
             byte b = (byte) value;
@@ -1924,7 +1919,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
             for (; i < size; i++) {
                 writeByteNode.execute(inliningTarget, ptr.withOffset(i), b);
             }
-            return PFactory.createNativeVoidPtr(language, ptr);
+            return PFactory.createNativeVoidPtr(ptr);
         }
     }
 
@@ -1986,7 +1981,7 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
                         @Cached PointerNodes.ReadBytesNode read,
                         @Cached PointerNodes.StrLenNode strLenNode,
                         @Cached AuditNode auditNode) {
-            auditNode.audit(inliningTarget, "ctypes.string_at", PFactory.createNativeVoidPtr(language, ptr), size);
+            auditNode.audit(inliningTarget, "ctypes.string_at", PFactory.createNativeVoidPtr(ptr), size);
             if (size == -1) {
                 size = strLenNode.execute(inliningTarget, ptr);
             }
@@ -2025,13 +2020,12 @@ public final class CtypesModuleBuiltins extends PythonBuiltins {
         @Specialization
         static TruffleString wstring_at(Pointer ptr, int size,
                         @Bind Node inliningTarget,
-                        @Bind PythonLanguage language,
                         @Cached AuditNode auditNode,
                         @Cached PointerNodes.ReadBytesNode read,
                         @Cached PointerNodes.WCsLenNode wCsLenNode,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
-            auditNode.audit(inliningTarget, "ctypes.wstring_at", PFactory.createNativeVoidPtr(language, ptr), size);
+            auditNode.audit(inliningTarget, "ctypes.wstring_at", PFactory.createNativeVoidPtr(ptr), size);
             if (size == -1) {
                 size = wCsLenNode.execute(inliningTarget, ptr);
             }

@@ -126,9 +126,8 @@ public final class SetBuiltins extends PythonBuiltins {
 
         @Fallback
         public PSet setEmpty(Object cls, @SuppressWarnings("unused") Object arg,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createSet(language, cls, getInstanceShape.execute(cls));
+            return PFactory.createSet(cls, getInstanceShape.execute(cls));
         }
 
         protected static boolean isBuiltinSet(Object cls) {

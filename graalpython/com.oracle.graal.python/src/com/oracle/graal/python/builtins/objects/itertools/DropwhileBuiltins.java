@@ -110,7 +110,6 @@ public final class DropwhileBuiltins extends PythonBuiltins {
                         @Cached(inline = false /* uncommon path */) TypeNodes.HasObjectInitNode hasObjectInitNode,
                         @Cached PyObjectGetIter getIter,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PRaiseNode raiseNode) {
             if (!isTypeNode.execute(inliningTarget, cls)) {
@@ -124,7 +123,7 @@ public final class DropwhileBuiltins extends PythonBuiltins {
             }
             Object predicate = args[0];
             Object iterable = args[1];
-            PDropwhile self = PFactory.createDropwhile(language, cls, getInstanceShape.execute(cls));
+            PDropwhile self = PFactory.createDropwhile(cls, getInstanceShape.execute(cls));
             self.setPredicate(predicate);
             self.setIterable(getIter.execute(frame, inliningTarget, iterable));
             self.setDoneDropping(false);

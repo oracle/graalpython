@@ -46,7 +46,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_NON_NEGATIVE;
 
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
@@ -102,7 +101,6 @@ public class CombinationsWithReplacementBuiltins extends PythonBuiltins {
                         @Cached IteratorNodes.ToArrayNode toArrayNode,
                         @Cached InlinedConditionProfile wrongTypeProfile,
                         @Cached InlinedConditionProfile negativeProfile,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PRaiseNode raiseNode) {
             if (!wrongTypeProfile.profile(inliningTarget, isTypeNode.execute(inliningTarget, cls))) {
@@ -111,7 +109,7 @@ public class CombinationsWithReplacementBuiltins extends PythonBuiltins {
             if (negativeProfile.profile(inliningTarget, r < 0)) {
                 throw raiseNode.raise(inliningTarget, ValueError, MUST_BE_NON_NEGATIVE, "r");
             }
-            PCombinationsWithReplacement self = PFactory.createCombinationsWithReplacement(language, cls, getInstanceShape.execute(cls));
+            PCombinationsWithReplacement self = PFactory.createCombinationsWithReplacement(cls, getInstanceShape.execute(cls));
             self.setPool(toArrayNode.execute(frame, iterable));
             self.setR(r);
 

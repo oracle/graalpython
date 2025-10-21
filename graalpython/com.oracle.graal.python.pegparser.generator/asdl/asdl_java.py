@@ -225,7 +225,7 @@ class AstStateGenerator(Generator):
             emitter.println()
             emitter.println(f'// {c.name.java}.{m.java}')
             self.emit_make_type(emitter, m, c.name, (), (), m.python)
-            emitter.println(f'{m.singleton_field} = factory.createSingleton({m.cls_field});')
+            emitter.println(f'{m.singleton_field} = AstTypeFactory.createSingleton({m.cls_field});')
 
     @staticmethod
     def emit_make_type(emitter: java_file.Emitter, name: model.Name, base_class: Optional[model.Name],

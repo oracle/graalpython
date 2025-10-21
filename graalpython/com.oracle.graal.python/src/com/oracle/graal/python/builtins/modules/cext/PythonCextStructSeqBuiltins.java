@@ -162,7 +162,6 @@ public final class PythonCextStructSeqBuiltins {
                         @Bind Node inliningTarget,
                         @Cached ReadAttributeFromObjectNode readRealSizeNode,
                         @Cached CastToJavaIntExactNode castToIntNode,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PRaiseNode raiseNode) {
             try {
@@ -173,7 +172,7 @@ public final class PythonCextStructSeqBuiltins {
                     int realSize = castToIntNode.execute(inliningTarget, realSizeObj);
                     Object[] values = new Object[realSize];
                     Arrays.fill(values, PNone.NO_VALUE); // Initialize to C NULL
-                    return PFactory.createTuple(language, cls, getInstanceShape.execute(cls), new ObjectSequenceStorage(values));
+                    return PFactory.createTuple(cls, getInstanceShape.execute(cls), new ObjectSequenceStorage(values));
                 }
             } catch (CannotCastException e) {
                 throw CompilerDirectives.shouldNotReachHere("attribute 'n_fields' is expected to be a Java int");

@@ -93,9 +93,8 @@ public final class MemoryBIOBuiltins extends PythonBuiltins {
     abstract static class MemoryBIONode extends PythonUnaryBuiltinNode {
         @Specialization
         static PMemoryBIO create(Object type,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createMemoryBIO(language, type, getInstanceShape.execute(type));
+            return PFactory.createMemoryBIO(type, getInstanceShape.execute(type));
         }
     }
 

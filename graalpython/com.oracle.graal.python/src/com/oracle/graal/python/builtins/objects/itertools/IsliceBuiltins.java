@@ -132,7 +132,6 @@ public final class IsliceBuiltins extends PythonBuiltins {
                         @Cached InlinedBranchProfile wrongTypeBranch,
                         @Cached InlinedBranchProfile wrongArgsBranch,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PRaiseNode raiseNode) {
             if (!isTypeNode.execute(inliningTarget, cls)) {
@@ -203,7 +202,7 @@ public final class IsliceBuiltins extends PythonBuiltins {
                 }
             }
             Object iterable = args[0];
-            PIslice self = PFactory.createIslice(language, cls, getInstanceShape.execute(cls));
+            PIslice self = PFactory.createIslice(cls, getInstanceShape.execute(cls));
             self.setIterable(getIter.execute(frame, inliningTarget, iterable));
             self.setNext(start);
             self.setStop(stop);

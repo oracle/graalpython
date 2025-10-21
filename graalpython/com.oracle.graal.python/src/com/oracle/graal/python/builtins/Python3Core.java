@@ -1230,8 +1230,8 @@ public abstract class Python3Core {
         // now initialize well-known objects
         PythonBuiltinClassType booleanType = PythonBuiltinClassType.Boolean;
         Shape booleanShape = booleanType.getInstanceShape(getLanguage());
-        pyTrue = PFactory.createInt(getLanguage(), booleanType, booleanShape, BigInteger.ONE);
-        pyFalse = PFactory.createInt(getLanguage(), booleanType, booleanShape, BigInteger.ZERO);
+        pyTrue = PFactory.createInt(booleanType, booleanShape, BigInteger.ONE);
+        pyFalse = PFactory.createInt(booleanType, booleanShape, BigInteger.ZERO);
         pyNaN = PFactory.createFloat(getLanguage(), Double.NaN);
     }
 
@@ -1284,7 +1284,7 @@ public abstract class Python3Core {
     private PythonModule createModule(TruffleString name, PythonBuiltins moduleBuiltins) {
         PythonModule mod = builtinModules.get(name);
         if (mod == null) {
-            mod = PFactory.createPythonModule(getLanguage(), name);
+            mod = PFactory.createPythonModule(name);
             if (moduleBuiltins != null) {
                 mod.setBuiltins(moduleBuiltins);
             }
@@ -1321,7 +1321,7 @@ public abstract class Python3Core {
         PythonModule mod = lookupBuiltinModule(s);
         if (mod == null) {
             // use an anonymous module for the side-effects
-            mod = PFactory.createPythonModule(getLanguage(), T___ANONYMOUS__);
+            mod = PFactory.createPythonModule(T___ANONYMOUS__);
         }
         loadFile(s, prefix, mod);
     }

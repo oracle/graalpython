@@ -270,10 +270,9 @@ public final class StringIOBuiltins extends PythonBuiltins {
     public abstract static class StringIONode extends PythonBuiltinNode {
         @Specialization
         static PStringIO doNew(Object cls, @SuppressWarnings("unused") Object arg,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             // data filled in subsequent __init__ call - see StringIONodeBuiltins.InitNode
-            return PFactory.createStringIO(language, cls, getInstanceShape.execute(cls));
+            return PFactory.createStringIO(cls, getInstanceShape.execute(cls));
         }
     }
 

@@ -141,13 +141,12 @@ public final class TupleBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Shared @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
                         @Shared @Cached TupleNodes.ConstructTupleNode constructTupleNode,
                         @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             PTuple tuple = constructTupleNode.execute(frame, iterable);
             if (isSameTypeNode.execute(inliningTarget, cls, PythonBuiltinClassType.PTuple)) {
                 return tuple;
             } else {
-                return PFactory.createTuple(language, cls, getInstanceShape.execute(cls), tuple.getSequenceStorage());
+                return PFactory.createTuple(cls, getInstanceShape.execute(cls), tuple.getSequenceStorage());
             }
         }
 

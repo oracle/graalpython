@@ -116,13 +116,12 @@ public final class GroupByBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PRaiseNode raiseNode) {
             if (!isTypeNode.execute(inliningTarget, cls)) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
             }
-            PGroupBy self = PFactory.createGroupBy(language, cls, getInstanceShape.execute(cls));
+            PGroupBy self = PFactory.createGroupBy(cls, getInstanceShape.execute(cls));
             self.setKeyFunc(PGuards.isNone(key) ? null : key);
             self.setIt(getIter.execute(frame, inliningTarget, iterable));
             return self;

@@ -116,9 +116,8 @@ public final class PropertyBuiltins extends PythonBuiltins {
     public abstract static class PropertyNode extends PythonVarargsBuiltinNode {
         @Specialization
         static PProperty doit(Object cls, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createProperty(language, cls, getInstanceShape.execute(cls));
+            return PFactory.createProperty(cls, getInstanceShape.execute(cls));
         }
     }
 

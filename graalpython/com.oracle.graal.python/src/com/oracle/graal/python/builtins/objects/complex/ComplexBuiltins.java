@@ -244,9 +244,8 @@ public final class ComplexBuiltins extends PythonBuiltins {
             @Specialization(guards = "!needsNativeAllocationNode.execute(inliningTarget, cls)", limit = "1")
             static PComplex doManaged(@SuppressWarnings("unused") Node inliningTarget, Object cls, double real, double imaginary,
                             @SuppressWarnings("unused") @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
-                            @Bind PythonLanguage language,
                             @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-                return PFactory.createComplex(language, cls, getInstanceShape.execute(cls), real, imaginary);
+                return PFactory.createComplex(cls, getInstanceShape.execute(cls), real, imaginary);
             }
 
             @Fallback

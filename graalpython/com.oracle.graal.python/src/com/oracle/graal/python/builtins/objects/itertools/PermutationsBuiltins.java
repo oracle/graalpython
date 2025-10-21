@@ -130,7 +130,6 @@ public final class PermutationsBuiltins extends PythonBuiltins {
                         @Cached InlinedLoopConditionProfile indicesLoopProfile,
                         @Cached InlinedLoopConditionProfile cyclesLoopProfile,
                         @Cached TypeNodes.IsTypeNode isTypeNode,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PRaiseNode raiseNode) {
             if (!wrongTypeProfile.profile(inliningTarget, isTypeNode.execute(inliningTarget, cls))) {
@@ -152,7 +151,7 @@ public final class PermutationsBuiltins extends PythonBuiltins {
                     throw raiseNode.raise(inliningTarget, ValueError, MUST_BE_NON_NEGATIVE, "r");
                 }
             }
-            PPermutations self = PFactory.createPermutations(language, cls, getInstanceShape.execute(cls));
+            PPermutations self = PFactory.createPermutations(cls, getInstanceShape.execute(cls));
             self.setPool(pool);
             self.setR(r);
             int n = pool.length;

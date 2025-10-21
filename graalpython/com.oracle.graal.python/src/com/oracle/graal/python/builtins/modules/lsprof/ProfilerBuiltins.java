@@ -107,7 +107,7 @@ public class ProfilerBuiltins extends PythonBuiltins {
                 if (instrumentInfo != null) {
                     CPUSampler sampler = env.lookup(instrumentInfo, CPUSampler.class);
                     if (sampler != null) {
-                        return PFactory.createProfiler(context.getLanguage(), cls, TypeNodes.GetInstanceShape.executeUncached(cls), sampler);
+                        return PFactory.createProfiler(cls, TypeNodes.GetInstanceShape.executeUncached(cls), sampler);
                     }
                 }
             }

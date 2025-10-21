@@ -110,9 +110,8 @@ public class UnpicklerBuiltins extends PythonBuiltins {
     abstract static class ConstructUnpicklerNode extends PythonVarargsBuiltinNode {
         @Specialization
         PUnpickler construct(Object cls, @SuppressWarnings("unused") Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createUnpickler(language, cls, getInstanceShape.execute(cls));
+            return PFactory.createUnpickler(cls, getInstanceShape.execute(cls));
         }
     }
 

@@ -120,7 +120,7 @@ public final class ChainBuiltins extends PythonBuiltins {
             if (keywords.length > 0 && hasObjectInitNode.executeCached(cls)) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_TAKES_NO_KEYWORD_ARGS, "chain()");
             }
-            PChain self = PFactory.createChain(language, cls, getInstanceShape.execute(cls));
+            PChain self = PFactory.createChain(cls, getInstanceShape.execute(cls));
             self.setSource(getIter.execute(frame, inliningTarget, PFactory.createList(language, args)));
             self.setActive(PNone.NONE);
             return self;

@@ -92,9 +92,8 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(arg)")
         static PFrozenSet frozensetEmpty(Object cls, @SuppressWarnings("unused") PNone arg,
-                        @Bind PythonLanguage language,
                         @Cached @Shared TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createFrozenSet(language, cls, getInstanceShape.execute(cls), EmptyStorage.INSTANCE);
+            return PFactory.createFrozenSet(cls, getInstanceShape.execute(cls), EmptyStorage.INSTANCE);
         }
 
         @Specialization(guards = "isBuiltinClass.profileIsAnyBuiltinClass(inliningTarget, cls)")
@@ -108,19 +107,17 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         static PFrozenSet subFrozensetIdentity(Object cls, PFrozenSet arg,
                         @SuppressWarnings("unused") @Bind Node inliningTarget,
                         @Shared("isBuiltinProfile") @SuppressWarnings("unused") @Cached BuiltinClassProfiles.IsAnyBuiltinClassProfile isBuiltinClass,
-                        @Bind PythonLanguage language,
                         @Cached @Shared TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createFrozenSet(language, cls, getInstanceShape.execute(cls), arg.getDictStorage());
+            return PFactory.createFrozenSet(cls, getInstanceShape.execute(cls), arg.getDictStorage());
         }
 
         @Specialization(guards = {"!isNoValue(iterable)", "!isPFrozenSet(iterable)"})
         static PFrozenSet frozensetIterable(VirtualFrame frame, Object cls, Object iterable,
                         @Bind Node inliningTarget,
                         @Cached HashingCollectionNodes.GetClonedHashingStorageNode getHashingStorageNode,
-                        @Bind PythonLanguage language,
                         @Cached @Shared TypeNodes.GetInstanceShape getInstanceShape) {
             HashingStorage storage = getHashingStorageNode.getForSets(frame, inliningTarget, iterable);
-            return PFactory.createFrozenSet(language, cls, getInstanceShape.execute(cls), storage);
+            return PFactory.createFrozenSet(cls, getInstanceShape.execute(cls), storage);
         }
     }
 

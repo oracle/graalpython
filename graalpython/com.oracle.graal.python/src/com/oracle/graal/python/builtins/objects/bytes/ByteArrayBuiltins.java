@@ -143,10 +143,9 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
     public abstract static class ByteArrayNode extends PythonBuiltinNode {
         @Specialization
         public PByteArray setEmpty(Object cls, @SuppressWarnings("unused") Object arg,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             // data filled in subsequent __init__ call - see BytesCommonBuiltins.InitNode
-            return PFactory.createByteArray(language, cls, getInstanceShape.execute(cls), PythonUtils.EMPTY_BYTE_ARRAY);
+            return PFactory.createByteArray(cls, getInstanceShape.execute(cls), PythonUtils.EMPTY_BYTE_ARRAY);
         }
 
         // TODO: native allocation?
@@ -662,12 +661,11 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
         @Specialization
         static PByteArray copy(PByteArray byteArray,
                         @Bind Node inliningTarget,
-                        @Bind PythonLanguage language,
                         @Cached GetClassNode getClassNode,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached SequenceStorageNodes.ToByteArrayNode toByteArray) {
             Object cls = getClassNode.execute(inliningTarget, byteArray);
-            return PFactory.createByteArray(language, cls, getInstanceShape.execute(cls), toByteArray.execute(inliningTarget, byteArray.getSequenceStorage()));
+            return PFactory.createByteArray(cls, getInstanceShape.execute(cls), toByteArray.execute(inliningTarget, byteArray.getSequenceStorage()));
         }
     }
 

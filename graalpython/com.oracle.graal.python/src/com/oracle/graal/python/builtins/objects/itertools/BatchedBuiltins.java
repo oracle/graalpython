@@ -99,7 +99,6 @@ public final class BatchedBuiltins extends PythonBuiltins {
         static PBatched batched(VirtualFrame frame, Object cls, Object iterable, int n,
                         @Bind Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PRaiseNode raiseNode) {
             if (n < 1) {
@@ -111,7 +110,7 @@ public final class BatchedBuiltins extends PythonBuiltins {
             }
             Object it = getIter.execute(frame, inliningTarget, iterable);
             /* create batchedobject structure */
-            PBatched bo = PFactory.createBatched(language, cls, getInstanceShape.execute(cls));
+            PBatched bo = PFactory.createBatched(cls, getInstanceShape.execute(cls));
             bo.setBatchSize(n);
             bo.setIter(it);
             return bo;

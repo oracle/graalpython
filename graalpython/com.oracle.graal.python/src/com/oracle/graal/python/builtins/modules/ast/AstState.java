@@ -986,7 +986,7 @@ final class AstState {
                         tsa(),
                         ts("Load")
         );
-        singletonLoad = factory.createSingleton(clsLoad);
+        singletonLoad = AstTypeFactory.createSingleton(clsLoad);
 
         // ExprContextTy.Store
         clsStore = factory.makeType(T_C_STORE, clsExprContextTy,
@@ -995,7 +995,7 @@ final class AstState {
                         tsa(),
                         ts("Store")
         );
-        singletonStore = factory.createSingleton(clsStore);
+        singletonStore = AstTypeFactory.createSingleton(clsStore);
 
         // ExprContextTy.Del
         clsDel = factory.makeType(T_C_DEL, clsExprContextTy,
@@ -1004,7 +1004,7 @@ final class AstState {
                         tsa(),
                         ts("Del")
         );
-        singletonDel = factory.createSingleton(clsDel);
+        singletonDel = AstTypeFactory.createSingleton(clsDel);
 
         // BoolOpTy
         clsBoolOpTy = factory.makeType(T_T_BOOLOP, clsAst,
@@ -1021,7 +1021,7 @@ final class AstState {
                         tsa(),
                         ts("And")
         );
-        singletonAnd = factory.createSingleton(clsAnd);
+        singletonAnd = AstTypeFactory.createSingleton(clsAnd);
 
         // BoolOpTy.Or
         clsOr = factory.makeType(T_C_OR, clsBoolOpTy,
@@ -1030,7 +1030,7 @@ final class AstState {
                         tsa(),
                         ts("Or")
         );
-        singletonOr = factory.createSingleton(clsOr);
+        singletonOr = AstTypeFactory.createSingleton(clsOr);
 
         // OperatorTy
         clsOperatorTy = factory.makeType(T_T_OPERATOR, clsAst,
@@ -1047,7 +1047,7 @@ final class AstState {
                         tsa(),
                         ts("Add")
         );
-        singletonAdd = factory.createSingleton(clsAdd);
+        singletonAdd = AstTypeFactory.createSingleton(clsAdd);
 
         // OperatorTy.Sub
         clsSub = factory.makeType(T_C_SUB, clsOperatorTy,
@@ -1056,7 +1056,7 @@ final class AstState {
                         tsa(),
                         ts("Sub")
         );
-        singletonSub = factory.createSingleton(clsSub);
+        singletonSub = AstTypeFactory.createSingleton(clsSub);
 
         // OperatorTy.Mult
         clsMult = factory.makeType(T_C_MULT, clsOperatorTy,
@@ -1065,7 +1065,7 @@ final class AstState {
                         tsa(),
                         ts("Mult")
         );
-        singletonMult = factory.createSingleton(clsMult);
+        singletonMult = AstTypeFactory.createSingleton(clsMult);
 
         // OperatorTy.MatMult
         clsMatMult = factory.makeType(T_C_MATMULT, clsOperatorTy,
@@ -1074,7 +1074,7 @@ final class AstState {
                         tsa(),
                         ts("MatMult")
         );
-        singletonMatMult = factory.createSingleton(clsMatMult);
+        singletonMatMult = AstTypeFactory.createSingleton(clsMatMult);
 
         // OperatorTy.Div
         clsDiv = factory.makeType(T_C_DIV, clsOperatorTy,
@@ -1083,7 +1083,7 @@ final class AstState {
                         tsa(),
                         ts("Div")
         );
-        singletonDiv = factory.createSingleton(clsDiv);
+        singletonDiv = AstTypeFactory.createSingleton(clsDiv);
 
         // OperatorTy.Mod
         clsMod = factory.makeType(T_C_MOD, clsOperatorTy,
@@ -1092,7 +1092,7 @@ final class AstState {
                         tsa(),
                         ts("Mod")
         );
-        singletonMod = factory.createSingleton(clsMod);
+        singletonMod = AstTypeFactory.createSingleton(clsMod);
 
         // OperatorTy.Pow
         clsPow = factory.makeType(T_C_POW, clsOperatorTy,
@@ -1101,7 +1101,7 @@ final class AstState {
                         tsa(),
                         ts("Pow")
         );
-        singletonPow = factory.createSingleton(clsPow);
+        singletonPow = AstTypeFactory.createSingleton(clsPow);
 
         // OperatorTy.LShift
         clsLShift = factory.makeType(T_C_LSHIFT, clsOperatorTy,
@@ -1110,7 +1110,7 @@ final class AstState {
                         tsa(),
                         ts("LShift")
         );
-        singletonLShift = factory.createSingleton(clsLShift);
+        singletonLShift = AstTypeFactory.createSingleton(clsLShift);
 
         // OperatorTy.RShift
         clsRShift = factory.makeType(T_C_RSHIFT, clsOperatorTy,
@@ -1119,7 +1119,7 @@ final class AstState {
                         tsa(),
                         ts("RShift")
         );
-        singletonRShift = factory.createSingleton(clsRShift);
+        singletonRShift = AstTypeFactory.createSingleton(clsRShift);
 
         // OperatorTy.BitOr
         clsBitOr = factory.makeType(T_C_BITOR, clsOperatorTy,
@@ -1128,7 +1128,7 @@ final class AstState {
                         tsa(),
                         ts("BitOr")
         );
-        singletonBitOr = factory.createSingleton(clsBitOr);
+        singletonBitOr = AstTypeFactory.createSingleton(clsBitOr);
 
         // OperatorTy.BitXor
         clsBitXor = factory.makeType(T_C_BITXOR, clsOperatorTy,
@@ -1137,7 +1137,7 @@ final class AstState {
                         tsa(),
                         ts("BitXor")
         );
-        singletonBitXor = factory.createSingleton(clsBitXor);
+        singletonBitXor = AstTypeFactory.createSingleton(clsBitXor);
 
         // OperatorTy.BitAnd
         clsBitAnd = factory.makeType(T_C_BITAND, clsOperatorTy,
@@ -1146,7 +1146,7 @@ final class AstState {
                         tsa(),
                         ts("BitAnd")
         );
-        singletonBitAnd = factory.createSingleton(clsBitAnd);
+        singletonBitAnd = AstTypeFactory.createSingleton(clsBitAnd);
 
         // OperatorTy.FloorDiv
         clsFloorDiv = factory.makeType(T_C_FLOORDIV, clsOperatorTy,
@@ -1155,7 +1155,7 @@ final class AstState {
                         tsa(),
                         ts("FloorDiv")
         );
-        singletonFloorDiv = factory.createSingleton(clsFloorDiv);
+        singletonFloorDiv = AstTypeFactory.createSingleton(clsFloorDiv);
 
         // UnaryOpTy
         clsUnaryOpTy = factory.makeType(T_T_UNARYOP, clsAst,
@@ -1172,7 +1172,7 @@ final class AstState {
                         tsa(),
                         ts("Invert")
         );
-        singletonInvert = factory.createSingleton(clsInvert);
+        singletonInvert = AstTypeFactory.createSingleton(clsInvert);
 
         // UnaryOpTy.Not
         clsNot = factory.makeType(T_C_NOT, clsUnaryOpTy,
@@ -1181,7 +1181,7 @@ final class AstState {
                         tsa(),
                         ts("Not")
         );
-        singletonNot = factory.createSingleton(clsNot);
+        singletonNot = AstTypeFactory.createSingleton(clsNot);
 
         // UnaryOpTy.UAdd
         clsUAdd = factory.makeType(T_C_UADD, clsUnaryOpTy,
@@ -1190,7 +1190,7 @@ final class AstState {
                         tsa(),
                         ts("UAdd")
         );
-        singletonUAdd = factory.createSingleton(clsUAdd);
+        singletonUAdd = AstTypeFactory.createSingleton(clsUAdd);
 
         // UnaryOpTy.USub
         clsUSub = factory.makeType(T_C_USUB, clsUnaryOpTy,
@@ -1199,7 +1199,7 @@ final class AstState {
                         tsa(),
                         ts("USub")
         );
-        singletonUSub = factory.createSingleton(clsUSub);
+        singletonUSub = AstTypeFactory.createSingleton(clsUSub);
 
         // CmpOpTy
         clsCmpOpTy = factory.makeType(T_T_CMPOP, clsAst,
@@ -1216,7 +1216,7 @@ final class AstState {
                         tsa(),
                         ts("Eq")
         );
-        singletonEq = factory.createSingleton(clsEq);
+        singletonEq = AstTypeFactory.createSingleton(clsEq);
 
         // CmpOpTy.NotEq
         clsNotEq = factory.makeType(T_C_NOTEQ, clsCmpOpTy,
@@ -1225,7 +1225,7 @@ final class AstState {
                         tsa(),
                         ts("NotEq")
         );
-        singletonNotEq = factory.createSingleton(clsNotEq);
+        singletonNotEq = AstTypeFactory.createSingleton(clsNotEq);
 
         // CmpOpTy.Lt
         clsLt = factory.makeType(T_C_LT, clsCmpOpTy,
@@ -1234,7 +1234,7 @@ final class AstState {
                         tsa(),
                         ts("Lt")
         );
-        singletonLt = factory.createSingleton(clsLt);
+        singletonLt = AstTypeFactory.createSingleton(clsLt);
 
         // CmpOpTy.LtE
         clsLtE = factory.makeType(T_C_LTE, clsCmpOpTy,
@@ -1243,7 +1243,7 @@ final class AstState {
                         tsa(),
                         ts("LtE")
         );
-        singletonLtE = factory.createSingleton(clsLtE);
+        singletonLtE = AstTypeFactory.createSingleton(clsLtE);
 
         // CmpOpTy.Gt
         clsGt = factory.makeType(T_C_GT, clsCmpOpTy,
@@ -1252,7 +1252,7 @@ final class AstState {
                         tsa(),
                         ts("Gt")
         );
-        singletonGt = factory.createSingleton(clsGt);
+        singletonGt = AstTypeFactory.createSingleton(clsGt);
 
         // CmpOpTy.GtE
         clsGtE = factory.makeType(T_C_GTE, clsCmpOpTy,
@@ -1261,7 +1261,7 @@ final class AstState {
                         tsa(),
                         ts("GtE")
         );
-        singletonGtE = factory.createSingleton(clsGtE);
+        singletonGtE = AstTypeFactory.createSingleton(clsGtE);
 
         // CmpOpTy.Is
         clsIs = factory.makeType(T_C_IS, clsCmpOpTy,
@@ -1270,7 +1270,7 @@ final class AstState {
                         tsa(),
                         ts("Is")
         );
-        singletonIs = factory.createSingleton(clsIs);
+        singletonIs = AstTypeFactory.createSingleton(clsIs);
 
         // CmpOpTy.IsNot
         clsIsNot = factory.makeType(T_C_ISNOT, clsCmpOpTy,
@@ -1279,7 +1279,7 @@ final class AstState {
                         tsa(),
                         ts("IsNot")
         );
-        singletonIsNot = factory.createSingleton(clsIsNot);
+        singletonIsNot = AstTypeFactory.createSingleton(clsIsNot);
 
         // CmpOpTy.In
         clsIn = factory.makeType(T_C_IN, clsCmpOpTy,
@@ -1288,7 +1288,7 @@ final class AstState {
                         tsa(),
                         ts("In")
         );
-        singletonIn = factory.createSingleton(clsIn);
+        singletonIn = AstTypeFactory.createSingleton(clsIn);
 
         // CmpOpTy.NotIn
         clsNotIn = factory.makeType(T_C_NOTIN, clsCmpOpTy,
@@ -1297,7 +1297,7 @@ final class AstState {
                         tsa(),
                         ts("NotIn")
         );
-        singletonNotIn = factory.createSingleton(clsNotIn);
+        singletonNotIn = AstTypeFactory.createSingleton(clsNotIn);
 
         // ComprehensionTy
         clsComprehensionTy = factory.makeType(T_T_COMPREHENSION, clsAst,

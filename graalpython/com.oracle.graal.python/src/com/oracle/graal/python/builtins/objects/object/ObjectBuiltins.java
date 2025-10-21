@@ -90,7 +90,6 @@ import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetBuiltins;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked0Node;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked1Node;
-import com.oracle.graal.python.builtins.objects.thread.ThreadLocalBuiltins;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -299,24 +298,22 @@ public final class ObjectBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!self.needsNativeAllocation()"})
         Object doManagedObject(VirtualFrame frame, PythonManagedClass self, Object[] varargs, PKeyword[] kwargs,
                         @Bind Node inliningTarget,
-                        @Bind PythonLanguage language,
                         @Shared @Cached CheckExcessArgsNode checkExcessArgsNode,
                         @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             checkExcessArgsNode.execute(inliningTarget, self, varargs, kwargs);
             if (self.isAbstractClass()) {
                 throw reportAbstractClass(frame, self);
             }
-            return PFactory.createPythonObject(language, self, getInstanceShape.execute(self));
+            return PFactory.createPythonObject(self, getInstanceShape.execute(self));
         }
 
         @Specialization
         static Object doBuiltinTypeType(PythonBuiltinClassType self, Object[] varargs, PKeyword[] kwargs,
                         @Bind Node inliningTarget,
-                        @Bind PythonLanguage language,
                         @Shared @Cached CheckExcessArgsNode checkExcessArgsNode,
                         @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             checkExcessArgsNode.execute(inliningTarget, self, varargs, kwargs);
-            return PFactory.createPythonObject(language, self, getInstanceShape.execute(self));
+            return PFactory.createPythonObject(self, getInstanceShape.execute(self));
         }
 
         @Specialization(guards = "self.needsNativeAllocation()")
@@ -511,9 +508,10 @@ public final class ObjectBuiltins extends PythonBuiltins {
         @Child private ReadAttributeFromObjectNode attrRead;
 
         /**
-         * Keep in sync with {@link TypeBuiltins.GetattributeNode} and
-         * {@link ThreadLocalBuiltins.GetAttributeNode} and
-         * {@link MergedObjectTypeModuleGetAttributeNode}
+         * Keep in sync with
+         * {@link com.oracle.graal.python.builtins.objects.type.TypeBuiltins.GetattributeNode} and
+         * {@link com.oracle.graal.python.builtins.objects.thread.ThreadLocalBuiltins.GetAttributeNode}
+         * and {@link MergedObjectTypeModuleGetAttributeNode}
          */
         @Specialization
         @SuppressWarnings("truffle-static-method")

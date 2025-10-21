@@ -113,9 +113,8 @@ public final class RandomBuiltins extends PythonBuiltins {
 
         @Specialization
         PRandom random(VirtualFrame frame, Object cls, Object seed,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            PRandom random = PFactory.createRandom(language, cls, getInstanceShape.execute(cls));
+            PRandom random = PFactory.createRandom(cls, getInstanceShape.execute(cls));
             try {
                 setSeed.executeObject(frame, random, seed != PNone.NO_VALUE ? seed : PNone.NONE);
             } catch (SpecialMethodNotFound ignore) {

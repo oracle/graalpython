@@ -141,7 +141,7 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
                     }
                 }
             }
-            return PFactory.createJSONEncoder(PythonLanguage.get(null), cls, TypeNodes.GetInstanceShape.executeUncached(cls),
+            return PFactory.createJSONEncoder(cls, TypeNodes.GetInstanceShape.executeUncached(cls),
                             markers, defaultFn, encoder, indent, keySeparator, itemSeparator, sortKeys, skipKeys, allowNan, fastEncode);
         }
     }

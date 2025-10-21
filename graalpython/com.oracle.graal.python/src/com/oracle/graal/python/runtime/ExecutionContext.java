@@ -292,15 +292,17 @@ public abstract class ExecutionContext {
      * Execution of a Python function should be wrapped with {@link #enter(VirtualFrame)} and
      * {@link #exit(VirtualFrame, PRootNode)}.
      * <p>
-     * When entering the function we create the {@link PFrame.Reference} that represents the current
-     * (possibly not yet materialized virtual frame). From then on, at any point we can refer to the
-     * current {@link PFrame.Reference} instance if we have the current virtual frame at hand.
+     * When entering the function we create the
+     * {@link com.oracle.graal.python.builtins.objects.frame.PFrame.Reference} that represents the
+     * current (possibly not yet materialized virtual frame). From then on, at any point we can
+     * refer to the current {@link com.oracle.graal.python.builtins.objects.frame.PFrame.Reference}
+     * instance if we have the current virtual frame at hand.
      * <p>
      * When leaving the function, we check if the current frame needs to outlive the function
      * execution, i.e., needs to escape. In such case, the frame is materialized to a {@link PFrame}
      * instance, and we copy local variables and some arguments into a new {@link MaterializedFrame}
      * stored in the {@link PFrame} (see {@link MaterializeFrameNode}). The {@link PFrame} is stored
-     * into {@link PFrame.Reference}.
+     * into {@link com.oracle.graal.python.builtins.objects.frame.PFrame.Reference}.
      * <p>
      * The frame may have been matarialized already during the function execution, in such case we
      * just synchronize the existing {@link PFrame} with the virtual frame when leaving the

@@ -130,7 +130,7 @@ public final class ZipBuiltins extends PythonBuiltins {
                 Object item = args[i];
                 iterables[i] = getIter.execute(frame, inliningTarget, item);
             }
-            return PFactory.createZip(PythonLanguage.get(inliningTarget), cls, getInstanceShape.execute(cls), iterables, strict);
+            return PFactory.createZip(cls, getInstanceShape.execute(cls), iterables, strict);
         }
     }
 

@@ -48,7 +48,6 @@ import com.oracle.graal.python.builtins.objects.module.ModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked1Node;
-import com.oracle.graal.python.builtins.objects.thread.ThreadLocalBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
@@ -77,9 +76,11 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
- * A node merging the logic of {@link ObjectBuiltins.GetAttributeNode},
- * {@link TypeBuiltins.GetattributeNode} and {@link ModuleBuiltins.ModuleGetattributeNode} to reduce
- * code size by about 3x for host inlining
+ * A node merging the logic of
+ * {@link com.oracle.graal.python.builtins.objects.object.ObjectBuiltins.GetAttributeNode},
+ * {@link com.oracle.graal.python.builtins.objects.type.TypeBuiltins.GetattributeNode} and
+ * {@link com.oracle.graal.python.builtins.objects.module.ModuleBuiltins.ModuleGetattributeNode} to
+ * reduce code size by about 3x for host inlining
  */
 @GenerateUncached
 @GenerateInline
@@ -109,9 +110,12 @@ abstract class MergedObjectTypeModuleGetAttributeInnerNode extends PNodeWithCont
     public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object object, TruffleString key, Object type, TpSlots slots);
 
     /**
-     * Keep in sync with {@link ObjectBuiltins.GetAttributeNode} and
-     * {@link TypeBuiltins.GetattributeNode} and {@link ThreadLocalBuiltins.GetAttributeNode} and
-     * {@link ModuleBuiltins.ModuleGetattributeNode}
+     * Keep in sync with
+     * {@link com.oracle.graal.python.builtins.objects.object.ObjectBuiltins.GetAttributeNode} and
+     * {@link com.oracle.graal.python.builtins.objects.type.TypeBuiltins.GetattributeNode} and
+     * {@link com.oracle.graal.python.builtins.objects.thread.ThreadLocalBuiltins.GetAttributeNode}
+     * and
+     * {@link com.oracle.graal.python.builtins.objects.module.ModuleBuiltins.ModuleGetattributeNode}
      */
     @Specialization(guards = {"slots.tp_getattro() == cachedSlot", "isObjectTypeModuleGetAttribute(cachedSlot)"}, limit = "1")
     static Object doIt(VirtualFrame frame, Node inliningTarget, Object object, TruffleString key, Object type, @SuppressWarnings("unused") TpSlots slots,

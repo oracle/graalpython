@@ -1026,7 +1026,7 @@ public final class CFieldBuiltins extends PythonBuiltins {
                 long val = (long) p;
                 return val < 0 ? PFactory.createInt(language, PInt.longToUnsignedBigInteger(val)) : val;
             }
-            return PFactory.createNativeVoidPtr(language, p);
+            return PFactory.createNativeVoidPtr(p);
         }
     }
 }

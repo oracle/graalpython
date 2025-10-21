@@ -46,7 +46,6 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
@@ -97,9 +96,8 @@ public final class StaticmethodBuiltins extends PythonBuiltins {
     public abstract static class StaticmethodNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object doObjectIndirect(Object cls, @SuppressWarnings("unused") Object callable,
-                        @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            return PFactory.createStaticmethod(language, cls, getInstanceShape.execute(cls));
+            return PFactory.createStaticmethod(cls, getInstanceShape.execute(cls));
         }
     }
 
@@ -124,7 +122,7 @@ public final class StaticmethodBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetNode extends DescrGetBuiltinNode {
         /**
-         * @see ClassmethodBuiltins.GetNode#getCached
+         * @see ClassmethodCommonBuiltins.GetNode#getCached
          */
         @Specialization(guards = {"isSingleContext()", "cachedSelf == self", "cachedCallable != null"}, limit = "3")
         static Object getCached(@SuppressWarnings("unused") PDecoratedMethod self, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") Object type,
