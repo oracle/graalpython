@@ -1,0 +1,19 @@
+[
+  {
+    "name": "com.oracle.graal.python.shell.JLineConsoleHandler",
+    "methods": [
+      {
+        "name": "initializeReadline",
+        "parameterTypes": [
+          "org.graalvm.polyglot.Value"
+        ]
+      },
+      {
+        "name": "readLine",
+        "parameterTypes": [
+          "java.lang.String"
+        ]
+      }
+    ]
+  }
+]

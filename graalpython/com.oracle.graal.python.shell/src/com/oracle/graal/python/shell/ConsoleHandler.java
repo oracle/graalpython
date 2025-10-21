@@ -40,19 +40,8 @@
  */
 package com.oracle.graal.python.shell;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.function.BiConsumer;
-import java.util.function.BooleanSupplier;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.IntConsumer;
-import java.util.function.IntFunction;
-import java.util.function.IntSupplier;
-
-import org.graalvm.polyglot.Context;
 
 /**
  * The interface to a source of input/output for the context, which may have different
@@ -60,26 +49,7 @@ import org.graalvm.polyglot.Context;
  */
 public abstract class ConsoleHandler {
 
-    /**
-     * Read a line of input, newline is <b>NOT</b> included in result.
-     */
-    public final String readLine() {
-        return readLine(true);
-    }
-
-    public abstract String readLine(boolean prompt);
-
-    public abstract void setPrompt(String prompt);
-
-    public void setContext(@SuppressWarnings("unused") Context context) {
-        // ignore by default
-    }
-
-    @SuppressWarnings("unused")
-    public void setupReader(BooleanSupplier shouldRecord, IntSupplier getSize, Consumer<String> addItem, IntFunction<String> getItem, BiConsumer<Integer, String> setItem, IntConsumer removeItem,
-                    Runnable clear, Function<String, List<String>> completer) {
-        // ignore by default
-    }
+    public abstract String readLine(String prompt);
 
     public InputStream createInputStream() {
         return new InputStream() {
@@ -87,13 +57,13 @@ public abstract class ConsoleHandler {
             int pos = 0;
 
             @Override
-            public int read() throws IOException {
+            public int read() {
                 if (pos < 0) {
                     pos = 0;
                     return -1;
                 } else if (buffer == null) {
                     assert pos == 0;
-                    String line = readLine(false);
+                    String line = readLine(null);
                     if (line == null) {
                         return -1;
                     }
@@ -108,15 +78,5 @@ public abstract class ConsoleHandler {
                 }
             }
         };
-    }
-
-    public int getTerminalWidth() {
-        // default value
-        return 80;
-    }
-
-    public int getTerminalHeight() {
-        // default value
-        return 25;
     }
 }

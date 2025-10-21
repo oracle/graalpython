@@ -2660,8 +2660,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 // Ignore
             }
 
-            Object consoleHandler = PyObjectLookupAttr.executeUncached(sysModule, tsLiteral("_console_handler"));
-            if (!(consoleHandler instanceof PNone)) {
+            Object consoleHandler = ReadlineModuleBuiltins.getConsoleHandlerIfInitialized(context);
+            if (consoleHandler != null) {
                 boolean tty = false;
                 try {
                     long fileno = PyLongAsLongNode.executeUncached(PyObjectCallMethodObjArgs.executeUncached(stdin, T_FILENO));
@@ -2674,16 +2674,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 if (tty) {
                     InteropLibrary lib = InteropLibrary.getUncached();
                     try {
-                        boolean havePrompt = !(prompt instanceof PNone);
-                        if (havePrompt) {
-                            TruffleString promptStr = PyObjectStrAsTruffleStringNode.executeUncached(prompt);
-                            lib.invokeMember(consoleHandler, "setPrompt", promptStr);
-                        }
+                        String promptStr = prompt instanceof PNone ? "" : PyObjectStrAsTruffleStringNode.executeUncached(prompt).toJavaStringUncached();
                         try (var gil = GilNode.uncachedRelease()) {
                             // TODO can we make it interruptible?
                             Object line;
                             try {
-                                line = lib.invokeMember(consoleHandler, "readLine", havePrompt);
+                                line = lib.invokeMember(consoleHandler, "readLine", promptStr);
                             } catch (AbstractTruffleException e) {
                                 try {
                                     if ("UserInterruptException".equals(lib.asString(lib.getMetaSimpleName(lib.getMetaObject(e))))) {
