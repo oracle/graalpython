@@ -1192,7 +1192,6 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
      * exiting. So,in either case, we never return.
      */
     private int readEvalPrint(Context context, ConsoleHandler consoleHandler, Value sysModule) {
-        int lastStatus = 0;
         try {
             Value hook = null;
             try {
@@ -1220,7 +1219,6 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                     String ps2 = null;
                     StringBuilder sb = new StringBuilder(input).append('\n');
                     while (true) { // processing subsequent lines while input is incomplete
-                        lastStatus = 0;
                         try {
                             context.eval(Source.newBuilder(getLanguageId(), sb.toString(), "<stdin>").interactive(true).buildLiteral());
                         } catch (PolyglotException e) {
@@ -1280,10 +1278,6 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                                  * system may be broken
                                  */
                                 System.err.println("An internal error occurred, continue at your own risk");
-                                lastStatus = 1;
-                            } else {
-                                // drop through to continue REPL and remember last eval was an error
-                                lastStatus = 1;
                             }
                         }
                         break;
@@ -1295,7 +1289,7 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                         } catch (PolyglotException e2) {
                             if (e2.isExit()) {
                                 // don't use the exit code from the PolyglotException
-                                return lastStatus;
+                                return 0;
                             } else if (e2.isCancelled()) {
                                 continue;
                             }
@@ -1303,7 +1297,7 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                         }
                     }
                     System.out.println();
-                    return lastStatus;
+                    return 0;
                 } catch (UserInterruptException e) {
                     // interrupted by ctrl-c
                 }
