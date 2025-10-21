@@ -13,7 +13,15 @@
         "parameterTypes": [
           "java.lang.String"
         ]
+      },
+      {
+        "name": "getCompletionState",
+        "parameterTypes": []
       }
     ]
+  },
+  {
+    "name": "com.oracle.graal.python.shell.JLineConsoleHandler$CompletionState",
+    "allPublicFields": true
   }
 ]

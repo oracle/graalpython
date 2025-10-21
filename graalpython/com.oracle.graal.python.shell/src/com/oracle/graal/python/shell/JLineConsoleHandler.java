@@ -75,6 +75,7 @@ public class JLineConsoleHandler extends ConsoleHandler {
     private final OutputStream outputStream;
     private LineReader reader;
     private final LinkedList<String> lineBuffer = new LinkedList<>();
+    private CompletionState completionState;
 
     JLineConsoleHandler(InputStream inputStream, OutputStream outputStream) {
         this.inputStream = inputStream;
@@ -113,33 +114,32 @@ public class JLineConsoleHandler extends ConsoleHandler {
             if (word != null) {
                 Value completer = getCompleter.execute();
                 if (completer.canExecute()) {
-                    int i = 0;
-                    while (true) {
-                        Value completerResult = completer.execute(word, i++);
-                        if (completerResult.isString()) {
-                            String completion = completerResult.asString();
-                            candidates.add(new Candidate(completion, completion, null, null, null, null, false));
-                        } else {
-                            break;
+                    try {
+                        completionState = new CompletionState();
+                        completionState.line = pl.line();
+                        completionState.beginIdx = pl.cursor() - pl.word().length();
+                        completionState.endIdx = pl.cursor();
+                        int i = 0;
+                        while (true) {
+                            Value completerResult = completer.execute(word, i++);
+                            if (completerResult.isString()) {
+                                String completion = completerResult.asString();
+                                candidates.add(new Candidate(completion, completion, null, null, null, null, false));
+                            } else {
+                                break;
+                            }
                         }
+                    } finally {
+                        completionState = null;
                     }
                 }
             }
         });
 
-        builder.parser(new DefaultParser() {
-            @Override
-            public boolean isDelimiterChar(CharSequence buffer, int pos) {
-                // Never count a last character of a char sequence as delimiter. The REPL completer
-                // implemented by `rlcompleter.py` adds a trailing whitespace to keywords,
-                // e.g. 'raise '. The default DefaultParser implementation always escaped this
-                // whitespace leading to wrong completions like 'raise\ '.
-                if (pos == buffer.length() - 1) {
-                    return false;
-                }
-                return Character.isWhitespace(buffer.charAt(pos));
-            }
-        });
+        DefaultParser parser = new DefaultParser();
+        // Disable escaping
+        parser.escapeChars(new char[0]);
+        builder.parser(parser);
 
         reader = builder.build();
         reader.option(LineReader.Option.DISABLE_EVENT_EXPANSION, true);
@@ -166,6 +166,13 @@ public class JLineConsoleHandler extends ConsoleHandler {
         binding.bind(new Macro(KeyMap.translate("/")), KeyMap.translate("^[OQ"));
     }
 
+    public static class CompletionState {
+        public String line;
+        public int beginIdx;
+        public int endIdx;
+    }
+
+    // Used via interop
     @Override
     public String readLine(String prompt) {
         if (lineBuffer.isEmpty()) {
@@ -181,6 +188,12 @@ public class JLineConsoleHandler extends ConsoleHandler {
             }
         }
         return lineBuffer.poll();
+    }
+
+    // Used via interop
+    @SuppressWarnings("unused")
+    public CompletionState getCompletionState() {
+        return completionState;
     }
 
     private static class HistoryImpl implements History {
