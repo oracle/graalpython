@@ -162,8 +162,9 @@ class TestHistoryManipulation (unittest.TestCase):
 
 class TestReadline(unittest.TestCase):
 
-    @unittest.skipIf(readline._READLINE_VERSION < 0x0601 and not is_editline,
-                     "not supported in this library version")
+    # GraalPy change: no _READLINE_VERSION
+    # @unittest.skipIf(readline._READLINE_VERSION < 0x0601 and not is_editline,
+    #                  "not supported in this library version")
     def test_init(self):
         # Issue #19884: Ensure that the ANSI sequence "\033[1034h" is not
         # written into stdout when the readline module is imported and stdout
@@ -308,8 +309,9 @@ print("history", ascii(readline.get_history_item(1)))
     #   See https://cnswww.cns.cwru.edu/php/chet/readline/CHANGES
     # - editline: history size is broken on OS X 10.11.6.
     #   Newer versions were not tested yet.
-    @unittest.skipIf(readline._READLINE_VERSION < 0x600,
-                     "this readline version does not support history-size")
+    # GraalPy change: no _READLINE_VERSION
+    # @unittest.skipIf(readline._READLINE_VERSION < 0x600,
+    #                  "this readline version does not support history-size")
     @unittest.skipIf(is_editline,
                      "editline history size configuration is broken")
     def test_history_size(self):
