@@ -297,6 +297,8 @@
         }),
     },
 
+    local need_pgo = task_spec({runAfter: ["python-pgo-profile-post_merge-linux-amd64-jdk-latest"]}),
+    local need_bc_pgo = task_spec({runAfter: ["python-pgo-profile-bytecode-dsl-post_merge-linux-amd64-jdk-latest"]}),
     local forks_warmup = forks("./mx.graalpython/warmup-fork-counts.json"),
     local forks_meso = forks("meso.json"),
     local raw_results = task_spec({
@@ -313,7 +315,7 @@
     local bench_task_dict = {
         [bench]: bench_task(bench) + platform_spec(no_jobs) + bench_variants({
             "vm_name:graalvm_ce_default"                                : {"linux:amd64:jdk-latest" : on_demand + t("08:00:00")},
-            "vm_name:graalvm_ee_default"                                : {"linux:amd64:jdk-latest" : post_merge + t("08:00:00")},
+            "vm_name:graalvm_ee_default"                                : {"linux:amd64:jdk-latest" : post_merge + t("08:00:00") + need_pgo},
             "vm_name:graalpython_core"                                  : {"linux:amd64:jdk-latest" : on_demand      + t("08:00:00")},
             "vm_name:graalpython_enterprise"                            : {"linux:amd64:jdk-latest" : daily      + t("08:00:00"),
                 "job_type:checkup"                                      : {"linux:amd64:jdk-latest" : on_demand  + t("08:00:00")}
@@ -332,7 +334,7 @@
     } + {
         [bench]: bench_task(bench) + platform_spec(no_jobs) + bench_variants({
             "vm_name:graalvm_ce_default"                                : {"linux:amd64:jdk-latest" : on_demand + t("08:00:00")},
-            "vm_name:graalvm_ee_default"                                : {"linux:amd64:jdk-latest" : post_merge + t("08:00:00")},
+            "vm_name:graalvm_ee_default"                                : {"linux:amd64:jdk-latest" : post_merge + t("08:00:00") + need_pgo},
             "vm_name:graalpython_core"                                  : {"linux:amd64:jdk-latest" : on_demand      + t("08:00:00")},
             "vm_name:graalpython_core_panama"                           : {"linux:amd64:jdk-latest" : on_demand  + t("08:00:00")},
             "vm_name:graalpython_enterprise"                            : {"linux:amd64:jdk-latest" : daily      + t("08:00:00"),
@@ -399,14 +401,14 @@
         for bench in ["warmup"]
     } + {
         [bench]: bench_task(bench) + platform_spec(no_jobs) + bench_variants({
-            "vm_name:graalvm_ee_default_interpreter"                    : {"linux:amd64:jdk-latest" : post_merge     + t("02:00:00")},
+            "vm_name:graalvm_ee_default_interpreter"                    : {"linux:amd64:jdk-latest" : post_merge     + t("02:00:00") + need_pgo},
             "vm_name:graalpython_enterprise_interpreter"                : {"linux:amd64:jdk-latest" : weekly         + t("02:00:00")},
             "vm_name:cpython"                                           : {"linux:amd64:jdk-latest" : weekly         + t("01:00:00")},
         }),
         for bench in ["heap", "micro_small_heap"]
     } + {
         [bench + "-bytecode-dsl"]: bench_task(bench) + bytecode_dsl_bench + platform_spec(no_jobs) + bench_variants({
-            "vm_name:graalvm_ee_default_interpreter_bc_dsl"             : {"linux:amd64:jdk-latest" : post_merge     + t("02:00:00")},
+            "vm_name:graalvm_ee_default_interpreter_bc_dsl"             : {"linux:amd64:jdk-latest" : post_merge     + t("02:00:00") + need_bc_pgo},
             "vm_name:graalpython_enterprise_interpreter_bc_dsl"         : {"linux:amd64:jdk-latest" : weekly         + t("02:00:00")},
         }),
         for bench in ["heap", "micro_small_heap"]

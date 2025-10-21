@@ -316,7 +316,7 @@ def libpythonvm_build_args():
             # when running in the CI on a bench runner, ensure a PGO profile
             if (
                     any(b.startswith("release/") for b in [branch, os.environ.get("TO_BRANCH", "")])
-                    or os.environ.get('BUILD_NAME', '').startswith('pybench-')
+                    or ("bench" in os.environ.get('BUILD_NAME', ''))
             ):
                 mx.warn("PGO profile must exist for benchmarking and release, creating one now...")
                 profile = graalpy_native_pgo_build_and_test()
