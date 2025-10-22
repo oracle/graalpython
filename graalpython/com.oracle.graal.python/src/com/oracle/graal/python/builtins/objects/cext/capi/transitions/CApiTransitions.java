@@ -653,13 +653,20 @@ public abstract class CApiTransitions {
             IdReference<?> ref = iterator.next().getValue();
             if (ref instanceof PythonObjectReference reference) {
                 if (!reference.isAllocatedFromJava()) {
-                    // This memory must be free from C
-                    referencesToBeFreed.add(reference.pointer);
-                    iterator.remove();
+                    // This memory must be freed from C
+                    if (subNativeRefCount(reference.pointer, MANAGED_REFCNT) == 0) {
+                        // Only the managed references exist, we can dealloc
+                        referencesToBeFreed.add(reference.pointer);
+                        iterator.remove();
+                    } else {
+                        // There is a native reference which presumably will decref this one at a
+                        // later point and call tp_dealloc then
+                    }
                 }
             }
         }
         releaseNativeObjects(context, referencesToBeFreed);
+        pollReferenceQueue();
     }
 
     public static void freeNativeReplacementStructs(PythonContext context, HandleContext handleContext) {
@@ -668,9 +675,12 @@ public abstract class CApiTransitions {
             if (ref instanceof PythonObjectReference reference) {
                 // We don't expect references to wrappers that would have a native object stub.
                 assert reference.handleTableIndex == -1;
-                // We expect at this point that there are only references allocated from Java
-                assert reference.isAllocatedFromJava();
-                freeNativeStruct(reference);
+                // We expect at this point that most if not all references left were allocated
+                // from Java and can be freed here. There may be stragglers that are waiting
+                // for a GC though, so we have to check.
+                if (reference.isAllocatedFromJava()) {
+                    freeNativeStruct(reference);
+                }
             }
         });
         handleContext.nativeLookup.clear();
