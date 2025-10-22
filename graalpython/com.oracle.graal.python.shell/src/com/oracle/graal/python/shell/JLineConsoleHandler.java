@@ -43,6 +43,10 @@ package com.oracle.graal.python.shell;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Reader;
+import java.io.Writer;
+import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Collections;
@@ -69,11 +73,14 @@ import org.graalvm.shadowed.org.jline.reader.UserInterruptException;
 import org.graalvm.shadowed.org.jline.reader.impl.DefaultParser;
 import org.graalvm.shadowed.org.jline.terminal.Terminal;
 import org.graalvm.shadowed.org.jline.terminal.TerminalBuilder;
+import org.graalvm.shadowed.org.jline.utils.InputStreamReader;
 
 public class JLineConsoleHandler extends ConsoleHandler {
     private final InputStream inputStream;
     private final OutputStream outputStream;
     private LineReader reader;
+    private Reader fallbackReader;
+    private Writer fallbackWriter;
     private final LinkedList<String> lineBuffer = new LinkedList<>();
     private CompletionState completionState;
 
@@ -175,6 +182,49 @@ public class JLineConsoleHandler extends ConsoleHandler {
     // Used via interop
     @Override
     public String readLine(String prompt) {
+        if (reader == null) {
+            if (fallbackReader == null) {
+                Charset charset;
+                try {
+                    charset = Charset.forName(System.getProperty("stdin.encoding"));
+                } catch (Exception e) {
+                    charset = Charset.defaultCharset();
+                }
+                // Note: using InputStreamReader from jline.utils for truly unbuffered reads
+                fallbackReader = new InputStreamReader(inputStream, charset);
+            }
+            try {
+                if (prompt != null && !prompt.isEmpty()) {
+                    if (fallbackWriter == null) {
+                        fallbackWriter = new OutputStreamWriter(outputStream);
+                    }
+                    fallbackWriter.write(prompt);
+                    fallbackWriter.flush();
+                }
+                StringBuilder sb = new StringBuilder();
+                while (true) {
+                    int c = inputStream.read();
+                    if (c < 0) {
+                        // EOF
+                        if (!sb.isEmpty()) {
+                            break;
+                        }
+                        if (prompt != null) {
+                            fallbackWriter.write("\n");
+                            fallbackWriter.flush();
+                        }
+                        return null;
+                    } else if (c == '\n') {
+                        break;
+                    } else if (c != '\r') {
+                        sb.append((char) c);
+                    }
+                }
+                return sb.toString();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
         if (lineBuffer.isEmpty()) {
             try {
                 String lines = reader.readLine(prompt);

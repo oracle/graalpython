@@ -74,6 +74,7 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
@@ -128,7 +129,10 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
     public static Object getConsoleHandlerIfInitialized(PythonContext context) {
         PythonModule module = context.lookupBuiltinModule(T_READLINE);
         if (module != null) {
-            return module.getModuleState(LocalData.class).consoleHandler;
+            LocalData moduleState = module.getModuleState(LocalData.class);
+            if (moduleState != null) {
+                return moduleState.consoleHandler;
+            }
         }
         return null;
     }
@@ -403,7 +407,7 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
                     }
                 }
             } catch (InteropException e) {
-                // Fall through
+                LOGGER.fine(() -> PythonUtils.formatJString("Exception in getting completion state member %s: %s", member, e));
             }
         }
         return null;
@@ -416,7 +420,7 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
             try {
                 return InteropLibrary.getUncached().asInt(idx);
             } catch (InteropException e) {
-                // Fall through
+                LOGGER.fine(() -> PythonUtils.formatJString("Exception in getting completion state member %s: %s", member, e));
             }
         }
         return defaultValue;
@@ -433,7 +437,7 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
                 try {
                     return InteropLibrary.getUncached().asTruffleString(lineObj);
                 } catch (InteropException e) {
-                    // Fall through
+                    LOGGER.fine(() -> PythonUtils.formatJString("Exception in getting completion state member %s: %s", "line", e));
                 }
             }
             return T_EMPTY_STRING;
