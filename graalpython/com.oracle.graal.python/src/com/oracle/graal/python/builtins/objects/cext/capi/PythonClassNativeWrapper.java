@@ -197,15 +197,15 @@ public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWr
         return PythonUtils.formatJString("PythonClassNativeWrapper(%s, isNative=%s)", getDelegate(), isNative());
     }
 
-    public Object getReplacement(InteropLibrary lib) {
+    public Object getReplacement() {
         if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, replacement == null)) {
-            initializeReplacement(lib);
+            initializeReplacement();
         }
         return replacement;
     }
 
     @TruffleBoundary
-    private void initializeReplacement(InteropLibrary lib) {
+    private void initializeReplacement() {
         /*
          * Note: it's important that we first allocate the empty 'PyTypeStruct' and register it to
          * the wrapper before we do the type's initialization. Otherwise, we will run into an

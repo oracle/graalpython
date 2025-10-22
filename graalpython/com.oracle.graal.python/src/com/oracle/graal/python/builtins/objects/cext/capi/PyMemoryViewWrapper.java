@@ -65,7 +65,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
  * Wrapper object for {@code PMemoryView}.
  */
 public final class PyMemoryViewWrapper extends PythonAbstractObjectNativeWrapper {
-    private Object replacement;
+    private NativePointer replacement;
 
     public PyMemoryViewWrapper(PythonObject delegate) {
         super(delegate);
@@ -144,7 +144,7 @@ public final class PyMemoryViewWrapper extends PythonAbstractObjectNativeWrapper
         return mem;
     }
 
-    public Object getReplacement(InteropLibrary lib) {
+    public Object getReplacement() {
         if (replacement == null) {
             long ptr = allocate((PMemoryView) getDelegate());
             // TODO: need to convert to interop pointer for NFI for now
