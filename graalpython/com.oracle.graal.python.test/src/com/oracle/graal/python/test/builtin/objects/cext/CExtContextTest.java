@@ -81,7 +81,7 @@ public class CExtContextTest {
 
     private static class TestCExtContext extends CExtContext {
         public TestCExtContext(PythonContext context, Object library) {
-            super(context, library);
+            super(context, library, null);
         }
 
         public static TruffleString getBN(TruffleString s) {

@@ -317,7 +317,7 @@ public final class CApiContext extends CExtContext {
     }
 
     public CApiContext(PythonContext context, Object library, NativeLibraryLocator locator) {
-        super(context, library);
+        super(context, library, locator.getCapiLibrary());
         this.nativeSymbolCache = new Object[NativeCAPISymbol.values().length];
         this.nativeLibraryLocator = locator;
 

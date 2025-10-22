@@ -726,6 +726,10 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     public void postInitialize(Python3Core core) {
         postInitialize0(core);
         initStd(core);
+        PythonModule sys = core.lookupBuiltinModule(T_SYS);
+        core.getContext().registerCApiHook(() -> {
+            sys.setAttribute(toTruffleStringUncached("_dllhandle_name"), toTruffleStringUncached(core.getContext().getCApiContext().getLibraryName()));
+        });
     }
 
     @TruffleBoundary
