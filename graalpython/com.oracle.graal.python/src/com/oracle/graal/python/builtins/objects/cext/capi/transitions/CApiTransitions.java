@@ -498,18 +498,30 @@ public abstract class CApiTransitions {
                         } else {
                             assert nativeLookupGet(handleContext, reference.pointer) != null : Long.toHexString(reference.pointer);
                             LOGGER.finer(() -> PythonUtils.formatJString("releasing native stub lookup for managed object with replacement %x => %s", reference.pointer, reference));
-                            nativeLookupRemove(handleContext, reference.pointer);
-                            if (reference.isAllocatedFromJava()) {
-                                LOGGER.finer(() -> PythonUtils.formatJString("freeing managed object %s replacement", reference));
-                                freeNativeStruct(reference);
+                            if (nativeLookupRemove(handleContext, reference.pointer) != null) {
+                                // The reference was still in our lookup table, it was not otherwise
+                                // freed and we can process it now.
+                                if (reference.isAllocatedFromJava()) {
+                                    LOGGER.finer(() -> PythonUtils.formatJString("freeing managed object %s replacement", reference));
+                                    freeNativeStruct(reference);
+                                } else {
+                                    referencesToBeFreed.add(reference.pointer);
+                                }
                             } else {
-                                referencesToBeFreed.add(reference.pointer);
+                                // This handle was removed from the native lookup table before,
+                                // probably during an explicit collection. This can happen during
+                                // shutdown when tp_dealloc is called for some objects and that
+                                // causes upcalls and reference queue polling on references that
+                                // were already removed and had their memory freed
                             }
                         }
                     } else if (entry instanceof NativeObjectReference reference) {
-                        LOGGER.finer(() -> PythonUtils.formatJString("releasing native lookup for native object %x => %s", reference.pointer, reference));
-                        nativeLookupRemove(handleContext, reference.pointer);
-                        processNativeObjectReference(reference, referencesToBeFreed);
+                        if (nativeLookupRemove(handleContext, reference.pointer) != null) {
+                            // The reference was still in our lookup table, it was not otherwise
+                            // freed and we can process it now
+                            LOGGER.finer(() -> PythonUtils.formatJString("releasing native lookup for native object %x => %s", reference.pointer, reference));
+                            processNativeObjectReference(reference, referencesToBeFreed);
+                        }
                     } else if (entry instanceof NativeStorageReference reference) {
                         handleContext.nativeStorageReferences.remove(reference);
                         processNativeStorageReference(reference);
