@@ -249,5 +249,5 @@ def test_meson_windows_detect_native_arch() -> str:
         if kernel32.IsWow64Process2(process, ctypes.byref(process_arch), ctypes.byref(native_arch)):
             assert native_arch.value == 0x8664, "only amd64 supported by GraalPy on Windows"
     except AttributeError as e:
-        if not "Unknown identifier: IsWow64Process2" in str(e):
+        if not "function 'IsWow64Process2' not found" in str(e):
             raise e
