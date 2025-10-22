@@ -472,7 +472,10 @@ if _os.name == "nt":
 elif _sys.platform == "cygwin":
     pythonapi = PyDLL("libpython%d.%d.dll" % _sys.version_info[:2])
 else:
-    pythonapi = PyDLL(None)
+    # GraalPy change: we _dlopen right here, libpython-native it may be different per context
+    pythonapi = PyDLL(None, None, _dlopen(_sys._dllhandle_name, 0))
+    # pythonapi = PyDLL(None)
+    # End GraalPy change
 
 
 if _os.name == "nt":
