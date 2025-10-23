@@ -40,10 +40,12 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.T__SRE;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_CHAR_IN_GROUP_NAME;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ESCAPE_END_OF_STRING;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_GROUP_REFERENCE;
-import static com.oracle.graal.python.nodes.ErrorMessages.MISSING_S;
+import static com.oracle.graal.python.nodes.ErrorMessages.MISSING_GROUP_NAME;
+import static com.oracle.graal.python.nodes.ErrorMessages.MISSING_LEFT_ANGLE_BRACKET;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNKNOWN_GROUP_NAME;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
@@ -61,7 +63,6 @@ import org.graalvm.collections.EconomicMap;
 import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.PArray;
@@ -69,7 +70,6 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -80,7 +80,6 @@ import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
-import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -99,6 +98,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -107,6 +107,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -132,6 +133,8 @@ import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 
 @CoreFunctions(defineModule = "_sre")
 public final class SREModuleBuiltins extends PythonBuiltins {
+
+    private static final TruffleString T_ERROR = tsLiteral("error");
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -189,7 +192,6 @@ public final class SREModuleBuiltins extends PythonBuiltins {
 
         private static final String ENCODING_UTF_32 = "Encoding=UTF-32";
         private static final String ENCODING_LATIN_1 = "Encoding=LATIN-1";
-        private static final TruffleString T_ERROR = tsLiteral("error");
         private static final TruffleString T_VALUE_ERROR_UNICODE_FLAG_BYTES_PATTERN = tsLiteral("cannot use UNICODE flag with a bytes pattern");
         private static final TruffleString T_VALUE_ERROR_LOCALE_FLAG_STR_PATTERN = tsLiteral("cannot use LOCALE flag with a str pattern");
         private static final TruffleString T_VALUE_ERROR_ASCII_UNICODE_INCOMPATIBLE = tsLiteral("ASCII and UNICODE flags are incompatible");
@@ -406,7 +408,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                     regexp = compiledRegex;
                 }
             } catch (RuntimeException e) {
-                throw handleCompilationError(node, e, lib, context);
+                throw handleCompilationError(node, e, lib);
             }
             if (isLocaleSensitive()) {
                 setLocaleSensitiveRegexp(method, mustAdvance, locale, regexp);
@@ -418,7 +420,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
 
         // No BoundaryCallContext: lookups attribute on a builtin module; constructs builtin
         // exceptions
-        private RuntimeException handleCompilationError(Node node, RuntimeException e, InteropLibrary lib, PythonContext context) {
+        private RuntimeException handleCompilationError(Node node, RuntimeException e, InteropLibrary lib) {
             try {
                 if (lib.isException(e)) {
                     if (lib.getExceptionType(e) == ExceptionType.PARSE_ERROR) {
@@ -431,10 +433,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                         } else {
                             SourceSection sourceSection = lib.getSourceLocation(e);
                             int position = sourceSection.getCharIndex();
-                            PythonModule module = context.lookupBuiltinModule(BuiltinNames.T__SRE);
-                            Object errorConstructor = PyObjectLookupAttr.executeUncached(module, T_ERROR);
-                            PBaseException exception = (PBaseException) CallNode.executeUncached(errorConstructor, reason, originalPattern, position);
-                            return PRaiseNode.raiseExceptionObjectStatic(node, exception);
+                            throw RaiseRegexErrorNode.executeWithPatternAndPositionUncached(reason, originalPattern, position);
                         }
                     }
                 }
@@ -549,7 +548,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @NeverDefault
         protected Object lookupGetLocaleFunction() {
-            PythonModule module = getContext().lookupBuiltinModule(BuiltinNames.T__SRE);
+            PythonModule module = getContext().lookupBuiltinModule(T__SRE);
             return PyObjectLookupAttr.executeUncached(module, T__GETLOCALE);
         }
 
@@ -634,14 +633,14 @@ public final class SREModuleBuiltins extends PythonBuiltins {
             static Object doRead(
                             @Bind PythonContext context,
                             @Cached ReadAttributeFromModuleNode read) {
-                PythonModule module = context.lookupBuiltinModule(BuiltinNames.T__SRE);
+                PythonModule module = context.lookupBuiltinModule(T__SRE);
                 return read.execute(module, T_MATCH_CONSTRUCTOR);
             }
 
             @TruffleBoundary
             @NeverDefault
             protected static Object lookupMatchConstructor() {
-                PythonModule module = PythonContext.get(null).lookupBuiltinModule(BuiltinNames.T__SRE);
+                PythonModule module = PythonContext.get(null).lookupBuiltinModule(T__SRE);
                 return PyObjectLookupAttr.executeUncached(module, T_MATCH_CONSTRUCTOR);
             }
         }
@@ -903,7 +902,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    private static abstract sealed class ReplacementToken {
+    private abstract static sealed class ReplacementToken {
     }
 
     private static final class Codepoint extends ReplacementToken {
@@ -930,7 +929,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    private static abstract sealed class ReplacementConsumer {
+    private abstract static sealed class ReplacementConsumer {
         abstract void codepoint(int codepoint);
 
         abstract void literal(TruffleString replacement, int fromIndex, int toIndex);
@@ -957,11 +956,44 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    private static final int CODEPOINT_LENGTH_ASCII = 4;
-    // TODO
-    private static final PythonBuiltinClassType PATTERN_ERROR = PythonErrorType.Exception;
+    @GenerateInline(false) // Only for errors
+    @GenerateUncached
+    abstract static class RaiseRegexErrorNode extends Node {
+        public final PException execute(VirtualFrame frame, TruffleString message) {
+            return executeWithPatternAndPosition(frame, message, PNone.NONE, PNone.NONE);
+        }
 
-    private static void parseReplacement(Object tregexCompiledRegex, TruffleString replacement, ReplacementConsumer consumer,
+        public final PException executeFormatted(VirtualFrame frame, TruffleString message, Object... formatArgs) {
+            return execute(frame, doFormat(message, formatArgs));
+        }
+
+        @TruffleBoundary
+        private static TruffleString doFormat(TruffleString message, Object[] formatArgs) {
+            return TruffleString.fromJavaStringUncached(ErrorMessageFormatter.format(message, formatArgs), TS_ENCODING);
+        }
+
+        public abstract PException executeWithPatternAndPosition(VirtualFrame frame, TruffleString message, Object pattern, Object position);
+
+        public static PException executeWithPatternAndPositionUncached(TruffleString message, Object pattern, Object position) {
+            return SREModuleBuiltinsFactory.RaiseRegexErrorNodeGen.getUncached().executeWithPatternAndPosition(null, message, pattern, position);
+        }
+
+        @Specialization
+        static PException createAndRaise(VirtualFrame frame, TruffleString message, Object pattern, Object position,
+                        @Bind Node inliningTarget,
+                        @Bind PythonContext context,
+                        @Cached ReadAttributeFromModuleNode readAttribute,
+                        @Cached CallNode callNode) {
+            PythonModule module = context.lookupBuiltinModule(T__SRE);
+            Object errorType = readAttribute.execute(module, T_ERROR);
+            Object exception = callNode.execute(frame, errorType, message, pattern, position);
+            throw PRaiseNode.raiseExceptionObjectStatic(inliningTarget, exception);
+        }
+    }
+
+    private static final int CODEPOINT_LENGTH_ASCII = 4;
+
+    private static void parseReplacement(VirtualFrame frame, Object tregexCompiledRegex, TruffleString replacement, ReplacementConsumer consumer,
                     Node inliningTarget,
                     TruffleString.ByteIndexOfCodePointNode indexOfNode,
                     TruffleString.CodePointAtByteIndexNode codePointAtByteIndexNode,
@@ -970,7 +1002,8 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                     TRegexUtil.InteropReadMemberNode readGroupCountNode,
                     TRegexUtil.InteropReadMemberNode readNamedGroupsNode,
                     InteropLibrary genericInteropLib,
-                    PRaiseNode raiseNode) {
+                    PRaiseNode raiseNode,
+                    RaiseRegexErrorNode raiseRegexErrorNode) {
         int length = replacement.byteLength(TS_ENCODING);
         if (length == 0) {
             return;
@@ -985,7 +1018,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
             }
             int nextCPPos = backslashPos + CODEPOINT_LENGTH_ASCII;
             if (nextCPPos >= length) {
-                throw raiseNode.raise(inliningTarget, PATTERN_ERROR, BAD_ESCAPE_END_OF_STRING);
+                throw raiseRegexErrorNode.execute(frame, BAD_ESCAPE_END_OF_STRING);
             }
             int firstCodepoint = codePointAtByteIndexNode.execute(replacement, nextCPPos, TS_ENCODING);
             nextCPPos += CODEPOINT_LENGTH_ASCII;
@@ -993,18 +1026,18 @@ public final class SREModuleBuiltins extends PythonBuiltins {
             nextCPPos += CODEPOINT_LENGTH_ASCII;
             if (firstCodepoint == 'g') {
                 if (secondCodepoint != '<') {
-                    throw raiseNode.raise(inliningTarget, PATTERN_ERROR, MISSING_S, "<");
+                    throw raiseRegexErrorNode.execute(frame, MISSING_LEFT_ANGLE_BRACKET);
                 }
                 int nameStartPos = nextCPPos;
                 int nameEndPos;
                 if (nameStartPos >= length || (nameEndPos = indexOfNode.execute(replacement, '>', nameStartPos, length, TS_ENCODING)) < 0 || nameEndPos == nameStartPos) {
-                    throw raiseNode.raise(inliningTarget, PATTERN_ERROR, MISSING_S, "group name");
+                    throw raiseRegexErrorNode.execute(frame, MISSING_GROUP_NAME);
                 }
                 int nameLength = nameEndPos - nameStartPos;
                 assert nameLength > 0;
                 TruffleString name = substringByteIndexNode.execute(replacement, nameStartPos, nameLength, TS_ENCODING, true);
                 if (getCodeRangeNode.execute(name, TS_ENCODING) != TruffleString.CodeRange.ASCII) {
-                    throw raiseNode.raise(inliningTarget, PATTERN_ERROR, BAD_CHAR_IN_GROUP_NAME, name);
+                    throw raiseRegexErrorNode.executeFormatted(frame, BAD_CHAR_IN_GROUP_NAME, name);
                 }
                 int groupNumber = 0;
                 for (int i = 0; i < nameLength; i += CODEPOINT_LENGTH_ASCII) {
@@ -1016,7 +1049,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                         break;
                     }
                     if (groupNumber >= numberOfCaptureGroups) {
-                        throw raiseNode.raise(inliningTarget, PATTERN_ERROR, INVALID_GROUP_REFERENCE, groupNumber);
+                        throw raiseRegexErrorNode.executeFormatted(frame, INVALID_GROUP_REFERENCE, groupNumber);
                     }
                 }
                 if (groupNumber < 0) {
@@ -1048,7 +1081,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                 consumer.codepoint(octalEscape);
                 lastPos = nextCPPos;
             } else if (isDecimalDigit(firstCodepoint)) {
-
+                // TODO
             }
         }
     }

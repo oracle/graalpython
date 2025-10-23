@@ -497,6 +497,8 @@ public abstract class ErrorMessages {
     public static final TruffleString MISSING_D_REQUIRED_S_ARGUMENT_S_POS = tsLiteral("%s() missing required argument '%s' (pos %d)");
     public static final TruffleString MISSING_D_REQUIRED_S_ARGUMENT_S_S = tsLiteral("%s() missing %d required %s argument%s: '%s'");
     public static final TruffleString MISSING_S = tsLiteral("Missing %s");
+    public static final TruffleString MISSING_GROUP_NAME = tsLiteral("Missing group name");
+    public static final TruffleString MISSING_LEFT_ANGLE_BRACKET = tsLiteral("Missing <");
     public static final TruffleString MMAP_INDEX_OUT_OF_RANGE = tsLiteral("mmap index out of range");
     public static final TruffleString MODULE_FILENAME_MISSING = tsLiteral("module filename missing");
     public static final TruffleString MODULE_HAS_NO_ATTR_S = tsLiteral("module has no attribute '%s'");
