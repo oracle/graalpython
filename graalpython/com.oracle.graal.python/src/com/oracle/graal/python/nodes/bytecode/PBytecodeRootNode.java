@@ -573,6 +573,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
      */
     private final byte[] variableShouldUnbox;
 
+    @CompilationFinal private boolean unboxAllVariables;
+
     /*
      * Whether this variable should be unboxed in the interpreter. We unbox all variables in
      * compiled code, but in the interpreter we do an optimization that we only unbox variables that
@@ -955,7 +957,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @ExplodeLoop
     private void copyArgs(Object[] args, Frame localFrame) {
-        boolean inCompiledCode = CompilerDirectives.inCompiledCode();
         if (variableTypes == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             copyArgsFirstTime(args, localFrame);
@@ -970,7 +971,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 continue;
             } else if ((type & QuickeningTypes.INT) != 0) {
                 if (arg instanceof Integer) {
-                    if (inCompiledCode || (type & UNBOXED_IN_INTERPRETER) != 0) {
+                    if (unboxAllVariables || (type & UNBOXED_IN_INTERPRETER) != 0) {
                         localFrame.setInt(i, (int) arg);
                     } else {
                         localFrame.setObject(i, arg);
@@ -979,7 +980,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 }
             } else if ((type & QuickeningTypes.LONG) != 0) {
                 if (arg instanceof Long) {
-                    if (inCompiledCode || (type & UNBOXED_IN_INTERPRETER) != 0) {
+                    if (unboxAllVariables || (type & UNBOXED_IN_INTERPRETER) != 0) {
                         localFrame.setLong(i, (long) arg);
                     } else {
                         localFrame.setObject(i, arg);
@@ -988,7 +989,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 }
             } else if ((type & QuickeningTypes.DOUBLE) != 0) {
                 if (arg instanceof Double) {
-                    if (inCompiledCode || (type & UNBOXED_IN_INTERPRETER) != 0) {
+                    if (unboxAllVariables || (type & UNBOXED_IN_INTERPRETER) != 0) {
                         localFrame.setDouble(i, (double) arg);
                     } else {
                         localFrame.setObject(i, arg);
@@ -997,7 +998,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 }
             } else if ((type & QuickeningTypes.BOOLEAN) != 0) {
                 if (arg instanceof Boolean) {
-                    if (inCompiledCode || (type & UNBOXED_IN_INTERPRETER) != 0) {
+                    if (unboxAllVariables || (type & UNBOXED_IN_INTERPRETER) != 0) {
                         localFrame.setBoolean(i, (boolean) arg);
                     } else {
                         localFrame.setObject(i, arg);
@@ -1009,17 +1010,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             generalizeVariableStores(i);
             variableTypes[i] = QuickeningTypes.OBJECT;
             localFrame.setObject(i, arg);
-        }
-        if (inCompiledCode != CompilerDirectives.inCompiledCode()) {
-            /*
-             * If we deopted we might have unboxed some locals that are supposed to be boxed in the
-             * interpreter, so we have to undo that because the bytecode loop won't expect them.
-             */
-            for (int i = 0; i < argCount; i++) {
-                if (variableTypes[i] != 0 && (variableTypes[i] & UNBOXED_IN_INTERPRETER) == 0 && !localFrame.isObject(i)) {
-                    localFrame.setObject(i, localFrame.getValue(i));
-                }
-            }
         }
     }
 
@@ -1278,13 +1268,13 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @SuppressWarnings("fallthrough")
     @BytecodeInterpreterSwitch
     private Object bytecodeLoop(VirtualFrame virtualFrame, Frame localFrame, BytecodeOSRNode osrNode, int initialBci, int initialStackTop, boolean useCachedNodes, boolean fromOSR) {
-        boolean hasUnboxedLocals = CompilerDirectives.inCompiledCode();
+        boolean hasUnboxedLocals = unboxAllVariables;
         Object[] arguments = virtualFrame.getArguments();
         Object globals = PArguments.getGlobals(arguments);
         Object locals = PArguments.getSpecialArgument(arguments);
 
         boolean isGeneratorOrCoroutine = co.isGeneratorOrCoroutine();
-        if (hasUnboxedLocals && !isGeneratorOrCoroutine) {
+        if (fromOSR && hasUnboxedLocals && !isGeneratorOrCoroutine) {
             unboxVariables(localFrame);
         }
 
@@ -1537,47 +1527,67 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     }
                     case OpCodesConstants.LOAD_FAST_O: {
                         oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
-                        bytecodeLoadFastO(virtualFrame, localFrame, ++stackTop, bci++, oparg, localNodes, hasUnboxedLocals);
+                        bytecodeLoadFastO(virtualFrame, localFrame, ++stackTop, bci++, oparg, localNodes);
+                        break;
+                    }
+                    case OpCodesConstants.LOAD_FAST_BOXED_I: {
+                        oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
+                        bytecodeLoadFastBoxedI(virtualFrame, localFrame, ++stackTop, bci++, oparg, localNodes, hasUnboxedLocals);
+                        break;
+                    }
+                    case OpCodesConstants.LOAD_FAST_BOXED_B: {
+                        oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
+                        bytecodeLoadFastBoxedB(virtualFrame, localFrame, ++stackTop, bci++, oparg, localNodes, hasUnboxedLocals);
+                        break;
+                    }
+                    case OpCodesConstants.LOAD_FAST_BOXED_D: {
+                        oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
+                        bytecodeLoadFastBoxedD(virtualFrame, localFrame, ++stackTop, bci++, oparg, localNodes, hasUnboxedLocals);
+                        break;
+                    }
+                    case OpCodesConstants.LOAD_FAST_BOXED_L: {
+                        oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
+                        bytecodeLoadFastBoxedL(virtualFrame, localFrame, ++stackTop, bci++, oparg, localNodes, hasUnboxedLocals);
                         break;
                     }
                     case OpCodesConstants.LOAD_FAST_I: {
                         oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
-                        bytecodeLoadFastI(virtualFrame, localFrame, ++stackTop, bci++, oparg, localNodes, hasUnboxedLocals);
+                        bytecodeLoadFastI(virtualFrame, localFrame, ++stackTop, bci++, oparg, localNodes);
                         break;
                     }
                     case OpCodesConstants.LOAD_FAST_I_BOX: {
                         oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
-                        bytecodeLoadFastIBox(virtualFrame, localFrame, ++stackTop, bci++, oparg, localNodes, hasUnboxedLocals);
+                        bytecodeLoadFastIBox(virtualFrame, localFrame, ++stackTop, bci++, oparg, localNodes);
                         break;
                     }
                     case OpCodesConstants.LOAD_FAST_L: {
                         oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
-                        bytecodeLoadFastL(virtualFrame, localFrame, ++stackTop, bci++, oparg, localNodes, hasUnboxedLocals);
+                        bytecodeLoadFastL(virtualFrame, localFrame, ++stackTop, bci++, oparg, localNodes);
                         break;
                     }
                     case OpCodesConstants.LOAD_FAST_L_BOX: {
                         oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
-                        bytecodeLoadFastLBox(virtualFrame, localFrame, ++stackTop, bci++, oparg, localNodes, hasUnboxedLocals);
+                        bytecodeLoadFastLBox(virtualFrame, localFrame, ++stackTop, bci++, oparg, localNodes);
                         break;
                     }
                     case OpCodesConstants.LOAD_FAST_D: {
                         oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
-                        bytecodeLoadFastD(virtualFrame, localFrame, ++stackTop, bci++, oparg, localNodes, hasUnboxedLocals);
+                        bytecodeLoadFastD(virtualFrame, localFrame, ++stackTop, bci++, oparg, localNodes);
                         break;
                     }
                     case OpCodesConstants.LOAD_FAST_D_BOX: {
                         oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
-                        bytecodeLoadFastDBox(virtualFrame, localFrame, ++stackTop, bci++, oparg, localNodes, hasUnboxedLocals);
+                        bytecodeLoadFastDBox(virtualFrame, localFrame, ++stackTop, bci++, oparg, localNodes);
                         break;
                     }
                     case OpCodesConstants.LOAD_FAST_B: {
                         oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
-                        bytecodeLoadFastB(virtualFrame, localFrame, ++stackTop, bci++, oparg, localNodes, hasUnboxedLocals);
+                        bytecodeLoadFastB(virtualFrame, localFrame, ++stackTop, bci++, oparg, localNodes);
                         break;
                     }
                     case OpCodesConstants.LOAD_FAST_B_BOX: {
                         oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
-                        bytecodeLoadFastBBox(virtualFrame, localFrame, ++stackTop, bci++, oparg, localNodes, hasUnboxedLocals);
+                        bytecodeLoadFastBBox(virtualFrame, localFrame, ++stackTop, bci++, oparg, localNodes);
                         break;
                     }
                     case OpCodesConstants.LOAD_CLOSURE: {
@@ -4629,7 +4639,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     private void generalizeStoreFast(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
-        generalizeFrameSlot(virtualFrame, index);
+        generalizeFrameSlot(localFrame, index);
         generalizeInputs(index);
         bytecode[bci] = OpCodesConstants.STORE_FAST_O;
         generalizeVariableStores(index);
@@ -4654,20 +4664,19 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private void bytecodeLoadFastAdaptiveInputOutput(VirtualFrame virtualFrame, Frame localFrame, int stackTop, byte[] localBC, int bci, int index, Node[] localNodes, boolean hasUnboxedLocals) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
         if (localFrame.isObject(index)) {
-            localBC[bci] = OpCodesConstants.LOAD_FAST_O;
-            bytecodeLoadFastO(virtualFrame, localFrame, stackTop, bci, index, localNodes, hasUnboxedLocals);
+            loadFastOAdaptive(virtualFrame, localFrame, stackTop, localBC, bci, index, localNodes, hasUnboxedLocals);
         } else if (localFrame.isInt(index)) {
             localBC[bci] = OpCodesConstants.LOAD_FAST_I;
-            bytecodeLoadFastI(virtualFrame, localFrame, stackTop, bci, index, localNodes, hasUnboxedLocals);
+            bytecodeLoadFastI(virtualFrame, localFrame, stackTop, bci, index, localNodes);
         } else if (localFrame.isLong(index)) {
             localBC[bci] = OpCodesConstants.LOAD_FAST_L;
-            bytecodeLoadFastL(virtualFrame, localFrame, stackTop, bci, index, localNodes, hasUnboxedLocals);
+            bytecodeLoadFastL(virtualFrame, localFrame, stackTop, bci, index, localNodes);
         } else if (localFrame.isDouble(index)) {
             localBC[bci] = OpCodesConstants.LOAD_FAST_D;
-            bytecodeLoadFastD(virtualFrame, localFrame, stackTop, bci, index, localNodes, hasUnboxedLocals);
+            bytecodeLoadFastD(virtualFrame, localFrame, stackTop, bci, index, localNodes);
         } else if (localFrame.isBoolean(index)) {
             localBC[bci] = OpCodesConstants.LOAD_FAST_B;
-            bytecodeLoadFastB(virtualFrame, localFrame, stackTop, bci, index, localNodes, hasUnboxedLocals);
+            bytecodeLoadFastB(virtualFrame, localFrame, stackTop, bci, index, localNodes);
         } else {
             throw CompilerDirectives.shouldNotReachHere("Unimplemented stack item type for LOAD_FAST");
         }
@@ -4677,143 +4686,218 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private void bytecodeLoadFastAdaptiveInputOnly(VirtualFrame virtualFrame, Frame localFrame, int stackTop, byte[] localBC, int bci, int index, Node[] localNodes, boolean hasUnboxedLocals) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
         if (localFrame.isObject(index)) {
-            localBC[bci] = OpCodesConstants.LOAD_FAST_O;
-            bytecodeLoadFastO(virtualFrame, localFrame, stackTop, bci, index, localNodes, hasUnboxedLocals);
+            loadFastOAdaptive(virtualFrame, localFrame, stackTop, localBC, bci, index, localNodes, hasUnboxedLocals);
         } else if (localFrame.isInt(index)) {
             localBC[bci] = OpCodesConstants.LOAD_FAST_I_BOX;
-            bytecodeLoadFastIBox(virtualFrame, localFrame, stackTop, bci, index, localNodes, hasUnboxedLocals);
+            bytecodeLoadFastIBox(virtualFrame, localFrame, stackTop, bci, index, localNodes);
         } else if (localFrame.isLong(index)) {
             localBC[bci] = OpCodesConstants.LOAD_FAST_L_BOX;
-            bytecodeLoadFastLBox(virtualFrame, localFrame, stackTop, bci, index, localNodes, hasUnboxedLocals);
+            bytecodeLoadFastLBox(virtualFrame, localFrame, stackTop, bci, index, localNodes);
         } else if (localFrame.isDouble(index)) {
             localBC[bci] = OpCodesConstants.LOAD_FAST_D_BOX;
-            bytecodeLoadFastDBox(virtualFrame, localFrame, stackTop, bci, index, localNodes, hasUnboxedLocals);
+            bytecodeLoadFastDBox(virtualFrame, localFrame, stackTop, bci, index, localNodes);
         } else if (localFrame.isBoolean(index)) {
             localBC[bci] = OpCodesConstants.LOAD_FAST_B_BOX;
-            bytecodeLoadFastBBox(virtualFrame, localFrame, stackTop, bci, index, localNodes, hasUnboxedLocals);
+            bytecodeLoadFastBBox(virtualFrame, localFrame, stackTop, bci, index, localNodes);
         } else {
             throw CompilerDirectives.shouldNotReachHere("Unimplemented stack item type for LOAD_FAST");
         }
     }
 
+    private void loadFastOAdaptive(VirtualFrame virtualFrame, Frame localFrame, int stackTop, byte[] localBC, int bci, int index, Node[] localNodes, boolean hasUnboxedLocals) {
+        if (variableTypes[index] == QuickeningTypes.INT) {
+            localBC[bci] = OpCodesConstants.LOAD_FAST_BOXED_I;
+            bytecodeLoadFastBoxedI(virtualFrame, localFrame, stackTop, bci, index, localNodes, hasUnboxedLocals);
+        } else if (variableTypes[index] == QuickeningTypes.BOOLEAN) {
+            localBC[bci] = OpCodesConstants.LOAD_FAST_BOXED_B;
+            bytecodeLoadFastBoxedB(virtualFrame, localFrame, stackTop, bci, index, localNodes, hasUnboxedLocals);
+        } else if (variableTypes[index] == QuickeningTypes.DOUBLE) {
+            localBC[bci] = OpCodesConstants.LOAD_FAST_BOXED_D;
+            bytecodeLoadFastBoxedD(virtualFrame, localFrame, stackTop, bci, index, localNodes, hasUnboxedLocals);
+        } else if (variableTypes[index] == QuickeningTypes.LONG) {
+            localBC[bci] = OpCodesConstants.LOAD_FAST_BOXED_L;
+            bytecodeLoadFastBoxedL(virtualFrame, localFrame, stackTop, bci, index, localNodes, hasUnboxedLocals);
+        } else {
+            localBC[bci] = OpCodesConstants.LOAD_FAST_O;
+            bytecodeLoadFastO(virtualFrame, localFrame, stackTop, bci, index, localNodes);
+        }
+    }
+
     @BytecodeInterpreterSwitch
-    private void bytecodeLoadFastIBox(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index, Node[] localNodes, boolean hasUnboxedLocals) {
+    private void bytecodeLoadFastIBox(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index, Node[] localNodes) {
         if (localFrame.isInt(index)) {
             virtualFrame.setObject(stackTop, localFrame.getInt(index));
         } else {
-            generalizeLoadFast(virtualFrame, localFrame, stackTop, bci, index, localNodes, hasUnboxedLocals);
+            generalizeLoadFast(virtualFrame, localFrame, stackTop, bci, index, localNodes);
         }
     }
 
     @BytecodeInterpreterSwitch
-    private void bytecodeLoadFastI(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index, Node[] localNodes, boolean hasUnboxedLocals) {
+    private void bytecodeLoadFastI(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index, Node[] localNodes) {
         if (localFrame.isInt(index)) {
             virtualFrame.setInt(stackTop, localFrame.getInt(index));
         } else {
-            generalizeLoadFast(virtualFrame, localFrame, stackTop, bci, index, localNodes, hasUnboxedLocals);
+            generalizeLoadFast(virtualFrame, localFrame, stackTop, bci, index, localNodes);
         }
     }
 
-    private void bytecodeLoadFastLBox(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index, Node[] localNodes, boolean hasUnboxedLocals) {
+    private void bytecodeLoadFastLBox(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index, Node[] localNodes) {
         if (localFrame.isLong(index)) {
             virtualFrame.setObject(stackTop, localFrame.getLong(index));
         } else {
-            generalizeLoadFast(virtualFrame, localFrame, stackTop, bci, index, localNodes, hasUnboxedLocals);
+            generalizeLoadFast(virtualFrame, localFrame, stackTop, bci, index, localNodes);
         }
     }
 
-    private void bytecodeLoadFastL(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index, Node[] localNodes, boolean hasUnboxedLocals) {
+    private void bytecodeLoadFastL(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index, Node[] localNodes) {
         if (localFrame.isLong(index)) {
             virtualFrame.setLong(stackTop, localFrame.getLong(index));
         } else {
-            generalizeLoadFast(virtualFrame, localFrame, stackTop, bci, index, localNodes, hasUnboxedLocals);
+            generalizeLoadFast(virtualFrame, localFrame, stackTop, bci, index, localNodes);
         }
     }
 
-    private void bytecodeLoadFastDBox(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index, Node[] localNodes, boolean hasUnboxedLocals) {
+    private void bytecodeLoadFastDBox(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index, Node[] localNodes) {
         if (localFrame.isDouble(index)) {
             virtualFrame.setObject(stackTop, localFrame.getDouble(index));
         } else {
-            generalizeLoadFast(virtualFrame, localFrame, stackTop, bci, index, localNodes, hasUnboxedLocals);
+            generalizeLoadFast(virtualFrame, localFrame, stackTop, bci, index, localNodes);
         }
     }
 
-    private void bytecodeLoadFastD(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index, Node[] localNodes, boolean hasUnboxedLocals) {
+    private void bytecodeLoadFastD(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index, Node[] localNodes) {
         if (localFrame.isDouble(index)) {
             virtualFrame.setDouble(stackTop, localFrame.getDouble(index));
         } else {
-            generalizeLoadFast(virtualFrame, localFrame, stackTop, bci, index, localNodes, hasUnboxedLocals);
+            generalizeLoadFast(virtualFrame, localFrame, stackTop, bci, index, localNodes);
         }
     }
 
     @BytecodeInterpreterSwitch
-    private void bytecodeLoadFastBBox(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index, Node[] localNodes, boolean hasUnboxedLocals) {
+    private void bytecodeLoadFastBBox(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index, Node[] localNodes) {
         if (localFrame.isBoolean(index)) {
             virtualFrame.setObject(stackTop, localFrame.getBoolean(index));
         } else {
-            generalizeLoadFast(virtualFrame, localFrame, stackTop, bci, index, localNodes, hasUnboxedLocals);
+            generalizeLoadFast(virtualFrame, localFrame, stackTop, bci, index, localNodes);
         }
     }
 
     @BytecodeInterpreterSwitch
-    private void bytecodeLoadFastB(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index, Node[] localNodes, boolean hasUnboxedLocals) {
+    private void bytecodeLoadFastB(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index, Node[] localNodes) {
         if (localFrame.isBoolean(index)) {
             virtualFrame.setBoolean(stackTop, localFrame.getBoolean(index));
         } else {
-            generalizeLoadFast(virtualFrame, localFrame, stackTop, bci, index, localNodes, hasUnboxedLocals);
+            generalizeLoadFast(virtualFrame, localFrame, stackTop, bci, index, localNodes);
         }
     }
 
-    private void generalizeLoadFast(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index, Node[] localNodes, boolean hasUnboxedLocals) {
+    private void generalizeLoadFast(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index, Node[] localNodes) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
         generalizeVariableStores(index);
-        generalizeFrameSlot(virtualFrame, index);
+        generalizeFrameSlot(localFrame, index);
         bytecode[bci] = OpCodesConstants.LOAD_FAST_O;
-        bytecodeLoadFastO(virtualFrame, localFrame, stackTop, bci, index, localNodes, hasUnboxedLocals);
+        bytecodeLoadFastO(virtualFrame, localFrame, stackTop, bci, index, localNodes);
     }
 
     @BytecodeInterpreterSwitch
-    private void bytecodeLoadFastO(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index, Node[] localNodes, boolean hasUnboxedLocals) {
-        Object value;
+    private void bytecodeLoadFastO(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index, Node[] localNodes) {
         try {
-            if (hasUnboxedLocals) {
-                if (variableTypes[index] == QuickeningTypes.INT) {
-                    virtualFrame.setObject(stackTop, virtualFrame.getInt(index));
-                    return;
-                } else if (variableTypes[index] == QuickeningTypes.LONG) {
-                    virtualFrame.setObject(stackTop, virtualFrame.getLong(index));
-                    return;
-                } else if (variableTypes[index] == QuickeningTypes.DOUBLE) {
-                    virtualFrame.setObject(stackTop, virtualFrame.getDouble(index));
-                    return;
-                } else if (variableTypes[index] == QuickeningTypes.BOOLEAN) {
-                    virtualFrame.setObject(stackTop, virtualFrame.getBoolean(index));
-                    return;
-                }
+            Object value = localFrame.getObject(index);
+            if (value == null) {
+                throw raiseVarReferencedBeforeAssignment(localNodes, bci, index);
             }
-            value = localFrame.getObject(index);
+            virtualFrame.setObject(stackTop, value);
         } catch (FrameSlotTypeException e) {
             // This should only happen when quickened concurrently in multi-context
             // mode
-            value = generalizeBytecodeLoadFastO(localFrame, index);
+            generalizeLoadFast(virtualFrame, localFrame, stackTop, bci, index, localNodes);
         }
-        if (value == null) {
-            throw raiseVarReferencedBeforeAssignment(localNodes, bci, index);
+    }
+
+    @BytecodeInterpreterSwitch
+    private void bytecodeLoadFastBoxedI(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index, Node[] localNodes, boolean hasUnboxedLocals) {
+        try {
+            if (hasUnboxedLocals) {
+                virtualFrame.setObject(stackTop, localFrame.getInt(index));
+            } else {
+                Object value = localFrame.getObject(index);
+                if (!(value instanceof Integer)) {
+                    generalizeLoadFast(virtualFrame, localFrame, stackTop, bci, index, localNodes);
+                    return;
+                }
+                virtualFrame.setObject(stackTop, value);
+            }
+        } catch (FrameSlotTypeException e) {
+            // This should only happen when quickened concurrently in multi-context
+            // mode
+            generalizeLoadFast(virtualFrame, localFrame, stackTop, bci, index, localNodes);
         }
-        virtualFrame.setObject(stackTop, value);
+    }
+
+    @BytecodeInterpreterSwitch
+    private void bytecodeLoadFastBoxedB(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index, Node[] localNodes, boolean hasUnboxedLocals) {
+        try {
+            if (hasUnboxedLocals) {
+                virtualFrame.setObject(stackTop, localFrame.getBoolean(index));
+            } else {
+                Object value = localFrame.getObject(index);
+                if (!(value instanceof Boolean)) {
+                    generalizeLoadFast(virtualFrame, localFrame, stackTop, bci, index, localNodes);
+                    return;
+                }
+                virtualFrame.setObject(stackTop, value);
+            }
+        } catch (FrameSlotTypeException e) {
+            // This should only happen when quickened concurrently in multi-context
+            // mode
+            generalizeLoadFast(virtualFrame, localFrame, stackTop, bci, index, localNodes);
+        }
+    }
+
+    @BytecodeInterpreterSwitch
+    private void bytecodeLoadFastBoxedD(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index, Node[] localNodes, boolean hasUnboxedLocals) {
+        try {
+            if (hasUnboxedLocals) {
+                virtualFrame.setObject(stackTop, localFrame.getDouble(index));
+            } else {
+                Object value = localFrame.getObject(index);
+                if (!(value instanceof Double)) {
+                    generalizeLoadFast(virtualFrame, localFrame, stackTop, bci, index, localNodes);
+                    return;
+                }
+                virtualFrame.setObject(stackTop, value);
+            }
+        } catch (FrameSlotTypeException e) {
+            // This should only happen when quickened concurrently in multi-context
+            // mode
+            generalizeLoadFast(virtualFrame, localFrame, stackTop, bci, index, localNodes);
+        }
+    }
+
+    @BytecodeInterpreterSwitch
+    private void bytecodeLoadFastBoxedL(VirtualFrame virtualFrame, Frame localFrame, int stackTop, int bci, int index, Node[] localNodes, boolean hasUnboxedLocals) {
+        try {
+            if (hasUnboxedLocals) {
+                virtualFrame.setObject(stackTop, localFrame.getLong(index));
+            } else {
+                Object value = localFrame.getObject(index);
+                if (!(value instanceof Long)) {
+                    generalizeLoadFast(virtualFrame, localFrame, stackTop, bci, index, localNodes);
+                    return;
+                }
+                virtualFrame.setObject(stackTop, value);
+            }
+        } catch (FrameSlotTypeException e) {
+            // This should only happen when quickened concurrently in multi-context
+            // mode
+            generalizeLoadFast(virtualFrame, localFrame, stackTop, bci, index, localNodes);
+        }
     }
 
     @InliningCutoff
     private PException raiseVarReferencedBeforeAssignment(Node[] localNodes, int bci, int index) {
         PRaiseCachedNode raiseNode = insertChildNode(localNodes, bci, PRaiseCachedNodeGen.class, NODE_RAISE);
         throw raiseNode.raise(PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, varnames[index]);
-    }
-
-    private Object generalizeBytecodeLoadFastO(Frame localFrame, int index) {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        generalizeVariableStores(index);
-        generalizeFrameSlot(localFrame, index);
-        return localFrame.getValue(index);
     }
 
     private static byte stackSlotTypeToTypeId(VirtualFrame virtualFrame, int stackTop) {
@@ -4830,18 +4914,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
      * repeated FrameSlotTypeException. This can happen in combination with OSR: if there are
      * multiple OSR bytecode loop invocations that have different view on whether the local
      * variables are boxed or unboxed in the frame, but they all share the same frame.
-     * <p>
-     * For example, when we enter compiled bytecode loop, variable "hasUnboxedLocals" that captures
-     * CompilerDirectives.inCompiledCode() at the beginning of the bytecode loop is true and frame
-     * slots are unboxed. If we happen to deoptimize during the bytecode loop, then
-     * "hasUnboxedLocals" variable is still true (although CompilerDirectives.inCompiledCode() would
-     * return false) and we will work with unboxed locals even in the interpreter. However, we may
-     * call tryOSR from the interpreter, and invoke another bytecode loop. If we are unlucky, the
-     * OST target will deopt in the meantime, and we'll enter the OSR bytecode loop in interpreter,
-     * so "hasUnboxedLocals" will be false, but the frame will have unboxed locals.
-     * <p>
-     * We could pass the "hasUnboxedLocals" flag down in the OSR state, but it is not worth it for
-     * such a corner case.
      */
     private void generalizeVariableStores(int index) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -5731,7 +5803,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         localFrame.setObject(celloffset + i, cell);
         if (cell2arg != null && cell2arg[i] != -1) {
             int idx = cell2arg[i];
-            if (CompilerDirectives.inCompiledCode()) {
+            if (unboxAllVariables) {
                 cell.setRef(localFrame.getValue(idx));
             } else {
                 cell.setRef(localFrame.getObject(idx));
@@ -6160,7 +6232,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @Override
     protected RootNode cloneUninitialized() {
-        return new PBytecodeRootNode(getLanguage(), getFrameDescriptor(), getSignature(), co, lazySource, internal, parserCallbacks);
+        // Note: the bytecode might be quickened already, it's not practical to undo it
+        PBytecodeRootNode rootNode = new PBytecodeRootNode(getLanguage(), getFrameDescriptor(), getSignature(), co, lazySource, internal, parserCallbacks);
+        rootNode.variableTypes = variableTypes;
+        return rootNode;
     }
 
     public void triggerDeferredDeprecationWarnings() {
@@ -6189,5 +6264,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     public boolean hasSelf() {
         return selfIndex >= 0;
+    }
+
+    @Override
+    protected boolean prepareForCompilation(boolean rootCompilation, int compilationTier, boolean lastTier) {
+        unboxAllVariables = true;
+        return super.prepareForCompilation(rootCompilation, compilationTier, lastTier);
     }
 }
