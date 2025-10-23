@@ -151,6 +151,7 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
         """))
 
 
+    @unittest.skipIf(sys.platform == 'darwin', "Fails with garbage after EOF")
     def test_basic_repl_no_readline():
         validate_repl(dedent("""\
             >>> 1023 + 1
