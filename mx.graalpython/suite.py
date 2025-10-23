@@ -918,6 +918,8 @@ suite = {
                 "name": "org.graalvm.py.launcher",
                 "exports": [
                     "com.oracle.graal.python.shell to org.graalvm.launcher",
+                    # Exported to be accessible from readline callbacks
+                    "com.oracle.graal.python.shell",
                 ],
             },
             "useModulePath": True,

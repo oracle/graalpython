@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,93 +43,110 @@ package com.oracle.graal.python.shell;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Reader;
+import java.io.Writer;
+import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.ListIterator;
 import java.util.NoSuchElementException;
 import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.IntConsumer;
 import java.util.function.IntFunction;
 import java.util.function.IntSupplier;
 
+import org.graalvm.polyglot.Value;
 import org.graalvm.shadowed.org.jline.keymap.KeyMap;
 import org.graalvm.shadowed.org.jline.reader.Binding;
 import org.graalvm.shadowed.org.jline.reader.Candidate;
-import org.graalvm.shadowed.org.jline.reader.Completer;
 import org.graalvm.shadowed.org.jline.reader.EndOfFileException;
 import org.graalvm.shadowed.org.jline.reader.History;
 import org.graalvm.shadowed.org.jline.reader.LineReader;
 import org.graalvm.shadowed.org.jline.reader.LineReaderBuilder;
 import org.graalvm.shadowed.org.jline.reader.Macro;
-import org.graalvm.shadowed.org.jline.reader.ParsedLine;
 import org.graalvm.shadowed.org.jline.reader.UserInterruptException;
 import org.graalvm.shadowed.org.jline.reader.impl.DefaultParser;
 import org.graalvm.shadowed.org.jline.terminal.Terminal;
 import org.graalvm.shadowed.org.jline.terminal.TerminalBuilder;
+import org.graalvm.shadowed.org.jline.utils.InputStreamReader;
 
-class JLineConsoleHandler extends ConsoleHandler {
-    private final boolean noPrompt;
-    private final Terminal terminal;
+public class JLineConsoleHandler extends ConsoleHandler {
+    private final InputStream inputStream;
+    private final OutputStream outputStream;
     private LineReader reader;
-    private History history;
-    private String prompt;
-    private LinkedList<String> lineBuffer = new LinkedList<>();
+    private Reader fallbackReader;
+    private Writer fallbackWriter;
+    private final LinkedList<String> lineBuffer = new LinkedList<>();
+    private CompletionState completionState;
 
-    JLineConsoleHandler(InputStream inStream, OutputStream outStream, boolean noPrompt) {
-        this.noPrompt = noPrompt;
+    JLineConsoleHandler(InputStream inputStream, OutputStream outputStream) {
+        this.inputStream = inputStream;
+        this.outputStream = outputStream;
+    }
+
+    // Called via interop from readline module initialization
+    @SuppressWarnings("unused")
+    public void initializeReadline(Value readlineModule) {
+        Terminal terminal;
         try {
-            this.terminal = TerminalBuilder.builder().jna(false).streams(inStream, outStream).system(true).signalHandler(Terminal.SignalHandler.SIG_IGN).build();
+            terminal = TerminalBuilder.builder().jna(false).streams(inputStream, outputStream).system(true).signalHandler(Terminal.SignalHandler.SIG_IGN).build();
         } catch (IOException ex) {
             throw new RuntimeException("unexpected error opening console reader", ex);
         }
-    }
+        final Value getCompleter = readlineModule.getMember("get_completer");
+        final Value shouldRecord = readlineModule.getMember("get_auto_history");
+        final Value addHistory = readlineModule.getMember("add_history");
+        final Value getHistoryItem = readlineModule.getMember("get_history_item");
+        final Value setHistoryItem = readlineModule.getMember("replace_history_item");
+        final Value deleteHistoryItem = readlineModule.getMember("remove_history_item");
+        final Value clearHistory = readlineModule.getMember("clear_history");
+        final Value getHistorySize = readlineModule.getMember("get_current_history_length");
 
-    @Override
-    public void setupReader(BooleanSupplier shouldRecord,
-                    IntSupplier getSize,
-                    Consumer<String> addItem,
-                    IntFunction<String> getItem,
-                    BiConsumer<Integer, String> setItem,
-                    IntConsumer removeItem,
-                    Runnable clear,
-                    Function<String, List<String>> completer) {
-        history = new HistoryImpl(shouldRecord, getSize, addItem, getItem, setItem, removeItem, clear);
-
-        LineReaderBuilder builder = LineReaderBuilder.builder();
-        builder = builder.terminal(terminal).history(history);
-        if (completer != null) {
-            builder.completer(new Completer() {
-                @Override
-                public void complete(LineReader r, ParsedLine pl, List<Candidate> candidates) {
-                    String word = pl.word();
-                    if (word != null) {
-                        List<String> l = completer.apply(word);
-                        for (String value : l) {
-                            candidates.add(new Candidate(value, value, null, null, null, null, false));
+        LineReaderBuilder builder = LineReaderBuilder.builder().terminal(terminal);
+        builder.history(new HistoryImpl(
+                        () -> shouldRecord.execute().asBoolean(),
+                        () -> getHistorySize.execute().asInt(),
+                        addHistory::execute,
+                        (pos) -> getHistoryItem.execute(pos).asString(),
+                        setHistoryItem::execute,
+                        deleteHistoryItem::execute,
+                        clearHistory::execute));
+        builder.completer((r, pl, candidates) -> {
+            String word = pl.word();
+            if (word != null) {
+                Value completer = getCompleter.execute();
+                if (completer.canExecute()) {
+                    try {
+                        completionState = new CompletionState();
+                        completionState.line = pl.line();
+                        completionState.beginIdx = pl.cursor() - pl.word().length();
+                        completionState.endIdx = pl.cursor();
+                        int i = 0;
+                        while (true) {
+                            Value completerResult = completer.execute(word, i++);
+                            if (completerResult.isString()) {
+                                String completion = completerResult.asString();
+                                candidates.add(new Candidate(completion, completion, null, null, null, null, false));
+                            } else {
+                                break;
+                            }
                         }
+                    } finally {
+                        completionState = null;
                     }
                 }
-            });
-        }
-
-        builder.parser(new DefaultParser() {
-            @Override
-            public boolean isDelimiterChar(CharSequence buffer, int pos) {
-                // Never count a last character of a char sequence as delimiter. The REPL completer
-                // implemented by `rlcompleter.py` adds a trailing whitespace to keywords,
-                // e.g. 'raise '. The default DefaultParser implementation always escaped this
-                // whitespace leading to wrong completions like 'raise\ '.
-                if (pos == buffer.length() - 1) {
-                    return false;
-                }
-                return Character.isWhitespace(buffer.charAt(pos));
             }
         });
+
+        DefaultParser parser = new DefaultParser();
+        // Disable escaping
+        parser.escapeChars(new char[0]);
+        builder.parser(parser);
 
         reader = builder.build();
         reader.option(LineReader.Option.DISABLE_EVENT_EXPANSION, true);
@@ -156,14 +173,62 @@ class JLineConsoleHandler extends ConsoleHandler {
         binding.bind(new Macro(KeyMap.translate("/")), KeyMap.translate("^[OQ"));
     }
 
+    public static class CompletionState {
+        public String line;
+        public int beginIdx;
+        public int endIdx;
+    }
+
+    // Used via interop
     @Override
-    public String readLine(boolean showPrompt) {
+    public String readLine(String prompt) {
+        if (reader == null) {
+            if (fallbackReader == null) {
+                Charset charset;
+                try {
+                    charset = Charset.forName(System.getProperty("stdin.encoding"));
+                } catch (Exception e) {
+                    charset = Charset.defaultCharset();
+                }
+                // Note: using InputStreamReader from jline.utils for truly unbuffered reads
+                fallbackReader = new InputStreamReader(inputStream, charset);
+            }
+            try {
+                if (prompt != null && !prompt.isEmpty()) {
+                    if (fallbackWriter == null) {
+                        fallbackWriter = new OutputStreamWriter(outputStream);
+                    }
+                    fallbackWriter.write(prompt);
+                    fallbackWriter.flush();
+                }
+                StringBuilder sb = new StringBuilder();
+                while (true) {
+                    int c = inputStream.read();
+                    if (c < 0) {
+                        // EOF
+                        if (!sb.isEmpty()) {
+                            break;
+                        }
+                        if (prompt != null) {
+                            fallbackWriter.write("\n");
+                            fallbackWriter.flush();
+                        }
+                        return null;
+                    } else if (c == '\n') {
+                        break;
+                    } else if (c != '\r') {
+                        sb.append((char) c);
+                    }
+                }
+                return sb.toString();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
         if (lineBuffer.isEmpty()) {
             try {
-                String lines = reader.readLine(showPrompt ? prompt : "");
-                for (String line : lines.split("\n")) {
-                    lineBuffer.add(line);
-                }
+                String lines = reader.readLine(prompt);
+                Collections.addAll(lineBuffer, lines.split("\n"));
             } catch (UserInterruptException e) {
                 throw e;
             } catch (EndOfFileException e) {
@@ -175,19 +240,10 @@ class JLineConsoleHandler extends ConsoleHandler {
         return lineBuffer.poll();
     }
 
-    @Override
-    public void setPrompt(String prompt) {
-        this.prompt = noPrompt ? "" : prompt != null ? prompt : "";
-    }
-
-    @Override
-    public int getTerminalHeight() {
-        return terminal.getHeight();
-    }
-
-    @Override
-    public int getTerminalWidth() {
-        return terminal.getWidth();
+    // Used via interop
+    @SuppressWarnings("unused")
+    public CompletionState getCompletionState() {
+        return completionState;
     }
 
     private static class HistoryImpl implements History {
@@ -328,7 +384,7 @@ class JLineConsoleHandler extends ConsoleHandler {
         }
 
         @Override
-        public void purge() throws IOException {
+        public void purge() {
             clear.run();
         }
 
@@ -360,8 +416,7 @@ class JLineConsoleHandler extends ConsoleHandler {
                 if (!hasNext()) {
                     throw new NoSuchElementException();
                 }
-                HistoryEntry e = new HistoryEntry(iterIndex++);
-                return e;
+                return new HistoryEntry(iterIndex++);
             }
 
             @Override
@@ -380,8 +435,7 @@ class JLineConsoleHandler extends ConsoleHandler {
                 if (!hasPrevious()) {
                     throw new NoSuchElementException();
                 }
-                HistoryEntry e = new HistoryEntry(--iterIndex);
-                return e;
+                return new HistoryEntry(--iterIndex);
             }
 
             @Override
@@ -437,27 +491,27 @@ class JLineConsoleHandler extends ConsoleHandler {
         }
 
         @Override
-        public void load() throws IOException {
+        public void load() {
 
         }
 
         @Override
-        public void save() throws IOException {
+        public void save() {
 
         }
 
         @Override
-        public void write(Path path, boolean bln) throws IOException {
+        public void write(Path path, boolean bln) {
 
         }
 
         @Override
-        public void append(Path path, boolean bln) throws IOException {
+        public void append(Path path, boolean bln) {
 
         }
 
         @Override
-        public void read(Path path, boolean bln) throws IOException {
+        public void read(Path path, boolean bln) {
 
         }
     }

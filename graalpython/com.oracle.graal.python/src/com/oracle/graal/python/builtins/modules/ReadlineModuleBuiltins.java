@@ -42,7 +42,10 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.J_READLINE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_READLINE;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -51,9 +54,11 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -67,18 +72,26 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.InteropException;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = J_READLINE)
 public final class ReadlineModuleBuiltins extends PythonBuiltins {
+
+    public static final TruffleLogger LOGGER = PythonLanguage.getLogger(ReadlineModuleBuiltins.class);
+    public static final TruffleString T__CONSOLE_HANDLER = tsLiteral("_console_handler");
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -86,16 +99,42 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
     }
 
     private static final class LocalData {
+        private Object consoleHandler;
         private final List<TruffleString> history = new ArrayList<>();
-        protected Object completer = null;
-        protected boolean autoHistory = true;
-        protected TruffleString completerDelims = null;
+        private Object completer = null;
+        private boolean autoHistory = true;
+        private TruffleString completerDelims = null;
     }
 
     @Override
     public void postInitialize(Python3Core core) {
         super.postInitialize(core);
-        core.lookupBuiltinModule(T_READLINE).setModuleState(new LocalData());
+        PythonModule module = core.lookupBuiltinModule(T_READLINE);
+        LocalData moduleState = new LocalData();
+        module.setModuleState(moduleState);
+        Object consoleHandler = core.lookupBuiltinModule(T_SYS).getAttribute(T__CONSOLE_HANDLER);
+        if (consoleHandler != PNone.NO_VALUE) {
+            InteropLibrary lib = InteropLibrary.getUncached(consoleHandler);
+            try {
+                if (lib.isMemberInvocable(consoleHandler, "initializeReadline")) {
+                    lib.invokeMember(consoleHandler, "initializeReadline", module);
+                    moduleState.consoleHandler = consoleHandler;
+                }
+            } catch (Exception e) {
+                throw PRaiseNode.raiseStatic(null, PythonBuiltinClassType.RuntimeError, ErrorMessages.M, e);
+            }
+        }
+    }
+
+    public static Object getConsoleHandlerIfInitialized(PythonContext context) {
+        PythonModule module = context.lookupBuiltinModule(T_READLINE);
+        if (module != null) {
+            LocalData moduleState = module.getModuleState(LocalData.class);
+            if (moduleState != null) {
+                return moduleState.consoleHandler;
+            }
+        }
+        return null;
     }
 
     @Builtin(name = "get_completer", minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
@@ -351,6 +390,77 @@ public final class ReadlineModuleBuiltins extends PythonBuiltins {
         static Object getCompleterDelims(PythonModule self) {
             LocalData data = self.getModuleState(LocalData.class);
             return (data.completerDelims != null) ? data.completerDelims : PNone.NONE;
+        }
+    }
+
+    @TruffleBoundary
+    static Object getCompletionStateMember(PythonModule self, String member) {
+        Object consoleHandler = self.getModuleState(LocalData.class).consoleHandler;
+        if (consoleHandler != null) {
+            try {
+                InteropLibrary lib = InteropLibrary.getUncached();
+                Object completionState = lib.invokeMember(consoleHandler, "getCompletionState");
+                if (!lib.isNull(completionState)) {
+                    Object obj = lib.readMember(completionState, member);
+                    if (!lib.isNull(obj)) {
+                        return obj;
+                    }
+                }
+            } catch (InteropException e) {
+                LOGGER.fine(() -> PythonUtils.formatJString("Exception in getting completion state member %s: %s", member, e));
+            }
+        }
+        return null;
+    }
+
+    @TruffleBoundary
+    static int getCompletionStateIntMember(PythonModule self, String member, int defaultValue) {
+        Object idx = getCompletionStateMember(self, member);
+        if (idx != null) {
+            try {
+                return InteropLibrary.getUncached().asInt(idx);
+            } catch (InteropException e) {
+                LOGGER.fine(() -> PythonUtils.formatJString("Exception in getting completion state member %s: %s", member, e));
+            }
+        }
+        return defaultValue;
+    }
+
+    @Builtin(name = "get_line_buffer", minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    abstract static class GetLineBuffer extends PythonUnaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        static Object get(PythonModule self) {
+            Object lineObj = getCompletionStateMember(self, "line");
+            if (lineObj != null) {
+                try {
+                    return InteropLibrary.getUncached().asTruffleString(lineObj);
+                } catch (InteropException e) {
+                    LOGGER.fine(() -> PythonUtils.formatJString("Exception in getting completion state member %s: %s", "line", e));
+                }
+            }
+            return T_EMPTY_STRING;
+        }
+    }
+
+    @Builtin(name = "get_begidx", minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    abstract static class GetBegidx extends PythonUnaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        static Object get(PythonModule self) {
+            return getCompletionStateIntMember(self, "beginIdx", 0);
+        }
+    }
+
+    @Builtin(name = "get_endidx", minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    abstract static class GetEndidx extends PythonUnaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        static Object get(PythonModule self) {
+            return getCompletionStateIntMember(self, "endIdx", 0);
         }
     }
 }

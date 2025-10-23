@@ -46,7 +46,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.graalvm.launcher.AbstractLanguageLauncher;
@@ -799,9 +798,8 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
         ConsoleHandler consoleHandler = createConsoleHandler(System.in, System.out);
         contextBuilder.arguments(getLanguageId(), programArgs.toArray(new String[programArgs.size()]));
         contextBuilder.in(consoleHandler.createInputStream());
-        contextBuilder.option("python.TerminalIsInteractive", Boolean.toString(isTTY()));
-        contextBuilder.option("python.TerminalWidth", Integer.toString(consoleHandler.getTerminalWidth()));
-        contextBuilder.option("python.TerminalHeight", Integer.toString(consoleHandler.getTerminalHeight()));
+        boolean tty = isTTY();
+        contextBuilder.option("python.TerminalIsInteractive", Boolean.toString(tty));
 
         contextBuilder.option("python.CheckHashPycsMode", checkHashPycsMode);
         contextBuilder.option("python.RunViaLauncher", "true");
@@ -834,15 +832,20 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                 evalInternal(context, "__graalpython__.startup_wall_clock_ts = " + startupWallClockTime + "; __graalpython__.startup_nano = " + startupNanoTime);
             }
 
-            if (!quietFlag && (verboseFlag || (commandString == null && inputFile == null && isTTY()))) {
-                print("Python " + evalInternal(context, "import sys; sys.version + ' on ' + sys.platform").asString());
+            Value sysModule = evalInternal(context, "import sys; sys");
+            if (!quietFlag && (verboseFlag || (commandString == null && inputFile == null && tty))) {
+                print("Python " + sysModule.getMember("version").asString() + " on " + sysModule.getMember("platform"));
                 if (!noSite) {
                     print("Type \"help\", \"copyright\", \"credits\" or \"license\" for more information.");
                 }
             }
-            consoleHandler.setContext(context);
 
-            if (commandString != null || inputFile != null || !isTTY()) {
+            sysModule.putMember("_console_handler", consoleHandler);
+            if (tty && !isolateFlag && (inspectFlag || (commandString == null && inputFile == null))) {
+                evalInternal(context, "import readline, rlcompleter");
+            }
+
+            if (commandString != null || inputFile != null || !tty) {
                 try {
                     evalNonInteractive(context, consoleHandler);
                     rc = 0;
@@ -858,7 +861,7 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
             }
             if ((commandString == null && inputFile == null) || inspectFlag) {
                 inspectFlag = false;
-                rc = readEvalPrint(context, consoleHandler);
+                rc = readEvalPrint(context, consoleHandler, sysModule);
             }
         } catch (RuntimeException e) {
             if (e.getMessage() != null && e.getMessage().contains("did not complete all polyglot threads")) {
@@ -871,7 +874,6 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                 // brings up getaddrinfo which may just block in native for an arbitrary amount of
                 // time and prevent us from shutting down the thread.
                 if (!verboseFlag) {
-                    tryToResetConsoleHandler(consoleHandler);
                     System.exit(rc);
                 }
             } else {
@@ -880,18 +882,8 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
         } catch (IOException e) {
             rc = 1;
             e.printStackTrace();
-        } finally {
-            tryToResetConsoleHandler(consoleHandler);
         }
         System.exit(rc);
-    }
-
-    private static void tryToResetConsoleHandler(ConsoleHandler consoleHandler) {
-        try {
-            consoleHandler.setContext(null);
-        } catch (Throwable e) {
-            // pass
-        }
     }
 
     private static boolean getBoolEnv(String var) {
@@ -1076,10 +1068,6 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
     }
 
     private void evalNonInteractive(Context context, ConsoleHandler consoleHandler) throws IOException {
-        // We need to setup the terminal even when not running the REPL because code may request
-        // input from the terminal.
-        setupTerminal(consoleHandler);
-
         Source src;
         if (commandString != null) {
             src = Source.newBuilder(getLanguageId(), commandString, "<string>").build();
@@ -1182,7 +1170,7 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
         if (!isTTY()) {
             return new DefaultConsoleHandler(inStream);
         } else {
-            return new JLineConsoleHandler(inStream, outStream, false);
+            return new JLineConsoleHandler(inStream, outStream);
         }
     }
 
@@ -1196,18 +1184,23 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
      * In case 2, we must implicitly execute a {@code quit("default, 0L, TRUE} command before
      * exiting. So,in either case, we never return.
      */
-    private int readEvalPrint(Context context, ConsoleHandler consoleHandler) {
-        int lastStatus = 0;
+    private int readEvalPrint(Context context, ConsoleHandler consoleHandler, Value sysModule) {
         try {
-            setupREPL(context, consoleHandler);
-            Value sys = evalInternal(context, "import sys; sys");
-
+            Value hook = null;
+            try {
+                hook = sysModule.getMember("__interactivehook__");
+            } catch (PolyglotException e) {
+                // ignore
+            }
+            if (hook != null) {
+                hook.execute();
+            }
             while (true) { // processing inputs
                 boolean doEcho = doEcho(context);
-                consoleHandler.setPrompt(doEcho ? sys.getMember("ps1").asString() : null);
+                String ps1 = doEcho ? sysModule.getMember("ps1").asString() : null;
 
                 try {
-                    String input = consoleHandler.readLine();
+                    String input = consoleHandler.readLine(ps1);
                     if (input == null) {
                         throw new EOFException();
                     }
@@ -1216,26 +1209,24 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                         continue;
                     }
 
-                    String continuePrompt = null;
+                    String ps2 = null;
                     StringBuilder sb = new StringBuilder(input).append('\n');
                     while (true) { // processing subsequent lines while input is incomplete
-                        lastStatus = 0;
                         try {
                             context.eval(Source.newBuilder(getLanguageId(), sb.toString(), "<stdin>").interactive(true).buildLiteral());
                         } catch (PolyglotException e) {
-                            if (continuePrompt == null) {
-                                continuePrompt = doEcho ? sys.getMember("ps2").asString() : null;
+                            if (ps2 == null) {
+                                ps2 = doEcho ? sysModule.getMember("ps2").asString() : null;
                             }
                             if (e.isIncompleteSource()) {
                                 // read more input until we get an empty line
-                                consoleHandler.setPrompt(continuePrompt);
                                 String additionalInput;
                                 boolean isIncompleteCode = false; // this for cases like empty lines
                                                                   // in tripplecode, where the
                                                                   // additional input can be empty,
                                                                   // but we should still continue
                                 do {
-                                    additionalInput = consoleHandler.readLine();
+                                    additionalInput = consoleHandler.readLine(ps2);
                                     sb.append(additionalInput).append('\n');
                                     try {
                                         // We try to parse every time, when an additional input is
@@ -1280,10 +1271,6 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                                  * system may be broken
                                  */
                                 System.err.println("An internal error occurred, continue at your own risk");
-                                lastStatus = 1;
-                            } else {
-                                // drop through to continue REPL and remember last eval was an error
-                                lastStatus = 1;
                             }
                         }
                         break;
@@ -1295,7 +1282,7 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                         } catch (PolyglotException e2) {
                             if (e2.isExit()) {
                                 // don't use the exit code from the PolyglotException
-                                return lastStatus;
+                                return 0;
                             } else if (e2.isCancelled()) {
                                 continue;
                             }
@@ -1303,7 +1290,7 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
                         }
                     }
                     System.out.println();
-                    return lastStatus;
+                    return 0;
                 } catch (UserInterruptException e) {
                     // interrupted by ctrl-c
                 }
@@ -1325,52 +1312,6 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
 
     private Value evalInternal(Context context, String code) {
         return context.eval(Source.newBuilder(getLanguageId(), code, "<internal>").internal(true).buildLiteral());
-    }
-
-    private void setupREPL(Context context, ConsoleHandler consoleHandler) {
-        // Then we can get the readline module and see if any completers were registered and use its
-        // history feature
-        evalInternal(context, "import sys\ngetattr(sys, '__interactivehook__', lambda: None)()\n");
-        final Value readline = evalInternal(context, "import readline; readline");
-        final Value getCompleter = readline.getMember("get_completer").execute();
-        final Value shouldRecord = readline.getMember("get_auto_history");
-        final Value addHistory = readline.getMember("add_history");
-        final Value getHistoryItem = readline.getMember("get_history_item");
-        final Value setHistoryItem = readline.getMember("replace_history_item");
-        final Value deleteHistoryItem = readline.getMember("remove_history_item");
-        final Value clearHistory = readline.getMember("clear_history");
-        final Value getHistorySize = readline.getMember("get_current_history_length");
-
-        Function<String, List<String>> completer = null;
-        if (getCompleter.canExecute()) {
-            completer = (buffer) -> {
-                List<String> candidates = new ArrayList<>();
-                Value candidate = getCompleter.execute(buffer, candidates.size());
-                while (candidate.isString()) {
-                    candidates.add(candidate.asString());
-                    candidate = getCompleter.execute(buffer, candidates.size());
-                }
-                return candidates;
-            };
-        }
-        consoleHandler.setupReader(
-                        () -> shouldRecord.execute().asBoolean(),
-                        () -> getHistorySize.execute().asInt(),
-                        (item) -> addHistory.execute(item),
-                        (pos) -> getHistoryItem.execute(pos).asString(),
-                        (pos, item) -> setHistoryItem.execute(pos, item),
-                        (pos) -> deleteHistoryItem.execute(pos),
-                        () -> clearHistory.execute(),
-                        completer);
-
-    }
-
-    private static void setupTerminal(ConsoleHandler consoleHandler) {
-        consoleHandler.setupReader(() -> false, () -> 0, (item) -> {
-        }, (pos) -> null, (pos, item) -> {
-        }, (pos) -> {
-        }, () -> {
-        }, null);
     }
 
     /**

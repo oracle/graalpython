@@ -85,7 +85,7 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
             import termios
             termios.tcsetwinsize(pty_parent, (60, 80))
             proc = subprocess.Popen(
-                [sys.executable, '-I', *python_args],
+                [sys.executable, '-s', '-E', '-P', *python_args],
                 env=env,
                 stdin=pty_child,
                 stdout=pty_child,
@@ -149,6 +149,19 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
             >>> _
             'hello'
         """))
+
+
+    @unittest.skipIf(sys.platform == 'darwin', "Fails with garbage after EOF")
+    def test_basic_repl_no_readline():
+        validate_repl(dedent("""\
+            >>> 1023 + 1
+            1024
+            >>> None
+            >>> "hello"
+            'hello'
+            >>> _
+            'hello'
+        """), python_args=['-I'])
 
 
     def test_continuation():
