@@ -49,6 +49,7 @@ import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.graalvm.nativeimage.DowncallDescriptor;
 import org.graalvm.nativeimage.ForeignFunctions;
@@ -59,16 +60,30 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public final class NfiContext {
 
+    private final ConcurrentLinkedQueue<NfiLibrary> libraries = new ConcurrentLinkedQueue<>();
     final Arena arena;
 
     @TruffleBoundary
     NfiContext() {
-        // TODO(NFI2) is shared Arena OK?
         arena = Arena.ofShared();
     }
 
     public void close() {
-        // TODO(NFI2) dlclose all libraries
+        for (NfiLibrary library : libraries) {
+            int result;
+            try {
+                if (ImageInfo.inImageCode()) {
+                    result = (int) ForeignFunctions.invoke(dlcloseDescriptor, dlclosePtr.address(), library.ptr);
+                } else {
+                    result = (int) dlclose.invokeExact(library.ptr);
+                }
+            } catch (Throwable e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+            if (result != 0) {
+                // TODO(NFI2) log error
+            }
+        }
         arena.close();
     }
 
@@ -77,11 +92,13 @@ public final class NfiContext {
         long nativeName = NativeMemory.javaStringToNativeUtf8(name);
         try {
             ensureDlopenDlsym();
-            // TODO(NFI2) only add RTLD_LAZY flag if actually needed
+            if ((flags & (RTLD_LAZY | RTLD_NOW)) == 0) {
+                flags |= RTLD_NOW;
+            }
             if (ImageInfo.inImageCode()) {
-                lib = (long) ForeignFunctions.invoke(dlopenDescriptor, dlopenPtr.address(), nativeName, flags | RTLD_LAZY);
+                lib = (long) ForeignFunctions.invoke(dlopenDescriptor, dlopenPtr.address(), nativeName, flags);
             } else {
-                lib = (long) dlopen.invokeExact(nativeName, flags | RTLD_LAZY);
+                lib = (long) dlopen.invokeExact(nativeName, flags);
             }
         } catch (Throwable e) {
             throw CompilerDirectives.shouldNotReachHere(e);
@@ -91,7 +108,9 @@ public final class NfiContext {
         if (lib == 0) {
             throw CompilerDirectives.shouldNotReachHere("Failed to load library " + name);
         }
-        return new NfiLibrary(this, lib);
+        NfiLibrary library = new NfiLibrary(this, lib);
+        libraries.add(library);
+        return library;
     }
 
     long lookupOptionalSymbol(long library, String name) {
@@ -112,24 +131,31 @@ public final class NfiContext {
 
     // TODO(NFI2) platform-specific values for RTLD_* constants
     private static final int RTLD_LAZY = 1;
+    private static final int RTLD_NOW = 2;
 
     private static final FunctionDescriptor DLOPEN_FUNCTION_DESCRIPTOR = FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG, ValueLayout.JAVA_INT);
+    private static final FunctionDescriptor DLCLOSE_FUNCTION_DESCRIPTOR = FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.JAVA_LONG);
     private static final FunctionDescriptor DLSYM_FUNCTION_DESCRIPTOR = FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG);
     private static final DowncallDescriptor dlopenDescriptor;
+    private static final DowncallDescriptor dlcloseDescriptor;
     private static final DowncallDescriptor dlsymDescriptor;
 
     private static MethodHandle dlopen;
+    private static MethodHandle dlclose;
     private static MethodHandle dlsym;
 
     private static MemorySegment dlopenPtr;
+    private static MemorySegment dlclosePtr;
     private static MemorySegment dlsymPtr;
 
     static {
         if (ImageInfo.inImageCode()) {
             dlopenDescriptor = ForeignFunctions.getDowncallDescriptor(DLOPEN_FUNCTION_DESCRIPTOR);
+            dlcloseDescriptor = ForeignFunctions.getDowncallDescriptor(DLCLOSE_FUNCTION_DESCRIPTOR);
             dlsymDescriptor = ForeignFunctions.getDowncallDescriptor(DLSYM_FUNCTION_DESCRIPTOR);
         } else {
             dlopenDescriptor = null;
+            dlcloseDescriptor = null;
             dlsymDescriptor = null;
         }
     }
@@ -142,9 +168,11 @@ public final class NfiContext {
             return;
         }
         dlopenPtr = Linker.nativeLinker().defaultLookup().find("dlopen").get();
+        dlclosePtr = Linker.nativeLinker().defaultLookup().find("dlclose").get();
         dlsymPtr = Linker.nativeLinker().defaultLookup().find("dlsym").get();
         if (!ImageInfo.inImageCode()) {
             dlopen = Linker.nativeLinker().downcallHandle(dlopenPtr, DLOPEN_FUNCTION_DESCRIPTOR);
+            dlclose = Linker.nativeLinker().downcallHandle(dlclosePtr, DLCLOSE_FUNCTION_DESCRIPTOR);
             dlsym = Linker.nativeLinker().downcallHandle(dlsymPtr, DLSYM_FUNCTION_DESCRIPTOR);
         }
     }

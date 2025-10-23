@@ -45,7 +45,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 public final class NfiLibrary {
 
     private final NfiContext context;
-    private final long ptr;
+    final long ptr;
 
     @SuppressWarnings("unused")
     NfiLibrary(NfiContext context, long ptr) {
