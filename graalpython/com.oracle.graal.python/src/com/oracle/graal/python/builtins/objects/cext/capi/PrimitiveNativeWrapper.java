@@ -44,6 +44,7 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.MaterializeDelegateNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.FirstToNativeNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -54,6 +55,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.utilities.TriState;
 
@@ -254,10 +256,16 @@ public final class PrimitiveNativeWrapper extends PythonAbstractObjectNativeWrap
     void toNative(
                     @Bind Node inliningTarget,
                     @Cached CApiTransitions.FirstToNativeNode firstToNativeNode) {
+        toNative(false, inliningTarget, firstToNativeNode);
+    }
+
+    @Ignore
+    @Override
+    public void toNative(boolean newRef, Node inliningTarget, FirstToNativeNode firstToNativeNode) {
         if (!isNative()) {
             boolean immortal = isBool();
-            assert !isBool() || (PythonContext.get(inliningTarget).getCApiContext().getCachedBooleanPrimitiveNativeWrapper(value != 0) == this);
-            setNativePointer(firstToNativeNode.execute(inliningTarget, this, immortal));
+            assert !immortal || (PythonContext.get(inliningTarget).getCApiContext().getCachedBooleanPrimitiveNativeWrapper(value != 0) == this);
+            setNativePointer(firstToNativeNode.execute(inliningTarget, this, FirstToNativeNode.getInitialRefcnt(newRef, immortal)));
         }
     }
 }

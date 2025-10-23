@@ -106,11 +106,15 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper.ToNativeStorageNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonObjectReference;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.GetNativeWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers;
 import com.oracle.graal.python.builtins.objects.cext.copying.NativeLibraryLocator;
+import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ReadI32Node;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
@@ -1232,8 +1236,14 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
                 return -1;
             }
             Object nativeWrapper = GetNativeWrapperNode.executeUncached(object);
-            if (nativeWrapper instanceof PythonNativeWrapper pn) {
-                return pn.ref.getHandleTableIndex();
+            if (nativeWrapper instanceof PythonAbstractObjectNativeWrapper pn) {
+                if (pn.ref != null) {
+                    return pn.ref.getHandleTableIndex();
+                } else {
+                    assert pn.isNative();
+                    long untagged = HandlePointerConverter.pointerToStub(pn.getNativePointer());
+                    return ReadI32Node.readUncached(untagged, CFields.GraalPyObject__handle_table_index);
+                }
             } else {
                 return -1;
             }
@@ -1246,8 +1256,9 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static boolean doGeneric(int id) {
-            PythonObjectReference ref = CApiTransitions.nativeStubLookupGet(PythonContext.get(null).nativeContext, 0, id);
-            return ref != null && ref.isStrongReference();
+            Object ref = CApiTransitions.nativeStubLookupGet(PythonContext.get(null).nativeContext, 0, id);
+            assert ref == null || ref instanceof PythonNativeWrapper || ref instanceof PythonObjectReference;
+            return ref instanceof PythonNativeWrapper || ref != null && ((PythonObjectReference) ref).isStrongReference();
         }
     }
 

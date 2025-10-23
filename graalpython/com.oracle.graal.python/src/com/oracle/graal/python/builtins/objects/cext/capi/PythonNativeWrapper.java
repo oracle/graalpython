@@ -41,9 +41,11 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.FirstToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonObjectReference;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
@@ -79,6 +81,10 @@ public abstract class PythonNativeWrapper implements TruffleObject {
         // we should set the pointer just once
         assert this.nativePointer == UNINITIALIZED || this.nativePointer == nativePointer || nativePointer == UNINITIALIZED;
         this.nativePointer = nativePointer;
+    }
+
+    public final void clearNativePointer() {
+        setNativePointer(UNINITIALIZED);
     }
 
     public final boolean isNative(Node inliningTarget, InlinedConditionProfile hasNativePointerProfile) {
@@ -139,6 +145,9 @@ public abstract class PythonNativeWrapper implements TruffleObject {
             }
             return refCount;
         }
+
+        @Ignore
+        public abstract void toNative(boolean newRef, Node inliningTarget, FirstToNativeNode firstToNativeNode);
     }
 
     /**

@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.FirstToNativeNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -53,6 +54,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
@@ -89,7 +91,7 @@ public final class PythonObjectNativeWrapper extends PythonAbstractObjectNativeW
     }
 
     @ExportMessage
-    boolean isPointer() {
+    public boolean isPointer() {
         return getDelegate() == PNone.NO_VALUE || isNative();
     }
 
@@ -102,6 +104,14 @@ public final class PythonObjectNativeWrapper extends PythonAbstractObjectNativeW
     void toNative(
                     @Bind Node inliningTarget,
                     @Cached CApiTransitions.FirstToNativeNode firstToNativeNode) {
+        toNative(false, inliningTarget, firstToNativeNode);
+    }
+
+    @Ignore
+    @Override
+    public void toNative(boolean newRef,
+                    Node inliningTarget,
+                    CApiTransitions.FirstToNativeNode firstToNativeNode) {
         if (getDelegate() != PNone.NO_VALUE && !isNative()) {
             /*
              * If the wrapped object is a special singleton (e.g. None, True, False, ...) then it
@@ -109,7 +119,7 @@ public final class PythonObjectNativeWrapper extends PythonAbstractObjectNativeW
              */
             boolean immortal = CApiGuards.isSpecialSingleton(getDelegate());
             assert !immortal || (getDelegate() instanceof PythonAbstractObject po && PythonContext.get(inliningTarget).getCApiContext().getSingletonNativeWrapper(po) == this);
-            setNativePointer(firstToNativeNode.execute(inliningTarget, this, immortal));
+            setNativePointer(firstToNativeNode.execute(inliningTarget, this, FirstToNativeNode.getInitialRefcnt(newRef, immortal)));
         }
     }
 }

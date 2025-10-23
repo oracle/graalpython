@@ -50,6 +50,7 @@ import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.FirstToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
@@ -68,6 +69,8 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.ExportMessage.Ignore;
+import com.oracle.truffle.api.nodes.Node;
 
 /**
  * Wrapper object for {@code PMemoryView}.
@@ -169,5 +172,15 @@ public final class PyMemoryViewWrapper extends PythonAbstractObjectNativeWrapper
             CApiTransitions.createReference(this, ptr, false);
         }
         return replacement;
+    }
+
+    @Ignore
+    @Override
+    public void toNative(boolean newRef, Node inliningTarget, FirstToNativeNode firstToNativeNode) {
+        /*
+         * This is a wrapper that is eagerly transformed to its C layout in the Python-to-native
+         * transition. Therefore, the wrapper is expected to be native already.
+         */
+        throw CompilerDirectives.shouldNotReachHere();
     }
 }

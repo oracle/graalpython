@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -104,7 +105,27 @@ public abstract class CApiGCSupport {
     @GenerateCached(false)
     public abstract static class PyObjectGCTrackNode extends Node {
 
-        public abstract void execute(Node inliningTarget, long gc);
+        /**
+         * Track the Python object denoted by the given {@code PyObject*} pointer. This will apply
+         * {@code AS_GC(op)} first.
+         */
+        public final void executeOp(Node inliningTarget, long op) {
+            if (PythonLanguage.get(inliningTarget).getEngineOption(PythonOptions.PythonGC)) {
+                // AS_GC(op)
+                execute(inliningTarget, op - CStructs.PyGC_Head.size());
+            }
+        }
+
+        /**
+         * Track the Python object denoted by the given {@code _PyGC_Head*} pointer.
+         */
+        public final void executeGc(Node inliningTarget, long gc) {
+            if (PythonLanguage.get(inliningTarget).getEngineOption(PythonOptions.PythonGC)) {
+                execute(inliningTarget, gc);
+            }
+        }
+
+        abstract void execute(Node inliningTarget, long gc);
 
         @Specialization
         static void doGeneric(Node inliningTarget, long gc,
@@ -112,6 +133,7 @@ public abstract class CApiGCSupport {
                         @Cached(inline = false) CStructAccess.ReadPointerNode readPointerNode,
                         @Cached(inline = false) CStructAccess.ReadI64Node readI64Node,
                         @Cached(inline = false) CStructAccess.WriteLongNode writeLongNode) {
+            assert PythonLanguage.get(inliningTarget).getEngineOption(PythonOptions.PythonGC);
 
             long gcUntagged = HandlePointerConverter.pointerToStub(gc);
             // #define _PyObject_GC_IS_TRACKED(o) (_PyGCHead_UNTAG(_Py_AS_GC(o))->_gc_next != 0)
@@ -146,6 +168,14 @@ public abstract class CApiGCSupport {
             } else if (GC_LOGGER.isLoggable(Level.FINER)) {
                 GC_LOGGER.finer(PythonUtils.formatJString("GC object 0x%x (op=0x%x) already tracked", gc, gc + CStructs.PyGC_Head.size()));
             }
+        }
+
+        @TruffleBoundary(allowInlining = true)
+        public static boolean isGcTracked(long taggedPointer) {
+            // #define _PyObject_GC_IS_TRACKED(o) (_PyGCHead_UNTAG(_Py_AS_GC(o))->_gc_next != 0)
+            long gcUntagged = HandlePointerConverter.pointerToStub(taggedPointer - CStructs.PyGC_Head.size());
+            long gcNext = CStructAccess.ReadI64Node.getUncached().read(gcUntagged, CFields.PyGC_Head___gc_next);
+            return gcNext != 0;
         }
     }
 

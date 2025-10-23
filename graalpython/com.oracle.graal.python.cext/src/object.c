@@ -2998,8 +2998,7 @@ _decref_notify(const PyObject *op, const Py_ssize_t updated_refcnt)
             GraalPyPrivate_BulkNotifyRefCount(deferred_notify_ops, DEFERRED_NOTIFY_SIZE);
         }
 #else
-        PyObject *nonConstOp = (PyObject *)op;
-        GraalPyPrivate_BulkNotifyRefCount(&nonConstOp, 1);
+        GraalPyPrivate_NotifyRefCount((PyObject *) op, updated_refcnt);
 #endif
     }
 }

@@ -457,10 +457,14 @@ public final class CApiContext extends CExtContext {
             assert singletonNativeWrapper != null;
             assert getSingletonNativeWrapperIdx(singletonNativeWrapper.getDelegate()) != -1;
             assert !singletonNativeWrapper.isNative() || singletonNativeWrapper.getRefCount() == IMMORTAL_REFCNT;
-            if (singletonNativeWrapper.ref != null) {
-                CApiTransitions.nativeStubLookupRemove(handleContext, singletonNativeWrapper.ref);
+            assert singletonNativeWrapper.ref == null : "immortal objects should not have a weak ref";
+            // It may be that the singleton was never used in native and there is nothing to free.
+            if (singletonNativeWrapper.isNative()) {
+                long pointer = CApiTransitions.HandlePointerConverter.pointerToStub(singletonNativeWrapper.getNativePointer());
+                int handleTableIndex = CStructAccess.ReadI32Node.readUncached(pointer, CFields.GraalPyObject__handle_table_index);
+                CApiTransitions.nativeStubLookupRemove(handleContext, handleTableIndex);
+                CApiTransitions.releaseNativeWrapperUncached(singletonNativeWrapper);
             }
-            CApiTransitions.releaseNativeWrapperUncached(singletonNativeWrapper);
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,10 +41,13 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.FirstToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.FirstToNativeNodeGen;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.library.ExportMessage.Ignore;
+import com.oracle.truffle.api.nodes.Node;
 
 @ExportLibrary(InteropLibrary.class)
 public final class TruffleObjectNativeWrapper extends PythonAbstractObjectNativeWrapper {
@@ -71,8 +74,14 @@ public final class TruffleObjectNativeWrapper extends PythonAbstractObjectNative
 
     @ExportMessage
     void toNative() {
+        toNative(false, null, FirstToNativeNodeGen.getUncached());
+    }
+
+    @Ignore
+    @Override
+    public void toNative(boolean newRef, Node inliningTarget, FirstToNativeNode firstToNativeNode) {
         if (!isNative()) {
-            setNativePointer(CApiTransitions.FirstToNativeNode.executeUncached(this, false));
+            setNativePointer(firstToNativeNode.execute(inliningTarget, this, FirstToNativeNode.getInitialRefcnt(newRef, false)));
         }
     }
 }

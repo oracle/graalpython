@@ -43,12 +43,14 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.FirstToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.AllocateNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
@@ -66,6 +68,8 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.ExportMessage.Ignore;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -225,11 +229,19 @@ public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWr
                 size = TypeNodes.GetBasicSizeNode.executeUncached(nativeMetatype);
             }
         }
+        /*
+         * For built-in classes, we can always create a strong reference. Those classes are always
+         * reachable and a weak reference is not necessary. We will release the native memory in the
+         * C API finalization.
+         */
+        boolean isBuiltinClass = clazz instanceof PythonBuiltinClass;
+
         long ptr = AllocateNode.allocUncachedPointer(size);
         // TODO: need to convert to interop pointer for NFI for now
         replacement = new NativePointer(ptr);
         CApiTransitions.createReference(this, ptr, true);
         ToNativeTypeNode.initializeType(this, ptr, heaptype);
+        assert !isBuiltinClass || getRefCount() == IMMORTAL_REFCNT;
     }
 
     /**
@@ -237,5 +249,17 @@ public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWr
      */
     public Object getReplacementIfInitialized() {
         return replacement;
+    }
+
+    @Ignore
+    @Override
+    public void toNative(boolean newRef, Node inliningTarget, FirstToNativeNode firstToNativeNode) {
+        if (!isNative()) {
+            /*
+             * This is a wrapper that is eagerly transformed to its C layout in the Python-to-native
+             * transition. Therefore, the wrapper is expected to be native already.
+             */
+            throw CompilerDirectives.shouldNotReachHere();
+        }
     }
 }

@@ -515,7 +515,7 @@ public class CStructAccess {
         }
 
         @Specialization
-        static long readLong(long pointer, long offset) {
+        public static long readLong(long pointer, long offset) {
             assert offset >= 0;
             return UNSAFE.getLong(pointer + offset);
         }
