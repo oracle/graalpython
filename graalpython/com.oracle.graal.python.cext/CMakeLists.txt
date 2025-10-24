@@ -367,6 +367,9 @@ set(CTYPES_SRC
     "${SRC_DIR}/modules/_ctypes/ctypes.h"
     "${SRC_DIR}/modules/_ctypes/stgdict.c"
 )
+if(APPLE)
+    set(CTYPES_SRC ${CTYPES_SRC} "${SRC_DIR}/modules/_ctypes/malloc_closure.c")
+endif()
 native_module("_ctypes" TRUE "${CTYPES_SRC}")
 target_include_directories("_ctypes" PUBLIC "${SRC_DIR}/modules/_ctypes")
 find_library(FFI_LIBRARY
@@ -414,7 +417,7 @@ elseif(APPLE)
         HAVE_DECL_RTLD_LOCAL
         HAVE_DECL_RTLD_GLOBAL
         HAVE_DYLD_SHARED_CACHE_CONTAINS_PATH
-        HAVE_BUILTIN_AVAILABLE
+        USING_MALLOC_CLOSURE_DOT_C
     )
 else()
     target_compile_definitions("_ctypes" PRIVATE
