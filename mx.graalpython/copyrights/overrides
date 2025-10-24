@@ -232,8 +232,6 @@ graalpython/com.oracle.graal.python.cext/modules/_cpython_sre/sre_constants.h,py
 graalpython/com.oracle.graal.python.cext/modules/_cpython_sre/sre_lib.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_cpython_sre/sre_targets.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_cpython_unicodedata.c,python.copyright
-graalpython/com.oracle.graal.python.cext/modules/_ctypes_test.c,python.copyright
-graalpython/com.oracle.graal.python.cext/modules/_ctypes_test.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_sqlite/blob.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_sqlite/blob.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/_sqlite/clinic/blob.c.h,no.copyright
@@ -344,6 +342,15 @@ graalpython/com.oracle.graal.python.cext/modules/termios.c,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/testcapi_long.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/unicodedata_db.h,python.copyright
 graalpython/com.oracle.graal.python.cext/modules/unicodename_db.h,python.copyright
+graalpython/com.oracle.graal.python.cext/modules/_ctypes/_ctypes.c,python.copyright
+graalpython/com.oracle.graal.python.cext/modules/_ctypes/_ctypes_test.c,python.copyright
+graalpython/com.oracle.graal.python.cext/modules/_ctypes/_ctypes_test.h,python.copyright
+graalpython/com.oracle.graal.python.cext/modules/_ctypes/callbacks.c,python.copyright
+graalpython/com.oracle.graal.python.cext/modules/_ctypes/callproc.c,python.copyright
+graalpython/com.oracle.graal.python.cext/modules/_ctypes/cfield.c,python.copyright
+graalpython/com.oracle.graal.python.cext/modules/_ctypes/ctypes.h,python.copyright
+graalpython/com.oracle.graal.python.cext/modules/_ctypes/malloc_closure.c,python.copyright
+graalpython/com.oracle.graal.python.cext/modules/_ctypes/stgdict.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/_warnings.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/abstract.c,python.copyright
 graalpython/com.oracle.graal.python.cext/src/boolobject.c,python.copyright

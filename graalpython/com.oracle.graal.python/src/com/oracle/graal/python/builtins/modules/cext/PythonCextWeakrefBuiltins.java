@@ -41,21 +41,30 @@
 package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PYWEAKREFERENCE_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PYWEAKREFERENCE_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_PROXY_TYPE;
+import static com.oracle.graal.python.nodes.BuiltinNames.T__WEAKREF;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType;
 import com.oracle.graal.python.builtins.objects.referencetype.ReferenceTypeBuiltins.ReferenceTypeNode;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 
 public final class PythonCextWeakrefBuiltins {
 
@@ -77,12 +86,32 @@ public final class PythonCextWeakrefBuiltins {
         }
     }
 
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
+    abstract static class PyWeakref_NewProxy extends CApiBinaryBuiltinNode {
+        @Specialization
+        static Object refType(Object object, Object callback,
+                        @Bind Node inliningTarget,
+                        @Cached PyObjectCallMethodObjArgs call) {
+            PythonModule weakrefModule = PythonContext.get(inliningTarget).lookupBuiltinModule(T__WEAKREF);
+            return call.execute(null, inliningTarget, weakrefModule, T_PROXY_TYPE, object, callback == PNone.NO_VALUE ? PNone.NONE : callback);
+        }
+    }
+
     @CApiBuiltin(ret = PyObjectBorrowed, args = {PyObject}, call = Direct)
     abstract static class PyWeakref_GetObject extends CApiUnaryBuiltinNode {
         @Specialization
-        static Object call(Object reference) {
+        static Object call(Object reference,
+                        @Bind Node inliningTarget,
+                        @Cached ReadAttributeFromPythonObjectNode read) {
             if (reference instanceof PReferenceType ref) {
                 return ref.getPyObject();
+            }
+            if (reference instanceof PythonObject obj) {
+                // maybe a _weakref.py proxytype
+                Object weakref = read.execute(obj, T__WEAKREF);
+                if (weakref instanceof PReferenceType ref) {
+                    return ref.getPyObject();
+                }
             }
             /*
              * This weak reference has died in the managed side due to its referent being collected.

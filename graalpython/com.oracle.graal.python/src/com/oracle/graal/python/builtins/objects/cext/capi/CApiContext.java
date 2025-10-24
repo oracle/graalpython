@@ -317,7 +317,7 @@ public final class CApiContext extends CExtContext {
     }
 
     public CApiContext(PythonContext context, Object library, NativeLibraryLocator locator) {
-        super(context, library);
+        super(context, library, locator.getCapiLibrary());
         this.nativeSymbolCache = new Object[NativeCAPISymbol.values().length];
         this.nativeLibraryLocator = locator;
 
@@ -1114,14 +1114,16 @@ public final class CApiContext extends CExtContext {
         try {
             // TODO(fa): remove GIL acquisition (GR-51314)
             try (GilNode.UncachedAcquire ignored = GilNode.uncachedAcquire()) {
+                // First we want to free all replacements for which we have to call tp_dealloc,
+                // while all our stubs are still available for the tp_dealloc code to run.
+                CApiTransitions.deallocNativeReplacements(context, handleContext);
+                // The singletons can be freed now
                 freeSingletonNativeWrappers(handleContext);
-                /*
-                 * Clear all remaining native object stubs. This must be done after the small int
-                 * and the singleton wrappers were cleared because they might also end up in the
-                 * lookup table and may otherwise be double-freed.
-                 */
+                // Now we can clear all native memory that was simply allocated from Java. This
+                // must be done after the the singleton wrappers were cleared because they might
+                // also end up in the lookup table and may otherwise be double-freed.
                 CApiTransitions.freeNativeObjectStubs(handleContext);
-                CApiTransitions.freeClassReplacements(handleContext);
+                CApiTransitions.freeNativeReplacementStructs(context, handleContext);
                 CApiTransitions.freeNativeStorages(handleContext);
             }
             if (pyDateTimeCAPICapsule != null) {

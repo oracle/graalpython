@@ -1849,7 +1849,7 @@ public final class PythonCextBuiltins {
 
                     // create the wrapper and register the pointer
                     LOGGER.fine(() -> "setting type store for built-in class " + name + " to " + PythonUtils.formatPointer(typeStructPtr));
-                    PythonClassNativeWrapper.wrapNative(clazz, TypeNodes.GetNameNode.executeUncached(clazz), typeStructPtr);
+                    PythonClassNativeWrapper.wrapStaticTypeStructForManagedClass(clazz, TypeNodes.GetNameNode.executeUncached(clazz), typeStructPtr);
 
                     builtinTypes.add(Pair.create(clazz, typeStructPtr));
                 }

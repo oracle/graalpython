@@ -105,7 +105,6 @@ import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.MathGuards;
-import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.CtypesThreadState;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
@@ -330,8 +329,6 @@ public final class PythonContext extends Python3Core {
         /* corresponds to 'PyThreadState.dict' */
         PDict dict;
 
-        CtypesThreadState ctypes;
-
         /*
          * This is the native wrapper object if we need to expose the thread state as PyThreadState
          * object. We need to store it here because the wrapper may receive 'toNative' in which case
@@ -451,14 +448,6 @@ public final class PythonContext extends Python3Core {
             this.dict = dict;
         }
 
-        public CtypesThreadState getCtypes() {
-            return ctypes;
-        }
-
-        public void setCtypes(CtypesThreadState ctypes) {
-            this.ctypes = ctypes;
-        }
-
         public PThreadState getNativeWrapper() {
             return nativeWrapper;
         }
@@ -494,8 +483,11 @@ public final class PythonContext extends Python3Core {
                 }
             }
             dict = null;
-            if (nativeWrapper != null && nativeWrapper.ref == null) {
-                CApiTransitions.releaseNativeWrapperUncached(nativeWrapper);
+            if (nativeWrapper != null) {
+                if (nativeWrapper.ref == null) {
+                    // There is no PythonObjectReference, this will not be collected anywhere else
+                    CApiTransitions.releaseNativeWrapperUncached(nativeWrapper);
+                }
                 nativeWrapper = null;
             }
             /*
@@ -746,9 +738,6 @@ public final class PythonContext extends Python3Core {
 
     // Equivalent of _Py_HashSecret
     @CompilationFinal(dimensions = 1) private byte[] hashSecret = new byte[24];
-
-    // ctypes' used native libraries/functions.
-    private final ConcurrentHashMap<Long, Object> ptrAdrMap = new ConcurrentHashMap<>();
 
     @CompilationFinal private PosixSupport posixSupport;
     @CompilationFinal private NFIZlibSupport nativeZlib;
@@ -1428,10 +1417,6 @@ public final class PythonContext extends Python3Core {
 
     public NFILZMASupport getNFILZMASupport() {
         return nativeLZMA;
-    }
-
-    public ConcurrentHashMap<Long, Object> getCtypesAdrMap() {
-        return ptrAdrMap;
     }
 
     public TruffleLanguage.Env getEnv() {

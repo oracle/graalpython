@@ -62,7 +62,6 @@ import com.oracle.truffle.api.strings.TruffleString;
 public enum NativeCAPISymbol implements NativeCExtSymbol {
 
     FUN_VA_ARG_POINTER("GraalPyPrivate_VaArgPointer", Pointer, Pointer),
-    FUN_CONVERT_POINTER("GraalPyPrivate_ConvertPointer", Pointer, Py_ssize_t),
     FUN_NO_OP_CLEAR("GraalPyPrivate_NoOpClear", Int, PyObject),
     FUN_NO_OP_TRAVERSE("GraalPyPrivate_NoOpTraverse", Int, PyObject, Pointer, Pointer),
 
@@ -96,6 +95,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_PY_TYPE_READY("PyType_Ready", Int, PyTypeObject),
     FUN_PY_OBJECT_FREE("PyObject_Free", Void, Pointer),
     FUN_PY_OBJECT_GENERIC_SET_DICT("PyObject_GenericSetDict", Int, PyObject, PyObject, Pointer),
+    FUN_PY_TYPE_GENERIC_NEW_RAW("PyType_GenericNew", ArgDescriptor.UINTPTR_T, PyTypeObject, ArgDescriptor.UINTPTR_T, ArgDescriptor.UINTPTR_T),
     FUN_PY_TYPE_GENERIC_ALLOC("PyType_GenericAlloc", PyObjectTransfer, PyTypeObject, Py_ssize_t),
     FUN_PY_OBJECT_GET_DICT_PTR("_PyObject_GetDictPtr", Pointer, PyObject),
     FUN_PY_UNICODE_GET_LENGTH("PyUnicode_GetLength", Py_ssize_t, PyObject),
@@ -111,7 +111,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_OBJECT_ARRAY_RELEASE("GraalPyPrivate_ObjectArrayRelease", ArgDescriptor.Void, Pointer, Int),
     FUN_PY_OBJECT_NEW("GraalPyPrivate_ObjectNew", PyObjectTransfer, PyTypeObject),
     FUN_GRAALPY_OBJECT_GC_DEL("GraalPyPrivate_Object_GC_Del", Void, Pointer),
-    FUN_BULK_DEALLOC("GraalPyPrivate_BulkDealloc", Py_ssize_t, Pointer, INT64_T),
+    FUN_BULK_DEALLOC("GraalPyPrivate_BulkDealloc", Py_ssize_t, ArgDescriptor.UINTPTR_T, INT64_T),
     FUN_SHUTDOWN_BULK_DEALLOC("GraalPyPrivate_BulkDeallocOnShutdown", Py_ssize_t, Pointer, INT64_T),
     FUN_GET_CURRENT_RSS("GraalPyPrivate_GetCurrentRSS", SIZE_T),
     FUN_ADD_SUBOFFSET("GraalPyPrivate_AddSuboffset", Pointer, Pointer, Py_ssize_t, Py_ssize_t),
@@ -126,23 +126,13 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_UNICODE_SUBTYPE_NEW("GraalPyPrivate_Unicode_SubtypeNew", PyObjectTransfer, PyTypeObject, PyObject),
     FUN_CHECK_BASICSIZE_FOR_GETSTATE("GraalPyPrivate_CheckBasicsizeForGetstate", Int, PyTypeObject, Int),
     FUN_MMAP_INIT_BUFFERPROTOCOL("GraalPyPrivate_MMap_InitBufferProtocol", ArgDescriptor.Void, PyTypeObject),
-    FUN_PY_TRUFFLE_CDATA_INIT_BUFFER_PROTOCOL("GraalPyPrivate_CData_InitBufferProtocol", ArgDescriptor.Void, PyTypeObject),
     FUN_TRUFFLE_CHECK_TYPE_READY("GraalPyPrivate_CheckTypeReady", ArgDescriptor.Void, PyTypeObject),
     FUN_GRAALPY_GC_COLLECT("GraalPyPrivate_GC_Collect", Py_ssize_t, Int),
     FUN_SUBTYPE_TRAVERSE("GraalPyPrivate_SubtypeTraverse", Int, PyObject, Pointer, Pointer),
 
     /* PyDateTime_CAPI */
 
-    FUN_INIT_NATIVE_DATETIME("GraalPyPrivate_InitNativeDateTime", ArgDescriptor.Void),
-
-    // ctypes
-    FUN_FREE("free", Void, Pointer),
-    FUN_MEMMOVE("memmove", Pointer, Pointer, Pointer, SIZE_T),
-    FUN_MEMSET("memset", Pointer, Pointer, Int, SIZE_T),
-    FUN_CALLOC("calloc", Pointer, SIZE_T),
-    FUN_STRING_AT("string_at"),
-    FUN_CAST("cast"),
-    FUN_WSTRING_AT("wstring_at");
+    FUN_INIT_NATIVE_DATETIME("GraalPyPrivate_InitNativeDateTime", ArgDescriptor.Void);
 
     private final String name;
     private final TruffleString tsName;

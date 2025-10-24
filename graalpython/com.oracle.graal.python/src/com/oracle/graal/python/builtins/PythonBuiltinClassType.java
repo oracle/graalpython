@@ -63,7 +63,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_TYPE_VAR_TUPLE;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_TYPING;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_WRAPPER_DESCRIPTOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__CONTEXTVARS;
-import static com.oracle.graal.python.nodes.BuiltinNames.J__CTYPES;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__SOCKET;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__SSL;
 import static com.oracle.graal.python.nodes.BuiltinNames.J__STRUCT;
@@ -94,22 +93,6 @@ import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteStreamReaderB
 import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteStreamWriterBuiltins;
 import com.oracle.graal.python.builtins.modules.csv.CSVDialectBuiltins;
 import com.oracle.graal.python.builtins.modules.csv.CSVReaderBuiltins;
-import com.oracle.graal.python.builtins.modules.ctypes.CArgObjectBuiltins;
-import com.oracle.graal.python.builtins.modules.ctypes.CDataBuiltins;
-import com.oracle.graal.python.builtins.modules.ctypes.CDataTypeSequenceBuiltins;
-import com.oracle.graal.python.builtins.modules.ctypes.CFieldBuiltins;
-import com.oracle.graal.python.builtins.modules.ctypes.PyCArrayBuiltins;
-import com.oracle.graal.python.builtins.modules.ctypes.PyCArrayTypeBuiltins;
-import com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrBuiltins;
-import com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrTypeBuiltins;
-import com.oracle.graal.python.builtins.modules.ctypes.PyCPointerBuiltins;
-import com.oracle.graal.python.builtins.modules.ctypes.PyCPointerTypeBuiltins;
-import com.oracle.graal.python.builtins.modules.ctypes.PyCSimpleTypeBuiltins;
-import com.oracle.graal.python.builtins.modules.ctypes.PyCStructTypeBuiltins;
-import com.oracle.graal.python.builtins.modules.ctypes.SimpleCDataBuiltins;
-import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins;
-import com.oracle.graal.python.builtins.modules.ctypes.StructUnionTypeBuiltins;
-import com.oracle.graal.python.builtins.modules.ctypes.StructureBuiltins;
 import com.oracle.graal.python.builtins.modules.functools.KeyWrapperBuiltins;
 import com.oracle.graal.python.builtins.modules.functools.LruCacheWrapperBuiltins;
 import com.oracle.graal.python.builtins.modules.functools.PartialBuiltins;
@@ -1208,48 +1191,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
     // _ast (rest of the classes are not builtin, they are generated in AstModuleBuiltins)
     AST("AST", PythonObject, newBuilder().moduleName("ast").publishInModule("_ast").basetype().addDict().slots(AstBuiltins.SLOTS)),
 
-    // _ctype
-    CArgObject("CArgObject", PythonObject, newBuilder().basetype().slots(CArgObjectBuiltins.SLOTS)),
-    CThunkObject("CThunkObject", PythonObject, newBuilder().publishInModule(J__CTYPES).basetype()),
-    StgDict("StgDict", PDict, newBuilder().slots(StgDictBuiltins.SLOTS)),
-    PyCStructType(
-                    "PyCStructType",
-                    PythonClass,
-                    newBuilder().publishInModule(J__CTYPES).basetype().slots(CDataTypeSequenceBuiltins.SLOTS, StructUnionTypeBuiltins.SLOTS, PyCStructTypeBuiltins.SLOTS)),
-    UnionType(
-                    "UnionType",
-                    PythonClass,
-                    newBuilder().publishInModule(J__CTYPES).basetype().slots(
-                                    CDataTypeSequenceBuiltins.SLOTS, StructUnionTypeBuiltins.SLOTS,
-                                    com.oracle.graal.python.builtins.modules.ctypes.UnionTypeBuiltins.SLOTS)),
-    PyCPointerType(
-                    "PyCPointerType",
-                    PythonClass,
-                    newBuilder().publishInModule(J__CTYPES).basetype().slots(CDataTypeSequenceBuiltins.SLOTS, PyCPointerTypeBuiltins.SLOTS)),
-    PyCArrayType(
-                    "PyCArrayType",
-                    PythonClass,
-                    newBuilder().publishInModule(J__CTYPES).basetype().slots(CDataTypeSequenceBuiltins.SLOTS, PyCArrayTypeBuiltins.SLOTS)),
-    PyCSimpleType(
-                    "PyCSimpleType",
-                    PythonClass,
-                    newBuilder().publishInModule(J__CTYPES).basetype().slots(CDataTypeSequenceBuiltins.SLOTS, PyCPointerTypeBuiltins.SLOTS, PyCSimpleTypeBuiltins.SLOTS)),
-    PyCFuncPtrType(
-                    "PyCFuncPtrType",
-                    PythonClass,
-                    newBuilder().publishInModule(J__CTYPES).basetype().slots(CDataTypeSequenceBuiltins.SLOTS, PyCFuncPtrTypeBuiltins.SLOTS)),
-    PyCData("_CData", PythonObject, newBuilder().publishInModule(J__CTYPES).basetype().slots(CDataBuiltins.SLOTS)), /*- type = PyCStructType */
-    Structure("Structure", PyCData, newBuilder().publishInModule(J__CTYPES).basetype().slots(StructureBuiltins.SLOTS)), /*- type = PyCStructType */
-    Union("Union", PyCData, newBuilder().publishInModule(J__CTYPES).basetype().slots(StructureBuiltins.SLOTS)), /*- type = UnionType */
-    PyCPointer("_Pointer", PyCData, newBuilder().publishInModule(J__CTYPES).basetype().slots(PyCPointerBuiltins.SLOTS)), /*- type = PyCPointerType */
-    PyCArray("Array", PyCData, newBuilder().publishInModule(J__CTYPES).basetype().slots(PyCArrayBuiltins.SLOTS)), /*- type = PyCArrayType */
-    SimpleCData("_SimpleCData", PyCData, newBuilder().publishInModule(J__CTYPES).basetype().slots(SimpleCDataBuiltins.SLOTS)), /*- type = PyCStructType */
-    PyCFuncPtr("PyCFuncPtr", PyCData, newBuilder().publishInModule(J__CTYPES).basetype().slots(PyCFuncPtrBuiltins.SLOTS)), /*- type = PyCFuncPtrType */
-    CField("CField", PythonObject, newBuilder().publishInModule(J__CTYPES).basetype().slots(CFieldBuiltins.SLOTS)),
-    DictRemover("DictRemover", PythonObject, newBuilder().publishInModule(J__CTYPES).basetype()),
-    StructParam("StructParam_Type", PythonObject, newBuilder().publishInModule(J__CTYPES).basetype()),
-    ArgError("ArgumentError", PBaseException, newBuilder().publishInModule(J__CTYPES).basetype().addDict()),
-
     // _multibytecodec
     MultibyteCodec("MultibyteCodec", PythonObject, newBuilder().publishInModule("_multibytecodec").basetype().addDict().disallowInstantiation()),
     MultibyteIncrementalEncoder("MultibyteIncrementalEncoder", PythonObject, newBuilder().publishInModule("_multibytecodec").basetype().addDict().slots(MultibyteIncrementalEncoderBuiltins.SLOTS)),
@@ -1532,7 +1473,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
     private final TruffleString doc;
 
     // initialized in static constructor
-    @CompilationFinal private PythonBuiltinClassType type;
     @CompilationFinal private int weaklistoffset;
 
     /**
@@ -1598,10 +1538,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
         return printName;
     }
 
-    public PythonBuiltinClassType getType() {
-        return type;
-    }
-
     public PythonBuiltinClassType getBase() {
         return base;
     }
@@ -1655,36 +1591,13 @@ public enum PythonBuiltinClassType implements TruffleObject {
     @CompilationFinal(dimensions = 1) public static final PythonBuiltinClassType[] VALUES = Arrays.copyOf(values(), values().length);
 
     static {
-        PythonObject.type = PythonClass;
-        Structure.type = PyCStructType;
-        Union.type = UnionType;
-        PyCPointer.type = PyCPointerType;
-        PyCArray.type = PyCArrayType;
-        SimpleCData.type = PyCSimpleType;
-        PyCFuncPtr.type = PyCFuncPtrType;
-
         boolean assertionsEnabled = false;
         assert (assertionsEnabled = true) == true;
         HashSet<String> set = assertionsEnabled ? new HashSet<>() : null;
         for (PythonBuiltinClassType type : VALUES) {
             // check uniqueness
             assert set.add("" + type.moduleName + "." + type.name) : type.name();
-
-            /*
-             * Now the only way base can still be null is if type is PythonObject.
-             */
-            if (type.type == null && type.base != null) {
-                type.type = type.base.type;
-            }
-
             type.weaklistoffset = WeakRefModuleBuiltins.getBuiltinTypeWeaklistoffset(type);
-        }
-
-        // Finally, we set all remaining types to PythonClass.
-        for (PythonBuiltinClassType type : VALUES) {
-            if (type.type == null) {
-                type.type = PythonClass;
-            }
         }
     }
 

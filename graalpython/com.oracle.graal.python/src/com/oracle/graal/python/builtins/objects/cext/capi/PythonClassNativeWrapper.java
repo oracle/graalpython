@@ -42,7 +42,9 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
+import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.AllocateNode;
@@ -64,20 +66,18 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Used to wrap {@link PythonClass} when used in native code. This wrapper is replacing and the
  * replacement mimics the correct shape of the corresponding native type {@code struct _typeobject}.
  */
-@ExportLibrary(InteropLibrary.class)
 public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWrapper {
     private final CStringWrapper nameWrapper;
+    private Object replacement;
 
     private PythonClassNativeWrapper(PythonManagedClass object, TruffleString name, TruffleString.SwitchEncodingNode switchEncoding) {
-        super(object, true);
+        super(object);
         this.nameWrapper = new CStringWrapper(switchEncoding.execute(name, TruffleString.Encoding.UTF_8), TruffleString.Encoding.UTF_8);
     }
 
@@ -96,9 +96,9 @@ public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWr
     }
 
     /**
-     * Creates a wrapper that uses an existing native object as native replacement object.
+     * Creates a wrapper that uses existing native memory as native replacement object.
      */
-    public static void wrapNative(PythonManagedClass clazz, TruffleString name, Object pointer) {
+    public static void wrapStaticTypeStructForManagedClass(PythonManagedClass clazz, TruffleString name, Object pointer) {
         /*
          * This *MUST NOT* happen, otherwise we would allocate a fresh native type store and then
          * the native pointer of the wrapper would not be equal to the corresponding native global
@@ -174,7 +174,13 @@ public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWr
          * 'getReplacement' for more explanation).
          */
         wrapper.replacement = pointer;
-        wrapper.registerReplacement(pointer, false, lib);
+        long ptr;
+        try {
+            ptr = lib.asPointer(pointer);
+        } catch (UnsupportedMessageException e) {
+            throw CompilerDirectives.shouldNotReachHere(e);
+        }
+        CApiTransitions.createReference(wrapper, ptr, false);
     }
 
     public static void initNative(PythonManagedClass clazz, Object pointer) {
@@ -191,15 +197,15 @@ public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWr
         return PythonUtils.formatJString("PythonClassNativeWrapper(%s, isNative=%s)", getDelegate(), isNative());
     }
 
-    public Object getReplacement(InteropLibrary lib) {
+    public Object getReplacement() {
         if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, replacement == null)) {
-            initializeReplacement(lib);
+            initializeReplacement();
         }
         return replacement;
     }
 
     @TruffleBoundary
-    private void initializeReplacement(InteropLibrary lib) {
+    private void initializeReplacement() {
         /*
          * Note: it's important that we first allocate the empty 'PyTypeStruct' and register it to
          * the wrapper before we do the type's initialization. Otherwise, we will run into an
@@ -219,10 +225,11 @@ public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWr
                 size = TypeNodes.GetBasicSizeNode.executeUncached(nativeMetatype);
             }
         }
-        Object pointerObject = AllocateNode.allocUncached(size);
-        replacement = registerReplacement(pointerObject, true, lib);
-
-        ToNativeTypeNode.initializeType(this, pointerObject, heaptype);
+        long ptr = AllocateNode.allocUncachedPointer(size);
+        // TODO: need to convert to interop pointer for NFI for now
+        replacement = new NativePointer(ptr);
+        CApiTransitions.createReference(this, ptr, true);
+        ToNativeTypeNode.initializeType(this, ptr, heaptype);
     }
 
     /**
@@ -230,30 +237,5 @@ public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWr
      */
     public Object getReplacementIfInitialized() {
         return replacement;
-    }
-
-    @ExportMessage
-    boolean isPointer() {
-        return isNative();
-    }
-
-    @ExportMessage
-    long asPointer() throws UnsupportedMessageException {
-        if (!isNative()) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw UnsupportedMessageException.create();
-        }
-        return getNativePointer();
-    }
-
-    @ExportMessage
-    void toNative() {
-        if (!isNative()) {
-            /*
-             * This is a wrapper that is eagerly transformed to its C layout in the Python-to-native
-             * transition. Therefore, the wrapper is expected to be native already.
-             */
-            throw CompilerDirectives.shouldNotReachHere();
-        }
     }
 }

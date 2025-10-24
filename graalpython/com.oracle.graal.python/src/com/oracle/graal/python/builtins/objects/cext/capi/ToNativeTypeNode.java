@@ -57,7 +57,6 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTy
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.ctypes.StgDictObject;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
@@ -256,13 +255,11 @@ public abstract class ToNativeTypeNode {
 
         // TODO(fa): we could cache the dict instance on the class' native wrapper
         PDict dict = GetOrCreateDictNode.executeUncached(clazz);
-        if (!(dict instanceof StgDictObject)) {
-            HashingStorage dictStorage = dict.getDictStorage();
-            if (!(dictStorage instanceof DynamicObjectStorage)) {
-                HashingStorage storage = new DynamicObjectStorage(clazz);
-                // copy all mappings to the new storage
-                dict.setDictStorage(HashingStorageAddAllToOther.executeUncached(dictStorage, storage));
-            }
+        HashingStorage dictStorage = dict.getDictStorage();
+        if (!(dictStorage instanceof DynamicObjectStorage)) {
+            HashingStorage storage = new DynamicObjectStorage(clazz);
+            // copy all mappings to the new storage
+            dict.setDictStorage(HashingStorageAddAllToOther.executeUncached(dictStorage, storage));
         }
         writePtrNode.write(mem, CFields.PyTypeObject__tp_dict, toNative.execute(dict));
 

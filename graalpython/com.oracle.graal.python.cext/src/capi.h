@@ -398,13 +398,6 @@ PY_TRUFFLE_TYPE(PyReversed_Type,                 "reversed",                   &
 PY_TRUFFLE_TYPE(cycle_type,                      "cycle",                      &PyType_Type, sizeof(PyObject)) \
 PY_TRUFFLE_TYPE(PySeqIter_Type,                  "iterator",                   &PyType_Type, sizeof(PyObject)) \
 PY_TRUFFLE_TYPE(PyEnum_Type,                     "enumerate",                  &PyType_Type, sizeof(PyObject)) \
-PY_TRUFFLE_TYPE(PyCSimpleType,                   "PyCSimpleType",              &PyType_Type, sizeof(PyObject)) \
-PY_TRUFFLE_TYPE(PyCData_Type,                    "_CData",                     &PyType_Type, sizeof(PyObject)) \
-PY_TRUFFLE_TYPE(Simple_Type,                     "_SimpleCData",               &PyType_Type, sizeof(PyObject)) \
-PY_TRUFFLE_TYPE(PyCStructType_Type,              "PyCStructType",              &PyType_Type, sizeof(PyObject)) \
-PY_TRUFFLE_TYPE(UnionType_Type,                  "_ctypes.UnionType",          &PyType_Type, sizeof(PyObject)) \
-PY_TRUFFLE_TYPE(PyCPointerType_Type,             "PyCPointerType",             &PyType_Type, sizeof(PyObject)) \
-PY_TRUFFLE_TYPE(PyCArrayType_Type,               "PyCArrayType",               &PyType_Type, sizeof(PyObject)) \
 PY_TRUFFLE_TYPE(PyCoro_Type,                     "coroutine",                  &PyType_Type, sizeof(PyCoroObject)) \
 PY_TRUFFLE_TYPE(Py_GenericAliasType,             "types.GenericAlias", 		   &PyType_Type, sizeof(PyObject)) \
 /* PyPickleBufferObject (PyObject_HEAD + Py_buffer + PyObject*) is defined within Objects/picklebufobject.c, so its not exposed. */ \

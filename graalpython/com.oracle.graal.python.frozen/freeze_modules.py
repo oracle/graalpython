@@ -13,7 +13,6 @@ import os
 import posixpath
 import shutil
 import sys
-from _sha256 import sha256
 from collections import namedtuple
 
 FROZEN_ONLY = os.path.join(os.path.dirname(__file__), "flag.py")
@@ -374,7 +373,6 @@ class FrozenModule(namedtuple('FrozenModule', 'name ispkg section source')):
             'ispkg': self.ispkg,
             'source': source,
             'frozen': os.path.basename(self.frozenfile),
-            'checksum': _get_checksum(self.frozenfile),
         }
 
 
@@ -388,14 +386,6 @@ def _iter_sources(modules):
 
 #######################################
 # generic helpers
-
-def _get_checksum(filename):
-    with open(filename, "rb") as infile:
-        contents = infile.read()
-    m = sha256()
-    m.update(contents)
-    return m.hexdigest()
-
 
 def resolve_modules(modname, pyfile=None):
     if modname.startswith('<') and modname.endswith('>'):

@@ -323,7 +323,6 @@ if(WIN32)
 endif()
 simple_native_module("_testmultiphase")
 simple_native_module("_testsinglephase")
-simple_native_module("_ctypes_test")
 
 if(NOT WIN32)
     ###################### BZIP2 ########################
@@ -358,6 +357,76 @@ target_compile_definitions(${TARGET_PYEXPAT} PRIVATE
     XML_DTD=1
 )
 
+###################### CTYPES ######################
+native_module("_ctypes_test" TRUE "${SRC_DIR}/modules/_ctypes/_ctypes_test.c")
+set(CTYPES_SRC
+    "${SRC_DIR}/modules/_ctypes/_ctypes.c"
+    "${SRC_DIR}/modules/_ctypes/callbacks.c"
+    "${SRC_DIR}/modules/_ctypes/callproc.c"
+    "${SRC_DIR}/modules/_ctypes/cfield.c"
+    "${SRC_DIR}/modules/_ctypes/ctypes.h"
+    "${SRC_DIR}/modules/_ctypes/stgdict.c"
+)
+if(APPLE)
+    set(CTYPES_SRC ${CTYPES_SRC} "${SRC_DIR}/modules/_ctypes/malloc_closure.c")
+endif()
+native_module("_ctypes" TRUE "${CTYPES_SRC}")
+target_include_directories("_ctypes" PUBLIC "${SRC_DIR}/modules/_ctypes")
+find_library(FFI_LIBRARY
+  NAMES "ffi.lib" "libffi.a"
+  PATHS "${LIBFFI_DIST}"
+  REQUIRED
+  NO_DEFAULT_PATH
+  NO_PACKAGE_ROOT_PATH
+  NO_CMAKE_PATH
+  NO_CMAKE_ENVIRONMENT_PATH
+  NO_SYSTEM_ENVIRONMENT_PATH
+  NO_CMAKE_SYSTEM_PATH
+  NO_CMAKE_INSTALL_PREFIX
+)
+find_path(FFI_INCLUDE
+  NAMES "ffi.h"
+  PATHS "${LIBFFI_DIST}"
+  PATH_SUFFIXES "include"
+  REQUIRED
+  NO_DEFAULT_PATH
+  NO_PACKAGE_ROOT_PATH
+  NO_CMAKE_PATH
+  NO_CMAKE_ENVIRONMENT_PATH
+  NO_SYSTEM_ENVIRONMENT_PATH
+  NO_CMAKE_SYSTEM_PATH
+  NO_CMAKE_INSTALL_PREFIX
+)
+target_link_libraries("_ctypes" PRIVATE ${FFI_LIBRARY})
+
+target_include_directories("_ctypes" BEFORE PRIVATE ${FFI_INCLUDE})
+
+if(WIN32)
+    target_compile_options("_ctypes" PRIVATE
+        /wd4201 # ffi.h(332): warning C4201: nonstandard extension used: nameless struct/union
+        /wd4457 # _ctypes.c(4783): warning C4457: declaration of 'item' hides function parameter
+    )
+    target_compile_definitions("_ctypes" PRIVATE
+        MS_WIN32
+        MS_WIN64
+        _WIN64
+        FFI_STATIC_BUILD
+    )
+elseif(APPLE)
+    target_compile_definitions("_ctypes" PRIVATE
+        HAVE_DECL_RTLD_LOCAL
+        HAVE_DECL_RTLD_GLOBAL
+        HAVE_DYLD_SHARED_CACHE_CONTAINS_PATH
+        USING_MALLOC_CLOSURE_DOT_C
+    )
+else()
+    target_compile_definitions("_ctypes" PRIVATE
+        HAVE_DECL_RTLD_LOCAL
+        HAVE_DECL_RTLD_GLOBAL
+    )
+endif()
+
+###################### LIBPYTHON ######################
 target_sources(${TARGET_LIBPYTHON} PRIVATE ${SRC_FILES})
 target_include_directories(${TARGET_LIBPYTHON} PRIVATE
     "${SRC_DIR}/include/internal"

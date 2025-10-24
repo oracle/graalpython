@@ -43,16 +43,11 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ReleaseNativeWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonStructNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -83,7 +78,7 @@ public final class CPyObjectArrayWrapper extends PythonStructNativeWrapper {
         wrappers = new Object[delegate.length];
     }
 
-    public Object[] getObjectArray() {
+    private Object[] getObjectArray() {
         return ((Object[]) getDelegate());
     }
 
@@ -97,53 +92,15 @@ public final class CPyObjectArrayWrapper extends PythonStructNativeWrapper {
         return getNativePointer();
     }
 
-    @ExportMessage
-    long getArraySize() {
-        return wrappers.length;
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    boolean hasArrayElements() {
-        return true;
-    }
-
-    @ExportMessage
-    Object readArrayElement(long index,
-                    @Shared("toNativeNode") @Cached PythonToNativeNode toNativeNode) throws InvalidArrayIndexException {
-        try {
-            int idx = PInt.intValueExact(index);
-            if (idx >= 0 && idx < wrappers.length) {
-                if (wrappers[idx] == null) {
-                    Object[] arr = getObjectArray();
-                    wrappers[idx] = toNativeNode.execute(arr[idx]);
-                }
-                return wrappers[idx];
-            }
-        } catch (OverflowException e) {
-            // fall through
-        }
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw InvalidArrayIndexException.create(index);
-    }
-
-    @ExportMessage
-    boolean isArrayElementReadable(long identifier) {
-        return 0 <= identifier && identifier < wrappers.length;
-    }
-
     /**
      * Copies a Java {@code Object[]} to a native {@code PyObject *arr[]}. For this, the native
      * memory is allocated off-heap using {@code Unsafe}.
      */
     @ExportMessage
     void toNative(
-                    @Shared("toNativeNode") @Cached PythonToNativeNode toNativeNode,
+                    @Cached PythonToNativeNode toNativeNode,
                     @CachedLibrary(limit = "3") InteropLibrary interopLib) {
-        if (!PythonContext.get(toNativeNode).isNativeAccessAllowed()) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new RuntimeException(ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED.toJavaStringUncached());
-        }
+        assert PythonContext.get(toNativeNode).isNativeAccessAllowed();
         if (!isNative()) {
             Object[] data = getObjectArray();
             long ptr = allocateBoundary((long) wrappers.length * Long.BYTES);
@@ -175,10 +132,7 @@ public final class CPyObjectArrayWrapper extends PythonStructNativeWrapper {
         // releaseNativeWrapperNode.execute(wrappers[i]);
         // }
         if (isNative()) {
-            if (!PythonContext.get(releaseNativeWrapperNode).isNativeAccessAllowed()) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new RuntimeException(ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED.toJavaStringUncached());
-            }
+            assert PythonContext.get(releaseNativeWrapperNode).isNativeAccessAllowed();
             freeBoundary(getNativePointer());
         }
     }

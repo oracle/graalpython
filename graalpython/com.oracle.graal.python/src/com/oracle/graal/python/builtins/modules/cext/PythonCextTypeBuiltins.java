@@ -85,6 +85,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Ensu
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ReadObjectNode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -101,6 +102,7 @@ import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
+import com.oracle.graal.python.nodes.object.SetDictNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -221,7 +223,10 @@ public final class PythonCextTypeBuiltins {
         @TruffleBoundary
         @Specialization
         static Object doIt(PythonAbstractClass object,
-                        @Bind Node inliningTarget) {
+                        @Bind Node inliningTarget,
+                        @Cached ReadObjectNode readObjectNode,
+                        @Cached GetDictIfExistsNode getDictIfExists,
+                        @Cached SetDictNode setDict) {
             if (object instanceof PythonAbstractNativeObject clazz) {
                 PythonContext context = PythonContext.get(inliningTarget);
                 CyclicAssumption nativeClassStableAssumption = context.getNativeClassStableAssumption(clazz, false);
@@ -232,7 +237,12 @@ public final class PythonCextTypeBuiltins {
                 mroStorage.lookupChanged();
                 // Reload slots from native, which also invalidates cached slot lookups
                 clazz.setTpSlots(TpSlots.fromNative(clazz, context));
-            } else {
+            } else if (object instanceof PythonManagedClass clazz) {
+                Object field = readObjectNode.read(clazz.getClassNativeWrapper().getNativePointer(), CFields.PyTypeObject__tp_dict);
+                if (field instanceof PDict dict && dict != getDictIfExists.execute(clazz)) {
+                    setDict.execute(inliningTarget, object, dict);
+                }
+                // TODO: should we support syncing special slots as well?
                 MroSequenceStorage mroStorage = TypeNodes.GetMroStorageNode.executeUncached(object);
                 mroStorage.lookupChanged();
             }

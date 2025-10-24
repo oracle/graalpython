@@ -43,18 +43,21 @@ package com.oracle.graal.python.builtins.objects.cext.capi.transitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyMemoryViewWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
+/**
+ * Native wrappers are usually materialized lazily when they receive
+ * {@link InteropLibrary#toNative(Object)}. A few native wrappers may emulate data structures where
+ * it is more efficient to have off-heap memory that just replaces the object on the native side
+ * (and is presumably somehow synced). These wrappers have specializations here so the users of this
+ * node can return them directly for native access.
+ */
 @GenerateUncached
 @GenerateInline
 @GenerateCached(false)
@@ -62,33 +65,18 @@ public abstract class GetReplacementNode extends Node {
 
     public abstract Object execute(Node inliningTarget, PythonNativeWrapper wrapper);
 
-    @Specialization(guards = "isReplacingWrapper(wrapper)")
-    static Object doReplacingWrapper(PyMemoryViewWrapper wrapper,
-                    @Shared @CachedLibrary(limit = "3") InteropLibrary lib) {
-        return wrapper.getReplacement(lib);
+    @Specialization
+    static Object doReplacingWrapper(PyMemoryViewWrapper wrapper) {
+        return wrapper.getReplacement();
     }
 
-    @Specialization(guards = "isReplacingWrapper(wrapper)")
-    static Object doReplacingWrapper(PythonClassNativeWrapper wrapper,
-                    @Shared @CachedLibrary(limit = "3") InteropLibrary lib) {
-        return wrapper.getReplacement(lib);
+    @Specialization
+    static Object doReplacingWrapper(PythonClassNativeWrapper wrapper) {
+        return wrapper.getReplacement();
     }
 
-    @Specialization(guards = "isReplacingWrapper(wrapper)")
-    static Object doReplacingWrapper(PythonNativeWrapper wrapper) {
-        throw CompilerDirectives.shouldNotReachHere("Unexpected replacing wrapper");
-    }
-
-    @Specialization(guards = "!isReplacingWrapper(wrapper)")
+    @Fallback
     static Object doWrapper(Node inliningTarget, PythonNativeWrapper wrapper) {
-        if (wrapper instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper && !PythonContext.get(inliningTarget).isNativeAccessAllowed()) {
-            // LLVM managed code path
-            return objectNativeWrapper;
-        }
         return null;
-    }
-
-    static boolean isReplacingWrapper(PythonNativeWrapper wrapper) {
-        return wrapper.isReplacingWrapper();
     }
 }

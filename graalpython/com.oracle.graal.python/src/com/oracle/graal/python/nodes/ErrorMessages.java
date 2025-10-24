@@ -1191,7 +1191,6 @@ public abstract class ErrorMessages {
     public static final TruffleString ISSUBCLASS_ARG_1_MUST_BE_A_CLASS = tsLiteral("issubclass() arg 1 must be a class");
     public static final TruffleString FOUND_NON_STR_S_IN_SKIP_FILE_PREFIXES = tsLiteral("Found non-str '%s' in skip_file_prefixes.");
 
-    // ctypes
     public static final TruffleString PASSING_STRUCTS_BY_VALUE_NOT_SUPPORTED = tsLiteral("Passing structs by value is not supported on NFI backend");
     public static final TruffleString RETURNING_STRUCT_BY_VALUE_NOT_SUPPORTED = tsLiteral("ctypes: returning struct by value is not supported.");
     public static final TruffleString MEMORYVIEW_CANNOT_BE_CONVERTED_TO_NATIVE_MEMORY = tsLiteral("Memoryview cannot be converted to native memory");
@@ -1475,8 +1474,6 @@ public abstract class ErrorMessages {
     public static final TruffleString STREAM_FUNCTION_RETURNED_A_NON_BYTES_OBJECT_P = tsLiteral("stream function returned a non-bytes object (%p)");
 
     public static final TruffleString CANNOT_BUILD_PARAMETER = tsLiteral("cannot build parameter");
-    public static final TruffleString ON_CALLING_CTYPES_CALLBACK_FUNCTION = tsLiteral("on calling ctypes callback function");
-    public static final TruffleString ON_CONVERTING_RESULT_OF_CTYPES_CALLBACK_FUNCTION = tsLiteral("on converting result of ctypes callback function");
     public static final TruffleString MEMORY_LEAK_IN_CALLBACK_FUNCTION = tsLiteral("memory leak in callback function.");
 
     public static final TruffleString INDEX_EXCEEDS_INT = tsLiteral("index exceeds integer size");

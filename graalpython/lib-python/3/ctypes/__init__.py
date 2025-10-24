@@ -465,11 +465,17 @@ cdll = LibraryLoader(CDLL)
 pydll = LibraryLoader(PyDLL)
 
 if _os.name == "nt":
+    # GraalPy change: we set the dllhandle here, it may be different per context
+    _sys.dllhandle = _dlopen(_sys._dllhandle_name, 0)
+    # End GraalPy change
     pythonapi = PyDLL("python dll", None, _sys.dllhandle)
 elif _sys.platform == "cygwin":
     pythonapi = PyDLL("libpython%d.%d.dll" % _sys.version_info[:2])
 else:
-    pythonapi = PyDLL(None)
+    # GraalPy change: we _dlopen right here, libpython-native it may be different per context
+    pythonapi = PyDLL(None, None, _dlopen(_sys._dllhandle_name, 0))
+    # pythonapi = PyDLL(None)
+    # End GraalPy change
 
 
 if _os.name == "nt":

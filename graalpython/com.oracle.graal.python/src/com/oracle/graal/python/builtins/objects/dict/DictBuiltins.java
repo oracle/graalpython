@@ -39,17 +39,18 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.HashNotImplemented;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.ForeignHashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
@@ -152,16 +153,23 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @Specialization(replaces = "builtinDict")
         @SuppressWarnings("unused")
-        static PDict dict(Object cls, Object[] args, PKeyword[] keywordArgs,
+        static Object dict(Object cls, Object[] args, PKeyword[] keywordArgs,
                         @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile orderedProfile,
+                        @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
+                        @Cached CExtNodes.DictSubtypeNew subtypeNew,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             Shape shape = getInstanceShape.execute(cls);
             if (orderedProfile.profile(inliningTarget, isSubtypeNode.execute(cls, PythonBuiltinClassType.POrderedDict))) {
                 return PFactory.createOrderedDict(cls, shape);
             }
-            return PFactory.createDict(cls, shape, EmptyStorage.INSTANCE);
+            PDict newDict = PFactory.createDict(cls, shape, EmptyStorage.INSTANCE);
+            if (needsNativeAllocationNode.execute(inliningTarget, cls)) {
+                return subtypeNew.execute(inliningTarget, cls, newDict);
+            } else {
+                return newDict;
+            }
         }
 
         protected static boolean isBuiltinDict(Object cls) {

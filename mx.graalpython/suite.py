@@ -673,6 +673,7 @@ suite = {
                             "TRUFFLE_NFI_H_INC": "<path:com.oracle.truffle.nfi.native>/include",
                             "GRAALPY_PARENT_DIR": "<suite_parent:graalpython>",
                             "GRAALPY_EXT": "<graalpy_ext>",
+                            "LIBFFI_DIST": "<output_root:truffle:LIBFFI_DIST>/<os>-<arch>/<multitarget_libc_selection>/"
                         },
                         "results": [
                             "bin/<lib:python-native>",
@@ -685,6 +686,7 @@ suite = {
                             "bin/modules/_testbuffer<graalpy_ext>",
                             "bin/modules/_testmultiphase<graalpy_ext>",
                             "bin/modules/_testsinglephase<graalpy_ext>",
+                            "bin/modules/_ctypes<graalpy_ext>",
                             "bin/modules/_ctypes_test<graalpy_ext>",
                             "bin/modules/pyexpat<graalpy_ext>",
                         ],
@@ -702,6 +704,7 @@ suite = {
                             "TRUFFLE_NFI_H_INC": "<path:com.oracle.truffle.nfi.native>/include",
                             "GRAALPY_PARENT_DIR": "<suite_parent:graalpython>",
                             "GRAALPY_EXT": "<graalpy_ext>",
+                            "LIBFFI_DIST": "<output_root:truffle:LIBFFI_DIST>/<os>-<arch>/<multitarget_libc_selection>/"
                         },
                         "results": [
                             "bin/<lib:python-native>",
@@ -713,6 +716,7 @@ suite = {
                             "bin/modules/_testbuffer<graalpy_ext>",
                             "bin/modules/_testmultiphase<graalpy_ext>",
                             "bin/modules/_testsinglephase<graalpy_ext>",
+                            "bin/modules/_ctypes<graalpy_ext>",
                             "bin/modules/_ctypes_test<graalpy_ext>",
                             "bin/modules/pyexpat<graalpy_ext>",
                             "bin/modules/termios<graalpy_ext>",
@@ -723,6 +727,7 @@ suite = {
             "buildDependencies": [
                 "graalpy-pyconfig",
                 "com.oracle.graal.python",
+                "truffle:LIBFFI_DIST",
             ],
         },
 

@@ -79,10 +79,12 @@ public abstract class CExtContext {
 
     /** The library object representing 'libpython.*.so' or similar. */
     private final Object library;
+    private final String libraryName;
 
-    public CExtContext(PythonContext context, Object library) {
+    public CExtContext(PythonContext context, Object library, String libraryName) {
         this.context = context;
         this.library = library;
+        this.libraryName = libraryName;
     }
 
     public final PythonContext getContext() {
@@ -91,6 +93,10 @@ public abstract class CExtContext {
 
     public final Object getLibrary() {
         return library;
+    }
+
+    public final String getLibraryName() {
+        return libraryName;
     }
 
     public static boolean isMethVarargs(int flags) {

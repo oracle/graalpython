@@ -971,7 +971,6 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyUnicode_Splitlines", ret = PyObject, args = {PyObject, Int}, call = NotImplemented)
     @CApiBuiltin(name = "PyUnicode_Translate", ret = PyObject, args = {PyObject, PyObject, ConstCharPtrAsTruffleString}, call = NotImplemented)
     @CApiBuiltin(name = "PyUnicode_WriteChar", ret = Int, args = {PyObject, Py_ssize_t, PY_UCS4}, call = NotImplemented)
-    @CApiBuiltin(name = "PyWeakref_NewProxy", ret = PyObject, args = {PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyWideStringList_Append", ret = PYSTATUS, args = {PYWIDESTRINGLIST_PTR, CONST_WCHAR_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "PyWideStringList_Insert", ret = PYSTATUS, args = {PYWIDESTRINGLIST_PTR, Py_ssize_t, CONST_WCHAR_PTR}, call = NotImplemented)
     @CApiBuiltin(name = "PyWrapper_New", ret = PyObject, args = {PyObject, PyObject}, call = NotImplemented)

@@ -386,6 +386,8 @@ public abstract class BuiltinNames {
 
     public static final String J__WEAKREF = "_weakref";
     public static final TruffleString T__WEAKREF = tsLiteral(J__WEAKREF);
+    public static final TruffleString T_PROXY_TYPE = tsLiteral("ProxyType");
+    public static final TruffleString T_CALLABLE_PROXY_TYPE = tsLiteral("CallableProxyType");
 
     public static final String J__WARNINGS = "_warnings";
     public static final TruffleString T__WARNINGS = tsLiteral(J__WARNINGS);
@@ -404,9 +406,6 @@ public abstract class BuiltinNames {
 
     public static final String J_ARRAY = "array";
     public static final TruffleString T_ARRAY = tsLiteral(J_ARRAY);
-
-    public static final String J__CTYPES = "_ctypes";
-    public static final TruffleString T__CTYPES = tsLiteral(J__CTYPES);
 
     public static final String J__SOCKET = "_socket";
     public static final TruffleString T__SOCKET = tsLiteral(J__SOCKET);

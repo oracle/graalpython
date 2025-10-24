@@ -45,9 +45,12 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWra
 
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
@@ -69,6 +72,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPoin
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.PrimitiveNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.TruffleObjectNativeWrapper;
@@ -166,7 +170,7 @@ public abstract class CApiTransitions {
             nativeStubLookupFreeStack.pushRange(1, DEFAULT_CAPACITY);
         }
 
-        public final NativeObjectReferenceArrayWrapper referencesToBeFreed = new NativeObjectReferenceArrayWrapper();
+        public final ArrayList<Long> referencesToBeFreed = new ArrayList<>();
         public final HashMap<Long, IdReference<?>> nativeLookup = new HashMap<>();
         public final ConcurrentHashMap<Long, Long> nativeWeakRef = new ConcurrentHashMap<>();
         public final WeakHashMap<Object, WeakReference<Object>> managedNativeLookup = new WeakHashMap<>();
@@ -214,7 +218,6 @@ public abstract class CApiTransitions {
      * A weak and unique reference to a native wrapper of a reference counted managed object.
      */
     public static final class PythonObjectReference extends IdReference<PythonNativeWrapper> {
-
         /**
          * This reference forces the wrapper to remain alive, and can be set to null when the
          * refcount falls to {@link PythonAbstractObjectNativeWrapper#MANAGED_REFCNT}.
@@ -232,36 +235,51 @@ public abstract class CApiTransitions {
         private final int handleTableIndex;
 
         /**
-         * Indicates if the native memory {@link #pointer} should be freed (using {@link FreeNode})
-         * if this reference was enqueued because the referent was collected. For example, this will
-         * be {@code true} if the referent is
-         * {@link com.oracle.graal.python.builtins.objects.cext.capi.PythonClassNativeWrapper} and
-         * the class native replacement was allocated on the heap (usually a heap type). It will be
-         * {@code false} if the class wraps a static type.
+         * Indicates if the native memory {@link #pointer} was allocated from Java using
+         * {@link AllocateNode} and thus must be freed using {@link FreeNode}. For any
+         * {@link PythonObjectReference} the last collection is always on the Java side, since the
+         * native side can only drop the ob_refcnt to
+         * {@link PythonAbstractObjectNativeWrapper#MANAGED_REFCNT} at which point the
+         * {@link #strongReference} is removed and the Java GC will eventually get to collect the
+         * object and enqueue this reference. At that point, we need to make a decision how to free
+         * the native memory. For example, for managed classes we allocated a complete type struct
+         * from Java ({@link PythonClassNativeWrapper#getReplacement}), or for any managed object
+         * that is represented with a stub we also allocate that stub from Java
+         * ({@link AllocateNativeObjectStubNode}). These subsequently must be freed from Java as
+         * well. If this field is false, however, it means the memory was allocated through C in in
+         * some way (presumably {@code PyObject_Malloc}, via the type's {@code tp_alloc}). So when
+         * the reference is collected we dealloc using {@code GraalPyPrivate_BulkDealloc} which
+         * calls the right API.
          */
-        private final boolean freeAtCollection;
+        private final boolean allocatedFromJava;
         private final boolean gc;
 
-        private PythonObjectReference(HandleContext handleContext, PythonNativeWrapper referent, boolean strong, long pointer, int handleTableIndex, boolean freeAtCollection, boolean gc) {
+        private PythonObjectReference(HandleContext handleContext, PythonNativeWrapper referent, boolean strong, long pointer, int handleTableIndex, boolean allocatedFromJava, boolean gc) {
             super(handleContext, referent);
             this.pointer = pointer;
             this.strongReference = strong ? referent : null;
             referent.ref = this;
             this.handleTableIndex = handleTableIndex;
-            this.freeAtCollection = freeAtCollection;
+            this.allocatedFromJava = allocatedFromJava;
             this.gc = gc;
             if (LOGGER.isLoggable(Level.FINE)) {
                 LOGGER.fine(PythonUtils.formatJString("new %s", toString()));
             }
         }
 
-        static PythonObjectReference create(HandleContext handleContext, PythonAbstractObjectNativeWrapper referent, boolean strong, long pointer, int idx, boolean gc) {
+        static PythonObjectReference createStub(HandleContext handleContext, PythonAbstractObjectNativeWrapper referent, boolean strong, long pointer, int idx, boolean gc) {
             assert HandlePointerConverter.pointsToPyHandleSpace(pointer);
+            assert idx >= 0;
             return new PythonObjectReference(handleContext, referent, strong, pointer, idx, true, gc);
         }
 
-        static PythonObjectReference create(HandleContext handleContext, PythonNativeWrapper referent, long pointer, boolean freeAtCollection) {
-            return new PythonObjectReference(handleContext, referent, true, pointer, -1, freeAtCollection, false);
+        static PythonObjectReference createReplacement(HandleContext handleContext, PythonNativeWrapper referent, long pointer, boolean allocatedFromJava) {
+            assert !HandlePointerConverter.pointsToPyHandleSpace(pointer);
+            return new PythonObjectReference(handleContext, referent, true, pointer, -1, allocatedFromJava, false);
+        }
+
+        public boolean isStubReference() {
+            return handleTableIndex >= 0;
         }
 
         public boolean isStrongReference() {
@@ -276,8 +294,8 @@ public abstract class CApiTransitions {
             return handleTableIndex;
         }
 
-        public boolean isFreeAtCollection() {
-            return freeAtCollection;
+        public boolean isAllocatedFromJava() {
+            return allocatedFromJava;
         }
 
         @Override
@@ -417,7 +435,7 @@ public abstract class CApiTransitions {
                 ReferenceQueue<Object> queue = handleContext.referenceQueue;
                 int count = 0;
                 long start = 0;
-                NativeObjectReferenceArrayWrapper referencesToBeFreed = handleContext.referencesToBeFreed;
+                ArrayList<Long> referencesToBeFreed = handleContext.referencesToBeFreed;
                 while (true) {
                     Object entry = queue.poll();
                     if (entry == null) {
@@ -480,16 +498,30 @@ public abstract class CApiTransitions {
                         } else {
                             assert nativeLookupGet(handleContext, reference.pointer) != null : Long.toHexString(reference.pointer);
                             LOGGER.finer(() -> PythonUtils.formatJString("releasing native stub lookup for managed object with replacement %x => %s", reference.pointer, reference));
-                            nativeLookupRemove(handleContext, reference.pointer);
-                            if (reference.isFreeAtCollection()) {
-                                LOGGER.finer(() -> PythonUtils.formatJString("freeing managed object %s replacement", reference));
-                                freeNativeStruct(reference);
+                            if (nativeLookupRemove(handleContext, reference.pointer) != null) {
+                                // The reference was still in our lookup table, it was not otherwise
+                                // freed and we can process it now.
+                                if (reference.isAllocatedFromJava()) {
+                                    LOGGER.finer(() -> PythonUtils.formatJString("freeing managed object %s replacement", reference));
+                                    freeNativeStruct(reference);
+                                } else {
+                                    referencesToBeFreed.add(reference.pointer);
+                                }
+                            } else {
+                                // This handle was removed from the native lookup table before,
+                                // probably during an explicit collection. This can happen during
+                                // shutdown when tp_dealloc is called for some objects and that
+                                // causes upcalls and reference queue polling on references that
+                                // were already removed and had their memory freed
                             }
                         }
                     } else if (entry instanceof NativeObjectReference reference) {
-                        LOGGER.finer(() -> PythonUtils.formatJString("releasing native lookup for native object %x => %s", reference.pointer, reference));
-                        nativeLookupRemove(handleContext, reference.pointer);
-                        processNativeObjectReference(reference, referencesToBeFreed);
+                        if (nativeLookupRemove(handleContext, reference.pointer) != null) {
+                            // The reference was still in our lookup table, it was not otherwise
+                            // freed and we can process it now
+                            LOGGER.finer(() -> PythonUtils.formatJString("releasing native lookup for native object %x => %s", reference.pointer, reference));
+                            processNativeObjectReference(reference, referencesToBeFreed);
+                        }
                     } else if (entry instanceof NativeStorageReference reference) {
                         handleContext.nativeStorageReferences.remove(reference);
                         processNativeStorageReference(reference);
@@ -509,7 +541,7 @@ public abstract class CApiTransitions {
      * to be freed. Therefore, this method neither frees any native memory nor runs any object
      * destructor (guest code).
      */
-    private static void processNativeObjectReference(NativeObjectReference reference, NativeObjectReferenceArrayWrapper referencesToBeFreed) {
+    private static void processNativeObjectReference(NativeObjectReference reference, ArrayList<Long> referencesToBeFreed) {
         LOGGER.fine(() -> PythonUtils.formatJString("releasing %s", reference.toString()));
         if (subNativeRefCount(reference.pointer, MANAGED_REFCNT) == 0) {
             referencesToBeFreed.add(reference.pointer);
@@ -548,13 +580,13 @@ public abstract class CApiTransitions {
      * element. This method may therefore run arbitrary guest code and strictly requires the GIL to
      * be held at the time of invocation.
      */
-    private static void releaseNativeObjects(PythonContext context, NativeObjectReferenceArrayWrapper referencesToBeFreed) {
+    private static void releaseNativeObjects(PythonContext context, ArrayList<Long> referencesToBeFreed) {
         if (!referencesToBeFreed.isEmpty()) {
             /*
              * This needs the GIL because this will call the native objects' destructors which can
              * be arbitrary guest code.
              */
-            assert PythonContext.get(null).ownsGil();
+            assert context.ownsGil();
             PythonContext.PythonThreadState threadState = context.getThreadState(context.getLanguage());
             /*
              * There can be an active exception. Since we might be calling arbitary python, we need
@@ -562,12 +594,15 @@ public abstract class CApiTransitions {
              */
             Object savedException = CExtCommonNodes.ReadAndClearNativeException.executeUncached(threadState);
             try {
-                LOGGER.fine(() -> PythonUtils.formatJString("releasing %d NativeObjectReference instances", referencesToBeFreed.getArraySize()));
-                Object array = AllocateNode.allocUncached(referencesToBeFreed.getArraySize() * Long.BYTES);
-                CStructAccess.WriteLongNode.getUncached().writeLongArray(array, referencesToBeFreed.getArray(), (int) referencesToBeFreed.getArraySize(), 0, 0);
-                PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_BULK_DEALLOC, array, referencesToBeFreed.getArraySize());
-                FreeNode.executeUncached(array);
-                referencesToBeFreed.reset();
+                int size = referencesToBeFreed.size();
+                LOGGER.fine(() -> PythonUtils.formatJString("releasing %d NativeObjectReference instances", size));
+                long pointer = AllocateNode.allocUncachedPointer(size * Long.BYTES);
+                for (int i = 0; i < size; i++) {
+                    CStructAccess.WriteLongNode.writeLong(pointer, i * Long.BYTES, referencesToBeFreed.get(i));
+                }
+                PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_BULK_DEALLOC, pointer, size);
+                FreeNode.freeLong(pointer);
+                referencesToBeFreed.clear();
             } finally {
                 CExtCommonNodes.ReadAndClearNativeException.executeUncached(threadState);
                 if (savedException != PNone.NO_VALUE) {
@@ -622,18 +657,40 @@ public abstract class CApiTransitions {
         return true;
     }
 
-    public static void freeClassReplacements(HandleContext handleContext) {
-        assert PythonContext.get(null).ownsGil();
+    public static void deallocNativeReplacements(PythonContext context, HandleContext handleContext) {
+        assert context.ownsGil();
+        ArrayList<Long> referencesToBeFreed = new ArrayList<>();
+        Iterator<Entry<Long, IdReference<?>>> iterator = handleContext.nativeLookup.entrySet().iterator();
+        while (iterator.hasNext()) {
+            IdReference<?> ref = iterator.next().getValue();
+            if (ref instanceof PythonObjectReference reference) {
+                if (!reference.isAllocatedFromJava()) {
+                    // This memory must be freed from C
+                    if (subNativeRefCount(reference.pointer, MANAGED_REFCNT) == 0) {
+                        // Only the managed references exist, we can dealloc
+                        referencesToBeFreed.add(reference.pointer);
+                        iterator.remove();
+                    } else {
+                        // There is a native reference which presumably will decref this one at a
+                        // later point and call tp_dealloc then
+                    }
+                }
+            }
+        }
+        releaseNativeObjects(context, referencesToBeFreed);
+        pollReferenceQueue();
+    }
+
+    public static void freeNativeReplacementStructs(PythonContext context, HandleContext handleContext) {
+        assert context.ownsGil();
         handleContext.nativeLookup.forEach((l, ref) -> {
             if (ref instanceof PythonObjectReference reference) {
                 // We don't expect references to wrappers that would have a native object stub.
                 assert reference.handleTableIndex == -1;
-                /*
-                 * The ref may denote: (a) class wrappers, where some of them are backed by static
-                 * native memory and some of them were allocated in heap, and (b) struct wrappers,
-                 * which may be freed manually in a separate step.
-                 */
-                if (reference.isFreeAtCollection()) {
+                // We expect at this point that most if not all references left were allocated
+                // from Java and can be freed here. There may be stragglers that are waiting
+                // for a GC though, so we have to check.
+                if (reference.isAllocatedFromJava()) {
                     freeNativeStruct(reference);
                 }
             }
@@ -668,7 +725,7 @@ public abstract class CApiTransitions {
 
     private static void freeNativeStruct(PythonObjectReference ref) {
         assert ref.handleTableIndex == -1;
-        assert ref.isFreeAtCollection();
+        assert ref.isAllocatedFromJava();
         assert !ref.gc;
         LOGGER.fine(() -> PythonUtils.formatJString("releasing %s", ref.toString()));
         FreeNode.executeUncached(ref.pointer);
@@ -1129,7 +1186,7 @@ public abstract class CApiTransitions {
                 // accidentally maps to some valid object.
                 assert idx > 0;
                 writeIntNode.write(stubPointer, CFields.GraalPyObject__handle_table_index, idx);
-                PythonObjectReference ref = PythonObjectReference.create(handleContext, wrapper, immortal, taggedPointer, idx, gc);
+                PythonObjectReference ref = PythonObjectReference.createStub(handleContext, wrapper, immortal, taggedPointer, idx, gc);
                 nativeStubLookupPut(handleContext, ref);
             } catch (OverflowException e) {
                 /*
@@ -1149,15 +1206,10 @@ public abstract class CApiTransitions {
     /**
      * Creates a {@link PythonObjectReference} to {@code delegate} and connects that to the given
      * native {@code pointer} such that the {@code pointer} can be resolved to the {@code delegate}.
-     * <p>
-     * This is used in LLVM managed mode where we will not have real native pointers (i.e. addresses
-     * pointing into off-heap memory) but managed pointers to objects emulating the native memory.
-     * We still need to be able to resolve those managed pointers to our objects.
-     * </p>
      */
     @TruffleBoundary
     @SuppressWarnings("try")
-    public static void createReference(PythonNativeWrapper obj, long ptr, boolean freeAtCollection) {
+    public static void createReference(PythonNativeWrapper obj, long ptr, boolean allocatedFromJava) {
         try (GilNode.UncachedAcquire ignored = GilNode.uncachedAcquire()) {
             /*
              * The first test if '!obj.isNative()' in the caller is done on a fast-path but not
@@ -1168,7 +1220,7 @@ public abstract class CApiTransitions {
                 obj.setNativePointer(ptr);
                 pollReferenceQueue();
                 HandleContext context = getContext();
-                nativeLookupPut(context, ptr, PythonObjectReference.create(context, obj, ptr, freeAtCollection));
+                nativeLookupPut(context, ptr, PythonObjectReference.createReplacement(context, obj, ptr, allocatedFromJava));
             }
         }
     }
@@ -2083,24 +2135,6 @@ public abstract class CApiTransitions {
             } else {
                 return object;
             }
-        }
-    }
-
-    @GenerateUncached
-    @GenerateInline(false)
-    public abstract static class WrappedPointerToNativeNode extends CExtToNativeNode {
-        @Specialization
-        static Object doGeneric(Object object,
-                        @Bind Node inliningTarget,
-                        @Cached InlinedConditionProfile isWrapperProfile,
-                        @Cached GetReplacementNode getReplacementNode) {
-            if (isWrapperProfile.profile(inliningTarget, object instanceof PythonNativeWrapper)) {
-                Object replacement = getReplacementNode.execute(inliningTarget, (PythonNativeWrapper) object);
-                if (replacement != null) {
-                    return replacement;
-                }
-            }
-            return object;
         }
     }
 

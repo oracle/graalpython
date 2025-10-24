@@ -142,6 +142,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.IDUtils;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
@@ -157,6 +158,8 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
@@ -314,8 +317,8 @@ public abstract class ObjectNodes {
         @Specialization
         static Object id(PythonAbstractNativeObject self,
                         @Bind Node inliningTarget,
-                        @Shared @Cached ObjectNodes.GetObjectIdNode getObjectIdNode) {
-            return getObjectIdNode.execute(inliningTarget, self);
+                        @CachedLibrary(limit = "2") InteropLibrary lib) {
+            return PythonUtils.coerceToLong(self.getPtr(), lib);
         }
 
         @Specialization

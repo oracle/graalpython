@@ -40,40 +40,25 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonObjectReference;
-import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleLogger;
-import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 public abstract class PythonNativeWrapper implements TruffleObject {
-
-    private static final TruffleLogger LOGGER = CApiContext.getLogger(PythonNativeWrapper.class);
-
     private static final long UNINITIALIZED = -1;
 
-    private final boolean replacing;
     private Object delegate;
     private long nativePointer = UNINITIALIZED;
-
-    protected Object replacement;
 
     public PythonObjectReference ref;
 
     private PythonNativeWrapper() {
-        this.replacing = false;
     }
 
-    private PythonNativeWrapper(Object delegate, boolean replacing) {
-        this.replacing = replacing;
+    private PythonNativeWrapper(Object delegate) {
         this.delegate = delegate;
     }
 
@@ -105,67 +90,6 @@ public abstract class PythonNativeWrapper implements TruffleObject {
     }
 
     /**
-     * Determines if the native wrapper should always be materialized in native memory.
-     * <p>
-     * Native wrappers are usually materialized lazily if they receive
-     * {@link InteropLibrary#toNative(Object)}. Sometimes, e.g., when using LLVM runtime, this may
-     * never happen if the pointer never floats into real native code or memory. However, some
-     * native wrappers emulate data structures where it does not make sense to emulate them and it
-     * is more efficient to just allocate the native memory and write data to it. Also, in some
-     * cases it is just necessary to enable byte-wise access (e.g. when using {@code memcpy}).
-     * </p>
-     * <p>
-     * Therefore, wrappers may return {@code true} and the appropriate <it>Python-to-native</it>
-     * transition code will consider that and eagerly return the pointer object. If {@code true} is
-     * returned, the wrapper must also implement specialization in
-     * {@link com.oracle.graal.python.builtins.objects.cext.capi.transitions.GetReplacementNode}
-     * which returns the pointer object. Furthermore, wrappers must use
-     * {@link #registerReplacement(Object, boolean, InteropLibrary)} to register the allocated
-     * native memory in order that the native pointer can be resolved to the managed wrapper in the
-     * <it>native-to-Python</it> transition.
-     * </p>
-     *
-     * @return {@code true} if the wrapper should be materialized eagerly, {@code false} otherwise.
-     */
-    public final boolean isReplacingWrapper() {
-        return replacing;
-    }
-
-    public final void setReplacement(Object replacement) {
-        this.replacement = replacement;
-    }
-
-    @TruffleBoundary
-    public final Object registerReplacement(Object pointer, boolean freeAtCollection, InteropLibrary lib) {
-        LOGGER.finest(() -> PythonUtils.formatJString("assigning %s with %s", getDelegate(), pointer));
-        Object result;
-        if (pointer instanceof Long lptr) {
-            // need to convert to actual pointer
-            result = PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_CONVERT_POINTER, lptr);
-            CApiTransitions.createReference(this, lptr, freeAtCollection);
-        } else {
-            result = pointer;
-            if (lib.isPointer(pointer)) {
-                assert CApiContext.isPointerObject(pointer);
-                try {
-                    CApiTransitions.createReference(this, lib.asPointer(pointer), freeAtCollection);
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
-                }
-            } else {
-                /*
-                 * This branch is required for LLVM managed mode where we will never have a native
-                 * pointer (i.e. an address pointing into off-heap memory) but a managed pointer to
-                 * some object emulating the native memory.
-                 */
-                assert pointer.getClass().getSimpleName().contains("LLVMPointer");
-                CApiTransitions.createManagedReference(getDelegate(), pointer);
-            }
-        }
-        return result;
-    }
-
-    /**
      * A wrapper for a reference counted object.
      */
     public abstract static class PythonAbstractObjectNativeWrapper extends PythonNativeWrapper {
@@ -181,11 +105,7 @@ public abstract class PythonNativeWrapper implements TruffleObject {
         }
 
         protected PythonAbstractObjectNativeWrapper(Object delegate) {
-            super(delegate, false);
-        }
-
-        protected PythonAbstractObjectNativeWrapper(Object delegate, boolean replacing) {
-            super(delegate, replacing);
+            super(delegate);
         }
 
         public final long getRefCount() {
@@ -230,11 +150,7 @@ public abstract class PythonNativeWrapper implements TruffleObject {
         }
 
         protected PythonStructNativeWrapper(Object delegate) {
-            super(delegate, false);
-        }
-
-        protected PythonStructNativeWrapper(Object delegate, boolean replacing) {
-            super(delegate, replacing);
+            super(delegate);
         }
     }
 }
