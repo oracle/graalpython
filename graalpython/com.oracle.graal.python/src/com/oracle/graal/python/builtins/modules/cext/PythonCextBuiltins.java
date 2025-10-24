@@ -684,7 +684,7 @@ public final class PythonCextBuiltins {
                         argTypes[i] = args[i].getNFI2Type();
                     }
                     NfiUpcallSignature signature = Nfi.createUpcallSignature(ret.getNFI2Type(), argTypes);
-                    pointer = signature.createClosure(context.ensureNfiContext(), name, handle_executeBuiltinWrapper.bindTo(new ExecuteCApiBuiltinRootNode(this).getCallTarget()));
+                    pointer = signature.createClosure(context.ensureNfiContext(), name, handle_executeBuiltinWrapper.bindTo(new ExecuteCApiBuiltinRootNode(this, signature).getCallTarget()));
                     context.getCApiContext().setClosurePointer(null, null, this, pointer);
                     LOGGER.finer(CApiBuiltinExecutable.class.getSimpleName() + " toNative: " + id + " / " + name() + " -> " + pointer);
                 } catch (Throwable t) {
@@ -721,11 +721,13 @@ public final class PythonCextBuiltins {
     static final class ExecuteCApiBuiltinRootNode extends RootNode {
 
         final CApiBuiltinExecutable self;
+        final NfiUpcallSignature signature;
         @Child ExecuteCApiBuiltinNode executeBuiltinNode;
 
-        ExecuteCApiBuiltinRootNode(CApiBuiltinExecutable self) {
+        ExecuteCApiBuiltinRootNode(CApiBuiltinExecutable self, NfiUpcallSignature signature) {
             super(PythonLanguage.get(null));
             this.self = self;
+            this.signature = signature;
         }
 
         @Override
@@ -736,7 +738,16 @@ public final class PythonCextBuiltins {
             }
             try {
                 Object[] args = frame.getArguments();
-                return executeBuiltinNode.execute(args);
+                Object[] newArgs = new Object[args.length];
+                for (int i = 0; i < args.length; i++) {
+                    if (signature.getArgTypes()[i] == NfiType.POINTER) {
+                        newArgs[i] = new NativePointer((long) args[i]);
+                    } else {
+                        newArgs[i] = args[i];
+                    }
+                }
+                Object result = executeBuiltinNode.execute(newArgs);
+                return signature.getReturnType().convertToNative(result);
             } catch (Throwable e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }

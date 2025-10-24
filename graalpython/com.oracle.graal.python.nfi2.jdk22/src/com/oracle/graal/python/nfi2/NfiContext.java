@@ -73,7 +73,7 @@ public final class NfiContext {
             int result;
             try {
                 if (ImageInfo.inImageCode()) {
-                    result = (int) ForeignFunctions.invoke(dlcloseDescriptor, dlclosePtr.address(), library.ptr);
+                    result = (int) ForeignFunctions.invoke(dlcloseDescriptor, dlclosePtr, library.ptr);
                 } else {
                     result = (int) dlclose.invokeExact(library.ptr);
                 }
@@ -96,7 +96,7 @@ public final class NfiContext {
                 flags |= RTLD_NOW;
             }
             if (ImageInfo.inImageCode()) {
-                lib = (long) ForeignFunctions.invoke(dlopenDescriptor, dlopenPtr.address(), nativeName, flags);
+                lib = (long) ForeignFunctions.invoke(dlopenDescriptor, dlopenPtr, nativeName, flags);
             } else {
                 lib = (long) dlopen.invokeExact(nativeName, flags);
             }
@@ -118,7 +118,7 @@ public final class NfiContext {
         long nativeName = NativeMemory.javaStringToNativeUtf8(name);
         try {
             if (ImageInfo.inImageCode()) {
-                return (long) ForeignFunctions.invoke(dlsymDescriptor, dlsymPtr.address(), library, nativeName);
+                return (long) ForeignFunctions.invoke(dlsymDescriptor, dlsymPtr, library, nativeName);
             } else {
                 return (long) dlsym.invokeExact(library, nativeName);
             }
@@ -144,9 +144,9 @@ public final class NfiContext {
     private static MethodHandle dlclose;
     private static MethodHandle dlsym;
 
-    private static MemorySegment dlopenPtr;
-    private static MemorySegment dlclosePtr;
-    private static MemorySegment dlsymPtr;
+    private static long dlopenPtr;
+    private static long dlclosePtr;
+    private static long dlsymPtr;
 
     static {
         if (ImageInfo.inImageCode()) {
@@ -164,16 +164,19 @@ public final class NfiContext {
     // TODO(NFI2) Windows LoadLibrary/GetProcAddress
     @SuppressWarnings("restricted")
     private static void ensureDlopenDlsym() {
-        if (dlopenPtr != null) {
+        if (dlopenPtr != 0) {
             return;
         }
-        dlopenPtr = Linker.nativeLinker().defaultLookup().find("dlopen").get();
-        dlclosePtr = Linker.nativeLinker().defaultLookup().find("dlclose").get();
-        dlsymPtr = Linker.nativeLinker().defaultLookup().find("dlsym").get();
+        MemorySegment dlopenSegment = Linker.nativeLinker().defaultLookup().find("dlopen").get();
+        MemorySegment dlcloseSegment = Linker.nativeLinker().defaultLookup().find("dlclose").get();
+        MemorySegment dlsymSegment = Linker.nativeLinker().defaultLookup().find("dlsym").get();
+        dlopenPtr = dlopenSegment.address();
+        dlclosePtr = dlcloseSegment.address();
+        dlsymPtr = dlsymSegment.address();
         if (!ImageInfo.inImageCode()) {
-            dlopen = Linker.nativeLinker().downcallHandle(dlopenPtr, DLOPEN_FUNCTION_DESCRIPTOR);
-            dlclose = Linker.nativeLinker().downcallHandle(dlclosePtr, DLCLOSE_FUNCTION_DESCRIPTOR);
-            dlsym = Linker.nativeLinker().downcallHandle(dlsymPtr, DLSYM_FUNCTION_DESCRIPTOR);
+            dlopen = Linker.nativeLinker().downcallHandle(dlopenSegment, DLOPEN_FUNCTION_DESCRIPTOR);
+            dlclose = Linker.nativeLinker().downcallHandle(dlcloseSegment, DLCLOSE_FUNCTION_DESCRIPTOR);
+            dlsym = Linker.nativeLinker().downcallHandle(dlsymSegment, DLSYM_FUNCTION_DESCRIPTOR);
         }
     }
 

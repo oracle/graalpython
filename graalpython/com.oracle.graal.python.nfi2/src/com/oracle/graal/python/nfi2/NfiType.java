@@ -64,6 +64,10 @@ public enum NfiType {
         };
     }
 
+    public Object convertToNative(Object value) {
+        return getConvertArgJavaToNativeNodeUncached().execute(value);
+    }
+
     ConvertArgJavaToNativeNode getConvertArgJavaToNativeNodeUncached() {
         return switch (this) {
             case VOID -> ConvertArgJavaToNativeNodeFactory.ToVOIDNodeGen.getUncached();

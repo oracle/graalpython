@@ -103,8 +103,6 @@ public record PyMethodDefHelper(TruffleString name, Object meth, int flags, Truf
         for (int i = 0; i < kwDefaults.length; i++) {
             if (ExternalFunctionNodes.KW_CALLABLE.equals(kwDefaults[i].getName())) {
                 // This can happen for slot wrapper methods of native slots
-                // TODO(NFI2) this should be NfiBoundFunction, used to be interop executable. Where
-                // do we invoke it?
                 return kwDefaults[i].getValue();
             }
         }

@@ -1280,9 +1280,11 @@ public final class CApiContext extends CExtContext {
     static final class ExecuteClosureWrapperRootNode extends RootNode {
 
         @Child InteropLibrary interopLib;
+        final NfiUpcallSignature signature;
 
-        ExecuteClosureWrapperRootNode() {
+        ExecuteClosureWrapperRootNode(NfiUpcallSignature signature) {
             super(PythonLanguage.get(null));
+            this.signature = signature;
         }
 
         @Override
@@ -1292,8 +1294,19 @@ public final class CApiContext extends CExtContext {
                 interopLib = insert(InteropLibrary.getFactory().createDispatched(3));
             }
             try {
-                Object[] args = frame.getArguments();
-                return interopLib.execute(args[0], (Object[]) args[1]);
+                Object[] frameArgs = frame.getArguments();
+                Object receiver = frameArgs[0];
+                Object[] args = (Object[]) frameArgs[1];
+                Object[] newArgs = new Object[args.length];
+                for (int i = 0; i < args.length; i++) {
+                    if (signature.getArgTypes()[i] == NfiType.POINTER) {
+                        newArgs[i] = new NativePointer((long) args[i]);
+                    } else {
+                        newArgs[i] = args[i];
+                    }
+                }
+                Object result = interopLib.execute(receiver, newArgs);
+                return signature.getReturnType().convertToNative(result);
             } catch (Throwable e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
@@ -1314,7 +1327,7 @@ public final class CApiContext extends CExtContext {
     public long registerClosure(String name, NfiUpcallSignature signature, Object executable, Object delegate) {
         CompilerAsserts.neverPartOfCompilation();
         PythonContext context = getContext();
-        MethodHandle methodHandle = handle_executeWrapper.bindTo(new ExecuteClosureWrapperRootNode().getCallTarget()).bindTo(executable);
+        MethodHandle methodHandle = handle_executeWrapper.bindTo(new ExecuteClosureWrapperRootNode(signature).getCallTarget()).bindTo(executable);
         long pointer = signature.createClosure(context.ensureNfiContext(), name, methodHandle);
         setClosurePointer(null, delegate, executable, pointer);
         return pointer;

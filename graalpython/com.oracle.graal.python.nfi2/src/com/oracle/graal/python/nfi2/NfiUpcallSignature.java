@@ -47,6 +47,15 @@ public final class NfiUpcallSignature {
     NfiUpcallSignature() {
     }
 
+    // TODO(NFI2) remove - temporarily needed for arg conversions in graalpy
+    public NfiType[] getArgTypes() {
+        throw new UnsupportedOperationException();
+    }
+
+    public NfiType getReturnType() {
+        throw new UnsupportedOperationException();
+    }
+
     @SuppressWarnings({"unused", "static-method"})
     public long createClosure(NfiContext context, String name, MethodHandle staticMethodHandle) {
         throw new UnsupportedOperationException();

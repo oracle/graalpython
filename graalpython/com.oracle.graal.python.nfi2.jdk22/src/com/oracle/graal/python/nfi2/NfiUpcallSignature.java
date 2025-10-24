@@ -62,10 +62,18 @@ public final class NfiUpcallSignature {
         this.argTypes = argTypes;
     }
 
+    public NfiType[] getArgTypes() {
+        return argTypes;
+    }
+
+    public NfiType getReturnType() {
+        return resType;
+    }
+
     @SuppressWarnings({"unused", "restricted"})
     public long createClosure(NfiContext context, String name, MethodHandle staticMethodHandle) {
         // TODO(NFI2) if logging enabled, wrap the handle in a method that logs the name and args
-        MethodHandle handle = handle_closureWrapper.bindTo(this).bindTo(staticMethodHandle);
+        MethodHandle handle = staticMethodHandle; // handle_closureLoggingWrapper.bindTo(name).bindTo(this).bindTo(staticMethodHandle);
         handle = handle.asType(UPCALL_METHOD_TYPE).asVarargsCollector(Object[].class);
         Class<?>[] javaArgTypes = new Class<?>[argTypes.length];
         for (int i = 0; i < argTypes.length; i++) {
@@ -77,19 +85,10 @@ public final class NfiUpcallSignature {
     }
 
     @SuppressWarnings("unused")
-    private static Object closureWrapper(NfiUpcallSignature signature, MethodHandle inner, Object[] args) {
+    private static Object closureLoggingWrapper(String name, NfiUpcallSignature signature, MethodHandle inner, Object[] args) {
+        // TODO(NFI2) implement logging
         try {
-            // TODO(NFI2) get rid of this wrapper once we don't need to widen the return values and
-            // migrate to RAWPOINTER
-            Object[] newArgs = new Object[args.length];
-            for (int i = 0; i < args.length; i++) {
-                if (signature.argTypes[i] == NfiType.POINTER) {
-                    newArgs[i] = new NativePointer((long) args[i]);
-                } else {
-                    newArgs[i] = args[i];
-                }
-            }
-            return signature.resType.getConvertArgJavaToNativeNodeUncached().execute(inner.invoke(newArgs));
+            return inner.invoke(args);
         } catch (Throwable e) {
             throw CompilerDirectives.shouldNotReachHere(e);
         }
@@ -113,9 +112,11 @@ public final class NfiUpcallSignature {
     static final MethodHandle handle_closureWrapper;
 
     static {
-        MethodType callType = MethodType.methodType(Object.class, NfiUpcallSignature.class, MethodHandle.class, Object[].class);
+        MethodType callType = MethodType.methodType(Object.class, String.class, NfiUpcallSignature.class,
+                        MethodHandle.class, Object[].class);
         try {
-            handle_closureWrapper = MethodHandles.lookup().findStatic(NfiUpcallSignature.class, "closureWrapper", callType);
+            handle_closureWrapper = MethodHandles.lookup().findStatic(NfiUpcallSignature.class,
+                            "closureLoggingWrapper", callType);
         } catch (NoSuchMethodException | IllegalAccessException ex) {
             throw CompilerDirectives.shouldNotReachHere(ex);
         }
