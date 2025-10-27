@@ -1,4 +1,4 @@
-test.test_capi.test_abstract.CAPITest.test_mapping_check @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_capi.test_abstract.CAPITest.test_mapping_check @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_capi.test_abstract.CAPITest.test_mapping_haskey @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_capi.test_abstract.CAPITest.test_mapping_haskeystring @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_capi.test_abstract.CAPITest.test_mapping_keys_valuesitems @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -70,6 +70,7 @@ test.test_capi.test_eval_code_ex.PyEval_EvalCodeExTests.test_with_default @ darw
 test.test_capi.test_eval_code_ex.PyEval_EvalCodeExTests.test_with_kwarg_default @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_capi.test_exceptions.Test_ErrSetAndRestore.test_err_restore @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_capi.test_exceptions.Test_ErrSetAndRestore.test_err_set_raised @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_capi.test_exceptions.Test_ErrSetAndRestore.test_format @ linux-x86_64,win32-AMD64
 test.test_capi.test_float.CAPIFloatTest.test_asdouble @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_capi.test_float.CAPIFloatTest.test_check @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_capi.test_float.CAPIFloatTest.test_checkexact @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -186,7 +187,7 @@ test.test_capi.test_misc.CAPITest.test_buildvalue @ darwin-arm64,darwin-x86_64,l
 test.test_capi.test_misc.CAPITest.test_buildvalue_ints @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_capi.test_misc.CAPITest.test_c_type_with_ipow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_capi.test_misc.CAPITest.test_c_type_with_matrix_multiplication @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_capi.test_misc.CAPITest.test_export_symbols @ linux-x86_64
+test.test_capi.test_misc.CAPITest.test_export_symbols @ darwin-arm64,linux-x86_64,win32-AMD64
 test.test_capi.test_misc.CAPITest.test_getitem_with_error @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_capi.test_misc.CAPITest.test_heaptype_with_buffer @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_capi.test_misc.CAPITest.test_heaptype_with_custom_metaclass @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
