@@ -44,6 +44,7 @@ test.test_exceptions.ExceptionTests.test_str @ darwin-arm64,darwin-x86_64,linux-
 test.test_exceptions.ExceptionTests.test_unhandled @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_exceptions.ExceptionTests.test_unicode_change_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_exceptions.ExceptionTests.test_unicode_errors_no_object @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_exceptions.ExceptionTests.test_windows_message @ win32-AMD64
 test.test_exceptions.ExceptionTests.test_yield_in_nested_try_excepts @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_exceptions.ImportErrorTests.test_attributes @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_exceptions.ImportErrorTests.test_copy_pickle @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

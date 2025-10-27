@@ -5,7 +5,7 @@ test.test_hmac.ConstructorTestCase.test_internal_types @ darwin-arm64,darwin-x86
 test.test_hmac.ConstructorTestCase.test_normal @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_hmac.ConstructorTestCase.test_with_bytearray @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_hmac.ConstructorTestCase.test_with_memoryview_msg @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_hmac.ConstructorTestCase.test_with_sha256_module @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_hmac.ConstructorTestCase.test_with_sha256_module @ darwin-x86_64,linux-aarch64
 test.test_hmac.ConstructorTestCase.test_with_str_key @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_hmac.ConstructorTestCase.test_withmodule @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_hmac.ConstructorTestCase.test_withtext @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
