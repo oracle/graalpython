@@ -167,7 +167,6 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Ensu
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ReadPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.WritePointerNode;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
@@ -1435,12 +1434,12 @@ public record TpSlots(TpSlot nb_bool, //
 
     @TruffleBoundary
     public static void inherit(PythonClass klass, PDict namespace, MroSequenceStorage mro, boolean allocateAllGroups) {
-        Builder klassSlots = buildInherited(klass, null, mro, allocateAllGroups);
+        Builder klassSlots = buildInherited(klass, mro, allocateAllGroups);
         klass.setTpSlots(klassSlots.build());
     }
 
     @TruffleBoundary
-    public static TpSlots.Builder buildInherited(PythonClass klass, PDict namespace, MroSequenceStorage mro, boolean allocateAllGroups) {
+    public static TpSlots.Builder buildInherited(PythonClass klass, MroSequenceStorage mro, boolean allocateAllGroups) {
         // partially implements CPython:type_ready_inherit
         // slots of native classes are initialized in GraalPyPrivate_AddInheritedSlots, they are
         // just a mirror of the native slots initialized and inherited on the native side
@@ -1458,7 +1457,7 @@ public record TpSlots(TpSlot nb_bool, //
             TpSlots slots = GetTpSlotsNode.executeUncached(type);
             assert slots != null || type == klass;
             if (slots != null) {
-                klassSlots.inherit(klass, namespace, slots);
+                klassSlots.inherit(klass, slots);
             }
         }
         return klassSlots;
@@ -1814,7 +1813,7 @@ public record TpSlots(TpSlot nb_bool, //
             return this;
         }
 
-        private Builder inherit(PythonClass klass, PDict namespace, TpSlots base) {
+        private Builder inherit(PythonClass klass, TpSlots base) {
             // similar to CPython:inherit_slots
             // indirect slots (from tp_as_number etc.) are not inherited if the group is not
             // allocated explicitly. Note: native heap types and managed types have always all
@@ -1843,7 +1842,7 @@ public record TpSlots(TpSlot nb_bool, //
                 set(TpSlotMeta.TP_SETATTRO, base.tp_setattro());
             }
             if (get(TpSlotMeta.TP_RICHCOMPARE) == null && get(TpSlotMeta.TP_HASH) == null) {
-                if (!overridesHash(namespace)) {
+                if (!overridesHash(klass)) {
                     set(TpSlotMeta.TP_RICHCOMPARE, base.tp_richcmp());
                     set(TpSlotMeta.TP_HASH, base.tp_hash());
                 }
@@ -1851,14 +1850,11 @@ public record TpSlots(TpSlot nb_bool, //
             return this;
         }
 
-        private static boolean overridesHash(PDict namespace) {
-            if (namespace == null) {
-                return false;
-            }
-            Object eq = HashingStorageGetItem.executeUncached(namespace.getDictStorage(), T___EQ__);
-            if (eq == null) {
-                Object hash = HashingStorageGetItem.executeUncached(namespace.getDictStorage(), T___HASH__);
-                return hash != null;
+        private static boolean overridesHash(PythonClass klass) {
+            Object eq = klass.getAttribute(T___EQ__);
+            if (eq == PNone.NO_VALUE) {
+                Object hash = klass.getAttribute(T___HASH__);
+                return hash != PNone.NO_VALUE;
             }
             return true;
         }
