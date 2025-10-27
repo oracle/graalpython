@@ -136,13 +136,20 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
     }
 
     @ExportMessage
+    @TruffleBoundary
     protected boolean isPointer() {
-        return isNative();
+        long pointer = PythonContext.get(null).getCApiContext().getClosurePointer(this);
+        return pointer != -1;
     }
 
     @ExportMessage
-    protected long asPointer() {
-        return getNativePointer();
+    @TruffleBoundary
+    protected long asPointer() throws UnsupportedMessageException {
+        long pointer = PythonContext.get(null).getCApiContext().getClosurePointer(this);
+        if (pointer == -1) {
+            throw UnsupportedMessageException.create();
+        }
+        return pointer;
     }
 
     protected abstract String getSignature();
@@ -153,7 +160,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
                     @CachedLibrary(limit = "1") SignatureLibrary signatureLibrary) {
         if (!isPointer()) {
             CApiContext cApiContext = PythonContext.get(null).getCApiContext();
-            setNativePointer(cApiContext.registerClosure(getSignature(), this, getDelegate(), signatureLibrary));
+            cApiContext.registerClosure(getSignature(), this, getDelegate(), signatureLibrary);
         }
     }
 
