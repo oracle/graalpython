@@ -2010,11 +2010,11 @@ public abstract class TypeNodes {
             //
             // - fixup_slot_dispatchers to set the slots according to magic methods.
 
-            Builder inheritedSlots = TpSlots.buildInherited(newType, namespace, getMroStorageNode.execute(inliningTarget, newType), true);
+            Builder inheritedSlots = TpSlots.buildInherited(newType, getMroStorageNode.execute(inliningTarget, newType), true);
             // type_ready_set_hash
             if (inheritedSlots.get(TpSlotMeta.TP_HASH) == null) {
-                Object dunderHash = getItemNamespace.execute(inliningTarget, namespace.getDictStorage(), T___HASH__);
-                if (dunderHash == null) {
+                Object dunderHash = newType.getAttribute(T___HASH__);
+                if (dunderHash == NO_VALUE) {
                     inheritedSlots.set(TpSlotMeta.TP_HASH, TpSlotHashFun.HASH_NOT_IMPLEMENTED);
                     newType.setAttribute(T___HASH__, PNone.NONE);
                 }
