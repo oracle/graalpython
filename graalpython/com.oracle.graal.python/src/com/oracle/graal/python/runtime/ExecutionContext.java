@@ -177,8 +177,15 @@ public abstract class ExecutionContext {
         /**
          * Prepare an indirect call from a Python frame to a Python function.
          */
-        public void prepareIndirectCall(VirtualFrame frame, Object[] callArguments) {
-            executePrepareCall(frame, getActualCallArguments(callArguments), true, true);
+        public void prepareIndirectCall(VirtualFrame frame, Object[] callArguments, RootCallTarget callTarget) {
+            PRootNode pRootNode;
+            RootNode rootNode = callTarget.getRootNode();
+            if (rootNode instanceof ContinuationRootNode continuationRoot) {
+                pRootNode = (PRootNode) continuationRoot.getSourceRootNode();
+            } else {
+                pRootNode = (PRootNode) rootNode;
+            }
+            executePrepareCall(frame, getActualCallArguments(callArguments), pRootNode.needsCallerFrame(), pRootNode.needsExceptionState());
         }
 
         private static Object[] getActualCallArguments(Object[] callArguments) {
@@ -215,6 +222,16 @@ public abstract class ExecutionContext {
         }
 
         protected abstract void executePrepareCall(VirtualFrame frame, Object[] callArguments, boolean needsCallerFrame, boolean needsExceptionState);
+
+        @Specialization
+        protected static void prepareCall(VirtualFrame frame, Object[] callArguments, boolean needsCallerFrame, boolean needsExceptionState,
+                        @Bind Node inliningTarget,
+                        @Cached PassCallerFrameNode passCallerFrame,
+                        @Cached PassExceptionStateNode passExceptionState) {
+            assert PArguments.isPythonFrame(frame) || inliningTarget.getRootNode() instanceof TopLevelExceptionHandler : "calling from non-Python or non-top-level frame";
+            passCallerFrame.execute(frame, inliningTarget, callArguments, needsCallerFrame);
+            passExceptionState.execute(frame, inliningTarget, callArguments, needsExceptionState);
+        }
 
         /**
          * Equivalent to PyPy's ExecutionContext.enter `frame.f_backref = self.topframeref` we here
@@ -345,16 +362,6 @@ public abstract class ExecutionContext {
                 // inside Python led us here
                 PArguments.setException(callArguments, PException.NO_EXCEPTION);
             }
-        }
-
-        @Specialization
-        protected static void prepareCall(VirtualFrame frame, Object[] callArguments, boolean needsCallerFrame, boolean needsExceptionState,
-                        @Bind Node inliningTarget,
-                        @Cached PassCallerFrameNode passCallerFrame,
-                        @Cached PassExceptionStateNode passExceptionState) {
-            assert PArguments.isPythonFrame(frame) || inliningTarget.getRootNode() instanceof TopLevelExceptionHandler : "calling from non-Python or non-top-level frame";
-            passCallerFrame.execute(frame, inliningTarget, callArguments, needsCallerFrame);
-            passExceptionState.execute(frame, inliningTarget, callArguments, needsExceptionState);
         }
     }
 
@@ -759,35 +766,28 @@ public abstract class ExecutionContext {
          * {@link PRootNode#needsExceptionState()}.
          */
         public static Object enterIndirect(PythonLanguage language, PythonContext context, Object[] pArguments, RootCallTarget callTarget) {
-            return enter(context.getThreadState(language), unwrapArgumentsArray(callTarget, pArguments), true);
+            return enter(context.getThreadState(language), pArguments, needsExceptionState(callTarget));
         }
 
         /**
          * @see #enterIndirect(PythonLanguage, PythonContext, Object[], RootCallTarget)
          */
         public static Object enterIndirect(PythonThreadState threadState, Object[] pArguments, RootCallTarget callTarget) {
-            return enter(threadState, unwrapArgumentsArray(callTarget, pArguments), true);
+            return enter(threadState, pArguments, needsExceptionState(callTarget));
         }
 
         /**
          * @see #enter(PythonThreadState, Object[], RootCallTarget)
          */
         public static Object enter(PythonLanguage language, PythonContext context, Object[] pArguments, RootCallTarget callTarget) {
-            return enter(context.getThreadState(language), unwrapArgumentsArray(callTarget, pArguments), needsExceptionState(callTarget));
+            return enter(context.getThreadState(language), pArguments, needsExceptionState(callTarget));
         }
 
         /**
          * Prepare a call from a foreign frame to a Python function.
          */
         public static Object enter(PythonThreadState threadState, Object[] pArguments, RootCallTarget callTarget) {
-            return enter(threadState, unwrapArgumentsArray(callTarget, pArguments), needsExceptionState(callTarget));
-        }
-
-        private static Object[] unwrapArgumentsArray(RootCallTarget callTarget, Object[] arguments) {
-            if (PGenerator.isDSLGeneratorTarget(callTarget)) {
-                return PGenerator.getDSLGeneratorFrame(arguments).getArguments();
-            }
-            return arguments;
+            return enter(threadState, pArguments, needsExceptionState(callTarget));
         }
 
         private static boolean needsExceptionState(RootCallTarget callTarget) {

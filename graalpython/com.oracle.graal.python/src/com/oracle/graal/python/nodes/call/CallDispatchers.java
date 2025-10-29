@@ -167,7 +167,7 @@ public class CallDispatchers {
                     IndirectCalleeContext.exit(threadState, state);
                 }
             } else {
-                callContext.prepareIndirectCall(frame, arguments);
+                callContext.prepareIndirectCall(frame, arguments, callTarget);
                 return callNode.call(callTarget, arguments);
             }
         }
