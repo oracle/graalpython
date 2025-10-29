@@ -83,6 +83,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.Py
 import com.oracle.graal.python.builtins.objects.cext.capi.TruffleObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.FirstToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativePtrToPythonNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonInternalNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonTransferNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeInternalNodeGen;
@@ -1724,24 +1725,20 @@ public abstract class CApiTransitions {
     }
 
     @GenerateUncached
-    @GenerateInline(false)
+    @GenerateInline
+    @GenerateCached(false)
     @ImportStatic(CApiGuards.class)
-    public abstract static class NativeToPythonNode extends CExtToJavaNode {
+    public abstract static class NativeToPythonInternalNode extends Node {
 
-        public abstract Object execute(PythonNativeWrapper object);
+        public abstract Object execute(Node inliningTarget, Object value, boolean needsTransfer);
 
         @TruffleBoundary
-        public static Object executeUncached(Object obj) {
-            return NativeToPythonNodeGen.getUncached().execute(obj);
-        }
-
-        protected boolean needsTransfer() {
-            return false;
+        public static Object executeUncached(Object value, boolean needsTransfer) {
+            return NativeToPythonInternalNodeGen.getUncached().execute(null, value, needsTransfer);
         }
 
         @Specialization
-        static Object doWrapper(PythonNativeWrapper value,
-                        @Bind Node inliningTarget,
+        static Object doWrapper(Node inliningTarget, PythonNativeWrapper value, @SuppressWarnings("unused") boolean needsTransfer,
                         @Exclusive @Cached InlinedExactClassProfile wrapperProfile,
                         @Exclusive @Cached UpdateStrongRefNode updateRefNode) {
             return handleWrapper(inliningTarget, wrapperProfile, updateRefNode, false, value);
@@ -1749,8 +1746,7 @@ public abstract class CApiTransitions {
 
         @Specialization(guards = "!isNativeWrapper(value)", limit = "3")
         @SuppressWarnings({"truffle-static-method", "truffle-sharing"})
-        Object doNonWrapper(Object value,
-                        @Bind Node inliningTarget,
+        static Object doNonWrapper(Node inliningTarget, Object value, boolean needsTransfer,
                         @CachedLibrary("value") InteropLibrary interopLibrary,
                         @Cached CStructAccess.ReadI32Node readI32Node,
                         @Cached InlinedConditionProfile isNullProfile,
@@ -1829,22 +1825,22 @@ public abstract class CApiTransitions {
                         if (LOGGER.isLoggable(Level.FINE)) {
                             LOGGER.fine(() -> "re-creating collected PythonAbstractNativeObject reference" + Long.toHexString(pointer));
                         }
-                        return createAbstractNativeObject(nativeContext, value, needsTransfer(), pointer);
+                        return createAbstractNativeObject(nativeContext, value, needsTransfer, pointer);
                     }
                     if (isNativeWrapperProfile.profile(inliningTarget, ref instanceof PythonNativeWrapper)) {
                         wrapper = (PythonNativeWrapper) ref;
                     } else {
                         PythonAbstractNativeObject result = (PythonAbstractNativeObject) ref;
-                        if (needsTransfer()) {
+                        if (needsTransfer) {
                             addNativeRefCount(pointer, -1);
                         }
                         return result;
                     }
                 } else {
-                    return createAbstractNativeObject(nativeContext, value, needsTransfer(), pointer);
+                    return createAbstractNativeObject(nativeContext, value, needsTransfer, pointer);
                 }
             }
-            return handleWrapper(inliningTarget, wrapperProfile, updateRefNode, needsTransfer(), wrapper);
+            return handleWrapper(inliningTarget, wrapperProfile, updateRefNode, needsTransfer, wrapper);
         }
 
         /**
@@ -1901,6 +1897,24 @@ public abstract class CApiTransitions {
             }
             return result;
         }
+    }
+
+    @GenerateUncached
+    @GenerateInline(false)
+    @ImportStatic(CApiGuards.class)
+    public abstract static class NativeToPythonNode extends CExtToJavaNode {
+
+        @TruffleBoundary
+        public static Object executeUncached(Object obj) {
+            return NativeToPythonNodeGen.getUncached().execute(obj);
+        }
+
+        @Specialization
+        static Object doGeneric(Object value,
+                        @Bind Node inliningTarget,
+                        @Cached NativeToPythonInternalNode nativeToPythonInternalNode) {
+            return nativeToPythonInternalNode.execute(inliningTarget, value, false);
+        }
 
         @NeverDefault
         public static NativeToPythonNode create() {
@@ -1914,22 +1928,18 @@ public abstract class CApiTransitions {
 
     @GenerateUncached
     @GenerateInline(false)
-    public abstract static class NativeToPythonTransferNode extends NativeToPythonNode {
-
-        @Specialization
-        static Object dummy(@SuppressWarnings("unused") Void dummy) {
-            // needed for DSL (GR-44728)
-            throw CompilerDirectives.shouldNotReachHere();
-        }
+    public abstract static class NativeToPythonTransferNode extends CExtToJavaNode {
 
         @TruffleBoundary
         public static Object executeUncached(Object obj) {
             return NativeToPythonTransferNodeGen.getUncached().execute(obj);
         }
 
-        @Override
-        protected final boolean needsTransfer() {
-            return true;
+        @Specialization
+        static Object doGeneric(Object value,
+                        @Bind Node inliningTarget,
+                        @Cached NativeToPythonInternalNode nativeToPythonInternalNode) {
+            return nativeToPythonInternalNode.execute(inliningTarget, value, true);
         }
 
         @NeverDefault
@@ -2020,7 +2030,7 @@ public abstract class CApiTransitions {
                     return createAbstractNativeObject(nativeContext, new NativePointer(pointer), stealing, pointer);
                 }
             }
-            return NativeToPythonNode.handleWrapper(inliningTarget, wrapperProfile, updateRefNode, stealing, wrapper);
+            return NativeToPythonInternalNode.handleWrapper(inliningTarget, wrapperProfile, updateRefNode, stealing, wrapper);
         }
     }
 
