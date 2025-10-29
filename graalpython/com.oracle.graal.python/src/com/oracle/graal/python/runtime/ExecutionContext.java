@@ -45,7 +45,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.exception.TopLevelExceptionHandler;
@@ -65,7 +64,6 @@ import com.oracle.truffle.api.HostCompilerDirectives;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.bytecode.BytecodeNode;
-import com.oracle.truffle.api.bytecode.ContinuationRootNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -81,7 +79,6 @@ import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedCountingConditionProfile;
 
@@ -163,65 +160,25 @@ public abstract class ExecutionContext {
     @GenerateUncached
     public abstract static class CallContext extends Node {
 
-        /*
-         * Bytecode DSL note: When resuming a generator/coroutine, the call target is a
-         * ContinuationRoot with a different calling convention from regular PRootNodes. The first
-         * argument is a materialized frame, which will be used for the execution itself. We will,
-         * e.g., lookup the exception state in that frame's arguments.
-         *
-         * So for Bytecode DSL generators, we update the arguments array of that materialized frame
-         * instead of the arguments array that will be used for the actual Truffle call to the
-         * ContinuationRoot, which is not accessible to us in the generator root.
-         */
-
         /**
          * Prepare an indirect call from a Python frame to a Python function.
          */
         public void prepareIndirectCall(VirtualFrame frame, Object[] callArguments, RootCallTarget callTarget) {
-            PRootNode pRootNode;
-            RootNode rootNode = callTarget.getRootNode();
-            if (rootNode instanceof ContinuationRootNode continuationRoot) {
-                pRootNode = (PRootNode) continuationRoot.getSourceRootNode();
-            } else {
-                pRootNode = (PRootNode) rootNode;
-            }
-            executePrepareCall(frame, getActualCallArguments(callArguments), pRootNode.needsCallerFrame(), pRootNode.needsExceptionState());
-        }
-
-        private static Object[] getActualCallArguments(Object[] callArguments) {
-            // See Bytecode DSL note at the top
-            if (callArguments.length == 2 && callArguments[0] instanceof MaterializedFrame materialized) {
-                return materialized.getArguments();
-            }
-            return callArguments;
+            PRootNode rootNode = (PRootNode) callTarget.getRootNode();
+            executePrepareCall(frame, callArguments, rootNode.needsCallerFrame(), rootNode.needsExceptionState());
         }
 
         /**
          * Prepare a call from a Python frame to a Python function.
          */
         public void prepareCall(VirtualFrame frame, Object[] callArguments, RootCallTarget callTarget) {
-            RootNode rootNode = callTarget.getRootNode();
-
-            PRootNode calleeRootNode;
-            Object[] actualCallArguments;
-            boolean needsExceptionState;
-            if (rootNode instanceof ContinuationRootNode continuationRoot) {
-                // See Bytecode DSL note at the top
-                calleeRootNode = (PRootNode) continuationRoot.getSourceRootNode();
-                assert callArguments.length == 2;
-                actualCallArguments = ((MaterializedFrame) callArguments[0]).getArguments();
-                needsExceptionState = calleeRootNode.needsExceptionState();
-            } else {
-                // n.b.: The class cast should always be correct, since this context
-                // must only be used when calling from Python to Python
-                calleeRootNode = (PRootNode) rootNode;
-                actualCallArguments = callArguments;
-                needsExceptionState = calleeRootNode.needsExceptionState();
-            }
-            executePrepareCall(frame, actualCallArguments, calleeRootNode.needsCallerFrame(), needsExceptionState);
+            // n.b.: The class cast should always be correct, since this context
+            // must only be used when calling from Python to Python
+            PRootNode calleeRootNode = (PRootNode) callTarget.getRootNode();
+            executePrepareCall(frame, callArguments, calleeRootNode.needsCallerFrame(), calleeRootNode.needsExceptionState());
         }
 
-        protected abstract void executePrepareCall(VirtualFrame frame, Object[] callArguments, boolean needsCallerFrame, boolean needsExceptionState);
+        public abstract void executePrepareCall(VirtualFrame frame, Object[] callArguments, boolean needsCallerFrame, boolean needsExceptionState);
 
         @Specialization
         protected static void prepareCall(VirtualFrame frame, Object[] callArguments, boolean needsCallerFrame, boolean needsExceptionState,
@@ -791,7 +748,7 @@ public abstract class ExecutionContext {
         }
 
         private static boolean needsExceptionState(RootCallTarget callTarget) {
-            PRootNode calleeRootNode = (PRootNode) PGenerator.unwrapContinuationRoot(callTarget.getRootNode());
+            PRootNode calleeRootNode = (PRootNode) callTarget.getRootNode();
             return calleeRootNode.needsExceptionState();
         }
 
