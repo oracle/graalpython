@@ -69,12 +69,12 @@ The four GraalPy runtimes are identified as follows, using the general pattern _
 ### Linux
 
 The easiest way to install GraalPy on Linux is to use [Pyenv](https://github.com/pyenv/pyenv) (the Python version manager).
-To install version 25.0.0 using Pyenv, run the following commands:
+To install version 25.0.1 using Pyenv, run the following commands:
 ```bash
-pyenv install graalpy-25.0.0
+pyenv install graalpy-25.0.1
 ```
 ```bash
-pyenv shell graalpy-25.0.0
+pyenv shell graalpy-25.0.1
 ```
 > Before running `pyenv install`, you may need to update `pyenv` to include the latest GraalPy versions.
 
@@ -86,12 +86,12 @@ Alternatively, you can download a compressed GraalPy installation file from [Git
 ### macOS
 
 The easiest way to install GraalPy on macOS is to use [Pyenv](https://github.com/pyenv/pyenv) (the Python version manager).
-To install version 25.0.0 using Pyenv, run the following commands:
+To install version 25.0.1 using Pyenv, run the following commands:
 ```bash
-pyenv install graalpy-25.0.0
+pyenv install graalpy-25.0.1
 ```
 ```bash
-pyenv shell graalpy-25.0.0
+pyenv shell graalpy-25.0.1
 ```
 > Before running `pyenv install`, you may need to update `pyenv` to include the latest GraalPy versions.
 
@@ -104,7 +104,7 @@ Alternatively, you can download a compressed GraalPy installation file from [Git
     ```
     For example:
     ```bash
-    sudo xattr -r -d com.apple.quarantine ~/.pyenv/versions/graalpy-25.0.0
+    sudo xattr -r -d com.apple.quarantine ~/.pyenv/versions/graalpy-25.0.1
     ```
 3. Uncompress the file and update your `PATH` environment variable to include to the _graalpy-XX.Y.Z-macos-amd64/bin_ (or _graalpy-XX.Y.Z-macos-aarch64/bin_) directory.
 
@@ -139,7 +139,7 @@ This generates wrapper scripts and makes the implementation usable from a shell 
     ```
     For example:
     ```bash
-    graalpy -m venv ~/.virtualenvs/graalpy-25.0.0
+    graalpy -m venv ~/.virtualenvs/graalpy-25.0.1
     ```
 
 2. Activate the environment in your shell session:
@@ -148,7 +148,7 @@ This generates wrapper scripts and makes the implementation usable from a shell 
     ```
     For example:
     ```bash
-    source ~/.virtualenvs/graalpy-25.0.0/bin/activate
+    source ~/.virtualenvs/graalpy-25.0.1/bin/activate
     ```
 
 Multiple executables are available in the virtual environment, including: `python`, `python3`, and `graalpy`.
