@@ -1730,7 +1730,11 @@ public abstract class CApiTransitions {
     @ImportStatic(CApiGuards.class)
     public abstract static class NativeToPythonInternalNode extends Node {
 
-        public abstract Object execute(Node inliningTarget, Object value, boolean needsTransfer);
+        public final Object execute(Node inliningTarget, Object value, boolean needsTransfer) {
+            return execute(inliningTarget, value, needsTransfer, false);
+        }
+
+        public abstract Object execute(Node inliningTarget, Object value, boolean needsTransfer, boolean release);
 
         @TruffleBoundary
         public static Object executeUncached(Object value, boolean needsTransfer) {
@@ -1738,15 +1742,15 @@ public abstract class CApiTransitions {
         }
 
         @Specialization
-        static Object doWrapper(Node inliningTarget, PythonNativeWrapper value, @SuppressWarnings("unused") boolean needsTransfer,
+        static Object doWrapper(Node inliningTarget, PythonNativeWrapper value, @SuppressWarnings("unused") boolean needsTransfer, @SuppressWarnings("unused") boolean release,
                         @Exclusive @Cached InlinedExactClassProfile wrapperProfile,
                         @Exclusive @Cached UpdateStrongRefNode updateRefNode) {
-            return handleWrapper(inliningTarget, wrapperProfile, updateRefNode, false, value);
+            return handleWrapper(inliningTarget, wrapperProfile, updateRefNode, false, false, value);
         }
 
         @Specialization(guards = "!isNativeWrapper(value)", limit = "3")
         @SuppressWarnings({"truffle-static-method", "truffle-sharing"})
-        static Object doNonWrapper(Node inliningTarget, Object value, boolean needsTransfer,
+        static Object doNonWrapper(Node inliningTarget, Object value, boolean needsTransfer, boolean release,
                         @CachedLibrary("value") InteropLibrary interopLibrary,
                         @Cached CStructAccess.ReadI32Node readI32Node,
                         @Cached InlinedConditionProfile isNullProfile,
@@ -1840,7 +1844,7 @@ public abstract class CApiTransitions {
                     return createAbstractNativeObject(nativeContext, value, needsTransfer, pointer);
                 }
             }
-            return handleWrapper(inliningTarget, wrapperProfile, updateRefNode, needsTransfer, wrapper);
+            return handleWrapper(inliningTarget, wrapperProfile, updateRefNode, needsTransfer, release, wrapper);
         }
 
         /**
@@ -1852,7 +1856,7 @@ public abstract class CApiTransitions {
          * @param wrapper The native wrapper to unwrap.
          * @return The Python value contained in the native wrapper.
          */
-        static Object handleWrapper(Node node, InlinedExactClassProfile wrapperProfile, UpdateStrongRefNode updateRefNode, boolean transfer, PythonNativeWrapper wrapper) {
+        static Object handleWrapper(Node node, InlinedExactClassProfile wrapperProfile, UpdateStrongRefNode updateRefNode, boolean transfer, boolean release, PythonNativeWrapper wrapper) {
             PythonNativeWrapper profiledWrapper = wrapperProfile.profile(node, wrapper);
             if (transfer && profiledWrapper instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
                 /*
@@ -1866,7 +1870,7 @@ public abstract class CApiTransitions {
                  * MANAGED_REFCNT.
                  */
                 assert objectNativeWrapper.getRefCount() > MANAGED_REFCNT;
-                updateRefNode.execute(node, objectNativeWrapper, objectNativeWrapper.decRef());
+                updateRefNode.execute(node, objectNativeWrapper, objectNativeWrapper.decRef(), release);
             }
             if (profiledWrapper instanceof PrimitiveNativeWrapper primitive) {
                 if (primitive.isBool()) {
@@ -2030,7 +2034,7 @@ public abstract class CApiTransitions {
                     return createAbstractNativeObject(nativeContext, new NativePointer(pointer), stealing, pointer);
                 }
             }
-            return NativeToPythonInternalNode.handleWrapper(inliningTarget, wrapperProfile, updateRefNode, stealing, wrapper);
+            return NativeToPythonInternalNode.handleWrapper(inliningTarget, wrapperProfile, updateRefNode, stealing, false, wrapper);
         }
     }
 
