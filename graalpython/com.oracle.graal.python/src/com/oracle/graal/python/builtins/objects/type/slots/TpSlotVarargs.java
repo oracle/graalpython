@@ -60,7 +60,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.InitCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -308,12 +308,10 @@ public final class TpSlotVarargs {
     @GenerateUncached
     abstract static class CallSlotVarargsNativeNode extends Node {
 
-        abstract Object execute(VirtualFrame frame, TpSlotCExtNative slot, Object self, Object[] args, PKeyword[] keywords, TruffleString name, CheckFunctionResultNode checkResultNode,
-                        NativeToPythonTransferNode toPythonNode);
+        abstract Object execute(VirtualFrame frame, TpSlotCExtNative slot, Object self, Object[] args, PKeyword[] keywords, TruffleString name, CheckFunctionResultNode checkResultNode);
 
         @Specialization
         static Object callNative(VirtualFrame frame, TpSlotCExtNative slot, Object self, Object[] args, PKeyword[] keywords, TruffleString name, CheckFunctionResultNode checkResultNode,
-                        NativeToPythonTransferNode toPythonNode,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached GetThreadStateNode getThreadStateNode,
@@ -329,10 +327,7 @@ public final class TpSlotVarargs {
                             toNativeNode.execute(self), toNativeNode.execute(argsTuple), toNativeNode.execute(kwargsDict));
             eagerTupleState.report(inliningTarget, argsTuple);
             checkResultNode.execute(state, name, nativeResult);
-            if (toPythonNode != null) {
-                return toPythonNode.execute(nativeResult);
-            }
-            return NO_VALUE;
+            return nativeResult;
         }
     }
 
@@ -358,7 +353,8 @@ public final class TpSlotVarargs {
         static Object callNative(VirtualFrame frame, TpSlotCExtNative slot, Object self, Object[] args, PKeyword[] keywords,
                         @Cached InitCheckFunctionResultNode checkResult,
                         @Cached CallSlotVarargsNativeNode callNode) {
-            return callNode.execute(frame, slot, self, args, keywords, T___INIT__, checkResult, null);
+            callNode.execute(frame, slot, self, args, keywords, T___INIT__, checkResult);
+            return NO_VALUE;
         }
     }
 
@@ -415,11 +411,12 @@ public final class TpSlotVarargs {
 
         @Specialization
         @InliningCutoff
-        static Object callNative(VirtualFrame frame, TpSlotCExtNative slot, Object self, Object[] args, PKeyword[] keywords,
+        static Object callNative(VirtualFrame frame, Node inliningTarget, TpSlotCExtNative slot, Object self, Object[] args, PKeyword[] keywords,
                         @Cached DefaultCheckFunctionResultNode checkResult,
-                        @Cached NativeToPythonTransferNode toPythonNode,
+                        @Cached NativeToPythonInternalNode toPythonNode,
                         @Cached CallSlotVarargsNativeNode callNode) {
-            return callNode.execute(frame, slot, self, args, keywords, T___NEW__, checkResult, toPythonNode);
+            Object result = callNode.execute(frame, slot, self, args, keywords, T___NEW__, checkResult);
+            return toPythonNode.execute(inliningTarget, result, true, true);
         }
     }
 
@@ -437,11 +434,12 @@ public final class TpSlotVarargs {
 
         @Specialization
         @InliningCutoff
-        static Object callNative(VirtualFrame frame, TpSlotCExtNative slot, Object self, Object[] args, PKeyword[] keywords,
+        static Object callNative(VirtualFrame frame, Node inliningTarget, TpSlotCExtNative slot, Object self, Object[] args, PKeyword[] keywords,
                         @Cached DefaultCheckFunctionResultNode checkResult,
-                        @Cached NativeToPythonTransferNode toPythonNode,
+                        @Cached NativeToPythonInternalNode toPythonNode,
                         @Cached CallSlotVarargsNativeNode callNode) {
-            return callNode.execute(frame, slot, self, args, keywords, T___CALL__, checkResult, toPythonNode);
+            Object result = callNode.execute(frame, slot, self, args, keywords, T___CALL__, checkResult);
+            return toPythonNode.execute(inliningTarget, result, true, true);
         }
     }
 }

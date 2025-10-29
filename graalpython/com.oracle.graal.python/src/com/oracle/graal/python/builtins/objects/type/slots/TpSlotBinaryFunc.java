@@ -49,7 +49,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.type.slots.PythonDispatchers.BinaryPythonSlotDispatcherNode;
@@ -146,13 +146,13 @@ public class TpSlotBinaryFunc {
                         @Cached(inline = false) PythonToNativeNode selfToNativeNode,
                         @Cached(inline = false) PythonToNativeNode argToNativeNode,
                         @Exclusive @Cached ExternalFunctionInvokeNode externalInvokeNode,
-                        @Cached(inline = false) NativeToPythonTransferNode toPythonNode,
+                        @Cached NativeToPythonInternalNode toPythonNode,
                         @Exclusive @Cached(inline = false) PyObjectCheckFunctionResultNode checkResultNode) {
             PythonContext ctx = PythonContext.get(inliningTarget);
             PythonThreadState state = getThreadStateNode.execute(inliningTarget, ctx);
             Object result = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T_BINARY_SLOT, slot.callable,
                             selfToNativeNode.execute(self), argToNativeNode.execute(arg));
-            return checkResultNode.execute(state, T_BINARY_SLOT, toPythonNode.execute(result));
+            return checkResultNode.execute(state, T_BINARY_SLOT, toPythonNode.execute(inliningTarget, result, true));
         }
 
         @Specialization(replaces = "callCachedBuiltin")

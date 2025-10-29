@@ -52,7 +52,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -223,7 +223,7 @@ public abstract class TpSlotDescrGet {
                         @Cached(inline = false) PythonToNativeNode objToNativeNode,
                         @Cached(inline = false) PythonToNativeNode valueToNativeNode,
                         @Cached ExternalFunctionInvokeNode externalInvokeNode,
-                        @Cached(inline = false) NativeToPythonTransferNode toPythonNode,
+                        @Cached NativeToPythonInternalNode toPythonNode,
                         @Cached(inline = false) PyObjectCheckFunctionResultNode checkResultNode) {
             PythonContext ctx = PythonContext.get(inliningTarget);
             PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, ctx);
@@ -231,7 +231,7 @@ public abstract class TpSlotDescrGet {
                             selfToNativeNode.execute(self), //
                             objToNativeNode.execute(obj), //
                             valueToNativeNode.execute(value));
-            return checkResultNode.execute(threadState, T___GET__, toPythonNode.execute(result));
+            return checkResultNode.execute(threadState, T___GET__, toPythonNode.execute(inliningTarget, result, true));
         }
 
         @TruffleBoundary

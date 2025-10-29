@@ -47,7 +47,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.type.slots.PythonDispatchers.UnaryPythonSlotDispatcherNode;
@@ -122,12 +122,11 @@ public final class TpSlotUnaryFunc {
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached(inline = false) PythonToNativeNode toNativeNode,
                         @Cached ExternalFunctionInvokeNode externalInvokeNode,
-                        @Cached(inline = false) NativeToPythonTransferNode toPythonNode,
+                        @Cached NativeToPythonInternalNode toPythonNode,
                         @Cached(inline = false) PyObjectCheckFunctionResultNode checkResultNode) {
             PythonThreadState state = getThreadStateNode.execute(inliningTarget);
-            Object result = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T_UNARY_SLOT, slot.callable,
-                            toNativeNode.execute(self));
-            return checkResultNode.execute(state, T_UNARY_SLOT, toPythonNode.execute(result));
+            Object result = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T_UNARY_SLOT, slot.callable, toNativeNode.execute(self));
+            return checkResultNode.execute(state, T_UNARY_SLOT, toPythonNode.execute(inliningTarget, result, true, true));
         }
 
         @Specialization(replaces = "callCachedBuiltin")

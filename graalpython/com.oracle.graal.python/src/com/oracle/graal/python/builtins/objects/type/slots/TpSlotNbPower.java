@@ -52,7 +52,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -171,13 +171,13 @@ public final class TpSlotNbPower {
                         @Cached(inline = false) PythonToNativeNode wToNative,
                         @Cached(inline = false) PythonToNativeNode zToNative,
                         @Cached ExternalFunctionInvokeNode externalInvokeNode,
-                        @Cached(inline = false) NativeToPythonTransferNode toPythonNode,
+                        @Cached NativeToPythonInternalNode toPythonNode,
                         @Cached(inline = false) PyObjectCheckFunctionResultNode checkResultNode) {
             PythonContext ctx = PythonContext.get(inliningTarget);
             PythonContext.PythonThreadState state = getThreadStateNode.execute(inliningTarget, ctx);
             Object result = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T___POW__, slot.callable,
                             vToNative.execute(v), wToNative.execute(w), zToNative.execute(z));
-            return checkResultNode.execute(state, T___POW__, toPythonNode.execute(result));
+            return checkResultNode.execute(state, T___POW__, toPythonNode.execute(inliningTarget, result, true));
         }
 
         @SuppressWarnings("unused")
@@ -252,13 +252,13 @@ public final class TpSlotNbPower {
                         @Cached(inline = false) PythonToNativeNode wToNative,
                         @Cached(inline = false) PythonToNativeNode zToNative,
                         @Cached ExternalFunctionInvokeNode externalInvokeNode,
-                        @Cached(inline = false) NativeToPythonTransferNode toPythonNode,
+                        @Cached NativeToPythonInternalNode toPythonNode,
                         @Cached(inline = false) PyObjectCheckFunctionResultNode checkResultNode) {
             PythonContext ctx = PythonContext.get(inliningTarget);
             PythonContext.PythonThreadState state = getThreadStateNode.execute(inliningTarget, ctx);
             Object result = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T___IPOW__, slot.callable,
                             vToNative.execute(v), wToNative.execute(w), zToNative.execute(z));
-            return checkResultNode.execute(state, T___IPOW__, toPythonNode.execute(result));
+            return checkResultNode.execute(state, T___IPOW__, toPythonNode.execute(inliningTarget, result, true));
         }
     }
 }

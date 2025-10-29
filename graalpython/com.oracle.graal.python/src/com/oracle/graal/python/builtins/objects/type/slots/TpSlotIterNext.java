@@ -52,7 +52,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -189,12 +189,11 @@ public final class TpSlotIterNext {
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached(inline = false) PythonToNativeNode toNativeNode,
                         @Cached ExternalFunctionInvokeNode externalInvokeNode,
-                        @Cached(inline = false) NativeToPythonTransferNode toPythonNode,
+                        @Cached NativeToPythonInternalNode toPythonNode,
                         @Cached CExtCommonNodes.ReadAndClearNativeException readAndClearNativeException) {
             PythonThreadState state = getThreadStateNode.execute(inliningTarget);
-            Object nativeResult = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T___NEXT__, slot.callable,
-                            toNativeNode.execute(self));
-            Object pythonResult = toPythonNode.execute(nativeResult);
+            Object nativeResult = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T___NEXT__, slot.callable, toNativeNode.execute(self));
+            Object pythonResult = toPythonNode.execute(inliningTarget, nativeResult, true);
             if (pythonResult == PNone.NO_VALUE) {
                 Object currentException = readAndClearNativeException.execute(inliningTarget, state);
                 if (currentException != PNone.NO_VALUE) {

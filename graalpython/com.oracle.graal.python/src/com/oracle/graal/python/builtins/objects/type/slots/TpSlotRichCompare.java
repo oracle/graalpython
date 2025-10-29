@@ -53,7 +53,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -244,13 +244,13 @@ public abstract class TpSlotRichCompare {
                         @Cached(inline = false) PythonToNativeNode toNativeNodeA,
                         @Cached(inline = false) PythonToNativeNode toNativeNodeB,
                         @Exclusive @Cached ExternalFunctionInvokeNode externalInvokeNode,
-                        @Exclusive @Cached(inline = false) NativeToPythonTransferNode toPythonNode,
+                        @Exclusive @Cached NativeToPythonInternalNode toPythonNode,
                         @Exclusive @Cached(inline = false) PyObjectCheckFunctionResultNode checkResultNode) {
             PythonContext ctx = PythonContext.get(inliningTarget);
             PythonThreadState state = getThreadStateNode.execute(inliningTarget, ctx);
             Object result = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T_TP_RICHCOMPARE, slot.callable, toNativeNodeA.execute(a), toNativeNodeB.execute(b),
                             op.asNative());
-            return checkResultNode.execute(state, T___HASH__, toPythonNode.execute(result));
+            return checkResultNode.execute(state, T___HASH__, toPythonNode.execute(inliningTarget, result, true));
         }
 
         @Specialization(replaces = "callCachedBuiltin")
