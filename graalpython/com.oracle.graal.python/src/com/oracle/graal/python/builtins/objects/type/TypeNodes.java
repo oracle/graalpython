@@ -1479,6 +1479,10 @@ public abstract class TypeNodes {
             return IsSameTypeNodeGen.create();
         }
 
+        public static IsSameTypeNode getUncached() {
+            return IsSameTypeNodeGen.getUncached();
+        }
+
         @Specialization
         static boolean doManaged(PythonManagedClass left, PythonManagedClass right) {
             return left == right;
