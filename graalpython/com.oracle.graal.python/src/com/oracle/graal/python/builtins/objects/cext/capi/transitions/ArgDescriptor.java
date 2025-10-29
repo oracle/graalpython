@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesF
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.InitCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonReturnNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
@@ -135,12 +136,13 @@ public enum ArgDescriptor {
     PyObjectAsTruffleString(ArgBehavior.PyObjectAsTruffleString, "PyObject*"),
     PyTypeObject(ArgBehavior.PyObject, "PyTypeObject*"),
     PyTypeObjectBorrowed(ArgBehavior.PyObjectBorrowed, "PyTypeObject*"),
-    PyTypeObjectTransfer(ArgBehavior.PyObject, "PyTypeObject*", true),
+    PyTypeObjectTransfer(ArgBehavior.PyObject, "PyTypeObject*", true, false),
     PyListObject(ArgBehavior.PyObject, "PyListObject*"),
     PyTupleObject(ArgBehavior.PyObject, "PyTupleObject*"),
     PyMethodObject(ArgBehavior.PyObject, "PyMethodObject*"),
     PyInstanceMethodObject(ArgBehavior.PyObject, "PyInstanceMethodObject*"),
-    PyObjectTransfer(ArgBehavior.PyObject, "PyObject*", true),
+    PyObjectTransfer(ArgBehavior.PyObject, "PyObject*", true, false),
+    PyObjectReturn(ArgBehavior.PyObject, "PyObject*", true, true),
     PyObjectRawPointer(ArgBehavior.Pointer, "PyObject*"),
     Pointer(ArgBehavior.Pointer, "void*"),
     Py_ssize_t(ArgBehavior.Int64, "Py_ssize_t"),
@@ -209,7 +211,7 @@ public enum ArgDescriptor {
     PyCMethodObject(ArgBehavior.PyObject, "PyCMethodObject*"),
     PY_CAPSULE_DESTRUCTOR(ArgBehavior.Pointer, "PyCapsule_Destructor"),
     PyCodeObject(ArgBehavior.PyObject, "PyCodeObject*"),
-    PyCodeObjectTransfer(ArgBehavior.PyObject, "PyCodeObject*", true),
+    PyCodeObjectTransfer(ArgBehavior.PyObject, "PyCodeObject*", true, false),
     PyCode_WatchCallback(ArgBehavior.Pointer, "PyCode_WatchCallback"),
     PY_COMPILER_FLAGS(ArgBehavior.Pointer, "PyCompilerFlags*"),
     PY_COMPLEX("Py_complex"),
@@ -219,7 +221,7 @@ public enum ArgDescriptor {
     PyFrameConstructor("PyFrameConstructor*"),
     PyFrameObject(ArgBehavior.PyObject, "PyFrameObject*"),
     PyFrameObjectBorrowed(ArgBehavior.PyObjectBorrowed, "PyFrameObject*"),
-    PyFrameObjectTransfer(ArgBehavior.PyObject, "PyFrameObject*", true),
+    PyFrameObjectTransfer(ArgBehavior.PyObject, "PyFrameObject*", true, false),
     _PyFrameEvalFunction("_PyFrameEvalFunction"),
     _PyInterpreterFrame("struct _PyInterpreterFrame*"),
     PY_GEN_OBJECT(ArgBehavior.PyObject, "PyGenObject*"),
@@ -232,10 +234,10 @@ public enum ArgDescriptor {
     PY_LOCK_STATUS("PyLockStatus"),
     PyLongObject(ArgBehavior.PyObject, "PyLongObject*"),
     ConstPyLongObject(ArgBehavior.PyObject, "const PyLongObject*"),
-    PyLongObjectTransfer(ArgBehavior.PyObject, "PyLongObject*", true),
+    PyLongObjectTransfer(ArgBehavior.PyObject, "PyLongObject*", true, false),
     PyMemberDef(ArgBehavior.Pointer, "PyMemberDef*"),
     PyModuleObject(ArgBehavior.PyObject, "PyModuleObject*"),
-    PyModuleObjectTransfer(ArgBehavior.PyObject, "PyModuleObject*", true),
+    PyModuleObjectTransfer(ArgBehavior.PyObject, "PyModuleObject*", true, false),
     PyMethodDef(ArgBehavior.WrappedPointer, "PyMethodDef*"),
     PyModuleDef(ArgBehavior.Pointer, "PyModuleDef*"), // it's unclear if this should be PyObject
     PyModuleDefSlot(ArgBehavior.Pointer, "PyModuleDef_Slot*"),
@@ -366,6 +368,7 @@ public enum ArgDescriptor {
     private final String cSignature;
     private final ArgBehavior behavior;
     private final boolean transfer;
+    private final boolean release;
     private final Supplier<CheckFunctionResultNode> checkResult;
     private final CheckFunctionResultNode uncachedCheckResult;
 
@@ -373,6 +376,7 @@ public enum ArgDescriptor {
         this.behavior = ArgBehavior.Unknown;
         this.cSignature = cSignature;
         this.transfer = false;
+        this.release = false;
         this.checkResult = null;
         this.uncachedCheckResult = null;
     }
@@ -381,14 +385,16 @@ public enum ArgDescriptor {
         this.behavior = behavior;
         this.cSignature = cSignature;
         this.transfer = false;
+        this.release = false;
         this.checkResult = null;
         this.uncachedCheckResult = null;
     }
 
-    ArgDescriptor(ArgBehavior behavior, String cSignature, boolean transfer) {
+    ArgDescriptor(ArgBehavior behavior, String cSignature, boolean transfer, boolean release) {
         this.behavior = behavior;
         this.cSignature = cSignature;
         this.transfer = transfer;
+        this.release = release;
         this.checkResult = null;
         this.uncachedCheckResult = null;
     }
@@ -399,6 +405,7 @@ public enum ArgDescriptor {
         this.checkResult = checkResult;
         this.uncachedCheckResult = uncachedCheckResult;
         this.transfer = false;
+        this.release = false;
     }
 
     ArgDescriptor(ArgBehavior behavior, String cSignature, Supplier<CheckFunctionResultNode> checkResult, CheckFunctionResultNode uncachedCheckResult, boolean transfer) {
@@ -407,6 +414,7 @@ public enum ArgDescriptor {
         this.checkResult = checkResult;
         this.uncachedCheckResult = uncachedCheckResult;
         this.transfer = transfer;
+        this.release = false;
     }
 
     public static CExtToJavaNode[] createNativeToPython(ArgDescriptor[] args) {
@@ -430,7 +438,14 @@ public enum ArgDescriptor {
 
     public CExtToJavaNode createNativeToPythonNode() {
         assert behavior != ArgBehavior.Unknown : "undefined behavior in " + this;
-        Supplier<CExtToJavaNode> factory = transfer ? behavior.nativeToPythonTransfer : behavior.nativeToPython;
+        Supplier<CExtToJavaNode> factory;
+        if (transfer && release) {
+            factory = NativeToPythonReturnNode::create;
+        } else if (transfer) {
+            factory = behavior.nativeToPythonTransfer;
+        } else {
+            factory = behavior.nativeToPython;
+        }
         assert !(transfer && factory == null);
         return factory == null ? null : factory.get();
     }

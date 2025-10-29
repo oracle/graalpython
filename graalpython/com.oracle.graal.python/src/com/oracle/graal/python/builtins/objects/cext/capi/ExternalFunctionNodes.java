@@ -51,6 +51,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PrimitiveResult32;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PrimitiveResult64;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectReturn;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
@@ -325,54 +326,54 @@ public abstract class ExternalFunctionNodes {
      * the definition in {code capi.h}.
      */
     public enum PExternalFunctionWrapper implements NativeCExtSymbol {
-        DIRECT(1, PyObjectTransfer, PyObject, PyObject), // TODO: remove?
-        FASTCALL(2, PyObjectTransfer, PyObject, Pointer, Py_ssize_t),
+        DIRECT(1, PyObjectReturn, PyObject, PyObject), // TODO: remove?
+        FASTCALL(2, PyObjectReturn, PyObject, Pointer, Py_ssize_t),
         FASTCALL_WITH_KEYWORDS(3, PyObjectTransfer, PyObject, Pointer, Py_ssize_t, PyObject),
-        KEYWORDS(4, PyObjectTransfer, PyObject, PyObject, PyObject), // METH_VARARGS | METH_KEYWORDS
-        VARARGS(5, PyObjectTransfer, PyObject, PyObject),            // METH_VARARGS
-        NOARGS(6, PyObjectTransfer, PyObject, PyObject),             // METH_NOARGS
-        O(7, PyObjectTransfer, PyObject, PyObject),                  // METH_O
+        KEYWORDS(4, PyObjectReturn, PyObject, PyObject, PyObject), // METH_VARARGS | METH_KEYWORDS
+        VARARGS(5, PyObjectReturn, PyObject, PyObject),            // METH_VARARGS
+        NOARGS(6, PyObjectReturn, PyObject, PyObject),             // METH_NOARGS
+        O(7, PyObjectReturn, PyObject, PyObject),                  // METH_O
         // METH_FASTCALL | METH_KEYWORDS | METH_METHOD:
-        METHOD(8, PyObjectTransfer, PyObject, PyTypeObject, Pointer, Py_ssize_t, PyObject),
+        METHOD(8, PyObjectReturn, PyObject, PyTypeObject, Pointer, Py_ssize_t, PyObject),
         ALLOC(10, PyObjectTransfer, PyTypeObject, Py_ssize_t),
-        GETATTR(11, PyObjectTransfer, PyObject, CharPtrAsTruffleString),
+        GETATTR(11, PyObjectReturn, PyObject, CharPtrAsTruffleString),
         SETATTR(12, InitResult, PyObject, CharPtrAsTruffleString, PyObject),
-        RICHCMP(13, PyObjectTransfer, PyObject, PyObject, Int),
+        RICHCMP(13, PyObjectReturn, PyObject, PyObject, Int),
         SETITEM(14, InitResult, PyObject, Py_ssize_t, PyObject),
-        UNARYFUNC(15, PyObjectTransfer, PyObject),
-        BINARYFUNC(16, PyObjectTransfer, PyObject, PyObject),
-        BINARYFUNC_L(17, PyObjectTransfer, PyObject, PyObject),
-        BINARYFUNC_R(18, PyObjectTransfer, PyObject, PyObject),
-        TERNARYFUNC(19, PyObjectTransfer, PyObject, PyObject, PyObject),
-        TERNARYFUNC_R(20, PyObjectTransfer, PyObject, PyObject, PyObject),
-        LT(21, PyObjectTransfer, PyObject, PyObject, Int),
-        LE(22, PyObjectTransfer, PyObject, PyObject, Int),
-        EQ(23, PyObjectTransfer, PyObject, PyObject, Int),
-        NE(24, PyObjectTransfer, PyObject, PyObject, Int),
-        GT(25, PyObjectTransfer, PyObject, PyObject, Int),
-        GE(26, PyObjectTransfer, PyObject, PyObject, Int),
+        UNARYFUNC(15, PyObjectReturn, PyObject),
+        BINARYFUNC(16, PyObjectReturn, PyObject, PyObject),
+        BINARYFUNC_L(17, PyObjectReturn, PyObject, PyObject),
+        BINARYFUNC_R(18, PyObjectReturn, PyObject, PyObject),
+        TERNARYFUNC(19, PyObjectReturn, PyObject, PyObject, PyObject),
+        TERNARYFUNC_R(20, PyObjectReturn, PyObject, PyObject, PyObject),
+        LT(21, PyObjectReturn, PyObject, PyObject, Int),
+        LE(22, PyObjectReturn, PyObject, PyObject, Int),
+        EQ(23, PyObjectReturn, PyObject, PyObject, Int),
+        NE(24, PyObjectReturn, PyObject, PyObject, Int),
+        GT(25, PyObjectReturn, PyObject, PyObject, Int),
+        GE(26, PyObjectReturn, PyObject, PyObject, Int),
         ITERNEXT(27, IterResult, PyObject),
         INQUIRY(28, InquiryResult, PyObject),
         DELITEM(29, defaults(1), Int, PyObject, Py_ssize_t, PyObject),
-        GETITEM(30, PyObjectTransfer, PyObject, Py_ssize_t),
-        GETTER(31, PyObjectTransfer, PyObject, Pointer),
+        GETITEM(30, PyObjectReturn, PyObject, Py_ssize_t),
+        GETTER(31, PyObjectReturn, PyObject, Pointer),
         SETTER(32, InitResult, PyObject, PyObject, Pointer),
         INITPROC(33, InitResult, PyObject, PyObject, PyObject),
         HASHFUNC(34, PrimitiveResult64, PyObject),
-        CALL(35, PyObjectTransfer, PyObject, PyObject, PyObject),
+        CALL(35, PyObjectReturn, PyObject, PyObject, PyObject),
         SETATTRO(36, InitResult, PyObject, PyObject, PyObject),
         DESCR_GET(37, defaults(1), PyObjectTransfer, PyObject, PyObject, PyObject),
         DESCR_SET(38, InitResult, PyObject, PyObject, PyObject),
         LENFUNC(39, PrimitiveResult64, PyObject),
         OBJOBJPROC(40, InquiryResult, PyObject, PyObject),
         OBJOBJARGPROC(41, PrimitiveResult32, PyObject, PyObject, PyObject),
-        NEW(42, PyObjectTransfer, PyObject, PyObject, PyObject),
+        NEW(42, PyObjectReturn, PyObject, PyObject, PyObject),
         MP_DELITEM(43, PrimitiveResult32, PyObject, PyObject, PyObject),
-        TP_STR(44, PyObjectTransfer, PyObject),
-        TP_REPR(45, PyObjectTransfer, PyObject),
+        TP_STR(44, PyObjectReturn, PyObject),
+        TP_REPR(45, PyObjectReturn, PyObject),
         DESCR_DELETE(46, InitResult, PyObject, PyObject, PyObject), // the last one is always NULL
         DELATTRO(47, InitResult, PyObject, PyObject, PyObject), // the last one is always NULL
-        SSIZE_ARG(48, PyObjectTransfer, PyObject, Py_ssize_t),
+        SSIZE_ARG(48, PyObjectReturn, PyObject, Py_ssize_t),
         VISITPROC(49, Int, PyObject, Pointer),
         TRAVERSEPROC(50, Int, PyObject, Pointer, Pointer);
 

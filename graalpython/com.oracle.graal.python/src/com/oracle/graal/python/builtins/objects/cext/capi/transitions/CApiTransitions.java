@@ -85,6 +85,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativePtrToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonInternalNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonReturnNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonTransferNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeInternalNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNewRefNodeGen;
@@ -1958,6 +1959,32 @@ public abstract class CApiTransitions {
 
     @GenerateUncached
     @GenerateInline(false)
+    public abstract static class NativeToPythonReturnNode extends CExtToJavaNode {
+
+        @TruffleBoundary
+        public static Object executeUncached(Object obj) {
+            return NativeToPythonReturnNodeGen.getUncached().execute(obj);
+        }
+
+        @Specialization
+        static Object doGeneric(Object value,
+                        @Bind Node inliningTarget,
+                        @Cached NativeToPythonInternalNode nativeToPythonInternalNode) {
+            return nativeToPythonInternalNode.execute(inliningTarget, value, true, true);
+        }
+
+        @NeverDefault
+        public static NativeToPythonReturnNode create() {
+            return NativeToPythonReturnNodeGen.create();
+        }
+
+        public static NativeToPythonReturnNode getUncached() {
+            return NativeToPythonReturnNodeGen.getUncached();
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline(false)
     @ImportStatic(CApiGuards.class)
     public abstract static class NativePtrToPythonNode extends PNodeWithContext {
 
@@ -2427,7 +2454,7 @@ public abstract class CApiTransitions {
                      * The reference should be weak but we may not release the native object stub.
                      * We need to create a PythonObjectReference.
                      */
-                    PythonObjectReference pythonObjectReference = PythonObjectReference.create(handleContext, wrapper, false, taggedPointer, idx, gc);
+                    PythonObjectReference pythonObjectReference = PythonObjectReference.createStub(handleContext, wrapper, false, taggedPointer, idx, gc);
                     nativeStubLookupReplaceByWeak(handleContext, idx, pythonObjectReference, taggedPointer);
                 }
             }
