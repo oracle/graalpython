@@ -807,7 +807,7 @@ public final class ObjectHashMap {
             return true;
         }
         boolean result = eqNode.executeEq(frame, inliningTarget, originalKey, key);
-        if (getKey(index) != originalKey || indices != originalIndices) {
+        if (indices != originalIndices || getKey(index) != originalKey) {
             // Either someone overridden the slot we are just examining, or rehasing reallocated the
             // indices array. We need to restart the lookup. Other situations are OK:
             //
