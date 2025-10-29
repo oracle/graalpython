@@ -61,7 +61,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodesF
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodesFactory.WriteULongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativeCharNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativeDoubleNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativePrimitiveNode;
@@ -71,6 +70,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFacto
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.NativeUnsignedPrimitiveAsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.NativeUnsignedShortNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.StringAsPythonStringNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
@@ -171,7 +171,7 @@ public class CApiMemberAccessNodes {
         throw CompilerDirectives.shouldNotReachHere("invalid member type");
     }
 
-    private static CExtAsPythonObjectNode getReadConverterNode(int type) {
+    private static CExtToJavaNode getReadConverterNode(int type) {
         switch (type) {
             case T_SHORT:
             case T_INT:
@@ -211,7 +211,7 @@ public class CApiMemberAccessNodes {
         private static final Builtin BUILTIN = ReadMemberNode.class.getAnnotation(Builtin.class);
 
         @Child private PythonToNativeNode toSulongNode;
-        @Child private CExtAsPythonObjectNode asPythonObjectNode;
+        @Child private CExtToJavaNode asPythonObjectNode;
 
         @Child private CStructAccess.ReadBaseNode read;
 
@@ -221,7 +221,7 @@ public class CApiMemberAccessNodes {
         /** The offset where to read from (will be passed to the native getter). */
         private final int offset;
 
-        protected ReadMemberNode(int type, int offset, CExtAsPythonObjectNode asPythonObjectNode) {
+        protected ReadMemberNode(int type, int offset, CExtToJavaNode asPythonObjectNode) {
             this.type = type;
             this.read = getReadNode(type);
             this.offset = offset;
@@ -262,7 +262,7 @@ public class CApiMemberAccessNodes {
 
         @TruffleBoundary
         public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, Object owner, TruffleString propertyName, int type, int offset) {
-            CExtAsPythonObjectNode asPythonObjectNode = getReadConverterNode(type);
+            CExtToJavaNode asPythonObjectNode = getReadConverterNode(type);
             RootCallTarget callTarget = language.createCachedPropAccessCallTarget(
                             l -> new BuiltinFunctionRootNode(l, BUILTIN, new PrototypeNodeFactory<>(ReadMemberNodeGen.create(type, offset, asPythonObjectNode)), true),
                             ReadMemberNode.class, BUILTIN.name(), type, offset);
