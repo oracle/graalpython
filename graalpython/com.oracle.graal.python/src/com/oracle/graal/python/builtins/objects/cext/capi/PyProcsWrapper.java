@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.checkThrowableBeforeNative;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonStructNativeWrapper;
@@ -136,20 +137,30 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
     }
 
     @ExportMessage
-    @TruffleBoundary
-    protected boolean isPointer() {
-        long pointer = PythonContext.get(null).getCApiContext().getClosurePointer(this);
-        return pointer != -1;
+    protected boolean isPointer(
+                    @Bind Node inliningTarget) {
+        if (PythonLanguage.get(inliningTarget).isSingleContext()) {
+            return isNative();
+        }
+        return getClosurePointerMultiContext() != -1;
     }
 
     @ExportMessage
-    @TruffleBoundary
-    protected long asPointer() throws UnsupportedMessageException {
-        long pointer = PythonContext.get(null).getCApiContext().getClosurePointer(this);
+    protected long asPointer(
+                    @Bind Node inliningTarget) throws UnsupportedMessageException {
+        if (PythonLanguage.get(inliningTarget).isSingleContext()) {
+            return getNativePointer();
+        }
+        long pointer = getClosurePointerMultiContext();
         if (pointer == -1) {
             throw UnsupportedMessageException.create();
         }
         return pointer;
+    }
+
+    @TruffleBoundary
+    private long getClosurePointerMultiContext() {
+        return PythonContext.get(null).getCApiContext().getClosurePointer(this);
     }
 
     protected abstract String getSignature();
@@ -158,9 +169,12 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
     @TruffleBoundary
     protected void toNative(
                     @CachedLibrary(limit = "1") SignatureLibrary signatureLibrary) {
-        if (!isPointer()) {
+        if (!isPointer(null)) {
             CApiContext cApiContext = PythonContext.get(null).getCApiContext();
-            cApiContext.registerClosure(getSignature(), this, getDelegate(), signatureLibrary);
+            long pointer = cApiContext.registerClosure(getSignature(), this, getDelegate(), signatureLibrary);
+            if (PythonLanguage.get(null).isSingleContext()) {
+                setNativePointer(pointer);
+            }
         }
     }
 
