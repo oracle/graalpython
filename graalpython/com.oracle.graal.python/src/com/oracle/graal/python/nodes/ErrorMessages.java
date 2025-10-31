@@ -497,8 +497,6 @@ public abstract class ErrorMessages {
     public static final TruffleString MISSING_D_REQUIRED_S_ARGUMENT_S_POS = tsLiteral("%s() missing required argument '%s' (pos %d)");
     public static final TruffleString MISSING_D_REQUIRED_S_ARGUMENT_S_S = tsLiteral("%s() missing %d required %s argument%s: '%s'");
     public static final TruffleString MISSING_S = tsLiteral("Missing %s");
-    public static final TruffleString MISSING_GROUP_NAME = tsLiteral("Missing group name");
-    public static final TruffleString MISSING_LEFT_ANGLE_BRACKET = tsLiteral("Missing <");
     public static final TruffleString MMAP_INDEX_OUT_OF_RANGE = tsLiteral("mmap index out of range");
     public static final TruffleString MODULE_FILENAME_MISSING = tsLiteral("module filename missing");
     public static final TruffleString MODULE_HAS_NO_ATTR_S = tsLiteral("module has no attribute '%s'");
@@ -1628,8 +1626,13 @@ public abstract class ErrorMessages {
     public static final TruffleString NOT_A_DECIMAL = tsLiteral("not a decimal");
 
     // re module errors
+    public static final TruffleString BAD_ESCAPE = tsLiteral("bad escape");
     public static final TruffleString BAD_ESCAPE_END_OF_STRING = tsLiteral("bad escape (end of string)");
-    public static final TruffleString BAD_CHAR_IN_GROUP_NAME = tsLiteral("bad character in group name '%s'");
-    public static final TruffleString INVALID_GROUP_REFERENCE = tsLiteral("invalid group reference %d");
-    public static final TruffleString UNKNOWN_GROUP_NAME = tsLiteral("unknown group name %s");
+    public static final TruffleString BAD_CHAR_IN_GROUP_NAME = tsLiteral("bad character in group name %s");
+    public static final TruffleString INVALID_GROUP_REFERENCE = tsLiteral("invalid group reference %s");
+    public static final TruffleString UNKNOWN_GROUP_NAME = tsLiteral("unknown group name '%s'");
+    public static final TruffleString OCTAL_ESCAPE_OUT_OF_RANGE = tsLiteral("octal escape value %s outside of range 0-0o377");
+    public static final TruffleString MISSING_LEFT_ANGLE_BRACKET = tsLiteral("missing <");
+    public static final TruffleString MISSING_GROUP_NAME = tsLiteral("missing group name");
+    public static final TruffleString MISSING_RIGHT_ANGLE_BRACKET = tsLiteral("missing >, unterminated name");
 }

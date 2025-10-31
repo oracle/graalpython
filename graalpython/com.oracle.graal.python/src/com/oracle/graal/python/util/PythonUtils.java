@@ -131,6 +131,10 @@ public final class PythonUtils {
      * Encoding of all {@link TruffleString} instances.
      */
     public static final TruffleString.Encoding TS_ENCODING = TruffleString.Encoding.UTF_32;
+    /**
+     * Encoding for {@link TruffleString}-representations of bytes-like objects.
+     */
+    public static final TruffleString.Encoding TS_ENCODING_BINARY = TruffleString.Encoding.ISO_8859_1;
 
     public static TruffleStringBuilderUTF32 createStringBuilder() {
         return TruffleStringBuilder.createUTF32();

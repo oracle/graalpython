@@ -40,15 +40,12 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import com.oracle.graal.python.builtins.objects.str.StringBuiltinsFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -136,15 +133,6 @@ public final class TRegexUtil {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
         }
-
-        @NeverDefault
-        public static InteropReadMemberNode create() {
-            return /*InteropReadMemberNodeGen.create()*/null;
-        }
-
-        public static InteropReadMemberNode getUncached() {
-            return /*InteropReadMemberNodeGen.getUncached()*/null;
-        }
     }
 
     @GenerateCached(false)
@@ -170,10 +158,6 @@ public final class TRegexUtil {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
         }
-
-        public static InteropReadIntArrayMemberNode getUncached() {
-            return /*InteropReadIntArrayMemberNodeGen.getUncached()*/null;
-        }
     }
 
     @GenerateCached(false)
@@ -185,7 +169,7 @@ public final class TRegexUtil {
 
         @Specialization(limit = "3")
         static Object exec(Object compiledRegex, TruffleString input, int fromIndex,
-                           @CachedLibrary("compiledRegex") InteropLibrary objs) {
+                        @CachedLibrary("compiledRegex") InteropLibrary objs) {
             try {
                 return objs.invokeMember(compiledRegex, Props.CompiledRegex.EXEC, input, fromIndex);
             } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException | UnknownIdentifierException e) {
@@ -259,6 +243,14 @@ public final class TRegexUtil {
 
         public static boolean hasGroup(Object namedCaptureGroupsMap, TruffleString name, InteropLibrary interop) {
             return interop.isMemberReadable(namedCaptureGroupsMap, name.toJavaStringUncached());
+        }
+
+        public static int getGroupNumber(Object namedCaptureGroupsMap, TruffleString name, InteropLibrary libMap) {
+            try {
+                return (int) libMap.readMember(namedCaptureGroupsMap, name.toJavaStringUncached());
+            } catch (UnsupportedMessageException | UnknownIdentifierException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
         }
 
         public static int[] getGroupNumbers(Object namedCaptureGroupsMap, TruffleString name, InteropLibrary libMap, InteropLibrary libArray) {

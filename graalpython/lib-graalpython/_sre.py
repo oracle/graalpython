@@ -328,15 +328,15 @@ class Pattern():
     def _search(self, string, pos, endpos, method=_METHOD_SEARCH, must_advance=False):
         return tregex_search(self, string, pos, endpos, method, must_advance)
 
-    # @__graalpython__.force_split_direct_calls
+    @__graalpython__.force_split_direct_calls
     def search(self, string, pos=0, endpos=maxsize):
         return self._search(string, pos, endpos, method=_METHOD_SEARCH)
 
-    # @__graalpython__.force_split_direct_calls
+    @__graalpython__.force_split_direct_calls
     def match(self, string, pos=0, endpos=maxsize):
         return self._search(string, pos, endpos, method=_METHOD_MATCH)
 
-    # @__graalpython__.force_split_direct_calls
+    @__graalpython__.force_split_direct_calls
     def fullmatch(self, string, pos=0, endpos=maxsize):
         return self._search(string, pos, endpos, method=_METHOD_FULLMATCH)
 
@@ -350,7 +350,7 @@ class Pattern():
         else:
             return str(elem)
 
-    # @__graalpython__.force_split_direct_calls
+    @__graalpython__.force_split_direct_calls
     def finditer(self, string, pos=0, endpos=maxsize):
         for must_advance in [False, True]:
             if tregex_compile(self, _METHOD_SEARCH, must_advance) is None:
@@ -373,7 +373,7 @@ class Pattern():
             must_advance = (result.getStart(0) == result.getEnd(0))
         return
 
-    # @__graalpython__.force_split_direct_calls
+    @__graalpython__.force_split_direct_calls
     def findall(self, string, pos=0, endpos=maxsize):
         for must_advance in [False, True]:
             if tregex_compile(self, _METHOD_SEARCH, must_advance) is None:
@@ -398,66 +398,15 @@ class Pattern():
             must_advance = (result.getStart(0) == result.getEnd(0))
         return matchlist
 
-    # @__graalpython__.force_split_direct_calls
+    @__graalpython__.force_split_direct_calls
     def sub(self, repl, string, count=0):
-        return self.subn(repl, string, count)[0]
+        return tregex_re_sub(self, repl, string, count)
 
-    # @__graalpython__.force_split_direct_calls
+    @__graalpython__.force_split_direct_calls
     def subn(self, repl, string, count=0):
-        for must_advance in [False, True]:
-            if tregex_compile(self, _METHOD_SEARCH, must_advance) is None:
-                return self.__fallback_compile().subn(repl, string, count=count)
-        self.__check_input_type(string)
-        n = 0
-        result = []
-        pos = 0
-        literal = False
-        template = False
-        must_advance = False
-        if not callable(repl):
-            self.__check_input_type(repl)
-            if isinstance(repl, str):
-                literal = '\\' not in repl
-            else:
-                literal = b'\\' not in repl
-            if not literal:
-                import re
-                repl = re._compile_template(self, repl)
-                template = True
+        return tregex_re_subn(self, repl, string, count)
 
-        strlen = len(string)
-        compiled_regex = tregex_compile(self, _METHOD_SEARCH, False)
-        compiled_regex_must_advance = tregex_compile(self, _METHOD_SEARCH, True)
-        while (count == 0 or n < count) and pos <= strlen:
-            match_result = tregex_call_exec(compiled_regex_must_advance, string, pos, strlen) if must_advance else tregex_call_exec(compiled_regex, string, pos, strlen)
-            if not match_result.isMatch:
-                break
-            n += 1
-            start = match_result.getStart(0)
-            end = match_result.getEnd(0)
-            result.append(string[pos:start])
-            if literal:
-                result.append(repl)
-            else:
-                _srematch = Match(self, pos, -1, match_result, string, self.__indexgroup)
-                if template:
-                    _repl = expand_template(repl, _srematch)
-                else:
-                    _repl = repl(_srematch)
-                if _repl is not None:
-                    if self.__binary:
-                        result.append(bytes(_repl))
-                    else:
-                        result.append(str(_repl))
-            pos = end
-            must_advance = start == end
-        result.append(string[pos:])
-        if self.__binary:
-            return b"".join(result), n
-        else:
-            return "".join(result), n
-
-    # @__graalpython__.force_split_direct_calls
+    @__graalpython__.force_split_direct_calls
     def split(self, string, maxsplit=0):
         for must_advance in [False, True]:
             if tregex_compile(self, _METHOD_SEARCH, must_advance) is None:
@@ -519,11 +468,11 @@ class SREScanner(object):
             self.__must_advance = match.start() == self.__start
         return match
 
-    # @__graalpython__.force_split_direct_calls
+    @__graalpython__.force_split_direct_calls
     def match(self):
         return self.__match_search(_METHOD_MATCH)
 
-    # @__graalpython__.force_split_direct_calls
+    @__graalpython__.force_split_direct_calls
     def search(self):
         return self.__match_search(_METHOD_SEARCH)
 
@@ -567,33 +516,33 @@ def compile(pattern, flags, code, groups, groupindex, indexgroup):
     return _cpython_sre.compile(pattern, flags, code, groups, groupindex, indexgroup)
 
 
-# @__graalpython__.builtin
+@__graalpython__.builtin
 def getcodesize(module, *args, **kwargs):
     raise NotImplementedError("_sre.getcodesize is not yet implemented")
 
 
-# @__graalpython__.builtin
+@__graalpython__.builtin
 def getlower(module, char_ord, flags):
     import _cpython_sre
     return _cpython_sre.getlower(char_ord, flags)
 
 
-# @__graalpython__.builtin
+@__graalpython__.builtin
 def unicode_iscased(module, codepoint):
     ch = chr(codepoint)
     return ch != ch.lower() or ch != ch.upper()
 
 
-# @__graalpython__.builtin
+@__graalpython__.builtin
 def unicode_tolower(module, codepoint):
     return ord(chr(codepoint).lower())
 
 
-# @__graalpython__.builtin
+@__graalpython__.builtin
 def ascii_iscased(module, codepoint):
     return codepoint < 128 and chr(codepoint).isalpha()
 
 
-# @__graalpython__.builtin
+@__graalpython__.builtin
 def ascii_tolower(module, codepoint):
     return ord(chr(codepoint).lower()) if codepoint < 128 else codepoint

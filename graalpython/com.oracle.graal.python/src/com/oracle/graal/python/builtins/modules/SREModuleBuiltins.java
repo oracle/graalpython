@@ -42,24 +42,28 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.T__SRE;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_CHAR_IN_GROUP_NAME;
+import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ESCAPE;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ESCAPE_END_OF_STRING;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_GROUP_REFERENCE;
 import static com.oracle.graal.python.nodes.ErrorMessages.MISSING_GROUP_NAME;
 import static com.oracle.graal.python.nodes.ErrorMessages.MISSING_LEFT_ANGLE_BRACKET;
+import static com.oracle.graal.python.nodes.ErrorMessages.MISSING_RIGHT_ANGLE_BRACKET;
+import static com.oracle.graal.python.nodes.ErrorMessages.OCTAL_ESCAPE_OUT_OF_RANGE;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNKNOWN_GROUP_NAME;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING_BINARY;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
 import org.graalvm.collections.EconomicMap;
 
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -74,10 +78,14 @@ import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.str.StringUtils;
+import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyObjectAsciiNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -89,8 +97,10 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromModuleNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonSenaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
@@ -99,7 +109,11 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
+import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.graal.python.util.IntArrayBuilder;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -112,6 +126,7 @@ import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
@@ -122,6 +137,7 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
@@ -433,7 +449,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                         } else {
                             SourceSection sourceSection = lib.getSourceLocation(e);
                             int position = sourceSection.getCharIndex();
-                            throw RaiseRegexErrorNode.executeWithPatternAndPositionUncached(reason, originalPattern, position);
+                            throw RaiseRegexErrorNode.executeWithPatternAndPositionUncached(reason, originalPattern, position, node);
                         }
                     }
                 }
@@ -492,32 +508,42 @@ public final class SREModuleBuiltins extends PythonBuiltins {
     @ImportStatic(PythonMethod.class)
     abstract static class TRegexCompile extends PythonTernaryBuiltinNode {
 
-        @Child private HiddenAttr.ReadNode readCacheNode = HiddenAttr.ReadNode.create();
+        @Specialization
+        Object doCompile(VirtualFrame frame, PythonObject pattern, PythonMethod method, boolean mustAdvance,
+                        @Bind Node inliningTarget,
+                        @Cached HiddenAttr.ReadNode readCacheNode,
+                        @Cached TRegexCompileInner innerNode) {
+            return innerNode.execute(frame, getTRegexCache(inliningTarget, pattern, readCacheNode), method, mustAdvance);
+        }
+
+        static TRegexCache getTRegexCache(Node inliningTarget, PythonObject pattern, HiddenAttr.ReadNode readCacheNode) {
+            return (TRegexCache) readCacheNode.execute(inliningTarget, pattern, HiddenAttr.TREGEX_CACHE, null);
+        }
+    }
+
+    @GenerateCached
+    @ImportStatic(PythonMethod.class)
+    @SuppressWarnings("truffle-inlining") // TODO
+    abstract static class TRegexCompileInner extends PNodeWithContext {
 
         private static final TruffleString T__GETLOCALE = tsLiteral("_getlocale");
 
         // limit of 6 specializations = 3 Python methods * 2 values of mustAdvance
         protected static final int SPECIALIZATION_LIMIT = 2 * PythonMethod.PYTHON_METHOD_COUNT;
 
-        @Specialization(guards = {"getTRegexCache(pattern) == cachedTRegexCache", "method == cachedMethod", "mustAdvance == cachedMustAdvance", "!cachedTRegexCache.isLocaleSensitive()"}, limit = "2")
+        abstract Object execute(VirtualFrame frame, TRegexCache tRegexCache, PythonMethod method, boolean mustAdvance);
+
+        @Specialization(guards = {"tRegexCache == cachedTRegexCache", "method == cachedMethod", "mustAdvance == cachedMustAdvance", "!cachedTRegexCache.isLocaleSensitive()"}, limit = "2")
         @SuppressWarnings("unused")
-        Object cached(PythonObject pattern, PythonMethod method, boolean mustAdvance,
-                        @Cached(value = "getTRegexCache(pattern)", weak = true) TRegexCache cachedTRegexCache,
+        Object cached(VirtualFrame frame, TRegexCache tRegexCache, PythonMethod method, boolean mustAdvance,
+                        @Cached(value = "tRegexCache", weak = true) TRegexCache cachedTRegexCache,
                         @Cached("method") PythonMethod cachedMethod,
                         @Cached("mustAdvance") boolean cachedMustAdvance,
-                        @Cached("getCompiledRegex(pattern, method, mustAdvance)") Object compiledRegex) {
+                        @Cached("getCompiledRegexLocaleNonSensitive(tRegexCache, method, mustAdvance)") Object compiledRegex) {
             return compiledRegex;
         }
 
-        protected Object getCompiledRegex(PythonObject pattern, PythonMethod method, boolean mustAdvance) {
-            return localeNonSensitive(pattern, method, mustAdvance, method, mustAdvance);
-        }
-
-        @Specialization(guards = {"method == cachedMethod", "mustAdvance == cachedMustAdvance", "!getTRegexCache(pattern).isLocaleSensitive()"}, limit = "SPECIALIZATION_LIMIT", replaces = "cached")
-        Object localeNonSensitive(PythonObject pattern, PythonMethod method, boolean mustAdvance,
-                        @Cached("method") @SuppressWarnings("unused") PythonMethod cachedMethod,
-                        @Cached("mustAdvance") @SuppressWarnings("unused") boolean cachedMustAdvance) {
-            TRegexCache tRegexCache = getTRegexCache(pattern);
+        protected Object getCompiledRegexLocaleNonSensitive(TRegexCache tRegexCache, PythonMethod method, boolean mustAdvance) {
             final Object tRegex = tRegexCache.getRegexp(method, mustAdvance);
             if (tRegex != null) {
                 return tRegex;
@@ -526,16 +552,22 @@ public final class SREModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"method == cachedMethod", "mustAdvance == cachedMustAdvance", "getTRegexCache(pattern).isLocaleSensitive()"}, limit = "SPECIALIZATION_LIMIT", replaces = "cached")
+        @Specialization(guards = {"method == cachedMethod", "mustAdvance == cachedMustAdvance", "!tRegexCache.isLocaleSensitive()"}, limit = "SPECIALIZATION_LIMIT", replaces = "cached")
+        Object localeNonSensitive(@SuppressWarnings("unused") VirtualFrame frame, TRegexCache tRegexCache, PythonMethod method, boolean mustAdvance,
+                        @Cached("method") @SuppressWarnings("unused") PythonMethod cachedMethod,
+                        @Cached("mustAdvance") @SuppressWarnings("unused") boolean cachedMustAdvance) {
+            return getCompiledRegexLocaleNonSensitive(tRegexCache, method, cachedMustAdvance);
+        }
+
+        @Specialization(guards = {"method == cachedMethod", "mustAdvance == cachedMustAdvance", "tRegexCache.isLocaleSensitive()"}, limit = "SPECIALIZATION_LIMIT", replaces = "cached")
         @SuppressWarnings("truffle-static-method")
-        Object localeSensitive(VirtualFrame frame, PythonObject pattern, PythonMethod method, boolean mustAdvance,
+        Object localeSensitive(VirtualFrame frame, TRegexCache tRegexCache, PythonMethod method, boolean mustAdvance,
                         @Bind Node inliningTarget,
                         @Cached("method") @SuppressWarnings("unused") PythonMethod cachedMethod,
                         @Cached("mustAdvance") @SuppressWarnings("unused") boolean cachedMustAdvance,
                         @Cached("lookupGetLocaleFunction()") Object getLocale,
                         @Cached CallNode callGetLocale,
                         @Cached CastToTruffleStringNode castToTruffleStringNode) {
-            TRegexCache tRegexCache = getTRegexCache(pattern);
             TruffleString locale = castToTruffleStringNode.execute(inliningTarget, callGetLocale.execute(frame, getLocale));
             final Object tRegex = tRegexCache.getLocaleSensitiveRegexp(method, mustAdvance, locale);
             if (tRegex != null) {
@@ -550,10 +582,6 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         protected Object lookupGetLocaleFunction() {
             PythonModule module = getContext().lookupBuiltinModule(T__SRE);
             return PyObjectLookupAttr.executeUncached(module, T__GETLOCALE);
-        }
-
-        protected TRegexCache getTRegexCache(PythonObject pattern) {
-            return (TRegexCache) readCacheNode.executeCached(pattern, HiddenAttr.TREGEX_CACHE, null);
         }
     }
 
@@ -729,7 +757,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "method == cachedMethod", limit = "PYTHON_METHOD_COUNT", replaces = {"doCached", "doCachedRegex"})
         @SuppressWarnings("truffle-static-method")
-        // @ReportPolymorphism.Megamorphic
+        @ReportPolymorphism.Megamorphic
         protected Object doDynamic(VirtualFrame frame, PythonObject pattern, Object input, Object posArg, Object endPosArg, PythonMethod method, boolean mustAdvance,
                         @Bind Node inliningTarget,
                         @Cached("method") PythonMethod cachedMethod,
@@ -791,48 +819,36 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("truffle-static-method")
         Object doCached(VirtualFrame frame, @SuppressWarnings("unused") Object callable, Object inputStringOrBytes, Number fromIndex, Number toIndex,
                         @Bind Node inliningTarget,
-                        @Shared @Cached("createFor($node)") InteropCallData callData,
+                        @Shared @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @Cached(value = "callable", weak = true) Object cachedCallable,
                         @Cached @Shared CastToTruffleStringNode cast,
-                        @CachedLibrary(limit = "3") @Shared PythonBufferAcquireLibrary bufferAcquireLib,
-                        @CachedLibrary(limit = "1") @Shared PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary("callable") InteropLibrary interop,
                         @Cached @Shared InlinedBranchProfile binaryProfile) {
             TruffleString input;
-            Object buffer = null;
             try {
-                try {
-                    // This would materialize the string if it was native
-                    input = cast.execute(inliningTarget, inputStringOrBytes);
-                } catch (CannotCastException e1) {
-                    binaryProfile.enter(inliningTarget);
-                    // It's bytes or other buffer object
-                    buffer = bufferAcquireLib.acquireReadonly(inputStringOrBytes, frame, callData);
-                    input = getBufferToTruffleStringNode().execute(buffer);
-                }
-                try {
-                    return interop.invokeMember(cachedCallable, "exec", input, fromIndex, toIndex, 0, toIndex);
-                } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException | UnknownIdentifierException e2) {
-                    throw CompilerDirectives.shouldNotReachHere("could not call TRegex exec method", e2);
-                }
-            } finally {
-                if (buffer != null) {
-                    bufferLib.release(buffer, frame, callData);
-                }
+                // This would materialize the string if it was native
+                input = cast.execute(inliningTarget, inputStringOrBytes);
+            } catch (CannotCastException e1) {
+                binaryProfile.enter(inliningTarget);
+                // It's bytes or other buffer object
+                input = getBufferToTruffleStringNode().execute(frame, inputStringOrBytes);
+            }
+            try {
+                return interop.invokeMember(cachedCallable, "exec", input, fromIndex, toIndex, 0, toIndex);
+            } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException | UnknownIdentifierException e2) {
+                throw CompilerDirectives.shouldNotReachHere("could not call TRegex exec method", e2);
             }
         }
 
         @Specialization(limit = "1", replaces = "doCached")
-        // @ReportPolymorphism.Megamorphic
+        @ReportPolymorphism.Megamorphic
         Object doUncached(VirtualFrame frame, Object callable, Object inputStringOrBytes, Number fromIndex, Number toIndex,
                         @Bind Node inliningTarget,
-                        @Shared @Cached("createFor($node)") InteropCallData callData,
+                        @Shared @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @Cached @Shared CastToTruffleStringNode cast,
-                        @CachedLibrary(limit = "3") @Shared PythonBufferAcquireLibrary bufferAcquireLib,
-                        @CachedLibrary(limit = "1") @Shared PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary("callable") InteropLibrary interop,
                         @Cached @Shared InlinedBranchProfile binaryProfile) {
-            return doCached(frame, callable, inputStringOrBytes, fromIndex, inliningTarget, callData, callable, cast, bufferAcquireLib, bufferLib, interop, binaryProfile);
+            return doCached(frame, callable, inputStringOrBytes, fromIndex, toIndex, inliningTarget, callable, cast, interop, binaryProfile);
         }
 
         private BufferToTruffleStringNode getBufferToTruffleStringNode() {
@@ -846,11 +862,39 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         @GenerateInline(false)
         abstract static class BufferToTruffleStringNode extends PNodeWithContext {
 
-            public abstract TruffleString execute(Object buffer);
+            public abstract TruffleString execute(VirtualFrame frame, Object buffer);
+
+            @Specialization(limit = "3")
+            static TruffleString convert(VirtualFrame frame, Object bytesLikeObject,
+                            @Bind Node inliningTarget,
+                            @Shared @Cached("createFor($node)") IndirectCallData indirectCallData,
+                            @Cached(inline = true) BufferToTruffleStringInnerNode innerNode,
+                            @CachedLibrary("bytesLikeObject") PythonBufferAcquireLibrary bufferAcquireLib,
+                            @CachedLibrary(limit = "1") @Shared PythonBufferAccessLibrary bufferLib) {
+                Object buffer = null;
+                try {
+                    buffer = bufferAcquireLib.acquireReadonly(bytesLikeObject, frame, indirectCallData);
+                    return innerNode.execute(inliningTarget, buffer);
+                } finally {
+                    if (buffer != null) {
+                        bufferLib.release(buffer, frame, indirectCallData);
+                    }
+                }
+            }
+
+            @NeverDefault
+            public static BufferToTruffleStringNode create() {
+                return SREModuleBuiltinsFactory.TRegexCallExecFactory.BufferToTruffleStringNodeGen.create();
+            }
+        }
+
+        @GenerateInline
+        abstract static class BufferToTruffleStringInnerNode extends PNodeWithContext {
+
+            public abstract TruffleString execute(Node inliningTarget, Object buffer);
 
             @Specialization(limit = "4")
-            static TruffleString convert(Object buffer,
-                            @Bind Node inliningTarget,
+            static TruffleString convert(Node inliningTarget, Object buffer,
                             @CachedLibrary(value = "buffer") PythonBufferAccessLibrary bufferLib,
                             @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                             @Cached TruffleString.FromNativePointerNode fromNativePointerNode,
@@ -862,7 +906,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                 if (bufferLib.hasInternalByteArray(buffer)) {
                     internalArrayProfile.enter(inliningTarget);
                     byte[] bytes = bufferLib.getInternalByteArray(buffer);
-                    return fromByteArrayNode.execute(bytes, 0, len, TruffleString.Encoding.ISO_8859_1, false);
+                    return fromByteArrayNode.execute(bytes, 0, len, TS_ENCODING_BINARY, false);
                 }
                 if (bufferLib.isNative(buffer)) {
                     nativeProfile.enter(inliningTarget);
@@ -871,100 +915,495 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                         if (ptr instanceof Long lptr) {
                             ptr = new NativePointer(lptr);
                         }
-                        return fromNativePointerNode.execute(ptr, 0, len, TruffleString.Encoding.ISO_8859_1, false);
+                        return fromNativePointerNode.execute(ptr, 0, len, TS_ENCODING_BINARY, false);
                     }
                 }
                 fallbackProfile.enter(inliningTarget);
                 byte[] bytes = bufferLib.getCopiedByteArray(buffer);
-                return fromByteArrayNode.execute(bytes, 0, len, TruffleString.Encoding.ISO_8859_1, false);
-            }
-
-            @NeverDefault
-            public static BufferToTruffleStringNode create() {
-                return SREModuleBuiltinsFactory.TRegexCallExecFactory.BufferToTruffleStringNodeGen.create();
+                return fromByteArrayNode.execute(bytes, 0, len, TS_ENCODING_BINARY, false);
             }
         }
     }
 
-    @Builtin(name = "tregex_re_subn", minNumOfPositionalArgs = 6)
+    @Builtin(name = "tregex_re_subn", minNumOfPositionalArgs = 4, parameterNames = {"pattern", "replacement", "input", "count"})
     @GenerateNodeFactory
-    @ImportStatic(PythonMethod.class)
-    abstract static class TRegexRESubN extends PythonSenaryBuiltinNode {
+    @ArgumentClinic(name = "count", conversion = ArgumentClinic.ClinicConversion.Index)
+    abstract static class TRegexRESubn extends PythonQuaternaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SREModuleBuiltinsClinicProviders.TRegexRESubnClinicProviderGen.INSTANCE;
+        }
 
         @Specialization
-        static Object doCached(VirtualFrame frame, TRegexCache pattern, TruffleString replacement, TruffleString string, int count,
-                        @Bind Node inliningTarget) {
-            TruffleStringBuilderUTF32 result = TruffleStringBuilder.createUTF32(Math.max(32, string.byteLength(TS_ENCODING)));
+        static Object doCached(VirtualFrame frame, PythonObject pattern, Object replacement, Object input, int count,
+                        @Bind Node inliningTarget,
+                        @Cached HiddenAttr.ReadNode readCacheNode,
+                        @Cached TRegexCompileInner tRegexCompile,
+                        @Cached RECheckInputTypeNode checkInputTypeNode,
+                        @Cached PyCallableCheckNode callableCheckNode,
+                        @Cached(inline = true) TRegexRESubnInnerNode1 innerNode1) {
+            return doSubn(frame, pattern, replacement, input, count, true, inliningTarget, readCacheNode, tRegexCompile, checkInputTypeNode, callableCheckNode, innerNode1);
+        }
+
+        private static Object doSubn(VirtualFrame frame, PythonObject pattern, Object replacement, Object input, int count, boolean returnTuple,
+                        Node inliningTarget,
+                        HiddenAttr.ReadNode readCacheNode,
+                        TRegexCompileInner tRegexCompile,
+                        RECheckInputTypeNode checkInputTypeNode,
+                        PyCallableCheckNode callableCheckNode,
+                        TRegexRESubnInnerNode1 innerNode1) {
+            TRegexCache tRegexCache = TRegexCompile.getTRegexCache(inliningTarget, pattern, readCacheNode);
+            Object compiledRegex = tRegexCompile.execute(frame, tRegexCache, PythonMethod.Search, false);
+            Object compiledRegexMustAdvance = tRegexCompile.execute(frame, tRegexCache, PythonMethod.Search, true);
+            if (compiledRegex == PNone.NONE || compiledRegexMustAdvance == PNone.NONE) {
+                // TODO: Fallback
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+            checkInputTypeNode.execute(frame, input, tRegexCache.binary);
+            return innerNode1.execute(inliningTarget, frame, pattern, compiledRegex, compiledRegexMustAdvance, replacement, input, count, tRegexCache.binary,
+                            callableCheckNode.execute(inliningTarget, replacement), returnTuple);
+        }
+    }
+
+    @Builtin(name = "tregex_re_sub", minNumOfPositionalArgs = 4, parameterNames = {"pattern", "replacement", "input", "count"})
+    @GenerateNodeFactory
+    @ArgumentClinic(name = "count", conversion = ArgumentClinic.ClinicConversion.Index)
+    abstract static class TRegexRESub extends PythonQuaternaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SREModuleBuiltinsClinicProviders.TRegexRESubClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        static Object doCached(VirtualFrame frame, PythonObject pattern, Object replacement, Object input, int count,
+                        @Bind Node inliningTarget,
+                        @Cached HiddenAttr.ReadNode readCacheNode,
+                        @Cached TRegexCompileInner tRegexCompile,
+                        @Cached RECheckInputTypeNode checkInputTypeNode,
+                        @Cached PyCallableCheckNode callableCheckNode,
+                        @Cached(inline = true) TRegexRESubnInnerNode1 innerNode1) {
+            return TRegexRESubn.doSubn(frame, pattern, replacement, input, count, false, inliningTarget, readCacheNode, tRegexCompile, checkInputTypeNode, callableCheckNode, innerNode1);
+        }
+    }
+
+    /**
+     * There are multiple nested inner nodes used in {@link TRegexRESubn}. The number at the end of
+     * each inner node indiceates the nesting level.
+     */
+    @GenerateInline
+    abstract static class TRegexRESubnInnerNode1 extends Node {
+
+        abstract Object execute(Node inliningTarget, VirtualFrame frame, PythonObject pattern, Object compiledRegex, Object compiledRegexMustAdvance, Object replacement, Object input, int count,
+                        boolean binary, boolean isCallable, boolean returnTuple);
+
+        @Specialization(guards = "!binary")
+        static Object doString(Node inliningTarget, VirtualFrame frame, PythonObject pattern, Object compiledRegex, Object compiledRegexMustAdvance, Object replacement, Object inputObj, int count,
+                        @SuppressWarnings("unused") boolean binary,
+                        boolean isCallable,
+                        boolean returnTuple,
+                        @Cached CastToTruffleStringNode cast,
+                        @Cached @Cached.Exclusive TRegexRESubnInnerNode2 innerNode) {
+            TruffleString input = cast.castKnownString(inliningTarget, inputObj);
+            assert TS_ENCODING == TruffleString.Encoding.UTF_32 : "remove the >> 2 when switching to UTF-8";
+            int stringLength = input.byteLength(TS_ENCODING) >> 2;
+            TruffleStringBuilderUTF32 result = TruffleStringBuilder.createUTF32(Math.max(32, stringLength));
+            return innerNode.execute(inliningTarget, frame, pattern, compiledRegex, compiledRegexMustAdvance, replacement, input, inputObj, count, binary, isCallable, returnTuple, stringLength,
+                            result);
+        }
+
+        @Specialization(guards = "binary")
+        static Object doBytes(Node inliningTarget, VirtualFrame frame, PythonObject pattern, Object compiledRegex, Object compiledRegexMustAdvance, Object replacement, Object inputObj, int count,
+                        @SuppressWarnings("unused") boolean binary,
+                        boolean isCallable,
+                        boolean returnTuple,
+                        @Cached TRegexCallExec.BufferToTruffleStringNode bufferToTruffleStringNode,
+                        @Cached @Cached.Exclusive TRegexRESubnInnerNode2 innerNode) {
+            TruffleString input = bufferToTruffleStringNode.execute(frame, inputObj);
+            int stringLength = input.byteLength(TS_ENCODING_BINARY);
+            TruffleStringBuilder result = TruffleStringBuilder.create(TS_ENCODING_BINARY, Math.max(32, stringLength));
+            return innerNode.execute(inliningTarget, frame, pattern, compiledRegex, compiledRegexMustAdvance, replacement, input, inputObj, count, binary, isCallable, returnTuple, stringLength,
+                            result);
+        }
+    }
+
+    @GenerateInline
+    abstract static class TRegexRESubnInnerNode2 extends Node {
+
+        abstract Object execute(Node inliningTarget, VirtualFrame frame, PythonObject pattern, Object compiledRegex, Object compiledRegexMustAdvance, Object replacement, TruffleString input,
+                        Object originalInput,
+                        int count,
+                        boolean binary,
+                        boolean isCallable,
+                        boolean returnTuple,
+                        int stringLength,
+                        TruffleStringBuilder result);
+
+        @Specialization(guards = "isCallable")
+        static Object doCallable(Node inliningTarget, VirtualFrame frame, PythonObject pattern, Object compiledRegex, Object compiledRegexMustAdvance, Object replacement, TruffleString input,
+                        Object originalInput,
+                        int count,
+                        boolean binary,
+                        @SuppressWarnings("unused") boolean isCallable,
+                        boolean returnTuple,
+                        int stringLength,
+                        TruffleStringBuilder result,
+                        @Cached TRegexUtil.InvokeExecMethodNode invokeExecMethodNode0,
+                        @Cached TRegexUtil.InvokeExecMethodNode invokeExecMethodNode1,
+                        @Cached TRegexUtil.InteropReadMemberNode readIsMatchNode,
+                        @Cached TRegexUtil.InvokeGetGroupBoundariesMethodNode readStartNode,
+                        @Cached TRegexUtil.InvokeGetGroupBoundariesMethodNode readEndNode,
+                        @Cached TruffleStringBuilder.AppendSubstringByteIndexNode appendSubstringNode,
+                        @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Cached TruffleStringBuilder.ToStringNode toStringNode,
+                        @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
+                        @Cached CallNode callNode,
+                        @Cached @Cached.Exclusive CastToTruffleStringNode cast,
+                        @Cached @Cached.Exclusive TRegexCallExec.BufferToTruffleStringNode bufferToTruffleStringNode,
+                        @Cached CreateMatchFromTRegexResultNode createMatchFromTRegexResultNode) {
             int n = 0;
             int pos = 0;
             boolean mustAdvance = false;
-            return null;
+            while ((count == 0 || n < count) && pos < stringLength) {
+                final Object searchResult;
+                if (mustAdvance) {
+                    searchResult = invokeExecMethodNode0.execute(inliningTarget, compiledRegexMustAdvance, input, pos);
+                } else {
+                    searchResult = invokeExecMethodNode1.execute(inliningTarget, compiledRegex, input, pos);
+                }
+                if (!TRegexUtil.TRegexResultAccessor.isMatch(searchResult, inliningTarget, readIsMatchNode)) {
+                    break;
+                }
+                n++;
+                int start = TRegexUtil.TRegexResultAccessor.captureGroupStart(searchResult, 0, inliningTarget, readStartNode);
+                int end = TRegexUtil.TRegexResultAccessor.captureGroupEnd(searchResult, 0, inliningTarget, readEndNode);
+                appendSubstringNode.execute(result, input, toByteIndex(pos, binary), toByteIndex(start - pos, binary));
+                Object callResult = callNode.execute(frame, replacement, createMatchFromTRegexResultNode.execute(frame, inliningTarget, pattern, pos, stringLength, searchResult, originalInput));
+                if (callResult != PNone.NONE) {
+                    if (binary) {
+                        appendStringNode.execute(result, bufferToTruffleStringNode.execute(frame, callResult));
+                    } else {
+                        appendStringNode.execute(result, cast.castKnownString(inliningTarget, callResult));
+                    }
+                }
+                pos = end;
+                mustAdvance = start == end;
+            }
+            final TruffleString resultString;
+            if (n == 0) {
+                resultString = input;
+            } else {
+                appendSubstringNode.execute(result, input, toByteIndex(pos, binary), toByteIndex(stringLength - pos, binary));
+                resultString = toStringNode.execute(result, binary);
+            }
+            final Object resultObject;
+            if (binary) {
+                resultObject = PFactory.createBytes(PythonLanguage.get(inliningTarget), copyToByteArrayNode.execute(resultString, TS_ENCODING_BINARY));
+            } else {
+                resultObject = resultString;
+            }
+            if (returnTuple) {
+                return PFactory.createTuple(PythonLanguage.get(inliningTarget), new Object[]{resultObject, n});
+            } else {
+                return resultObject;
+            }
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = {"!isCallable", "binary"})
+        static Object doBinary(Node inliningTarget, VirtualFrame frame, PythonObject pattern, Object compiledRegex, Object compiledRegexMustAdvance, Object replacementObj, TruffleString input,
+                        Object originalInput,
+                        int count,
+                        boolean binary,
+                        boolean isCallable,
+                        boolean returnTuple,
+                        int stringLength,
+                        TruffleStringBuilder result,
+                        @Cached @Shared RECheckInputTypeNode checkInputTypeNode,
+                        @Cached @Cached.Exclusive TRegexCallExec.BufferToTruffleStringNode bufferToTruffleStringNode,
+                        @Cached @Cached.Exclusive TRegexRESubnInnerNode3 innerNode) {
+            checkInputTypeNode.execute(frame, replacementObj, binary);
+            TruffleString replacement = bufferToTruffleStringNode.execute(frame, replacementObj);
+            return innerNode.execute(inliningTarget, frame, compiledRegex, compiledRegexMustAdvance, replacement, input, count, binary, returnTuple, stringLength, result);
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = {"!isCallable", "!binary"})
+        static Object doString(Node inliningTarget, VirtualFrame frame, PythonObject pattern, Object compiledRegex, Object compiledRegexMustAdvance, Object replacementObj, TruffleString input,
+                        Object originalInput,
+                        int count,
+                        boolean binary,
+                        boolean isCallable,
+                        boolean returnTuple,
+                        int stringLength,
+                        TruffleStringBuilder result,
+                        @Cached @Shared RECheckInputTypeNode checkInputTypeNode,
+                        @Cached @Cached.Exclusive CastToTruffleStringNode cast,
+                        @Cached @Cached.Exclusive TRegexRESubnInnerNode3 innerNode) {
+            checkInputTypeNode.execute(frame, replacementObj, binary);
+            TruffleString replacement = cast.castKnownString(inliningTarget, replacementObj);
+            return innerNode.execute(inliningTarget, frame, compiledRegex, compiledRegexMustAdvance, replacement, input, count, binary, returnTuple, stringLength, result);
+        }
+
+        private static int toByteIndex(int index, boolean binary) {
+            assert TS_ENCODING == TruffleString.Encoding.UTF_32 : "remove this method when switching to UTF-8";
+            return binary ? index : index << 2;
         }
     }
 
-    private abstract static sealed class ReplacementToken {
-    }
+    @GenerateInline
+    abstract static class TRegexRESubnInnerNode3 extends Node {
 
-    private static final class Codepoint extends ReplacementToken {
-        private final int codepoint;
+        private static final int UNROLL_MAX = 4;
 
-        private Codepoint(int codepoint) {
-            this.codepoint = codepoint;
+        abstract Object execute(Node inliningTarget, VirtualFrame frame, Object compiledRegex, Object compiledRegexMustAdvance, TruffleString replacement, TruffleString input,
+                        int count,
+                        boolean binary,
+                        boolean returnTuple,
+                        int stringLength,
+                        TruffleStringBuilder result);
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "replacement == cachedReplacement", limit = "2")
+        static Object doCached(Node inliningTarget, VirtualFrame frame, Object compiledRegex, Object compiledRegexMustAdvance, TruffleString replacement, TruffleString input,
+                        int count,
+                        boolean binary,
+                        boolean returnTuple,
+                        int stringLength,
+                        TruffleStringBuilder result,
+                        @Cached("replacement") TruffleString cachedReplacement,
+                        @Cached @Shared ParseReplacementNode parseReplacementNode,
+                        @Cached("parseReplacementNode.execute(inliningTarget, frame, compiledRegex, replacement, binary)") ParsedReplacement cachedParsedReplacement,
+                        @Cached @Shared TRegexUtil.InvokeExecMethodNode invokeExecMethodNode0,
+                        @Cached @Shared TRegexUtil.InvokeExecMethodNode invokeExecMethodNode1,
+                        @Cached @Shared TRegexUtil.InteropReadMemberNode readIsMatchNode,
+                        @Cached @Shared TRegexUtil.InvokeGetGroupBoundariesMethodNode readStartNode,
+                        @Cached @Shared TRegexUtil.InvokeGetGroupBoundariesMethodNode readEndNode,
+                        @Cached @Shared TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
+                        @Cached @Shared TruffleStringBuilder.AppendSubstringByteIndexNode appendSubstringNode,
+                        @Cached @Shared TruffleStringBuilder.ToStringNode toStringNode,
+                        @Cached @Shared TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
+            return doReplace(compiledRegex, compiledRegexMustAdvance, replacement, input, count, binary, returnTuple, stringLength, result, cachedParsedReplacement,
+                            inliningTarget,
+                            invokeExecMethodNode0,
+                            invokeExecMethodNode1,
+                            readIsMatchNode,
+                            readStartNode,
+                            readEndNode,
+                            appendCodePointNode,
+                            appendSubstringNode,
+                            toStringNode,
+                            copyToByteArrayNode);
+        }
+
+        protected static ParsedReplacement parseReplacement(Node inliningTarget, VirtualFrame frame, Object compiledRegex, TruffleString replacement, ParseReplacementNode parseReplacementNode,
+                        boolean binary) {
+            return parseReplacementNode.execute(inliningTarget, frame, compiledRegex, replacement, binary);
+        }
+
+        @Specialization(replaces = "doCached")
+        static Object doOnTheFly(Node inliningTarget, VirtualFrame frame, Object compiledRegex, Object compiledRegexMustAdvance, TruffleString replacement, TruffleString input,
+                        int count,
+                        boolean binary,
+                        boolean returnTuple,
+                        int stringLength,
+                        TruffleStringBuilder result,
+                        @Cached @Shared ParseReplacementNode parseReplacementNode,
+                        @Cached @Shared TRegexUtil.InvokeExecMethodNode invokeExecMethodNode0,
+                        @Cached @Shared TRegexUtil.InvokeExecMethodNode invokeExecMethodNode1,
+                        @Cached @Shared TRegexUtil.InteropReadMemberNode readIsMatchNode,
+                        @Cached @Shared TRegexUtil.InvokeGetGroupBoundariesMethodNode readStartNode,
+                        @Cached @Shared TRegexUtil.InvokeGetGroupBoundariesMethodNode readEndNode,
+                        @Cached @Shared TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
+                        @Cached @Shared TruffleStringBuilder.AppendSubstringByteIndexNode appendSubstringNode,
+                        @Cached @Shared TruffleStringBuilder.ToStringNode toStringNode,
+                        @Cached @Shared TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
+            ParsedReplacement parsedReplacement = parseReplacementNode.execute(inliningTarget, frame, compiledRegex, replacement, binary);
+            return doReplace(compiledRegex, compiledRegexMustAdvance, replacement, input, count, binary, returnTuple, stringLength, result, parsedReplacement,
+                            inliningTarget,
+                            invokeExecMethodNode0,
+                            invokeExecMethodNode1,
+                            readIsMatchNode,
+                            readStartNode,
+                            readEndNode,
+                            appendCodePointNode,
+                            appendSubstringNode,
+                            toStringNode,
+                            copyToByteArrayNode);
+        }
+
+        private static Object doReplace(Object compiledRegex, Object compiledRegexMustAdvance, TruffleString replacement, TruffleString input, int count, boolean binary, boolean returnTuple,
+                        int stringLength,
+                        TruffleStringBuilder result,
+                        ParsedReplacement parsedReplacement,
+                        Node inliningTarget,
+                        TRegexUtil.InvokeExecMethodNode invokeExecMethodNode0,
+                        TRegexUtil.InvokeExecMethodNode invokeExecMethodNode1,
+                        TRegexUtil.InteropReadMemberNode readIsMatchNode,
+                        TRegexUtil.InvokeGetGroupBoundariesMethodNode readStartNode,
+                        TRegexUtil.InvokeGetGroupBoundariesMethodNode readEndNode,
+                        TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
+                        TruffleStringBuilder.AppendSubstringByteIndexNode appendSubstringNode,
+                        TruffleStringBuilder.ToStringNode toStringNode,
+                        TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
+            int n = 0;
+            int pos = 0;
+            boolean mustAdvance = false;
+            while ((count == 0 || n < count) && pos < stringLength) {
+                final Object searchResult;
+                if (mustAdvance) {
+                    searchResult = invokeExecMethodNode0.execute(inliningTarget, compiledRegexMustAdvance, input, pos);
+                } else {
+                    searchResult = invokeExecMethodNode1.execute(inliningTarget, compiledRegex, input, pos);
+                }
+                if (!TRegexUtil.TRegexResultAccessor.isMatch(searchResult, inliningTarget, readIsMatchNode)) {
+                    break;
+                }
+                n++;
+                int start = TRegexUtil.TRegexResultAccessor.captureGroupStart(searchResult, 0, inliningTarget, readStartNode);
+                int end = TRegexUtil.TRegexResultAccessor.captureGroupEnd(searchResult, 0, inliningTarget, readEndNode);
+                appendSubstringNode.execute(result, input, TRegexRESubnInnerNode2.toByteIndex(pos, binary), TRegexRESubnInnerNode2.toByteIndex(start - pos, binary));
+                if (CompilerDirectives.isPartialEvaluationConstant(parsedReplacement) && parsedReplacement.size() <= UNROLL_MAX) {
+                    applyReplacementUnrolled(parsedReplacement, result, replacement, input, searchResult, binary, inliningTarget, readStartNode, readEndNode, appendCodePointNode, appendSubstringNode);
+                } else {
+                    applyReplacement(parsedReplacement, result, replacement, input, searchResult, binary, inliningTarget, readStartNode, readEndNode, appendCodePointNode, appendSubstringNode);
+                }
+                pos = end;
+                mustAdvance = start == end;
+            }
+            final TruffleString resultString;
+            if (n == 0) {
+                resultString = input;
+            } else {
+                appendSubstringNode.execute(result, input, TRegexRESubnInnerNode2.toByteIndex(pos, binary), TRegexRESubnInnerNode2.toByteIndex(stringLength - pos, binary));
+                resultString = toStringNode.execute(result, binary);
+            }
+            final Object resultObject;
+            if (binary) {
+                resultObject = PFactory.createBytes(PythonLanguage.get(inliningTarget), copyToByteArrayNode.execute(resultString, TS_ENCODING_BINARY));
+            } else {
+                resultObject = resultString;
+            }
+            if (returnTuple) {
+                return PFactory.createTuple(PythonLanguage.get(inliningTarget), new Object[]{resultObject, n});
+            } else {
+                return resultObject;
+            }
+        }
+
+        @ExplodeLoop
+        private static void applyReplacementUnrolled(ParsedReplacement parsedReplacement, TruffleStringBuilder result, TruffleString replacement, TruffleString string,
+                        Object searchResult,
+                        boolean binary,
+                        Node inliningTarget,
+                        TRegexUtil.InvokeGetGroupBoundariesMethodNode readStartNode,
+                        TRegexUtil.InvokeGetGroupBoundariesMethodNode readEndNode,
+                        TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
+                        TruffleStringBuilder.AppendSubstringByteIndexNode appendSubstringByteIndexNode) {
+            CompilerAsserts.partialEvaluationConstant(parsedReplacement);
+            int size = parsedReplacement.size();
+            CompilerAsserts.partialEvaluationConstant(size);
+            for (int i = 0; i < size; i++) {
+                parsedReplacement.apply(i, replacement, string, result, binary, searchResult, inliningTarget, readStartNode, readEndNode, appendCodePointNode, appendSubstringByteIndexNode);
+            }
+        }
+
+        private static void applyReplacement(ParsedReplacement parsedReplacement, TruffleStringBuilder result, TruffleString replacement, TruffleString string,
+                        Object searchResult,
+                        boolean binary,
+                        Node inliningTarget,
+                        TRegexUtil.InvokeGetGroupBoundariesMethodNode readStartNode,
+                        TRegexUtil.InvokeGetGroupBoundariesMethodNode readEndNode,
+                        TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
+                        TruffleStringBuilder.AppendSubstringByteIndexNode appendSubstringByteIndexNode) {
+            int size = parsedReplacement.size();
+            for (int i = 0; i < size; i++) {
+                parsedReplacement.apply(i, replacement, string, result, binary, searchResult, inliningTarget, readStartNode, readEndNode, appendCodePointNode, appendSubstringByteIndexNode);
+            }
         }
     }
 
-    private static final class Literal extends ReplacementToken {
-        private final TruffleString literal;
+    static final class ParsedReplacement {
 
-        private Literal(TruffleString literal) {
-            this.literal = literal;
-        }
-    }
+        private static final ParsedReplacement EMPTY = new ParsedReplacement(new int[]{});
 
-    private static final class GroupReference extends ReplacementToken {
-        private final int groupNumber;
+        private static final int TOKEN_KIND_CODEPOINT = -1;
+        private static final int TOKEN_KIND_GROUP_REF = -2;
 
-        private GroupReference(int groupNumber) {
-            this.groupNumber = groupNumber;
-        }
-    }
+        @CompilationFinal(dimensions = 1) private final int[] tokens;
 
-    private abstract static sealed class ReplacementConsumer {
-        abstract void codepoint(int codepoint);
-
-        abstract void literal(TruffleString replacement, int fromIndex, int toIndex);
-
-        abstract void groupReference(int groupNumber);
-    }
-
-    private static final class ReplacementTokenListConsumer extends ReplacementConsumer {
-        private final ArrayList<ReplacementToken> tokens = new ArrayList<>();
-
-        @Override
-        void codepoint(int codepoint) {
-            tokens.add(new Codepoint(codepoint));
+        private ParsedReplacement(int[] tokens) {
+            this.tokens = tokens;
         }
 
-        @Override
-        void literal(TruffleString replacement, int fromByteIndex, int toByteIndex) {
-            tokens.add(new Literal(replacement.substringByteIndexUncached(fromByteIndex, toByteIndex, TS_ENCODING, false)));
+        private int size() {
+            return tokens.length >> 1;
         }
 
-        @Override
-        void groupReference(int groupNumber) {
-            tokens.add(new GroupReference(groupNumber));
+        private void apply(int iToken, TruffleString replacement, TruffleString input, TruffleStringBuilder result, boolean binary, Object searchResult,
+                        Node inliningTarget,
+                        TRegexUtil.InvokeGetGroupBoundariesMethodNode readStartNode,
+                        TRegexUtil.InvokeGetGroupBoundariesMethodNode readEndNode,
+                        TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
+                        TruffleStringBuilder.AppendSubstringByteIndexNode appendSubstringByteIndexNode) {
+            int tokenPart0 = tokens[iToken << 1];
+            int tokenPart1 = tokens[(iToken << 1) + 1];
+            if (tokenPart0 == TOKEN_KIND_CODEPOINT) {
+                appendCodePointNode.execute(result, tokenPart1);
+            } else {
+                final int start;
+                final int length;
+                final TruffleString s;
+                if (tokenPart0 == TOKEN_KIND_GROUP_REF) {
+                    start = TRegexRESubnInnerNode2.toByteIndex(TRegexUtil.TRegexResultAccessor.captureGroupStart(searchResult, tokenPart1, inliningTarget, readStartNode), binary);
+                    if (start < 0) {
+                        return;
+                    }
+                    length = TRegexRESubnInnerNode2.toByteIndex(TRegexUtil.TRegexResultAccessor.captureGroupEnd(searchResult, tokenPart1, inliningTarget, readEndNode), binary) - start;
+                    s = input;
+                } else {
+                    start = tokenPart0;
+                    length = tokenPart1;
+                    s = replacement;
+                }
+                appendSubstringByteIndexNode.execute(result, s, start, length);
+            }
+        }
+
+        private static final class Builder {
+            private final IntArrayBuilder tokens = new IntArrayBuilder();
+
+            void codepoint(int codepoint) {
+                tokens.add(TOKEN_KIND_CODEPOINT);
+                tokens.add(codepoint);
+            }
+
+            void literal(int fromByteIndex, int toByteIndex) {
+                tokens.add(fromByteIndex);
+                tokens.add(toByteIndex - fromByteIndex);
+            }
+
+            void groupReference(int groupNumber) {
+                tokens.add(TOKEN_KIND_GROUP_REF);
+                tokens.add(groupNumber);
+            }
+
+            ParsedReplacement build() {
+                return new ParsedReplacement(tokens.toArray());
+            }
         }
     }
 
     @GenerateInline(false) // Only for errors
     @GenerateUncached
     abstract static class RaiseRegexErrorNode extends Node {
-        public final PException execute(VirtualFrame frame, TruffleString message) {
-            return executeWithPatternAndPosition(frame, message, PNone.NONE, PNone.NONE);
+        public final PException execute(VirtualFrame frame, TruffleString message, Object pattern, int position) {
+            return executeWithPatternAndPosition(frame, message, pattern, position);
         }
 
-        public final PException executeFormatted(VirtualFrame frame, TruffleString message, Object... formatArgs) {
-            return execute(frame, doFormat(message, formatArgs));
+        public final PException executeFormatted(VirtualFrame frame, TruffleString message, Object pattern, int position, Object... formatArgs) {
+            return execute(frame, doFormat(message, formatArgs), pattern, position);
         }
 
         @TruffleBoundary
@@ -974,8 +1413,8 @@ public final class SREModuleBuiltins extends PythonBuiltins {
 
         public abstract PException executeWithPatternAndPosition(VirtualFrame frame, TruffleString message, Object pattern, Object position);
 
-        public static PException executeWithPatternAndPositionUncached(TruffleString message, Object pattern, Object position) {
-            return SREModuleBuiltinsFactory.RaiseRegexErrorNodeGen.getUncached().executeWithPatternAndPosition(null, message, pattern, position);
+        public static PException executeWithPatternAndPositionUncached(TruffleString message, Object pattern, Object position, Node location) {
+            return createAndRaise(null, message, pattern, position, location, PythonContext.get(location), ReadAttributeFromModuleNode.getUncached(), CallNode.getUncached());
         }
 
         @Specialization
@@ -991,99 +1430,185 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    private static final int CODEPOINT_LENGTH_ASCII = 4;
+    @GenerateInline
+    abstract static class ParseReplacementNode extends Node {
 
-    private static void parseReplacement(VirtualFrame frame, Object tregexCompiledRegex, TruffleString replacement, ReplacementConsumer consumer,
-                    Node inliningTarget,
-                    TruffleString.ByteIndexOfCodePointNode indexOfNode,
-                    TruffleString.CodePointAtByteIndexNode codePointAtByteIndexNode,
-                    TruffleString.SubstringByteIndexNode substringByteIndexNode,
-                    TruffleString.GetCodeRangeNode getCodeRangeNode,
-                    TRegexUtil.InteropReadMemberNode readGroupCountNode,
-                    TRegexUtil.InteropReadMemberNode readNamedGroupsNode,
-                    InteropLibrary genericInteropLib,
-                    PRaiseNode raiseNode,
-                    RaiseRegexErrorNode raiseRegexErrorNode) {
-        int length = replacement.byteLength(TS_ENCODING);
-        if (length == 0) {
-            return;
-        }
-        int numberOfCaptureGroups = TRegexUtil.TRegexCompiledRegexAccessor.groupCount(tregexCompiledRegex, inliningTarget, readGroupCountNode);
-        int lastPos = 0;
-        while (true) {
-            int backslashPos = indexOfNode.execute(replacement, '\\', lastPos, length, TS_ENCODING);
-            consumer.literal(replacement, lastPos, backslashPos < 0 ? length : backslashPos);
-            if (backslashPos < 0) {
-                return;
-            }
-            int nextCPPos = backslashPos + CODEPOINT_LENGTH_ASCII;
-            if (nextCPPos >= length) {
-                throw raiseRegexErrorNode.execute(frame, BAD_ESCAPE_END_OF_STRING);
-            }
-            int firstCodepoint = codePointAtByteIndexNode.execute(replacement, nextCPPos, TS_ENCODING);
-            nextCPPos += CODEPOINT_LENGTH_ASCII;
-            int secondCodepoint = nextCPPos < length ? codePointAtByteIndexNode.execute(replacement, nextCPPos, TS_ENCODING) : -1;
-            nextCPPos += CODEPOINT_LENGTH_ASCII;
-            if (firstCodepoint == 'g') {
-                if (secondCodepoint != '<') {
-                    throw raiseRegexErrorNode.execute(frame, MISSING_LEFT_ANGLE_BRACKET);
+        abstract ParsedReplacement execute(Node inliningTarget, VirtualFrame frame, Object tregexCompiledRegex, TruffleString replacement, boolean binary);
+
+        @Specialization
+        static ParsedReplacement parseReplacement(Node inliningTarget, VirtualFrame frame, Object tregexCompiledRegex, TruffleString replacement, boolean binary,
+                        @Cached TruffleString.ByteIndexOfCodePointNode indexOfNode,
+                        @Cached TruffleString.CodePointAtByteIndexNode codePointAtByteIndexNode,
+                        @Cached TruffleString.SubstringByteIndexNode substringByteIndexNode,
+                        @Cached TruffleString.GetCodeRangeNode getCodeRangeNode,
+                        @Cached TRegexUtil.InteropReadMemberNode readGroupCountNode,
+                        @Cached TRegexUtil.InteropReadMemberNode readNamedGroupsNode,
+                        @CachedLibrary(limit = "3") InteropLibrary genericInteropLib,
+                        @Cached PRaiseNode raiseNode,
+                        @Cached RaiseRegexErrorNode raiseRegexErrorNode,
+                        @Cached StringUtils.IsIdentifierNode isIdentifierNode,
+                        @Cached InlinedBranchProfile errorProfile) {
+            CompilerAsserts.partialEvaluationConstant(binary);
+            assert TS_ENCODING == TruffleString.Encoding.UTF_32 : "replace codepointLengthAscii with 1 when switching to UTF-8";
+            int codepointLengthAscii = binary ? 1 : 4;
+            TruffleString.Encoding encoding = binary ? TS_ENCODING_BINARY : TS_ENCODING;
+            ParsedReplacement.Builder builder = new ParsedReplacement.Builder();
+            int length = replacement.byteLength(encoding);
+            int numberOfCaptureGroups = TRegexUtil.TRegexCompiledRegexAccessor.groupCount(tregexCompiledRegex, inliningTarget, readGroupCountNode);
+            int lastPos = 0;
+            int lastLiteralPos = 0;
+            while (lastPos < length) {
+                int backslashPos = indexOfNode.execute(replacement, '\\', lastPos, length, encoding);
+                builder.literal(lastLiteralPos, backslashPos < 0 ? length : backslashPos);
+                if (backslashPos < 0) {
+                    return builder.build();
                 }
-                int nameStartPos = nextCPPos;
-                int nameEndPos;
-                if (nameStartPos >= length || (nameEndPos = indexOfNode.execute(replacement, '>', nameStartPos, length, TS_ENCODING)) < 0 || nameEndPos == nameStartPos) {
-                    throw raiseRegexErrorNode.execute(frame, MISSING_GROUP_NAME);
+                int nextCPPos = backslashPos + codepointLengthAscii;
+                if (nextCPPos >= length) {
+                    throw raiseRegexErrorNode.execute(frame, BAD_ESCAPE_END_OF_STRING, replacement, codepointIndex(length, binary));
                 }
-                int nameLength = nameEndPos - nameStartPos;
-                assert nameLength > 0;
-                TruffleString name = substringByteIndexNode.execute(replacement, nameStartPos, nameLength, TS_ENCODING, true);
-                if (getCodeRangeNode.execute(name, TS_ENCODING) != TruffleString.CodeRange.ASCII) {
-                    throw raiseRegexErrorNode.executeFormatted(frame, BAD_CHAR_IN_GROUP_NAME, name);
-                }
-                int groupNumber = 0;
-                for (int i = 0; i < nameLength; i += CODEPOINT_LENGTH_ASCII) {
-                    int d = codePointAtByteIndexNode.execute(name, i, TS_ENCODING);
-                    if (isDecimalDigit(d)) {
-                        groupNumber = (groupNumber * 10) + (d - '0');
-                    } else {
-                        groupNumber = -1;
-                        break;
+                int firstCodepoint = codePointAtByteIndexNode.execute(replacement, nextCPPos, encoding);
+                nextCPPos += codepointLengthAscii;
+                int secondCodepoint = nextCPPos < length ? codePointAtByteIndexNode.execute(replacement, nextCPPos, encoding) : -1;
+                if (firstCodepoint == 'g') {
+                    if (secondCodepoint != '<') {
+                        throw raiseRegexErrorNode.execute(frame, MISSING_LEFT_ANGLE_BRACKET, replacement, codepointIndex(nextCPPos, binary));
                     }
-                    if (groupNumber >= numberOfCaptureGroups) {
-                        throw raiseRegexErrorNode.executeFormatted(frame, INVALID_GROUP_REFERENCE, groupNumber);
+                    int nameStartPos = nextCPPos + codepointLengthAscii;
+                    int nameEndPos = 0;
+                    if (nameStartPos >= length || (nameEndPos = indexOfNode.execute(replacement, '>', nameStartPos, length, encoding)) < 0 || nameEndPos == nameStartPos) {
+                        errorProfile.enter(inliningTarget);
+                        throw raiseRegexErrorNode.execute(frame, nameStartPos >= length || nameEndPos == nameStartPos ? MISSING_GROUP_NAME : MISSING_RIGHT_ANGLE_BRACKET, replacement,
+                                        codepointIndex(nameStartPos, binary));
                     }
-                }
-                if (groupNumber < 0) {
-                    Object namedCaptureGroups = TRegexUtil.TRegexCompiledRegexAccessor.namedCaptureGroups(tregexCompiledRegex, inliningTarget, readNamedGroupsNode);
-                    if (!TRegexUtil.TRegexNamedCaptureGroupsAccessor.hasGroup(namedCaptureGroups, name, genericInteropLib)) {
-                        throw raiseNode.raise(inliningTarget, PythonErrorType.IndexError, UNKNOWN_GROUP_NAME, name);
-                    }
-                    int[] groupNumbers = TRegexUtil.TRegexNamedCaptureGroupsAccessor.getGroupNumbers(namedCaptureGroups, name, genericInteropLib, genericInteropLib);
-                    assert groupNumbers.length == 1 : Arrays.toString(groupNumbers);
-                    groupNumber = groupNumbers[0];
-                }
-                consumer.groupReference(groupNumber);
-                lastPos = nameEndPos + CODEPOINT_LENGTH_ASCII;
-            } else if (firstCodepoint == '0') {
-                int octalEscape;
-                if (isOctalDigit(secondCodepoint)) {
-                    octalEscape = (secondCodepoint - '0');
-                    if (nextCPPos < length) {
-                        int thirdCodepoint = codePointAtByteIndexNode.execute(replacement, nextCPPos, TS_ENCODING);
-                        if (isOctalDigit(thirdCodepoint)) {
-                            octalEscape = (octalEscape * 8) + (thirdCodepoint - '0');
-                            nextCPPos += CODEPOINT_LENGTH_ASCII;
+                    int nameLength = nameEndPos - nameStartPos;
+                    assert nameLength > 0;
+                    TruffleString name = substringByteIndexNode.execute(replacement, nameStartPos, nameLength, encoding, true);
+                    int groupNumber = -1;
+                    boolean ascii = getCodeRangeNode.execute(name, encoding) == TruffleString.CodeRange.ASCII;
+                    if (ascii) {
+                        groupNumber = 0;
+                        for (int i = 0; i < nameLength; i += codepointLengthAscii) {
+                            int d = codePointAtByteIndexNode.execute(name, i, encoding);
+                            if (isDecimalDigit(d)) {
+                                groupNumber = (groupNumber * 10) + digitValue(d);
+                            } else {
+                                groupNumber = -1;
+                                break;
+                            }
+                            if (groupNumber >= numberOfCaptureGroups) {
+                                errorProfile.enter(inliningTarget);
+                                throw raiseRegexErrorNode.executeFormatted(frame, INVALID_GROUP_REFERENCE, replacement, codepointIndex(nameStartPos, binary), name);
+                            }
                         }
                     }
+                    if (groupNumber < 0) {
+                        if (!isIdentifierNode.execute(inliningTarget, name) || binary && !ascii) {
+                            errorProfile.enter(inliningTarget);
+                            throw raiseRegexErrorNode.executeFormatted(frame, BAD_CHAR_IN_GROUP_NAME, replacement, codepointIndex(nameStartPos, binary),
+                                            binary ? PyObjectAsciiNode.executeUncached(name) : PyObjectReprAsTruffleStringNode.executeUncached(name));
+                        }
+                        Object namedCaptureGroups = TRegexUtil.TRegexCompiledRegexAccessor.namedCaptureGroups(tregexCompiledRegex, inliningTarget, readNamedGroupsNode);
+                        if (!TRegexUtil.TRegexNamedCaptureGroupsAccessor.hasGroup(namedCaptureGroups, name, genericInteropLib)) {
+                            throw raiseNode.raise(inliningTarget, PythonErrorType.IndexError, UNKNOWN_GROUP_NAME, name);
+                        }
+                        groupNumber = TRegexUtil.TRegexNamedCaptureGroupsAccessor.getGroupNumber(namedCaptureGroups, name, genericInteropLib);
+                    }
+                    builder.groupReference(groupNumber);
+                    nextCPPos = nameEndPos + codepointLengthAscii;
+                    lastPos = lastLiteralPos = nextCPPos;
+                } else if (firstCodepoint == '0') {
+                    int octalEscape;
+                    if (isOctalDigit(secondCodepoint)) {
+                        nextCPPos += codepointLengthAscii;
+                        octalEscape = digitValue(secondCodepoint);
+                        if (nextCPPos < length) {
+                            int thirdCodepoint = codePointAtByteIndexNode.execute(replacement, nextCPPos, encoding);
+                            if (isOctalDigit(thirdCodepoint)) {
+                                nextCPPos += codepointLengthAscii;
+                                octalEscape = (octalEscape * 8) + digitValue(thirdCodepoint);
+                                if (octalEscape > 0xff) {
+                                    errorProfile.enter(inliningTarget);
+                                    TruffleString octalEscapeString = replacement.substringByteIndexUncached(backslashPos, nextCPPos - backslashPos, encoding, true);
+                                    throw raiseRegexErrorNode.executeFormatted(frame, OCTAL_ESCAPE_OUT_OF_RANGE, replacement, codepointIndex(backslashPos, binary), octalEscapeString);
+                                }
+                            }
+                        }
+                    } else {
+                        octalEscape = 0;
+                    }
+                    builder.codepoint(octalEscape);
+                    lastPos = lastLiteralPos = nextCPPos;
+                } else if (isDecimalDigit(firstCodepoint)) {
+                    int groupNumber = digitValue(firstCodepoint);
+                    if (isDecimalDigit(secondCodepoint)) {
+                        nextCPPos += codepointLengthAscii;
+                        int thirdCodepoint;
+                        if (Math.max(firstCodepoint, secondCodepoint) <= '7' && nextCPPos < length &&
+                                        isOctalDigit(thirdCodepoint = codePointAtByteIndexNode.execute(replacement, nextCPPos, encoding))) {
+                            nextCPPos += codepointLengthAscii;
+                            // Single and double-digit escapes are group references, but three-digit
+                            // escapes are octal character codes. Hopefully this will be deprecated
+                            // at some point
+                            int octalEscape = digitValue(firstCodepoint) * 64 + digitValue(secondCodepoint) * 8 + digitValue(thirdCodepoint);
+                            if (octalEscape > 0xff) {
+                                errorProfile.enter(inliningTarget);
+                                TruffleString octalEscapeString = replacement.substringByteIndexUncached(backslashPos, nextCPPos - backslashPos, encoding, true);
+                                throw raiseRegexErrorNode.executeFormatted(frame, OCTAL_ESCAPE_OUT_OF_RANGE, replacement, codepointIndex(backslashPos, binary), octalEscapeString);
+                            }
+                            builder.codepoint(octalEscape);
+                            groupNumber = -1;
+                        } else {
+                            groupNumber = groupNumber * 10 + digitValue(secondCodepoint);
+                        }
+                    }
+                    if (groupNumber >= 0) {
+                        if (groupNumber >= numberOfCaptureGroups) {
+                            errorProfile.enter(inliningTarget);
+                            throw raiseRegexErrorNode.executeFormatted(frame, INVALID_GROUP_REFERENCE, replacement, codepointIndex(backslashPos + codepointLengthAscii, binary), groupNumber);
+                        }
+                        builder.groupReference(groupNumber);
+                    }
+                    lastPos = lastLiteralPos = nextCPPos;
                 } else {
-                    octalEscape = 0;
-                    nextCPPos -= CODEPOINT_LENGTH_ASCII;
+                    int escape = switch (firstCodepoint) {
+                        case 'a' -> '\u0007';
+                        case 'b' -> '\b';
+                        case 'f' -> '\f';
+                        case 'n' -> '\n';
+                        case 'r' -> '\r';
+                        case 't' -> '\t';
+                        case 'v' -> '\u000b';
+                        case '\\' -> '\\';
+                        default -> {
+                            // check if character is in [A-Za-z]
+                            int lowercased = firstCodepoint | 0x20;
+                            if ('a' <= lowercased && lowercased <= 'z') {
+                                throw raiseRegexErrorNode.execute(frame, BAD_ESCAPE, replacement, codepointIndex(nextCPPos, binary));
+                            } else {
+                                yield -1;
+                            }
+                        }
+                    };
+                    if (escape >= 0) {
+                        builder.codepoint(escape);
+                        lastLiteralPos = nextCPPos;
+                    }
+                    lastPos = nextCPPos;
                 }
-                consumer.codepoint(octalEscape);
-                lastPos = nextCPPos;
-            } else if (isDecimalDigit(firstCodepoint)) {
-                // TODO
             }
+            return builder.build();
         }
+
+        private static int codepointIndex(int i, boolean binary) {
+            assert TS_ENCODING == TruffleString.Encoding.UTF_32 : "remove this when switching to UTF-8";
+            return binary ? i : i >> 2;
+        }
+    }
+
+    private static int digitValue(int d) {
+        assert isDecimalDigit(d);
+        return d - '0';
     }
 
     private static boolean isDecimalDigit(int d) {
