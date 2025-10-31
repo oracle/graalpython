@@ -375,28 +375,7 @@ class Pattern():
 
     @__graalpython__.force_split_direct_calls
     def findall(self, string, pos=0, endpos=maxsize):
-        for must_advance in [False, True]:
-            if tregex_compile(self, _METHOD_SEARCH, must_advance) is None:
-                return self.__fallback_compile().findall(string, pos=pos, endpos=endpos)
-        _check_pos(pos)
-        self.__check_input_type(string)
-        pos, endpos = _normalize_bounds(string, pos, endpos)
-        matchlist = []
-        must_advance = False
-        while pos <= endpos:
-            compiled_regex = tregex_compile(self, _METHOD_SEARCH, must_advance)
-            result = tregex_call_exec(compiled_regex, string, pos, endpos)
-            if not result.isMatch:
-                break
-            elif self.groups == 0:
-                matchlist.append(self.__sanitize_out_type(string[result.getStart(0):result.getEnd(0)]))
-            elif self.groups == 1:
-                matchlist.append(self.__sanitize_out_type(string[result.getStart(1):result.getEnd(1)]))
-            else:
-                matchlist.append(tuple(map(self.__sanitize_out_type, Match(self, pos, endpos, result, string, self.__indexgroup).groups())))
-            pos = result.getEnd(0)
-            must_advance = (result.getStart(0) == result.getEnd(0))
-        return matchlist
+        return tregex_re_findall(self, string, pos, endpos)
 
     @__graalpython__.force_split_direct_calls
     def sub(self, repl, string, count=0):

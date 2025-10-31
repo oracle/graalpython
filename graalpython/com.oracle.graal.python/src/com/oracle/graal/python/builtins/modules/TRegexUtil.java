@@ -181,6 +181,24 @@ public final class TRegexUtil {
     @GenerateCached(false)
     @GenerateInline
     @GenerateUncached
+    public abstract static class InvokeExecMethodWithMaxIndexNode extends Node {
+
+        public abstract Object execute(Node inliningTarget, Object compiledRegex, TruffleString input, int fromIndex, int toIndex);
+
+        @Specialization(limit = "3")
+        static Object exec(Object compiledRegex, TruffleString input, int fromIndex, int toIndex,
+                        @CachedLibrary("compiledRegex") InteropLibrary objs) {
+            try {
+                return objs.invokeMember(compiledRegex, Props.CompiledRegex.EXEC, input, fromIndex, toIndex, 0, toIndex);
+            } catch (UnsupportedMessageException | UnsupportedTypeException | ArityException | UnknownIdentifierException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
+    }
+
+    @GenerateCached(false)
+    @GenerateInline
+    @GenerateUncached
     public abstract static class ReadIsMatchNode extends Node {
         static final String IS_MATCH = "isMatch";
 
