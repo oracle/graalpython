@@ -1872,11 +1872,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         stackTop = bytecodeStoreSubscrSeqIDO(virtualFrame, stackTop, beginBci, localNodes, useCachedNodes);
                         break;
                     }
-                    case OpCodesConstants.DELETE_SUBSCR: {
-                        setCurrentBci(virtualFrame, bciSlot, bci);
-                        stackTop = bytecodeDeleteSubscr(virtualFrame, stackTop, beginBci, localNodes, useCachedNodes);
-                        break;
-                    }
                     case OpCodesConstants.RAISE_VARARGS: {
                         int count = Byte.toUnsignedInt(localBC[bci + 1]);
                         throw bytecodeRaiseVarargs(virtualFrame, stackTop, beginBci, count, localNodes);
@@ -1900,12 +1895,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         stackTop = bytecodeStoreName(virtualFrame, stackTop, beginBci, oparg, localNames, localNodes, useCachedNodes);
                         break;
                     }
-                    case OpCodesConstants.DELETE_NAME: {
-                        setCurrentBci(virtualFrame, bciSlot, bci);
-                        oparg |= Byte.toUnsignedInt(localBC[++bci]);
-                        bytecodeDeleteName(virtualFrame, globals, locals, beginBci, oparg, localNames, localNodes, useCachedNodes);
-                        break;
-                    }
                     case OpCodesConstants.STORE_ATTR: {
                         setCurrentBci(virtualFrame, bciSlot, bci);
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
@@ -1922,12 +1911,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         setCurrentBci(virtualFrame, bciSlot, bci);
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         stackTop = bytecodeStoreGlobal(virtualFrame, globals, stackTop, beginBci, oparg, localNodes, localNames, useCachedNodes);
-                        break;
-                    }
-                    case OpCodesConstants.DELETE_GLOBAL: {
-                        setCurrentBci(virtualFrame, bciSlot, bci);
-                        oparg |= Byte.toUnsignedInt(localBC[++bci]);
-                        bytecodeDeleteGlobal(virtualFrame, globals, beginBci, oparg, localNodes, localNames, useCachedNodes);
                         break;
                     }
                     case OpCodesConstants.LOAD_NAME: {
@@ -2337,6 +2320,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case OpCodesConstants.LOAD_FROM_DICT_OR_GLOBALS:
                     case OpCodesConstants.MAKE_TYPE_PARAM:
                     case OpCodesConstants.IMPORT_STAR:
+                    case OpCodesConstants.DELETE_GLOBAL:
+                    case OpCodesConstants.DELETE_NAME:
                         stackTop = infrequentBytecodes(virtualFrame, localFrame, bc, bci, stackTop, beginBci, oparg, localBC, globals, locals, localNames, localNodes, bciSlot, localCelloffset,
                                         useCachedNodes);
                         bci++;
@@ -2345,6 +2330,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case OpCodesConstants.LOAD_LOCALS:
                     case OpCodesConstants.MAKE_TYPE_ALIAS:
                     case OpCodesConstants.MAKE_GENERIC:
+                    case OpCodesConstants.DELETE_SUBSCR:
                         stackTop = infrequentBytecodes(virtualFrame, localFrame, bc, bci, stackTop, beginBci, oparg, localBC, globals, locals, localNames, localNodes, bciSlot, localCelloffset,
                                         useCachedNodes);
                         break;
@@ -2439,6 +2425,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
+    @BytecodeInterpreterSwitch
     private int infrequentBytecodes(VirtualFrame virtualFrame, Frame localFrame, byte bc, int bci, int stackTop, int beginBci, int oparg, byte[] localBC, Object globals, Object locals,
                     TruffleString[] localNames, Node[] localNodes, int bciSlot, int localCelloffset, boolean useCachedNodes) {
         switch (bc) {
@@ -2486,6 +2473,23 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 setCurrentBci(virtualFrame, bciSlot, bci);
                 oparg |= Byte.toUnsignedInt(localBC[++bci]);
                 stackTop = bytecodeImportStar(virtualFrame, stackTop, beginBci, oparg, localNames, localNodes, useCachedNodes);
+                break;
+            }
+            case OpCodesConstants.DELETE_GLOBAL: {
+                setCurrentBci(virtualFrame, bciSlot, bci);
+                oparg |= Byte.toUnsignedInt(localBC[++bci]);
+                bytecodeDeleteGlobal(virtualFrame, globals, beginBci, oparg, localNodes, localNames, useCachedNodes);
+                break;
+            }
+            case OpCodesConstants.DELETE_NAME: {
+                setCurrentBci(virtualFrame, bciSlot, bci);
+                oparg |= Byte.toUnsignedInt(localBC[++bci]);
+                bytecodeDeleteName(virtualFrame, globals, locals, beginBci, oparg, localNames, localNodes, useCachedNodes);
+                break;
+            }
+            case OpCodesConstants.DELETE_SUBSCR: {
+                setCurrentBci(virtualFrame, bciSlot, bci);
+                stackTop = bytecodeDeleteSubscr(virtualFrame, stackTop, beginBci, localNodes, useCachedNodes);
                 break;
             }
             default:
