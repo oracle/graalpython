@@ -48,6 +48,9 @@ import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -155,38 +158,32 @@ public final class ReadCallerFrameNode extends Node {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             cachedCallerFrameProfile = ConditionProfile.create();
             // executed the first time - don't pollute the profile
-            for (int i = 0; i <= level;) {
-                PFrame.Reference callerInfo = curFrameInfo.getCallerInfo();
-                if (callerInfo == null) {
-                    return getMaterializedCallerFrame(startFrameInfo, frameAccess, selector, level);
-                } else if (!selector.skip(callerInfo.getRootNode())) {
-                    i++;
-                }
-                curFrameInfo = callerInfo;
-            }
-            return curFrameInfo.getPyFrame();
+            return walkLevels(curFrameInfo, frameAccess, selector, level, ConditionProfile.getUncached());
         } else {
-            return walkLevels(curFrameInfo, frameAccess, selector, level);
+            return walkLevels(curFrameInfo, frameAccess, selector, level, cachedCallerFrameProfile);
         }
     }
 
     private PFrame getMaterializedCallerFrame(PFrame.Reference startFrameInfo, FrameInstance.FrameAccess frameAccess, FrameSelector selector, int level) {
-        StackWalkResult callerFrameResult = getCallerFrame(startFrameInfo, frameAccess, selector, level);
+        StackWalkResult callerFrameResult = getCallerFrameImpl(this, startFrameInfo, frameAccess, selector, level);
         if (callerFrameResult != null) {
-            Node location = callerFrameResult.rootNode;
-            if (location instanceof PBytecodeDSLRootNode rootNode) {
-                location = rootNode.getBytecodeNode();
+            Node location = callerFrameResult.callNode;
+            if (!(callerFrameResult.rootNode instanceof PBytecodeDSLRootNode) && location == null) {
+                // We can fixup the location like this only for other root nodes, for Bytecode DSL
+                // we need the BytecodeNode
+                location = callerFrameResult.rootNode;
             }
             return ensureMaterializeNode().execute(location, false, true, callerFrameResult.frame);
         }
         return null;
     }
 
-    private PFrame walkLevels(PFrame.Reference startFrameInfo, FrameInstance.FrameAccess frameAccess, FrameSelector selector, int level) {
+    private PFrame walkLevels(PFrame.Reference startFrameInfo, FrameInstance.FrameAccess frameAccess, FrameSelector selector, int level, ConditionProfile stackWalkProfile) {
         PFrame.Reference currentFrame = startFrameInfo;
         for (int i = 0; i <= level;) {
             PFrame.Reference callerInfo = currentFrame.getCallerInfo();
-            if (cachedCallerFrameProfile.profile(callerInfo == null || callerInfo.getPyFrame() == null)) {
+            if (stackWalkProfile.profile(callerInfo == null || (!selector.skip(callerInfo.getRootNode()) && callerInfo.getPyFrame() == null))) {
+                // The chain is broken here, we must continue using slow Truffle stack walk
                 return getMaterializedCallerFrame(startFrameInfo, frameAccess, selector, level);
             } else if (!selector.skip(callerInfo.getRootNode())) {
                 i++;
@@ -200,21 +197,21 @@ public final class ReadCallerFrameNode extends Node {
      * Walk up the stack to find the currently top Python frame. This method is mostly useful for
      * code that cannot accept a {@code VirtualFrame} parameter (e.g. library code). It is necessary
      * to provide the requesting node because it might be necessary to locate the last node with
-     * {@link IndirectCallData} that effectively executes the requesting node such that the
+     * {@link BoundaryCallData} that effectively executes the requesting node such that the
      * necessary assumptions can be invalidated to avoid deopt loops.<br/>
      * Consider following situation:<br/>
      *
      * <pre>
      *     public class SomeCaller extends PRootNode {
      *         &#64;Child private InteropLibrary lib = ...;
-     *         private final IndirectCallData indirectCallData = IndirectCallData.createFor(this);
+     *         @Child private IndirectCallData indirectCallData = IndirectCallData.createFor(this);
      *
      *         public Object execute(VirtualFrame frame, Object callee, Object[] args) {
-     *             Object state = IndirectCallContext.enter(frame, ctx, indirectCallData);
+     *             Object state = BoundaryCallContext.enter(frame, ctx, indirectCallData);
      *             try {
      *                 return lib.execute(callee, args);
      *             } finally {
-     *                 IndirectCallContext.exit(frame, ctx, state);
+     *                 BoundaryCallContext.exit(frame, ctx, state);
      *             }
      *         }
      *     }
@@ -255,8 +252,7 @@ public final class ReadCallerFrameNode extends Node {
      * Since there is no Truffle call happening, this can only be achieved if we walk the node's
      * parent chain.
      *
-     * @param requestingNode - the frame to start counting from or {@code null} to return the top
-     *            frame
+     * @param requestingNode - the top most "location" node
      * @param frameAccess - the desired {@link FrameInstance} access kind
      */
     public static Frame getCurrentFrame(Node requestingNode, FrameInstance.FrameAccess frameAccess) {
@@ -267,95 +263,105 @@ public final class ReadCallerFrameNode extends Node {
         return null;
     }
 
+    // For getting just the Truffle frame, we do not need current location
+    public static Frame getCallerFrame(PFrame.Reference startFrame, FrameInstance.FrameAccess frameAccess, FrameSelector selector, int level) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        StackWalkResult result = getFrame(null, Objects.requireNonNull(startFrame), frameAccess, selector, level);
+        return result != null ? result.frame : null;
+    }
+
+    private static StackWalkResult getCallerFrameImpl(Node location, PFrame.Reference startFrame, FrameInstance.FrameAccess frameAccess, FrameSelector selector, int level) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        return getFrame(location, Objects.requireNonNull(startFrame), frameAccess, selector, level);
+    }
+
+    /**
+     * @param callNode The call node if called from code with Python frame, or a last node set as
+     *            {@link com.oracle.truffle.api.nodes.EncapsulatingNodeReference} before an indirect
+     *            call was made. Should be an adopted AST node connected to the
+     *            {@link com.oracle.truffle.api.bytecode.BytecodeNode}, in case of Bytecode DSL, and
+     *            to a root node in any case.
+     */
+    public record StackWalkResult(PRootNode rootNode, Node callNode, Frame frame) {
+    }
+
     /**
      * Walk up the stack to find the {@code startFrame} and from then ({@code
-     * level} + 1)-times (counting only non-internal Python frames if {@code
-     * skipInternal} is true). If {@code startFrame} is {@code null}, return the currently top
-     * Python frame.
+     * level} + 1)-times (counting only Python frames according to the {@code selector}). If
+     * {@code startFrame} is {@code null}, return the currently top Python frame.
      *
-     * @param startFrame - the frame to start counting from (must not be {@code null})
+     * @param requestingNode - the node that requests the stack walk. Truffle does not give us the
+     *            "call node" for the top most frame, so the caller must provide it explicitly. If
+     *            the location is not passed, then the result may not contain the
+     *            {@link StackWalkResult#callNode()}, which is needed by, e.g.,
+     *            {@link MaterializeFrameNode}.
+     * @param startFrame - the frame to start counting from, if {@code null}, then return the first
+     *            Python frame.
      * @param frameAccess - the desired {@link FrameInstance} access kind
      * @param selector - declares which frames should be skipped or counted
      * @param level - the stack depth to go to. Ignored if {@code startFrame} is {@code null}
      */
-    public static StackWalkResult getCallerFrame(PFrame.Reference startFrame, FrameInstance.FrameAccess frameAccess, FrameSelector selector, int level) {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        return getFrame(null, Objects.requireNonNull(startFrame), frameAccess, selector, level);
-    }
-
-    public record StackWalkResult(PRootNode rootNode, Frame frame) {
-    }
-
     @TruffleBoundary
-    private static StackWalkResult getFrame(Node requestingNode, PFrame.Reference startFrame, FrameInstance.FrameAccess frameAccess, FrameSelector selector, int level) {
-        StackWalkResult[] result = new StackWalkResult[1];
-        Truffle.getRuntime().iterateFrames(new FrameInstanceVisitor<>() {
-            int i = -1;
+    public static StackWalkResult getFrame(Node requestingNode, PFrame.Reference startFrame, FrameInstance.FrameAccess frameAccess, FrameSelector selector, int level) {
+        PythonContext.setWasStackWalk();
+        return Truffle.getRuntime().iterateFrames(new FrameInstanceVisitor<>() {
+            int i = startFrame != null ? -1 : 0;
+            boolean first = true;
 
-            /**
-             * We may find the Python frame at the level we desire, but the {@link PRootNode}
-             * associated with it may have been called from a different language, and thus not be
-             * able to pass the caller frame. That means that we cannot immediately return when we
-             * find the correct level frame, but instead we need to remember the frame in
-             * {@code result} and then keep going until we find the previous Python caller on the
-             * stack (or not). That last Python caller should have {@link IndirectCallData} that
-             * will be marked to pass the frame through the context.
-             *
-             * <pre>
-             *                      ================
-             *                   ,>| IndirectCallData |
-             *                   |  ================
-             *                   | |  LLVMRootNode  |
-             *                   | |  LLVMCallNode  |
-             *                   |  ================
-             *                   |       . . .
-             *                   |  ================
-             *                   | |  LLVMRootNode  |
-             *                   | |  LLVMCallNode  |
-             *                   |  ================
-             *                    \| PythonRootNode |
-             *                      ================
-             * </pre>
-             */
             public StackWalkResult visitFrame(FrameInstance frameInstance) {
-                RootNode rootNode = getRootNode(frameInstance);
+                RootNode rootNode = ReadCallerFrameNode.getRootNode(frameInstance);
                 Node callNode = frameInstance.getCallNode();
-                boolean didMark = IndirectCallData.setEncapsulatingNeedsToPassCallerFrame(callNode != null ? callNode : requestingNode);
-                if (rootNode instanceof PRootNode pRootNode && pRootNode.setsUpCalleeContext()) {
-                    if (result[0] != null) {
-                        return result[0];
-                    }
-                    boolean needsCallerFrame = true;
-                    if (i < 0 && startFrame != null) {
-                        Frame roFrame = getFrame(frameInstance, FrameInstance.FrameAccess.READ_ONLY);
-                        if (PArguments.getCurrentFrameInfo(roFrame) == startFrame) {
-                            i = 0;
-                        }
-                    } else {
-                        // Skip frames of builtin functions (if requested) because these do not have
-                        // a Python frame in CPython.
-                        if (!selector.skip(pRootNode)) {
-                            if (i == level || startFrame == null) {
-                                Frame frame = getFrame(frameInstance, frameAccess);
-                                assert PArguments.isPythonFrame(frame);
-                                result[0] = new StackWalkResult(pRootNode, frame);
-                                needsCallerFrame = false;
-                            }
-                            i += 1;
-                        }
-                    }
-                    if (needsCallerFrame) {
-                        pRootNode.setNeedsCallerFrame();
-                    }
+                if (callNode == null && first) {
+                    // This should happen only for the top most frame, i.e., the frame that is being
+                    // executed now. Otherwise, this is a bug - we need the call node for Bytecode
+                    // DSL. In the manual interpreter, the root node is enough.
+                    callNode = requestingNode;
                 }
-                if (didMark) {
-                    return result[0];
-                } else {
+                // We must have a callNode for Bytecode DSL root nodes. If this assertion fires, it
+                // can be because of missing BoundaryCallContext.enter/exit around @TruffleBoundary
+                // calls that may call back into Python code. Look at the Java stack trace and check
+                // if all @TruffleBoundary methods are preceded by BoundaryCallContext.enter/exit
+                assert first || !(PGenerator.unwrapContinuationRoot(rootNode) instanceof PBytecodeDSLRootNode) || !PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER ||
+                                callNode != null : rootNode;
+                first = false;
+                if (!(rootNode instanceof PRootNode pRootNode && pRootNode.setsUpCalleeContext())) {
+                    // Note: any non-Python Truffle frames should have been preceded by
+                    // BoundaryCallContext.enter/exit, and the PFrame.References will be chained
+                    // through thread state. We will eventually arrive at the Python frame that did
+                    // BoundaryCallContext.enter, find the IndirectCallData via the callNode and
+                    // tell it to pass the PFrame.Reference in thread state next time
                     return null;
                 }
+                IndirectCallData.setEncapsulatingNeedsToPassCallerFrame(callNode);
+                StackWalkResult result = null;
+                if (i < 0 && startFrame != null) {
+                    // We are still looking for the start frame
+                    Frame roFrame = ReadCallerFrameNode.getFrame(frameInstance, FrameInstance.FrameAccess.READ_ONLY);
+                    if (PArguments.getCurrentFrameInfo(roFrame) == startFrame) {
+                        i = 0;
+                    }
+                } else if (i >= 0) {
+                    // We found the start frame already, or we are supposed to return the start
+                    // frame (startFrame argument was null)
+                    if (!selector.skip(pRootNode)) {
+                        if (i == level) {
+                            Frame frame = ReadCallerFrameNode.getFrame(frameInstance, frameAccess);
+                            assert PArguments.isPythonFrame(frame);
+                            return new StackWalkResult(pRootNode, callNode, frame);
+                        }
+                        i += 1;
+                    }
+                }
+                // For any Python root node we traverse we need the PFrame.Reference to be passed in
+                // call arguments next time. Builtins don't materialize PFrame, because it
+                // should not be visible to Python code anyway, but still pass the
+                // PFrame.Reference to connect the linked list of references. If we are at the frame
+                // that we need, we still need caller frame info if our frame is escaped, see
+                // CalleeContext#exitEscaped
+                pRootNode.setNeedsCallerFrame();
+                return null; // if 'null' continue iterating
             }
         });
-        return result[0];
     }
 
     private static RootNode getRootNode(FrameInstance frameInstance) {

@@ -50,8 +50,8 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
-import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool.CachedPyObjectRichCompareBool;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -328,7 +328,7 @@ public abstract class SortNodes {
                     IndirectCalleeContext.exit(threadState, state);
                 }
             } else {
-                callContext.prepareCall(frame, arguments, callTarget, this);
+                callContext.prepareCall(frame, arguments, callTarget);
                 callSortWithoutKey(array, len, callTarget, arguments);
             }
             if (reverse) {
@@ -429,7 +429,7 @@ public abstract class SortNodes {
                         IndirectCalleeContext.exit(threadState, state);
                     }
                 } else {
-                    callContext.prepareCall(frame, arguments, callTarget, this);
+                    callContext.prepareCall(frame, arguments, callTarget);
                     callSortWithKey(pairArray, len, callTarget, arguments);
                 }
             }

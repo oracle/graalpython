@@ -64,8 +64,8 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.ExecutionContext.InteropCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -606,12 +606,12 @@ public class MemoryViewNodes {
         @Specialization(guards = {"self.getReference() != null"})
         static void releaseNative(VirtualFrame frame, PMemoryView self,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") InteropCallData callData,
                         @Cached ReleaseBufferNode releaseNode,
                         @Shared("raise") @Cached PRaiseNode raiseNode) {
             self.checkExports(inliningTarget, raiseNode);
             if (self.checkShouldReleaseBuffer()) {
-                releaseNode.execute(frame, inliningTarget, indirectCallData, self.getLifecycleManager());
+                releaseNode.execute(frame, inliningTarget, callData, self.getLifecycleManager());
             }
             self.setReleased();
         }
@@ -628,12 +628,12 @@ public class MemoryViewNodes {
             MemoryViewNodesFactory.ReleaseBufferNodeGen.getUncached().execute(null, buffer);
         }
 
-        public final void execute(VirtualFrame frame, Node inliningTarget, IndirectCallData indirectCallData, BufferLifecycleManager buffer) {
-            Object state = IndirectCallContext.enter(frame, inliningTarget, indirectCallData);
+        public final void execute(VirtualFrame frame, Node inliningTarget, InteropCallData callData, BufferLifecycleManager buffer) {
+            Object state = InteropCallContext.enter(frame, inliningTarget, callData);
             try {
                 execute(inliningTarget, buffer);
             } finally {
-                IndirectCallContext.exit(frame, inliningTarget, indirectCallData, state);
+                InteropCallContext.exit(frame, inliningTarget, callData, state);
             }
         }
 

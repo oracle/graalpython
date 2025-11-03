@@ -190,7 +190,7 @@ public abstract class SliceNodes {
 
         @Specialization(guards = "length >= 0")
         PSlice.SliceInfo doSliceInt(PIntSlice slice, int length) {
-            return slice.computeIndices(length);
+            return slice.computeIndices(this, length);
         }
 
         @Specialization(guards = "length >= 0")
@@ -202,7 +202,7 @@ public abstract class SliceNodes {
             Object startIn = castStartNode.execute(frame, inliningTarget, slice.getStart());
             Object stopIn = castStopNode.execute(frame, inliningTarget, slice.getStop());
             Object stepIn = castStepNode.execute(frame, inliningTarget, slice.getStep());
-            return PObjectSlice.computeIndices(startIn, stopIn, stepIn, length);
+            return PObjectSlice.computeIndices(inliningTarget, startIn, stopIn, stepIn, length);
         }
 
         @Specialization(guards = "length < 0")

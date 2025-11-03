@@ -173,6 +173,10 @@ public abstract class SequenceNodes {
     @GenerateCached(false)
     public abstract static class GetObjectArrayNode extends Node {
 
+        public static GetObjectArrayNode getUncached() {
+            return GetObjectArrayNodeGen.getUncached();
+        }
+
         public abstract Object[] execute(Node inliningTarget, Object seq);
 
         public static Object[] executeUncached(Object seq) {

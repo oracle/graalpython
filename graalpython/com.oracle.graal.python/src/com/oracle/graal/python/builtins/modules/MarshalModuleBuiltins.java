@@ -122,8 +122,9 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
+import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -182,12 +183,12 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         static Object doit(VirtualFrame frame, Object value, Object file, int version,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PRaiseNode raiseNode) {
             PythonLanguage language = context.getLanguage(inliningTarget);
             PythonContext.PythonThreadState threadState = context.getThreadState(language);
-            Object savedState = IndirectCallContext.enter(frame, threadState, indirectCallData);
+            Object savedState = BoundaryCallContext.enter(frame, threadState, boundaryCallData);
             byte[] data;
             try {
                 data = Marshal.dump(context, value, version);
@@ -196,7 +197,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             } catch (Marshal.MarshalError me) {
                 throw raiseNode.raise(inliningTarget, me.type, me.message, me.arguments);
             } finally {
-                IndirectCallContext.exit(frame, threadState, savedState);
+                BoundaryCallContext.exit(frame, threadState, savedState);
             }
             return callMethod.execute(frame, inliningTarget, file, T_WRITE, PFactory.createBytes(language, data));
         }
@@ -215,11 +216,11 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         static Object doit(VirtualFrame frame, Object value, int version,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached PRaiseNode raiseNode) {
             PythonLanguage language = context.getLanguage(inliningTarget);
             PythonContext.PythonThreadState threadState = context.getThreadState(language);
-            Object savedState = IndirectCallContext.enter(frame, threadState, indirectCallData);
+            Object savedState = BoundaryCallContext.enter(frame, threadState, boundaryCallData);
             try {
                 return PFactory.createBytes(language, Marshal.dump(context, value, version));
             } catch (IOException e) {
@@ -227,7 +228,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             } catch (Marshal.MarshalError me) {
                 throw raiseNode.raise(inliningTarget, me.type, me.message, me.arguments);
             } finally {
-                IndirectCallContext.exit(frame, threadState, savedState);
+                BoundaryCallContext.exit(frame, threadState, savedState);
             }
         }
     }
@@ -270,7 +271,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         static Object doit(VirtualFrame frame, Object buffer,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached PRaiseNode raiseNode) {
             try {
@@ -280,7 +281,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             } catch (Marshal.MarshalError me) {
                 throw raiseNode.raise(inliningTarget, me.type, me.message, me.arguments);
             } finally {
-                bufferLib.release(buffer, frame, indirectCallData);
+                bufferLib.release(buffer, frame, callData);
             }
         }
 

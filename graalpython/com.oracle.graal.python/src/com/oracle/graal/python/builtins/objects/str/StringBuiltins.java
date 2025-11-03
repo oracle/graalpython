@@ -158,8 +158,9 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
+import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.InternalFormat;
@@ -278,7 +279,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization(guards = {"!needsNativeAllocationNode.execute(inliningTarget, cls)", "!isNoValue(encoding) || !isNoValue(errors)"}, limit = "3")
         static Object doBuffer(VirtualFrame frame, Object cls, Object obj, Object encoding, Object errors,
                         @Bind Node inliningTarget,
-                        @Exclusive @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Exclusive @Cached("createFor($node)") InteropCallData callData,
                         @SuppressWarnings("unused") @Exclusive @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
                         @Exclusive @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
                         @Exclusive @Cached InlinedConditionProfile isStringProfile,
@@ -290,7 +291,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Exclusive @Cached PRaiseNode raiseNode) {
             Object buffer;
             try {
-                buffer = acquireLib.acquireReadonly(obj, frame, indirectCallData);
+                buffer = acquireLib.acquireReadonly(obj, frame, callData);
             } catch (PException e) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.NEED_BYTELIKE_OBJ, obj);
             }
@@ -307,7 +308,7 @@ public final class StringBuiltins extends PythonBuiltins {
                 }
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.P_S_RETURNED_NON_STRING, bytesObj, "decode", result);
             } finally {
-                bufferLib.release(buffer, frame, indirectCallData);
+                bufferLib.release(buffer, frame, callData);
             }
         }
 
@@ -336,7 +337,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         "!isNoValue(encoding) || !isNoValue(errors)"}, limit = "1")
         static Object doNativeSubclassEncodeErr(VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors,
                         @SuppressWarnings("unused") @Bind Node inliningTarget,
-                        @Exclusive @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Exclusive @Cached("createFor($node)") InteropCallData callData,
                         @SuppressWarnings("unused") @Exclusive @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
                         @Shared @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
                         @Exclusive @Cached IsBuiltinClassExactProfile isPrimitiveProfile,
@@ -350,7 +351,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Exclusive @Cached PRaiseNode raiseNode) {
             Object buffer;
             try {
-                buffer = acquireLib.acquireReadonly(obj, frame, indirectCallData);
+                buffer = acquireLib.acquireReadonly(obj, frame, callData);
             } catch (PException e) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.NEED_BYTELIKE_OBJ, obj);
             }
@@ -365,7 +366,7 @@ public final class StringBuiltins extends PythonBuiltins {
                 }
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.P_S_RETURNED_NON_STRING, bytesObj, "decode", result);
             } finally {
-                bufferLib.release(buffer, frame, indirectCallData);
+                bufferLib.release(buffer, frame, callData);
             }
         }
 
@@ -461,7 +462,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         static TruffleString format(VirtualFrame frame, Object self, Object[] args, PKeyword[] kwargs,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached BuiltinFunctions.FormatNode format,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached PRaiseNode raiseNode) {
@@ -474,11 +475,11 @@ public final class StringBuiltins extends PythonBuiltins {
             TemplateFormatter template = new TemplateFormatter(string);
             PythonContext context = PythonContext.get(inliningTarget);
             PythonLanguage language = context.getLanguage(inliningTarget);
-            Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
+            Object state = BoundaryCallContext.enter(frame, language, context, boundaryCallData);
             try {
                 return template.build(inliningTarget, args, kwargs, format);
             } finally {
-                IndirectCallContext.exit(frame, language, context, state);
+                BoundaryCallContext.exit(frame, language, context, state);
             }
         }
     }
@@ -495,18 +496,18 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization
         TruffleString format(VirtualFrame frame, TruffleString self, Object mapping,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached BuiltinFunctions.FormatNode format) {
 
             TemplateFormatter template = new TemplateFormatter(self);
 
             PythonContext context = PythonContext.get(this);
             PythonLanguage language = context.getLanguage(this);
-            Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
+            Object state = BoundaryCallContext.enter(frame, language, context, boundaryCallData);
             try {
                 return template.build(this, null, mapping, format);
             } finally {
-                IndirectCallContext.exit(frame, language, context, state);
+                BoundaryCallContext.exit(frame, language, context, state);
             }
         }
     }
@@ -1922,17 +1923,17 @@ public final class StringBuiltins extends PythonBuiltins {
         static Object doGeneric(VirtualFrame frame, Object self, Object right,
                         @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Cached PyUnicodeCheckNode check,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached CastToJavaStringCheckedNode castSelfNode,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
             String selfStr = castSelfNode.cast(inliningTarget, self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, T___MOD__, self);
             PythonContext context = PythonContext.get(inliningTarget);
             PythonLanguage language = context.getLanguage(inliningTarget);
-            Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
+            Object state = BoundaryCallContext.enter(frame, language, context, boundaryCallData);
             try {
                 return fromJavaStringNode.execute(new StringFormatProcessor(context, selfStr, inliningTarget).format(assertNoJavaString(right)), TS_ENCODING);
             } finally {
-                IndirectCallContext.exit(frame, language, context, state);
+                BoundaryCallContext.exit(frame, language, context, state);
             }
         }
 

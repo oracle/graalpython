@@ -155,8 +155,8 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -627,6 +627,7 @@ public final class TypeBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         @Specialization(guards = "isImmutable(object)")
+        // No BoundaryCallContext: sllowed only on startup and from internal code
         void setBuiltin(Object object, Object key, Object value) {
             if (PythonContext.get(this).isInitialized()) {
                 throw PRaiseNode.raiseStatic(this, TypeError, ErrorMessages.CANT_SET_ATTRIBUTE_R_OF_IMMUTABLE_TYPE_N, PyObjectReprAsTruffleStringNode.executeUncached(key), object);
@@ -672,6 +673,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                         @Cached GetBaseClassNode getBase,
                         @Cached GetBestBaseClassNode getBestBase,
                         @Cached CheckCompatibleForAssigmentNode checkCompatibleForAssigment,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached IsSameTypeNode isSameTypeNode,
                         @Cached GetMroNode getMroNode,
@@ -706,7 +708,12 @@ public final class TypeBuiltins extends PythonBuiltins {
             Object oldBase = getBase.execute(inliningTarget, cls);
             checkCompatibleForAssigment.execute(frame, oldBase, newBestBase);
 
-            cls.setBases(inliningTarget, newBestBase, baseClasses);
+            Object saved = BoundaryCallContext.enter(frame, boundaryCallData);
+            try {
+                cls.setBases(inliningTarget, newBestBase, baseClasses);
+            } finally {
+                BoundaryCallContext.exit(frame, boundaryCallData, saved);
+            }
             TpSlots.updateAllSlots(cls);
 
             return PNone.NONE;
@@ -1205,13 +1212,13 @@ public final class TypeBuiltins extends PythonBuiltins {
         static PList dir(VirtualFrame frame, Object klass,
                         @Bind Node inliningTarget,
                         @Cached ConstructListNode constructListNode,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData) {
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
             PSet names = PFactory.createSet(PythonLanguage.get(inliningTarget));
-            Object state = IndirectCallContext.enter(frame, inliningTarget, indirectCallData);
+            Object state = BoundaryCallContext.enter(frame, boundaryCallData);
             try {
                 dir(names, klass);
             } finally {
-                IndirectCallContext.exit(frame, inliningTarget, indirectCallData, state);
+                BoundaryCallContext.exit(frame, boundaryCallData, state);
             }
             return constructListNode.execute(frame, names);
         }
@@ -1249,9 +1256,9 @@ public final class TypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class OrNode extends BinaryOpBuiltinNode {
         @Specialization
-        Object union(Object self, Object other,
+        Object union(VirtualFrame frame, Object self, Object other,
                         @Cached GenericTypeNodes.UnionTypeOrNode orNode) {
-            return orNode.execute(self, other);
+            return orNode.execute(frame, self, other);
         }
     }
 

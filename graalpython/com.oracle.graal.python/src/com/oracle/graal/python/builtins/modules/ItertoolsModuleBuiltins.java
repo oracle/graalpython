@@ -46,8 +46,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -74,15 +74,15 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
 
     @SuppressWarnings("this-escape")
     public abstract static class DeprecatedReduceBuiltin extends PythonUnaryBuiltinNode {
-        private final IndirectCallData indirectCallData = IndirectCallData.createFor(this);
+        @Child private BoundaryCallData boundaryCallData = BoundaryCallData.createFor(this);
 
         @Override
         public final Object execute(VirtualFrame frame, Object arg) {
-            Object saved = IndirectCallContext.enter(frame, this, indirectCallData);
+            Object saved = BoundaryCallContext.enter(frame, boundaryCallData);
             try {
                 return warnAndExecute(arg);
             } finally {
-                IndirectCallContext.exit(frame, this, indirectCallData, saved);
+                BoundaryCallContext.exit(frame, boundaryCallData, saved);
             }
         }
 
@@ -97,15 +97,15 @@ public final class ItertoolsModuleBuiltins extends PythonBuiltins {
 
     @SuppressWarnings("this-escape")
     public abstract static class DeprecatedSetStateBuiltin extends PythonBinaryBuiltinNode {
-        private final IndirectCallData indirectCallData = IndirectCallData.createFor(this);
+        @Child private BoundaryCallData boundaryCallData = BoundaryCallData.createFor(this);
 
         @Override
         public final Object execute(VirtualFrame frame, Object arg1, Object arg2) {
-            Object saved = IndirectCallContext.enter(frame, this, indirectCallData);
+            Object saved = BoundaryCallContext.enter(frame, boundaryCallData);
             try {
                 return warnAndExecute(arg1, arg2);
             } finally {
-                IndirectCallContext.exit(frame, this, indirectCallData, saved);
+                BoundaryCallContext.exit(frame, boundaryCallData, saved);
             }
         }
 

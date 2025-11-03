@@ -219,6 +219,9 @@ public final class PythonContext extends Python3Core {
     public final ArrowSupport arrowSupport = new ArrowSupport(this);
     private volatile boolean finalizing;
 
+    // Used for testing only.
+    public boolean wasStackWalk;
+
     @TruffleBoundary
     public static String getSupportLibName(PythonOS os, String libName) {
         // note: this should be aligned with MX's "lib" substitution
@@ -2818,5 +2821,10 @@ public final class PythonContext extends Python3Core {
     @TruffleBoundary
     private static void setNativeMemoryBoundary(Unsafe unsafe, long pointer, int size, byte value) {
         unsafe.setMemory(pointer, size, value);
+    }
+
+    @SuppressWarnings("AssertWithSideEffects")
+    public static void setWasStackWalk() {
+        assert (PythonContext.get(null).wasStackWalk = true);
     }
 }

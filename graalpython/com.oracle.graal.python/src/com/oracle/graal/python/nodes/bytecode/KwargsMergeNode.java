@@ -46,6 +46,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.keywords.ConcatDictToStorageNode;
 import com.oracle.graal.python.nodes.argument.keywords.NonMappingException;
 import com.oracle.graal.python.nodes.argument.keywords.SameDictKeyException;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -67,6 +68,7 @@ public abstract class KwargsMergeNode extends AbstractKwargsNode {
                     @Cached ConcatDictToStorageNode concatNode,
                     @Cached PRaiseNode raise,
                     @Cached InlinedBranchProfile keywordsError1,
+                    @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                     @Cached InlinedBranchProfile keywordsError2) {
         int stackTop = initialStackTop;
         Object mapping = frame.getObject(stackTop);
@@ -77,10 +79,10 @@ public abstract class KwargsMergeNode extends AbstractKwargsNode {
             dict.setDictStorage(resultStorage);
         } catch (SameDictKeyException e) {
             keywordsError1.enter(inliningTarget);
-            throw handleSameKey(frame, inliningTarget, raise, stackTop, e);
+            throw handleSameKey(frame, inliningTarget, boundaryCallData, raise, stackTop, e);
         } catch (NonMappingException e) {
             keywordsError2.enter(inliningTarget);
-            throw handleNonMapping(frame, inliningTarget, raise, stackTop, e);
+            throw handleNonMapping(frame, inliningTarget, boundaryCallData, raise, stackTop, e);
         }
         return stackTop;
     }

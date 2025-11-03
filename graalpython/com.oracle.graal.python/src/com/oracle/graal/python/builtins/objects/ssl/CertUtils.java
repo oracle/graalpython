@@ -111,6 +111,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class CertUtils {
@@ -176,11 +177,12 @@ public final class CertUtils {
         return keyUsage != null && keyUsage.length > 6 && keyUsage[6];
     }
 
+    // No BoundaryCallContext: constructs and raises only builtin errors
     /**
      * _ssl.c#_decode_certificate
      */
     @TruffleBoundary
-    public static PDict decodeCertificate(X509Certificate cert, PythonLanguage language) throws CertificateParsingException {
+    public static PDict decodeCertificate(Node inliningTarget, PConstructAndRaiseNode.Lazy raiseNode, X509Certificate cert, PythonLanguage language) throws CertificateParsingException {
         PDict dict = PFactory.createDict(language);
         HashingStorage storage = dict.getDictStorage();
         try {
@@ -195,7 +197,7 @@ public final class CertUtils {
             storage = setItem(storage, T_JAVA_X509_SUBJECT_ALT_NAME, parseSubjectAltName(cert, language));
             storage = setItem(storage, T_JAVA_X509_VERSION, getVersion(cert));
         } catch (RuntimeException re) {
-            throw PConstructAndRaiseNode.raiseUncachedSSLError(SSLErrorCode.ERROR_SSL, re);
+            throw raiseNode.get(inliningTarget).raiseSSLError(null, SSLErrorCode.ERROR_SSL, re);
         }
         dict.setDictStorage(storage);
         return dict;
@@ -623,8 +625,9 @@ public final class CertUtils {
         return l;
     }
 
+    // No BoundaryCallContext: constructs and raises only builtin errors
     @TruffleBoundary
-    static PrivateKey getPrivateKey(PythonContext context, BufferedReader reader, char[] password, X509Certificate cert)
+    static PrivateKey getPrivateKey(PythonContext context, Node inliningTarget, PConstructAndRaiseNode.Lazy raiseNode, BufferedReader reader, char[] password, X509Certificate cert)
                     throws NeedsPasswordException {
         PEMParser pemParser = new PEMParser(reader);
         JcaPEMKeyConverter converter = new JcaPEMKeyConverter();
@@ -661,17 +664,17 @@ public final class CertUtils {
                 break;
             }
         } catch (IOException | DecoderException | OperatorCreationException | PKCSException e) {
-            throw PConstructAndRaiseNode.raiseUncachedSSLError(SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
+            throw raiseNode.get(inliningTarget).raiseSSLError(null, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
         }
         if (privateKey == null) {
-            throw PConstructAndRaiseNode.raiseUncachedSSLError(SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
+            throw raiseNode.get(inliningTarget).raiseSSLError(null, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
         }
         PublicKey publicKey = cert.getPublicKey();
-        checkPrivateKey(context, privateKey, publicKey);
+        checkPrivateKey(inliningTarget, raiseNode, context, privateKey, publicKey);
         return privateKey;
     }
 
-    private static void checkPrivateKey(PythonContext context, PrivateKey privateKey, PublicKey publicKey) {
+    private static void checkPrivateKey(Node inliningTarget, PConstructAndRaiseNode.Lazy raiseNode, PythonContext context, PrivateKey privateKey, PublicKey publicKey) {
         /*
          * Check that the private key matches the public key by signing and verifying a short piece
          * of data.
@@ -694,11 +697,11 @@ public final class CertUtils {
                 return;
             }
         } catch (NoSuchAlgorithmException e) {
-            throw PConstructAndRaiseNode.raiseUncachedSSLError(SSLErrorCode.ERROR_SSL, e);
+            throw raiseNode.get(inliningTarget).raiseSSLError(null, SSLErrorCode.ERROR_SSL, e);
         } catch (SignatureException | InvalidKeyException e) {
             // fallthrough
         }
-        throw PConstructAndRaiseNode.raiseUncachedSSLError(SSLErrorCode.ERROR_KEY_VALUES_MISMATCH, ErrorMessages.KEY_VALUES_MISMATCH);
+        throw raiseNode.get(inliningTarget).raiseSSLError(null, SSLErrorCode.ERROR_KEY_VALUES_MISMATCH, ErrorMessages.KEY_VALUES_MISMATCH);
     }
 
     @TruffleBoundary

@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
@@ -193,7 +194,7 @@ public final class ExceptionUtils {
             for (TruffleStackTraceElement frame : stackTrace) {
                 Node location = frame.getLocation();
                 RootNode rootNode = frame.getTarget().getRootNode();
-                int lineno = getLineno(frame.getFrame(), location, null);
+                int lineno = getLineno(PGenerator.unwrapDSLGeneratorFrame(frame), location, null);
                 appendStackLine(stack, location, rootNode, false, lineno);
             }
             printStack(p, stack);

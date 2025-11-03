@@ -64,7 +64,7 @@ import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
  * the frames captured during the unwinding and then the frames that are currently on stack, i.e. it
  * expects to be called in an exception handler, otherwise the stacktrace is incorrect - it would
  * contain frames from the place where you asked for the stacktrace not the place where the
- * exception occured. Additionally, the stacktrace is frozen on the first access and from then on,
+ * exception occurred. Additionally, the stacktrace is frozen on the first access and from then on,
  * Truffle always returns its cached copy.
  * </p>
  * <p>
@@ -85,7 +85,7 @@ import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
  * exception gets reraised, either explicitly (raise statement) or implicitly (for example, at the
  * end of finally). Each of these segments needs to have their own distinct {@link PException} to
  * avoid interference, therefore a caught {@link PException} must never be rethrown after being
- * added to the traceback and it must never be added to the traceback multiple times.
+ * added to the traceback, and it must never be added to the traceback multiple times.
  * </p>
  *
  * <p>
@@ -107,7 +107,7 @@ import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
  * Try to avoid the {@link PException#getUnreifiedException()} method unless you know what you're
  * doing.</li>
  * <li>{@link PException PException} must never be rethrown after it has been possibly exposed to
- * the program, because its Truffle stacktrace may already be frozen and it would not capture more
+ * the program, because its Truffle stacktrace may already be frozen, and it would not capture more
  * frames. If you need to rethrow without the catching site appearing in the traceback, use
  * {@link PException#getExceptionForReraise(boolean)} method to obtain a fresh {@link PException
  * PException} to throw</li>

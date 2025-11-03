@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,7 +46,10 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___QUALNAME__
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 
@@ -55,8 +58,17 @@ import com.oracle.truffle.api.strings.TruffleStringBuilder;
  * {@code _PyObject_FunctionStr}.
  */
 public abstract class PyObjectFunctionStr {
+    public static TruffleString execute(VirtualFrame frame, BoundaryCallData boundaryCallData, Object function) {
+        Object saved = BoundaryCallContext.enter(frame, boundaryCallData);
+        try {
+            return executeUncached(function);
+        } finally {
+            BoundaryCallContext.exit(frame, boundaryCallData, saved);
+        }
+    }
+
     @TruffleBoundary
-    public static TruffleString execute(Object function) {
+    public static TruffleString executeUncached(Object function) {
         PyObjectStrAsTruffleStringNode asStr = PyObjectStrAsTruffleStringNode.getUncached();
         Object qualname = PyObjectLookupAttr.executeUncached(function, T___QUALNAME__);
         if (qualname == PNone.NO_VALUE) {

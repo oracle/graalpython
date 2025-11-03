@@ -115,6 +115,7 @@ public final class AtexitModuleBuiltins extends PythonBuiltins {
                 }
             }
 
+            // No BoundaryCallContext: calls only internal well-behaved Python code
             @TruffleBoundary
             private static void handleException(PythonContext context, PException e) {
                 Object pythonException = e.getEscapedException();

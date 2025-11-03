@@ -136,6 +136,8 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassExactProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.formatting.FloatFormatter;
@@ -1648,8 +1650,14 @@ public final class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static int neg(boolean arg) {
-            warnBoolInvert();
+        static int neg(VirtualFrame frame, boolean arg,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
+            Object state = BoundaryCallContext.enter(frame, boundaryCallData);
+            try {
+                warnBoolInvert();
+            } finally {
+                BoundaryCallContext.exit(frame, boundaryCallData, state);
+            }
             return ~(arg ? 1 : 0);
         }
 

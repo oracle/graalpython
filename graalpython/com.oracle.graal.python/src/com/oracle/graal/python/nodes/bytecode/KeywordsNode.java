@@ -45,6 +45,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.keywords.MappingToKeywordsNode;
 import com.oracle.graal.python.nodes.argument.keywords.NonMappingException;
 import com.oracle.graal.python.nodes.argument.keywords.SameDictKeyException;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -66,15 +67,16 @@ public abstract class KeywordsNode extends AbstractKwargsNode {
                     @Cached MappingToKeywordsNode expandKeywordStarargsNode,
                     @Cached InlinedBranchProfile keywordsError1,
                     @Cached InlinedBranchProfile keywordsError2,
+                    @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                     @Cached PRaiseNode raise) {
         try {
             return expandKeywordStarargsNode.execute(frame, inliningTarget, sourceCollection);
         } catch (SameDictKeyException e) {
             keywordsError1.enter(inliningTarget);
-            throw handleSameKey(frame, inliningTarget, raise, stackTop, e);
+            throw handleSameKey(frame, inliningTarget, boundaryCallData, raise, stackTop, e);
         } catch (NonMappingException e) {
             keywordsError2.enter(inliningTarget);
-            throw handleNonMapping(frame, inliningTarget, raise, stackTop, e);
+            throw handleNonMapping(frame, inliningTarget, boundaryCallData, raise, stackTop, e);
         }
     }
 

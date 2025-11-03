@@ -72,10 +72,10 @@ import org.bouncycastle.util.encoders.DecoderException;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Builtin;
+import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.ssl.CertUtils;
@@ -427,25 +427,26 @@ public final class SSLModuleBuiltins extends PythonBuiltins {
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                         @Cached TruffleString.EqualNode eqNode,
                         @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
-            return decode(toTruffleFile(frame, inliningTarget, asPath, path, toJavaStringNode, eqNode, constructAndRaiseNode));
+            return decode(inliningTarget, constructAndRaiseNode, toTruffleFile(frame, inliningTarget, asPath, path, toJavaStringNode, eqNode, constructAndRaiseNode));
         }
 
+        // No BoundaryCallContext: constructs and raises only builtin errors
         @TruffleBoundary
-        private Object decode(TruffleFile file) throws PException {
+        private Object decode(Node inliningTarget, PConstructAndRaiseNode.Lazy constructAndRaiseNode, TruffleFile file) throws PException {
             try (BufferedReader r = file.newBufferedReader()) {
                 List<Object> certs = CertUtils.getCertificates(r);
                 if (certs.isEmpty()) {
-                    throw PConstructAndRaiseNode.raiseUncachedSSLError(SSL_ERR_DECODING_PEM_FILE);
+                    throw constructAndRaiseNode.get(inliningTarget).raiseSSLError(null, SSL_ERR_DECODING_PEM_FILE);
                 }
                 Object cert = certs.get(0);
                 if (!(cert instanceof X509Certificate)) {
-                    throw PConstructAndRaiseNode.raiseUncachedSSLError(SSL_ERR_DECODING_PEM_FILE_UNEXPECTED_S, cert.getClass().getName());
+                    throw constructAndRaiseNode.get(inliningTarget).raiseSSLError(null, SSL_ERR_DECODING_PEM_FILE_UNEXPECTED_S, cert.getClass().getName());
                 }
-                return CertUtils.decodeCertificate((X509Certificate) certs.get(0), PythonLanguage.get(null));
+                return CertUtils.decodeCertificate(inliningTarget, constructAndRaiseNode, (X509Certificate) certs.get(0), PythonLanguage.get(null));
             } catch (IOException | DecoderException ex) {
-                throw PConstructAndRaiseNode.raiseUncachedSSLError(SSL_CANT_OPEN_FILE_S, ex.toString());
+                throw constructAndRaiseNode.get(inliningTarget).raiseSSLError(null, SSL_CANT_OPEN_FILE_S, ex.toString());
             } catch (CertificateException | CRLException ex) {
-                throw PConstructAndRaiseNode.raiseUncachedSSLError(SSL_ERR_DECODING_PEM_FILE_S, ex.toString());
+                throw constructAndRaiseNode.get(inliningTarget).raiseSSLError(null, SSL_ERR_DECODING_PEM_FILE_S, ex.toString());
             }
         }
 

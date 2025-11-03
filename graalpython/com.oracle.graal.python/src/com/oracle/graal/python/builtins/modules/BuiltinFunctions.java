@@ -261,9 +261,10 @@ import com.oracle.graal.python.pegparser.Parser;
 import com.oracle.graal.python.pegparser.ParserCallbacks;
 import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
+import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -308,7 +309,6 @@ import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.LoopNode;
@@ -991,16 +991,16 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         Object doCompile(VirtualFrame frame, TruffleString expression, TruffleString filename, TruffleString mode, int flags, boolean dontInherit, int optimize,
                         int featureVersion,
-                        @Shared @Cached ReadCallerFrameNode readCallerFrame) {
+                        @Shared @Cached ReadCallerFrameNode readCallerFrame,
+                        @Exclusive @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
             if (!dontInherit) {
                 flags = inheritFlags(frame, flags, readCallerFrame);
             }
-            EncapsulatingNodeReference encapsulating = EncapsulatingNodeReference.getCurrent();
-            Node encapsulatingNode = encapsulating.set(this);
+            Object saved = BoundaryCallContext.enter(frame, boundaryCallData);
             try {
                 return compile(expression, filename, mode, flags, dontInherit, optimize, featureVersion);
             } finally {
-                encapsulating.set(encapsulatingNode);
+                BoundaryCallContext.exit(frame, boundaryCallData, saved);
             }
         }
 
@@ -1076,7 +1076,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Bind PythonContext context,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Exclusive @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached CodecsModuleBuiltins.HandleDecodingErrorNode handleDecodingErrorNode,
                         @Cached PyObjectStrAsTruffleStringNode asStrNode,
                         @CachedLibrary("wSource") InteropLibrary interopLib,
@@ -1093,8 +1093,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 flags = inheritFlags(frame, flags, readCallerFrame);
             }
 
-            EncapsulatingNodeReference encapsulating = EncapsulatingNodeReference.getCurrent();
-            Node encapsulatingNode = encapsulating.set(this);
+            Object saved = BoundaryCallContext.enter(frame, boundaryCallData);
             try {
                 if (AstModuleBuiltins.isAst(context, wSource)) {
                     ModTy mod = AstModuleBuiltins.obj2sst(inliningTarget, context, wSource, getParserInputType(mode, flags));
@@ -1103,11 +1102,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     return wrapRootCallTarget(rootCallTarget);
                 }
                 TruffleString source = sourceAsString(frame, inliningTarget, wSource, filename, interopLib, acquireLib, bufferLib, handleDecodingErrorNode, asStrNode, switchEncodingNode,
-                                raiseNode, indirectCallData);
+                                raiseNode);
                 checkSource(source);
                 return compile(source, filename, mode, flags, dontInherit, optimize, featureVersion);
             } finally {
-                encapsulating.set(encapsulatingNode);
+                BoundaryCallContext.exit(frame, boundaryCallData, saved);
             }
         }
 
@@ -1166,7 +1165,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         // modeled after _Py_SourceAsString
         TruffleString sourceAsString(VirtualFrame frame, Node inliningTarget, Object source, TruffleString filename, InteropLibrary interopLib, PythonBufferAcquireLibrary acquireLib,
                         PythonBufferAccessLibrary bufferLib, CodecsModuleBuiltins.HandleDecodingErrorNode handleDecodingErrorNode, PyObjectStrAsTruffleStringNode asStrNode,
-                        TruffleString.SwitchEncodingNode switchEncodingNode, PRaiseNode raiseNode, IndirectCallData indirectCallData) {
+                        TruffleString.SwitchEncodingNode switchEncodingNode, PRaiseNode raiseNode) {
             if (interopLib.isString(source)) {
                 try {
                     return switchEncodingNode.execute(interopLib.asTruffleString(source), TS_ENCODING);
@@ -1178,7 +1177,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 // buffers, since that's fast for us anyway
                 Object buffer;
                 try {
-                    buffer = acquireLib.acquireReadonly(source, frame, indirectCallData);
+                    buffer = acquireLib.acquireReadonly(source, frame, InteropCallData.getUncached());
                 } catch (PException e) {
                     throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.ARG_D_MUST_BE_S, "compile()", 1, "string, bytes or AST object");
                 }
@@ -1200,7 +1199,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 } catch (PythonFileDetector.InvalidEncodingException e) {
                     throw raiseInvalidSyntax(filename, "(unicode error) %s", e.getEncodingName());
                 } finally {
-                    bufferLib.release(buffer, frame, indirectCallData);
+                    bufferLib.release(buffer, frame, InteropCallData.getUncached());
                 }
             }
         }
@@ -1351,12 +1350,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(guards = {"depth != NON_RECURSIVE", "depth >= getNodeRecursionLimit()"})
         static boolean doRecursiveWithLoop(VirtualFrame frame, Object instance, PTuple clsTuple,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Shared @Cached GetObjectArrayNode getObjectArrayNode,
                         @Cached("createNonRecursive()") RecursiveBinaryCheckBaseNode node) {
             PythonContext context = PythonContext.get(inliningTarget);
             PythonLanguage language = context.getLanguage(inliningTarget);
-            Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
+            Object state = BoundaryCallContext.enter(frame, language, context, boundaryCallData);
             try {
                 // Note: we need actual recursion to trigger the stack overflow error like CPython
                 // Note: we need fresh RecursiveBinaryCheckBaseNode and cannot use "this", because
@@ -1364,7 +1363,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 // always get a non-null frame
                 return callRecursiveWithNodeTruffleBoundary(inliningTarget, instance, clsTuple, getObjectArrayNode, node);
             } finally {
-                IndirectCallContext.exit(frame, language, context, state);
+                BoundaryCallContext.exit(frame, language, context, state);
             }
         }
 
@@ -2433,6 +2432,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         private static final TruffleString T_METACLASS = tsLiteral("metaclass");
         public static final TruffleString T_BUILD_JAVA_CLASS = tsLiteral("build_java_class");
 
+        // No BoundaryCallContext: calls only internal well-behaved Python code
         @TruffleBoundary
         private static Object buildJavaClass(Object namespace, TruffleString name, Object base) {
             // uncached PythonContext get, since this code path is slow in any case
@@ -2456,7 +2456,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         protected Object doItNonFunction(VirtualFrame frame, Object function, Object[] arguments, PKeyword[] keywords,
                         @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached CalculateMetaclassNode calculateMetaClass,
                         @Cached("create(T___PREPARE__)") GetFixedAttributeNode getPrepare,
                         @Cached PyMappingCheckNode pyMappingCheckNode,
@@ -2540,12 +2540,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     // will use the explicitly given object as it is
                 }
             }
-            Object savedState = IndirectCallContext.enter(frame, inliningTarget, indirectCallData);
+            Object savedState = BoundaryCallContext.enter(frame, language, ctx, boundaryCallData);
             InitializeBuildClass init;
             try {
                 init = new InitializeBuildClass(ctx);
             } finally {
-                IndirectCallContext.exit(frame, inliningTarget, indirectCallData, savedState);
+                BoundaryCallContext.exit(frame, language, ctx, savedState);
             }
 
             Object ns;
@@ -2625,12 +2625,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
         static Object input(VirtualFrame frame, Object prompt,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData) {
-            Object savedState = IndirectCallContext.enter(frame, inliningTarget, indirectCallData);
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
+            Object savedState = BoundaryCallContext.enter(frame, boundaryCallData);
             try {
                 return doInput(prompt, inliningTarget, context);
             } finally {
-                IndirectCallContext.exit(frame, inliningTarget, indirectCallData, savedState);
+                BoundaryCallContext.exit(frame, boundaryCallData, savedState);
             }
         }
 

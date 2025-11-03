@@ -222,7 +222,9 @@ import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNodeGen;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
@@ -597,6 +599,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @Child private CalleeContext calleeContext = CalleeContext.create();
     @Child private ExceptionStateNodes.GetCaughtExceptionNode getCaughtExceptionNode;
     @Child private ChainExceptionsNode chainExceptionsNode;
+    @Child private BoundaryCallData profilingAndTracingBoundaryCallData;
 
     private static final byte TRACE_PROFILE_LINE = 1;
     private static final byte TRACE_PROFILE_NEW_FRAME = 1 << 1;
@@ -3260,10 +3263,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         PFrame pyFrame = PArguments.getCurrentFrameInfo(virtualFrame).getPyFrame();
         if (pyFrame == null) {
             enterTraceProfile(bci, TRACE_PROFILE_NEW_FRAME);
-            return getTracingNodes().traceMaterializeFrameNewNode.execute(virtualFrame, this, true, true);
+            return getTracingNodes().traceMaterializeFrameNewNode.executeOnStack(virtualFrame, this, true, true);
         } else {
             enterTraceProfile(bci, TRACE_PROFILE_EXISTING_FRAME);
-            return getTracingNodes().traceMaterializeFrameExistingNode.execute(virtualFrame, this, true, true);
+            return getTracingNodes().traceMaterializeFrameExistingNode.executeOnStack(virtualFrame, this, true, true);
         }
     }
 
@@ -3286,7 +3289,17 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             if (line != -1) {
                 pyFrame.setLineLock(line);
             }
-            Object result = doInvokeTraceFunction(event, pyFrame, traceFn, nonNullArg);
+            if (profilingAndTracingBoundaryCallData == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                profilingAndTracingBoundaryCallData = insert(BoundaryCallData.createFor(this));
+            }
+            Object savedState = BoundaryCallContext.enter(virtualFrame, threadState, profilingAndTracingBoundaryCallData);
+            Object result;
+            try {
+                result = doInvokeTraceFunction(event, pyFrame, traceFn, nonNullArg);
+            } finally {
+                BoundaryCallContext.exit(virtualFrame, threadState, savedState);
+            }
             syncLocalsBackToFrame(virtualFrame, pyFrame, bci);
             // https://github.com/python/cpython/issues/104232
             if (useLocalFn) {
@@ -3368,7 +3381,17 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
 
         try {
-            Object result = doInvokeProfileFunction(arg, event, pyFrame, profileFun);
+            if (profilingAndTracingBoundaryCallData == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                profilingAndTracingBoundaryCallData = insert(BoundaryCallData.createFor(this));
+            }
+            Object savedState = BoundaryCallContext.enter(virtualFrame, threadState, profilingAndTracingBoundaryCallData);
+            Object result;
+            try {
+                result = doInvokeProfileFunction(arg, event, pyFrame, profileFun);
+            } finally {
+                BoundaryCallContext.exit(virtualFrame, threadState, savedState);
+            }
             syncLocalsBackToFrame(virtualFrame, pyFrame, bci);
             Object realResult = result == PNone.NONE ? null : result;
             pyFrame.setLocalTraceFun(realResult);

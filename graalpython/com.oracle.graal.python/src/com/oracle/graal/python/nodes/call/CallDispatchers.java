@@ -128,7 +128,7 @@ public class CallDispatchers {
                     IndirectCalleeContext.exit(threadState, state);
                 }
             } else {
-                callContext.prepareCall(frame, arguments, callTarget, callNode);
+                callContext.prepareCall(frame, arguments, callTarget);
                 return callNode.call(arguments);
             }
         }
@@ -167,7 +167,7 @@ public class CallDispatchers {
                     IndirectCalleeContext.exit(threadState, state);
                 }
             } else {
-                callContext.prepareIndirectCall(frame, arguments, callNode);
+                callContext.prepareIndirectCall(frame, arguments);
                 return callNode.call(callTarget, arguments);
             }
         }

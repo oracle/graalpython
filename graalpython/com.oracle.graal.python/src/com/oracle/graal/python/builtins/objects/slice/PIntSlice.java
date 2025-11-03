@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.slice;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.nodes.Node;
 
 public final class PIntSlice extends PSlice {
 
@@ -97,8 +98,8 @@ public final class PIntSlice extends PSlice {
         return stepIsNone ? PNone.NONE : step;
     }
 
-    public SliceInfo computeIndices(int length) {
-        return computeIndices(getStart(), stop, getStep(), length);
+    public SliceInfo computeIndices(Node nodeForRaise, int length) {
+        return computeIndices(nodeForRaise, getStart(), stop, getStep(), length);
     }
 
     public boolean equals(PIntSlice other) {

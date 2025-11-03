@@ -52,9 +52,9 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -71,13 +71,13 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.GetAttrBuiltinNode;
-import com.oracle.graal.python.lib.PyNumberOrNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpBuiltinNode;
-import com.oracle.graal.python.lib.RichCmpOp;
+import com.oracle.graal.python.lib.PyNumberOrNode;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
+import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
@@ -85,6 +85,8 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -122,10 +124,11 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ParametersNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object parameters(PUnionType self,
-                        @Bind PythonLanguage language) {
+        static Object parameters(VirtualFrame frame, PUnionType self,
+                        @Bind PythonLanguage language,
+                        @Cached("createFor($node)") BoundaryCallData callData) {
             if (self.getParameters() == null) {
-                self.setParameters(PFactory.createTuple(language, GenericTypeNodes.makeParameters(self.getArgs())));
+                self.setParameters(PFactory.createTuple(language, GenericTypeNodes.makeParameters(frame, callData, self.getArgs())));
             }
             return self.getParameters();
         }
@@ -135,9 +138,9 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class OrNode extends BinaryOpBuiltinNode {
         @Specialization
-        Object union(Object self, Object other,
+        Object union(VirtualFrame frame, Object self, Object other,
                         @Cached GenericTypeNodes.UnionTypeOrNode orNode) {
-            return orNode.execute(self, other);
+            return orNode.execute(frame, self, other);
         }
     }
 
@@ -147,8 +150,18 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
         private static final TruffleString SEPARATOR = tsLiteral(" | ");
 
         @Specialization
+        Object repr(VirtualFrame frame, PUnionType self,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
+            Object saved = BoundaryCallContext.enter(frame, boundaryCallData);
+            try {
+                return reprBoundary(self);
+            } finally {
+                BoundaryCallContext.exit(frame, boundaryCallData, saved);
+            }
+        }
+
         @TruffleBoundary
-        Object repr(PUnionType self) {
+        private TruffleString reprBoundary(PUnionType self) {
             TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
             SequenceStorage argsStorage = self.getArgs().getSequenceStorage();
             for (int i = 0; i < argsStorage.length(); i++) {
@@ -287,17 +300,29 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
         Object getitem(VirtualFrame frame, PUnionType self, Object item,
                         @Bind Node inliningTarget,
                         @Cached InlinedBranchProfile createProfile,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached PyNumberOrNode orNode) {
-            if (self.getParameters() == null) {
-                createProfile.enter(inliningTarget);
-                self.setParameters(PFactory.createTuple(PythonLanguage.get(inliningTarget), GenericTypeNodes.makeParameters(self.getArgs())));
+            Object saved = BoundaryCallContext.enter(frame, boundaryCallData);
+            Object[] newargs;
+            try {
+                newargs = createNewArgs(self, item, inliningTarget, createProfile);
+            } finally {
+                BoundaryCallContext.exit(frame, boundaryCallData, saved);
             }
-            Object[] newargs = GenericTypeNodes.subsParameters(this, self, self.getArgs(), self.getParameters(), item);
             Object result = newargs[0];
             for (int i = 1; i < newargs.length; i++) {
                 result = orNode.execute(frame, result, newargs[i]);
             }
             return result;
+        }
+
+        @TruffleBoundary
+        private static Object[] createNewArgs(PUnionType self, Object item, Node inliningTarget, InlinedBranchProfile createProfile) {
+            if (self.getParameters() == null) {
+                createProfile.enter(inliningTarget);
+                self.setParameters(PFactory.createTuple(PythonLanguage.get(inliningTarget), GenericTypeNodes.makeParametersUncached(self.getArgs())));
+            }
+            return GenericTypeNodes.subsParametersUncached(inliningTarget, self, self.getArgs(), self.getParameters(), item);
         }
     }
 }

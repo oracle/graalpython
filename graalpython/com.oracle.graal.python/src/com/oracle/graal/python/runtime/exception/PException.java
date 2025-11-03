@@ -76,10 +76,12 @@ import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.source.SourceSection;
 
 /**
- * Serves both as a throwable carrier of the python exception object and as a representation of the
- * exception state at a single point in the program. An important invariant is that it must never be
- * rethrown after the contained exception object has been exposed to the program, instead, a new
- * object must be created for each throw.
+ * Serves both as a throwable carrier of the python exception object ({@link PBaseException}) and as
+ * a representation of the exception state at a single point in the program. An important invariant
+ * is that it must never be rethrown after the contained exception object has been exposed to the
+ * program, instead, a new object must be created for each throw. See
+ * {@link MaterializeLazyTracebackNode} for more details on how tracebacks work and why we need to
+ * create fresh {@link PException} instances.
  */
 @ExportLibrary(value = InteropLibrary.class, delegateTo = "pythonException")
 @SuppressWarnings({"serial"})
@@ -93,23 +95,37 @@ public final class PException extends AbstractTruffleException {
     final transient Object pythonException;
     private transient PFrame.Reference frameInfo;
 
-    // This node is a manual bytecode or Bytecode DSL root node.
+    /**
+     * Root node that caught this exception object. This node is a manual bytecode or Bytecode DSL
+     * root node.
+     */
     private transient PRootNode rootNode;
-    // This node is present when using the Bytecode DSL.
+    /**
+     * Present only for Bytecode DSL interpreter. The {@link BytecodeNode} that caught this
+     * exception. For Bytecode DSL, only {@link BytecodeNode} can resolve BCI, not the root node.
+     */
     private transient BytecodeNode bytecodeNode;
 
     private int catchBci;
     private boolean reified = false;
     private boolean skipFirstTracebackFrame;
+
+    // See the docs of MaterializeLazyTracebackNode
     private int tracebackFrameCount;
 
+    private static Node validateLocation(Node location) {
+        // For Bytecode DSL root nodes the location must lead to a BytecodeNode
+        assert location == null || !(location.getRootNode() instanceof PBytecodeDSLRootNode) || BytecodeNode.get(location) != null : String.format("%s, root: %s", location, location.getRootNode());
+        return location;
+    }
+
     private PException(Object pythonException, Node node) {
-        super(node);
+        super(validateLocation(node));
         this.pythonException = pythonException;
     }
 
     private PException(Object pythonException, Node node, Throwable wrapped) {
-        super(null, wrapped, UNLIMITED_STACK_TRACE, node);
+        super(null, wrapped, UNLIMITED_STACK_TRACE, validateLocation(node));
         this.pythonException = pythonException;
         assert PyExceptionInstanceCheckNode.executeUncached(pythonException);
     }

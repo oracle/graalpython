@@ -40,10 +40,10 @@ import java.math.BigInteger;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -653,7 +653,7 @@ public final class RangeBuiltins extends PythonBuiltins {
             BigInteger rangeStart = rangeBI.getBigIntegerStart();
             BigInteger rangeStep = rangeBI.getBigIntegerStep();
 
-            SliceObjectInfo info = PObjectSlice.computeIndicesSlowPath(toBigIntSlice.execute(slice), rangeBI.getBigIntegerLength(), false);
+            SliceObjectInfo info = PObjectSlice.computeIndicesSlowPath(inliningTarget, toBigIntSlice.execute(slice), rangeBI.getBigIntegerLength(), false);
             return createRange(inliningTarget, info, rangeStart, rangeStep, lenOfRangeNode);
         }
 
@@ -688,7 +688,7 @@ public final class RangeBuiltins extends PythonBuiltins {
             BigInteger rangeStart = rangeBI.getBigIntegerStart();
             BigInteger rangeStep = rangeBI.getBigIntegerStep();
 
-            SliceObjectInfo info = PObjectSlice.computeIndicesSlowPath(toBigIntSlice.execute(slice), rangeBI.getBigIntegerLength(), false);
+            SliceObjectInfo info = PObjectSlice.computeIndicesSlowPath(inliningTarget, toBigIntSlice.execute(slice), rangeBI.getBigIntegerLength(), false);
             return createRange(inliningTarget, info, rangeStart, rangeStep, lenOfRangeNode);
         }
 

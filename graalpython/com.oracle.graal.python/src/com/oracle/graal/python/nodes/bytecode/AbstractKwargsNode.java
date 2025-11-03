@@ -47,27 +47,28 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.keywords.NonMappingException;
 import com.oracle.graal.python.nodes.argument.keywords.SameDictKeyException;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 public class AbstractKwargsNode extends PNodeWithContext {
-    protected static PException handleNonMapping(VirtualFrame frame, Node inliningTarget, PRaiseNode raise, int stackTop, NonMappingException e) {
-        Object functionName = AbstractKwargsNode.getFunctionName(frame, stackTop);
+    protected static PException handleNonMapping(VirtualFrame frame, Node inliningTarget, BoundaryCallData boundaryCallData, PRaiseNode raise, int stackTop, NonMappingException e) {
+        Object functionName = AbstractKwargsNode.getFunctionName(frame, boundaryCallData, stackTop);
         throw raise.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_MAPPING, functionName, e.getObject());
     }
 
-    protected static PException handleSameKey(VirtualFrame frame, Node inliningTarget, PRaiseNode raise, int stackTop, SameDictKeyException e) {
-        Object functionName = AbstractKwargsNode.getFunctionName(frame, stackTop);
+    protected static PException handleSameKey(VirtualFrame frame, Node inliningTarget, BoundaryCallData boundaryCallData, PRaiseNode raise, int stackTop, SameDictKeyException e) {
+        Object functionName = AbstractKwargsNode.getFunctionName(frame, boundaryCallData, stackTop);
         throw raise.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.S_GOT_MULTIPLE_VALUES_FOR_KEYWORD_ARG, functionName, e.getKey());
     }
 
-    private static Object getFunctionName(VirtualFrame frame, int stackTop) {
+    private static Object getFunctionName(VirtualFrame frame, BoundaryCallData boundaryCallData, int stackTop) {
         /*
          * The instruction is only emitted when generating CALL_FUNCTION_KW. The stack layout at
          * this point is [kwargs dict, varargs, callable].
          */
         Object callable = frame.getObject(stackTop - 2);
-        return PyObjectFunctionStr.execute(callable);
+        return PyObjectFunctionStr.execute(frame, boundaryCallData, callable);
     }
 }

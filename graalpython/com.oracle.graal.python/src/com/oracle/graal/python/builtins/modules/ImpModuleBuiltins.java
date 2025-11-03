@@ -107,9 +107,9 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinN
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -266,17 +266,17 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         static int doPythonModule(VirtualFrame frame, PythonModule extensionModule,
                         @Bind PythonContext context,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData) {
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
             Object nativeModuleDef = extensionModule.getNativeModuleDef();
             if (nativeModuleDef == null) {
                 return 0;
             }
             PythonLanguage language = context.getLanguage(inliningTarget);
-            Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
+            Object state = BoundaryCallContext.enter(frame, language, context, boundaryCallData);
             try {
                 return doExec(inliningTarget, context, extensionModule, nativeModuleDef);
             } finally {
-                IndirectCallContext.exit(frame, language, context, state);
+                BoundaryCallContext.exit(frame, language, context, state);
             }
         }
 
@@ -337,10 +337,20 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         public static final TruffleString T_LOADER = tsLiteral("loader");
 
         @Specialization
-        @TruffleBoundary
-        static Object run(PythonObject moduleSpec,
+        static Object run(VirtualFrame frame, PythonObject moduleSpec,
                         @Bind Node inliningTarget,
-                        @Bind PythonContext context) {
+                        @Bind PythonContext context,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
+            Object saved = BoundaryCallContext.enter(frame, boundaryCallData);
+            try {
+                return runBoundary(inliningTarget, context, moduleSpec);
+            } finally {
+                BoundaryCallContext.exit(frame, boundaryCallData, saved);
+            }
+        }
+
+        @TruffleBoundary
+        static Object runBoundary(Node inliningTarget, PythonContext context, PythonObject moduleSpec) {
             Object name = PyObjectLookupAttr.executeUncached(moduleSpec, T_NAME);
             TruffleString nameStr = StringNodes.CastToTruffleStringChecked0Node.getUncached().cast(null, name, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
             PythonModule builtinModule = context.lookupBuiltinModule(nameStr);
@@ -420,10 +430,12 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         static boolean run(TruffleString name,
-                        @Bind PythonContext context) {
+                        @Bind PythonContext context,
+                        @Bind Node inliningTarget,
+                        @Cached PConstructAndRaiseNode.Lazy raiseNode) {
             FrozenResult result = findFrozen(context, name);
             if (result.status != FROZEN_EXCLUDED) {
-                raiseFrozenError(result.status, name);
+                raiseFrozenError(inliningTarget, raiseNode, result.status, name);
             }
             return result.info.isPackage;
         }
@@ -447,7 +459,8 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object run(TruffleString name, Object dataObj,
                         @Bind Node inliningTarget,
-                        @Bind PythonContext context) {
+                        @Bind PythonContext context,
+                        @Cached PConstructAndRaiseNode.Lazy raiseNode) {
             FrozenInfo info;
             if (dataObj != PNone.NONE) {
                 byte[] bytes;
@@ -461,7 +474,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                 }
                 if (size == 0) {
                     /* Does not contain executable code. */
-                    raiseFrozenError(FROZEN_INVALID, name);
+                    raiseFrozenError(inliningTarget, raiseNode, FROZEN_INVALID, name);
                 }
 
                 Object code = null;
@@ -469,7 +482,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                 try {
                     code = MarshalModuleBuiltins.Marshal.load(context, bytes, size);
                 } catch (MarshalError | NumberFormatException e) {
-                    raiseFrozenError(FROZEN_INVALID, name);
+                    raiseFrozenError(inliningTarget, raiseNode, FROZEN_INVALID, name);
                 }
 
                 if (!(code instanceof PCode)) {
@@ -481,7 +494,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                 FrozenResult result = findFrozen(context, name);
                 FrozenStatus status = result.status;
                 info = result.info;
-                raiseFrozenError(status, name);
+                raiseFrozenError(inliningTarget, raiseNode, status, name);
 
                 RootCallTarget callTarget = createCallTarget(context, info);
                 return PFactory.createCode(context.getLanguage(), callTarget);
@@ -513,9 +526,12 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         @Specialization
+        // No BoundaryCallContext: creating PMemoryView from builtin PBytes, constructing and
+        // raising builtin errors
         static Object run(TruffleString name, boolean withData,
                         @Bind Node inliningTarget,
-                        @Bind PythonContext context) {
+                        @Bind PythonContext context,
+                        @Cached PConstructAndRaiseNode.Lazy raiseNode) {
             FrozenResult result = findFrozen(context, name);
             FrozenStatus status = result.status;
             FrozenInfo info = result.info;
@@ -526,7 +542,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                 case FROZEN_BAD_NAME:
                     return PNone.NONE;
                 default:
-                    raiseFrozenError(status, name);
+                    raiseFrozenError(inliningTarget, raiseNode, status, name);
             }
 
             PMemoryView data = null;
@@ -560,29 +576,42 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @TruffleBoundary
-        static PythonModule run(TruffleString name,
-                        @Bind PythonContext context) {
-            return importFrozenModuleObject(context, name, true);
+        static PythonModule run(VirtualFrame frame, TruffleString name,
+                        @Bind PythonContext context,
+                        @Bind Node inliningTarget,
+                        @Cached PConstructAndRaiseNode.Lazy raiseNode) {
+            return importFrozenModuleObject(inliningTarget, raiseNode, context, name);
         }
     }
 
     /**
      * Equivalent to CPythons PyImport_FrozenModuleObject. Initialize a frozen module. Returns the
-     * imported module, null, or raises a Python exception.
+     * imported module, null, or raises a Python exception. Use
+     * {@link #importFrozenModuleObjectNoRaise(Python3Core, TruffleString, PythonModule)} if
+     * exception should not be raised.
      */
     @TruffleBoundary
-    public static PythonModule importFrozenModuleObject(Python3Core core, TruffleString name, boolean doRaise) {
-        return importFrozenModuleObject(core, name, doRaise, null);
+    public static PythonModule importFrozenModuleObject(Node inliningTarget, PConstructAndRaiseNode.Lazy raiseNode, Python3Core core, TruffleString name) {
+        return importFrozenModuleObject(inliningTarget, raiseNode, core, name, null);
+    }
+
+    @TruffleBoundary
+    public static PythonModule importFrozenModuleObjectNoRaise(Python3Core core, TruffleString name) {
+        return importFrozenModuleObjectNoRaise(core, name, null);
+    }
+
+    @TruffleBoundary
+    public static PythonModule importFrozenModuleObjectNoRaise(Python3Core core, TruffleString name, PythonModule globals) {
+        return importFrozenModuleObject(null, null, core, name, globals);
     }
 
     /**
-     * @see #importFrozenModuleObject
+     * Uses {@code globals} if given as the globals for execution.
      *
-     *      Uses {@code globals} if given as the globals for execution.
+     * @see #importFrozenModuleObject
      */
     @TruffleBoundary
-    public static PythonModule importFrozenModuleObject(Python3Core core, TruffleString name, boolean doRaise, PythonModule globals) {
+    public static PythonModule importFrozenModuleObject(Node inliningTarget, PConstructAndRaiseNode.Lazy raiseNode, Python3Core core, TruffleString name, PythonModule globals) {
         FrozenResult result = findFrozen(core.getContext(), name);
         FrozenStatus status = result.status;
         FrozenInfo info = result.info;
@@ -593,8 +622,8 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
             case FROZEN_BAD_NAME:
                 return null;
             default:
-                if (doRaise) {
-                    raiseFrozenError(status, name);
+                if (raiseNode != null) {
+                    raiseFrozenError(inliningTarget, raiseNode, status, name);
                 } else if (status != FROZEN_OKAY) {
                     return null;
                 }
@@ -652,7 +681,8 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         return new FrozenResult(FROZEN_OKAY, info);
     }
 
-    private static void raiseFrozenError(FrozenStatus status, TruffleString moduleName) {
+    // No BoundaryCallContext: constructing and raising a builtin error
+    private static void raiseFrozenError(Node inliningTarget, PConstructAndRaiseNode.Lazy raiseNode, FrozenStatus status, TruffleString moduleName) {
         if (status == FROZEN_OKAY) {
             // There was no error.
             return;
@@ -664,7 +694,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
             case FROZEN_INVALID -> ErrorMessages.FROZEN_INVALID;
             default -> throw CompilerDirectives.shouldNotReachHere("unknown frozen status");
         };
-        throw PConstructAndRaiseNode.getUncached().raiseImportErrorWithModule(null, moduleName, PNone.NONE, message, moduleName);
+        throw raiseNode.get(inliningTarget).raiseImportErrorWithModule(null, moduleName, PNone.NONE, message, moduleName);
     }
 
     @Builtin(name = "source_hash", minNumOfPositionalArgs = 2, parameterNames = {"key", "source"})
@@ -733,13 +763,13 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         static Object run(VirtualFrame frame, PythonObject moduleSpec, @SuppressWarnings("unused") Object fileName,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData) {
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
             PythonLanguage language = context.getLanguage(inliningTarget);
-            Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
+            Object state = BoundaryCallContext.enter(frame, language, context, boundaryCallData);
             try {
                 return doCreate(moduleSpec, inliningTarget, context);
             } finally {
-                IndirectCallContext.exit(frame, language, context, state);
+                BoundaryCallContext.exit(frame, language, context, state);
             }
         }
 

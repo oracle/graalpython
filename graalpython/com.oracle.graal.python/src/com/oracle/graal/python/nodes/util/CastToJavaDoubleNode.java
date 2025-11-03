@@ -100,8 +100,8 @@ public abstract class CastToJavaDoubleNode extends PNodeWithContext {
     }
 
     @Specialization
-    double doPInt(PInt x) {
-        return x.doubleValueWithOverflow(this);
+    static double doPInt(Node inliningTarget, PInt x) {
+        return x.doubleValueWithOverflow(inliningTarget);
     }
 
     @Specialization

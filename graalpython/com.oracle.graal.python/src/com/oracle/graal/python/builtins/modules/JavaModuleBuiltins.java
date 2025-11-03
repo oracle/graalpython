@@ -73,7 +73,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.interop.InteropByteArray;
@@ -285,10 +285,12 @@ public final class JavaModuleBuiltins extends PythonBuiltins {
         private Object getAttr(VirtualFrame frame, PythonModule mod) {
             if (getAttr == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                // Note: passing VirtualFrame to TruffleBoundary methods (uncached execute) is fine,
-                // because this branch will never be compiled
-                Object javaLoader = PyObjectGetAttr.getUncached().execute(frame, null, mod, T_JAVA_PKG_LOADER);
-                getAttr = PyObjectCallMethodObjArgs.executeUncached(frame, javaLoader, T_MAKE_GETATTR, T_JAVA);
+                // Note: passing VirtualFrame to TruffleBoundary methods (uncached execute) is not
+                // fine in Bytecode DSL. We assume that direct calls are connected to AST, because
+                // we need the current BytecodeNode to materialize the frame properly, see assertion
+                // in CallContext$PassCallerFrameNode
+                Object javaLoader = PyObjectGetAttr.getUncached().execute(null, null, mod, T_JAVA_PKG_LOADER);
+                getAttr = PyObjectCallMethodObjArgs.executeUncached(null, javaLoader, T_MAKE_GETATTR, T_JAVA);
             }
             return getAttr;
         }
@@ -310,14 +312,14 @@ public final class JavaModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isBytes(object)", limit = "3")
         static Object doBuffer(VirtualFrame frame, Object object,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary("object") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
-            Object buffer = acquireLib.acquireReadonly(object, frame, indirectCallData);
+            Object buffer = acquireLib.acquireReadonly(object, frame, callData);
             try {
                 return new InteropByteArray(bufferLib.getCopiedByteArray(object));
             } finally {
-                bufferLib.release(buffer, frame, indirectCallData);
+                bufferLib.release(buffer, frame, callData);
             }
         }
     }

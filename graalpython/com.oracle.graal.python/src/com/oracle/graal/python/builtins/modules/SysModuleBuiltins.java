@@ -44,6 +44,9 @@ import static com.oracle.graal.python.PythonLanguage.J_GRAALPYTHON_ID;
 import static com.oracle.graal.python.PythonLanguage.RELEASE_LEVEL;
 import static com.oracle.graal.python.PythonLanguage.RELEASE_SERIAL;
 import static com.oracle.graal.python.PythonLanguage.T_GRAALPYTHON_ID;
+import static com.oracle.graal.python.PythonLanguage.getPythonOS;
+import static com.oracle.graal.python.annotations.PythonOS.PLATFORM_DARWIN;
+import static com.oracle.graal.python.annotations.PythonOS.PLATFORM_WIN32;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ImportError;
@@ -52,9 +55,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeWar
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.UnicodeEncodeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.annotations.PythonOS.PLATFORM_DARWIN;
-import static com.oracle.graal.python.annotations.PythonOS.PLATFORM_WIN32;
-import static com.oracle.graal.python.PythonLanguage.getPythonOS;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_BUFFER;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_ENCODING;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_MODE;
@@ -63,21 +63,20 @@ import static com.oracle.graal.python.builtins.modules.io.IONodes.T_W;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyObject__ob_refcnt;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.cat;
-import static com.oracle.graal.python.lib.PyTraceBackPrintNode.castToString;
-import static com.oracle.graal.python.lib.PyTraceBackPrintNode.classNameNoDot;
-import static com.oracle.graal.python.lib.PyTraceBackPrintNode.fileFlush;
-import static com.oracle.graal.python.lib.PyTraceBackPrintNode.fileWriteString;
-import static com.oracle.graal.python.lib.PyTraceBackPrintNode.getExceptionTraceback;
-import static com.oracle.graal.python.lib.PyTraceBackPrintNode.getObjectClass;
-import static com.oracle.graal.python.lib.PyTraceBackPrintNode.getTypeName;
-import static com.oracle.graal.python.lib.PyTraceBackPrintNode.longAsInt;
-import static com.oracle.graal.python.lib.PyTraceBackPrintNode.objectHasAttr;
-import static com.oracle.graal.python.lib.PyTraceBackPrintNode.objectLookupAttr;
-import static com.oracle.graal.python.lib.PyTraceBackPrintNode.objectLookupAttrAsString;
-import static com.oracle.graal.python.lib.PyTraceBackPrintNode.objectRepr;
-import static com.oracle.graal.python.lib.PyTraceBackPrintNode.objectStr;
-import static com.oracle.graal.python.lib.PyTraceBackPrintNode.setExceptionTraceback;
-import static com.oracle.graal.python.lib.PyTraceBackPrintNode.tryCastToString;
+import static com.oracle.graal.python.lib.PyTraceBackPrint.castToString;
+import static com.oracle.graal.python.lib.PyTraceBackPrint.classNameNoDot;
+import static com.oracle.graal.python.lib.PyTraceBackPrint.fileFlush;
+import static com.oracle.graal.python.lib.PyTraceBackPrint.fileWriteString;
+import static com.oracle.graal.python.lib.PyTraceBackPrint.getExceptionTraceback;
+import static com.oracle.graal.python.lib.PyTraceBackPrint.getObjectClass;
+import static com.oracle.graal.python.lib.PyTraceBackPrint.getTypeName;
+import static com.oracle.graal.python.lib.PyTraceBackPrint.objectHasAttr;
+import static com.oracle.graal.python.lib.PyTraceBackPrint.objectLookupAttr;
+import static com.oracle.graal.python.lib.PyTraceBackPrint.objectLookupAttrAsString;
+import static com.oracle.graal.python.lib.PyTraceBackPrint.objectRepr;
+import static com.oracle.graal.python.lib.PyTraceBackPrint.objectStr;
+import static com.oracle.graal.python.lib.PyTraceBackPrint.setExceptionTraceback;
+import static com.oracle.graal.python.lib.PyTraceBackPrint.tryCastToString;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_BREAKPOINTHOOK;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_DISPLAYHOOK;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_EXCEPTHOOK;
@@ -150,11 +149,11 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.annotations.Builtin;
+import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltinsClinicProviders.GetFrameNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltinsClinicProviders.SetDlopenFlagsClinicProviderGen;
 import com.oracle.graal.python.builtins.modules.io.BufferedReaderBuiltins;
@@ -189,6 +188,7 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
+import com.oracle.graal.python.builtins.objects.traceback.TracebackBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
@@ -198,6 +198,7 @@ import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyFloatCheckExactNode;
 import com.oracle.graal.python.lib.PyImportImport;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
+import com.oracle.graal.python.lib.PyLongAsIntNodeGen;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
@@ -205,7 +206,7 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
-import com.oracle.graal.python.lib.PyTraceBackPrintNode;
+import com.oracle.graal.python.lib.PyTraceBackPrint;
 import com.oracle.graal.python.lib.PyTupleCheckNode;
 import com.oracle.graal.python.lib.PyTupleGetItem;
 import com.oracle.graal.python.lib.PyUnicodeAsEncodedString;
@@ -229,6 +230,8 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -237,7 +240,6 @@ import com.oracle.graal.python.runtime.formatting.IntegerFormatter;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.CharsetMapping;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.Truffle;
@@ -254,7 +256,6 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
-import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -1240,37 +1241,28 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                     "* object: Object causing the exception, can be None.")
     @GenerateNodeFactory
     abstract static class UnraisableHookNode extends PythonBuiltinNode {
-        @Child private PyTraceBackPrintNode pyTraceBackPrintNode;
 
-        private void printTraceBack(VirtualFrame frame, PythonModule sys, Object out, Object tb) {
-            if (pyTraceBackPrintNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                pyTraceBackPrintNode = insert(PyTraceBackPrintNode.create());
-            }
-            pyTraceBackPrintNode.execute(frame, sys, out, tb);
-        }
-
-        private void writeUnraisableExc(MaterializedFrame frame, PythonModule sys, Object out,
-                        Object excType, Object excValue, Object excTb, Object errMsg, Object obj) {
+        private void writeUnraisableExc(Node inliningTarget, TracebackBuiltins.GetTracebackFrameNode getTbFrameNode, TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStNode,
+                        PythonModule sys, Object out, Object excType, Object excValue, Object excTb, Object errMsg, Object obj) {
             if (obj != PNone.NONE) {
                 if (errMsg != PNone.NONE) {
-                    PyTraceBackPrintNode.fileWriteObject(frame, out, errMsg, true);
-                    fileWriteString(frame, out, ": ");
+                    PyTraceBackPrint.fileWriteObject(out, errMsg, true);
+                    PyTraceBackPrint.fileWriteString(out, ": ");
                 } else {
-                    fileWriteString(frame, out, "Exception ignored in: ");
+                    PyTraceBackPrint.fileWriteString(out, "Exception ignored in: ");
                 }
 
-                if (!PyTraceBackPrintNode.fileWriteObject(frame, out, obj, false)) {
-                    fileWriteString(frame, out, "<object repr() failed>");
+                if (!PyTraceBackPrint.fileWriteObject(out, obj, false)) {
+                    PyTraceBackPrint.fileWriteString(out, "<object repr() failed>");
                 }
-                fileWriteString(frame, out, T_NEWLINE);
+                fileWriteString(out, T_NEWLINE);
             } else if (errMsg != PNone.NONE) {
-                PyTraceBackPrintNode.fileWriteObject(frame, out, errMsg, true);
-                fileWriteString(frame, out, ":\n");
+                PyTraceBackPrint.fileWriteObject(out, errMsg, true);
+                PyTraceBackPrint.fileWriteString(out, ":\n");
             }
 
             if (excTb != PNone.NONE) {
-                printTraceBack(frame, sys, out, excTb);
+                PyTraceBackPrint.print(inliningTarget, getTbFrameNode, materializeStNode, sys, out, excTb);
             }
 
             if (excType == PNone.NONE) {
@@ -1285,39 +1277,43 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                 className = null;
             }
             TruffleString moduleName;
-            Object v = objectLookupAttr(frame, excType, T___MODULE__);
+            Object v = objectLookupAttr(excType, T___MODULE__);
             if (v == PNone.NO_VALUE || !PGuards.isString(v)) {
-                fileWriteString(frame, out, T_VALUE_UNKNOWN);
+                fileWriteString(out, T_VALUE_UNKNOWN);
             } else {
                 moduleName = castToString(v);
                 if (!moduleName.equalsUncached(T_BUILTINS, TS_ENCODING)) {
-                    fileWriteString(frame, out, moduleName);
-                    fileWriteString(frame, out, T_DOT);
+                    fileWriteString(out, moduleName);
+                    fileWriteString(out, T_DOT);
                 }
             }
             if (className == null) {
-                fileWriteString(frame, out, T_VALUE_UNKNOWN);
+                fileWriteString(out, T_VALUE_UNKNOWN);
             } else {
-                fileWriteString(frame, out, className);
+                fileWriteString(out, className);
             }
 
             if (excValue != PNone.NONE) {
                 // only print colon if the str() of the object is not the empty string
-                fileWriteString(frame, out, ": ");
-                if (!PyTraceBackPrintNode.fileWriteObject(frame, out, excValue, true)) {
-                    fileWriteString(frame, out, "<exception str() failed>");
+                PyTraceBackPrint.fileWriteString(out, ": ");
+                if (!PyTraceBackPrint.fileWriteObject(out, excValue, true)) {
+                    PyTraceBackPrint.fileWriteString(out, "<exception str() failed>");
                 }
             }
 
-            fileWriteString(frame, out, T_NEWLINE);
+            fileWriteString(out, T_NEWLINE);
         }
 
         @Specialization
         Object doit(VirtualFrame frame, PythonModule sys, Object args,
                         @Bind Node inliningTarget,
+                        @Cached GetClassNode getClassNode,
                         @Cached PyTupleGetItem getItemNode,
-                        @Cached PRaiseNode raiseNode) {
-            final Object cls = getObjectClass(args);
+                        @Cached PRaiseNode raiseNode,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
+                        @Cached TracebackBuiltins.GetTracebackFrameNode getTbFrameNode,
+                        @Cached TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStNode) {
+            final Object cls = getClassNode.execute(inliningTarget, args);
             if (cls != PythonBuiltinClassType.PUnraisableHookArgs) {
                 throw raiseNode.raise(inliningTarget, TypeError, ARG_TYPE_MUST_BE, "sys.unraisablehook", "UnraisableHookArgs");
             }
@@ -1327,11 +1323,21 @@ public final class SysModuleBuiltins extends PythonBuiltins {
             final Object errMsg = getItemNode.execute(inliningTarget, args, 3);
             final Object obj = getItemNode.execute(inliningTarget, args, 4);
 
-            Object stdErr = objectLookupAttr(frame, sys, T_STDERR);
-            final MaterializedFrame materializedFrame = frame.materialize();
-            writeUnraisableExc(materializedFrame, sys, stdErr, excType, excValue, excTb, errMsg, obj);
-            fileFlush(materializedFrame, stdErr);
+            Object saved = BoundaryCallContext.enter(frame, boundaryCallData);
+            try {
+                writeUnraisableExc(inliningTarget, getTbFrameNode, materializeStNode, sys, excType, excValue, excTb, errMsg, obj);
+            } finally {
+                BoundaryCallContext.exit(frame, boundaryCallData, saved);
+            }
             return PNone.NONE;
+        }
+
+        @TruffleBoundary
+        private void writeUnraisableExc(Node inliningTarget, TracebackBuiltins.GetTracebackFrameNode getTbFrameNode, TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStNode,
+                        PythonModule sys, Object excType, Object excValue, Object excTb, Object errMsg, Object obj) {
+            Object stdErr = objectLookupAttr(sys, T_STDERR);
+            writeUnraisableExc(inliningTarget, getTbFrameNode, materializeStNode, sys, stdErr, excType, excValue, excTb, errMsg, obj);
+            fileFlush(stdErr);
         }
     }
 
@@ -1349,16 +1355,6 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         static final TruffleString T_ATTR_LINENO = tsInternedLiteral("lineno");
         static final TruffleString T_ATTR_OFFSET = tsInternedLiteral("offset");
         static final TruffleString T_ATTR_TEXT = tsInternedLiteral("text");
-
-        @Child private PyTraceBackPrintNode pyTraceBackPrintNode;
-
-        private void printTraceBack(VirtualFrame frame, PythonModule sys, Object out, Object tb) {
-            if (pyTraceBackPrintNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                pyTraceBackPrintNode = insert(PyTraceBackPrintNode.create());
-            }
-            pyTraceBackPrintNode.execute(frame, sys, out, tb);
-        }
 
         @ValueType
         static final class SyntaxErrData {
@@ -1379,40 +1375,40 @@ public final class SysModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        private static SyntaxErrData parseSyntaxError(MaterializedFrame frame, Object err) {
+        private static SyntaxErrData parseSyntaxError(Object err) {
             Object v, msg;
             TruffleString fileName = null, text = null;
             int lineNo = 0, offset = 0, hold;
 
             // new style errors. `err' is an instance
-            msg = objectLookupAttr(frame, err, T_ATTR_MSG);
+            msg = objectLookupAttr(err, T_ATTR_MSG);
             if (msg == PNone.NO_VALUE) {
                 return new SyntaxErrData(null, fileName, lineNo, offset, text, true);
             }
 
-            v = objectLookupAttr(frame, err, T_ATTR_FILENAME);
+            v = objectLookupAttr(err, T_ATTR_FILENAME);
             if (v == PNone.NO_VALUE) {
                 return new SyntaxErrData(msg, fileName, lineNo, offset, text, true);
             }
             if (v == PNone.NONE) {
                 fileName = T_STRING_SOURCE;
             } else {
-                fileName = castToString(objectStr(frame, v));
+                fileName = castToString(objectStr(v));
             }
 
-            v = objectLookupAttr(frame, err, T_ATTR_LINENO);
+            v = objectLookupAttr(err, T_ATTR_LINENO);
             if (v == PNone.NO_VALUE) {
                 return new SyntaxErrData(msg, fileName, lineNo, offset, text, true);
             }
             try {
-                hold = longAsInt(frame, v);
+                hold = PyLongAsIntNodeGen.getUncached().execute(null, null, v);
             } catch (PException pe) {
                 return new SyntaxErrData(msg, fileName, lineNo, offset, text, true);
             }
 
             lineNo = hold;
 
-            v = objectLookupAttr(frame, err, T_ATTR_OFFSET);
+            v = objectLookupAttr(err, T_ATTR_OFFSET);
             if (v == PNone.NO_VALUE) {
                 return new SyntaxErrData(msg, fileName, lineNo, offset, text, true);
             }
@@ -1420,14 +1416,14 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                 offset = -1;
             } else {
                 try {
-                    hold = longAsInt(frame, v);
+                    hold = PyLongAsIntNodeGen.getUncached().execute(null, null, v);
                 } catch (PException pe) {
                     return new SyntaxErrData(msg, fileName, lineNo, offset, text, true);
                 }
                 offset = hold;
             }
 
-            v = objectLookupAttr(frame, err, T_ATTR_TEXT);
+            v = objectLookupAttr(err, T_ATTR_TEXT);
             if (v == PNone.NO_VALUE) {
                 return new SyntaxErrData(msg, fileName, lineNo, offset, text, true);
             }
@@ -1440,8 +1436,8 @@ public final class SysModuleBuiltins extends PythonBuiltins {
             return new SyntaxErrData(msg, fileName, lineNo, offset, text, false);
         }
 
-        private static void printErrorText(VirtualFrame frame, Object out, SyntaxErrData syntaxErrData) {
-            TruffleString text = castToString(objectStr(frame, syntaxErrData.text));
+        private static void printErrorText(Object out, SyntaxErrData syntaxErrData) {
+            TruffleString text = castToString(objectStr(syntaxErrData.text));
             int textLen = text.codePointLengthUncached(TS_ENCODING);
             int offset = syntaxErrData.offset;
 
@@ -1473,23 +1469,24 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                 }
             }
 
-            fileWriteString(frame, out, "    ");
-            fileWriteString(frame, out, text);
+            PyTraceBackPrint.fileWriteString(out, "    ");
+            fileWriteString(out, text);
             if (text.isEmpty() || text.codePointAtIndexUncached(text.codePointLengthUncached(TS_ENCODING) - 1, TS_ENCODING) != '\n') {
-                fileWriteString(frame, out, T_NEWLINE);
+                fileWriteString(out, T_NEWLINE);
             }
             if (offset == -1) {
                 return;
             }
-            fileWriteString(frame, out, "    ");
+            PyTraceBackPrint.fileWriteString(out, "    ");
             while (--offset > 0) {
-                fileWriteString(frame, out, " ");
+                PyTraceBackPrint.fileWriteString(out, " ");
             }
-            fileWriteString(frame, out, "^\n");
+            PyTraceBackPrint.fileWriteString(out, "^\n");
         }
 
         @TruffleBoundary
-        void printExceptionRecursive(MaterializedFrame frame, PythonModule sys, Object out, Object value, Set<Object> seen) {
+        void printExceptionRecursive(Node inliningTarget, TracebackBuiltins.GetTracebackFrameNode getTbFrameNode, TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStNode,
+                        PythonModule sys, Object out, Object value, Set<Object> seen) {
             if (seen != null) {
                 // Exception chaining
                 add(seen, value);
@@ -1499,47 +1496,48 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
                     if (cause != PNone.NONE) {
                         if (notSeen(seen, cause)) {
-                            printExceptionRecursive(frame, sys, out, cause, seen);
-                            fileWriteString(frame, out, T_CAUSE_MESSAGE);
+                            printExceptionRecursive(inliningTarget, getTbFrameNode, materializeStNode, sys, out, cause, seen);
+                            fileWriteString(out, T_CAUSE_MESSAGE);
                         }
                     } else if (context != PNone.NONE && !ExceptionNodes.GetSuppressContextNode.executeUncached(value)) {
                         if (notSeen(seen, context)) {
-                            printExceptionRecursive(frame, sys, out, context, seen);
-                            fileWriteString(frame, out, T_CONTEXT_MESSAGE);
+                            printExceptionRecursive(inliningTarget, getTbFrameNode, materializeStNode, sys, out, context, seen);
+                            fileWriteString(out, T_CONTEXT_MESSAGE);
                         }
                     }
                 }
             }
-            printException(frame, sys, out, value);
+            printException(inliningTarget, getTbFrameNode, materializeStNode, sys, out, value);
         }
 
-        protected void printException(MaterializedFrame frame, PythonModule sys, Object out, Object excValue) {
+        protected void printException(Node inliningTarget, TracebackBuiltins.GetTracebackFrameNode getTbFrameNode, TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStNode,
+                        PythonModule sys, Object out, Object excValue) {
             Object value = excValue;
             final Object type = getObjectClass(value);
             if (!PyExceptionInstanceCheckNode.executeUncached(value)) {
-                fileWriteString(frame, out, "TypeError: print_exception(): Exception expected for value, ");
-                fileWriteString(frame, out, getTypeName(type));
-                fileWriteString(frame, out, " found\n");
+                PyTraceBackPrint.fileWriteString(out, "TypeError: print_exception(): Exception expected for value, ");
+                fileWriteString(out, getTypeName(type));
+                PyTraceBackPrint.fileWriteString(out, " found\n");
                 return;
             }
 
             final Object tb = getExceptionTraceback(value);
             if (tb instanceof PTraceback) {
-                printTraceBack(frame, sys, out, tb);
+                PyTraceBackPrint.print(inliningTarget, getTbFrameNode, materializeStNode, sys, out, tb);
             }
 
-            if (objectHasAttr(frame, value, T_ATTR_PRINT_FILE_AND_LINE)) {
+            if (objectHasAttr(value, T_ATTR_PRINT_FILE_AND_LINE)) {
                 // SyntaxError case
-                final SyntaxErrData syntaxErrData = parseSyntaxError(frame, value);
+                final SyntaxErrData syntaxErrData = parseSyntaxError(value);
                 if (!syntaxErrData.err) {
                     value = syntaxErrData.message;
                     StringBuilder sb = newStringBuilder("  File \"");
-                    append(sb, castToString(objectStr(frame, syntaxErrData.fileName)), "\", line ", syntaxErrData.lineNo, "\n");
-                    fileWriteString(frame, out, sbToString(sb));
+                    append(sb, castToString(objectStr(syntaxErrData.fileName)), "\", line ", syntaxErrData.lineNo, "\n");
+                    PyTraceBackPrint.fileWriteString(out, sbToString(sb));
 
                     // Can't be bothered to check all those PyFile_WriteString() calls
                     if (syntaxErrData.text != null) {
-                        printErrorText(frame, out, syntaxErrData);
+                        printErrorText(out, syntaxErrData);
                     }
                 }
             }
@@ -1552,37 +1550,37 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                 className = null;
             }
             TruffleString moduleName;
-            Object v = objectLookupAttr(frame, type, T___MODULE__);
+            Object v = objectLookupAttr(type, T___MODULE__);
             if (v == PNone.NO_VALUE || !PGuards.isString(v)) {
-                fileWriteString(frame, out, T_VALUE_UNKNOWN);
+                fileWriteString(out, T_VALUE_UNKNOWN);
             } else {
                 moduleName = castToString(v);
                 if (!moduleName.equalsUncached(T_BUILTINS, TS_ENCODING)) {
-                    fileWriteString(frame, out, moduleName);
-                    fileWriteString(frame, out, T_DOT);
+                    fileWriteString(out, moduleName);
+                    fileWriteString(out, T_DOT);
                 }
             }
             if (className == null) {
-                fileWriteString(frame, out, T_VALUE_UNKNOWN);
+                fileWriteString(out, T_VALUE_UNKNOWN);
             } else {
-                fileWriteString(frame, out, className);
+                fileWriteString(out, className);
             }
 
             if (value != PNone.NONE) {
                 // only print colon if the str() of the object is not the empty string
-                v = objectStr(frame, value);
+                v = objectStr(value);
                 TruffleString s = tryCastToString(v);
                 if (v == PNone.NONE) {
-                    fileWriteString(frame, out, ": <exception str() failed>");
+                    PyTraceBackPrint.fileWriteString(out, ": <exception str() failed>");
                 } else if (!PGuards.isString(v) || (s != null && !s.isEmpty())) {
-                    fileWriteString(frame, out, ": ");
+                    PyTraceBackPrint.fileWriteString(out, ": ");
                 }
                 if (s != null) {
-                    fileWriteString(frame, out, s);
+                    fileWriteString(out, s);
                 }
             }
 
-            fileWriteString(frame, out, T_NEWLINE);
+            fileWriteString(out, T_NEWLINE);
         }
 
         @TruffleBoundary(allowInlining = true)
@@ -1619,24 +1617,50 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doHookWithTb(VirtualFrame frame, PythonModule sys, @SuppressWarnings("unused") Object excType, Object value, PTraceback traceBack) {
-            setExceptionTraceback(value, traceBack);
-            final MaterializedFrame materializedFrame = frame.materialize();
-            Object stdErr = objectLookupAttr(materializedFrame, sys, T_STDERR);
-            printExceptionRecursive(materializedFrame, sys, stdErr, value, createSet());
-            fileFlush(materializedFrame, stdErr);
-
+        Object doHookWithTb(VirtualFrame frame, PythonModule sys, @SuppressWarnings("unused") Object excType, Object value, PTraceback traceBack,
+                        @Bind Node inliningTarget,
+                        @Shared @Cached TracebackBuiltins.GetTracebackFrameNode getTbFrameNode,
+                        @Shared @Cached TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStNode,
+                        @Shared @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
+            Object saved = BoundaryCallContext.enter(frame, boundaryCallData);
+            try {
+                doHookWithTbImpl(inliningTarget, getTbFrameNode, materializeStNode, sys, value, traceBack);
+            } finally {
+                BoundaryCallContext.exit(frame, boundaryCallData, saved);
+            }
             return PNone.NONE;
         }
 
-        @Specialization(guards = "!isPTraceback(traceBack)")
-        Object doHookWithoutTb(VirtualFrame frame, PythonModule sys, @SuppressWarnings("unused") Object excType, Object value, @SuppressWarnings("unused") Object traceBack) {
-            final MaterializedFrame materializedFrame = frame.materialize();
-            Object stdErr = objectLookupAttr(materializedFrame, sys, T_STDERR);
-            printExceptionRecursive(materializedFrame, sys, stdErr, value, createSet());
-            fileFlush(materializedFrame, stdErr);
+        @TruffleBoundary
+        private void doHookWithTbImpl(Node inliningTarget, TracebackBuiltins.GetTracebackFrameNode getTbFrameNode, TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStNode,
+                        PythonModule sys, Object value, PTraceback traceBack) {
+            setExceptionTraceback(value, traceBack);
+            Object stdErr = objectLookupAttr(sys, T_STDERR);
+            printExceptionRecursive(inliningTarget, getTbFrameNode, materializeStNode, sys, stdErr, value, createSet());
+            fileFlush(stdErr);
+        }
 
+        @Specialization(guards = "!isPTraceback(traceBack)")
+        Object doHookWithoutTb(VirtualFrame frame, PythonModule sys, @SuppressWarnings("unused") Object excType, Object value, @SuppressWarnings("unused") Object traceBack,
+                        @Bind Node inliningTarget,
+                        @Shared @Cached TracebackBuiltins.GetTracebackFrameNode getTbFrameNode,
+                        @Shared @Cached TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStNode,
+                        @Shared @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
+            Object saved = BoundaryCallContext.enter(frame, boundaryCallData);
+            try {
+                doHookWithoutTbImpl(inliningTarget, getTbFrameNode, materializeStNode, sys, value);
+            } finally {
+                BoundaryCallContext.exit(frame, boundaryCallData, saved);
+            }
             return PNone.NONE;
+        }
+
+        @TruffleBoundary
+        private void doHookWithoutTbImpl(Node inliningTarget, TracebackBuiltins.GetTracebackFrameNode getTbFrameNode, TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStNode,
+                        PythonModule sys, Object value) {
+            Object stdErr = objectLookupAttr(sys, T_STDERR);
+            printExceptionRecursive(inliningTarget, getTbFrameNode, materializeStNode, sys, stdErr, value, createSet());
+            fileFlush(stdErr);
         }
     }
 
@@ -1720,6 +1744,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object doHook(VirtualFrame frame, Object[] args, PKeyword[] keywords,
                         @Bind Node inliningTarget,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached CallNode callNode,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached PyImportImport importNode,
@@ -1730,7 +1755,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                         @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
                         @Cached TruffleString.LastIndexOfCodePointNode lastIndexOfCodePointNode,
                         @Cached TruffleString.SubstringNode substringNode) {
-            TruffleString hookName = OsEnvironGetNode.executeUncached(T_PYTHONBREAKPOINT);
+            TruffleString hookName = OsEnvironGetNode.lookup(frame, boundaryCallData, T_PYTHONBREAKPOINT);
             if (hookName == null || hookName.isEmpty()) {
                 hookName = T_VAL_PDB_SETTRACE;
             }

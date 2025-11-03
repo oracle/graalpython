@@ -47,7 +47,7 @@ import com.oracle.graal.python.annotations.ClinicConverterFactory.BuiltinName;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Bind;
@@ -70,11 +70,11 @@ public abstract class WritableBufferConversionNode extends ArgumentCastNode {
     Object doObject(VirtualFrame frame, Object value,
                     @Bind Node inliningTarget,
                     @Bind PythonContext context,
-                    @Cached("createFor($node)") IndirectCallData indirectCallData,
+                    @Cached("createFor($node)") InteropCallData callData,
                     @CachedLibrary("value") PythonBufferAcquireLibrary acquireLib,
                     @Cached PRaiseNode raiseNode) {
         try {
-            return acquireLib.acquireWritable(value, frame, context, context.getLanguage(inliningTarget), indirectCallData);
+            return acquireLib.acquireWritable(value, frame, context, context.getLanguage(inliningTarget), callData);
         } catch (PException e) {
             throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_BRACKETS_ARG_MUST_BE_READ_WRITE_BYTES_LIKE_NOT_P, builtinName, value);
         }

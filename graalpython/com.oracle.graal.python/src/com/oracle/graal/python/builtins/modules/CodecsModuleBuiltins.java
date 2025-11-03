@@ -148,7 +148,9 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinN
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
+import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -683,7 +685,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
         static Object decode(VirtualFrame frame, Object input, TruffleString encoding, TruffleString errors, boolean finalData,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary("input") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached TruffleString.EqualNode equalNode,
@@ -691,7 +693,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                         @Cached InternErrorAction internErrorAction,
                         @Cached HandleDecodingErrorNode errorHandler,
                         @Cached PRaiseNode raiseNode) {
-            Object buffer = acquireLib.acquireReadonly(input, frame, indirectCallData);
+            Object buffer = acquireLib.acquireReadonly(input, frame, callData);
             try {
                 int len = bufferLib.getBufferLength(buffer);
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
@@ -713,7 +715,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                 }
                 return PFactory.createTuple(language, new Object[]{decoder.getString(), decoder.getInputPosition()});
             } finally {
-                bufferLib.release(buffer, frame, indirectCallData);
+                bufferLib.release(buffer, frame, callData);
             }
         }
     }
@@ -739,13 +741,13 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization(limit = "3")
         Object decode(VirtualFrame frame, Object buffer, TruffleString errors,
                         @Bind PythonLanguage language,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
             try {
                 int len = bufferLib.getBufferLength(buffer);
                 return decodeBytes(bufferLib.getInternalOrCopiedByteArray(buffer), len, errors, language);
             } finally {
-                bufferLib.release(buffer, frame, indirectCallData);
+                bufferLib.release(buffer, frame, callData);
             }
         }
 
@@ -980,6 +982,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile hasTruffleEncodingProfile,
                         @Cached InlinedConditionProfile isTupleProfile,
                         @Cached NormalizeEncodingNameNode normalizeEncodingNameNode,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached PRaiseNode raiseNode) {
             TruffleString normalizedEncoding = normalizeEncodingNameNode.execute(inliningTarget, encoding);
             PythonContext context = PythonContext.get(inliningTarget);
@@ -990,7 +993,12 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
             }
             if (hasTruffleEncodingProfile.profile(inliningTarget, hasTruffleEncodingNormalized(normalizedEncoding))) {
                 PythonModule codecs = context.lookupBuiltinModule(T__CODECS_TRUFFLE);
-                result = CodecsTruffleModuleBuiltins.codecsInfo(codecs, encoding, context);
+                Object savedState = BoundaryCallContext.enter(frame, boundaryCallData);
+                try {
+                    result = CodecsTruffleModuleBuiltins.codecsInfo(codecs, encoding, context);
+                } finally {
+                    BoundaryCallContext.exit(frame, boundaryCallData, savedState);
+                }
             } else {
                 Object[] searchPaths = getSearchPaths(context);
                 for (Object func : searchPaths) {
@@ -1532,16 +1540,16 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
         Object doIt(VirtualFrame frame, Object data, TruffleString errors, Object mapping,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary("data") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached PyUnicodeDecodeCharmapNode pyUnicodeDecodeCharmapNode) {
-            Object dataBuffer = bufferAcquireLib.acquireReadonly(data, frame, context, context.getLanguage(inliningTarget), indirectCallData);
+            Object dataBuffer = bufferAcquireLib.acquireReadonly(data, frame, context, context.getLanguage(inliningTarget), callData);
             int len;
             try {
                 len = bufferLib.getBufferLength(dataBuffer);
             } finally {
-                bufferLib.release(dataBuffer, frame, indirectCallData);
+                bufferLib.release(dataBuffer, frame, callData);
             }
             TruffleString result = len == 0 ? T_EMPTY_STRING : pyUnicodeDecodeCharmapNode.execute(frame, data, errors, mapping);
             return PFactory.createTuple(context.getLanguage(inliningTarget), new Object[]{result, len});

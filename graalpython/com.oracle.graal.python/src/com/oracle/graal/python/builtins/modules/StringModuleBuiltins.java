@@ -57,7 +57,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.ExecutionContext;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Cached;
@@ -85,16 +85,16 @@ public final class StringModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         PSequenceIterator formatterParser(VirtualFrame frame, TruffleString self,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData) {
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
             TemplateFormatter formatter = new TemplateFormatter(self);
             List<Object[]> parserList;
             PythonContext context = PythonContext.get(this);
             PythonLanguage language = context.getLanguage(this);
-            Object state = ExecutionContext.IndirectCallContext.enter(frame, language, context, indirectCallData);
+            Object state = ExecutionContext.BoundaryCallContext.enter(frame, language, context, boundaryCallData);
             try {
                 parserList = formatter.formatterParser(this);
             } finally {
-                ExecutionContext.IndirectCallContext.exit(frame, language, context, state);
+                ExecutionContext.BoundaryCallContext.exit(frame, language, context, state);
             }
             return parserListToIterator(parserList, language);
         }
@@ -119,16 +119,16 @@ public final class StringModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object formatterParser(VirtualFrame frame, TruffleString self,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData) {
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
             TemplateFormatter formatter = new TemplateFormatter(self);
             TemplateFormatter.FieldNameSplitResult result;
             PythonContext context = PythonContext.get(this);
             PythonLanguage language = context.getLanguage(this);
-            Object state = ExecutionContext.IndirectCallContext.enter(frame, language, context, indirectCallData);
+            Object state = ExecutionContext.BoundaryCallContext.enter(frame, language, context, boundaryCallData);
             try {
                 result = formatter.formatterFieldNameSplit(this);
             } finally {
-                ExecutionContext.IndirectCallContext.exit(frame, language, context, state);
+                ExecutionContext.BoundaryCallContext.exit(frame, language, context, state);
             }
             return PFactory.createTuple(language, new Object[]{result.first, parserListToIterator(result.parserList, language)});
         }

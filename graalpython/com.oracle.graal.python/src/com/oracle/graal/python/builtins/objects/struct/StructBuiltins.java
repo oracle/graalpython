@@ -72,14 +72,14 @@ import java.util.Set;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.Builtin;
+import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.modules.StructModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
@@ -100,7 +100,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -478,7 +478,7 @@ public class StructBuiltins extends PythonBuiltins {
         @Specialization(limit = "3")
         static Object packInto(VirtualFrame frame, PStruct self, Object buffer, int offset, Object[] args,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached StructNodes.PackValueNode packValueNode,
                         @Cached PRaiseNode raiseNode) {
@@ -527,7 +527,7 @@ public class StructBuiltins extends PythonBuiltins {
                 }
                 return PNone.NONE;
             } finally {
-                bufferLib.release(buffer, frame, indirectCallData);
+                bufferLib.release(buffer, frame, callData);
             }
         }
 
@@ -552,7 +552,7 @@ public class StructBuiltins extends PythonBuiltins {
         static Object unpack(VirtualFrame frame, PStruct self, Object buffer,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached StructNodes.UnpackValueNode unpackValueNode,
                         @Cached PRaiseNode raiseNode) {
@@ -564,7 +564,7 @@ public class StructBuiltins extends PythonBuiltins {
                 }
                 return PFactory.createTuple(language, unpackInternal(self, unpackValueNode, bytes, 0));
             } finally {
-                bufferLib.release(buffer, frame, indirectCallData);
+                bufferLib.release(buffer, frame, callData);
             }
         }
     }
@@ -584,7 +584,7 @@ public class StructBuiltins extends PythonBuiltins {
         static Object iterUnpack(VirtualFrame frame, PStruct self, Object buffer,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached PRaiseNode raiseNode) {
             try {
@@ -596,7 +596,7 @@ public class StructBuiltins extends PythonBuiltins {
                     throw raiseNode.raise(inliningTarget, StructError, STRUCT_ITER_UNPACK_REQ_A_BUFFER_OF_A_MUL_OF_BYTES, self.getSize());
                 }
             } catch (Exception e) {
-                bufferLib.release(buffer, frame, indirectCallData);
+                bufferLib.release(buffer, frame, callData);
                 throw e;
             }
             // The buffer ownership is transferred to the iterator
@@ -623,7 +623,7 @@ public class StructBuiltins extends PythonBuiltins {
         static Object unpackFrom(VirtualFrame frame, PStruct self, Object buffer, int offset,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached StructNodes.UnpackValueNode unpackValueNode,
                         @Cached PRaiseNode raiseNode) {
@@ -650,7 +650,7 @@ public class StructBuiltins extends PythonBuiltins {
 
                 return PFactory.createTuple(language, unpackInternal(self, unpackValueNode, bytes, bufferOffset));
             } finally {
-                bufferLib.release(buffer, frame, indirectCallData);
+                bufferLib.release(buffer, frame, callData);
             }
         }
     }

@@ -65,7 +65,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.truffle.api.dsl.Bind;
@@ -94,9 +94,9 @@ public class PickleBufferBuiltins extends PythonBuiltins {
         @Specialization(limit = "3")
         static PPickleBuffer construct(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object object,
                         @Bind PythonLanguage language,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary("object") PythonBufferAcquireLibrary acquireLib) {
-            Object buffer = acquireLib.acquire(object, BufferFlags.PyBUF_FULL_RO, frame, indirectCallData);
+            Object buffer = acquireLib.acquire(object, BufferFlags.PyBUF_FULL_RO, frame, callData);
             return PFactory.createPickleBuffer(language, buffer);
         }
     }

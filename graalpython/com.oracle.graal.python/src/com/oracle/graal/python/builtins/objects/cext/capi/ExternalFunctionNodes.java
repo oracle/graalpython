@@ -115,9 +115,9 @@ import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.ExecutionContext.InteropCallContext;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
@@ -728,12 +728,12 @@ public abstract class ExternalFunctionNodes {
 
         @Specialization
         static Object invoke(VirtualFrame frame, Node inliningTarget, PythonThreadState threadState, CApiTiming timing, TruffleString name, Object callable, Object[] cArguments,
-                        @Cached(value = "createFor($node)", uncached = "getUncached()") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") InteropCallData boundaryCallData,
                         @CachedLibrary(limit = "2") InteropLibrary lib) {
 
             // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store
             // it to the context since we cannot propagate it through the native frames.
-            Object state = IndirectCallContext.enter(frame, threadState, indirectCallData);
+            Object state = InteropCallContext.enter(frame, threadState, boundaryCallData);
 
             CApiTiming.enter();
             try {
@@ -762,7 +762,7 @@ public abstract class ExternalFunctionNodes {
                 if (frame != null && threadState.getCaughtException() != null) {
                     PArguments.setException(frame, threadState.getCaughtException());
                 }
-                IndirectCallContext.exit(frame, threadState, state);
+                InteropCallContext.exit(frame, threadState, state);
             }
         }
     }

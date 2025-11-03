@@ -74,7 +74,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixConstants.IntConstant;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
@@ -203,7 +203,7 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") InteropCallData callData,
                         @Cached PyLongAsIntNode asIntNode,
                         @Cached CastToTruffleStringNode castToString,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
@@ -222,11 +222,11 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
                     if (acquireLib.hasBuffer(arg)) {
                         boolean writable = false;
                         try {
-                            buffer = acquireLib.acquireWritable(arg, frame, indirectCallData);
+                            buffer = acquireLib.acquireWritable(arg, frame, callData);
                             writable = true;
                         } catch (PException e) {
                             try {
-                                buffer = acquireLib.acquireReadonly(arg, frame, indirectCallData);
+                                buffer = acquireLib.acquireReadonly(arg, frame, callData);
                             } catch (PException e1) {
                                 // ignore
                             }
@@ -269,7 +269,7 @@ public final class FcntlModuleBuiltins extends PythonBuiltins {
                                     }
                                 }
                             } finally {
-                                bufferLib.release(buffer, frame, indirectCallData);
+                                bufferLib.release(buffer, frame, callData);
                             }
                         }
                     }

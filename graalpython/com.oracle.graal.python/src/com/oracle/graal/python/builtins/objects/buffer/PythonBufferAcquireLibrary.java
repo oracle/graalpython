@@ -46,8 +46,9 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
+import com.oracle.graal.python.runtime.ExecutionContext.InteropCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -98,10 +99,11 @@ public abstract class PythonBufferAcquireLibrary extends Library {
      * finished. When intrinsifying CPython {PyObject_GetBuffer} calls, pay attention to what it
      * does to the exception. Sometimes it replaces the exception raised here with another one.
      * <p>
-     * <b>IMPORTANT:</b> This method may only be used in the context of an indirect call (see
-     * {@link IndirectCallContext}). If a frame is available, prefer using convenience methods
-     * {@link #acquireReadonly(Object, VirtualFrame, IndirectCallData)} or
-     * {@link #acquireReadonly(Object, VirtualFrame, PythonContext, PythonLanguage, IndirectCallData)}
+     * <b>IMPORTANT:</b> This method may only be used in the context of an indirect interop call
+     * (see {@link InteropCallContext}) or indirect boundary call {@link BoundaryCallContext}. If a
+     * frame is available, prefer using convenience methods
+     * {@link #acquireReadonly(Object, VirtualFrame, InteropCallData)} or
+     * {@link #acquireReadonly(Object, VirtualFrame, PythonContext, PythonLanguage, InteropCallData)}
      * .
      * </p>
      */
@@ -114,12 +116,12 @@ public abstract class PythonBufferAcquireLibrary extends Library {
      * {@link #acquireReadonly(Object)}. <b>NOTE:</b> the provided indirectCallData must belong to a
      * node which is an ancestor of the library.
      */
-    public final Object acquireReadonly(Object receiver, VirtualFrame frame, IndirectCallData indirectCallData) {
-        Object savedState = IndirectCallContext.enter(frame, this, indirectCallData);
+    public final Object acquireReadonly(Object receiver, VirtualFrame frame, InteropCallData callData) {
+        Object savedState = InteropCallContext.enter(frame, this, callData);
         try {
             return acquire(receiver, BufferFlags.PyBUF_SIMPLE);
         } finally {
-            IndirectCallContext.exit(frame, this, indirectCallData, savedState);
+            InteropCallContext.exit(frame, this, callData, savedState);
         }
     }
 
@@ -128,12 +130,12 @@ public abstract class PythonBufferAcquireLibrary extends Library {
      * {@link #acquireReadonly(Object)}. <b>NOTE:</b> the provided indirectCallData must belong to a
      * node which is an ancestor of the library.
      */
-    public final Object acquireReadonly(Object receiver, VirtualFrame frame, PythonContext context, PythonLanguage language, IndirectCallData indirectCallData) {
-        Object savedState = IndirectCallContext.enter(frame, language, context, indirectCallData);
+    public final Object acquireReadonly(Object receiver, VirtualFrame frame, PythonContext context, PythonLanguage language, InteropCallData callData) {
+        Object savedState = InteropCallContext.enter(frame, language, context, callData);
         try {
             return acquire(receiver, BufferFlags.PyBUF_SIMPLE);
         } finally {
-            IndirectCallContext.exit(frame, language, context, savedState);
+            InteropCallContext.exit(frame, language, context, savedState);
         }
     }
 
@@ -141,17 +143,18 @@ public abstract class PythonBufferAcquireLibrary extends Library {
      * Acquire a buffer object meant for writing. Equivalent of CPython's {@code PyObject_GetBuffer}
      * with flag {@code PyBUF_WRITABLE}. For equivalents of clinic and {@code PyArg_Parse*}
      * converters, see
-     * {@link #acquireWritableWithTypeError(Object, String, VirtualFrame, IndirectCallData)} . Will
+     * {@link #acquireWritableWithTypeError(Object, String, VirtualFrame, InteropCallData)} . Will
      * raise exception if the acquisition fails. Must call
      * {@link PythonBufferAccessLibrary#release(Object)} on the returned object after the access is
      * finished. When intrinsifying CPython {PyObject_GetBuffer} calls, pay attention to what it
      * does to the exception. More often than not, it replaces the exception raised here with
      * another one.
      * <p>
-     * <b>IMPORTANT:</b> This method may only be used in the context of an indirect call (see
-     * {@link IndirectCallContext}). If a frame is available, prefer using convenience methods
-     * {@link #acquireWritable(Object, VirtualFrame, IndirectCallData)} or
-     * {@link #acquireWritable(Object, VirtualFrame, PythonContext, PythonLanguage, IndirectCallData)}
+     * <b>IMPORTANT:</b> This method may only be used in the context of an indirect interop call
+     * (see {@link InteropCallContext}) or indirect boundary call {@link BoundaryCallContext}. If a
+     * frame is available, prefer using convenience methods
+     * {@link #acquireWritable(Object, VirtualFrame, InteropCallData)} or
+     * {@link #acquireWritable(Object, VirtualFrame, PythonContext, PythonLanguage, InteropCallData)}
      * .
      * </p>
      */
@@ -164,12 +167,12 @@ public abstract class PythonBufferAcquireLibrary extends Library {
      * {@link #acquireWritable(Object)}. <b>NOTE:</b> the provided indirectCallData must belong to a
      * node which is an ancestor of the library.
      */
-    public final Object acquireWritable(Object receiver, VirtualFrame frame, IndirectCallData indirectCallData) {
-        Object savedState = IndirectCallContext.enter(frame, this, indirectCallData);
+    public final Object acquireWritable(Object receiver, VirtualFrame frame, InteropCallData callData) {
+        Object savedState = InteropCallContext.enter(frame, this, callData);
         try {
             return acquire(receiver, BufferFlags.PyBUF_WRITABLE);
         } finally {
-            IndirectCallContext.exit(frame, this, indirectCallData, savedState);
+            InteropCallContext.exit(frame, this, callData, savedState);
         }
     }
 
@@ -178,12 +181,12 @@ public abstract class PythonBufferAcquireLibrary extends Library {
      * {@link #acquireWritable(Object)}. <b>NOTE:</b> the provided indirectCallData must belong to a
      * node which is an ancestor of the library.
      */
-    public final Object acquireWritable(Object receiver, VirtualFrame frame, PythonContext context, PythonLanguage language, IndirectCallData indirectCallData) {
-        Object savedState = IndirectCallContext.enter(frame, language, context, indirectCallData);
+    public final Object acquireWritable(Object receiver, VirtualFrame frame, PythonContext context, PythonLanguage language, InteropCallData callData) {
+        Object savedState = InteropCallContext.enter(frame, language, context, callData);
         try {
             return acquire(receiver, BufferFlags.PyBUF_WRITABLE);
         } finally {
-            IndirectCallContext.exit(frame, language, context, savedState);
+            InteropCallContext.exit(frame, language, context, savedState);
         }
     }
 
@@ -197,14 +200,14 @@ public abstract class PythonBufferAcquireLibrary extends Library {
      * Will raise a {@code TypeError} if the acquisition fails, regardless of what exception the
      * acquisition produced.
      */
-    public final Object acquireWritableWithTypeError(Object receiver, String callerName, VirtualFrame frame, IndirectCallData indirectCallData) {
-        Object savedState = IndirectCallContext.enter(frame, this, indirectCallData);
+    public final Object acquireWritableWithTypeError(Object receiver, String callerName, VirtualFrame frame, InteropCallData callData) {
+        Object savedState = InteropCallContext.enter(frame, this, callData);
         try {
             return acquireWritable(receiver);
         } catch (PException e) {
             throw PRaiseNode.raiseStatic(this, TypeError, ErrorMessages.S_BRACKETS_ARG_MUST_BE_READ_WRITE_BYTES_LIKE_NOT_P, callerName, receiver);
         } finally {
-            IndirectCallContext.exit(frame, this, indirectCallData, savedState);
+            InteropCallContext.exit(frame, this, callData, savedState);
         }
     }
 
@@ -213,9 +216,10 @@ public abstract class PythonBufferAcquireLibrary extends Library {
      * that the API is currently not expressive enough to deal with the more complex types. Make
      * sure you know what the flags mean and that you can handle the result properly.
      * <p>
-     * <b>IMPORTANT:</b> This method may only be used in the context of an indirect call (see
-     * {@link IndirectCallContext}). If a frame is available, prefer using convenience methods
-     * {@link #acquire(Object, int, VirtualFrame, IndirectCallData)}}.
+     * <b>IMPORTANT:</b> This method may only be used in the context of an indirect interop call
+     * (see {@link InteropCallContext}) or indirect boundary call {@link BoundaryCallContext}. If a
+     * frame is available, prefer using convenience methods
+     * {@link #acquire(Object, int, VirtualFrame, InteropCallData)}}.
      * </p>
      *
      * @param flags combined constants from {@link BufferFlags}. Unlike CPython, our buffer objects
@@ -233,12 +237,12 @@ public abstract class PythonBufferAcquireLibrary extends Library {
      * <b>NOTE:</b> the provided indirectCallData must belong to a node which is an ancestor of the
      * library.
      */
-    public final Object acquire(Object receiver, int flags, VirtualFrame frame, IndirectCallData indirectCallData) {
-        Object savedState = IndirectCallContext.enter(frame, this, indirectCallData);
+    public final Object acquire(Object receiver, int flags, VirtualFrame frame, InteropCallData callData) {
+        Object savedState = InteropCallContext.enter(frame, this, callData);
         try {
             return acquire(receiver, flags);
         } finally {
-            IndirectCallContext.exit(frame, this, indirectCallData, savedState);
+            InteropCallContext.exit(frame, this, callData, savedState);
         }
     }
 

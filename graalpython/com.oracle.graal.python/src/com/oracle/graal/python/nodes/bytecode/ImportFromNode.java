@@ -56,6 +56,8 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -82,13 +84,19 @@ public abstract class ImportFromNode extends PNodeWithContext {
     Object doImport(VirtualFrame frame, Object module, TruffleString name,
                     @Bind Node inliningTarget,
                     @Cached PyObjectLookupAttr lookupAttr,
+                    @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                     @Cached InlinedBranchProfile maybeCircularProfile) {
         Object result = lookupAttr.execute(frame, inliningTarget, module, name);
         if (result != PNone.NO_VALUE) {
             return result;
         }
         maybeCircularProfile.enter(inliningTarget);
-        return tryResolveCircularImport(module, name);
+        Object saved = BoundaryCallContext.enter(frame, boundaryCallData);
+        try {
+            return tryResolveCircularImport(module, name);
+        } finally {
+            BoundaryCallContext.exit(frame, boundaryCallData, saved);
+        }
     }
 
     @TruffleBoundary

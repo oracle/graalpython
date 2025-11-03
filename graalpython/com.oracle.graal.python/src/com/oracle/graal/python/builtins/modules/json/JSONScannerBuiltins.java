@@ -44,6 +44,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
@@ -120,10 +122,17 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        protected PTuple call(PJSONScanner self, TruffleString string, int idx,
-                        @Cached TruffleString.ToJavaStringNode toJavaStringNode) {
+        protected PTuple call(VirtualFrame frame, PJSONScanner self, TruffleString string, int idx,
+                        @Cached TruffleString.ToJavaStringNode toJavaStringNode,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
             IntRef nextIdx = new IntRef();
-            Object result = scanOnceUnicode(self, toJavaStringNode.execute(string), idx, nextIdx);
+            Object result;
+            Object saved = BoundaryCallContext.enter(frame, boundaryCallData);
+            try {
+                result = scanOnceUnicode(self, toJavaStringNode.execute(string), idx, nextIdx);
+            } finally {
+                BoundaryCallContext.exit(frame, boundaryCallData, saved);
+            }
             return PFactory.createTuple(PythonLanguage.get(this), new Object[]{result, nextIdx.value});
         }
 

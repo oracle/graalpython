@@ -52,6 +52,7 @@ import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
+import com.oracle.truffle.api.nodes.Node;
 
 public final class PObjectSlice extends PSlice {
 
@@ -92,10 +93,6 @@ public final class PObjectSlice extends PSlice {
         return stepObject;
     }
 
-    public SliceInfo computeIndices(int length) {
-        return PSlice.computeIndices(getStart(), getStop(), getStep(), length);
-    }
-
     @ValueType
     public static final class SliceObjectInfo {
         public final Object start;
@@ -128,13 +125,13 @@ public final class PObjectSlice extends PSlice {
      * _PySlice_GetLongIndices
      */
     @TruffleBoundary
-    public static SliceObjectInfo computeIndicesSlowPath(PObjectSlice slice, Object lengthIn, boolean usePInt) {
+    public static SliceObjectInfo computeIndicesSlowPath(Node nodeForRaise, PObjectSlice slice, Object lengthIn, boolean usePInt) {
         boolean stepIsNegative;
         BigInteger lower, upper;
         BigInteger start, stop, step, length;
         length = (BigInteger) lengthIn;
         if (pySign(length) < 0) {
-            throw PRaiseNode.raiseStatic(null, ValueError, ErrorMessages.LENGTH_SHOULD_NOT_BE_NEG);
+            throw PRaiseNode.raiseStatic(nodeForRaise, ValueError, ErrorMessages.LENGTH_SHOULD_NOT_BE_NEG);
         }
         if (slice.getStep() == PNone.NONE) {
             step = ONE;
@@ -143,7 +140,7 @@ public final class PObjectSlice extends PSlice {
             step = (BigInteger) slice.getStep();
             stepIsNegative = pySign(step) < 0;
             if (pySign(step) == 0) {
-                throw PRaiseNode.raiseStatic(null, ValueError, ErrorMessages.SLICE_STEP_CANNOT_BE_ZERO);
+                throw PRaiseNode.raiseStatic(nodeForRaise, ValueError, ErrorMessages.SLICE_STEP_CANNOT_BE_ZERO);
             }
         }
 

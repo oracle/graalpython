@@ -101,7 +101,8 @@ import com.oracle.graal.python.pegparser.sst.StmtTy;
 import com.oracle.graal.python.pegparser.sst.TypeParamTy;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
+import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonImageBuildOptions;
@@ -146,6 +147,7 @@ import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
 import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.utilities.TruffleWeakReference;
 
 @TruffleLanguage.Registration(id = PythonLanguage.ID, //
                 name = PythonLanguage.NAME, //
@@ -437,7 +439,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         context.finalizeContext();
         super.finalizeContext(context);
         // trigger cleanup of stale entries in weak hash maps
-        indirectCallDataMap.size();
+        interopCallDataMap.size();
+        boundaryCallDataMap.size();
     }
 
     @Override
@@ -1218,16 +1221,44 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
     }
 
-    private final Map<Node, IndirectCallData> indirectCallDataMap = Collections.synchronizedMap(new WeakHashMap<>());
+    private final Map<Node, InteropCallData> interopCallDataMap = Collections.synchronizedMap(new WeakHashMap<>());
+    private final Map<Node, TruffleWeakReference<BoundaryCallData>> boundaryCallDataMap = Collections.synchronizedMap(new WeakHashMap<>());
 
-    public static IndirectCallData lookupIndirectCallData(Node node) {
+    public static InteropCallData lookupInteropCallData(Node node) {
         CompilerAsserts.neverPartOfCompilation();
-        return get(node).indirectCallDataMap.get(node);
+        PythonLanguage lang = get(node);
+        return lang.interopCallDataMap.get(node);
     }
 
-    public static IndirectCallData createIndirectCallData(Node node) {
+    public static BoundaryCallData lookupBoundaryCallData(Node node) {
         CompilerAsserts.neverPartOfCompilation();
-        return get(node).indirectCallDataMap.computeIfAbsent(node, n -> new IndirectCallData());
+        PythonLanguage lang = get(node);
+        TruffleWeakReference<BoundaryCallData> ref = lang.boundaryCallDataMap.get(node);
+        return ref != null ? ref.get() : null;
+    }
+
+    public static InteropCallData createInteropCallData(Node node) {
+        CompilerAsserts.neverPartOfCompilation();
+        return get(node).interopCallDataMap.computeIfAbsent(node, n -> new InteropCallData());
+    }
+
+    public static BoundaryCallData createBoundaryCallData(Node node) {
+        CompilerAsserts.neverPartOfCompilation();
+        PythonLanguage lang = get(node);
+        final BoundaryCallData[] result = new BoundaryCallData[1];
+        TruffleWeakReference<BoundaryCallData> ref = lang.boundaryCallDataMap.computeIfAbsent(node, n -> {
+            BoundaryCallData r = new BoundaryCallData();
+            result[0] = r;
+            return new TruffleWeakReference<>(r);
+        });
+        if (result[0] == null) {
+            // BoundaryCallData should have node set as its parent, so if we find something, the
+            // referent must not be null, because what we used as search key has a strong reference
+            // to its BoundaryCallData
+            result[0] = ref.get();
+            assert result[0] != null : node;
+        }
+        return result[0];
     }
 
     public Source getOrCreateSource(Function<Object, Source> rootNodeFunction, Object key) {

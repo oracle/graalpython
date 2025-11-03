@@ -348,7 +348,7 @@ public final class PythonCextCapsuleBuiltins {
                 }
                 if (object == null) {
                     // noBlock has no effect anymore since 3.3
-                    object = AbstractImportNode.importModule(trace);
+                    object = AbstractImportNode.importModuleBoundary(trace);
                 } else {
                     object = getAttrNode.execute(object, trace);
                 }

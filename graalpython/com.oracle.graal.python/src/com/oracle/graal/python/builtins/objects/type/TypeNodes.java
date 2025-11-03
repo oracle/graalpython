@@ -205,8 +205,8 @@ import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNod
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
-import com.oracle.graal.python.runtime.IndirectCallData;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -1465,7 +1465,11 @@ public abstract class TypeNodes {
         }
 
         public static boolean executeUncached(Object left, Object right) {
-            return IsSameTypeNodeGen.getUncached().execute(null, left, right);
+            return getUncached().execute(null, left, right);
+        }
+
+        public static IsSameTypeNode getUncached() {
+            return IsSameTypeNodeGen.getUncached();
         }
 
         public static IsSameTypeNode create() {
@@ -1578,6 +1582,8 @@ public abstract class TypeNodes {
             return computeMethodResolutionOrder(node, cls, invokeMro);
         }
 
+        // No BoundaryCallContext: TODO: unlikely, but __mro__ lookup and call can run arbitrary
+        // code
         @TruffleBoundary
         static PythonAbstractClass[] invokeMro(Node node, PythonAbstractClass cls) {
             Object type = GetClassNode.executeUncached(cls);
@@ -2090,7 +2096,7 @@ public abstract class TypeNodes {
         @Specialization
         static PythonClass typeMetaclass(VirtualFrame frame, TruffleString name, PTuple bases, PDict namespace, Object metaclass,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached HashingStorageSetItemWithHash setHashingStorageItem,
                         @Cached GetOrCreateDictNode getOrCreateDictNode,
                         @Cached HashingStorageGetIterator getHashingStorageIterator,
@@ -2229,14 +2235,14 @@ public abstract class TypeNodes {
                     }
                 }
                 // Make slots into a tuple
-                Object state = IndirectCallContext.enter(frame, language, context, indirectCallData);
+                Object state = BoundaryCallContext.enter(frame, language, context, boundaryCallData);
                 try {
                     pythonClass.setAttribute(T___SLOTS__, slotsObject);
 
                     // checks for some name errors too
                     ctx.copiedSlots = copySlots(inliningTarget, ctx, name, slotsStorage, slotlen, namespace);
                 } finally {
-                    IndirectCallContext.exit(frame, language, context, state);
+                    BoundaryCallContext.exit(frame, language, context, state);
                 }
                 /* Secondary bases may provide weakrefs or dict */
                 typeNewSlotBases(ctx, base, basesArray);

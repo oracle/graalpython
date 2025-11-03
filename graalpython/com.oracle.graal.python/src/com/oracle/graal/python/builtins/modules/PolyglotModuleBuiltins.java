@@ -830,6 +830,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
+        // No BoundaryCallContext: lookups in hashmap that we control (only well-behaved keys)
         Object register(Object foreignClass, PythonClass pythonClass, boolean allowMethodOverwrites,
                         @Bind Node inliningTarget,
                         @Cached TypeNodes.IsTypeNode isClassTypeNode,

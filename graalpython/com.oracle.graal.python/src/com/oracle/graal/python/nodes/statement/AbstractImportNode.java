@@ -76,11 +76,14 @@ import com.oracle.graal.python.nodes.object.GetDictFromGlobalsNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNodeFactory.ImportNameNodeGen;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
@@ -102,15 +105,30 @@ public abstract class AbstractImportNode extends PNodeWithContext {
 
     public static final TruffleString T__FIND_AND_LOAD = tsLiteral("_find_and_load");
 
+    // Use this variant when the frame is available
+    public static PythonModule importModule(VirtualFrame frame, BoundaryCallData boundaryCallData, TruffleString name) {
+        Object saved = BoundaryCallContext.enter(frame, boundaryCallData);
+        try {
+            return importModuleBoundary(name);
+        } finally {
+            BoundaryCallContext.exit(frame, boundaryCallData, saved);
+        }
+    }
+
+    @TruffleBoundary
+    public static PythonModule importModuleBoundary(TruffleString name) {
+        return importModule(name);
+    }
+
     /**
      * Equivalent of {@code PyImport_Import} and {@code PyImport_ImportModule}.
      */
-    @TruffleBoundary
     public static PythonModule importModule(TruffleString name) {
         /*
          * TODO we should rather use {@link com.oracle.graal.python.lib.PyImportImport}, but it
          * currently can't be made uncached because it properly reads builtins from frame globals.
          */
+        CompilerAsserts.neverPartOfCompilation();
         PythonContext context = PythonContext.get(null);
         Object builtinImport = context.getBuiltins().getAttribute(T___IMPORT__);
         if (builtinImport == PNone.NO_VALUE) {
