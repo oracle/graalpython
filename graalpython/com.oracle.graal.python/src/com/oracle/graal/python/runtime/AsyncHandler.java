@@ -295,7 +295,7 @@ public class AsyncHandler {
             Object[] arguments = Arrays.copyOfRange(frameArguments, PArguments.USER_ARGUMENTS_OFFSET + ASYNC_ARG_COUNT, frameArguments.length);
 
             if (frameIndex >= 0) {
-                arguments[frameIndex] = readCallerFrameNode.executeWith(frame, 0);
+                arguments[frameIndex] = readCallerFrameNode.executeWith(frame, 0, false);
             }
             try {
                 return callNode.execute(frame, callable, arguments);

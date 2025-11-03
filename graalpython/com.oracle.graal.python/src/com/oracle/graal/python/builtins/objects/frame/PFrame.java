@@ -66,7 +66,8 @@ public final class PFrame extends PythonBuiltinObject {
     private static final int UNINITIALIZED_LINE = -2;
 
     private Object[] arguments;
-    private final MaterializedFrame locals;
+    private MaterializedFrame locals;
+    private final boolean hasCustomLocals;
     private Object localsDict;
     private final Reference virtualFrameInfo;
     /**
@@ -186,11 +187,11 @@ public final class PFrame extends PythonBuiltinObject {
         }
     }
 
-    public PFrame(PythonLanguage lang, Reference virtualFrameInfo, Node location, MaterializedFrame locals) {
+    public PFrame(PythonLanguage lang, Reference virtualFrameInfo, Node location, boolean hasCustomLocals) {
         super(PythonBuiltinClassType.PFrame, PythonBuiltinClassType.PFrame.getInstanceShape(lang));
         this.virtualFrameInfo = virtualFrameInfo;
-        this.locals = locals;
         this.location = location;
+        this.hasCustomLocals = hasCustomLocals;
     }
 
     public PFrame(PythonLanguage lang, @SuppressWarnings("unused") Object threadState, PCode code, PythonObject globals, Object localsDict) {
@@ -205,7 +206,7 @@ public final class PFrame extends PythonBuiltinObject {
         curFrameInfo.setPyFrame(this);
         this.line = this.location == null ? code.getFirstLineNo() : UNINITIALIZED_LINE;
         this.arguments = frameArgs;
-        this.locals = null;
+        this.hasCustomLocals = true;
         this.localsDict = localsDict;
     }
 
@@ -217,6 +218,10 @@ public final class PFrame extends PythonBuiltinObject {
         return locals;
     }
 
+    public void setLocals(MaterializedFrame locals) {
+        this.locals = locals;
+    }
+
     /**
      * Use {@link GetFrameLocalsNode} instead of accessing this directly.
      */
@@ -225,7 +230,7 @@ public final class PFrame extends PythonBuiltinObject {
     }
 
     public boolean hasCustomLocals() {
-        return locals == null;
+        return hasCustomLocals;
     }
 
     public void setLocalsDict(Object dict) {

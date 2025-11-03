@@ -214,7 +214,7 @@ public class TypingModuleBuiltins extends PythonBuiltins {
                         @Cached(inline = false) PyObjectCallMethodObjArgs callMethod,
                         @Cached(inline = false) ReadCallerFrameNode readCallerNode) {
             Reference currentFrameInfo = PArguments.getCurrentFrameInfo(frame);
-            PFrame pFrame = readCallerNode.executeWith(currentFrameInfo, 0);
+            PFrame pFrame = readCallerNode.executeWith(currentFrameInfo, 0, false);
             Object globals = getGlobalsNode.execute(frame, pFrame);
 
             return callMethod.executeCached(frame, globals, T_GET, T___NAME__, PNone.NONE);

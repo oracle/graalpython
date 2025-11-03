@@ -96,7 +96,11 @@ public abstract class GetFrameLocalsNode extends Node {
     @Specialization(guards = "!pyFrame.hasCustomLocals()")
     static Object doLoop(Node inliningTarget, PFrame pyFrame,
                     @Cached InlinedBranchProfile create,
-                    @Cached(inline = false) CopyLocalsToDict copyLocalsToDict) {
+                    @Cached(inline = false) CopyLocalsToDict copyLocalsToDict,
+                    @Cached ReadCallerFrameNode readCallerFrameNode) {
+        if (pyFrame.getLocals() == null) {
+            pyFrame = readCallerFrameNode.executeWith(pyFrame.getRef(), ReadCallerFrameNode.AllFramesSelector.INSTANCE, 0, true);
+        }
         MaterializedFrame locals = pyFrame.getLocals();
         // It doesn't have custom locals, so it has to be a builtin dict or null
         PDict localsDict = (PDict) pyFrame.getLocalsDict();
@@ -121,7 +125,7 @@ public abstract class GetFrameLocalsNode extends Node {
     abstract static class CopyLocalsToDict extends Node {
         abstract void execute(MaterializedFrame locals, PDict dict);
 
-        @Specialization(guards = {"cachedFd == locals.getFrameDescriptor()", "count < 32"}, limit = "1")
+        @Specialization(guards = {"cachedFd == locals.getFrameDescriptor()", "info != null", "count < 32"}, limit = "1")
         @ExplodeLoop
         void doCachedFd(MaterializedFrame locals, PDict dict,
                         @Bind Node inliningTarget,
@@ -152,6 +156,10 @@ public abstract class GetFrameLocalsNode extends Node {
                         @Shared("setItem") @Cached HashingStorageSetItem setItem,
                         @Shared("delItem") @Cached HashingStorageDelItem delItem) {
             FrameInfo info = getInfo(locals.getFrameDescriptor());
+            if (info == null) {
+                // A builtin frame. Ideally we would avoid materializing it in the first place
+                return;
+            }
             int count = info.getVariableCount();
             int regularVarCount = info.getRegularVariableCount();
 

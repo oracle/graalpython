@@ -44,6 +44,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
+import com.oracle.graal.python.runtime.CallerFlags;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
@@ -150,7 +151,7 @@ public abstract class ExceptionStateNodes {
                     // BoundaryCallContext.enter/exit
                     assert first || !(PGenerator.unwrapContinuationRoot(rootNode) instanceof PBytecodeDSLRootNode) || !PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER || callNode != null : rootNode;
                     first = false;
-                    IndirectCallData.setEncapsulatingNeedsToPassExceptionState(callNode);
+                    IndirectCallData.setCallerFlagsOnIndirectCallData(callNode, CallerFlags.NEEDS_EXCEPTION_STATE);
                     PRootNode pRootNode = null;
                     AbstractTruffleException result = null;
                     if (rootNode instanceof ContinuationRootNode continuationRootNode) {
@@ -170,7 +171,7 @@ public abstract class ExceptionStateNodes {
                         // caller to pass it next time and continue the stack walking by returning
                         // the null result
                         if (pRootNode != null) {
-                            pRootNode.setNeedsExceptionState();
+                            pRootNode.updateCallerFlags(CallerFlags.NEEDS_EXCEPTION_STATE);
                         }
                     }
                     return result;

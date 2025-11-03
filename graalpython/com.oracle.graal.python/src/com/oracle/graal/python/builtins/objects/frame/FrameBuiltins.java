@@ -338,7 +338,7 @@ public final class FrameBuiltins extends PythonBuiltins {
                     // a) self is still on the stack and the caller isn't filled in
                     // b) this frame has returned, but not (yet) to a Python caller
                     // c) this frame has no caller (it is/was a top frame)
-                    callerFrame = readCallerFrame.executeWith(cur.getRef(), ReadCallerFrameNode.AllFramesSelector.INSTANCE, 0);
+                    callerFrame = readCallerFrame.executeWith(cur.getRef(), ReadCallerFrameNode.AllFramesSelector.INSTANCE, 0, false);
 
                     // We don't need to mark the caller frame as 'escaped' because if 'self' is
                     // escaped, the caller frame will be escaped when leaving the current function.
@@ -368,7 +368,7 @@ public final class FrameBuiltins extends PythonBuiltins {
                 // Special case: the backref's PFrame object is not yet available; this is because
                 // the frame is still on the stack. So we need to find and materialize it.
                 for (int i = 0;; i++) {
-                    PFrame caller = readCallerFrameNode.executeWith(frame, i);
+                    PFrame caller = readCallerFrameNode.executeWith(frame, i, false);
                     if (caller == null) {
                         break;
                     } else if (caller.getRef() == backref) {

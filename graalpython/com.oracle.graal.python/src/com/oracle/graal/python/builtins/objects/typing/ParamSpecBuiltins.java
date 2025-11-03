@@ -80,6 +80,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.CallerFlags;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -101,7 +102,7 @@ public final class ParamSpecBuiltins extends PythonBuiltins {
 
     @Slot(value = SlotKind.tp_new, isComplex = true)
     @SlotSignature(name = J_PARAM_SPEC, minNumOfPositionalArgs = 2, parameterNames = {"$cls", "name"}, keywordOnlyNames = {"bound", "covariant",
-                    "contravariant", "infer_variance"}, needsFrame = true, alwaysNeedsCallerFrame = true)
+                    "contravariant", "infer_variance"}, needsFrame = true, callerFlags = CallerFlags.NEEDS_PFRAME)
     @ArgumentClinic(name = "name", conversion = ClinicConversion.TString)
     @ArgumentClinic(name = "covariant", conversion = ClinicConversion.Boolean, defaultValue = "false")
     @ArgumentClinic(name = "contravariant", conversion = ClinicConversion.Boolean, defaultValue = "false")

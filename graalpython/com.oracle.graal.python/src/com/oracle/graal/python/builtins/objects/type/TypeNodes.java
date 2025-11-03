@@ -1479,10 +1479,6 @@ public abstract class TypeNodes {
             return IsSameTypeNodeGen.create();
         }
 
-        public static IsSameTypeNode getUncached() {
-            return IsSameTypeNodeGen.getUncached();
-        }
-
         @Specialization
         static boolean doManaged(PythonManagedClass left, PythonManagedClass right) {
             return left == right;
@@ -1992,7 +1988,7 @@ public abstract class TypeNodes {
             if (moduleAttr == PNone.NO_VALUE) {
                 PythonObject globals;
                 if (getRootNode() instanceof BuiltinFunctionRootNode) {
-                    PFrame callerFrame = getReadCallerFrameNode().executeWith(frame, 0);
+                    PFrame callerFrame = getReadCallerFrameNode().executeWith(frame, 0, false);
                     globals = callerFrame != null ? callerFrame.getGlobals() : null;
                 } else {
                     globals = PArguments.getGlobals(frame);

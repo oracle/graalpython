@@ -785,7 +785,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             @Override
             public Object execute(VirtualFrame frame) {
                 Object[] arguments = PArguments.create();
-                // escape?
                 PFrame pFrame = materializeFrameNode.execute(this, false, true, frame);
                 Object pLocals = getFrameLocalsNode.executeCached(pFrame);
                 PArguments.setSpecialArgument(arguments, pLocals);

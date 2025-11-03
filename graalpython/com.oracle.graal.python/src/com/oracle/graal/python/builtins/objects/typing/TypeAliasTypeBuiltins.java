@@ -81,6 +81,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.CallerFlags;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -107,7 +108,7 @@ public final class TypeAliasTypeBuiltins extends PythonBuiltins {
 
     @Slot(value = SlotKind.tp_new, isComplex = true)
     @SlotSignature(name = J_TYPE_ALIAS_TYPE, minNumOfPositionalArgs = 3, parameterNames = {"$cls", "name", "value"}, keywordOnlyNames = {
-                    "type_params"}, needsFrame = true, alwaysNeedsCallerFrame = true)
+                    "type_params"}, needsFrame = true, callerFlags = CallerFlags.NEEDS_PFRAME)
     @ArgumentClinic(name = "name", conversion = ClinicConversion.TString)
     @GenerateNodeFactory
     abstract static class TypeAliasTypeNode extends PythonClinicBuiltinNode {

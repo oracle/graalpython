@@ -261,6 +261,7 @@ import com.oracle.graal.python.pegparser.Parser;
 import com.oracle.graal.python.pegparser.ParserCallbacks;
 import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
+import com.oracle.graal.python.runtime.CallerFlags;
 import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
@@ -807,11 +808,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Exclusive @Cached ReadCallerFrameNode readCallerFrameNode,
                         @Exclusive @Cached GetOrCreateDictNode getOrCreateDictNode,
                         @Exclusive @Cached InlinedConditionProfile haveCallerFrameProfile,
-                        @Exclusive @Cached InlinedConditionProfile haveLocals,
+                        @Exclusive @Cached InlinedConditionProfile inheritLocalsProfile,
                         @Exclusive @Cached PyMappingCheckNode mappingCheckNode,
                         @Exclusive @Cached GetFrameLocalsNode getFrameLocalsNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
-            PFrame callerFrame = readCallerFrameNode.executeWith(frame, 0);
+            boolean inheritLocals = inheritLocalsProfile.profile(inliningTarget, locals instanceof PNone);
+            PFrame callerFrame = readCallerFrameNode.executeWith(frame, 0, inheritLocals);
             Object[] args = PArguments.create();
             boolean haveCallerFrame = haveCallerFrameProfile.profile(inliningTarget, callerFrame != null);
             if (haveCallerFrame) {
@@ -819,7 +821,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             } else {
                 PArguments.setGlobals(args, getOrCreateDictNode.execute(inliningTarget, PythonContext.get(inliningTarget).getMainModule()));
             }
-            if (haveLocals.profile(inliningTarget, locals instanceof PNone)) {
+            if (inheritLocals) {
                 if (haveCallerFrame) {
                     Object callerLocals = getFrameLocalsNode.execute(inliningTarget, callerFrame);
                     setCustomLocals(args, callerLocals);
@@ -838,7 +840,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         static Object[] customGlobals(VirtualFrame frame, Node inliningTarget, PDict globals, Object locals, TruffleString mode,
                         @Bind PythonContext context,
-                        @Exclusive @Cached InlinedConditionProfile haveLocals,
+                        @Exclusive @Cached InlinedConditionProfile inheritLocalsProfile,
                         @Exclusive @Cached PyMappingCheckNode mappingCheckNode,
                         @Exclusive @Cached GetOrCreateDictNode getOrCreateDictNode,
                         @Exclusive @Cached HashingCollectionNodes.SetItemNode setBuiltins,
@@ -851,7 +853,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 setBuiltins.execute(frame, inliningTarget, globals, T___BUILTINS__, builtinsDict);
             }
             PArguments.setGlobals(args, globals);
-            if (haveLocals.profile(inliningTarget, locals instanceof PNone)) {
+            if (inheritLocalsProfile.profile(inliningTarget, locals instanceof PNone)) {
                 setCustomLocals(args, globals);
             } else {
                 if (!mappingCheckNode.execute(inliningTarget, locals)) {
@@ -980,7 +982,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         int featureVersion);
 
         private int inheritFlags(VirtualFrame frame, int flags, ReadCallerFrameNode readCallerFrame) {
-            PFrame fr = readCallerFrame.executeWith(frame, 0);
+            PFrame fr = readCallerFrame.executeWith(frame, 0, false);
             if (fr != null) {
                 PCode code = PFactory.createCode(PythonLanguage.get(this), fr.getTarget());
                 flags |= code.getFlags() & PyCF_MASK;
@@ -2252,7 +2254,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "globals", needsFrame = true, alwaysNeedsCallerFrame = true)
+    @Builtin(name = "globals", needsFrame = true, callerFlags = CallerFlags.NEEDS_PFRAME)
     @GenerateNodeFactory
     abstract static class GlobalsNode extends PythonBuiltinNode {
         private final ConditionProfile condProfile = ConditionProfile.create();
@@ -2271,7 +2273,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "locals", needsFrame = true, alwaysNeedsCallerFrame = true)
+    @Builtin(name = "locals", needsFrame = true, callerFlags = CallerFlags.NEEDS_LOCALS)
     @GenerateNodeFactory
     abstract static class LocalsNode extends PythonBuiltinNode {
 

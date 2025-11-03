@@ -42,9 +42,9 @@ package com.oracle.graal.python.builtins.objects.type.slots;
 
 import java.lang.annotation.Annotation;
 
-import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.PythonOS;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.util.PythonUtils;
 
 /**
@@ -148,8 +148,8 @@ class Slot2Builtin implements Builtin {
     }
 
     @Override
-    public boolean alwaysNeedsCallerFrame() {
-        return annotation != null && annotation.alwaysNeedsCallerFrame();
+    public int callerFlags() {
+        return annotation != null ? annotation.callerFlags() : 0;
     }
 
     @Override

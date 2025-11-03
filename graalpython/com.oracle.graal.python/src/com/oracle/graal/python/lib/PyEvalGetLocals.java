@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -59,7 +59,7 @@ public abstract class PyEvalGetLocals extends Node {
     static Object getLocals(VirtualFrame frame, Node inliningTarget,
                     @Cached(inline = false) ReadCallerFrameNode readCallerFrameNode,
                     @Cached GetFrameLocalsNode getFrameLocalsNode) {
-        PFrame callerFrame = readCallerFrameNode.executeWith(frame, 0);
+        PFrame callerFrame = readCallerFrameNode.executeWith(frame, 0, true);
         return getFrameLocalsNode.execute(inliningTarget, callerFrame);
     }
 }

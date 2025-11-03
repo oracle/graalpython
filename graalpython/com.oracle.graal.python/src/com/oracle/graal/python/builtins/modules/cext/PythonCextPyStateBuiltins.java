@@ -221,7 +221,7 @@ public final class PythonCextPyStateBuiltins {
                         @Cached GetCurrentFrameRef getCurrentFrameRef,
                         @Cached ReadCallerFrameNode readCallerFrameNode) {
             PFrame.Reference frameRef = getCurrentFrameRef.execute(null, inliningTarget);
-            return readCallerFrameNode.executeWith(frameRef, 0);
+            return readCallerFrameNode.executeWith(frameRef, 0, false);
         }
     }
 

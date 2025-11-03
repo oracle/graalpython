@@ -56,7 +56,7 @@ public @interface Slot {
      * The slot node either needs frame for execution (e.g., may call Python code) and/or is complex
      * enough that indirect call to partially evaluated code is preferred over uncached execution
      * without frame and without setting up indirect call context.
-     * 
+     *
      * The slot call nodes AST inline slot nodes, but if the inline cache overflows or in the
      * uncached case, they need to either call uncached slot node or do indirect call if
      * {@code isComplex} is {@code true}.
@@ -97,7 +97,7 @@ public @interface Slot {
 
         boolean needsFrame() default false;
 
-        boolean alwaysNeedsCallerFrame() default false;
+        int callerFlags() default 0;
     }
 
     /** See <a href="https://docs.python.org/3/c-api/typeobj.html">slot documentation</a> */

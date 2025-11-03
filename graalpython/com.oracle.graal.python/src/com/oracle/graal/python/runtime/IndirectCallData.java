@@ -44,6 +44,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.nodes.Node;
@@ -65,23 +66,12 @@ import com.oracle.truffle.api.nodes.Node;
  * that do the transition to their indirect call data and this is kept in {@link PythonLanguage}.
  */
 public abstract class IndirectCallData {
-    /**
-     * For given {@link Node} retried as "call node" during stack walk, finds the corresponding
-     * {@link BoundaryCallData} and if it exists sets the "pass caller frame next time" flag on it.
-     */
-    public static void setEncapsulatingNeedsToPassCallerFrame(final Node callNode) {
-        setFlagOnIndirectCallData(callNode, false);
-    }
 
     /**
      * For given {@link Node} retried as "call node" during stack walk, finds the corresponding
-     * {@link BoundaryCallData} and if it exists sets the "pass caller frame next time" flag on it.
+     * {@link BoundaryCallData} and if it exists sets the caller flags on it.
      */
-    public static void setEncapsulatingNeedsToPassExceptionState(final Node callNode) {
-        setFlagOnIndirectCallData(callNode, true);
-    }
-
-    private static void setFlagOnIndirectCallData(final Node callNode, boolean exceptionState) {
+    public static void setCallerFlagsOnIndirectCallData(final Node callNode, int callerFlags) {
         // If the call was made from non-Python frame, i.e., code without access to its
         // current Truffle virtual frame, e.g., TruffleBoundary code, we must find the point
         // where the transition from Python frame to non-Python frame was made and
@@ -90,7 +80,7 @@ public abstract class IndirectCallData {
         // associated with IndirectCallData.
         if (callNode instanceof BoundaryCallData boundaryCallData) {
             // Situation where Python itself set a BoundaryCallData as EncapsulatingNodeReference
-            setFlag(boundaryCallData, exceptionState);
+            boundaryCallData.updateCallerFlags(callerFlags);
         }
         // In any case we need to traverse the AST to find InteropCallData and BoundaryCallData in
         // case the EncapsulatingNodeReference was overridden.
@@ -98,29 +88,69 @@ public abstract class IndirectCallData {
         while (pythonCallNode != null) {
             InteropCallData interopCallData = PythonLanguage.lookupInteropCallData(pythonCallNode);
             if (interopCallData != null) {
-                setFlag(interopCallData, exceptionState);
+                interopCallData.updateCallerFlags(callerFlags);
             }
             BoundaryCallData boundaryCallData = PythonLanguage.lookupBoundaryCallData(pythonCallNode);
             if (boundaryCallData != null) {
-                setFlag(boundaryCallData, exceptionState);
+                boundaryCallData.updateCallerFlags(callerFlags);
             }
             pythonCallNode = pythonCallNode.getParent();
         }
     }
 
-    private static void setFlag(BoundaryCallData d, boolean exceptionState) {
-        if (exceptionState) {
-            d.setCalleeNeedsExceptionState();
-        } else {
-            d.setCalleeNeedsCallerFrame();
-        }
-    }
+    public static class CallerFlagsAssumptionSet {
+        @CompilationFinal private volatile int callerFlags;
+        @CompilationFinal private volatile Assumption callerFlagsAssumption = createAssumption();
 
-    private static void setFlag(InteropCallData d, boolean exceptionState) {
-        if (exceptionState) {
-            d.setCalleeNeedsExceptionState();
-        } else {
-            d.setCalleeNeedsCallerFrame();
+        private static final CallerFlagsAssumptionSet UNCACHED = new CallerFlagsAssumptionSet();
+        static {
+            UNCACHED.callerFlags = ~0;
+        }
+
+        public CallerFlagsAssumptionSet() {
+        }
+
+        public boolean isUncached() {
+            return this == UNCACHED;
+        }
+
+        /**
+         * Returns {@link CallerFlags} representing what this call site needs to pass in the context
+         * to the calees within the scope of the indirect call
+         */
+        public int getCallerFlags() {
+            if (CompilerDirectives.inCompiledCode() && CompilerDirectives.isPartialEvaluationConstant(this) && !callerFlagsAssumption.isValid()) {
+                /*
+                 * We create a new assumption after each invalidation, we shouldn't normally get
+                 * here except when the compilation races with the assumption resetting
+                 */
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+            }
+            return callerFlags;
+        }
+
+        @TruffleBoundary
+        public void updateCallerFlags(int newFlags) {
+            if ((newFlags & CallerFlags.NEEDS_LOCALS) != 0) {
+                newFlags |= CallerFlags.NEEDS_PFRAME;
+            }
+            if ((newFlags & CallerFlags.NEEDS_PFRAME) != 0) {
+                newFlags |= CallerFlags.NEEDS_FRAME_REFERENCE;
+            }
+            if ((callerFlags & newFlags) != newFlags) {
+                synchronized (this) {
+                    if ((callerFlags & newFlags) != newFlags) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        callerFlagsAssumption.invalidate("caller flags changed");
+                        callerFlags |= newFlags;
+                        callerFlagsAssumption = createAssumption();
+                    }
+                }
+            }
+        }
+
+        private static Assumption createAssumption() {
+            return Truffle.getRuntime().createAssumption("caller flags");
         }
     }
 
@@ -133,53 +163,24 @@ public abstract class IndirectCallData {
      * This scheme is used also for our interop buffer Truffle libraries.
      */
     public static final class InteropCallData {
-        private static final InteropCallData UNCACHED = new InteropCallData(Assumption.NEVER_VALID, Assumption.NEVER_VALID);
+        @CompilationFinal private CallerFlagsAssumptionSet callerFlagsAssumptionSet = new CallerFlagsAssumptionSet();
 
-        @CompilationFinal private Assumption nativeCodeDoesntNeedExceptionState;
-        @CompilationFinal private Assumption nativeCodeDoesntNeedMyFrame;
+        private static final InteropCallData UNCACHED = new InteropCallData();
 
-        public InteropCallData() {
-        }
-
-        private InteropCallData(Assumption nativeCodeDoesntNeedExceptionState, Assumption nativeCodeDoesntNeedMyFrame) {
-            this.nativeCodeDoesntNeedExceptionState = nativeCodeDoesntNeedExceptionState;
-            this.nativeCodeDoesntNeedMyFrame = nativeCodeDoesntNeedMyFrame;
+        static {
+            UNCACHED.callerFlagsAssumptionSet = CallerFlagsAssumptionSet.UNCACHED;
         }
 
         public boolean isUncached() {
             return this == UNCACHED;
         }
 
-        public boolean calleeNeedsCallerFrame() {
-            return !needNotPassFrameAssumption().isValid();
+        public int getCallerFlags() {
+            return callerFlagsAssumptionSet.getCallerFlags();
         }
 
-        public boolean calleeNeedsExceptionState() {
-            return !needNotPassExceptionAssumption().isValid();
-        }
-
-        private void setCalleeNeedsCallerFrame() {
-            needNotPassFrameAssumption().invalidate();
-        }
-
-        private void setCalleeNeedsExceptionState() {
-            needNotPassExceptionAssumption().invalidate();
-        }
-
-        private Assumption needNotPassFrameAssumption() {
-            if (nativeCodeDoesntNeedMyFrame == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                nativeCodeDoesntNeedMyFrame = Truffle.getRuntime().createAssumption();
-            }
-            return nativeCodeDoesntNeedMyFrame;
-        }
-
-        private Assumption needNotPassExceptionAssumption() {
-            if (nativeCodeDoesntNeedExceptionState == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                nativeCodeDoesntNeedExceptionState = Truffle.getRuntime().createAssumption();
-            }
-            return nativeCodeDoesntNeedExceptionState;
+        public void updateCallerFlags(int callerFlags) {
+            callerFlagsAssumptionSet.updateCallerFlags(callerFlags);
         }
 
         @NeverDefault
@@ -202,53 +203,25 @@ public abstract class IndirectCallData {
      * {@link InteropCallData}.
      */
     public static final class BoundaryCallData extends Node {
-        private static final BoundaryCallData UNCACHED = new BoundaryCallData(Assumption.NEVER_VALID, Assumption.NEVER_VALID);
 
-        @CompilationFinal private Assumption nativeCodeDoesntNeedExceptionState;
-        @CompilationFinal private Assumption nativeCodeDoesntNeedMyFrame;
+        @CompilationFinal private CallerFlagsAssumptionSet callerFlagsAssumptionSet = new CallerFlagsAssumptionSet();
 
-        private BoundaryCallData(Assumption nativeCodeDoesntNeedExceptionState, Assumption nativeCodeDoesntNeedMyFrame) {
-            this.nativeCodeDoesntNeedExceptionState = nativeCodeDoesntNeedExceptionState;
-            this.nativeCodeDoesntNeedMyFrame = nativeCodeDoesntNeedMyFrame;
-        }
+        private static final BoundaryCallData UNCACHED = new BoundaryCallData();
 
-        public BoundaryCallData() {
+        static {
+            UNCACHED.callerFlagsAssumptionSet = CallerFlagsAssumptionSet.UNCACHED;
         }
 
         public boolean isUncached() {
             return this == UNCACHED;
         }
 
-        public boolean calleeNeedsCallerFrame() {
-            return !needNotPassFrameAssumption().isValid();
+        public int getCallerFlags() {
+            return callerFlagsAssumptionSet.getCallerFlags();
         }
 
-        public boolean calleeNeedsExceptionState() {
-            return !needNotPassExceptionAssumption().isValid();
-        }
-
-        private void setCalleeNeedsCallerFrame() {
-            needNotPassFrameAssumption().invalidate();
-        }
-
-        private void setCalleeNeedsExceptionState() {
-            needNotPassExceptionAssumption().invalidate();
-        }
-
-        private Assumption needNotPassFrameAssumption() {
-            if (nativeCodeDoesntNeedMyFrame == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                nativeCodeDoesntNeedMyFrame = Truffle.getRuntime().createAssumption();
-            }
-            return nativeCodeDoesntNeedMyFrame;
-        }
-
-        private Assumption needNotPassExceptionAssumption() {
-            if (nativeCodeDoesntNeedExceptionState == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                nativeCodeDoesntNeedExceptionState = Truffle.getRuntime().createAssumption();
-            }
-            return nativeCodeDoesntNeedExceptionState;
+        public void updateCallerFlags(int callerFlags) {
+            callerFlagsAssumptionSet.updateCallerFlags(callerFlags);
         }
 
         @NeverDefault

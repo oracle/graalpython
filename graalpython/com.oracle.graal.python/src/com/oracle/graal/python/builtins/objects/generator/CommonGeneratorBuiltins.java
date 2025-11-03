@@ -180,7 +180,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                  * generator root.
                  */
                 MaterializedFrame generatorFrame = self.getGeneratorFrame();
-                callContext.executePrepareCall(frame, generatorFrame.getArguments(), rootNode.needsCallerFrame(), rootNode.needsExceptionState());
+                callContext.executePrepareCall(frame, generatorFrame.getArguments(), rootNode.getCallerFlags());
                 Object[] arguments = new Object[]{generatorFrame, sendValue};
                 generatorResult = callNode.call(arguments);
             } catch (PException e) {
@@ -236,7 +236,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                 // See the cached specialization for notes about the arguments handling
                 PRootNode rootNode = PGenerator.unwrapContinuationRoot((ContinuationRootNode) callTarget.getRootNode());
                 MaterializedFrame generatorFrame = self.getGeneratorFrame();
-                callContext.executePrepareCall(frame, generatorFrame.getArguments(), rootNode.needsCallerFrame(), rootNode.needsExceptionState());
+                callContext.executePrepareCall(frame, generatorFrame.getArguments(), rootNode.getCallerFlags());
                 Object[] arguments = new Object[]{generatorFrame, sendValue};
                 generatorResult = callNode.call(callTarget, arguments);
             } catch (PException e) {

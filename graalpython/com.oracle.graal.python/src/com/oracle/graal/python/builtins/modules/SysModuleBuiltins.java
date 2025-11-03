@@ -230,6 +230,7 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
+import com.oracle.graal.python.runtime.CallerFlags;
 import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
@@ -855,7 +856,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     // ATTENTION: this is intentionally a PythonBuiltinNode and not PythonUnaryBuiltinNode,
     // because we need a guarantee that this builtin will get its own stack frame in order to
     // be able to count how many frames down the call stack we need to walk
-    @Builtin(name = "_getframe", parameterNames = "depth", minNumOfPositionalArgs = 0, needsFrame = true, alwaysNeedsCallerFrame = true)
+    @Builtin(name = "_getframe", parameterNames = "depth", minNumOfPositionalArgs = 0, needsFrame = true, callerFlags = CallerFlags.NEEDS_PFRAME)
     @ArgumentClinic(name = "depth", defaultValue = "0", conversion = ClinicConversion.Int)
     @GenerateNodeFactory
     public abstract static class GetFrameNode extends PythonClinicBuiltinNode {
@@ -880,7 +881,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         private static PFrame escapeFrame(VirtualFrame frame, int num, ReadCallerFrameNode readCallerNode) {
             Reference currentFrameInfo = PArguments.getCurrentFrameInfo(frame);
             currentFrameInfo.markAsEscaped();
-            return readCallerNode.executeWith(currentFrameInfo, num);
+            return readCallerNode.executeWith(currentFrameInfo, num, false);
         }
 
     }
@@ -900,7 +901,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
             if (!getLanguage().singleThreadedAssumption.isValid()) {
                 warnNode.warn(frame, RuntimeWarning, ErrorMessages.WARN_CURRENT_FRAMES_MULTITHREADED);
             }
-            PFrame currentFrame = readCallerFrameNode.executeWith(frame, 0);
+            PFrame currentFrame = readCallerFrameNode.executeWith(frame, 0, false);
             PDict result = PFactory.createDict(language);
             result.setDictStorage(setHashingStorageItem.execute(frame, inliningTarget, result.getDictStorage(), PThread.getThreadId(Thread.currentThread()), currentFrame));
             return result;

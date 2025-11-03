@@ -64,6 +64,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.CallerFlags;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -299,12 +300,12 @@ public final class TracebackBuiltins extends PythonBuiltins {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         // This should invalidate the "pass frame" assumption for the
                         // BoundaryCallContext.enter
-                        Frame currentFrame = ReadCallerFrameNode.getCurrentFrame(inliningTarget, FrameAccess.READ_ONLY);
+                        Frame currentFrame = ReadCallerFrameNode.getCurrentFrame(inliningTarget, FrameAccess.READ_ONLY, CallerFlags.NEEDS_PFRAME);
                         topFrameInfo = PArguments.getCurrentFrameInfo(currentFrame);
                     }
                 }
                 for (int i = 0;; i++) {
-                    escapedFrame = readCallerFrame.executeWith(topFrameInfo, i);
+                    escapedFrame = readCallerFrame.executeWith(topFrameInfo, i, false);
                     if (escapedFrame == null || escapedFrame.getRef() == frameInfo) {
                         break;
                     }

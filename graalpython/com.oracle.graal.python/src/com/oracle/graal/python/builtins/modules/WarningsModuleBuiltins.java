@@ -119,6 +119,7 @@ import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.runtime.CallerFlags;
 import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -424,7 +425,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                 stackLevel--;
                 selector = rootNode -> ReadCallerFrameNode.SkipInternalFramesSelector.INSTANCE.skip(rootNode) || isFilenameToSkip(skipFilePrefixes, rootNode);
             }
-            return readCallerNode.executeWith(ref, selector, stackLevel);
+            return readCallerNode.executeWith(ref, selector, stackLevel, false);
         }
 
         @TruffleBoundary
@@ -986,7 +987,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = J_WARN, minNumOfPositionalArgs = 2, parameterNames = {"$mod", "message", "category", "stacklevel", "source",
-                    "skip_file_prefixes"}, declaresExplicitSelf = true, alwaysNeedsCallerFrame = true)
+                    "skip_file_prefixes"}, declaresExplicitSelf = true, callerFlags = CallerFlags.NEEDS_PFRAME)
     @ArgumentClinic(name = "category", defaultValue = "PNone.NONE")
     @ArgumentClinic(name = "stacklevel", conversion = ClinicConversion.Int, defaultValue = "1")
     @ArgumentClinic(name = "source", defaultValue = "PNone.NONE")

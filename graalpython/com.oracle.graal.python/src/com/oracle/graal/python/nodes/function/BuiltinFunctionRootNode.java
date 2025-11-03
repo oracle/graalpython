@@ -101,8 +101,8 @@ public final class BuiltinFunctionRootNode extends PRootNode {
         this.factory = factory;
         this.declaresExplicitSelf = declaresExplicitSelf;
         this.wrapsSlotForClass = wrapsSlotForClass;
-        if (builtin.alwaysNeedsCallerFrame()) {
-            setNeedsCallerFrame();
+        if (builtin.callerFlags() != 0) {
+            updateCallerFlags(builtin.callerFlags());
         }
     }
 

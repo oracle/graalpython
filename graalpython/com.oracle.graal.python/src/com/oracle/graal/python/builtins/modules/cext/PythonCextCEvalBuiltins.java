@@ -147,7 +147,7 @@ public final class PythonCextCEvalBuiltins {
                         @Cached GetCurrentFrameRef getCurrentFrameRef,
                         @Cached ReadCallerFrameNode readCallerFrameNode) {
             PFrame.Reference reference = getCurrentFrameRef.execute(null, inliningTarget);
-            return readCallerFrameNode.executeWith(reference, 0);
+            return readCallerFrameNode.executeWith(reference, 0, false);
         }
     }
 
@@ -215,7 +215,7 @@ public final class PythonCextCEvalBuiltins {
                         @Cached GetCurrentFrameRef getCurrentFrameRef,
                         @Cached ReadCallerFrameNode readCallerFrameNode) {
             PFrame.Reference frameRef = getCurrentFrameRef.execute(null, inliningTarget);
-            PFrame pFrame = readCallerFrameNode.executeWith(frameRef, 0);
+            PFrame pFrame = readCallerFrameNode.executeWith(frameRef, 0, false);
             return pFrame.getGlobals();
         }
     }
