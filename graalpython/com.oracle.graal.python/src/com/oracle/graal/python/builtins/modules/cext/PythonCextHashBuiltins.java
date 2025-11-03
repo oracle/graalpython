@@ -48,6 +48,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_hash_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING_BINARY;
 
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
@@ -62,7 +63,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.api.strings.TruffleString.Encoding;
 import com.oracle.truffle.api.strings.TruffleString.HashCodeNode;
 
 public final class PythonCextHashBuiltins {
@@ -118,7 +118,7 @@ public final class PythonCextHashBuiltins {
                         @Cached TruffleString.FromByteArrayNode toString,
                         @Cached HashCodeNode hashNode) {
             byte[] array = readNode.readByteArray(value, (int) size);
-            TruffleString string = toString.execute(array, Encoding.US_ASCII, false);
+            TruffleString string = toString.execute(array, TS_ENCODING_BINARY, false);
             return PyObjectHashNode.hash(string, hashNode);
         }
     }

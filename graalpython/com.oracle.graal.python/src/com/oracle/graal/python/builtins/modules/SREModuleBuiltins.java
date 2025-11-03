@@ -105,7 +105,6 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
@@ -160,8 +159,6 @@ public final class SREModuleBuiltins extends PythonBuiltins {
 
     @Override
     public void initialize(Python3Core core) {
-        addBuiltinConstant("_with_tregex", core.getContext().getLanguage().getEngineOption(PythonOptions.WithTRegex));
-        addBuiltinConstant("_with_sre", core.getContext().getLanguage().getEngineOption(PythonOptions.TRegexUsesSREFallback));
         addBuiltinConstant("_METHOD_SEARCH", PythonMethod.Search);
         addBuiltinConstant("_METHOD_MATCH", PythonMethod.Match);
         addBuiltinConstant("_METHOD_FULLMATCH", PythonMethod.FullMatch);
@@ -524,7 +521,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
 
     @GenerateCached
     @ImportStatic(PythonMethod.class)
-    @SuppressWarnings("truffle-inlining") // TODO
+    @SuppressWarnings("truffle-inlining")
     abstract static class TRegexCompileInner extends PNodeWithContext {
 
         private static final TruffleString T__GETLOCALE = tsLiteral("_getlocale");
@@ -949,8 +946,8 @@ public final class SREModuleBuiltins extends PythonBuiltins {
             Object compiledRegex = tRegexCompile.execute(frame, tRegexCache, PythonMethod.Search, false);
             Object compiledRegexMustAdvance = tRegexCompile.execute(frame, tRegexCache, PythonMethod.Search, true);
             if (compiledRegex == PNone.NONE || compiledRegexMustAdvance == PNone.NONE) {
-                // TODO: Fallback
-                throw CompilerDirectives.shouldNotReachHere();
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw CompilerDirectives.shouldNotReachHere("unsupported regular expression: /" + tRegexCache.pattern + "/" + tRegexCache.flags);
             }
             checkInputTypeNode.execute(frame, input, tRegexCache.binary);
             int groupCount = TRegexUtil.TRegexCompiledRegexAccessor.groupCount(compiledRegex, inliningTarget, readGroupCountNode);
@@ -1134,8 +1131,8 @@ public final class SREModuleBuiltins extends PythonBuiltins {
             Object compiledRegex = tRegexCompile.execute(frame, tRegexCache, PythonMethod.Search, false);
             Object compiledRegexMustAdvance = tRegexCompile.execute(frame, tRegexCache, PythonMethod.Search, true);
             if (compiledRegex == PNone.NONE || compiledRegexMustAdvance == PNone.NONE) {
-                // TODO: Fallback
-                throw CompilerDirectives.shouldNotReachHere();
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw CompilerDirectives.shouldNotReachHere("unsupported regular expression: /" + tRegexCache.pattern + "/" + tRegexCache.flags);
             }
             checkInputTypeNode.execute(frame, input, tRegexCache.binary);
             return innerNode1.execute(inliningTarget, frame, pattern, compiledRegex, compiledRegexMustAdvance, replacement, input, count, tRegexCache.binary,

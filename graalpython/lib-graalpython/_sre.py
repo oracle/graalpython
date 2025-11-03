@@ -77,7 +77,7 @@ def _getlocale():
     return '.'.join((lang, encoding))
 
 def _new_compile(p, flags=0):
-    if _with_tregex and isinstance(p, (str, bytes, bytearray, memoryview, array, mmap)):
+    if isinstance(p, (str, bytes, bytearray, memoryview, array, mmap)):
         return _t_compile(p, flags)
     else:
         return _sre_compile(p, flags)
@@ -279,11 +279,7 @@ class Pattern():
             raise TypeError("cannot use a bytes pattern on a string-like object")
 
     def __fallback_compile(self):
-        if self.__compiled_fallback is None:
-            if not _with_sre:
-                raise ValueError("regular expression not supported, no fallback engine present") from None
-            self.__compiled_fallback = _sre_compile(self.pattern, self.__input_flags)
-        return self.__compiled_fallback
+        raise ValueError("regular expression not supported, no fallback engine present") from None
 
     def __repr__(self):
         flags = self.flags
