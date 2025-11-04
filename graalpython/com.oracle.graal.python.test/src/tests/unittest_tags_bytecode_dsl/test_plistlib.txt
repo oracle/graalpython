@@ -1,6 +1,6 @@
 test.test_plistlib.MiscTestCase.test__all__ @ linux-x86_64
 test.test_plistlib.TestBinaryPlistlib.test_cycles @ linux-x86_64
-!test.test_plistlib.TestBinaryPlistlib.test_deep_nesting @ linux-x86_64
+!test.test_plistlib.TestBinaryPlistlib.test_deep_nesting
 test.test_plistlib.TestBinaryPlistlib.test_dump_duplicates @ linux-x86_64
 test.test_plistlib.TestBinaryPlistlib.test_identity @ linux-x86_64
 test.test_plistlib.TestBinaryPlistlib.test_invalid_binary @ linux-x86_64

@@ -11,5 +11,5 @@ test.test_trace.TestLineCounts.test_linear_methods @ linux-x86_64
 test.test_trace.TestLineCounts.test_traced_func_importing @ linux-x86_64
 test.test_trace.TestLineCounts.test_traced_func_linear @ linux-x86_64
 # GR-59862 - passes only if one of the other tests invokes the traced function before
-!test.test_trace.TestRunExecCounts.test_exec_counts @ linux-x86_64
+!test.test_trace.TestRunExecCounts.test_exec_counts
 test.test_trace.Test_Ignore.test_ignored @ linux-x86_64

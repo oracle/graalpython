@@ -185,7 +185,7 @@ ctypes.test.test_prototypes.CharPointersTestCase.test_c_void_p_arg_with_c_wchar_
 ctypes.test.test_prototypes.WCharPointersTestCase.test_POINTER_c_wchar_arg @ linux-x86_64
 ctypes.test.test_prototypes.WCharPointersTestCase.test_c_wchar_p_arg @ linux-x86_64
 ctypes.test.test_python_api.PythonAPITestCase.test_PyBytes_FromStringAndSize @ linux-x86_64
-!ctypes.test.test_python_api.PythonAPITestCase.test_PyOS_snprintf @ linux-x86_64
+!ctypes.test.test_python_api.PythonAPITestCase.test_PyOS_snprintf
 ctypes.test.test_returnfuncptrs.ReturnFuncPtrTestCase.test_from_dll @ linux-x86_64
 ctypes.test.test_returnfuncptrs.ReturnFuncPtrTestCase.test_from_dll_refcount @ linux-x86_64
 ctypes.test.test_simplesubclasses.Test.test_compare @ linux-x86_64

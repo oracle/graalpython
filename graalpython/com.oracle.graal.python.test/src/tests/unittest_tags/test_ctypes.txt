@@ -1,5 +1,5 @@
 # Transient, at least on M1
-!ctypes.test.test_python_api.PythonAPITestCase.test_PyOS_snprintf @ linux-aarch64,linux-x86_64
+!ctypes.test.test_python_api.PythonAPITestCase.test_PyOS_snprintf
 test.test_ctypes.test_anon.AnonTest.test_anon @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_ctypes.test_anon.AnonTest.test_anon_nonmember @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_ctypes.test_anon.AnonTest.test_anon_nonseq @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64

@@ -15,7 +15,7 @@ test.test_thread.LockTests.test_try_acquire_contended @ linux-x86_64
 test.test_thread.LockTests.test_weakref_exists @ linux-x86_64
 test.test_thread.LockTests.test_with @ linux-x86_64
 # Transient [GR-65187]
-!test.test_thread.ThreadRunningTests.test__count @ linux-x86_64
+!test.test_thread.ThreadRunningTests.test__count
 test.test_thread.ThreadRunningTests.test_nt_and_posix_stack_size @ linux-x86_64
 test.test_thread.ThreadRunningTests.test_stack_size @ linux-x86_64
 test.test_thread.ThreadRunningTests.test_starting_threads @ linux-x86_64

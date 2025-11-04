@@ -79,9 +79,9 @@ test.test_logging.ConfigDictTest.test_custom_formatter_function_with_validate @ 
 test.test_logging.ConfigDictTest.test_invalid_type_raises @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_logging.ConfigDictTest.test_kwargs_passing @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 # Disabled because these tests hang on Darwin
-!test.test_logging.ConfigDictTest.test_listen_config_10_ok @ darwin-arm64,linux-aarch64,linux-x86_64
-!test.test_logging.ConfigDictTest.test_listen_config_1_ok @ darwin-arm64,linux-aarch64,linux-x86_64
-!test.test_logging.ConfigDictTest.test_listen_verify @ darwin-arm64,linux-aarch64,linux-x86_64
+!test.test_logging.ConfigDictTest.test_listen_config_10_ok
+!test.test_logging.ConfigDictTest.test_listen_config_1_ok
+!test.test_logging.ConfigDictTest.test_listen_verify
 test.test_logging.ConfigDictTest.test_multiprocessing_queues @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_logging.ConfigDictTest.test_namedtuple @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_logging.ConfigFileTest.test_config0_ok @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

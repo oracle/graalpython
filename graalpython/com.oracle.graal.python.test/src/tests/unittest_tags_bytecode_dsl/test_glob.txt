@@ -11,4 +11,4 @@ test.test_glob.GlobTests.test_glob_one_directory @ linux-x86_64
 test.test_glob.GlobTests.test_glob_symlinks @ linux-x86_64
 test.test_glob.GlobTests.test_hidden_glob @ linux-x86_64
 test.test_glob.GlobTests.test_recursive_glob @ linux-x86_64
-!test.test_glob.SymlinkLoopGlobTests.test_selflink @ linux-x86_64
+!test.test_glob.SymlinkLoopGlobTests.test_selflink

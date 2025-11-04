@@ -6,7 +6,7 @@ test.test_exceptions.AttributeErrorTests.test_getattr_suggestions_for_same_name 
 test.test_exceptions.ExceptionTests.testAttributes @ linux-x86_64
 test.test_exceptions.ExceptionTests.testChainingAttrs @ linux-x86_64
 test.test_exceptions.ExceptionTests.testChainingDescriptors @ linux-x86_64
-!test.test_exceptions.ExceptionTests.testInfiniteRecursion @ linux-x86_64
+!test.test_exceptions.ExceptionTests.testInfiniteRecursion
 test.test_exceptions.ExceptionTests.testInvalidAttrs @ linux-x86_64
 test.test_exceptions.ExceptionTests.testInvalidTraceback @ linux-x86_64
 test.test_exceptions.ExceptionTests.testKeywordArgs @ linux-x86_64
@@ -17,7 +17,7 @@ test.test_exceptions.ExceptionTests.testSyntaxErrorMissingParens @ linux-x86_64
 test.test_exceptions.ExceptionTests.testWithTraceback @ linux-x86_64
 test.test_exceptions.ExceptionTests.test_WindowsError @ linux-x86_64
 test.test_exceptions.ExceptionTests.test_assert_shadowing @ linux-x86_64
-!test.test_exceptions.ExceptionTests.test_badisinstance @ linux-x86_64
+!test.test_exceptions.ExceptionTests.test_badisinstance
 test.test_exceptions.ExceptionTests.test_context_of_exception_in_else_and_finally @ linux-x86_64
 test.test_exceptions.ExceptionTests.test_context_of_exception_in_except_and_finally @ linux-x86_64
 test.test_exceptions.ExceptionTests.test_context_of_exception_in_try_and_finally @ linux-x86_64

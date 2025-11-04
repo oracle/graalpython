@@ -77,7 +77,7 @@ test.test_threading.ExceptHookTests.test_excepthook @ darwin-arm64,darwin-x86_64
 test.test_threading.ExceptHookTests.test_original_excepthook @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_threading.ExceptHookTests.test_system_exit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 # Transient on Darwin (at least)
-!test.test_threading.InterruptMainTests.test_can_interrupt_tight_loops @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+!test.test_threading.InterruptMainTests.test_can_interrupt_tight_loops
 test.test_threading.InterruptMainTests.test_interrupt_main_noerror @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_threading.LockTests.test_acquire_contended @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_threading.LockTests.test_acquire_destroy @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -126,7 +126,7 @@ test.test_threading.SemaphoreTests.test_try_acquire @ darwin-arm64,darwin-x86_64
 test.test_threading.SemaphoreTests.test_try_acquire_contended @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_threading.SemaphoreTests.test_with @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 # Can transiently fail with java.lang.AssertionError: The TruffleContext must be entered
-!test.test_threading.ThreadJoinOnShutdown.test_1_join_on_shutdown @ darwin-arm64,linux-aarch64,linux-x86_64
+!test.test_threading.ThreadJoinOnShutdown.test_1_join_on_shutdown
 test.test_threading.ThreadJoinOnShutdown.test_4_daemon_threads @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_threading.ThreadJoinOnShutdown.test_thread_from_thread @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_threading.ThreadTests.test_BoundedSemaphore_limit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

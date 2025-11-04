@@ -52,7 +52,7 @@ test.test_subprocess.POSIXProcessTestCase.test_stdout_stderr_are_single_inout_fd
 test.test_subprocess.POSIXProcessTestCase.test_stdout_stdin_are_single_inout_fd @ linux-x86_64
 test.test_subprocess.POSIXProcessTestCase.test_stopped @ linux-x86_64
 test.test_subprocess.POSIXProcessTestCase.test_swap_fds @ linux-x86_64
-!test.test_subprocess.POSIXProcessTestCase.test_swap_std_fds_with_one_closed @ linux-x86_64
+!test.test_subprocess.POSIXProcessTestCase.test_swap_std_fds_with_one_closed
 test.test_subprocess.POSIXProcessTestCase.test_terminate_dead @ linux-x86_64
 test.test_subprocess.POSIXProcessTestCase.test_user_error @ linux-x86_64
 test.test_subprocess.POSIXProcessTestCase.test_wait_when_sigchild_ignored @ linux-x86_64

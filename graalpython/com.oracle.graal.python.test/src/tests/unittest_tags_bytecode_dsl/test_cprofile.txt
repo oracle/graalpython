@@ -4,5 +4,5 @@ test.test_cprofile.TestCommandLine.test_sort @ linux-x86_64
 test.test_profile.ProfileTest.test_output_file_when_changing_directory @ linux-x86_64
 test.test_profile.ProfileTest.test_run @ linux-x86_64
 # This test times out in the gate even though it succeeds locally and in the retagger. Race condition?
-!test.test_profile.ProfileTest.test_run_profile_as_module @ linux-x86_64
+!test.test_profile.ProfileTest.test_run_profile_as_module
 test.test_profile.ProfileTest.test_runctx @ linux-x86_64

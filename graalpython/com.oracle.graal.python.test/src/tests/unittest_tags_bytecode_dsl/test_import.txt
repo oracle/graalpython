@@ -13,7 +13,7 @@ test.test_import.FilePermissionTests.test_creation_mode @ linux-x86_64
 test.test_import.FilePermissionTests.test_pyc_always_writable @ linux-x86_64
 test.test_import.ImportTests.test_bogus_fromlist @ linux-x86_64
 test.test_import.ImportTests.test_case_sensitivity @ linux-x86_64
-!test.test_import.ImportTests.test_concurrency @ linux-x86_64
+!test.test_import.ImportTests.test_concurrency
 test.test_import.ImportTests.test_double_const @ linux-x86_64
 test.test_import.ImportTests.test_failing_import_sticks @ linux-x86_64
 test.test_import.ImportTests.test_failing_reload @ linux-x86_64

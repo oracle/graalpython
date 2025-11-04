@@ -15,7 +15,7 @@ test.test_thread.LockTests.test_try_acquire_contended @ darwin-arm64,darwin-x86_
 test.test_thread.LockTests.test_weakref_exists @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_thread.LockTests.test_with @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 # Transient [GR-65187]
-!test.test_thread.ThreadRunningTests.test__count @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
+!test.test_thread.ThreadRunningTests.test__count
 test.test_thread.ThreadRunningTests.test_nt_and_posix_stack_size @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_thread.ThreadRunningTests.test_stack_size @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_thread.ThreadRunningTests.test_starting_threads @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

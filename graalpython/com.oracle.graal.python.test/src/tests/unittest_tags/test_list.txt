@@ -40,7 +40,7 @@ test.test_list.ListTest.test_remove @ darwin-arm64,darwin-x86_64,linux-aarch64,l
 test.test_list.ListTest.test_repeat @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_list.ListTest.test_repr @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 # Disabled due to transient stack overflow that fails to get caught and crashes the VM
-!test.test_list.ListTest.test_repr_deep @ darwin-arm64,linux-aarch64,linux-x86_64
+!test.test_list.ListTest.test_repr_deep
 test.test_list.ListTest.test_repr_large @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_list.ListTest.test_reverse @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_list.ListTest.test_reversed @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

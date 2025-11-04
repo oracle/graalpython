@@ -188,11 +188,11 @@ test.test_asyncio.test_events.SelectEventLoopTests.test_ssl_connect_accepted_soc
 !test.test_asyncio.test_events.SelectEventLoopTests.test_subprocess_close_after_finish
 test.test_asyncio.test_events.SelectEventLoopTests.test_subprocess_exec_invalid_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 # Timeouts
-!test.test_asyncio.test_events.SelectEventLoopTests.test_subprocess_exitcode @ darwin-arm64,darwin-x86_64
-!test.test_asyncio.test_events.SelectEventLoopTests.test_subprocess_shell @ darwin-arm64,darwin-x86_64,linux-aarch64
+!test.test_asyncio.test_events.SelectEventLoopTests.test_subprocess_exitcode
+!test.test_asyncio.test_events.SelectEventLoopTests.test_subprocess_shell
 test.test_asyncio.test_events.SelectEventLoopTests.test_subprocess_shell_invalid_args @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 # Timeouts
-!test.test_asyncio.test_events.SelectEventLoopTests.test_subprocess_wait_no_same_group @ darwin-arm64,linux-aarch64
+!test.test_asyncio.test_events.SelectEventLoopTests.test_subprocess_wait_no_same_group
 test.test_asyncio.test_events.SelectEventLoopTests.test_timeout_rounding @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_events.SelectEventLoopTests.test_unclosed_pipe_transport @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_events.SelectEventLoopTests.test_write_pipe @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
@@ -784,7 +784,7 @@ test.test_asyncio.test_subprocess.SubprocessSafeWatcherTests.test_popen_error @ 
 test.test_asyncio.test_subprocess.SubprocessSafeWatcherTests.test_popen_error_with_stdin_pipe @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_subprocess.SubprocessSafeWatcherTests.test_read_stdout_after_process_exit @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 # Transiently times out GR-52666
-!test.test_asyncio.test_subprocess.SubprocessSafeWatcherTests.test_shell @ darwin-x86_64,linux-aarch64,linux-x86_64
+!test.test_asyncio.test_subprocess.SubprocessSafeWatcherTests.test_shell
 !test.test_asyncio.test_subprocess.SubprocessSafeWatcherTests.test_start_new_session
 test.test_asyncio.test_subprocess.SubprocessThreadedWatcherTests.test_cancel_make_subprocess_transport_exec @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_subprocess.SubprocessThreadedWatcherTests.test_cancel_post_init @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64

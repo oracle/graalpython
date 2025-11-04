@@ -1,5 +1,5 @@
 # Counting file descriptors, can randomly change due to finalizers
-!test.test_zipfile.TestsWithMultipleOpens.test_many_opens @ darwin-arm64,linux-aarch64,linux-x86_64
+!test.test_zipfile.TestsWithMultipleOpens.test_many_opens
 test.test_zipfile._path.test_path.TestPath.test_backslash_not_separator @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_zipfile._path.test_path.TestPath.test_dir_parent @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_zipfile._path.test_path.TestPath.test_eq_hash @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64

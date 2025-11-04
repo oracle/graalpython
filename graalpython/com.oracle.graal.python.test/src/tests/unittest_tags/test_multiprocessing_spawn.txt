@@ -50,6 +50,6 @@ test.test_multiprocessing_spawn.test_misc.TestWait.test_wait_socket @ darwin-arm
 test.test_multiprocessing_spawn.test_misc.TestWait.test_wait_socket_slow @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_spawn.test_misc.TestWait.test_wait_timeout @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
 test.test_multiprocessing_spawn.test_misc._TestImportStar.test_import @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-!test.test_multiprocessing_spawn.test_processes.WithProcessesTestPool.test_enter @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+!test.test_multiprocessing_spawn.test_processes.WithProcessesTestPool.test_enter
 # transiently fails
 !test.test_multiprocessing_spawn.test_threads.WithThreadsTestPool.test_terminate
