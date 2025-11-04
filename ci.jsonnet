@@ -353,7 +353,7 @@
     } + {
         [bench + "-bytecode-dsl"]: bench_task(bench) + bytecode_dsl_bench + platform_spec(no_jobs) + bench_variants({
             "vm_name:graalvm_ee_default_interpreter_bc_dsl"                    : {"linux:amd64:jdk-latest" : daily     + t("04:00:00")},
-            "vm_name:graalpython_enterprise_interpreter_bc_dsl"                : {"linux:amd64:jdk-latest" : daily     + t("04:00:00")},
+            "vm_name:graalpython_enterprise_interpreter_bc_dsl"                : {"linux:amd64:jdk-latest" : weekly    + t("04:00:00")},
         }),
         for bench in ["micro_small", "meso_small"]
     } + {
