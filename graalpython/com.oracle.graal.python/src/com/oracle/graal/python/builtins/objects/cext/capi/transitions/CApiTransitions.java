@@ -96,7 +96,6 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
@@ -1080,8 +1079,6 @@ public abstract class CApiTransitions {
                 ctype = CStructs.GraalPyVarObject;
             } else if (isFloatObjectProfile.profile(inliningTarget, delegate instanceof PFloat)) {
                 ctype = CStructs.GraalPyFloatObject;
-            } else if (isMemViewObjectProfile.profile(inliningTarget, delegate instanceof PMemoryView)) {
-                ctype = CStructs.PyMemoryViewObject;
             } else {
                 ctype = CStructs.GraalPyObject;
             }
