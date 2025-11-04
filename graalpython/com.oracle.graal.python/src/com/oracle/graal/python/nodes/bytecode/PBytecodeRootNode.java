@@ -2644,7 +2644,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         Object matchType = virtualFrame.getObject(stackTop);
         virtualFrame.clear(stackTop);
         ExceptMatchNode matchNode = insertChildNode(localNodes, beginBci, UNCACHED_EXCEPT_MATCH, ExceptMatchNodeGen.class, NODE_EXCEPT_MATCH, useCachedNodes);
-        return matchNode.executeMatch(virtualFrame, exception, matchType);
+        return matchNode.executeMatch(exception, matchType);
     }
 
     @BytecodeInterpreterSwitch

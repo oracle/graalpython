@@ -143,9 +143,11 @@ public class BaseExceptionGroupBuiltins extends PythonBuiltins {
     @SlotSignature(name = "BaseExceptionGroup.__new__", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class BaseExceptionGroupNode extends PythonTernaryBuiltinNode {
+        @Override
+        public abstract PBaseExceptionGroup execute(VirtualFrame frame, Object cls, Object messageObj, Object exceptionsObj);
 
         @Specialization
-        static Object doManaged(VirtualFrame frame, Object cls, Object messageObj, Object exceptionsObj,
+        static PBaseExceptionGroup doManaged(VirtualFrame frame, Object cls, Object messageObj, Object exceptionsObj,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
@@ -233,6 +235,7 @@ public class BaseExceptionGroupBuiltins extends PythonBuiltins {
                 appendCodePointNode.execute(builder, 's');
             }
             appendCodePointNode.execute(builder, ')');
+            // TODO: GR-70916 recursive printing of exception groups + indentation
             return toStringNode.execute(builder);
         }
     }

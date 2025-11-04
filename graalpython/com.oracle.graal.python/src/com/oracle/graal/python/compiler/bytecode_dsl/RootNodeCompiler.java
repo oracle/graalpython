@@ -239,6 +239,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
     private SourceRange currentLocation;
     boolean savedYieldFromGenerator;
     BytecodeLocal yieldFromGenerator;
+    boolean inExceptStar;
 
     /**
      * Applicable only for generators: we need to know if we are in a code block that saved the
@@ -594,6 +595,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         currentSaveExceptionLocal = null;
         prevSaveExceptionLocal = null;
         this.savedYieldFromGenerator = false;
+        this.inExceptStar = false;
     }
 
     // -------------- helpers --------------
@@ -3516,6 +3518,8 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             // breakLabel:
             // @formatter:on
             boolean newStatement = beginSourceSection(node, b);
+            boolean saveInExceptStar = inExceptStar;
+            inExceptStar = false;
             b.beginBlock();
 
             BytecodeLocal iter = b.createLocal();
@@ -3563,6 +3567,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
             b.endBlock();
             endSourceSection(b, newStatement);
+            inExceptStar = saveInExceptStar;
             return null;
         }
 
@@ -5053,6 +5058,9 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             if (!scope.isFunction()) {
                 ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "'return' outside function");
             }
+            if (inExceptStar) {
+                ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "'break', 'continue' and 'return' cannot appear in an except* block");
+            }
             beginReturn(b);
             if (node.value != null) {
                 node.value.accept(this);
@@ -5104,9 +5112,9 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                     b.endBlock();
                 });
 
-                    emitTryExceptElse(node); // try
+                    emitTryExceptElse(node); // try-except-else
 
-                    b.beginBlock(); // catch
+                    b.beginBlock(); // catch uncaught exceptions
                         BytecodeLocal savedException = b.createLocal();
                         BytecodeLocal prevPrevSaved = enterSaveExceptionBlock(savedException);
 
@@ -5118,11 +5126,11 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                         b.endMarkExceptionAsCaught();
 
                         b.beginTryCatchOtherwise(() -> emitRestoreCurrentException(savedException));
-                            b.beginBlock(); // try
+                            b.beginBlock(); // try finally body
                                 visitSequence(node.finalBody);
-                            b.endBlock(); // try
+                            b.endBlock(); // try finally body
 
-                            b.beginBlock(); // catch
+                            b.beginBlock(); // catch exception in finally
                                 emitRestoreCurrentException(savedException);
 
                                 b.beginMarkExceptionAsCaught();
@@ -5132,7 +5140,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                                 b.beginReraise();
                                     b.emitLoadException();
                                 b.endReraise();
-                            b.endBlock(); // catch
+                            b.endBlock(); // catch exception in finally
                         b.endTryCatchOtherwise();
 
                         b.beginReraise();
@@ -5140,7 +5148,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                         b.endReraise();
 
                         exitSaveExceptionBlock(prevPrevSaved);
-                    b.endBlock(); // catch
+                    b.endBlock(); // catch uncaught exceptions
                 b.endTryCatchOtherwise();
                 // @formatter:on
             } else {
@@ -5347,6 +5355,301 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             }
         }
 
+        /**
+         * Emit the "try-except-else" part of a TryStar node. The "finally" part, if it exists,
+         * should be handled by the caller of this method.
+         */
+        private void emitTryExceptElse(StmtTy.TryStar node) {
+            /**
+             * See the overload for StmtTy.Try node for general overview.
+             *
+             * Some exception groups and try-except* related notes and differences w.r.t. regular try-except block:
+             *
+             * - In except* scenario, all handlers will try to match its exceptions from exception group.
+             *   This means, that possibly more than one handler bodies can be executed, and also all handler clauses
+             *   will be checked with caught exception group.
+             * - If handler raises a new exception, does explicit raise of a caught exception or does a reraise, all
+             *   these needs to be collected into one big exception group that gets reraised at the end of the
+             *   try-except* block, should it not be empty. Unmatched exceptions will end up in this final exception
+             *   group as well. We use the exception accumulator `exceptionAcc` during the
+             *   course of this function for this purpose.
+             * - In regular try-except the exceptions raised in `try` and caught in `except` were the same. However,
+             *   in try-except* the exception caught in `except*` is an exception group created ad-hoc, containing
+             *   only those exceptions, that matched the handler clause.
+             *
+             * @formatter:off
+             * try {
+             *   try_body
+             *   // fall through to else_body
+             * } catch eg {
+             *   save current exception
+             *   set current exception to eg
+             *   save eg to exceptionOrig
+             *   create exception_acc  # accumulator for final, all-encompassing exception group
+             *   markCaught(ex)
+             *   try {
+             *     if (handler_1_matches_eg(eg)) {
+             *       matched_ex = exceptions from eg that did match clause from handler 1
+             *       unmatched_ex = exceptions from eg that didn't match clause from handler 1
+             *       assign matched_ex to handler_1_name
+             *       try {
+             *         handler_1_body
+             *       } catch handler_1_ex {
+             *         add_exception_to_exception_acc(handler_1_ex)
+             *         unbind handler_1_name
+             *         // Freeze the bci before it gets rethrown.
+             *         markCaught(handler_ex)
+             *       } otherwise {
+             *         unbind handler_1_name
+             *       }
+             *     }
+             *     if (handler_2_matches_eg(unmatched_ex)) {
+             *       // here, the matched_ex and unmatched_ex from handler 1 are repurposed
+             *       ...
+             *     }
+             *     // similarly for all other handlers
+             *     ...
+             *
+             *     add_exception_to_exception_acc(unmatched_ex)
+             *     reraise exception_acc  # we need to raise, so that "otherwise" will not run
+             *   } catch final_eg {
+             *     // A handler for the final exception group, restore exception state and reraise it.
+             *     restore current exception
+             *     reraise final_eg
+             *     goto afterElse
+             *   } otherwise {
+             *     // Exception handled. Restore the exception state.
+             *     restore current exception
+             *   }
+             * }
+             * else_body
+             * afterElse:
+             */
+            b.beginBlock(); // outermost block
+
+            BytecodeLabel afterElse = b.createLabel();
+
+            b.beginTryCatch();
+
+                b.beginBlock(); // try
+                    visitSequence(node.body);
+                b.endBlock(); // try
+
+                b.beginBlock(); // catch
+                    BytecodeLocal exceptionOrig = b.createLocal();
+                    BytecodeLocal savedException = b.createLocal();
+                    BytecodeLocal prevPrevEx = enterSaveExceptionBlock(savedException);
+
+                    emitSaveCurrentException(savedException);
+                    emitSetCurrentException();
+
+                    b.beginStoreLocal(exceptionOrig);
+                        b.emitGetCaughtException();
+                    b.endStoreLocal();
+                    // Mark this location for the stack trace.
+                    b.beginMarkExceptionAsCaught();
+                        b.emitLoadException(); // ex
+                    b.endMarkExceptionAsCaught();
+
+                    b.beginTryCatchOtherwise(() -> emitRestoreCurrentException(savedException));
+                        b.beginBlock(); // try (all handlers)
+                            BytecodeLocal matchedExceptions = b.createLocal();
+                            BytecodeLocal unmatchedExceptions = b.createLocal();
+                            b.beginStoreLocal(unmatchedExceptions);
+                                b.emitLoadException();
+                            b.endStoreLocal();
+
+                            BytecodeLocal exceptionAcc = b.createLocal();
+                            b.beginStoreLocal(exceptionAcc);
+                                b.emitLoadConstant(PNone.NONE);
+                            b.endStoreLocal();
+
+                            for (ExceptHandlerTy h : node.handlers) {
+                                boolean newStatement = beginSourceSection(h, b);
+
+                                ExceptHandlerTy.ExceptHandler handler = (ExceptHandlerTy.ExceptHandler) h;
+                                if (handler.type == null) {
+                                    ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "cannot have bare 'except' in 'try' containing 'except*' clauses.");
+                                }
+
+                                b.beginIfThen();
+                                    b.beginSplitExceptionGroups(matchedExceptions, unmatchedExceptions);
+                                        b.emitLoadLocal(unmatchedExceptions); // ex
+                                        handler.type.accept(this);
+                                        b.emitLoadLocal(exceptionOrig);
+                                    b.endSplitExceptionGroups();
+
+                                    b.beginBlock(); // then; handler body
+                                        boolean saveInExceptStarState;
+                                        if (handler.name != null) {
+                                            // Assign exception to handler name.
+                                            beginStoreLocal(handler.name, b);
+                                                b.beginUnwrapException();
+                                                    b.emitLoadLocal(matchedExceptions);
+                                                b.endUnwrapException();
+                                            endStoreLocal(handler.name, b);
+
+                                            b.beginTryCatchOtherwise(() -> emitUnbindHandlerVariable(handler));
+                                                b.beginBlock(); // try (this handler only)
+                                                    b.beginSetCurrentException();
+                                                        b.emitLoadLocal(matchedExceptions);
+                                                    b.endSetCurrentException();
+
+                                                    saveInExceptStarState = inExceptStar;
+                                                    inExceptStar = true;
+
+                                                    visitSequence(handler.body);
+
+                                                    inExceptStar = saveInExceptStarState;
+
+                                                    b.beginSetCurrentException();
+                                                        b.emitLoadLocal(exceptionOrig);
+                                                    b.endSetCurrentException();
+                                                b.endBlock(); // try (this handler only)
+
+                                                b.beginBlock(); // catch (exception thrown in this handler)
+                                                    emitUnbindHandlerVariable(handler);
+
+                                                    b.beginMarkExceptionAsCaught();
+                                                        b.emitLoadException(); // handler_i_ex (exception thrown in this handler)
+                                                    b.endMarkExceptionAsCaught();
+
+                                                    b.beginIfThenElse();
+                                                        b.beginIsExceptionGroup(); // if
+                                                            b.emitLoadException();
+                                                            b.emitLoadLocal(exceptionOrig);
+                                                        b.endIsExceptionGroup();
+
+                                                        b.beginBlock(); // then (explicit raises and reraises)
+                                                            b.beginStoreLocal(exceptionAcc);
+                                                                b.beginHandleExceptionsInHandler();
+                                                                    b.emitLoadException(); // handler_i_ex (exception thrown in this handler)
+                                                                    b.emitLoadLocal(exceptionAcc);
+                                                                    b.emitLoadLocal(exceptionOrig);
+                                                                    handler.type.accept(this);
+                                                                b.endHandleExceptionsInHandler();
+                                                            b.endStoreLocal();
+                                                        b.endBlock();
+
+                                                        b.beginBlock(); // else (new exceptions raised)
+                                                            b.beginSetCurrentException();
+                                                                b.emitLoadLocal(matchedExceptions);
+                                                            b.endSetCurrentException();
+
+                                                            b.beginTryCatchOtherwise(() -> { });
+                                                                b.beginThrow(); // "try"
+                                                                    b.emitLoadException(); // handler_i_ex (exception thrown in this handler)
+                                                                b.endThrow();
+
+                                                                b.beginBlock(); // catch and insert into exception groups group
+                                                                    b.beginStoreLocal(exceptionAcc);
+                                                                        b.beginHandleExceptionsInHandler();
+                                                                            b.emitLoadException();
+                                                                            b.emitLoadLocal(exceptionAcc);
+                                                                            b.emitLoadLocal(exceptionOrig);
+                                                                            b.emitLoadConstant(PNone.NONE);
+                                                                        b.endHandleExceptionsInHandler();
+                                                                    b.endStoreLocal();
+                                                                b.endBlock();
+                                                            b.endTryCatchOtherwise();
+
+                                                            b.beginSetCurrentException();
+                                                                b.emitLoadLocal(exceptionOrig);
+                                                            b.endSetCurrentException();
+                                                        b.endBlock();
+                                                    b.endIfThenElse();
+                                                b.endBlock(); // catch (exception thrown in this handler)
+                                            b.endTryCatchOtherwise();
+                                        } else { // bare except
+                                            b.beginBlock();
+                                                b.beginTryCatch();
+                                                    b.beginBlock(); // try
+                                                        b.beginSetCurrentException();
+                                                            b.emitLoadLocal(matchedExceptions);
+                                                        b.endSetCurrentException();
+
+                                                        saveInExceptStarState = inExceptStar;
+                                                        inExceptStar = true;
+
+                                                        visitSequence(handler.body);
+
+                                                        inExceptStar = saveInExceptStarState;
+                                                        b.beginSetCurrentException();
+                                                            b.emitLoadLocal(exceptionOrig);
+                                                        b.endSetCurrentException();
+                                                    b.endBlock();
+
+                                                    b.beginBlock(); // catch (exception thrown in bare handler)
+                                                        b.beginStoreLocal(exceptionAcc);
+                                                            b.beginHandleExceptionsInHandler();
+                                                                b.emitLoadException(); // handler_i_ex (exception thrown in bare handler)
+                                                                b.emitLoadLocal(exceptionAcc);
+                                                                b.emitLoadLocal(exceptionOrig);
+                                                                handler.type.accept(this);
+                                                            b.endHandleExceptionsInHandler();
+                                                        b.endStoreLocal();
+                                                    b.endBlock();
+                                                b.endTryCatch();
+                                            b.endBlock();
+                                        }
+                                    b.endBlock(); // handler body
+                                b.endIfThen();
+
+                                endSourceSection(b, newStatement);
+                            } // end handler loop
+
+                            b.beginBlock(); // bundle up unmatched exceptions into exceptionAcc and throw them
+                                b.beginStoreLocal(exceptionAcc);
+                                    b.beginHandleExceptionsInHandler();
+                                        b.emitLoadLocal(unmatchedExceptions);
+                                        b.emitLoadLocal(exceptionAcc);
+                                        b.emitLoadLocal(exceptionOrig);
+                                        b.emitLoadConstant(PNone.NONE);
+                                    b.endHandleExceptionsInHandler();
+                                b.endStoreLocal();
+                            b.endBlock();
+
+                            b.beginIfThen();
+                                b.beginIsNotNone();
+                                    b.emitLoadLocal(exceptionAcc);
+                                b.endIsNotNone();
+                                b.beginReraise();
+                                    // exceptionAcc is a PBaseExceptionGroup and
+                                    // needs to be converted into PException
+                                    b.beginEncapsulateExceptionGroup();
+                                        b.emitLoadLocal(exceptionAcc);
+                                        b.emitLoadLocal(exceptionOrig);
+                                    b.endEncapsulateExceptionGroup();
+                                b.endReraise();
+                            b.endIfThen();
+                        b.endBlock(); // try (all handlers)
+
+                        b.beginBlock(); // catch (final, all-encompassing exception group)
+                            emitRestoreCurrentException(savedException);
+
+                            b.beginReraise();
+                                b.emitLoadException(); // handler_ex (final, all-encompassing exception group)
+                            b.endReraise();
+                        b.endBlock(); // catch (final, all-encompassing exception group)
+                    b.endTryCatchOtherwise();
+
+                    exitSaveExceptionBlock(prevPrevEx);
+
+                    b.emitBranch(afterElse);
+
+                b.endBlock(); // catch
+
+            b.endTryCatch();
+
+            if (node.orElse != null) {
+                visitSequence(node.orElse);
+            }
+            b.emitLabel(afterElse);
+
+            b.endBlock(); // outermost block
+            // @formatter:on
+        }
+
         private void emitSaveCurrentException(BytecodeLocal savedException) {
             b.beginStoreLocal(savedException);
             b.emitGetCurrentException();
@@ -5395,7 +5698,86 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         @Override
         public Void visit(StmtTy.TryStar node) {
-            emitNotImplemented("try star", b);
+            boolean newStatement = beginSourceSection(node, b);
+            if (node.finalBody != null && node.finalBody.length != 0) {
+                /**
+                 * In Python, an uncaught exception becomes the "current" exception inside a finally
+                 * block. The finally body can itself throw, in which case it replaces the exception
+                 * being thrown. For such a scenario, we have to be careful to restore the "current"
+                 * exception using a try-finally.
+                 *
+                 * In pseudocode, the implementation looks like:
+                 * @formatter:off
+                 * try {
+                 *   try_catch_else
+                 * } catch uncaught_ex {
+                 *   save current exception
+                 *   set the current exception to uncaught_ex
+                 *   markCaught(uncaught_ex)
+                 *   try {
+                 *     finally_body
+                 *   } catch handler_ex {
+                 *     restore current exception
+                 *     markCaught(handler_ex)
+                 *     reraise handler_ex
+                 *   } otherwise {
+                 *     restore current exception
+                 *   }
+                 *   reraise uncaught_ex
+                 * } otherwise {
+                 *   finally_body
+                 * }
+                 */
+                b.beginTryCatchOtherwise(() -> {
+                    b.beginBlock(); // finally
+                        visitSequence(node.finalBody);
+                    b.endBlock();
+                });
+
+                    emitTryExceptElse(node); // try-except-else
+
+                    b.beginBlock(); // catch uncaught exceptions
+                        BytecodeLocal savedException = b.createLocal();
+                        BytecodeLocal prevPrevSaved = enterSaveExceptionBlock(savedException);
+
+                        emitSaveCurrentException(savedException);
+                        emitSetCurrentException();
+                        // Mark this location for the stack trace.
+                        b.beginMarkExceptionAsCaught();
+                            b.emitLoadException();
+                        b.endMarkExceptionAsCaught();
+
+                        b.beginTryCatchOtherwise(() -> emitRestoreCurrentException(savedException));
+                            b.beginBlock(); // try finally body
+                                visitSequence(node.finalBody);
+                            b.endBlock(); // try finally body
+
+                            b.beginBlock(); // catch exception in finally
+                                emitRestoreCurrentException(savedException);
+
+                                b.beginMarkExceptionAsCaught();
+                                    b.emitLoadException();
+                                b.endMarkExceptionAsCaught();
+
+                                b.beginReraise();
+                                    b.emitLoadException();
+                                b.endReraise();
+                            b.endBlock(); // catch exception in finally
+                        b.endTryCatchOtherwise();
+
+                        b.beginReraise();
+                            b.emitLoadException();
+                        b.endReraise();
+
+                        exitSaveExceptionBlock(prevPrevSaved);
+                    b.endBlock(); // catch uncaught exceptions
+                b.endTryCatchOtherwise();
+                // @formatter:on
+            } else {
+                emitTryExceptElse(node);
+            }
+
+            endSourceSection(b, newStatement);
             return null;
         }
 
@@ -5407,6 +5789,8 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         @Override
         public Void visit(StmtTy.While node) {
             boolean newStatement = beginSourceSection(node, b);
+            boolean saveInExceptStar = inExceptStar;
+            inExceptStar = false;
             b.beginBlock();
 
             BytecodeLabel oldBreakLabel = breakLabel;
@@ -5436,6 +5820,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             b.emitLabel(currentBreakLabel);
 
             b.endBlock();
+            inExceptStar = saveInExceptStar;
             endSourceSection(b, newStatement);
             return null;
         }
@@ -5576,6 +5961,9 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         @Override
         public Void visit(StmtTy.Break aThis) {
             boolean newStatement = beginSourceSection(aThis, b);
+            if (inExceptStar) {
+                ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "'break', 'continue' and 'return' cannot appear in an except* block");
+            }
             if (breakLabel == null) {
                 ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "'break' outside loop");
             }
@@ -5587,6 +5975,9 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         @Override
         public Void visit(StmtTy.Continue aThis) {
             boolean newStatement = beginSourceSection(aThis, b);
+            if (inExceptStar) {
+                ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "'break', 'continue' and 'return' cannot appear in an except* block");
+            }
             if (continueLabel == null) {
                 ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "'continue' not properly in loop");
             }

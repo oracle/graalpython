@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,12 +41,33 @@
 package com.oracle.graal.python.builtins.objects.exception;
 
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public class PBaseExceptionGroup extends PBaseException {
     private final TruffleString message;
     private final Object[] exceptions;
+    @CompilationFinal private PException parent; // effectively final
+
+    /**
+     * Flag to denote if the `exceptions` field contains only reraised and/or unmatched exceptions.
+     */
+    @CompilationFinal private boolean containsReraises; // effectively final
+
+    /**
+     * This flag marks the outer/final exception group that encompasses all other exception groups
+     * that are thrown at the end of the try-except* block. This is needed, since we can nest other
+     * exception groups into exception groups themselves.
+     */
+    @CompilationFinal private boolean isOuter; // effectively final
+
+    /**
+     * Context setting behaves somewhat differently when handling exception groups. This flag
+     * assures, that context, after being once set, won't be set again/overwritten.
+     */
+    @CompilationFinal private boolean contextWasExplicitlySet; // effectively final
 
     public PBaseExceptionGroup(Object cls, Shape instanceShape, TruffleString message, Object[] exceptions, PTuple args) {
         super(cls, instanceShape, null, args);
@@ -60,5 +81,60 @@ public class PBaseExceptionGroup extends PBaseException {
 
     public TruffleString getMessage() {
         return message;
+    }
+
+    public void setParent(PException parent) {
+        this.parent = parent;
+    }
+
+    public PException getParent() {
+        return this.parent;
+    }
+
+    /**
+     * See {@link PBaseExceptionGroup#containsReraises}
+     */
+    public void setContainsReraises(boolean value) {
+        this.containsReraises = value;
+    }
+
+    /**
+     * See {@link PBaseExceptionGroup#containsReraises}
+     */
+    public boolean getContainsReraises() {
+        return this.containsReraises;
+    }
+
+    /**
+     * See {@link PBaseExceptionGroup#isOuter}
+     */
+    public void setIsOuter(boolean value) {
+        this.isOuter = value;
+    }
+
+    /**
+     * See {@link PBaseExceptionGroup#isOuter}
+     */
+    public boolean getIsOuter() {
+        return this.isOuter;
+    }
+
+    /**
+     * See {@link PBaseExceptionGroup#contextWasExplicitlySet}
+     */
+    public void setContextExplicitly(Object context) {
+        contextWasExplicitlySet = true;
+        super.setContext(context);
+    }
+
+    /**
+     * See also {@link PBaseExceptionGroup#setContextExplicitly} and
+     * {@link PBaseExceptionGroup#contextWasExplicitlySet}
+     */
+    public void setContext(Object context) {
+        if (contextWasExplicitlySet) {
+            return;
+        }
+        super.setContext(context);
     }
 }

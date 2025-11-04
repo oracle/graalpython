@@ -64,7 +64,7 @@ import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.exception.PBaseExceptionGroup;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -341,8 +341,8 @@ public abstract class PGuards {
         return exception instanceof PException;
     }
 
-    public static boolean isPBaseException(Object obj) {
-        return obj instanceof PBaseException;
+    public static boolean containsPBaseExceptionGroup(PException obj) {
+        return obj.getUnreifiedException() instanceof PBaseExceptionGroup;
     }
 
     public static boolean isPTraceback(Object obj) {

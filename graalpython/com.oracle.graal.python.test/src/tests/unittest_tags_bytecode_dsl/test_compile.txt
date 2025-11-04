@@ -47,7 +47,4 @@ test.test_compile.TestStackSizeStability.test_async_for @ linux-x86_64
 test.test_compile.TestStackSizeStability.test_async_for_else @ linux-x86_64
 test.test_compile.TestStackSizeStability.test_if @ linux-x86_64
 test.test_compile.TestStackSizeStability.test_if_else @ linux-x86_64
-test.test_compile.TestStackSizeStability.test_try_except_star_as @ linux-x86_64
-test.test_compile.TestStackSizeStability.test_try_except_star_finally @ linux-x86_64
-test.test_compile.TestStackSizeStability.test_try_except_star_qualified @ linux-x86_64
 test.test_compile.TestStackSizeStability.test_while_else @ linux-x86_64

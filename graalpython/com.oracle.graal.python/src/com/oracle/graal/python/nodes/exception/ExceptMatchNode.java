@@ -41,6 +41,7 @@
 package com.oracle.graal.python.nodes.exception;
 
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -61,8 +62,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
-import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -73,32 +72,42 @@ import com.oracle.truffle.api.nodes.Node;
 @OperationProxy.Proxyable(storeBytecodeIndex = true)
 @GenerateInline(false)       // footprint reduction 44 -> 25
 public abstract class ExceptMatchNode extends Node {
-    public abstract boolean executeMatch(Frame frame, Object exception, Object clause);
+    public abstract boolean executeMatch(Object exception, Object clause);
 
-    private static void raiseIfNoException(VirtualFrame frame, Node inliningTarget, Object clause, ValidExceptionNode isValidException) {
-        if (!isValidException.execute(frame, clause)) {
+    private static void raiseIfNoException(Node inliningTarget, Object clause, ValidExceptionNode isValidException) {
+        if (!isValidException.execute(clause)) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.TypeError, ErrorMessages.CATCHING_CLS_NOT_ALLOWED);
         }
     }
 
     @Specialization(guards = "!isPTuple(clause)")
-    public static boolean matchPythonSingle(VirtualFrame frame, PException e, Object clause,
+    public static boolean matchPythonSingle(PException e, Object clause,
                     @Bind Node inliningTarget,
                     @Shared @Cached ValidExceptionNode isValidException,
-                    @Cached GetClassNode getClassNode,
-                    @Cached IsSubtypeNode isSubtype) {
-        raiseIfNoException(frame, inliningTarget, clause, isValidException);
+                    @Shared @Cached GetClassNode getClassNode,
+                    @Shared @Cached IsSubtypeNode isSubtype) {
+        raiseIfNoException(inliningTarget, clause, isValidException);
         return isSubtype.execute(getClassNode.execute(inliningTarget, e.getUnreifiedException()), clause);
     }
 
+    @Specialization(guards = "!isPTuple(clause)")
+    public static boolean matchPythonBaseSingle(PBaseException e, Object clause,
+                    @Bind Node inliningTarget,
+                    @Shared @Cached ValidExceptionNode isValidException,
+                    @Shared @Cached GetClassNode getClassNode,
+                    @Shared @Cached IsSubtypeNode isSubtype) {
+        raiseIfNoException(inliningTarget, clause, isValidException);
+        return isSubtype.execute(getClassNode.execute(inliningTarget, e), clause);
+    }
+
     @Specialization(guards = {"!isPTuple(clause)", "!isPException(e)"}, limit = "1")
-    public static boolean matchJava(VirtualFrame frame, AbstractTruffleException e, Object clause,
+    public static boolean matchJava(AbstractTruffleException e, Object clause,
                     @Bind Node inliningTarget,
                     @Shared @Cached ValidExceptionNode isValidException,
                     @CachedLibrary("clause") InteropLibrary clauseLib) {
         // n.b.: we can only allow Java exceptions in clauses, because we cannot tell for other
         // foreign exception types if they *are* exception types
-        raiseIfNoException(frame, inliningTarget, clause, isValidException);
+        raiseIfNoException(inliningTarget, clause, isValidException);
         if (clauseLib.isMetaObject(clause)) {
             try {
                 return clauseLib.isMetaInstance(clause, e);
@@ -112,7 +121,7 @@ public abstract class ExceptMatchNode extends Node {
     }
 
     @Specialization
-    public static boolean matchTuple(VirtualFrame frame, Object e, PTuple clause,
+    public static boolean matchTuple(Object e, PTuple clause,
                     @Bind Node inliningTarget,
                     @Cached ExceptMatchNode recursiveNode,
                     @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
@@ -121,7 +130,7 @@ public abstract class ExceptMatchNode extends Node {
         int length = storage.length();
         for (int i = 0; i < length; i++) {
             Object clauseType = getItemNode.execute(inliningTarget, storage, i);
-            if (recursiveNode.executeMatch(frame, e, clauseType)) {
+            if (recursiveNode.executeMatch(e, clauseType)) {
                 return true;
             }
         }
