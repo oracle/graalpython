@@ -117,9 +117,9 @@
             "windows:amd64:jdk-latest"   : tier3                     + provide(GPY_JVM_STANDALONE),
         }),
         "python-unittest-bytecode-dsl": gpgate + platform_spec(no_jobs) + bytecode_dsl_gate("python-unittest") + platform_spec({
-            "linux:amd64:jdk21"          : daily     + t("01:00:00"),
-            "linux:aarch64:jdk21"        : daily     + t("01:00:00"),
-            "darwin:aarch64:jdk21"       : daily     + t("01:00:00"),
+            "linux:amd64:jdk-latest"     : daily     + t("01:00:00"),
+            "linux:aarch64:jdk-latest"   : daily     + t("01:00:00"),
+            "darwin:aarch64:jdk-latest"  : daily     + t("01:00:00"),
         }),
         "python-unittest-multi-context": gpgate + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk21"          : daily     + t("01:00:00") + require(GPY_JVM21_STANDALONE),
@@ -171,7 +171,7 @@
             "windows:amd64:jdk-latest"   : tier3                      + require(GRAAL_JDK_LATEST),
         }),
         "python-junit-bytecode-dsl": gpgate + platform_spec(no_jobs) + bytecode_dsl_gate("python-junit") + platform_spec({
-            "linux:amd64:jdk21"          : tier3                      + require(GRAAL_JDK_LATEST),
+            "linux:amd64:jdk-latest"     : tier3                      + require(GRAAL_JDK_LATEST),
         }),
         "python-junit-maven": gpgate_maven + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk21"          : daily     + t("00:30:00"),
