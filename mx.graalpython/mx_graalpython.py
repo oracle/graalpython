@@ -943,16 +943,20 @@ def get_maven_cache():
     # don't worry about maven.repo.local if not running on gate
     return os.path.join(SUITE.get_mx_output_dir(), 'm2_cache_' + buildnr) if buildnr else None
 
-def deploy_local_maven_repo(env=None):
-    env = {**os.environ.copy(), **(env or {})}
+def update_maven_opts(env):
     m2_cache = get_maven_cache()
     if m2_cache:
         mvn_repo_local = f'-Dmaven.repo.local={m2_cache}'
         maven_opts = env.get('MAVEN_OPTS')
         maven_opts = maven_opts + " " + mvn_repo_local if maven_opts else mvn_repo_local
+        if mx.is_windows():
+            maven_opts = maven_opts.replace("|", "^|")
         env['MAVEN_OPTS'] = maven_opts
-        mx.log(f'Added {mvn_repo_local} to MAVEN_OPTS={maven_opts}')
+        mx.log(f"Added '{mvn_repo_local}' to MAVEN_OPTS={maven_opts}")
+    return env
 
+def deploy_local_maven_repo(env=None):
+    env = update_maven_opts({**os.environ.copy(), **(env or {})})
     run_mx_args = [
         '-p',
         os.path.join(mx.suite('truffle').dir, '..', 'vm'),
@@ -989,14 +993,7 @@ def deploy_local_maven_repo(env=None):
 
 
 def deploy_graalpy_extensions_to_local_maven_repo(env=None):
-    env = {**os.environ.copy(), **(env or {})}
-    m2_cache = get_maven_cache()
-    if m2_cache:
-        mvn_repo_local = f'-Dmaven.repo.local={m2_cache}'
-        maven_opts = env.get('MAVEN_OPTS')
-        maven_opts = maven_opts + " " + mvn_repo_local if maven_opts else mvn_repo_local
-        env['MAVEN_OPTS'] = maven_opts
-        mx.log(f'Added {mvn_repo_local} to MAVEN_OPTS={maven_opts}')
+    env = update_maven_opts({**os.environ.copy(), **(env or {})})
 
     gradle_java_home = os.environ.get('GRADLE_JAVA_HOME')
     if not gradle_java_home:
@@ -1015,8 +1012,7 @@ def deploy_graalpy_extensions_to_local_maven_repo(env=None):
 
     local_repo_path = os.path.join(SUITE.get_mx_output_dir(), 'public-maven-repo')
     version = GRAAL_VERSION
-    # Note: running the maven wrapper causes some issues in the CI around MAVEN_OPTS
-    mx.run_maven(['-f', os.path.join(graalpy_extensions_path, 'pom.xml'),
+    mx.run([os.path.join(graalpy_extensions_path, mx.cmd_suffix('mvnw')),
             '-Pmxurlrewrite', '-DskipJavainterfacegen', '-DskipTests', '-DdeployAtEnd=true',
             f'-Drevision={version}',
             f'-Dlocal.repo.url=' + pathlib.Path(local_repo_path).as_uri(),
