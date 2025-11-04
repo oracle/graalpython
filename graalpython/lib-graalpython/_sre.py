@@ -336,16 +336,6 @@ class Pattern():
     def fullmatch(self, string, pos=0, endpos=maxsize):
         return self._search(string, pos, endpos, method=_METHOD_FULLMATCH)
 
-    def __sanitize_out_type(self, elem):
-        """Helper function for findall and split. Ensures that the type of the elements of the
-           returned list if always either 'str' or 'bytes'."""
-        if self.__binary:
-            return bytes(elem)
-        elif elem is None:
-            return ""
-        else:
-            return str(elem)
-
     @__graalpython__.force_split_direct_calls
     def finditer(self, string, pos=0, endpos=maxsize):
         for must_advance in [False, True]:
@@ -383,36 +373,7 @@ class Pattern():
 
     @__graalpython__.force_split_direct_calls
     def split(self, string, maxsplit=0):
-        for must_advance in [False, True]:
-            if tregex_compile(self, _METHOD_SEARCH, must_advance) is None:
-                return self.__fallback_compile().split(string, maxsplit=maxsplit)
-        n = 0
-        result = []
-        collect_pos = 0
-        search_pos = 0
-        must_advance = False
-        strlen = len(string)
-        while (maxsplit == 0 or n < maxsplit) and search_pos <= strlen:
-            compiled_regex = tregex_compile(self, _METHOD_SEARCH, must_advance)
-            match_result = tregex_call_exec(compiled_regex, string, search_pos, strlen)
-            if not match_result.isMatch:
-                break
-            n += 1
-            start = match_result.getStart(0)
-            end = match_result.getEnd(0)
-            result.append(self.__sanitize_out_type(string[collect_pos:start]))
-            # add all group strings
-            for i in range(1, self.groups + 1):
-                groupStart = match_result.getStart(i)
-                if groupStart >= 0:
-                    result.append(self.__sanitize_out_type(string[groupStart:match_result.getEnd(i)]))
-                else:
-                    result.append(None)
-            collect_pos = end
-            search_pos = end
-            must_advance = start == end
-        result.append(self.__sanitize_out_type(string[collect_pos:]))
-        return result
+        return tregex_re_split(self, string, maxsplit)
 
     def scanner(self, string, pos=0, endpos=maxsize):
         # We cannot pass the must_advance parameter to the internal SRE implementation.

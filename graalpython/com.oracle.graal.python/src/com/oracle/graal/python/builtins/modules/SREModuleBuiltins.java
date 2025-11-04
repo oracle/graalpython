@@ -73,11 +73,13 @@ import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
+import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
@@ -92,7 +94,6 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromModuleNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -100,6 +101,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNo
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonSenaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -129,13 +131,11 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.ExceptionType;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
@@ -676,30 +676,24 @@ public final class SREModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     @ImportStatic(PythonMethod.class)
     abstract static class TRegexSearch extends PythonSenaryBuiltinNode {
-        protected static final TruffleString T__PATTERN__FALLBACK_COMPILE = tsLiteral("_Pattern__fallback_compile");
 
         @Child private HiddenAttr.ReadNode readCacheNode = HiddenAttr.ReadNode.create();
-        @Child private GetFixedAttributeNode getFallbackCompileNode;
-        @Child private CallNode callFallbackCompileNode;
-        @Child private CallNode callFallbackMethodNode;
 
         @Specialization(guards = {"isSingleContext()", "pattern == cachedPattern", "method == cachedMethod", "mustAdvance == cachedMustAdvance", "!tRegexCache.isLocaleSensitive()"}, limit = "1")
         @SuppressWarnings({"truffle-static-method", "unused"})
         protected Object doCached(VirtualFrame frame, PythonObject pattern, Object input, Object posArg, Object endPosArg, PythonMethod method, boolean mustAdvance,
                         @Bind Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached(value = "pattern", weak = true) PythonObject cachedPattern,
-                        @SuppressWarnings("unused") @Cached("method") PythonMethod cachedMethod,
-                        @SuppressWarnings("unused") @Cached("mustAdvance") boolean cachedMustAdvance,
-                        @SuppressWarnings("unused") @Cached @Shared TRegexCompile tRegexCompileNode,
+                        @Cached(value = "pattern", weak = true) PythonObject cachedPattern,
+                        @Cached("method") PythonMethod cachedMethod,
+                        @Cached("mustAdvance") boolean cachedMustAdvance,
+                        @Cached @Shared TRegexCompile tRegexCompileNode,
                         @Cached(value = "getTRegexCache(pattern)", weak = true) TRegexCache tRegexCache,
                         @Cached(value = "tRegexCompileNode.execute(frame, pattern, method, mustAdvance)") Object compiledRegex,
-                        @Cached @Shared InlinedConditionProfile fallbackProfile,
                         @Cached @Shared RECheckInputTypeNode reCheckInputTypeNode,
                         @Cached @Shared PyNumberIndexNode indexNode,
                         @Cached @Shared PyNumberAsSizeNode asSizeNode,
                         @Cached @Shared PyObjectSizeNode lengthNode,
                         @CachedLibrary(limit = "1") @Shared InteropLibrary libCompiledRegex,
-                        @Cached("create(method.getMethodName())") GetFixedAttributeNode getFallbackMethodNode,
                         @Cached @Shared TRegexCallExec tRegexCallExec,
                         @Cached @Shared CreateMatchFromTRegexResultNode createMatchFromTRegexResultNode) {
             int pos = asSizeNode.executeExact(frame, inliningTarget, indexNode.execute(frame, inliningTarget, posArg));
@@ -715,17 +709,11 @@ public final class SREModuleBuiltins extends PythonBuiltins {
             } else if (endPos > length) {
                 endPos = length;
             }
-
             reCheckInputTypeNode.execute(frame, input, tRegexCache.isBinary());
-
-            if (fallbackProfile.profile(inliningTarget, libCompiledRegex.isNull(compiledRegex))) {
-                GetFixedAttributeNode getFixedAttributeNode = getGetFallbackCompileNode();
-                Object fallbackRegex = getCallFallbackCompileNode().executeWithoutFrame(getFixedAttributeNode.execute(frame, pattern));
-                return getCallFallbackMethodNode().executeWithoutFrame(getFallbackMethodNode.execute(frame, fallbackRegex), input, pos, endPos);
+            if (libCompiledRegex.isNull(compiledRegex)) {
+                bailoutUnsupportedRegex(tRegexCache);
             }
-
             Object regexResult = tRegexCallExec.execute(frame, compiledRegex, input, pos, endPos);
-
             return createMatchFromTRegexResultNode.execute(frame, inliningTarget, pattern, pos, endPos, regexResult, input);
         }
 
@@ -739,17 +727,15 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                         @Cached @Shared TRegexCompile tRegexCompileNode,
                         @Cached(value = "getTRegexCache(pattern)", weak = true) TRegexCache tRegexCache,
                         @Cached(value = "tRegexCompileNode.execute(frame, pattern, method, mustAdvance)") Object compiledRegex,
-                        @Cached @Shared InlinedConditionProfile fallbackProfile,
                         @Cached @Shared RECheckInputTypeNode reCheckInputTypeNode,
                         @Cached @Shared PyNumberIndexNode indexNode,
                         @Cached @Shared PyNumberAsSizeNode asSizeNode,
                         @Cached @Shared PyObjectSizeNode lengthNode,
                         @CachedLibrary(limit = "1") @Shared InteropLibrary libCompiledRegex,
-                        @Cached("create(method.getMethodName())") GetFixedAttributeNode getFallbackMethodNode,
                         @Cached @Shared TRegexCallExec tRegexCallExec,
                         @Cached @Shared CreateMatchFromTRegexResultNode createMatchFromTRegexResultNode) {
             return doCached(frame, pattern, input, posArg, endPosArg, method, mustAdvance, inliningTarget, pattern, cachedMethod, mustAdvance, tRegexCompileNode, tRegexCache,
-                            compiledRegex, fallbackProfile, reCheckInputTypeNode, indexNode, asSizeNode, lengthNode, libCompiledRegex, getFallbackMethodNode,
+                            compiledRegex, reCheckInputTypeNode, indexNode, asSizeNode, lengthNode, libCompiledRegex,
                             tRegexCallExec, createMatchFromTRegexResultNode);
         }
 
@@ -764,45 +750,24 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                         @Cached @Shared PyNumberAsSizeNode asSizeNode,
                         @Cached @Shared RECheckInputTypeNode reCheckInputTypeNode,
                         @Cached @Shared PyObjectSizeNode lengthNode,
-                        @Cached @Shared InlinedConditionProfile fallbackProfile,
                         @CachedLibrary(limit = "1") @Shared InteropLibrary libCompiledRegex,
-                        @Cached("create(method.getMethodName())") GetFixedAttributeNode getFallbackMethodNode,
                         @Cached @Shared TRegexCallExec tRegexCallExec,
                         @Cached @Shared CreateMatchFromTRegexResultNode createMatchFromTRegexResultNode) {
             TRegexCache tRegexCache = getTRegexCache(pattern);
             Object compiledRegex = tRegexCompileNode.execute(frame, pattern, method, mustAdvance);
             return doCached(frame, pattern, input, posArg, endPosArg, method, mustAdvance, inliningTarget, pattern, cachedMethod, mustAdvance, tRegexCompileNode, tRegexCache,
-                            compiledRegex, fallbackProfile, reCheckInputTypeNode, indexNode, asSizeNode, lengthNode, libCompiledRegex, getFallbackMethodNode,
+                            compiledRegex, reCheckInputTypeNode, indexNode, asSizeNode, lengthNode, libCompiledRegex,
                             tRegexCallExec, createMatchFromTRegexResultNode);
         }
 
         protected TRegexCache getTRegexCache(PythonObject pattern) {
             return (TRegexCache) readCacheNode.executeCached(pattern, HiddenAttr.TREGEX_CACHE, null);
         }
+    }
 
-        private GetFixedAttributeNode getGetFallbackCompileNode() {
-            if (getFallbackCompileNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getFallbackCompileNode = insert(GetFixedAttributeNode.create(T__PATTERN__FALLBACK_COMPILE));
-            }
-            return getFallbackCompileNode;
-        }
-
-        private CallNode getCallFallbackCompileNode() {
-            if (callFallbackCompileNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callFallbackCompileNode = insert(CallNode.create());
-            }
-            return callFallbackCompileNode;
-        }
-
-        private CallNode getCallFallbackMethodNode() {
-            if (callFallbackMethodNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callFallbackMethodNode = insert(CallNode.create());
-            }
-            return callFallbackMethodNode;
-        }
+    private static void bailoutUnsupportedRegex(TRegexCache tRegexCache) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        throw CompilerDirectives.shouldNotReachHere("unsupported regular expression: /" + tRegexCache.pattern + "/" + tRegexCache.flags);
     }
 
     @Builtin(name = "tregex_call_exec", minNumOfPositionalArgs = 4)
@@ -815,12 +780,11 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         // must_advance=True version in re builtins like sub, split, findall
         @Specialization(guards = "callable == cachedCallable", limit = "2")
         @SuppressWarnings("truffle-static-method")
-        Object doCached(VirtualFrame frame, @SuppressWarnings("unused") Object callable, Object inputStringOrBytes, Number fromIndex, Number toIndex,
+        Object doCached(VirtualFrame frame, @SuppressWarnings("unused") Object callable, Object inputStringOrBytes, int fromIndex, int toIndex,
                         @Bind Node inliningTarget,
-                        @Shared @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @Cached(value = "callable", weak = true) Object cachedCallable,
                         @Cached @Shared CastToTruffleStringNode cast,
-                        @CachedLibrary("callable") InteropLibrary interop,
+                        @Cached @Shared TRegexUtil.InvokeExecMethodWithMaxIndexNode invokeExecNode,
                         @Cached @Shared InlinedBranchProfile binaryProfile) {
             TruffleString input;
             try {
@@ -831,22 +795,17 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                 // It's bytes or other buffer object
                 input = getBufferToTruffleStringNode().execute(frame, inputStringOrBytes);
             }
-            try {
-                return interop.invokeMember(cachedCallable, "exec", input, fromIndex, toIndex, 0, toIndex);
-            } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException | UnknownIdentifierException e2) {
-                throw CompilerDirectives.shouldNotReachHere("could not call TRegex exec method", e2);
-            }
+            return invokeExecNode.execute(inliningTarget, cachedCallable, input, fromIndex, toIndex);
         }
 
-        @Specialization(limit = "1", replaces = "doCached")
+        @Specialization(replaces = "doCached")
         @ReportPolymorphism.Megamorphic
-        Object doUncached(VirtualFrame frame, Object callable, Object inputStringOrBytes, Number fromIndex, Number toIndex,
+        Object doUncached(VirtualFrame frame, Object callable, Object inputStringOrBytes, int fromIndex, int toIndex,
                         @Bind Node inliningTarget,
-                        @Shared @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @Cached @Shared CastToTruffleStringNode cast,
-                        @CachedLibrary("callable") InteropLibrary interop,
+                        @Cached @Shared TRegexUtil.InvokeExecMethodWithMaxIndexNode invokeExecNode,
                         @Cached @Shared InlinedBranchProfile binaryProfile) {
-            return doCached(frame, callable, inputStringOrBytes, fromIndex, toIndex, inliningTarget, callable, cast, interop, binaryProfile);
+            return doCached(frame, callable, inputStringOrBytes, fromIndex, toIndex, inliningTarget, callable, cast, invokeExecNode, binaryProfile);
         }
 
         private BufferToTruffleStringNode getBufferToTruffleStringNode() {
@@ -865,17 +824,17 @@ public final class SREModuleBuiltins extends PythonBuiltins {
             @Specialization(limit = "3")
             static TruffleString convert(VirtualFrame frame, Object bytesLikeObject,
                             @Bind Node inliningTarget,
-                            @Shared @Cached("createFor($node)") IndirectCallData indirectCallData,
+                            @Shared @Cached("createFor($node)") InteropCallData callData,
                             @Cached(inline = true) BufferToTruffleStringInnerNode innerNode,
                             @CachedLibrary("bytesLikeObject") PythonBufferAcquireLibrary bufferAcquireLib,
                             @CachedLibrary(limit = "1") @Shared PythonBufferAccessLibrary bufferLib) {
                 Object buffer = null;
                 try {
-                    buffer = bufferAcquireLib.acquireReadonly(bytesLikeObject, frame, indirectCallData);
+                    buffer = bufferAcquireLib.acquireReadonly(bytesLikeObject, frame, callData);
                     return innerNode.execute(inliningTarget, buffer);
                 } finally {
                     if (buffer != null) {
-                        bufferLib.release(buffer, frame, indirectCallData);
+                        bufferLib.release(buffer, frame, callData);
                     }
                 }
             }
@@ -923,6 +882,177 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "tregex_re_split", minNumOfPositionalArgs = 3, parameterNames = {"pattern", "input", "maxsplit"})
+    @GenerateNodeFactory
+    @ArgumentClinic(name = "maxsplit", conversion = ArgumentClinic.ClinicConversion.Index)
+    abstract static class TRegexRESplit extends PythonTernaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SREModuleBuiltinsClinicProviders.TRegexRESplitClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        static Object doCached(VirtualFrame frame, PythonObject pattern, Object input, int maxsplit,
+                        @Bind Node inliningTarget,
+                        @Cached HiddenAttr.ReadNode readCacheNode,
+                        @Cached TRegexCompileInner tRegexCompile,
+                        @Cached RECheckInputTypeNode checkInputTypeNode,
+                        @Cached TRegexUtil.InteropReadMemberNode readGroupCountNode,
+                        @Cached(inline = true) TRegexRESplitInnerNode1 innerNode) {
+            TRegexCache tRegexCache = TRegexCompile.getTRegexCache(inliningTarget, pattern, readCacheNode);
+            Object compiledRegex = tRegexCompile.execute(frame, tRegexCache, PythonMethod.Search, false);
+            Object compiledRegexMustAdvance = tRegexCompile.execute(frame, tRegexCache, PythonMethod.Search, true);
+            if (compiledRegex == PNone.NONE || compiledRegexMustAdvance == PNone.NONE) {
+                bailoutUnsupportedRegex(tRegexCache);
+            }
+            checkInputTypeNode.execute(frame, input, tRegexCache.binary);
+            int groupCount = TRegexUtil.TRegexCompiledRegexAccessor.groupCount(compiledRegex, inliningTarget, readGroupCountNode);
+            return innerNode.execute(inliningTarget, frame, compiledRegex, compiledRegexMustAdvance, input, maxsplit, tRegexCache.binary, groupCount);
+        }
+    }
+
+    /**
+     * There are multiple nested inner nodes used in {@link TRegexRESplit}. The number at the end of
+     * each inner node indicates the nesting level.
+     * <p>
+     * First level: separate specializations for strings ({@link TruffleString}, {@link PString})
+     * and bytes-objects ({@link PBytesLike}).
+     */
+    @GenerateInline
+    abstract static class TRegexRESplitInnerNode1 extends Node {
+
+        abstract Object execute(Node inliningTarget, VirtualFrame frame, Object compiledRegex, Object compiledRegexMustAdvance, Object input, int maxsplit,
+                        boolean binary, int groupCount);
+
+        @Specialization(guards = "!binary")
+        static Object doString(Node inliningTarget, @SuppressWarnings("unused") VirtualFrame frame, Object compiledRegex, Object compiledRegexMustAdvance, Object inputObj, int maxsplit,
+                        boolean binary, int groupCount,
+                        @Cached CastToTruffleStringNode cast,
+                        @Cached @Cached.Exclusive TRegexRESplitInnerNode2 innerNode) {
+            TruffleString input = cast.castKnownString(inliningTarget, inputObj);
+            return innerNode.execute(inliningTarget, compiledRegex, compiledRegexMustAdvance, input, maxsplit, binary, groupCount);
+        }
+
+        @Specialization(guards = "binary")
+        static Object doBytes(Node inliningTarget, VirtualFrame frame, Object compiledRegex, Object compiledRegexMustAdvance, Object inputObj, int maxsplit,
+                        boolean binary, int groupCount,
+                        @Cached TRegexCallExec.BufferToTruffleStringNode bufferToTruffleStringNode,
+                        @Cached @Cached.Exclusive TRegexRESplitInnerNode2 innerNode) {
+            TruffleString input = bufferToTruffleStringNode.execute(frame, inputObj);
+            return innerNode.execute(inliningTarget, compiledRegex, compiledRegexMustAdvance, input, maxsplit, binary, groupCount);
+        }
+    }
+
+    /**
+     * Second level: separate specializations for regexes with and without capture groups.
+     */
+    @GenerateInline
+    abstract static class TRegexRESplitInnerNode2 extends Node {
+
+        abstract Object execute(Node inliningTarget, Object compiledRegex, Object compiledRegexMustAdvance, TruffleString input, int maxsplit,
+                        boolean binary, int groupCount);
+
+        @Specialization(guards = "groupCount == 1")
+        static Object count1(Node inliningTarget, Object compiledRegex, Object compiledRegexMustAdvance, TruffleString input, int maxsplit, boolean binary, int groupCount,
+                        @Cached @Cached.Exclusive TRegexRESplitInnerNode3 innerNode) {
+            return innerNode.execute(inliningTarget, compiledRegex, compiledRegexMustAdvance, input, maxsplit, binary, groupCount, false);
+        }
+
+        @Specialization(guards = "groupCount > 1")
+        static Object count2(Node inliningTarget, Object compiledRegex, Object compiledRegexMustAdvance, TruffleString input, int maxsplit, boolean binary, int groupCount,
+                        @Cached @Cached.Exclusive TRegexRESplitInnerNode3 innerNode) {
+            return innerNode.execute(inliningTarget, compiledRegex, compiledRegexMustAdvance, input, maxsplit, binary, groupCount, true);
+        }
+    }
+
+    /**
+     * Third level: method implementation.
+     */
+    @GenerateInline
+    abstract static class TRegexRESplitInnerNode3 extends Node {
+
+        abstract Object execute(Node inliningTarget, Object compiledRegex, Object compiledRegexMustAdvance, TruffleString input, int maxsplit, boolean binary, int groupCount,
+                        boolean hasCaptureGroups);
+
+        @Specialization
+        static Object doString(Node inliningTarget, Object compiledRegex, Object compiledRegexMustAdvance, TruffleString input, int maxsplit, boolean binary, int groupCount,
+                        boolean hasCaptureGroups,
+                        @Cached TRegexUtil.InvokeExecMethodNode invokeExecMethodNodeMustAdvance,
+                        @Cached TRegexUtil.InvokeExecMethodNode invokeExecMethodNode,
+                        @Cached TRegexUtil.InteropReadMemberNode readIsMatchNode,
+                        @Cached TRegexUtil.InvokeGetGroupBoundariesMethodNode readStartNode,
+                        @Cached TRegexUtil.InvokeGetGroupBoundariesMethodNode readEndNode,
+                        @Cached TRegexUtil.InvokeGetGroupBoundariesMethodNode readStartNode2,
+                        @Cached TRegexUtil.InvokeGetGroupBoundariesMethodNode readEndNode2,
+                        @Cached TruffleString.SubstringByteIndexNode substringByteIndexNode,
+                        @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
+            CompilerAsserts.partialEvaluationConstant(binary);
+            CompilerAsserts.partialEvaluationConstant(hasCaptureGroups);
+            TruffleString.Encoding encoding = binary ? TS_ENCODING_BINARY : TS_ENCODING;
+            int stringLength = toCodepointIndex(input.byteLength(encoding), binary);
+            int pos = 0;
+            int n = 0;
+            boolean mustAdvance = false;
+            ArrayBuilder<Object> result = new ArrayBuilder<>(16);
+            while ((maxsplit == 0 || n < maxsplit) && pos <= stringLength) {
+                final Object searchResult;
+                if (mustAdvance) {
+                    searchResult = invokeExecMethodNodeMustAdvance.execute(inliningTarget, compiledRegexMustAdvance, input, pos);
+                } else {
+                    searchResult = invokeExecMethodNode.execute(inliningTarget, compiledRegex, input, pos);
+                }
+                if (!TRegexUtil.TRegexResultAccessor.isMatch(searchResult, inliningTarget, readIsMatchNode)) {
+                    break;
+                }
+                n++;
+                int start = TRegexUtil.TRegexResultAccessor.captureGroupStart(searchResult, 0, inliningTarget, readStartNode);
+                int end = TRegexUtil.TRegexResultAccessor.captureGroupEnd(searchResult, 0, inliningTarget, readEndNode);
+                result.add(createSubstring(inliningTarget, input, binary, pos, start, substringByteIndexNode, copyToByteArrayNode));
+                if (hasCaptureGroups) {
+                    for (int i = 0; i < groupCount - 1; i++) {
+                        // using a separate pair of capture group read nodes here, because the first
+                        // capture group access may cause a lazy capture group evaluation call
+                        // inside TRegex, and we want to avoid that in the inner loop
+                        int substringStart = TRegexUtil.TRegexResultAccessor.captureGroupStart(searchResult, i + 1, inliningTarget, readStartNode2);
+                        int substringEnd = TRegexUtil.TRegexResultAccessor.captureGroupEnd(searchResult, i + 1, inliningTarget, readEndNode2);
+                        result.add(createSubstringSplit(inliningTarget, input, binary, substringStart, substringEnd, substringByteIndexNode, copyToByteArrayNode));
+                    }
+                }
+                pos = end;
+                mustAdvance = start == end;
+            }
+            result.add(createSubstring(inliningTarget, input, binary, pos, stringLength, substringByteIndexNode, copyToByteArrayNode));
+            return PFactory.createList(PythonLanguage.get(inliningTarget), result.toObjectArray());
+        }
+
+        private static Object createSubstringSplit(Node inliningTarget, TruffleString input, boolean binary, int substringStart, int substringEnd,
+                        TruffleString.SubstringByteIndexNode substringByteIndexNode,
+                        TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
+            CompilerAsserts.partialEvaluationConstant(binary);
+            if (substringStart < 0) {
+                return PNone.NONE;
+            }
+            return createSubstring(inliningTarget, input, binary, substringStart, substringEnd, substringByteIndexNode, copyToByteArrayNode);
+        }
+    }
+
+    private static Object createSubstring(Node inliningTarget, TruffleString input, boolean binary, int substringStart, int substringEnd,
+                    TruffleString.SubstringByteIndexNode substringByteIndexNode,
+                    TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
+        CompilerAsserts.partialEvaluationConstant(binary);
+        assert substringStart >= 0 && substringEnd >= substringStart;
+        int byteIndexStart = toByteIndex(substringStart, binary);
+        int byteLength = toByteIndex(substringEnd - substringStart, binary);
+        if (binary) {
+            byte[] bytes = new byte[byteLength];
+            copyToByteArrayNode.execute(input, byteIndexStart, bytes, 0, byteLength, TS_ENCODING_BINARY);
+            return PFactory.createBytes(PythonLanguage.get(inliningTarget), bytes);
+        } else {
+            return substringByteIndexNode.execute(input, byteIndexStart, byteLength, TS_ENCODING, false);
+        }
+    }
+
     @Builtin(name = "tregex_re_findall", minNumOfPositionalArgs = 4, parameterNames = {"pattern", "input", "pos", "endpos"})
     @GenerateNodeFactory
     @ArgumentClinic(name = "pos", conversion = ArgumentClinic.ClinicConversion.Index)
@@ -946,8 +1076,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
             Object compiledRegex = tRegexCompile.execute(frame, tRegexCache, PythonMethod.Search, false);
             Object compiledRegexMustAdvance = tRegexCompile.execute(frame, tRegexCache, PythonMethod.Search, true);
             if (compiledRegex == PNone.NONE || compiledRegexMustAdvance == PNone.NONE) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw CompilerDirectives.shouldNotReachHere("unsupported regular expression: /" + tRegexCache.pattern + "/" + tRegexCache.flags);
+                bailoutUnsupportedRegex(tRegexCache);
             }
             checkInputTypeNode.execute(frame, input, tRegexCache.binary);
             int groupCount = TRegexUtil.TRegexCompiledRegexAccessor.groupCount(compiledRegex, inliningTarget, readGroupCountNode);
@@ -958,6 +1087,9 @@ public final class SREModuleBuiltins extends PythonBuiltins {
     /**
      * There are multiple nested inner nodes used in {@link TRegexREFindAll}. The number at the end
      * of each inner node indicates the nesting level.
+     * <p>
+     * First level: separate specializations for strings ({@link TruffleString}, {@link PString})
+     * and bytes-objects ({@link PBytesLike}).
      */
     @GenerateInline
     abstract static class TRegexREFindAllInnerNode1 extends Node {
@@ -984,6 +1116,10 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    /**
+     * Second level: separate specializations for regexes without capture groups, a single capture
+     * group, and multiple capture groups.
+     */
     @GenerateInline
     abstract static class TRegexREFindAllInnerNode2 extends Node {
 
@@ -1009,6 +1145,9 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    /**
+     * Third level: method implementation.
+     */
     @GenerateInline
     abstract static class TRegexREFindAllInnerNode3 extends Node {
 
@@ -1018,8 +1157,8 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object doString(Node inliningTarget, Object compiledRegex, Object compiledRegexMustAdvance, TruffleString input, int posArg, int endposArg, boolean binary, int groupCount,
                         boolean createTuples,
-                        @Cached TRegexUtil.InvokeExecMethodWithMaxIndexNode invokeExecMethodNode0,
-                        @Cached TRegexUtil.InvokeExecMethodWithMaxIndexNode invokeExecMethodNode1,
+                        @Cached TRegexUtil.InvokeExecMethodWithMaxIndexNode invokeExecMethodNodeMustAdvance,
+                        @Cached TRegexUtil.InvokeExecMethodWithMaxIndexNode invokeExecMethodNode,
                         @Cached TRegexUtil.InteropReadMemberNode readIsMatchNode,
                         @Cached TRegexUtil.InvokeGetGroupBoundariesMethodNode readStartNode,
                         @Cached TRegexUtil.InvokeGetGroupBoundariesMethodNode readEndNode,
@@ -1034,13 +1173,13 @@ public final class SREModuleBuiltins extends PythonBuiltins {
             int endpos = endposArg < 0 ? 0 : Math.min(endposArg, stringLength);
             int pos = posArg < 0 ? 0 : Math.min(posArg, endpos);
             boolean mustAdvance = false;
-            ArrayBuilder<Object> result = new ArrayBuilder<>(4);
+            ArrayBuilder<Object> result = new ArrayBuilder<>(16);
             while (pos <= endpos) {
                 final Object searchResult;
                 if (mustAdvance) {
-                    searchResult = invokeExecMethodNode0.execute(inliningTarget, compiledRegexMustAdvance, input, pos, endpos);
+                    searchResult = invokeExecMethodNodeMustAdvance.execute(inliningTarget, compiledRegexMustAdvance, input, pos, endpos);
                 } else {
-                    searchResult = invokeExecMethodNode1.execute(inliningTarget, compiledRegex, input, pos, endpos);
+                    searchResult = invokeExecMethodNode.execute(inliningTarget, compiledRegex, input, pos, endpos);
                 }
                 if (!TRegexUtil.TRegexResultAccessor.isMatch(searchResult, inliningTarget, readIsMatchNode)) {
                     break;
@@ -1053,7 +1192,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                     for (int i = 0; i < groupCount - 1; i++) {
                         int substringStart = TRegexUtil.TRegexResultAccessor.captureGroupStart(searchResult, i + 1, inliningTarget, readStartNode2);
                         int substringEnd = TRegexUtil.TRegexResultAccessor.captureGroupEnd(searchResult, i + 1, inliningTarget, readEndNode2);
-                        tuple[i] = createSubstring(inliningTarget, input, binary, substringStart, substringEnd, substringByteIndexNode, copyToByteArrayNode);
+                        tuple[i] = createSubstringFindAll(inliningTarget, input, binary, substringStart, substringEnd, substringByteIndexNode, copyToByteArrayNode);
                     }
                     resultEntry = PFactory.createTuple(PythonLanguage.get(inliningTarget), tuple);
                 } else {
@@ -1068,7 +1207,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                         substringStart = TRegexUtil.TRegexResultAccessor.captureGroupStart(searchResult, 1, inliningTarget, readStartNode2);
                         substringEnd = TRegexUtil.TRegexResultAccessor.captureGroupEnd(searchResult, 1, inliningTarget, readEndNode2);
                     }
-                    resultEntry = createSubstring(inliningTarget, input, binary, substringStart, substringEnd, substringByteIndexNode, copyToByteArrayNode);
+                    resultEntry = createSubstringFindAll(inliningTarget, input, binary, substringStart, substringEnd, substringByteIndexNode, copyToByteArrayNode);
                 }
                 result.add(resultEntry);
                 pos = end;
@@ -1077,9 +1216,10 @@ public final class SREModuleBuiltins extends PythonBuiltins {
             return PFactory.createList(PythonLanguage.get(inliningTarget), result.toObjectArray());
         }
 
-        private static Object createSubstring(Node inliningTarget, TruffleString input, boolean binary, int substringStart, int substringEnd,
+        private static Object createSubstringFindAll(Node inliningTarget, TruffleString input, boolean binary, int substringStart, int substringEnd,
                         TruffleString.SubstringByteIndexNode substringByteIndexNode,
                         TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
+            CompilerAsserts.partialEvaluationConstant(binary);
             if (substringStart < 0) {
                 if (binary) {
                     return PFactory.createEmptyBytes(PythonLanguage.get(inliningTarget));
@@ -1087,15 +1227,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                     return TS_ENCODING.getEmpty();
                 }
             }
-            int byteIndexStart = toByteIndex(substringStart, binary);
-            int byteLength = toByteIndex(substringEnd - substringStart, binary);
-            if (binary) {
-                byte[] bytes = new byte[byteLength];
-                copyToByteArrayNode.execute(input, byteIndexStart, bytes, 0, byteLength, TS_ENCODING_BINARY);
-                return PFactory.createBytes(PythonLanguage.get(inliningTarget), bytes);
-            } else {
-                return substringByteIndexNode.execute(input, byteIndexStart, byteLength, TS_ENCODING, false);
-            }
+            return createSubstring(inliningTarget, input, binary, substringStart, substringEnd, substringByteIndexNode, copyToByteArrayNode);
         }
     }
 
@@ -1131,8 +1263,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
             Object compiledRegex = tRegexCompile.execute(frame, tRegexCache, PythonMethod.Search, false);
             Object compiledRegexMustAdvance = tRegexCompile.execute(frame, tRegexCache, PythonMethod.Search, true);
             if (compiledRegex == PNone.NONE || compiledRegexMustAdvance == PNone.NONE) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw CompilerDirectives.shouldNotReachHere("unsupported regular expression: /" + tRegexCache.pattern + "/" + tRegexCache.flags);
+                bailoutUnsupportedRegex(tRegexCache);
             }
             checkInputTypeNode.execute(frame, input, tRegexCache.binary);
             return innerNode1.execute(inliningTarget, frame, pattern, compiledRegex, compiledRegexMustAdvance, replacement, input, count, tRegexCache.binary,
@@ -1165,6 +1296,9 @@ public final class SREModuleBuiltins extends PythonBuiltins {
     /**
      * There are multiple nested inner nodes used in {@link TRegexRESubn}. The number at the end of
      * each inner node indicates the nesting level.
+     * <p>
+     * First level: separate specializations for strings ({@link TruffleString}, {@link PString})
+     * and bytes-objects ({@link PBytesLike}).
      */
     @GenerateInline
     abstract static class TRegexRESubnInnerNode1 extends Node {
@@ -1202,6 +1336,9 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    /**
+     * Second level: Separate specializations for callable and non-callable replacement objects.
+     */
     @GenerateInline
     abstract static class TRegexRESubnInnerNode2 extends Node {
 
@@ -1223,8 +1360,8 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                         boolean returnTuple,
                         int stringLength,
                         TruffleStringBuilder result,
-                        @Cached TRegexUtil.InvokeExecMethodNode invokeExecMethodNode0,
-                        @Cached TRegexUtil.InvokeExecMethodNode invokeExecMethodNode1,
+                        @Cached TRegexUtil.InvokeExecMethodNode invokeExecMethodNodeMustAdvance,
+                        @Cached TRegexUtil.InvokeExecMethodNode invokeExecMethodNode,
                         @Cached TRegexUtil.InteropReadMemberNode readIsMatchNode,
                         @Cached TRegexUtil.InvokeGetGroupBoundariesMethodNode readStartNode,
                         @Cached TRegexUtil.InvokeGetGroupBoundariesMethodNode readEndNode,
@@ -1242,9 +1379,9 @@ public final class SREModuleBuiltins extends PythonBuiltins {
             while ((count == 0 || n < count) && pos <= stringLength) {
                 final Object searchResult;
                 if (mustAdvance) {
-                    searchResult = invokeExecMethodNode0.execute(inliningTarget, compiledRegexMustAdvance, input, pos);
+                    searchResult = invokeExecMethodNodeMustAdvance.execute(inliningTarget, compiledRegexMustAdvance, input, pos);
                 } else {
-                    searchResult = invokeExecMethodNode1.execute(inliningTarget, compiledRegex, input, pos);
+                    searchResult = invokeExecMethodNode.execute(inliningTarget, compiledRegex, input, pos);
                 }
                 if (!TRegexUtil.TRegexResultAccessor.isMatch(searchResult, inliningTarget, readIsMatchNode)) {
                     break;
@@ -1322,6 +1459,9 @@ public final class SREModuleBuiltins extends PythonBuiltins {
 
     }
 
+    /**
+     * Third level: method implementation and caching of non-callable replacement objects.
+     */
     @GenerateInline
     abstract static class TRegexRESubnInnerNode3 extends Node {
 
@@ -1345,8 +1485,8 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                         @Cached("replacement") TruffleString cachedReplacement,
                         @Cached @Shared ParseReplacementNode parseReplacementNode,
                         @Cached("parseReplacementNode.execute(inliningTarget, frame, compiledRegex, replacement, binary)") ParsedReplacement cachedParsedReplacement,
-                        @Cached @Shared TRegexUtil.InvokeExecMethodNode invokeExecMethodNode0,
-                        @Cached @Shared TRegexUtil.InvokeExecMethodNode invokeExecMethodNode1,
+                        @Cached @Shared TRegexUtil.InvokeExecMethodNode invokeExecMethodNodeMustAdvance,
+                        @Cached @Shared TRegexUtil.InvokeExecMethodNode invokeExecMethodNode,
                         @Cached @Shared TRegexUtil.InteropReadMemberNode readIsMatchNode,
                         @Cached @Shared TRegexUtil.InvokeGetGroupBoundariesMethodNode readStartNode,
                         @Cached @Shared TRegexUtil.InvokeGetGroupBoundariesMethodNode readEndNode,
@@ -1356,8 +1496,8 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                         @Cached @Shared TruffleString.CopyToByteArrayNode copyToByteArrayNode) {
             return doReplace(compiledRegex, compiledRegexMustAdvance, replacement, input, count, binary, returnTuple, stringLength, result, cachedParsedReplacement,
                             inliningTarget,
-                            invokeExecMethodNode0,
-                            invokeExecMethodNode1,
+                            invokeExecMethodNodeMustAdvance,
+                            invokeExecMethodNode,
                             readIsMatchNode,
                             readStartNode,
                             readEndNode,
@@ -1365,11 +1505,6 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                             appendSubstringNode,
                             toStringNode,
                             copyToByteArrayNode);
-        }
-
-        protected static ParsedReplacement parseReplacement(Node inliningTarget, VirtualFrame frame, Object compiledRegex, TruffleString replacement, ParseReplacementNode parseReplacementNode,
-                        boolean binary) {
-            return parseReplacementNode.execute(inliningTarget, frame, compiledRegex, replacement, binary);
         }
 
         @Specialization(replaces = "doCached")
@@ -1380,8 +1515,8 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                         int stringLength,
                         TruffleStringBuilder result,
                         @Cached @Shared ParseReplacementNode parseReplacementNode,
-                        @Cached @Shared TRegexUtil.InvokeExecMethodNode invokeExecMethodNode0,
-                        @Cached @Shared TRegexUtil.InvokeExecMethodNode invokeExecMethodNode1,
+                        @Cached @Shared TRegexUtil.InvokeExecMethodNode invokeExecMethodNodeMustAdvance,
+                        @Cached @Shared TRegexUtil.InvokeExecMethodNode invokeExecMethodNode,
                         @Cached @Shared TRegexUtil.InteropReadMemberNode readIsMatchNode,
                         @Cached @Shared TRegexUtil.InvokeGetGroupBoundariesMethodNode readStartNode,
                         @Cached @Shared TRegexUtil.InvokeGetGroupBoundariesMethodNode readEndNode,
@@ -1392,8 +1527,8 @@ public final class SREModuleBuiltins extends PythonBuiltins {
             ParsedReplacement parsedReplacement = parseReplacementNode.execute(inliningTarget, frame, compiledRegex, replacement, binary);
             return doReplace(compiledRegex, compiledRegexMustAdvance, replacement, input, count, binary, returnTuple, stringLength, result, parsedReplacement,
                             inliningTarget,
-                            invokeExecMethodNode0,
-                            invokeExecMethodNode1,
+                            invokeExecMethodNodeMustAdvance,
+                            invokeExecMethodNode,
                             readIsMatchNode,
                             readStartNode,
                             readEndNode,
@@ -1408,8 +1543,8 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                         TruffleStringBuilder result,
                         ParsedReplacement parsedReplacement,
                         Node inliningTarget,
-                        TRegexUtil.InvokeExecMethodNode invokeExecMethodNode0,
-                        TRegexUtil.InvokeExecMethodNode invokeExecMethodNode1,
+                        TRegexUtil.InvokeExecMethodNode invokeExecMethodNodeMustAdvance,
+                        TRegexUtil.InvokeExecMethodNode invokeExecMethodNode,
                         TRegexUtil.InteropReadMemberNode readIsMatchNode,
                         TRegexUtil.InvokeGetGroupBoundariesMethodNode readStartNode,
                         TRegexUtil.InvokeGetGroupBoundariesMethodNode readEndNode,
@@ -1423,9 +1558,9 @@ public final class SREModuleBuiltins extends PythonBuiltins {
             while ((count == 0 || n < count) && pos < stringLength) {
                 final Object searchResult;
                 if (mustAdvance) {
-                    searchResult = invokeExecMethodNode0.execute(inliningTarget, compiledRegexMustAdvance, input, pos);
+                    searchResult = invokeExecMethodNodeMustAdvance.execute(inliningTarget, compiledRegexMustAdvance, input, pos);
                 } else {
-                    searchResult = invokeExecMethodNode1.execute(inliningTarget, compiledRegex, input, pos);
+                    searchResult = invokeExecMethodNode.execute(inliningTarget, compiledRegex, input, pos);
                 }
                 if (!TRegexUtil.TRegexResultAccessor.isMatch(searchResult, inliningTarget, readIsMatchNode)) {
                     break;
@@ -1697,11 +1832,6 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                             if (isOctalDigit(thirdCodepoint)) {
                                 nextCPPos += codepointLengthAscii;
                                 octalEscape = (octalEscape * 8) + digitValue(thirdCodepoint);
-                                if (octalEscape > 0xff) {
-                                    errorProfile.enter(inliningTarget);
-                                    TruffleString octalEscapeString = replacement.substringByteIndexUncached(backslashPos, nextCPPos - backslashPos, encoding, true);
-                                    throw raiseRegexErrorNode.executeFormatted(frame, OCTAL_ESCAPE_OUT_OF_RANGE, replacement, toCodepointIndex(backslashPos, binary), octalEscapeString);
-                                }
                             }
                         }
                     } else {
