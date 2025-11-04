@@ -1,5 +1,5 @@
 # Disabled due to relatively frequent transient failures
 !test.test_fcntl.FcntlTests.test_flock_x_and_s
-test.test_fcntl.TestFcntl.test_flock @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_fcntl.TestFcntl.test_lockf_exclusive @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
-test.test_fcntl.TestFcntl.test_lockf_share @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-x86_64
+test.test_fcntl.TestFcntl.test_flock @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_fcntl.TestFcntl.test_lockf_exclusive @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_fcntl.TestFcntl.test_lockf_share @ darwin-arm64,linux-aarch64,linux-x86_64
