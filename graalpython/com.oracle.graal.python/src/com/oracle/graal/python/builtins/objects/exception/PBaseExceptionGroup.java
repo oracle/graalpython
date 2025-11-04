@@ -49,25 +49,25 @@ import com.oracle.truffle.api.strings.TruffleString;
 public class PBaseExceptionGroup extends PBaseException {
     private final TruffleString message;
     private final Object[] exceptions;
-    @CompilationFinal private PException parent; // effectively final
+    private PException parent;
 
     /**
      * Flag to denote if the `exceptions` field contains only reraised and/or unmatched exceptions.
      */
-    @CompilationFinal private boolean containsReraises; // effectively final
+    private boolean containsReraises;
 
     /**
      * This flag marks the outer/final exception group that encompasses all other exception groups
      * that are thrown at the end of the try-except* block. This is needed, since we can nest other
      * exception groups into exception groups themselves.
      */
-    @CompilationFinal private boolean isOuter; // effectively final
+    private boolean isOuter;
 
     /**
      * Context setting behaves somewhat differently when handling exception groups. This flag
      * assures, that context, after being once set, won't be set again/overwritten.
      */
-    @CompilationFinal private boolean contextWasExplicitlySet; // effectively final
+    private boolean contextWasExplicitlySet;
 
     public PBaseExceptionGroup(Object cls, Shape instanceShape, TruffleString message, Object[] exceptions, PTuple args) {
         super(cls, instanceShape, null, args);
