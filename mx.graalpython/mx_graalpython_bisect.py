@@ -72,8 +72,9 @@ DOWNSTREAM_REPO_MAPPING = {
 }
 
 
-def get_commit(repo_path: Path, ref='HEAD'):
-    return GIT.git_command(repo_path, ['rev-parse', ref], abortOnError=True).strip()
+def get_commit(repo_path, ref='HEAD'):
+    if repo_path:
+        return GIT.git_command(repo_path, ['rev-parse', ref], abortOnError=True).strip()
 
 
 def get_message(repo_path: Path, commit):
@@ -127,11 +128,11 @@ def run_bisect_benchmark(repo_path: Path, bad, good, callback, good_result=None,
             downstream_bad = get_commit(downstream_repo_path)
     subresults = {}
     if downstream_bad and downstream_good and downstream_bad != downstream_good:
-        GIT.update_to_branch(DIR, commits[good_index])
+        GIT.update_to_branch(repo_path, commits[good_index])
         subresult = run_bisect_benchmark(downstream_repo_path, downstream_bad, downstream_good, callback, good_result,
                                          bad_result)
         subresults[bad_index] = subresult
-    return BisectResult(downstream_repo_path, commits, results, good_index, bad_index, subresults)
+    return BisectResult(repo_path, commits, results, good_index, bad_index, subresults)
 
 
 class BisectResult:
