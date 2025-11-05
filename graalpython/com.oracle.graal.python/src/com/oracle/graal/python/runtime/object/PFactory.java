@@ -469,7 +469,7 @@ public final class PFactory {
     }
 
     public static PMemoryView createMemoryViewForManagedObject(PythonLanguage language, Object buffer, Object owner, int itemsize, int length, boolean readonly, TruffleString format,
-                    TruffleString.CodePointLengthNode lengthNode, TruffleString.CodePointAtIndexNode atIndexNode) {
+                    TruffleString.CodePointLengthNode lengthNode, TruffleString.CodePointAtIndexUTF32Node atIndexNode) {
         PythonBuiltinClassType cls = PythonBuiltinClassType.PMemoryView;
         return new PMemoryView(cls, cls.getInstanceShape(language), null, null, buffer, owner, length, readonly, itemsize,
                         BufferFormat.forMemoryView(format, lengthNode, atIndexNode), format, 1, null, 0, new int[]{length / itemsize}, new int[]{itemsize}, null,

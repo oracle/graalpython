@@ -92,7 +92,7 @@ public abstract class ImportStarNode extends AbstractImportNode {
                     @Cached InlinedConditionProfile javaImport,
                     @Cached CastToTruffleStringNode castToTruffleStringNode,
                     @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                    @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                    @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
                     @Cached IsBuiltinObjectProfile isAttributeErrorProfile) {
         Object importedModule = importModule(frame, moduleName, PArguments.getGlobals(frame), T_IMPORT_ALL, level, importNameNode);
         Object locals = PArguments.getSpecialArgument(frame);
@@ -152,7 +152,7 @@ public abstract class ImportStarNode extends AbstractImportNode {
     }
 
     private void writeAttributeToLocals(VirtualFrame frame, Node inliningTarget, TruffleString moduleName, PythonModule importedModule, Object locals, Object attrName, boolean fromAll,
-                    CastToTruffleStringNode castToTruffleStringNode, TruffleString.CodePointLengthNode cpLenNode, TruffleString.CodePointAtIndexNode cpAtIndexNode, PyObjectGetAttr getAttr,
+                    CastToTruffleStringNode castToTruffleStringNode, TruffleString.CodePointLengthNode cpLenNode, TruffleString.CodePointAtIndexUTF32Node cpAtIndexNode, PyObjectGetAttr getAttr,
                     PyObjectSetItem dictWriteNode, PyObjectSetAttr setAttrNode) {
         try {
             TruffleString name = castToTruffleStringNode.execute(inliningTarget, attrName);
@@ -170,8 +170,8 @@ public abstract class ImportStarNode extends AbstractImportNode {
         }
     }
 
-    private static boolean startsWithUnderscore(TruffleString s, TruffleString.CodePointLengthNode cpLenNode, TruffleString.CodePointAtIndexNode cpAtIndexNode) {
-        return cpLenNode.execute(s, TS_ENCODING) > 0 && cpAtIndexNode.execute(s, 0, TS_ENCODING) == '_';
+    private static boolean startsWithUnderscore(TruffleString s, TruffleString.CodePointLengthNode cpLenNode, TruffleString.CodePointAtIndexUTF32Node cpAtIndexNode) {
+        return cpLenNode.execute(s, TS_ENCODING) > 0 && cpAtIndexNode.execute(s, 0) == '_';
     }
 
     public static ImportStarNode create() {

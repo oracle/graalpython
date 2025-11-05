@@ -86,12 +86,12 @@ public abstract class CodePointConversionNode extends ArgumentCastNode {
                     @Bind Node inliningTarget,
                     @Cached CastToTruffleStringNode castToStringNode,
                     @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                    @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                    @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
                     @Cached PRaiseNode raiseNode) {
         try {
             TruffleString str = castToStringNode.execute(inliningTarget, value);
             if (codePointLengthNode.execute(str, TS_ENCODING) == 1) {
-                return codePointAtIndexNode.execute(str, 0, TS_ENCODING);
+                return codePointAtIndexNode.execute(str, 0);
             }
         } catch (CannotCastException ex) {
             // handled below

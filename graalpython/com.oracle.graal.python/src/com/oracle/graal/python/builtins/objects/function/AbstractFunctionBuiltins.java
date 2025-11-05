@@ -92,7 +92,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PFunction, PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.WrapperDescriptor})
@@ -412,7 +411,7 @@ public final class AbstractFunctionBuiltins extends PythonBuiltins {
             return sb.toStringUncached();
         }
 
-        private static boolean appendCommaIfNeeded(TruffleStringBuilder sb, boolean first) {
+        private static boolean appendCommaIfNeeded(TruffleStringBuilderUTF32 sb, boolean first) {
             if (!first) {
                 sb.appendStringUncached(T_COMMA_SPACE);
             }

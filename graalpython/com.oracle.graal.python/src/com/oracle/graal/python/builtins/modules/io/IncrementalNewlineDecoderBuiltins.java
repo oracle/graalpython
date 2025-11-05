@@ -63,10 +63,10 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -101,6 +101,7 @@ import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 
 @CoreFunctions(extendClasses = PIncrementalNewlineDecoder)
 public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
@@ -175,7 +176,7 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
                         @Cached InlinedConditionProfile len0Profile,
                         @Cached CastToTruffleStringNode toString,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
                         @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
                         @Cached TruffleString.SubstringNode substringNode,
                         @Cached TruffleString.ConcatNode concatNode,
@@ -202,7 +203,7 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
              * one pass
              */
             if (!isFinal) {
-                if (outputLen > 0 && codePointAtIndexNode.execute(output, outputLen - 1, TS_ENCODING) == '\r') {
+                if (outputLen > 0 && codePointAtIndexNode.execute(output, outputLen - 1) == '\r') {
                     output = substringNode.execute(output, 0, outputLen - 1, TS_ENCODING, false);
                     self.setPendingCR(true);
                 }
@@ -247,15 +248,15 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
 
                 int i = 0;
                 while (i < len && seenNewline != SEEN_ALL) {
-                    while (i < len && codePointAtIndexNode.execute(output, i, TS_ENCODING) > '\r') {
+                    while (i < len && codePointAtIndexNode.execute(output, i) > '\r') {
                         i++;
                     }
-                    int c = i < len ? codePointAtIndexNode.execute(output, i++, TS_ENCODING) : '\0';
+                    int c = i < len ? codePointAtIndexNode.execute(output, i++) : '\0';
                     if (c == '\n') {
                         seenNewline |= SEEN_LF;
                     } else if (c == '\r') {
                         assert i < len || isFinal;
-                        if (i < len && codePointAtIndexNode.execute(output, i, TS_ENCODING) == '\n') {
+                        if (i < len && codePointAtIndexNode.execute(output, i) == '\n') {
                             seenNewline |= SEEN_CRLF;
                             i++;
                         } else {
@@ -264,11 +265,11 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
                     }
                 }
             } else {
-                TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING, output.byteLength(TS_ENCODING));
+                TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32(output.byteLength(TS_ENCODING));
                 int in = 0;
                 while (true) {
                     int c = '\0';
-                    while (in < len && (c = codePointAtIndexNode.execute(output, in++, TS_ENCODING)) > '\r') {
+                    while (in < len && (c = codePointAtIndexNode.execute(output, in++)) > '\r') {
                         appendCodePointNode.execute(sb, c, 1, true);
                     }
                     if (c == '\n') {
@@ -277,7 +278,7 @@ public final class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
                         continue;
                     }
                     if (c == '\r') {
-                        if (in < len && codePointAtIndexNode.execute(output, in, TS_ENCODING) == '\n') {
+                        if (in < len && codePointAtIndexNode.execute(output, in) == '\n') {
                             in++;
                             seenNewline |= SEEN_CRLF;
                         } else {

@@ -165,12 +165,12 @@ public final class PString extends PythonBuiltinObject {
     Object readArrayElement(long index,
                     @Bind Node inliningTarget,
                     @Cached CastToTruffleStringNode cast,
-                    @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                    @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
                     @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
             try {
-                return codePointAtIndexNode.execute(cast.execute(inliningTarget, this), (int) index, TS_ENCODING);
+                return codePointAtIndexNode.execute(cast.execute(inliningTarget, this), (int) index);
             } catch (CannotCastException e) {
                 throw CompilerDirectives.shouldNotReachHere("A PString should always have an underlying CharSequence");
             }

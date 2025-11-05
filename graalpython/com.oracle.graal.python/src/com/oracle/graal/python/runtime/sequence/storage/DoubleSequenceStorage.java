@@ -103,8 +103,8 @@ public final class DoubleSequenceStorage extends ArrayBasedSequenceStorage {
         ensureCapacity(length + 1);
 
         // shifting tail to the right by one slot
-        for (int i = values.length - 1; i > idx; i--) {
-            values[i] = values[i - 1];
+        if (idx < length) {
+            PythonUtils.arraycopy(values, idx, values, idx + 1, length - idx);
         }
 
         values[idx] = value;

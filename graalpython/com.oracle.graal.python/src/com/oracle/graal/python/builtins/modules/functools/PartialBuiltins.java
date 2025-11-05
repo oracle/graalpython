@@ -53,15 +53,14 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_ELLIPSIS;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EQ;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LPAREN;
 import static com.oracle.graal.python.nodes.StringLiterals.T_RPAREN;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -123,6 +122,7 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.api.strings.TruffleStringBuilder.AppendStringNode;
+import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PPartial)
 public final class PartialBuiltins extends PythonBuiltins {
@@ -483,7 +483,7 @@ public final class PartialBuiltins extends PythonBuiltins {
     @Slot(value = SlotKind.tp_repr, isComplex = true)
     @GenerateNodeFactory
     abstract static class PartialReprNode extends PythonUnaryBuiltinNode {
-        private static void reprArgs(VirtualFrame frame, Node inliningTarget, PPartial partial, TruffleStringBuilder sb, PyObjectReprAsTruffleStringNode reprNode,
+        private static void reprArgs(VirtualFrame frame, Node inliningTarget, PPartial partial, TruffleStringBuilderUTF32 sb, PyObjectReprAsTruffleStringNode reprNode,
                         TruffleStringBuilder.AppendStringNode appendStringNode) {
             for (Object arg : partial.getArgs()) {
                 appendStringNode.execute(sb, T_COMMA_SPACE);
@@ -491,7 +491,7 @@ public final class PartialBuiltins extends PythonBuiltins {
             }
         }
 
-        private static void reprKwArgs(VirtualFrame frame, Node inliningTarget, PPartial partial, TruffleStringBuilder sb, PyObjectReprAsTruffleStringNode reprNode,
+        private static void reprKwArgs(VirtualFrame frame, Node inliningTarget, PPartial partial, TruffleStringBuilderUTF32 sb, PyObjectReprAsTruffleStringNode reprNode,
                         PyObjectStrAsTruffleStringNode strNode, HashingStorageGetIterator getHashingStorageIterator, HashingStorageIteratorNext hashingStorageIteratorNext,
                         HashingStorageIteratorKey hashingStorageIteratorKey, HashingStorageGetItem getItem, AppendStringNode appendStringNode) {
             final PDict kwDict = partial.getKw();
@@ -530,7 +530,7 @@ public final class PartialBuiltins extends PythonBuiltins {
                 return T_ELLIPSIS;
             }
             try {
-                TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+                TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32();
                 appendStringNode.execute(sb, name);
                 appendStringNode.execute(sb, T_LPAREN);
                 appendStringNode.execute(sb, reprNode.execute(frame, inliningTarget, partial.getFn()));

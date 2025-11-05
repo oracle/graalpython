@@ -141,7 +141,7 @@ public abstract class PyMemoryViewFromObject extends PNodeWithContext {
                     @Cached CallNode callNode,
                     @Cached MemoryViewNodes.InitFlagsNode initFlagsNode,
                     @Cached TruffleString.CodePointLengthNode lengthNode,
-                    @Cached TruffleString.CodePointAtIndexNode atIndexNode,
+                    @Cached TruffleString.CodePointAtIndexUTF32Node atIndexNode,
                     @Exclusive @Cached PRaiseNode raiseNode) {
         Object typeObj = getClassNode.execute(inliningTarget, object);
         assert typeObj instanceof PythonBuiltinClassType || typeObj instanceof PythonAbstractObject;

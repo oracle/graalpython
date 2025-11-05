@@ -80,7 +80,7 @@ public abstract class PyObjectLookupAttrO extends Node {
                     @Cached CallSlotGetAttrONode callGetattribute,
                     @Cached IsBuiltinObjectProfile errorProfile,
                     @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                    @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+                    @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode) {
         Object type = getClass.execute(inliningTarget, receiver);
         TpSlots slots = getSlotsNode.execute(inliningTarget, type);
         if (!codePointLengthNode.isAdoptable() && name instanceof TruffleString tsName) {

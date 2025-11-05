@@ -57,7 +57,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.api.strings.TruffleString.CodePointAtIndexNode;
+import com.oracle.truffle.api.strings.TruffleString.CodePointAtIndexUTF32Node;
 import com.oracle.truffle.api.strings.TruffleString.CodePointLengthNode;
 
 public abstract class PythonManagedClass extends PythonObject implements PythonAbstractClass {
@@ -219,7 +219,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     public void onAttributeUpdate(TruffleString key, Object value) {
         callOnAttributeUpdateOnSubclasses(subClasses, key, value);
         methodResolutionOrder.invalidateFinalAttributeAssumption(key);
-        if (TpSlots.canBeSpecialMethod(key, CodePointLengthNode.getUncached(), CodePointAtIndexNode.getUncached())) {
+        if (TpSlots.canBeSpecialMethod(key, CodePointLengthNode.getUncached(), CodePointAtIndexUTF32Node.getUncached())) {
             if (this.tpSlots != null) {
                 // This is called during type instantiation from copyDictSlots when the tp slots are
                 // not initialized yet
@@ -233,7 +233,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         assert TypeNodes.IsTypeNode.executeUncached(nativeClass);
         callOnAttributeUpdateOnSubclasses(GetSubclassesNode.executeUncached(nativeClass), key, value);
         TypeNodes.GetMroStorageNode.executeUncached(nativeClass).invalidateFinalAttributeAssumption(key);
-        if (TpSlots.canBeSpecialMethod(key, CodePointLengthNode.getUncached(), CodePointAtIndexNode.getUncached())) {
+        if (TpSlots.canBeSpecialMethod(key, CodePointLengthNode.getUncached(), CodePointAtIndexUTF32Node.getUncached())) {
             TpSlots.updateSlot(nativeClass, key);
         }
     }

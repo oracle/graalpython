@@ -199,6 +199,7 @@ import com.oracle.truffle.api.strings.TruffleString.Encoding;
 import com.oracle.truffle.api.strings.TruffleString.IndexOfStringNode;
 import com.oracle.truffle.api.strings.TruffleString.LastIndexOfStringNode;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 import com.oracle.truffle.api.strings.TruffleStringIterator;
 
 /**
@@ -1029,7 +1030,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Exclusive @Cached CastToTruffleStringChecked0Node cast,
                         @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
                         @Exclusive @Cached HashingStorageSetItem setHashingStorageItem,
                         @Cached HashingStorageLen lenNode,
                         @Cached HashingStorageGetIterator getIter,
@@ -1050,7 +1051,7 @@ public final class StringBuiltins extends PythonBuiltins {
                     if (codePointLengthNode.execute(strKey, TS_ENCODING) != 1) {
                         throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.STRING_KEYS_MUST_BE_LENGTH_1);
                     }
-                    int codePoint = codePointAtIndexNode.execute(strKey, 0, TS_ENCODING);
+                    int codePoint = codePointAtIndexNode.execute(strKey, 0);
                     destStorage = setHashingStorageItem.execute(frame, inliningTarget, destStorage, codePoint, currentValue);
                 }
             }
@@ -1072,18 +1073,18 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         static TruffleString doStringString(TruffleString self, TruffleString table,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
                         @Shared("createCpIterator") @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
                         @Shared("next") @Cached TruffleStringIterator.NextNode nextNode,
                         @Shared("appendCp") @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
                         @Shared("toString") @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             int tableLen = codePointLengthNode.execute(table, TS_ENCODING);
             TruffleStringIterator it = createCodePointIteratorNode.execute(self, TS_ENCODING);
-            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING, self.byteLength(TS_ENCODING));
+            TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32(self.byteLength(TS_ENCODING));
             while (it.hasNext()) {
                 int cp = nextNode.execute(it, TS_ENCODING);
                 if (cp >= 0 && cp < tableLen) {
-                    cp = codePointAtIndexNode.execute(table, cp, TS_ENCODING);
+                    cp = codePointAtIndexNode.execute(table, cp);
                 }
                 appendCodePointNode.execute(sb, cp, 1, true);
             }
@@ -1103,7 +1104,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Shared("appendCp") @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
                         @Shared("toString") @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             TruffleString selfStr = castSelfNode.cast(inliningTarget, self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "translate", self);
-            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING, selfStr.byteLength(TS_ENCODING));
+            TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32(selfStr.byteLength(TS_ENCODING));
             TruffleStringIterator it = createCodePointIteratorNode.execute(selfStr, TS_ENCODING);
             while (it.hasNext()) {
                 int original = nextNode.execute(it, TS_ENCODING);
@@ -1259,7 +1260,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         static PList doStringNoSep(TruffleString self, PNone sep, int maxsplit,
                         @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
                         @Shared("substring") @Cached TruffleString.SubstringNode substringNode,
                         @Shared("appendNode") @Cached AppendNode appendNode) {
             return splitfields(self, maxsplit, appendNode, codePointLengthNode, codePointAtIndexNode, substringNode);
@@ -1297,7 +1298,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
         // See {@link PyString}
         private static PList splitfields(TruffleString s, int maxsplit, AppendNode appendNode, TruffleString.CodePointLengthNode codePointLengthNode,
-                        TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
                         TruffleString.SubstringNode substringNode) {
             /*
              * Result built here is a list of split parts, exactly as required for s.split(None,
@@ -1319,7 +1320,7 @@ public final class StringBuiltins extends PythonBuiltins {
             while (start < length) {
                 // Find the next occurrence of non-whitespace
                 while (start < length) {
-                    if (!StringUtils.isSpace(codePointAtIndexNode.execute(s, start, TS_ENCODING))) {
+                    if (!StringUtils.isSpace(codePointAtIndexNode.execute(s, start))) {
                         // Break leaving start pointing at non-whitespace
                         break;
                     }
@@ -1337,7 +1338,7 @@ public final class StringBuiltins extends PythonBuiltins {
                 } else {
                     // The next segment runs up to the next next whitespace or end
                     for (index = start; index < length; index++) {
-                        if (StringUtils.isSpace(codePointAtIndexNode.execute(s, index, TS_ENCODING))) {
+                        if (StringUtils.isSpace(codePointAtIndexNode.execute(s, index))) {
                             // Break leaving index pointing at whitespace
                             break;
                         }
@@ -1412,7 +1413,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Shared("appendNode") @Cached AppendNode appendNode,
                         @Shared("reverseNode") @Cached ListReverseNode reverseNode,
                         @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
                         @Shared @Cached TruffleString.SubstringNode substringNode) {
             /*
              * Result built here is a list of split parts, exactly as required for s.split(None,
@@ -1433,7 +1434,7 @@ public final class StringBuiltins extends PythonBuiltins {
             int start = 0, end = length, splits = 0;
 
             for (int i = length - 1; i >= 0; i--) {
-                if (StringUtils.isSpace(codePointAtIndexNode.execute(s, i, TS_ENCODING))) {
+                if (StringUtils.isSpace(codePointAtIndexNode.execute(s, i))) {
                     if (hasSegment) {
                         appendNode.execute(list, substringNode.execute(s, start, end - start, TS_ENCODING, false));
                         hasSegment = false;
@@ -1511,20 +1512,20 @@ public final class StringBuiltins extends PythonBuiltins {
                     Object regexResult = invokeExecMethodNode.execute(inliningTarget, lineBreakRegex, self, lastEnd);
                     matchFound = readIsMatchNode.execute(inliningTarget, regexResult);
                     // TRegex reports UTF-32 matches as int indices
-                    final int substringStartByteIndex = asByteIndex(lastEnd);
+                    final int substringStartByteIndex = StringUtils.codepointIndexToByteIndex(lastEnd);
                     final int substringByteLength;
                     if (matchFound) {
                         int end = TRegexUtil.TRegexResultAccessor.captureGroupEnd(regexResult, 0, inliningTarget, getEndNode);
                         if (keepends) {
-                            substringByteLength = asByteIndex(end - lastEnd);
+                            substringByteLength = StringUtils.codepointIndexToByteIndex(end - lastEnd);
                         } else {
                             int start = TRegexUtil.TRegexResultAccessor.captureGroupStart(regexResult, 0, inliningTarget, getStartNode);
-                            substringByteLength = asByteIndex(start - lastEnd);
+                            substringByteLength = StringUtils.codepointIndexToByteIndex(start - lastEnd);
                         }
                         assert end > lastEnd : String.format("end: %d, lastEnd: %d", end, lastEnd);
                         lastEnd = end;
                     } else {
-                        substringByteLength = self.byteLength(TS_ENCODING) - asByteIndex(lastEnd);
+                        substringByteLength = self.byteLength(TS_ENCODING) - StringUtils.codepointIndexToByteIndex(lastEnd);
                         if (substringByteLength == 0) {
                             break;
                         }
@@ -1535,10 +1536,6 @@ public final class StringBuiltins extends PythonBuiltins {
                 return list;
             }
 
-            private static int asByteIndex(int tregexResultIndex) {
-                assert TS_ENCODING == Encoding.UTF_32 : "byte index must be adapted when changing the language string encoding";
-                return tregexResultIndex << 2;
-            }
         }
     }
 
@@ -1585,7 +1582,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         static TruffleString doStringString(TruffleString self, TruffleString chars,
                         @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
                         @Shared("indexOf") @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
                         @Shared("substring") @Cached TruffleString.SubstringNode substringNode) {
             return StringUtils.strip(self, chars, StripKind.BOTH, codePointLengthNode, codePointAtIndexNode, indexOfCodePointNode, substringNode);
@@ -1594,7 +1591,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         static TruffleString doStringNone(TruffleString self, @SuppressWarnings("unused") PNone chars,
                         @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
                         @Shared("substring") @Cached TruffleString.SubstringNode substringNode) {
             return StringUtils.strip(self, StripKind.BOTH, codePointLengthNode, codePointAtIndexNode, substringNode);
         }
@@ -1605,7 +1602,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached CastToTruffleStringChecked2Node castSelfNode,
                         @Cached CastToTruffleStringChecked2Node castCharsNode,
                         @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
                         @Shared("indexOf") @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
                         @Shared("substring") @Cached TruffleString.SubstringNode substringNode) {
             TruffleString selfStr = castSelfNode.cast(inliningTarget, self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "strip", self);
@@ -1623,7 +1620,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         static TruffleString doStringString(TruffleString self, TruffleString chars,
                         @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
                         @Shared("indexOf") @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
                         @Shared("substring") @Cached TruffleString.SubstringNode substringNode) {
             return StringUtils.strip(self, chars, StripKind.RIGHT, codePointLengthNode, codePointAtIndexNode, indexOfCodePointNode, substringNode);
@@ -1632,7 +1629,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         static TruffleString doStringNone(TruffleString self, @SuppressWarnings("unused") PNone chars,
                         @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
                         @Shared("substring") @Cached TruffleString.SubstringNode substringNode) {
             return StringUtils.strip(self, StripKind.RIGHT, codePointLengthNode, codePointAtIndexNode, substringNode);
         }
@@ -1643,7 +1640,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached CastToTruffleStringChecked2Node castSelfNode,
                         @Cached CastToTruffleStringChecked2Node castCharsNode,
                         @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
                         @Shared("indexOf") @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
                         @Shared("substring") @Cached TruffleString.SubstringNode substringNode) {
             TruffleString selfStr = castSelfNode.cast(inliningTarget, self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "rstrip", self);
@@ -1661,7 +1658,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         static TruffleString doStringString(TruffleString self, TruffleString chars,
                         @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
                         @Shared("indexOf") @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
                         @Shared("substring") @Cached TruffleString.SubstringNode substringNode) {
             return StringUtils.strip(self, chars, StripKind.LEFT, codePointLengthNode, codePointAtIndexNode, indexOfCodePointNode, substringNode);
@@ -1670,7 +1667,7 @@ public final class StringBuiltins extends PythonBuiltins {
         @Specialization
         static TruffleString doStringNone(TruffleString self, @SuppressWarnings("unused") PNone chars,
                         @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
                         @Shared("substring") @Cached TruffleString.SubstringNode substringNode) {
             return StringUtils.strip(self, StripKind.LEFT, codePointLengthNode, codePointAtIndexNode, substringNode);
         }
@@ -1681,7 +1678,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached CastToTruffleStringChecked2Node castSelfNode,
                         @Cached CastToTruffleStringChecked2Node castCharsNode,
                         @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
                         @Shared("indexOf") @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
                         @Shared("substring") @Cached TruffleString.SubstringNode substringNode) {
             TruffleString selfStr = castSelfNode.cast(inliningTarget, self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "lstrip", self);
@@ -2198,7 +2195,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached CastToTruffleStringChecked2Node castSelfNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
                         @Cached TruffleString.SubstringNode substringNode,
                         @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
@@ -2210,9 +2207,9 @@ public final class StringBuiltins extends PythonBuiltins {
                 return self;
             }
             int nzeros = width - len;
-            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING, tsbCapacity(nzeros + len));
+            TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32(tsbCapacity(nzeros + len));
             if (len > 0) {
-                int start = codePointAtIndexNode.execute(self, 0, TS_ENCODING);
+                int start = codePointAtIndexNode.execute(self, 0);
                 if (start == '+' || start == '-') {
                     appendCodePointNode.execute(sb, start, 1, true);
                     if (nzeros > 0) {
@@ -2251,7 +2248,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
-            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING, self.byteLength(TS_ENCODING));
+            TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32(self.byteLength(TS_ENCODING));
             TruffleStringIterator it = createCodePointIteratorNode.execute(self, TS_ENCODING);
             int start = 0;
             int end = 0;
@@ -2274,7 +2271,7 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         private static void appendSegment(TruffleString self, TruffleStringBuilder.AppendStringNode appendStringNode, TruffleString.SubstringNode substringNode,
-                        TruffleString.ToJavaStringNode toJavaStringNode, TruffleString.FromJavaStringNode fromJavaStringNode, TruffleStringBuilder sb, int start, int end) {
+                        TruffleString.ToJavaStringNode toJavaStringNode, TruffleString.FromJavaStringNode fromJavaStringNode, TruffleStringBuilderUTF32 sb, int start, int end) {
             TruffleString segment = substringNode.execute(self, start, end - start + 1, TS_ENCODING, true);
             String titleSegment = UCharacter.toTitleCase(Locale.ROOT, toJavaStringNode.execute(segment), null);
             appendStringNode.execute(sb, fromJavaStringNode.execute(titleSegment, TS_ENCODING));
@@ -2298,7 +2295,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached CastToTruffleStringChecked1Node castFillNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
                         @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode,
@@ -2313,7 +2310,7 @@ public final class StringBuiltins extends PythonBuiltins {
                 if (errorProfile.profile(inliningTarget, codePointLengthNode.execute(fillStr, TS_ENCODING) != 1)) {
                     throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.FILL_CHAR_MUST_BE_LENGTH_1);
                 }
-                fillChar = codePointAtIndexNode.execute(fillStr, 0, TS_ENCODING);
+                fillChar = codePointAtIndexNode.execute(fillStr, 0);
             }
             return make(self, asSizeNode.executeExact(frame, inliningTarget, width), fillChar, codePointLengthNode, appendCodePointNode, appendStringNode, toStringNode);
         }
@@ -2326,7 +2323,7 @@ public final class StringBuiltins extends PythonBuiltins {
             }
             int left = getLeftPaddingWidth(len, width);
             int right = width - len - left;
-            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING, tsbCapacity(len + left + right));
+            TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32(tsbCapacity(len + left + right));
             if (left > 0) {
                 appendCodePointNode.execute(sb, fillChar, left, true);
             }
@@ -2404,14 +2401,14 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Shared("len") @Cached LenOfRangeNode sliceLen,
                         @Shared("appendCP") @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
                         @Shared("toStr") @Cached TruffleStringBuilder.ToStringNode toStringNode,
-                        @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+                        @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode) {
             int len = sliceLen.len(inliningTarget, slice);
             int start = slice.start;
-            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING, tsbCapacity(len));
+            TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32(tsbCapacity(len));
             int j = 0;
             loopProfile.profileCounted(inliningTarget, len);
             for (int i = start; loopProfile.inject(inliningTarget, j < len); i += step) {
-                appendCodePointNode.execute(sb, codePointAtIndexNode.execute(value, i, TS_ENCODING), 1, true);
+                appendCodePointNode.execute(sb, codePointAtIndexNode.execute(value, i), 1, true);
                 j++;
             }
             return toStringNode.execute(sb);
@@ -2424,7 +2421,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Shared("len") @Cached LenOfRangeNode sliceLen,
                         @Shared("appendCP") @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
                         @Shared("toStr") @Cached TruffleStringBuilder.ToStringNode toStringNode,
-                        @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+                        @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode) {
             return doGenericCachedStep(value, slice, inliningTarget, slice.step, loopProfile, sliceLen, appendCodePointNode, toStringNode, codePointAtIndexNode);
         }
     }
@@ -2610,7 +2607,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached TruffleStringIterator.NextNode nextNode,
                         @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
-            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING, self.byteLength(TS_ENCODING));
+            TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32(self.byteLength(TS_ENCODING));
             int linePos = 0;
             TruffleStringIterator it = createCodePointIteratorNode.execute(self, TS_ENCODING);
             // It's ok to iterate with charAt, we just pass surrogates through

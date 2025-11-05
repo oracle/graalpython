@@ -128,10 +128,10 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.io.TextIOWrapperNodes.WriteFlushNode;
@@ -188,6 +188,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 
 @CoreFunctions(extendClasses = PTextIOWrapper)
 public final class TextIOWrapperBuiltins extends PythonBuiltins {
@@ -339,7 +340,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectIsTrueNode isTrueNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached TextIOWrapperNodes.ChangeEncodingNode changeEncodingNode) {
             TruffleString newline = null;
@@ -512,7 +513,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
             writeFlushNode.execute(frame, inliningTarget, self);
             TruffleString result = self.consumeDecodedChars(n, substringNode, false);
             int remaining = n - codePointLengthNode.execute(result, TS_ENCODING);
-            TruffleStringBuilder chunks = null;
+            TruffleStringBuilderUTF32 chunks = null;
             /* Keep reading chunks until we have n characters to return */
             while (remaining > 0) {
                 boolean res = readChunkNode.execute(frame, inliningTarget, self, remaining);
@@ -522,7 +523,7 @@ public final class TextIOWrapperBuiltins extends PythonBuiltins {
                 }
                 if (!result.isEmpty()) {
                     if (chunks == null) {
-                        chunks = TruffleStringBuilder.create(TS_ENCODING);
+                        chunks = TruffleStringBuilder.createUTF32();
                     }
                     appendStringNode.execute(chunks, result);
                 }

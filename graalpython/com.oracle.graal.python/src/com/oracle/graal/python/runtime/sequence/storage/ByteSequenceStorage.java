@@ -107,8 +107,8 @@ public final class ByteSequenceStorage extends ArrayBasedSequenceStorage {
         ensureCapacity(length + 1);
 
         // shifting tail to the right by one slot
-        for (int i = values.length - 1; i > idx; i--) {
-            values[i] = values[i - 1];
+        if (idx < length) {
+            PythonUtils.arraycopy(values, idx, values, idx + 1, length - idx);
         }
 
         values[idx] = value;
@@ -120,13 +120,10 @@ public final class ByteSequenceStorage extends ArrayBasedSequenceStorage {
     }
 
     public int indexOfInt(int value) {
-        for (int i = 0; i < length; i++) {
-            if ((values[i] & 0xFF) == value) {
-                return i;
-            }
+        if ((value & 0xFF) != value) {
+            return -1;
         }
-
-        return -1;
+        return ArrayUtils.indexOf(values, 0, length, (byte) value);
     }
 
     @Override

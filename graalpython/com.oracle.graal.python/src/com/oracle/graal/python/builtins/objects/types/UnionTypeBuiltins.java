@@ -101,6 +101,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PUnionType)
 public final class UnionTypeBuiltins extends PythonBuiltins {
@@ -162,7 +163,7 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private TruffleString reprBoundary(PUnionType self) {
-            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+            TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32();
             SequenceStorage argsStorage = self.getArgs().getSequenceStorage();
             for (int i = 0; i < argsStorage.length(); i++) {
                 if (i > 0) {
@@ -174,7 +175,7 @@ public final class UnionTypeBuiltins extends PythonBuiltins {
         }
 
         // Equivalent of union_repr_item in CPython
-        private static void reprItem(TruffleStringBuilder sb, Object obj) {
+        private static void reprItem(TruffleStringBuilderUTF32 sb, Object obj) {
             if (IsSameTypeNode.executeUncached(obj, PythonBuiltinClassType.PNone)) {
                 sb.appendStringUncached(StringLiterals.T_NONE);
                 return;

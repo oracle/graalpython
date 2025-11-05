@@ -50,7 +50,6 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_LBRACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LPAREN;
 import static com.oracle.graal.python.nodes.StringLiterals.T_RBRACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_RPAREN;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
@@ -110,6 +109,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PDictKeysView, PythonBuiltinClassType.PDictItemsView, PythonBuiltinClassType.PDictValuesView, PythonBuiltinClassType.PDict})
 public final class DictReprBuiltin extends PythonBuiltins {
@@ -133,15 +133,15 @@ public final class DictReprBuiltin extends PythonBuiltins {
         @ValueType
         protected static final class ReprState {
             private final Object self;
-            private final TruffleStringBuilder result;
+            private final TruffleStringBuilderUTF32 result;
             private final int initialLength;
             private final boolean ellipsisInBraces;
 
-            ReprState(Object self, TruffleStringBuilder result) {
+            ReprState(Object self, TruffleStringBuilderUTF32 result) {
                 this(self, result, true);
             }
 
-            ReprState(Object self, TruffleStringBuilder result, boolean ellipsisInBraces) {
+            ReprState(Object self, TruffleStringBuilderUTF32 result, boolean ellipsisInBraces) {
                 this.self = self;
                 this.result = result;
                 this.ellipsisInBraces = ellipsisInBraces;
@@ -309,7 +309,7 @@ public final class DictReprBuiltin extends PythonBuiltins {
                 return T_ELLIPSIS_IN_BRACES;
             }
             try {
-                TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+                TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32();
                 appendStringNode.execute(sb, T_LBRACE);
                 var storage = getStorageNode.execute(inliningTarget, dict);
                 forEachNode.execute(null, inliningTarget, storage, consumerNode, new ReprState(dict, sb));
@@ -361,7 +361,7 @@ public final class DictReprBuiltin extends PythonBuiltins {
 
         private static TruffleString viewRepr(Node inliningTarget, PDictView view, TruffleString type, HashingStorageForEach forEachNode, AbstractForEachRepr consumerNode,
                         TruffleStringBuilder.AppendStringNode appendStringNode, TruffleStringBuilder.ToStringNode toStringNode) {
-            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+            TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32();
             appendStringNode.execute(sb, type);
             appendStringNode.execute(sb, T_LPAREN_BRACKET);
             HashingStorage dictStorage = view.getWrappedStorage();
@@ -396,10 +396,10 @@ public final class DictReprBuiltin extends PythonBuiltins {
 
     @GenerateInline(false) // 116 -> 100
     public abstract static class ReprOrderedDictItemsNode extends Node {
-        public abstract void execute(VirtualFrame frame, POrderedDict dict, TruffleStringBuilder sb);
+        public abstract void execute(VirtualFrame frame, POrderedDict dict, TruffleStringBuilderUTF32 sb);
 
         @Specialization
-        static void repr(VirtualFrame frame, POrderedDict dict, TruffleStringBuilder sb,
+        static void repr(VirtualFrame frame, POrderedDict dict, TruffleStringBuilderUTF32 sb,
                         @Bind Node inliningTarget,
                         @Cached PyObjectCallMethodObjArgs callMethod,
                         @Cached PyObjectGetIter getIter,

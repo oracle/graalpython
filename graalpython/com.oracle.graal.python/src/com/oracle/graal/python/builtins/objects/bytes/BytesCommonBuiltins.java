@@ -760,13 +760,13 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode toStr,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             TruffleString str = toStr.execute(inliningTarget, strObj);
             if (codePointLengthNode.execute(str, TS_ENCODING) != 1) {
                 throw raiseNode.raise(inliningTarget, ValueError, SEP_MUST_BE_LENGTH_1);
             }
-            int cp = codePointAtIndexNode.execute(str, 0, TS_ENCODING);
+            int cp = codePointAtIndexNode.execute(str, 0);
             if (cp > 127) {
                 throw raiseNode.raise(inliningTarget, ValueError, SEP_MUST_BE_ASCII);
             }

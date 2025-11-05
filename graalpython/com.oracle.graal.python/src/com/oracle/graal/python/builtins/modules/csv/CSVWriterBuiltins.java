@@ -79,6 +79,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 import com.oracle.truffle.api.strings.TruffleStringIterator;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.CSVWriter)
@@ -118,7 +119,7 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
             }
 
             // Join all fields of passed in sequence in internal buffer.
-            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+            TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32();
             CSVDialect dialect = self.dialect;
             boolean first = true;
             boolean nullField = false;
@@ -179,7 +180,7 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
             return callNode.executeObject(frame, self.write, toStringNode.execute(sb));
         }
 
-        static void joinAppend(Node inliningTarget, TruffleStringBuilder sb, CSVWriter self, TruffleString field, boolean quotedArg,
+        static void joinAppend(Node inliningTarget, TruffleStringBuilderUTF32 sb, CSVWriter self, TruffleString field, boolean quotedArg,
                         PRaiseNode raiseNode,
                         TruffleStringBuilder.AppendStringNode appendStringNode,
                         TruffleString.CodePointLengthNode codePointLengthNode,
@@ -211,12 +212,12 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
     @GenerateInline(false) // 36 -> 17
     protected abstract static class JoinAppendData extends Node {
 
-        abstract boolean execute(Node inliningTarget, TruffleStringBuilder sb, CSVDialect dialect, TruffleString field, boolean quoted, boolean copyPhase,
+        abstract boolean execute(Node inliningTarget, TruffleStringBuilderUTF32 sb, CSVDialect dialect, TruffleString field, boolean quoted, boolean copyPhase,
                         PRaiseNode raiseNode,
                         TruffleStringBuilder.AppendStringNode appendStringNode);
 
         @Specialization
-        static boolean joinAppendData(Node inliningTarget, TruffleStringBuilder sb, CSVDialect dialect, TruffleString field, boolean quotedArg, boolean isCopyPhase,
+        static boolean joinAppendData(Node inliningTarget, TruffleStringBuilderUTF32 sb, CSVDialect dialect, TruffleString field, boolean quotedArg, boolean isCopyPhase,
                         PRaiseNode raiseNode,
                         TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
@@ -278,14 +279,14 @@ public final class CSVWriterBuiltins extends PythonBuiltins {
             return quoted;
         }
 
-        static void addChar(TruffleStringBuilder sb, TruffleString c, boolean isCopyPhase,
+        static void addChar(TruffleStringBuilderUTF32 sb, TruffleString c, boolean isCopyPhase,
                         TruffleStringBuilder.AppendStringNode appendStringNode) {
             if (isCopyPhase) {
                 appendStringNode.execute(sb, c);
             }
         }
 
-        static void addChar(TruffleStringBuilder sb, int c, boolean isCopyPhase,
+        static void addChar(TruffleStringBuilderUTF32 sb, int c, boolean isCopyPhase,
                         TruffleStringBuilder.AppendCodePointNode appendCodePointNode) {
             if (isCopyPhase) {
                 appendCodePointNode.execute(sb, c, 1, true);

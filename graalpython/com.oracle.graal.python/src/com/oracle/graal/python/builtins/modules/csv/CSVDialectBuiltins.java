@@ -331,11 +331,11 @@ public final class CSVDialectBuiltins extends PythonBuiltins {
             }
 
             // delimiter cannot be NOT_SET
-            int delimiterCodePoint = TruffleString.CodePointAtIndexNode.getUncached().execute(delimiter, 0, TS_ENCODING);
+            int delimiterCodePoint = TruffleString.CodePointAtIndexUTF32Node.getUncached().execute(delimiter, 0);
             int escapeCharCodePoint = TruffleString.EqualNode.getUncached().execute(escapeChar, T_NOT_SET, TS_ENCODING) ? NOT_SET_CODEPOINT
-                            : TruffleString.CodePointAtIndexNode.getUncached().execute(escapeChar, 0, TS_ENCODING);
+                            : TruffleString.CodePointAtIndexUTF32Node.getUncached().execute(escapeChar, 0);
             int quoteCharCodePoint = TruffleString.EqualNode.getUncached().execute(quoteChar, T_NOT_SET, TS_ENCODING) ? NOT_SET_CODEPOINT
-                            : TruffleString.CodePointAtIndexNode.getUncached().execute(quoteChar, 0, TS_ENCODING);
+                            : TruffleString.CodePointAtIndexUTF32Node.getUncached().execute(quoteChar, 0);
 
             return PFactory.createCSVDialect(cls, TypeNodes.GetInstanceShape.executeUncached(cls), delimiter, delimiterCodePoint, doubleQuote,
                             escapeChar, escapeCharCodePoint, lineTerminator, quoteChar, quoteCharCodePoint, quoting,

@@ -100,6 +100,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 
 public abstract class AbstractImportNode extends PNodeWithContext {
 
@@ -591,7 +592,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
                 return base;
             }
 
-            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING, base.byteLength(TS_ENCODING) + tsbCapacity(1) + name.byteLength(TS_ENCODING));
+            TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32(base.byteLength(TS_ENCODING) + tsbCapacity(1) + name.byteLength(TS_ENCODING));
             appendStringNode.execute(sb, base);
             appendStringNode.execute(sb, T_DOT);
             appendStringNode.execute(sb, name);

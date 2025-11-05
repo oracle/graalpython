@@ -326,11 +326,11 @@ public final class PickleUtils {
         return switchEncodingNode.execute(ret, TS_ENCODING);
     }
 
-    public static byte[] rawUnicodeEscape(TruffleString unicode, TruffleString.CodePointLengthNode codePointLengthNode, TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+    public static byte[] rawUnicodeEscape(TruffleString unicode, TruffleString.CodePointLengthNode codePointLengthNode, TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode) {
         int len = codePointLengthNode.execute(unicode, TS_ENCODING);
         ByteArrayBuffer buffer = new ByteArrayBuffer(len);
         for (int i = 0; i < len; i++) {
-            final int ch = codePointAtIndexNode.execute(unicode, i, TS_ENCODING);
+            final int ch = codePointAtIndexNode.execute(unicode, i);
             if (ch >= 0x10000) {
                 // Map 32-bit characters to \Uxxxxxxxx
                 buffer.append('\\');

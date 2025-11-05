@@ -153,7 +153,7 @@ public final class PicklerNodes {
         @Child private PyObjectReprAsTruffleStringNode reprNode;
         @Child private TruffleString.FromByteArrayNode tsFromByteArrayNode;
         @Child private TruffleString.CodePointLengthNode tsCodePointLengthNode;
-        @Child private TruffleString.CodePointAtIndexNode tsCodePointAtIndexNode;
+        @Child private TruffleString.CodePointAtIndexUTF32Node tsCodePointAtIndexUTF32Node;
         @Child private TruffleString.FromLongNode tsFromLongNode;
         @Child private TruffleString.IndexOfStringNode tsIndexOfStringNode;
         @Child private TruffleString.SubstringNode tsSubstringNode;
@@ -198,12 +198,12 @@ public final class PicklerNodes {
             return tsCodePointLengthNode;
         }
 
-        protected TruffleString.CodePointAtIndexNode ensureTsCodePointAtIndexNode() {
-            if (tsCodePointAtIndexNode == null) {
+        protected TruffleString.CodePointAtIndexUTF32Node ensureTsCodePointAtIndexUTF32Node() {
+            if (tsCodePointAtIndexUTF32Node == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                tsCodePointAtIndexNode = insert(TruffleString.CodePointAtIndexNode.create());
+                tsCodePointAtIndexUTF32Node = insert(TruffleString.CodePointAtIndexUTF32Node.create());
             }
-            return tsCodePointAtIndexNode;
+            return tsCodePointAtIndexUTF32Node;
         }
 
         protected TruffleString.FromLongNode ensureTsFromLongNode() {

@@ -48,8 +48,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 
-import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
-import com.oracle.truffle.api.dsl.Fallback;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.shadowed.com.ibm.icu.lang.UCharacter;
 import org.graalvm.shadowed.com.ibm.icu.lang.UCharacterCategory;
@@ -57,8 +55,10 @@ import org.graalvm.shadowed.com.ibm.icu.lang.UProperty;
 
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -69,6 +69,7 @@ import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.api.strings.TruffleStringBuilder.AppendCodePointNode;
 import com.oracle.truffle.api.strings.TruffleStringBuilder.AppendLongNumberNode;
 import com.oracle.truffle.api.strings.TruffleStringBuilder.AppendStringNode;
+import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 import com.oracle.truffle.api.strings.TruffleStringIterator;
 import com.oracle.truffle.regex.chardata.UnicodeCharacterAliases;
 
@@ -157,13 +158,13 @@ public final class StringUtils {
         return isUnicodeWhitespace(ch);
     }
 
-    public static TruffleString strip(TruffleString str, StripKind stripKind, TruffleString.CodePointLengthNode codePointLengthNode, TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+    public static TruffleString strip(TruffleString str, StripKind stripKind, TruffleString.CodePointLengthNode codePointLengthNode, TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
                     TruffleString.SubstringNode substringNode) {
         int i = 0;
         int len = codePointLengthNode.execute(str, TS_ENCODING);
         if (stripKind != StripKind.RIGHT) {
             while (i < len) {
-                int cp = codePointAtIndexNode.execute(str, i, TS_ENCODING);
+                int cp = codePointAtIndexNode.execute(str, i);
                 if (!isSpace(cp)) {
                     break;
                 }
@@ -175,7 +176,7 @@ public final class StringUtils {
         if (stripKind != StripKind.LEFT) {
             j--;
             while (j >= i) {
-                int cp = codePointAtIndexNode.execute(str, j, TS_ENCODING);
+                int cp = codePointAtIndexNode.execute(str, j);
                 if (!isSpace(cp)) {
                     break;
                 }
@@ -188,7 +189,7 @@ public final class StringUtils {
     }
 
     public static TruffleString strip(TruffleString str, TruffleString chars, StripKind stripKind, TruffleString.CodePointLengthNode codePointLengthNode,
-                    TruffleString.CodePointAtIndexNode codePointAtIndexNode, TruffleString.IndexOfCodePointNode indexOfCodePointNode, TruffleString.SubstringNode substringNode) {
+                    TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode, TruffleString.IndexOfCodePointNode indexOfCodePointNode, TruffleString.SubstringNode substringNode) {
         int i = 0;
         int len = codePointLengthNode.execute(str, TS_ENCODING);
         int charsLen = codePointLengthNode.execute(chars, TS_ENCODING);
@@ -196,7 +197,7 @@ public final class StringUtils {
         // to avoid the linear search in chars
         if (stripKind != StripKind.RIGHT) {
             while (i < len) {
-                int cp = codePointAtIndexNode.execute(str, i, TS_ENCODING);
+                int cp = codePointAtIndexNode.execute(str, i);
                 if (indexOfCodePointNode.execute(chars, cp, 0, charsLen, TS_ENCODING) < 0) {
                     break;
                 }
@@ -208,7 +209,7 @@ public final class StringUtils {
         if (stripKind != StripKind.LEFT) {
             j--;
             while (j >= i) {
-                int cp = codePointAtIndexNode.execute(str, j, TS_ENCODING);
+                int cp = codePointAtIndexNode.execute(str, j);
                 if (indexOfCodePointNode.execute(chars, cp, 0, charsLen, TS_ENCODING) < 0) {
                     break;
                 }
@@ -365,7 +366,7 @@ public final class StringUtils {
         if (!it.hasNext()) {
             return first;
         }
-        TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+        TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32();
         sb.appendStringUncached(first);
         while (it.hasNext()) {
             sb.appendStringUncached(delimiter);
@@ -410,7 +411,7 @@ public final class StringUtils {
         if (args.length == 2) {
             return args[0].concatUncached(args[1], TS_ENCODING, false);
         }
-        TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+        TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32();
         for (TruffleString arg : args) {
             sb.appendStringUncached(arg);
         }
@@ -457,7 +458,7 @@ public final class StringUtils {
                         @Shared("cpAtByteIndex") @Cached TruffleString.CodePointAtByteIndexNode codePointAtByteIndexNode,
                         @Shared("byteLenOfCP") @Cached TruffleString.ByteLengthOfCodePointNode byteLengthOfCodePointNode,
                         @Shared("js2ts") @Cached TruffleString.FromJavaStringNode fromJavaStringNode) {
-            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+            TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32();
             int i = 0;
             int len = format.byteLength(TS_ENCODING);
             int nextArg = 0;
@@ -607,5 +608,15 @@ public final class StringUtils {
                         @Cached TruffleString.EqualNode equalNode) {
             return equalNode.execute(left, right, TS_ENCODING);
         }
+    }
+
+    public static int codepointIndexToByteIndex(int codepointIndex) {
+        assert TS_ENCODING == TruffleString.Encoding.UTF_32 : "must be adapted when switching to a different encoding";
+        return codepointIndex << 2;
+    }
+
+    public static int byteIndexToCodepointIndex(int byteIndex) {
+        assert TS_ENCODING == TruffleString.Encoding.UTF_32 : "must be adapted when switching to a different encoding";
+        return byteIndex >> 2;
     }
 }

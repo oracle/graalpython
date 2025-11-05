@@ -35,7 +35,6 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_PARENS;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LPAREN;
 import static com.oracle.graal.python.nodes.StringLiterals.T_RPAREN;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
@@ -114,6 +113,7 @@ import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PTuple)
 public final class TupleBuiltins extends PythonBuiltins {
@@ -268,7 +268,7 @@ public final class TupleBuiltins extends PythonBuiltins {
                 return T_ELLIPSIS_IN_PARENS;
             }
             try {
-                TruffleStringBuilder buf = TruffleStringBuilder.create(TS_ENCODING);
+                TruffleStringBuilderUTF32 buf = TruffleStringBuilder.createUTF32();
                 appendStringNode.execute(buf, T_LPAREN);
                 for (int i = 0; i < len - 1; i++) {
                     appendStringNode.execute(buf, toString(frame, inliningTarget, getItemNode.execute(tupleStore, i), reprNode));

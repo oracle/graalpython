@@ -335,7 +335,7 @@ public final class CSVReaderBuiltins extends PythonBuiltins {
 
         private static void parseSaveField(Node inliningTarget, CSVReader self, PList fields, ToStringNode toStringNode, PyNumberFloatNode pyNumberFloatNode, AppendNode appendNode) {
             TruffleString field = toStringNode.execute(self.field);
-            self.field = TruffleStringBuilder.create(TS_ENCODING);
+            self.field = TruffleStringBuilder.createUTF32();
             if (self.numericField) {
                 self.numericField = false;
                 appendNode.execute(fields, pyNumberFloatNode.execute(inliningTarget, field));

@@ -989,8 +989,7 @@ public final class PatternBuiltins extends PythonBuiltins {
                         @Cached CastToTruffleStringNode cast,
                         @Cached @Exclusive SubnInnerNode2 innerNode) {
             TruffleString input = cast.castKnownString(inliningTarget, inputObj);
-            assert TS_ENCODING == TruffleString.Encoding.UTF_32 : "remove the >> 2 when switching to UTF-8";
-            int stringLength = input.byteLength(TS_ENCODING) >> 2;
+            int stringLength = StringUtils.byteIndexToCodepointIndex(input.byteLength(TS_ENCODING));
             TruffleStringBuilderUTF32 result = TruffleStringBuilder.createUTF32(Math.max(32, stringLength));
             return innerNode.execute(inliningTarget, frame, pattern, compiledRegex, compiledRegexMustAdvance, replacement, input, inputObj, count, false, isCallable, returnTuple, stringLength,
                             result);
@@ -1341,7 +1340,7 @@ public final class PatternBuiltins extends PythonBuiltins {
         @Specialization
         static ParsedReplacement parseReplacement(Node inliningTarget, VirtualFrame frame, Object tregexCompiledRegex, TruffleString replacement, boolean binary,
                         @Cached TruffleString.ByteIndexOfCodePointNode indexOfNode,
-                        @Cached TruffleString.CodePointAtByteIndexNode codePointAtByteIndexNode,
+                        @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtNode,
                         @Cached TruffleString.SubstringByteIndexNode substringByteIndexNode,
                         @Cached TruffleString.GetCodeRangeNode getCodeRangeNode,
                         @Cached TRegexUtil.InteropReadMemberNode readGroupCountNode,
@@ -1370,9 +1369,9 @@ public final class PatternBuiltins extends PythonBuiltins {
                 if (nextCPPos >= length) {
                     throw raiseRegexErrorNode.execute(frame, BAD_ESCAPE_END_OF_STRING, replacement, toCodepointIndex(length, binary));
                 }
-                int firstCodepoint = codePointAtByteIndexNode.execute(replacement, nextCPPos, encoding);
+                int firstCodepoint = codePointAtNode.execute(replacement, toCodepointIndex(nextCPPos, binary));
                 nextCPPos += codepointLengthAscii;
-                int secondCodepoint = nextCPPos < length ? codePointAtByteIndexNode.execute(replacement, nextCPPos, encoding) : -1;
+                int secondCodepoint = nextCPPos < length ? codePointAtNode.execute(replacement, toCodepointIndex(nextCPPos, binary)) : -1;
                 if (firstCodepoint == 'g') {
                     if (secondCodepoint != '<') {
                         throw raiseRegexErrorNode.execute(frame, MISSING_LEFT_ANGLE_BRACKET, replacement, toCodepointIndex(nextCPPos, binary));
@@ -1392,7 +1391,7 @@ public final class PatternBuiltins extends PythonBuiltins {
                     if (ascii) {
                         groupNumber = 0;
                         for (int i = 0; i < nameLength; i += codepointLengthAscii) {
-                            int d = codePointAtByteIndexNode.execute(name, i, encoding);
+                            int d = codePointAtNode.execute(name, toCodepointIndex(i, binary));
                             if (isDecimalDigit(d)) {
                                 groupNumber = (groupNumber * 10) + digitValue(d);
                             } else {
@@ -1426,7 +1425,7 @@ public final class PatternBuiltins extends PythonBuiltins {
                         nextCPPos += codepointLengthAscii;
                         octalEscape = digitValue(secondCodepoint);
                         if (nextCPPos < length) {
-                            int thirdCodepoint = codePointAtByteIndexNode.execute(replacement, nextCPPos, encoding);
+                            int thirdCodepoint = codePointAtNode.execute(replacement, toCodepointIndex(nextCPPos, binary));
                             if (isOctalDigit(thirdCodepoint)) {
                                 nextCPPos += codepointLengthAscii;
                                 octalEscape = (octalEscape * 8) + digitValue(thirdCodepoint);
@@ -1443,7 +1442,7 @@ public final class PatternBuiltins extends PythonBuiltins {
                         nextCPPos += codepointLengthAscii;
                         int thirdCodepoint;
                         if (Math.max(firstCodepoint, secondCodepoint) <= '7' && nextCPPos < length &&
-                                        isOctalDigit(thirdCodepoint = codePointAtByteIndexNode.execute(replacement, nextCPPos, encoding))) {
+                                        isOctalDigit(thirdCodepoint = codePointAtNode.execute(replacement, toCodepointIndex(nextCPPos, binary)))) {
                             nextCPPos += codepointLengthAscii;
                             // Single and double-digit escapes are group references, but three-digit
                             // escapes are octal character codes. Hopefully this will be deprecated
@@ -1565,12 +1564,12 @@ public final class PatternBuiltins extends PythonBuiltins {
 
     private static int toByteIndex(int index, boolean binary) {
         assert TS_ENCODING == TruffleString.Encoding.UTF_32 : "remove this method when switching to UTF-8";
-        return binary ? index : index << 2;
+        return binary ? index : StringUtils.codepointIndexToByteIndex(index);
     }
 
-    private static int toCodepointIndex(int i, boolean binary) {
+    private static int toCodepointIndex(int index, boolean binary) {
         assert TS_ENCODING == TruffleString.Encoding.UTF_32 : "remove this when switching to UTF-8";
-        return binary ? i : i >> 2;
+        return binary ? index : StringUtils.byteIndexToCodepointIndex(index);
     }
 
     private static int digitValue(int d) {

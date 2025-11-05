@@ -44,12 +44,11 @@ import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.HEXDIGIT
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
+import com.oracle.graal.python.builtins.objects.str.StringUtils;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningRoot;
 import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.api.strings.TruffleString.SubstringNode;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
-import com.oracle.truffle.api.strings.TruffleStringBuilder.AppendStringNode;
 import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
-import com.oracle.truffle.api.strings.TruffleStringIterator;
 
 public abstract class JSONUtils {
     private JSONUtils() {
@@ -63,134 +62,103 @@ public abstract class JSONUtils {
     private static final TruffleString T_ESC_R = tsLiteral("\\r");
     private static final TruffleString T_ESC_T = tsLiteral("\\t");
 
-    static void appendStringUncached(TruffleString ts, TruffleStringBuilderUTF32 builder, boolean asciiOnly) {
-        // Note: appending in chunks does not pay off in the uncached case
-        builder.appendCodePointUncached('"');
-        TruffleStringIterator it = ts.createCodePointIteratorUncached(TS_ENCODING);
-        while (it.hasNext()) {
-            int c = it.nextUncached(TS_ENCODING);
-            switch (c) {
-                case '\\':
-                    builder.appendStringUncached(T_ESC_BACKSLASH);
+    private static final TruffleString.CodePointSet JSON_ESCAPE_CHARS = TruffleString.CodePointSet.fromRanges(new int[]{
+                    0, 0x1f, // includes \b, \f, \n, \r, \t
+                    '"', '"',
+                    '\\', '\\',
+    }, TS_ENCODING);
+    private static final TruffleString.CodePointSet JSON_ESCAPE_CHARS_ASCII_ONLY = TruffleString.CodePointSet.fromRanges(new int[]{
+                    0, 0x1f, // includes \b, \f, \n, \r, \t
+                    '"', '"',
+                    '\\', '\\',
+                    0x7f, 0x10ffff,
+    }, TS_ENCODING);
+
+    static void appendString(TruffleString ts, TruffleStringBuilderUTF32 builder, boolean asciiOnly,
+                    TruffleString.ByteIndexOfCodePointSetNode byteIndexOfCodePointSetNode1,
+                    TruffleString.ByteIndexOfCodePointSetNode byteIndexOfCodePointSetNode2,
+                    TruffleString.CodePointAtIndexUTF32Node codePointAtNode,
+                    TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
+                    TruffleStringBuilder.AppendStringNode appendStringNode,
+                    TruffleStringBuilder.AppendSubstringByteIndexNode appendSubstringNode,
+                    TruffleString.FromByteArrayNode fromByteArrayNode) {
+        appendCodePointNode.execute(builder, '"');
+        int byteLength = ts.byteLength(TS_ENCODING);
+        int codepointLength = StringUtils.byteIndexToCodepointIndex(byteLength);
+        if (codepointLength < 16) {
+            int i = 0;
+            for (; i < codepointLength; i++) {
+                int c = codePointAtNode.execute(ts, i);
+                if (c <= 0x1f || c == '"' || c == '\\' || (asciiOnly && c >= 0x7f)) {
                     break;
-                case '"':
-                    builder.appendStringUncached(T_ESC_QUOTE);
-                    break;
-                case '\b':
-                    builder.appendStringUncached(T_ESC_B);
-                    break;
-                case '\f':
-                    builder.appendStringUncached(T_ESC_F);
-                    break;
-                case '\n':
-                    builder.appendStringUncached(T_ESC_N);
-                    break;
-                case '\r':
-                    builder.appendStringUncached(T_ESC_R);
-                    break;
-                case '\t':
-                    builder.appendStringUncached(T_ESC_T);
-                    break;
-                default:
-                    if (c <= 0x1f || (asciiOnly && c > '~')) {
-                        // appendSubstringUncached(builder, ts, chunkStart, currentIndex);
-                        if (c <= 0xffff) {
-                            appendEscapedUtf16Uncached((char) c, builder);
-                        } else {
-                            // split SMP codepoint to surrogate pair
-                            appendEscapedUtf16Uncached((char) (0xD800 + ((c - 0x10000) >> 10)), builder);
-                            appendEscapedUtf16Uncached((char) (0xDC00 + ((c - 0x10000) & 0x3FF)), builder);
-                        }
-                    } else {
-                        builder.appendCodePointUncached(c, 1, true);
-                    }
-                    break;
+                }
             }
-        }
-        builder.appendCodePointUncached('"');
-    }
-
-    private static void appendEscapedUtf16Uncached(char c, TruffleStringBuilderUTF32 builder) {
-        builder.appendStringUncached(TruffleString.fromByteArrayUncached(
-                        new byte[]{'\\', 'u', HEXDIGITS[(c >> 12) & 0xf], HEXDIGITS[(c >> 8) & 0xf], HEXDIGITS[(c >> 4) & 0xf], HEXDIGITS[c & 0xf]}, TruffleString.Encoding.US_ASCII));
-    }
-
-    static void appendString(TruffleString s, TruffleStringIterator it, TruffleStringBuilder builder, boolean asciiOnly, TruffleStringIterator.NextNode nextNode,
-                    TruffleStringBuilder.AppendCodePointNode appendCodePointNode, TruffleStringBuilder.AppendStringNode appendStringNode, SubstringNode substringNode) {
-        appendCodePointNode.execute(builder, '"', 1, true);
-
-        int chunkStart = 0;
-        int currentIndex = 0;
-        while (it.hasNext()) {
-            int c = nextNode.execute(it, TS_ENCODING);
-            switch (c) {
-                case '\\':
-                    appendSubstring(builder, s, chunkStart, currentIndex, appendStringNode, substringNode);
-                    chunkStart = currentIndex + 1;
-                    appendStringNode.execute(builder, T_ESC_BACKSLASH);
-                    break;
-                case '"':
-                    appendSubstring(builder, s, chunkStart, currentIndex, appendStringNode, substringNode);
-                    chunkStart = currentIndex + 1;
-                    appendStringNode.execute(builder, T_ESC_QUOTE);
-                    break;
-                case '\b':
-                    appendSubstring(builder, s, chunkStart, currentIndex, appendStringNode, substringNode);
-                    chunkStart = currentIndex + 1;
-                    appendStringNode.execute(builder, T_ESC_B);
-                    break;
-                case '\f':
-                    appendSubstring(builder, s, chunkStart, currentIndex, appendStringNode, substringNode);
-                    chunkStart = currentIndex + 1;
-                    appendStringNode.execute(builder, T_ESC_F);
-                    break;
-                case '\n':
-                    appendSubstring(builder, s, chunkStart, currentIndex, appendStringNode, substringNode);
-                    chunkStart = currentIndex + 1;
-                    appendStringNode.execute(builder, T_ESC_N);
-                    break;
-                case '\r':
-                    appendSubstring(builder, s, chunkStart, currentIndex, appendStringNode, substringNode);
-                    chunkStart = currentIndex + 1;
-                    appendStringNode.execute(builder, T_ESC_R);
-                    break;
-                case '\t':
-                    appendSubstring(builder, s, chunkStart, currentIndex, appendStringNode, substringNode);
-                    chunkStart = currentIndex + 1;
-                    appendStringNode.execute(builder, T_ESC_T);
-                    break;
-                default:
-                    if (c <= 0x1f || (asciiOnly && c > '~')) {
-                        appendSubstring(builder, s, chunkStart, currentIndex, appendStringNode, substringNode);
-                        chunkStart = currentIndex + 1;
-                        if (c <= 0xffff) {
-                            appendEscapedUtf16((char) c, builder, appendCodePointNode);
-                        } else {
-                            // split SMP codepoint to surrogate pair
-                            appendEscapedUtf16((char) (0xD800 + ((c - 0x10000) >> 10)), builder, appendCodePointNode);
-                            appendEscapedUtf16((char) (0xDC00 + ((c - 0x10000) & 0x3FF)), builder, appendCodePointNode);
-                        }
-                    }
-                    break;
+            if (i > 0) {
+                appendSubstringNode.execute(builder, ts, 0, StringUtils.codepointIndexToByteIndex(i));
             }
-            currentIndex++;
+            for (; i < codepointLength; i++) {
+                int c = codePointAtNode.execute(ts, i);
+                if (c <= 0x1f || c == '"' || c == '\\' || (asciiOnly && c >= 0x7f)) {
+                    appendStringNode.execute(builder, getEscaped(c, fromByteArrayNode));
+                } else {
+                    appendCodePointNode.execute(builder, c);
+                }
+            }
+        } else {
+            appendLongString(ts, builder, asciiOnly, byteIndexOfCodePointSetNode1, byteIndexOfCodePointSetNode2, codePointAtNode, appendStringNode, appendSubstringNode, fromByteArrayNode, byteLength);
         }
-        appendSubstring(builder, s, chunkStart, currentIndex, appendStringNode, substringNode);
-        appendCodePointNode.execute(builder, '"', 1, true);
+        appendCodePointNode.execute(builder, '"');
     }
 
-    private static void appendSubstring(TruffleStringBuilder builder, TruffleString s, int startIndex, int endIndex, AppendStringNode appendStringNode, SubstringNode substringNode) {
-        if (startIndex < endIndex) {
-            appendStringNode.execute(builder, substringNode.execute(s, startIndex, endIndex - startIndex, TS_ENCODING, true));
+    @InliningRoot
+    private static void appendLongString(TruffleString ts, TruffleStringBuilderUTF32 builder, boolean asciiOnly,
+                    TruffleString.ByteIndexOfCodePointSetNode byteIndexOfCodePointSetNode1,
+                    TruffleString.ByteIndexOfCodePointSetNode byteIndexOfCodePointSetNode2,
+                    TruffleString.CodePointAtIndexUTF32Node codePointAtNode,
+                    TruffleStringBuilder.AppendStringNode appendStringNode,
+                    TruffleStringBuilder.AppendSubstringByteIndexNode appendSubstringNode,
+                    TruffleString.FromByteArrayNode fromByteArrayNode,
+                    int byteLength) {
+        int lastEscape = 0;
+        while (lastEscape < byteLength) {
+            int pos = asciiOnly
+                            ? byteIndexOfCodePointSetNode1.execute(ts, lastEscape, byteLength, JSON_ESCAPE_CHARS_ASCII_ONLY)
+                            : byteIndexOfCodePointSetNode2.execute(ts, lastEscape, byteLength, JSON_ESCAPE_CHARS);
+            int substringLength = (pos < 0 ? ts.byteLength(TS_ENCODING) : pos) - lastEscape;
+            if (substringLength > 0) {
+                appendSubstringNode.execute(builder, ts, lastEscape, substringLength);
+            }
+            if (pos < 0) {
+                break;
+            }
+            appendStringNode.execute(builder, getEscaped(codePointAtNode.execute(ts, StringUtils.byteIndexToCodepointIndex(pos)), fromByteArrayNode));
+            lastEscape = pos + 4;
         }
     }
 
-    private static void appendEscapedUtf16(char c, TruffleStringBuilder builder, TruffleStringBuilder.AppendCodePointNode appendCodePointNode) {
-        appendCodePointNode.execute(builder, '\\', 1, true);
-        appendCodePointNode.execute(builder, 'u', 1, true);
-        appendCodePointNode.execute(builder, HEXDIGITS[(c >> 12) & 0xf], 1, true);
-        appendCodePointNode.execute(builder, HEXDIGITS[(c >> 8) & 0xf], 1, true);
-        appendCodePointNode.execute(builder, HEXDIGITS[(c >> 4) & 0xf], 1, true);
-        appendCodePointNode.execute(builder, HEXDIGITS[c & 0xf], 1, true);
+    private static TruffleString getEscaped(int c, TruffleString.FromByteArrayNode fromByteArrayNode) {
+        return switch (c) {
+            case '\\' -> T_ESC_BACKSLASH;
+            case '"' -> T_ESC_QUOTE;
+            case '\b' -> T_ESC_B;
+            case '\f' -> T_ESC_F;
+            case '\n' -> T_ESC_N;
+            case '\r' -> T_ESC_R;
+            case '\t' -> T_ESC_T;
+            default -> fromByteArrayNode.execute(utf16Escape(c), TruffleString.Encoding.US_ASCII, false);
+        };
+    }
+
+    private static byte[] utf16Escape(int c) {
+        if (c <= 0xffff) {
+            return new byte[]{'\\', 'u', HEXDIGITS[(c >> 12) & 0xf], HEXDIGITS[(c >> 8) & 0xf], HEXDIGITS[(c >> 4) & 0xf], HEXDIGITS[c & 0xf]};
+        } else {
+            // split SMP codepoint to surrogate pair
+            char c1 = (char) (0xD800 + ((c - 0x10000) >> 10));
+            char c2 = (char) (0xDC00 + ((c - 0x10000) & 0x3FF));
+            return new byte[]{
+                            '\\', 'u', HEXDIGITS[(c1 >> 12) & 0xf], HEXDIGITS[(c1 >> 8) & 0xf], HEXDIGITS[(c1 >> 4) & 0xf], HEXDIGITS[c1 & 0xf],
+                            '\\', 'u', HEXDIGITS[(c2 >> 12) & 0xf], HEXDIGITS[(c2 >> 8) & 0xf], HEXDIGITS[(c2 >> 4) & 0xf], HEXDIGITS[c2 & 0xf]};
+        }
     }
 }

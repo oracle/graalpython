@@ -87,13 +87,13 @@ public enum BufferFormat {
         this.baseTypeCode = toTruffleStringUncached(baseTypeCode);
     }
 
-    public static BufferFormat forMemoryView(TruffleString formatString, TruffleString.CodePointLengthNode lengthNode, TruffleString.CodePointAtIndexNode atIndexNode) {
+    public static BufferFormat forMemoryView(TruffleString formatString, TruffleString.CodePointLengthNode lengthNode, TruffleString.CodePointAtIndexUTF32Node atIndexNode) {
         char fmtchar;
         int length = lengthNode.execute(formatString, TS_ENCODING);
         if (length == 1) {
-            fmtchar = (char) atIndexNode.execute(formatString, 0, TS_ENCODING);
-        } else if (length == 2 && atIndexNode.execute(formatString, 0, TS_ENCODING) == '@') {
-            fmtchar = (char) atIndexNode.execute(formatString, 1, TS_ENCODING);
+            fmtchar = (char) atIndexNode.execute(formatString, 0);
+        } else if (length == 2 && atIndexNode.execute(formatString, 0) == '@') {
+            fmtchar = (char) atIndexNode.execute(formatString, 1);
         } else {
             return OTHER;
         }
@@ -112,10 +112,10 @@ public enum BufferFormat {
         return format != null ? format : OTHER;
     }
 
-    public static BufferFormat forArray(TruffleString formatString, TruffleString.CodePointLengthNode lengthNode, TruffleString.CodePointAtIndexNode atIndexNode) {
+    public static BufferFormat forArray(TruffleString formatString, TruffleString.CodePointLengthNode lengthNode, TruffleString.CodePointAtIndexUTF32Node atIndexNode) {
         int length = lengthNode.execute(formatString, TS_ENCODING);
         if (length == 1) {
-            char fmtchar = (char) atIndexNode.execute(formatString, 0, TS_ENCODING);
+            char fmtchar = (char) atIndexNode.execute(formatString, 0);
             if (fmtchar == 'u') {
                 return UNICODE;
             }

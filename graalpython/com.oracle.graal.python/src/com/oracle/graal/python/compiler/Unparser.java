@@ -77,6 +77,7 @@ import com.oracle.graal.python.runtime.formatting.FloatFormatter;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 
 public class Unparser implements SSTreeVisitor<Void> {
     public static TruffleString unparse(SSTNode node) {
@@ -84,17 +85,17 @@ public class Unparser implements SSTreeVisitor<Void> {
     }
 
     private static TruffleString unparse(SSTNode node, int level) {
-        TruffleStringBuilder builder = TruffleStringBuilder.create(TS_ENCODING);
+        TruffleStringBuilderUTF32 builder = TruffleStringBuilder.createUTF32();
         node.accept(new Unparser(builder, level));
         return builder.toStringUncached();
     }
 
-    private Unparser(TruffleStringBuilder builder, int level) {
+    private Unparser(TruffleStringBuilderUTF32 builder, int level) {
         this.builder = builder;
         this.level = level;
     }
 
-    private TruffleStringBuilder builder;
+    private TruffleStringBuilderUTF32 builder;
     private int level;
 
     private static final int PR_TUPLE = 0;
@@ -172,8 +173,8 @@ public class Unparser implements SSTreeVisitor<Void> {
     }
 
     public TruffleString buildFStringBody(ExprTy[] values, boolean isFormatSpec) {
-        TruffleStringBuilder savedBuilder = builder;
-        builder = TruffleStringBuilder.create(TS_ENCODING);
+        TruffleStringBuilderUTF32 savedBuilder = builder;
+        builder = TruffleStringBuilder.createUTF32();
         for (int i = 0; i < values.length; i++) {
             appendFStringElement(values[i], isFormatSpec);
         }

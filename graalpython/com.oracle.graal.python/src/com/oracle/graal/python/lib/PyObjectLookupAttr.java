@@ -132,7 +132,7 @@ public abstract class PyObjectLookupAttr extends Node {
         return type == PythonBuiltinClassType.PythonClass;
     }
 
-    protected static boolean isTypeSlot(TruffleString name, TruffleString.CodePointLengthNode codePointLengthNode, TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+    protected static boolean isTypeSlot(TruffleString name, TruffleString.CodePointLengthNode codePointLengthNode, TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode) {
         return TpSlots.canBeSpecialMethod(name, codePointLengthNode, codePointAtIndexNode) || name.equalsUncached(T_MRO, TS_ENCODING);
     }
 
@@ -207,7 +207,7 @@ public abstract class PyObjectLookupAttr extends Node {
                     @Exclusive @Cached CallSlotDescrGet callGetSlot,
                     /* GR-44836 @Shared */ @Exclusive @Cached IsBuiltinObjectProfile errorProfile,
                     @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                    @Shared @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+                    @Shared @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode) {
         Object value = readNode.execute(object, name);
         if (valueFound.profile(inliningTarget, value != PNone.NO_VALUE)) {
             var valueSlots = getSlotsNode.execute(inliningTarget, value);
@@ -270,7 +270,7 @@ public abstract class PyObjectLookupAttr extends Node {
                     @Exclusive @Cached CallSlotGetAttrNode callGetattribute,
                     /* GR-44836 @Shared */ @Exclusive @Cached IsBuiltinObjectProfile errorProfile,
                     @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                    @Shared @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+                    @Shared @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode) {
         Object type = getClass.execute(inliningTarget, receiver);
         TpSlots slots = getSlotsNode.execute(inliningTarget, type);
         if (!codePointLengthNode.isAdoptable()) {
@@ -316,14 +316,14 @@ public abstract class PyObjectLookupAttr extends Node {
      * guaranteed to be a {@code java.lang.TruffleString}.
      */
     static Object readAttributeQuickly(Object type, TpSlots slots, Object receiver, TruffleString stringName, TruffleString.CodePointLengthNode codePointLengthNode,
-                    TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+                    TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode) {
         if (slots.tp_getattro() == ObjectBuiltins.SLOTS.tp_getattro() && type instanceof PythonManagedClass) {
             PythonAbstractClass[] bases = ((PythonManagedClass) type).getBaseClasses();
             if (bases.length == 1) {
                 PythonAbstractClass base = bases[0];
                 if (base instanceof PythonBuiltinClass &&
                                 ((PythonBuiltinClass) base).getType() == PythonBuiltinClassType.PythonObject) {
-                    if (!(codePointAtIndexNode.execute(stringName, 0, TS_ENCODING) == '_' && codePointAtIndexNode.execute(stringName, 1, TS_ENCODING) == '_')) {
+                    if (!(codePointAtIndexNode.execute(stringName, 0) == '_' && codePointAtIndexNode.execute(stringName, 1) == '_')) {
                         // not a special name, so this attribute cannot be inherited, and can
                         // only be on the type or the object. If it's on the type, return to
                         // the generic code.

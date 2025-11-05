@@ -346,11 +346,11 @@ public abstract class BufferStorageNodes {
                         @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached StringNodes.CastToTruffleStringChecked0Node cast,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             TruffleString str = cast.cast(inliningTarget, object, ErrorMessages.ARRAY_ITEM_MUST_BE_UNICODE);
             if (codePointLengthNode.execute(str, TS_ENCODING) == 1) {
-                int codePoint = codePointAtIndexNode.execute(str, 0, TS_ENCODING);
+                int codePoint = codePointAtIndexNode.execute(str, 0);
                 bufferLib.writeInt(buffer, offset, codePoint);
             } else {
                 throw raiseNode.raise(inliningTarget, TypeError);

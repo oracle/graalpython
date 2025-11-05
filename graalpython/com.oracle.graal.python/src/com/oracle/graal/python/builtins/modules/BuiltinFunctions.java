@@ -321,6 +321,7 @@ import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 
 @CoreFunctions(defineModule = J_BUILTINS, isEager = true)
 public final class BuiltinFunctions extends PythonBuiltins {
@@ -587,7 +588,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @TruffleBoundary
         private static TruffleString buildString(boolean isNegative, TruffleString prefix, TruffleString number) {
-            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING, tsbCapacity(3) + number.byteLength(TS_ENCODING));
+            TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32(tsbCapacity(3) + number.byteLength(TS_ENCODING));
             if (isNegative) {
                 sb.appendStringUncached(T_MINUS);
             }
@@ -1703,7 +1704,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             TruffleString chr;
             try {
@@ -1715,7 +1716,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             if (len != 1) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.EXPECTED_CHARACTER_BUT_STRING_FOUND, "ord()", len);
             }
-            return codePointAtIndexNode.execute(chr, 0, TS_ENCODING);
+            return codePointAtIndexNode.execute(chr, 0);
         }
 
         @Specialization

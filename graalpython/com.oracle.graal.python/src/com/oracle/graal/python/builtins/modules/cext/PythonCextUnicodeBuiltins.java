@@ -177,6 +177,7 @@ import com.oracle.truffle.api.strings.TruffleString.Encoding;
 import com.oracle.truffle.api.strings.TruffleString.FromNativePointerNode;
 import com.oracle.truffle.api.strings.TruffleString.SwitchEncodingNode;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 
 public final class PythonCextUnicodeBuiltins {
 
@@ -720,7 +721,7 @@ public final class PythonCextUnicodeBuiltins {
             int seqlen = (int) seqlenlong;
             assert seqlen == seqlenlong;
             Object[] items = readNode.readPyObjectArray(itemsObj, seqlen);
-            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+            TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32();
             for (int i = 0; i < items.length; i++) {
                 TruffleString item = toTruffleStringNode.execute(inliningTarget, items[i]);
                 if (i != 0) {
@@ -769,7 +770,7 @@ public final class PythonCextUnicodeBuiltins {
                         @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached TruffleString.CodePointLengthNode lengthNode,
-                        @Cached TruffleString.CodePointAtIndexNode codepointAtIndexNode,
+                        @Cached TruffleString.CodePointAtIndexUTF32Node codepointAtIndexNode,
                         @Cached PRaiseNode raiseNode) {
             try {
                 TruffleString s = castToStringNode.execute(inliningTarget, type);
@@ -778,7 +779,7 @@ public final class PythonCextUnicodeBuiltins {
                 if (index < 0 || index >= lengthNode.execute(s, TS_ENCODING)) {
                     throw raiseNode.raise(inliningTarget, IndexError, ErrorMessages.STRING_INDEX_OUT_OF_RANGE);
                 }
-                return codepointAtIndexNode.execute(s, index, TS_ENCODING);
+                return codepointAtIndexNode.execute(s, index);
             } catch (CannotCastException e) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
             } catch (OverflowException e) {

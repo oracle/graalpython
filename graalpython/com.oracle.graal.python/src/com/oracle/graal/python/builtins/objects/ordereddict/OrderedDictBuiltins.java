@@ -56,7 +56,6 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_LBRACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LPAREN;
 import static com.oracle.graal.python.nodes.StringLiterals.T_RBRACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_RPAREN;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
@@ -126,6 +125,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.POrderedDict)
 public class OrderedDictBuiltins extends PythonBuiltins {
@@ -512,7 +512,7 @@ public class OrderedDictBuiltins extends PythonBuiltins {
                         @Cached ReprOrderedDictItemsNode reprDictItems) {
             TruffleString typeName = getNameNode.execute(inliningTarget, getClassNode.execute(inliningTarget, self));
             if (self.first == null) {
-                TruffleStringBuilder builder = TruffleStringBuilder.create(TS_ENCODING);
+                TruffleStringBuilderUTF32 builder = TruffleStringBuilder.createUTF32();
                 appendStringNode.execute(builder, typeName);
                 appendStringNode.execute(builder, T_EMPTY_PARENS);
                 return toStringNode.execute(builder);
@@ -522,7 +522,7 @@ public class OrderedDictBuiltins extends PythonBuiltins {
                 return T_ELLIPSIS;
             }
             try {
-                TruffleStringBuilder builder = TruffleStringBuilder.create(TS_ENCODING);
+                TruffleStringBuilderUTF32 builder = TruffleStringBuilder.createUTF32();
                 appendStringNode.execute(builder, typeName);
                 appendStringNode.execute(builder, T_LPAREN);
                 appendStringNode.execute(builder, T_LBRACE);

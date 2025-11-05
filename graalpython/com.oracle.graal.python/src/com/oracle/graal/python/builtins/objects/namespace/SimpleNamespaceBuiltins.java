@@ -48,7 +48,6 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EQ;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LPAREN;
 import static com.oracle.graal.python.nodes.StringLiterals.T_RPAREN;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.ArrayList;
@@ -111,6 +110,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSimpleNamespace)
 public final class SimpleNamespaceBuiltins extends PythonBuiltins {
@@ -217,7 +217,7 @@ public final class SimpleNamespaceBuiltins extends PythonBuiltins {
                 items.sort(Comparator.comparing(Pair::getLeft, StringUtils::compareStringsUncached));
             }
 
-            public void appendToTruffleStringBuilder(TruffleStringBuilder sb, TruffleStringBuilder.AppendStringNode appendStringNode) {
+            public void appendToTruffleStringBuilder(TruffleStringBuilderUTF32 sb, TruffleStringBuilder.AppendStringNode appendStringNode) {
                 sortItemsByKey();
                 for (int i = 0; i < items.size(); i++) {
                     Pair<TruffleString, TruffleString> item = items.get(i);
@@ -295,7 +295,7 @@ public final class SimpleNamespaceBuiltins extends PythonBuiltins {
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             final Object klass = getClassNode.execute(inliningTarget, ns);
             final TruffleString name = clsProfile.profileClass(inliningTarget, klass, PythonBuiltinClassType.PSimpleNamespace) ? T_NAMESPACE : getNameNode.execute(inliningTarget, klass);
-            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+            TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32();
             appendStringNode.execute(sb, name);
             appendStringNode.execute(sb, T_LPAREN);
             PythonContext ctxt = PythonContext.get(forEachNode);
