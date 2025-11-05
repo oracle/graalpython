@@ -1535,6 +1535,7 @@ public abstract class TypeNodes {
                             if (leftIsStatic) {
                                 left = lib.readMember(left, "class");
                             } else {
+                                assert rightIsStatic;
                                 right = lib.readMember(right, "class");
                             }
                         } catch (UnsupportedMessageException | UnknownIdentifierException e) {
