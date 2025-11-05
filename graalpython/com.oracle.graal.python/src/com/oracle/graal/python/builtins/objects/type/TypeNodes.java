@@ -1529,7 +1529,8 @@ public abstract class TypeNodes {
                     // the activation of isMemberReadable and later readMember serves as branch
                     // profile
                     boolean leftIsStatic = lib.isMemberReadable(left, "class");
-                    if (leftIsStatic != lib.isMemberReadable(right, "class")) {
+                    boolean rightIsStatic = lib.isMemberReadable(right, "class");
+                    if (leftIsStatic != rightIsStatic) {
                         try {
                             if (leftIsStatic) {
                                 left = lib.readMember(left, "class");
