@@ -142,13 +142,13 @@ def import_current_as_named_module_with_delegate(module, module_name, delegate_n
 
 
 @builtin
-def build_java_class(module, ns, name, base, old_style=True):
-    if not old_style:
+def build_java_class(module, ns, name, base, new_style=False):
+    if new_style:
         return build_new_style_java_class(ns, name, base)
     import warnings
     warnings.warn("Subclassing Java classes is going to change "
                   "to a new instance layout that is hopefully "
-                  "more intuitive. Pass the keyword old_style=False "
+                  "more intuitive. Pass the keyword new_style=True "
                   "to your class definition to try the new style. "
                   "The new style will become the default in the next "
                   "release and the old style will be removed soon after.", DeprecationWarning, 1)

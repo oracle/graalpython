@@ -1512,15 +1512,15 @@ public abstract class TypeNodes {
             return lib.isIdentical(left.getPtr(), right.getPtr(), lib);
         }
 
-        @Specialization(guards = {"!isAnyPythonObject(left)", "!isAnyPythonObject(right)"})
+        @Specialization(guards = {"isForeignObject(left)", "isForeignObject(right)"})
         @InliningCutoff
         static boolean doOther(Object left, Object right,
                         @Bind PythonContext context,
                         @CachedLibrary(limit = "2") InteropLibrary lib) {
-            if (left == right) {
-                return true;
-            }
             if (lib.isMetaObject(left) && lib.isMetaObject(right)) {
+                if (left == right) {
+                    return true;
+                }
                 // *sigh*... Host classes have split personality with a "static" and a "class"
                 // side, and that affects identity comparisons. And they report their "class" sides
                 // as bases, but importing from Java gives you the "static" side.
