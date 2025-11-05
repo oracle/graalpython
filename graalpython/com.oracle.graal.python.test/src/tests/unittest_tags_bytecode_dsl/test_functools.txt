@@ -93,7 +93,7 @@ test.test_functools.TestPartialC.test_no_side_effects @ linux-x86_64
 test.test_functools.TestPartialC.test_pickle @ linux-x86_64
 test.test_functools.TestPartialC.test_positional @ linux-x86_64
 test.test_functools.TestPartialC.test_protection_of_callers_dict_argument @ linux-x86_64
-!test.test_functools.TestPartialC.test_recursive_pickle @ linux-x86_64
+!test.test_functools.TestPartialC.test_recursive_pickle
 test.test_functools.TestPartialC.test_recursive_repr @ linux-x86_64
 test.test_functools.TestPartialC.test_repr @ linux-x86_64
 test.test_functools.TestPartialC.test_setstate @ linux-x86_64
@@ -119,7 +119,7 @@ test.test_functools.TestPartialCSubclass.test_no_side_effects @ linux-x86_64
 test.test_functools.TestPartialCSubclass.test_pickle @ linux-x86_64
 test.test_functools.TestPartialCSubclass.test_positional @ linux-x86_64
 test.test_functools.TestPartialCSubclass.test_protection_of_callers_dict_argument @ linux-x86_64
-!test.test_functools.TestPartialCSubclass.test_recursive_pickle @ linux-x86_64
+!test.test_functools.TestPartialCSubclass.test_recursive_pickle
 test.test_functools.TestPartialCSubclass.test_recursive_repr @ linux-x86_64
 test.test_functools.TestPartialCSubclass.test_repr @ linux-x86_64
 test.test_functools.TestPartialCSubclass.test_setstate @ linux-x86_64
@@ -154,7 +154,7 @@ test.test_functools.TestPartialPy.test_no_side_effects @ linux-x86_64
 test.test_functools.TestPartialPy.test_pickle @ linux-x86_64
 test.test_functools.TestPartialPy.test_positional @ linux-x86_64
 test.test_functools.TestPartialPy.test_protection_of_callers_dict_argument @ linux-x86_64
-!test.test_functools.TestPartialPy.test_recursive_pickle @ linux-x86_64
+!test.test_functools.TestPartialPy.test_recursive_pickle
 test.test_functools.TestPartialPy.test_recursive_repr @ linux-x86_64
 test.test_functools.TestPartialPy.test_repr @ linux-x86_64
 test.test_functools.TestPartialPy.test_setstate @ linux-x86_64
@@ -178,7 +178,7 @@ test.test_functools.TestPartialPySubclass.test_no_side_effects @ linux-x86_64
 test.test_functools.TestPartialPySubclass.test_pickle @ linux-x86_64
 test.test_functools.TestPartialPySubclass.test_positional @ linux-x86_64
 test.test_functools.TestPartialPySubclass.test_protection_of_callers_dict_argument @ linux-x86_64
-!test.test_functools.TestPartialPySubclass.test_recursive_pickle @ linux-x86_64
+!test.test_functools.TestPartialPySubclass.test_recursive_pickle
 test.test_functools.TestPartialPySubclass.test_recursive_repr @ linux-x86_64
 test.test_functools.TestPartialPySubclass.test_repr @ linux-x86_64
 test.test_functools.TestPartialPySubclass.test_setstate @ linux-x86_64

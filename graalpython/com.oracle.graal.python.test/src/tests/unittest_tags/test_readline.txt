@@ -1,4 +1,4 @@
-test.test_readline.TestReadline.test_auto_history_disabled @ darwin-arm64,linux-x86_64
-test.test_readline.TestReadline.test_auto_history_enabled @ darwin-arm64,linux-x86_64
-test.test_readline.TestReadline.test_gh123321_threadsafe @ darwin-arm64,linux-x86_64
-test.test_readline.TestReadline.test_init @ darwin-arm64,linux-x86_64,win32-AMD64
+test.test_readline.TestReadline.test_auto_history_disabled @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_readline.TestReadline.test_auto_history_enabled @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_readline.TestReadline.test_gh123321_threadsafe @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_readline.TestReadline.test_init @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64

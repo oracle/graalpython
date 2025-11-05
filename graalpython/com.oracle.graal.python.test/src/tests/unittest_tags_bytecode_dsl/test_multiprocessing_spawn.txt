@@ -81,7 +81,7 @@ test.test_multiprocessing_spawn.test_processes.WithProcessesTestPool.test_async 
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestPool.test_async_timeout @ linux-x86_64
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestPool.test_context @ linux-x86_64
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestPool.test_empty_iterable @ linux-x86_64
-!test.test_multiprocessing_spawn.test_processes.WithProcessesTestPool.test_enter @ linux-x86_64
+!test.test_multiprocessing_spawn.test_processes.WithProcessesTestPool.test_enter
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestPool.test_imap @ linux-x86_64
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestPool.test_imap_handle_iterable_exception @ linux-x86_64
 test.test_multiprocessing_spawn.test_processes.WithProcessesTestPool.test_imap_unordered @ linux-x86_64

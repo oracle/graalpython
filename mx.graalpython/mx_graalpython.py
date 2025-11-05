@@ -141,9 +141,6 @@ mx_gate.add_jacoco_excludes([
     "org.graalvm.tools.lsp.test",
 ])
 
-if CI and not os.environ.get("GRAALPYTEST_FAIL_FAST"):
-    os.environ["GRAALPYTEST_FAIL_FAST"] = "true"
-
 
 def is_collecting_coverage():
     return bool(mx_gate.get_jacoco_agent_args() or _COLLECTING_COVERAGE)

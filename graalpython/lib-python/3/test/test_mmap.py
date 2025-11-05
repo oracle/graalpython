@@ -53,6 +53,8 @@ class MmapTests(unittest.TestCase):
             f.write(b'\0'* (PAGESIZE-3) )
             f.flush()
             m = mmap.mmap(f.fileno(), 2 * PAGESIZE)
+            # GraalPy change: add cleanup
+            self.addCleanup(m.close)
         finally:
             f.close()
 
@@ -142,6 +144,8 @@ class MmapTests(unittest.TestCase):
             fp.write(b"a"*mapsize)
         with open(TESTFN, "rb") as f:
             m = mmap.mmap(f.fileno(), mapsize, access=mmap.ACCESS_READ)
+            # GraalPy change: add cleanup
+            self.addCleanup(m.close)
             self.assertEqual(m[:], b'a'*mapsize, "Readonly memory map data incorrect.")
 
             # Ensuring that readonly mmap can't be slice assigned
@@ -295,6 +299,8 @@ class MmapTests(unittest.TestCase):
             f.write(data)
             f.flush()
             m = mmap.mmap(f.fileno(), n)
+            # GraalPy change: add cleanup
+            self.addCleanup(m.close)
 
         self.assertEqual(m.find(b'one'), 0)
         self.assertEqual(m.find(b'ones'), 8)
@@ -334,6 +340,8 @@ class MmapTests(unittest.TestCase):
             f.write(data)
             f.flush()
             m = mmap.mmap(f.fileno(), n)
+            # GraalPy change: add cleanup
+            self.addCleanup(m.close)
 
         self.assertEqual(m.rfind(b'one'), 8)
         self.assertEqual(m.rfind(b'one '), 0)
@@ -595,6 +603,8 @@ class MmapTests(unittest.TestCase):
             fp.write(b"a"*mapsize)
         with open(TESTFN, "rb") as f:
             m = mmap.mmap(f.fileno(), mapsize, prot=mmap.PROT_READ)
+            # GraalPy change: add cleanup
+            self.addCleanup(m.close)
             self.assertRaises(TypeError, m.write, "foo")
 
     def test_error(self):
@@ -883,7 +893,11 @@ class MmapTests(unittest.TestCase):
         f.truncate(start_size)
         try:
             m1 = mmap.mmap(f.fileno(), start_size)
+            # GraalPy change: add cleanup
+            self.addCleanup(m1.close)
             m2 = mmap.mmap(f.fileno(), start_size)
+            # GraalPy change: add cleanup
+            self.addCleanup(m2.close)
             with self.assertRaises(OSError):
                 m1.resize(reduced_size)
             with self.assertRaises(OSError):

@@ -44,14 +44,14 @@ test.test_poplib.TestPOP3_SSLClass.test_user @ linux-x86_64
 test.test_poplib.TestPOP3_SSLClass.test_utf8 @ linux-x86_64
 test.test_poplib.TestPOP3_SSLClass.test_utf8_raises_if_unsupported @ linux-x86_64
 test.test_poplib.TestPOP3_TLSClass.test_apop_REDOS @ linux-x86_64
-!test.test_poplib.TestPOP3_TLSClass.test_apop_normal @ linux-x86_64
-!test.test_poplib.TestPOP3_TLSClass.test_capa @ linux-x86_64
-!test.test_poplib.TestPOP3_TLSClass.test_dele @ linux-x86_64
+!test.test_poplib.TestPOP3_TLSClass.test_apop_normal
+!test.test_poplib.TestPOP3_TLSClass.test_capa
+!test.test_poplib.TestPOP3_TLSClass.test_dele
 test.test_poplib.TestPOP3_TLSClass.test_exceptions @ linux-x86_64
 test.test_poplib.TestPOP3_TLSClass.test_getwelcome @ linux-x86_64
 test.test_poplib.TestPOP3_TLSClass.test_list @ linux-x86_64
-!test.test_poplib.TestPOP3_TLSClass.test_noop @ linux-x86_64
-!test.test_poplib.TestPOP3_TLSClass.test_pass_ @ linux-x86_64
+!test.test_poplib.TestPOP3_TLSClass.test_noop
+!test.test_poplib.TestPOP3_TLSClass.test_pass_
 test.test_poplib.TestPOP3_TLSClass.test_quit @ linux-x86_64
 test.test_poplib.TestPOP3_TLSClass.test_retr @ linux-x86_64
 test.test_poplib.TestPOP3_TLSClass.test_rpop @ linux-x86_64

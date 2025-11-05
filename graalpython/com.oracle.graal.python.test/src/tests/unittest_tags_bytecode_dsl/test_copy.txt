@@ -23,7 +23,7 @@ test.test_copy.TestCopy.test_copy_set @ linux-x86_64
 test.test_copy.TestCopy.test_copy_slots @ linux-x86_64
 test.test_copy.TestCopy.test_copy_tuple @ linux-x86_64
 test.test_copy.TestCopy.test_copy_tuple_subclass @ linux-x86_64
-!test.test_copy.TestCopy.test_copy_weakkeydict @ linux-x86_64
+!test.test_copy.TestCopy.test_copy_weakkeydict
 test.test_copy.TestCopy.test_copy_weakref @ linux-x86_64
 test.test_copy.TestCopy.test_deepcopy_atomic @ linux-x86_64
 test.test_copy.TestCopy.test_deepcopy_basic @ linux-x86_64
@@ -59,7 +59,7 @@ test.test_copy.TestCopy.test_deepcopy_slots @ linux-x86_64
 test.test_copy.TestCopy.test_deepcopy_tuple @ linux-x86_64
 test.test_copy.TestCopy.test_deepcopy_tuple_of_immutables @ linux-x86_64
 test.test_copy.TestCopy.test_deepcopy_tuple_subclass @ linux-x86_64
-!test.test_copy.TestCopy.test_deepcopy_weakkeydict @ linux-x86_64
+!test.test_copy.TestCopy.test_deepcopy_weakkeydict
 test.test_copy.TestCopy.test_deepcopy_weakref @ linux-x86_64
 test.test_copy.TestCopy.test_exceptions @ linux-x86_64
 test.test_copy.TestCopy.test_getstate_exc @ linux-x86_64

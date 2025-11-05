@@ -1,5 +1,5 @@
-!test.test_int.IntStrDigitLimitsTests.test_denial_of_service_prevented_int_to_str @ linux-x86_64
-!test.test_int.IntStrDigitLimitsTests.test_denial_of_service_prevented_str_to_int @ linux-x86_64
+!test.test_int.IntStrDigitLimitsTests.test_denial_of_service_prevented_int_to_str
+!test.test_int.IntStrDigitLimitsTests.test_denial_of_service_prevented_str_to_int
 test.test_int.IntStrDigitLimitsTests.test_disabled_limit @ linux-x86_64
 test.test_int.IntStrDigitLimitsTests.test_int_from_other_bases @ linux-x86_64
 test.test_int.IntStrDigitLimitsTests.test_max_str_digits @ linux-x86_64
@@ -7,8 +7,8 @@ test.test_int.IntStrDigitLimitsTests.test_max_str_digits_edge_cases @ linux-x86_
 test.test_int.IntStrDigitLimitsTests.test_power_of_two_bases_unlimited @ linux-x86_64
 test.test_int.IntStrDigitLimitsTests.test_sign_not_counted @ linux-x86_64
 test.test_int.IntStrDigitLimitsTests.test_underscores_ignored @ linux-x86_64
-!test.test_int.IntSubclassStrDigitLimitsTests.test_denial_of_service_prevented_int_to_str @ linux-x86_64
-!test.test_int.IntSubclassStrDigitLimitsTests.test_denial_of_service_prevented_str_to_int @ linux-x86_64
+!test.test_int.IntSubclassStrDigitLimitsTests.test_denial_of_service_prevented_int_to_str
+!test.test_int.IntSubclassStrDigitLimitsTests.test_denial_of_service_prevented_str_to_int
 test.test_int.IntSubclassStrDigitLimitsTests.test_disabled_limit @ linux-x86_64
 test.test_int.IntSubclassStrDigitLimitsTests.test_int_from_other_bases @ linux-x86_64
 test.test_int.IntSubclassStrDigitLimitsTests.test_max_str_digits @ linux-x86_64

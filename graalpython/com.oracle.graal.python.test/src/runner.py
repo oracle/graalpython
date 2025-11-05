@@ -224,7 +224,7 @@ def out_tell():
 T = typing.TypeVar('T')
 
 
-def partition_list(l: list[T], fn: typing.Callable[[T], bool]):
+def partition_list(l: list[T], fn: typing.Callable[[T], bool]) -> tuple[list[T], list[T]]:
     a = []
     b = []
     for item in l:
@@ -486,7 +486,7 @@ class TestRunner:
 def update_tags(test_file: 'TestFile', results: list[TestResult], tag_platform: str,
                 untag_failed=False, untag_skipped=False, untag_missing=False):
     current = read_tags(test_file, allow_exclusions=True)
-    exclusions, current = partition_list(current, lambda t: isinstance(t, TagExclusion))
+    exclusions, current = partition_list(current, lambda t: t.is_exclusion)
     status_by_id = {r.test_id.normalized(): r.status for r in results}
     tag_by_id = {}
     for tag in current:
@@ -510,7 +510,15 @@ def update_tags(test_file: 'TestFile', results: list[TestResult], tag_platform: 
             tag_by_id[test_id] = Tag.for_key(test_id, tag_platform)
 
     for exclusion in exclusions:
-        tag_by_id.pop(exclusion.test_id, None)
+        if tag := tag_by_id.get(exclusion.test_id):
+            if exclusion.keys:
+                tag = tag.without_keys(exclusion.keys)
+            else:
+                tag = None
+            if not tag:
+                del tag_by_id[exclusion.test_id]
+            else:
+                tag_by_id[exclusion.test_id] = tag
 
     tags = set(tag_by_id.values()) | set(exclusions)
     write_tags(test_file, tags)
@@ -1191,31 +1199,31 @@ def collect(all_specifiers: list[TestSpecifier], *, use_tags=False, ignore=None,
 class Tag:
     test_id: TestId
     keys: frozenset[str]
+    is_exclusion: bool
+    comment: str | None = False
 
     @classmethod
-    def for_key(cls, test_id, key):
-        return Tag(test_id, frozenset({key}))
+    def for_key(cls, test_id, key) -> 'Tag':
+        return Tag(test_id, frozenset({key}), is_exclusion=False)
 
-    def with_key(self, key: str):
-        return Tag(self.test_id, self.keys | {key})
+    def with_key(self, key: str) -> 'Tag':
+        return Tag(self.test_id, self.keys | {key}, is_exclusion=self.is_exclusion)
 
-    def without_key(self, key: str):
-        if key not in self.keys:
-            return self
-        keys = self.keys - {key}
+    def without_key(self, key: str) -> 'Tag | None':
+        return self.without_keys({key})
+
+    def without_keys(self, keys: set[str]) -> 'Tag | None':
+        keys = self.keys - keys
         if keys:
-            return Tag(self.test_id, keys)
+            if keys == self.keys:
+                return self
+            return Tag(self.test_id, keys, is_exclusion=self.is_exclusion)
 
     def __str__(self):
-        return f'{self.test_id.test_name} @ {",".join(sorted(self.keys))}'
-
-
-@dataclass(frozen=True)
-class TagExclusion(Tag):
-    comment: str | None
-
-    def __str__(self):
-        s = f'!{self.test_id.test_name}'
+        s = ''
+        if self.is_exclusion:
+            s += '!'
+        s += self.test_id.test_name
         if self.keys:
             s += f' @ {",".join(sorted(self.keys))}'
         if self.comment:
@@ -1241,21 +1249,21 @@ def read_tags(test_file: TestFile, allow_exclusions=False) -> list[Tag]:
                 test, _, keys = line.partition('@')
                 test = test.strip()
                 keys = keys.strip()
+                is_exclusion = False
                 if test.startswith('!'):
-                    if allow_exclusions:
-                        test = test.removeprefix('!')
-                        tags.append(TagExclusion(
-                            TestId(test_path, test),
-                            frozenset(keys.split(',')) if keys else frozenset(),
-                            comment,
-                        ))
-                else:
-                    if not keys:
-                        log(f'WARNING: invalid tag {test}: missing platform keys')
-                    tags.append(Tag(
-                        TestId(test_path, test),
-                        frozenset(keys.split(',')),
-                    ))
+                    is_exclusion = True
+                    test = test.removeprefix('!')
+
+                if not keys and not is_exclusion:
+                    log(f'WARNING: invalid tag {test}: missing platform keys')
+                tag = Tag(
+                    TestId(test_path, test),
+                    frozenset(keys.split(',') if keys else frozenset()),
+                    is_exclusion=is_exclusion,
+                    comment=comment,
+                )
+                if not is_exclusion or allow_exclusions:
+                    tags.append(tag)
                 comment = None
     return tags
 
