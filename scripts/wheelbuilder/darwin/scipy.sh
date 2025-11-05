@@ -1,4 +1,4 @@
-# Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -38,10 +38,17 @@
 # SOFTWARE.
 
 if [ -n "$GITHUB_RUN_ID" ]; then
-    brew install gcc openblas pkg-config
-    export PKG_CONFIG_PATH=/opt/homebrew/opt/openblas/lib/pkgconfig
+    brew install lld gcc pkg-config openblas
 fi
-export FFLAGS=-fallow-argument-mismatch
+
+export CC="gcc-15"
+export CXX="g++-15"
+export CXXFLAGS="-fuse-ld=lld"
+export CFLAGS="-fuse-ld=lld"
+export FFLAGS="-fuse-ld=lld"
+export LDFLAGS="-Wl,-platform_version,macos,15.0.0,15.0.0"
+export PKG_CONFIG_PATH="/opt/homebrew/opt/openblas/lib/pkgconfig"
+
 if [ -n "$1" ]; then
     pip wheel "scipy==$1"
 else
