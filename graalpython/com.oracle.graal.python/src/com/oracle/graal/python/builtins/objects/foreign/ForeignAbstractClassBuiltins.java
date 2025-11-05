@@ -86,7 +86,7 @@ public final class ForeignAbstractClassBuiltins extends PythonBuiltins {
                     SequenceStorage storage = createStorageFromIteratorNode.execute(frame, iterObj);
                     return PFactory.createTuple(language, storage);
                 } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere();
+                    throw CompilerDirectives.shouldNotReachHere(e);
                 }
             } else {
                 return PFactory.createEmptyTuple(language);
