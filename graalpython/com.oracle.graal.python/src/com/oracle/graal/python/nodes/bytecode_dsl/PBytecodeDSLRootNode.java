@@ -3762,9 +3762,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                 raiseIfNoExceptionTuples(inliningTarget, clause, isValidException, isSubtypeNode, getItemNode);
             } else {
                 if (!isValidException.execute(clause)) {
-                    throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.TypeError, ErrorMessages.CATCHING_CLS_NOT_ALLOWED);
+                    throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CATCHING_CLS_NOT_ALLOWED);
                 } else if (isSubtypeNode.execute(clause, PythonBuiltinClassType.PBaseExceptionGroup)) {
-                    throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.TypeError, ErrorMessages.NO_EXCEPTION_GROUPS_IN_EXCEPT_STAR);
+                    throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.NO_EXCEPTION_GROUPS_IN_EXCEPT_STAR);
                 }
             }
         }
@@ -3791,7 +3791,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Shared @Cached ValidExceptionNode isValidException,
                         @Shared @Cached IsSubtypeNode isSubtypeNode,
                         @Exclusive @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
-                        @Cached("createFor($node)") IndirectCallData indirectCallData,
                         @Shared @Cached BaseExceptionGroupBuiltins.BaseExceptionGroupNode exceptionGroupNode,
                         @Cached InlinedConditionProfile isExceptionGroup,
                         @Cached PyObjectCallMethodObjArgs callSplit,
