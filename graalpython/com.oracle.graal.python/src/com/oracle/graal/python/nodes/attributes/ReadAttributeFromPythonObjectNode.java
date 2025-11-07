@@ -45,7 +45,6 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -129,7 +128,6 @@ public abstract class ReadAttributeFromPythonObjectNode extends PNodeWithContext
                     @Cached(value = "dynamicObject", weak = true) DynamicObject cachedObject,
                     @Cached("dynamicObject.getShape()") Shape cachedShape,
                     @Cached("getLocationOrNull(cachedShape.getProperty(cachedKey))") Location loc,
-                    @Cached("dynamicObject.getShape().getPropertyAssumption(key)") Assumption propertyAssumption,
                     @Cached(value = "getAttribute(dynamicObject, key, defaultValue)", weak = true) Object value) {
         return value;
     }
@@ -151,7 +149,6 @@ public abstract class ReadAttributeFromPythonObjectNode extends PNodeWithContext
                     @Cached(value = "dynamicObject", weak = true) DynamicObject cachedObject,
                     @Cached("dynamicObject.getShape()") Shape cachedShape,
                     @Cached("getLocationOrNull(cachedShape.getProperty(cachedKey))") Location loc,
-                    @Cached("dynamicObject.getShape().getPropertyAssumption(key)") Assumption propertyAssumption,
                     @Cached(value = "getAttribute(dynamicObject, key, defaultValue)") Object value) {
         return value;
     }
