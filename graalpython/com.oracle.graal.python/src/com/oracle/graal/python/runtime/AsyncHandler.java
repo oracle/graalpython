@@ -61,6 +61,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
@@ -170,6 +171,8 @@ public class AsyncHandler {
                         // IndirectCalleeContext.enter and transfer the state from thread state to
                         // the frame. If we were woken-up in middle of Python frame code, we will
                         // have to do a stack walk, but we still need the location
+                        assert !PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER ||
+                                        !(location instanceof PBytecodeDSLRootNode) : String.format("Async action: location must not be PBytecodeDSLRootNode, was: %s", location);
                         prev = EncapsulatingNodeReference.getCurrent().set(location);
                     }
                     try {
