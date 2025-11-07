@@ -204,7 +204,9 @@ def build_new_style_java_class(module, ns, name, base):
         polyglot.register_interop_type(JavaClass, MroClass, allow_method_overwrites=True)
 
     # A class to make sure that the returned Python class can be used for
-    # issubclass and isinstance checks with the Java instances
+    # issubclass and isinstance checks with the Java instances, and to wrap all
+    # methods in created subclasses to provide the proper `self` (the Java
+    # instance) and still make `super()` work.
     class JavaSubclassMeta(type):
         @property
         def __bases__(self):
@@ -274,6 +276,7 @@ def build_new_style_java_class(module, ns, name, base):
             delegate = object.__new__(cls)
             java_object = polyglot.__new__(JavaClass, *(args + (delegate,)))
             delegate.__this__ = java_object
+            delegate.__init__(*args, **kwds)
             return java_object
 
     return type(name, (DelegateSuperclass,), ns)

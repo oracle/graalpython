@@ -1423,7 +1423,7 @@ class InteropTests(unittest.TestCase):
             def __new__(cls, name="default name", level=2):
                 return super().__new__(cls, name, level)
 
-            def __init__(self):
+            def __init__(self, *args, **kwarg):
                 self.misc_value = 42
 
             def getName(self):
