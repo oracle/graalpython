@@ -47,7 +47,6 @@ import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.bytecode.BytecodeFrameInfo;
 import com.oracle.graal.python.nodes.bytecode.FrameInfo;
-import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLFrameInfo;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -195,7 +194,7 @@ public abstract class MaterializeFrameNode extends Node {
                     @Cached InlinedConditionProfile syncProfile) {
         PFrame pyFrame = getPFrame(frameToMaterialize);
         if (syncProfile.profile(inliningTarget, forceSync && !PGenerator.isGeneratorFrame(frameToMaterialize))) {
-            syncValuesNode.execute(pyFrame, frameToMaterialize);
+            syncValuesNode.execute(pyFrame, frameToMaterialize, location);
         }
         if (markAsEscaped) {
             pyFrame.getRef().markAsEscaped();
@@ -248,7 +247,7 @@ public abstract class MaterializeFrameNode extends Node {
         // on a freshly created PFrame, we do always sync the arguments
         PArguments.synchronizeArgs(frameToMaterialize, escapedFrame);
         if (forceSync) {
-            syncValuesNode.execute(escapedFrame, frameToMaterialize);
+            syncValuesNode.execute(escapedFrame, frameToMaterialize, location);
         }
         if (markAsEscaped) {
             topFrameRef.markAsEscaped();
@@ -275,10 +274,10 @@ public abstract class MaterializeFrameNode extends Node {
     @GenerateUncached
     public abstract static class SyncFrameValuesNode extends Node {
 
-        public abstract void execute(PFrame pyFrame, Frame frameToSync);
+        public abstract void execute(PFrame pyFrame, Frame frameToSync, Node location);
 
         @Specialization(guards = "!pyFrame.hasCustomLocals()")
-        static void doSync(PFrame pyFrame, Frame frameToSync,
+        static void doSync(PFrame pyFrame, Frame frameToSync, Node location,
                         @Bind Node inliningTarget,
                         @Cached(inline = false) ValueProfile frameDescriptorProfile,
                         @Cached InlinedIntValueProfile slotCountProfile) {
@@ -288,10 +287,10 @@ public abstract class MaterializeFrameNode extends Node {
             int slotCount = slotCountProfile.profile(inliningTarget, variableSlotCount(cachedFd));
 
             if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                FrameInfo info = (FrameInfo) cachedFd.getInfo();
-                if (info instanceof BytecodeDSLFrameInfo bytecodeDSLFrameInfo) {
-                    PBytecodeDSLRootNode rootNode = bytecodeDSLFrameInfo.getRootNode();
-                    rootNode.getBytecodeNode().copyLocalValues(0, frameToSync, target, 0, slotCount);
+                CompilerAsserts.partialEvaluationConstant(location);
+                BytecodeNode bytecodeNode = BytecodeNode.get(location);
+                if (bytecodeNode != null) {
+                    bytecodeNode.copyLocalValues(0, frameToSync, target, 0, slotCount);
                 }
             } else {
                 frameToSync.copyTo(0, target, 0, slotCount);
@@ -300,7 +299,7 @@ public abstract class MaterializeFrameNode extends Node {
 
         @Specialization(guards = "pyFrame.hasCustomLocals()")
         @SuppressWarnings("unused")
-        static void doCustomLocals(PFrame pyFrame, Frame frameToSync) {
+        static void doCustomLocals(PFrame pyFrame, Frame frameToSync, Node location) {
             // nothing to do
         }
 
