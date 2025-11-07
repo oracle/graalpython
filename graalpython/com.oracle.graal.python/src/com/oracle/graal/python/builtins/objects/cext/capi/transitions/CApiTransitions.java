@@ -837,14 +837,9 @@ public abstract class CApiTransitions {
                     Object type = GetClassNode.executeUncached(wrapper.getDelegate());
                     isGc = (GetTypeFlagsNode.executeUncached(type) & TypeFlags.HAVE_GC) != 0;
                 }
-                /*
-                 * In rare cases (e.g. for memoryview objects), there are some object in the handle
-                 * table that are not refcounted and need to be "closed" manually. If they are still
-                 * in the handle table, this is actually a leak.
-                 */
-                if (HandlePointerConverter.pointsToPyHandleSpace(pointer)) {
-                    freeNativeStub(pointer, isGc);
-                }
+                // all pointers in 'nativeStubLookup' need to be tagged pointers
+                assert HandlePointerConverter.pointsToPyHandleSpace(pointer);
+                freeNativeStub(pointer, isGc);
             }
         }
     }
@@ -1017,6 +1012,7 @@ public abstract class CApiTransitions {
 
     private static int nativeStubLookupPut(HandleContext context, int idx, Object value, long pointer) {
         assert idx > 0;
+        assert HandlePointerConverter.pointsToPyHandleSpace(pointer);
         assert context.nativeStubLookup[idx] == null || context.nativeStubLookup[idx] == value;
         context.nativeStubLookup[idx] = value;
         if (PythonContext.DEBUG_CAPI) {
@@ -1031,6 +1027,7 @@ public abstract class CApiTransitions {
     private static int nativeStubLookupReplaceByWeak(HandleContext context, int idx, PythonObjectReference value, long pointer) {
         assert idx > 0;
         assert idx == value.handleTableIndex;
+        assert HandlePointerConverter.pointsToPyHandleSpace(pointer);
         assert context.nativeStubLookup[idx] == value.get();
         context.nativeStubLookup[idx] = value;
         if (PythonContext.DEBUG_CAPI) {
@@ -1043,6 +1040,7 @@ public abstract class CApiTransitions {
     }
 
     public static void nativeStubLookupRemove(HandleContext context, PythonObjectReference ref) {
+        assert HandlePointerConverter.pointsToPyHandleSpace(ref.pointer);
         nativeStubLookupRemove(context, ref.handleTableIndex);
     }
 
@@ -1753,7 +1751,7 @@ public abstract class CApiTransitions {
         @SuppressWarnings({"truffle-static-method", "truffle-sharing"})
         static Object doNonWrapper(Node inliningTarget, Object value, boolean needsTransfer, boolean release,
                         @CachedLibrary("value") InteropLibrary interopLibrary,
-                        @Cached CStructAccess.ReadI32Node readI32Node,
+                        @Cached(inline = false) CStructAccess.ReadI32Node readI32Node,
                         @Cached InlinedConditionProfile isNullProfile,
                         @Cached InlinedConditionProfile isZeroProfile,
                         @Cached InlinedConditionProfile createNativeProfile,
@@ -2391,7 +2389,7 @@ public abstract class CApiTransitions {
         static void doGeneric(Node inliningTarget, PythonAbstractObjectNativeWrapper wrapper, boolean setStrong, boolean keepInGcList, boolean release,
                         @Cached InlinedConditionProfile hasRefProfile,
                         @Cached PyObjectGCTrackNode gcTrackNode,
-                        @Cached CStructAccess.ReadI32Node readI32Node,
+                        @Cached(inline = false) CStructAccess.ReadI32Node readI32Node,
                         @Cached(inline = false) CStructAccess.WriteIntNode writeI32Node,
                         @Cached InlinedConditionProfile isGcProfile,
                         @Cached GetClassNode getClassNode,
@@ -2428,7 +2426,6 @@ public abstract class CApiTransitions {
             } else if (!setStrong) {
                 // no PythonObjectReference in the handle table -> reference is strong
 
-                assert wrapper.getRefCount() == MANAGED_REFCNT;
                 assert wrapper.ref == null;
                 HandleContext handleContext = PythonContext.get(inliningTarget).nativeContext;
                 long untaggedPointer = HandlePointerConverter.pointerToStub(taggedPointer);
@@ -2438,6 +2435,15 @@ public abstract class CApiTransitions {
                     Object type = getClassNode.execute(inliningTarget, wrapper.getDelegate());
                     gc = (getTypeFlagsNode.execute(type) & TypeFlags.HAVE_GC) != 0;
                 }
+
+                /*
+                 * At this point, we would commonly expect that 'wrapper.getRefCount() ==
+                 * MANAGED_REFCNT'. However, in order to break reference cycles with managed
+                 * objects, we make references weak even if that is not the case. So, for all non-gc
+                 * objects, we strongly expect MANAGED_REFCNT.
+                 */
+                assert gc || wrapper.getRefCount() == MANAGED_REFCNT;
+
                 if (release) {
                     writeI32Node.write(untaggedPointer, CFields.GraalPyObject__handle_table_index, 0);
                     wrapper.clearNativePointer();

@@ -247,13 +247,18 @@ public abstract class CApiGCSupport {
 
                 // PyGC_Head *next = GC_NEXT(gc)
                 long next = readI64Node.read(gcUntagged, CFields.PyGC_Head___gc_next);
+                /*
+                 * We need to remove NEXT_MASK_UNREACHABLE because the object we are up to remove
+                 * may be in GC list 'weak_candidates' which sets the bit.
+                 */
+                long nextUntagged = HandlePointerConverter.pointerToStub(next & ~CApiGCSupport.NEXT_MASK_UNREACHABLE);
 
                 // _PyGCHead_SET_NEXT(prev, next)
                 writeLongNode.write(HandlePointerConverter.pointerToStub(prev), CFields.PyGC_Head___gc_next, next);
 
                 // _PyGCHead_SET_PREV(next, prev)
-                long curNextPrev = readI64Node.read(HandlePointerConverter.pointerToStub(next), CFields.PyGC_Head___gc_prev);
-                writeLongNode.write(HandlePointerConverter.pointerToStub(next), CFields.PyGC_Head___gc_prev, computePrevValue(curNextPrev, prev));
+                long curNextPrev = readI64Node.read(nextUntagged, CFields.PyGC_Head___gc_prev);
+                writeLongNode.write(nextUntagged, CFields.PyGC_Head___gc_prev, computePrevValue(curNextPrev, prev));
 
                 // UNTAG(gc)->_gc_next = 0
                 writeLongNode.write(gcUntagged, CFields.PyGC_Head___gc_next, 0);
