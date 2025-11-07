@@ -128,6 +128,16 @@ public abstract class BuiltinNames {
 
     public static final TruffleString T_MODULES = tsLiteral("modules");
 
+    // time
+    public static final TruffleString T_TIME = tsLiteral("time");
+
+    // datetime
+    public static final TruffleString T_UTC = tsLiteral("UTC");
+    public static final TruffleString T__DATETIME = tsLiteral("_datetime");
+    public static final TruffleString T_TIMEZONE = tsLiteral("timezone");
+    public static final TruffleString T_MAX = tsLiteral("max");
+    public static final TruffleString T_RESOLUTION = tsLiteral("resolution");
+
     // built-in functions
     public static final String J_ABS = "abs";
     public static final TruffleString T_ABS = tsLiteral(J_ABS);

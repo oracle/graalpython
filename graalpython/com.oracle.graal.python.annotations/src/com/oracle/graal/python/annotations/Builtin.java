@@ -59,8 +59,10 @@ public @interface Builtin {
 
     boolean takesVarKeywordArgs() default false;
 
+    /** positional parameter names */
     String[] parameterNames() default {};
 
+    /** parameters that cannot be passed as positional ones */
     String[] keywordOnlyNames() default {};
 
     boolean isClassmethod() default false;

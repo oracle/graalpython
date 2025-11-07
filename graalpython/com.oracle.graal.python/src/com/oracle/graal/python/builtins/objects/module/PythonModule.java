@@ -47,8 +47,8 @@ import com.oracle.truffle.api.strings.TruffleString;
 public final class PythonModule extends PythonObject {
 
     /**
-     * Stores the native {@code PyModuleDef *} structure if this modules was created via the
-     * multi-phase extension module initialization mechanism.
+     * Stores the native {@code PyModuleDef *} structure if this module was created via the
+     * multiphase extension module initialization mechanism.
      */
     private Object nativeModuleDef;
     private Object nativeModuleState;

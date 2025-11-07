@@ -65,6 +65,10 @@ import com.oracle.truffle.api.strings.TruffleString;
  * <dt>%P</dt>
  * <dd>Determines the Python class of the corresponding object and prints the class' {@code repr}
  * string.</dd>
+ * <dt>%N</dt>
+ * <dd></dd>
+ * <dt>%m</dt>
+ * <dd></dd>
  * </dl>
  * </p>
  */

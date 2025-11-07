@@ -67,6 +67,30 @@ class ClockInfoTests(unittest.TestCase):
         self.assertRaises(TypeError, time.get_clock_info, 1)
         self.assertRaises(ValueError, time.get_clock_info, 'bogus')
 
+class TzSetTests(unittest.TestCase):
+    def test_removing_tz(self):
+        # sets system timezone to the local one
+
+        from os import environ
+        original_TZ = environ.get('TZ', None)
+        original_timezone = time.timezone
+
+        try:
+            environ['TZ'] = "Asia/Kolkata" # there is no daylight saving time for this timezone
+            time.tzset()
+            self.assertEqual(time.timezone, -5.5 * 3600)
+
+            del environ['TZ']
+            time.tzset()
+            self.assertEqual(time.timezone, original_timezone)
+        finally:
+            # Repair TZ environment variable in case any other tests rely on it.
+            if original_TZ is not None:
+                environ['TZ'] = original_TZ
+            elif 'TZ' in environ:
+                del environ['TZ']
+            time.tzset()
+
 class StructTimeTests(unittest.TestCase):
 
     def test_new_struct_time(self):
@@ -218,7 +242,7 @@ class StrftimeTests(unittest.TestCase):
         self.assertRaises(ValueError, time.strftime, "%S", time.struct_time((2018, 8, 2, 10, -1, 30, 1, 1, 0)))
         self.assertRaises(ValueError, time.strftime, "%S", time.struct_time((2018, 8, 2, 24, 62, 30, 1, 1, 0)))
 
-    def test_weekDay(self):
+    def test_weekDayw(self):
         self.check_format("%w", (2018, 11, 28, 10, 0, 0, -1, 1, 0), '0')
         self.check_format("%w", (2018, 11, 28, 10, 0, 0, 0, 1, 0), '1')
         self.check_format("%w", (2018, 11, 25, 11, 12, 2, 3, 1, 0), '4')
@@ -226,6 +250,20 @@ class StrftimeTests(unittest.TestCase):
         self.check_format("%w", (2018, 11, 24, 23, 20, 61, 7, 1, 0), '1')
         self.check_format("%w", (2018, 11, 24, 23, 20, 61, 999, 1, 0), '6')
         self.assertRaises(ValueError, time.strftime, "%w", time.struct_time((2018, 8, 2, 10, 20, 30, -2, 1, 0)))
+
+    def test_weekDayu(self):
+        self.check_format("%u", (2018, 11, 28, 10, 0, 0, 2, 332, -1), '3')
+        self.check_format("%u", (2018, 11, 25, 11, 12, 2, 6, 329, -1), '7')
+        self.check_format("%u", (2018, 11, 24, 23, 20, 0, 5, 328, -1), '6')
+        self.assertRaises(ValueError, time.strftime, "%u", time.struct_time((2018, 8, 2, 10, 20, 30, -2, 1, 0)))
+
+    def test_week_of_yearU(self):
+        self.check_format("%U", (2018, 11, 28, 0, 0, 0, 2, 332, -1), '47')
+        self.check_format("%U", (2018, 1, 7, 0, 0, 0, 6, 7, -1), '01')
+
+    def test_week_of_yearV(self):
+        self.check_format("%V", (2018, 11, 28, 0, 0, 0, 2, 332, -1), '48')
+        self.check_format("%V", (2018, 1, 7, 0, 0, 0, 6, 7, -1), '01')
 
     def test_YearY(self):
         self.check_format("%Y", (2018, 11, 28, 10, 0, 0, -1, 1, 0), '2018')
@@ -242,10 +280,17 @@ class StrftimeTests(unittest.TestCase):
         #self.check_format("%y", (-365, 11, 24, 23, 20, 61, 6, 1, 0), '65')
         self.check_format("%y", (17829, 11, 24, 23, 20, 61, 7, 1, 0), '29')
 
+    def test_YearG(self):
+        self.check_format("%G", (2024, 1, 1, 1, 1, 1, 1, 1, 1), '2024') # Jan 1, 2024 is Monday
+
     def test_wrongInput(self):
         self.assertRaises(TypeError, time.strftime, 10, (2018, 8, 2, 10, 20, 30, -2, 1, 0))
         self.assertRaises(TypeError, time.strftime, "%w", 10)
         self.assertRaises(TypeError, time.strftime, "%w", (2018, 11, 29))
+
+    def test_trailing_percent(self):
+        self.check_format("%", (2018, 8, 8, 0, 24, 0, 3, 1, 0), "%")
+        self.check_format("abc%", (2018, 8, 8, 0, 24, 0, 3, 1, 0), "abc%")
 
     def test_padding(self):
         self.check_format("%d", (2018, 8, 8, 5, 24, 10, 3, 1, 0), '08')

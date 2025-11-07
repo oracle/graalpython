@@ -98,7 +98,6 @@ public final class FrozenModules {
         private static final PythonFrozenModule POLYGLOT_ARROW = new PythonFrozenModule("POLYGLOT_ARROW", null, false);
         private static final PythonFrozenModule _SYSCONFIGDATA = new PythonFrozenModule("_SYSCONFIGDATA", null, false);
         private static final PythonFrozenModule _POLYGLOT = new PythonFrozenModule("_POLYGLOT", null, false);
-        private static final PythonFrozenModule _POLYGLOT_DATETIME = new PythonFrozenModule("_POLYGLOT_DATETIME", null, false);
         private static final PythonFrozenModule _POLYGLOT_TIME = new PythonFrozenModule("_POLYGLOT_TIME", null, false);
         private static final PythonFrozenModule GRAALPY___GRAALPYTHON__ = new PythonFrozenModule("GRAALPY___GRAALPYTHON__", null, false);
         private static final PythonFrozenModule GRAALPY__SRE = new PythonFrozenModule("GRAALPY__SRE", null, false);
@@ -230,8 +229,6 @@ public final class FrozenModules {
                 return Map._SYSCONFIGDATA;
             case "_polyglot":
                 return Map._POLYGLOT;
-            case "_polyglot_datetime":
-                return Map._POLYGLOT_DATETIME;
             case "_polyglot_time":
                 return Map._POLYGLOT_TIME;
             case "graalpy.__graalpython__":
