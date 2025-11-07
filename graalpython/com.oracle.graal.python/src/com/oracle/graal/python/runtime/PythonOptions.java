@@ -281,10 +281,10 @@ public final class PythonOptions {
 
     // disabling TRegex has an effect on the _sre Python functions that are
     // dynamically created, so we cannot change that option again.
-    @EngineOption @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Use the optimized TRegex engine. Default true") //
+    @EngineOption @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Use the optimized TRegex engine. Default true", deprecated = true, deprecationMessage = "TRegex is used for all regexes, this option is ignored") //
     public static final OptionKey<Boolean> WithTRegex = new OptionKey<>(true);
 
-    @EngineOption @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Use the CPython sre engine as a fallback to the TRegex engine.") //
+    @EngineOption @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Use the CPython sre engine as a fallback to the TRegex engine.", deprecated = true, deprecationMessage = "TRegex is used for all regexes, this option is ignored") //
     public static final OptionKey<Boolean> TRegexUsesSREFallback = new OptionKey<>(true);
 
     @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Switch on/off using lazy strings for performance reasons. Default true.") //

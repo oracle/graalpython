@@ -1624,4 +1624,15 @@ public abstract class ErrorMessages {
     public static final TruffleString DIM_MEMORY_HAS_NO_LENGTH = tsLiteral("0-dim memory has no length");
     public static final TruffleString NOT_A_DIGIT = tsLiteral("not a digit");
     public static final TruffleString NOT_A_DECIMAL = tsLiteral("not a decimal");
+
+    // re module errors
+    public static final TruffleString BAD_ESCAPE = tsLiteral("bad escape");
+    public static final TruffleString BAD_ESCAPE_END_OF_STRING = tsLiteral("bad escape (end of string)");
+    public static final TruffleString BAD_CHAR_IN_GROUP_NAME = tsLiteral("bad character in group name %s");
+    public static final TruffleString INVALID_GROUP_REFERENCE = tsLiteral("invalid group reference %s");
+    public static final TruffleString UNKNOWN_GROUP_NAME = tsLiteral("unknown group name '%s'");
+    public static final TruffleString OCTAL_ESCAPE_OUT_OF_RANGE = tsLiteral("octal escape value %s outside of range 0-0o377");
+    public static final TruffleString MISSING_LEFT_ANGLE_BRACKET = tsLiteral("missing <");
+    public static final TruffleString MISSING_GROUP_NAME = tsLiteral("missing group name");
+    public static final TruffleString MISSING_RIGHT_ANGLE_BRACKET = tsLiteral("missing >, unterminated name");
 }

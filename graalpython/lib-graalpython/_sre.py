@@ -62,10 +62,7 @@ def _normalize_bounds(string, pos, endpos):
         pos = 0
     elif pos > endpos:
         pos = endpos
-    substring = string
-    if endpos != strlen:
-        substring = string[:endpos]
-    return substring, pos, endpos
+    return pos, endpos
 
 def _is_bytes_like(object):
     return isinstance(object, (bytes, bytearray, memoryview, array, mmap))
@@ -80,7 +77,7 @@ def _getlocale():
     return '.'.join((lang, encoding))
 
 def _new_compile(p, flags=0):
-    if _with_tregex and isinstance(p, (str, bytes, bytearray, memoryview, array, mmap)):
+    if isinstance(p, (str, bytes, bytearray, memoryview, array, mmap)):
         return _t_compile(p, flags)
     else:
         return _sre_compile(p, flags)
@@ -282,11 +279,7 @@ class Pattern():
             raise TypeError("cannot use a bytes pattern on a string-like object")
 
     def __fallback_compile(self):
-        if self.__compiled_fallback is None:
-            if not _with_sre:
-                raise ValueError("regular expression not supported, no fallback engine present") from None
-            self.__compiled_fallback = _sre_compile(self.pattern, self.__input_flags)
-        return self.__compiled_fallback
+        raise ValueError("regular expression not supported, no fallback engine present") from None
 
     def __repr__(self):
         flags = self.flags
@@ -343,16 +336,6 @@ class Pattern():
     def fullmatch(self, string, pos=0, endpos=maxsize):
         return self._search(string, pos, endpos, method=_METHOD_FULLMATCH)
 
-    def __sanitize_out_type(self, elem):
-        """Helper function for findall and split. Ensures that the type of the elements of the
-           returned list if always either 'str' or 'bytes'."""
-        if self.__binary:
-            return bytes(elem)
-        elif elem is None:
-            return ""
-        else:
-            return str(elem)
-
     @__graalpython__.force_split_direct_calls
     def finditer(self, string, pos=0, endpos=maxsize):
         for must_advance in [False, True]:
@@ -360,14 +343,14 @@ class Pattern():
                 return self.__fallback_compile().finditer(string, pos=pos, endpos=endpos)
         _check_pos(pos)
         self.__check_input_type(string)
-        substring, pos, endpos = _normalize_bounds(string, pos, endpos)
-        return self.__finditer_gen(string, substring, pos, endpos)
+        pos, endpos = _normalize_bounds(string, pos, endpos)
+        return self.__finditer_gen(string, pos, endpos)
 
-    def __finditer_gen(self, string, substring, pos, endpos):
+    def __finditer_gen(self, string, pos, endpos):
         must_advance = False
         while pos <= endpos:
             compiled_regex = tregex_compile(self, _METHOD_SEARCH, must_advance)
-            result = tregex_call_exec(compiled_regex, substring, pos)
+            result = tregex_call_exec(compiled_regex, string, pos, endpos)
             if not result.isMatch:
                 break
             else:
@@ -378,117 +361,19 @@ class Pattern():
 
     @__graalpython__.force_split_direct_calls
     def findall(self, string, pos=0, endpos=maxsize):
-        for must_advance in [False, True]:
-            if tregex_compile(self, _METHOD_SEARCH, must_advance) is None:
-                return self.__fallback_compile().findall(string, pos=pos, endpos=endpos)
-        _check_pos(pos)
-        self.__check_input_type(string)
-        substring, pos, endpos = _normalize_bounds(string, pos, endpos)
-        matchlist = []
-        must_advance = False
-        while pos <= endpos:
-            compiled_regex = tregex_compile(self, _METHOD_SEARCH, must_advance)
-            result = tregex_call_exec(compiled_regex, substring, pos)
-            if not result.isMatch:
-                break
-            elif self.groups == 0:
-                matchlist.append(self.__sanitize_out_type(string[result.getStart(0):result.getEnd(0)]))
-            elif self.groups == 1:
-                matchlist.append(self.__sanitize_out_type(string[result.getStart(1):result.getEnd(1)]))
-            else:
-                matchlist.append(tuple(map(self.__sanitize_out_type, Match(self, pos, endpos, result, string, self.__indexgroup).groups())))
-            pos = result.getEnd(0)
-            must_advance = (result.getStart(0) == result.getEnd(0))
-        return matchlist
+        return tregex_re_findall(self, string, pos, endpos)
 
     @__graalpython__.force_split_direct_calls
     def sub(self, repl, string, count=0):
-        return self.subn(repl, string, count)[0]
+        return tregex_re_sub(self, repl, string, count)
 
     @__graalpython__.force_split_direct_calls
     def subn(self, repl, string, count=0):
-        for must_advance in [False, True]:
-            if tregex_compile(self, _METHOD_SEARCH, must_advance) is None:
-                return self.__fallback_compile().subn(repl, string, count=count)
-        self.__check_input_type(string)
-        n = 0
-        result = []
-        pos = 0
-        literal = False
-        template = False
-        must_advance = False
-        if not callable(repl):
-            self.__check_input_type(repl)
-            if isinstance(repl, str):
-                literal = '\\' not in repl
-            else:
-                literal = b'\\' not in repl
-            if not literal:
-                import re
-                repl = re._compile_template(self, repl)
-                template = True
-
-        while (count == 0 or n < count) and pos <= len(string):
-            compiled_regex = tregex_compile(self, _METHOD_SEARCH, must_advance)
-            match_result = tregex_call_exec(compiled_regex, string, pos)
-            if not match_result.isMatch:
-                break
-            n += 1
-            start = match_result.getStart(0)
-            end = match_result.getEnd(0)
-            result.append(string[pos:start])
-            if literal:
-                result.append(repl)
-            else:
-                _srematch = Match(self, pos, -1, match_result, string, self.__indexgroup)
-                if template:
-                    _repl = expand_template(repl, _srematch)
-                else:
-                    _repl = repl(_srematch)
-                if _repl is not None:
-                    if self.__binary:
-                        result.append(bytes(_repl))
-                    else:
-                        result.append(str(_repl))
-            pos = end
-            must_advance = start == end
-        result.append(string[pos:])
-        if self.__binary:
-            return b"".join(result), n
-        else:
-            return "".join(result), n
+        return tregex_re_subn(self, repl, string, count)
 
     @__graalpython__.force_split_direct_calls
     def split(self, string, maxsplit=0):
-        for must_advance in [False, True]:
-            if tregex_compile(self, _METHOD_SEARCH, must_advance) is None:
-                return self.__fallback_compile().split(string, maxsplit=maxsplit)
-        n = 0
-        result = []
-        collect_pos = 0
-        search_pos = 0
-        must_advance = False
-        while (maxsplit == 0 or n < maxsplit) and search_pos <= len(string):
-            compiled_regex = tregex_compile(self, _METHOD_SEARCH, must_advance)
-            match_result = tregex_call_exec(compiled_regex, string, search_pos)
-            if not match_result.isMatch:
-                break
-            n += 1
-            start = match_result.getStart(0)
-            end = match_result.getEnd(0)
-            result.append(self.__sanitize_out_type(string[collect_pos:start]))
-            # add all group strings
-            for i in range(1, self.groups + 1):
-                groupStart = match_result.getStart(i)
-                if groupStart >= 0:
-                    result.append(self.__sanitize_out_type(string[groupStart:match_result.getEnd(i)]))
-                else:
-                    result.append(None)
-            collect_pos = end
-            search_pos = end
-            must_advance = start == end
-        result.append(self.__sanitize_out_type(string[collect_pos:]))
-        return result
+        return tregex_re_split(self, string, maxsplit)
 
     def scanner(self, string, pos=0, endpos=maxsize):
         # We cannot pass the must_advance parameter to the internal SRE implementation.
