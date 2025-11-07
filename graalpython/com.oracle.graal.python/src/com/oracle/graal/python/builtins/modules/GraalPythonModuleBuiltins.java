@@ -637,8 +637,9 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             boolean assertionsEnabled = false;
             assert assertionsEnabled = true;
             if (!assertionsEnabled) {
-                // It does not make sense to run with if assertions are not enabled
-                throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.SystemError);
+                // None indicates that assertions are disabled and this functionality is not
+                // available
+                return PNone.NONE;
             }
 
             boolean prev = PythonContext.get(this).wasStackWalk;

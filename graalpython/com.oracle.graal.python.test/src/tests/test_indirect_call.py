@@ -56,8 +56,17 @@ NUM_ITERATIONS = 1000000 if sys.implementation.name == "graalpy" else 5
 STABILIZES_AT = 1 if sys.implementation.name != "graalpy" or __graalpython__.truffle_runtime == 'Interpreted' else 10
 STABILIZES_AT = int(os.environ.get('GRAALPY_TEST_INDIRECT_CALL_STABILIZES_AT', STABILIZES_AT))
 
+has_stack_walk_check = False
+if sys.implementation.name == "graalpy":
+    result = __graalpython__.was_stack_walk(False)
+    if result is None:
+        print("NOTE: assertions are not enabled; test_indirect_call cannot check for "
+              "repeated stack walks and will perform only basic sanity checks")
+    else:
+        has_stack_walk_check = True
+
 def was_stack_walk(new_value):
-    if sys.implementation.name == "graalpy":
+    if has_stack_walk_check:
         return __graalpython__.was_stack_walk(new_value)
     return False
 
