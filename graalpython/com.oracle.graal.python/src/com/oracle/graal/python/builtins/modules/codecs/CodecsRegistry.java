@@ -54,6 +54,7 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_XMLCHARREFREPLACE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.LookupError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.codecs.ErrorHandlersFactory.BackslashReplaceErrorHandlerNodeFactory;
 import com.oracle.graal.python.builtins.modules.codecs.ErrorHandlersFactory.IgnoreErrorHandlerNodeFactory;
 import com.oracle.graal.python.builtins.modules.codecs.ErrorHandlersFactory.NameReplaceErrorHandlerNodeFactory;
@@ -67,16 +68,20 @@ import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
+import com.oracle.graal.python.runtime.ExecutionContext;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -88,14 +93,15 @@ public final class CodecsRegistry {
     @GenerateCached(false)
     public abstract static class PyCodecLookupErrorNode extends Node {
 
-        public abstract Object execute(Node inliningTarget, TruffleString name);
+        public abstract Object execute(Frame frame, Node inliningTarget, TruffleString name);
 
         @Specialization
-        static Object lookup(Node inliningTarget, TruffleString name,
+        static Object lookup(VirtualFrame frame, Node inliningTarget, TruffleString name,
+                        @Cached CodecsRegistry.EnsureRegistryInitializedNode ensureRegistryInitializedNode,
                         @Cached InlinedConditionProfile resultProfile,
                         @Cached PRaiseNode raiseNode) {
             PythonContext context = PythonContext.get(inliningTarget);
-            ensureRegistryInitialized(context);
+            ensureRegistryInitializedNode.execute(frame, inliningTarget, context);
             if (name == null) {
                 name = T_STRICT;
             }
@@ -112,13 +118,14 @@ public final class CodecsRegistry {
     @GenerateCached(false)
     public abstract static class PyCodecRegisterErrorNode extends Node {
 
-        public abstract void execute(Node inliningTarget, TruffleString name, Object handler);
+        public abstract void execute(VirtualFrame frame, Node inliningTarget, TruffleString name, Object handler);
 
         @Specialization(guards = "callableCheckNode.execute(inliningTarget, handler)")
-        static void register(Node inliningTarget, TruffleString name, Object handler,
-                        @SuppressWarnings("unused") @Cached @Shared("callableCheck") PyCallableCheckNode callableCheckNode) {
+        static void register(VirtualFrame frame, Node inliningTarget, TruffleString name, Object handler,
+                        @SuppressWarnings("unused") @Cached @Shared("callableCheck") PyCallableCheckNode callableCheckNode,
+                        @Cached CodecsRegistry.EnsureRegistryInitializedNode ensureRegistryInitializedNode) {
             PythonContext context = PythonContext.get(inliningTarget);
-            ensureRegistryInitialized(context);
+            ensureRegistryInitializedNode.execute(frame, inliningTarget, context);
             putErrorHandler(context, name, handler);
         }
 
@@ -129,9 +136,27 @@ public final class CodecsRegistry {
         }
     }
 
-    public static void ensureRegistryInitialized(PythonContext context) {
-        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, !context.isCodecsInitialized())) {
-            doInitialize(context);
+    @GenerateInline
+    @GenerateCached(value = false)
+    @GenerateUncached
+    public abstract static class EnsureRegistryInitializedNode extends Node {
+        public abstract void execute(Frame frame, Node inliningTarget, PythonContext context);
+
+        @Specialization(guards = "context.isCodecsInitialized()")
+        static void ensure(@SuppressWarnings("unused") PythonContext context) {
+            // nothing to do
+        }
+
+        @Specialization(guards = "!context.isCodecsInitialized()")
+        static void ensure(VirtualFrame frame, Node inliningTarget, PythonContext context,
+                        @Cached("createFor($node)") IndirectCallData.BoundaryCallData boundaryCallData) {
+            PythonLanguage language = context.getLanguage(inliningTarget);
+            Object savedState = ExecutionContext.BoundaryCallContext.enter(frame, language, context, boundaryCallData);
+            try {
+                doInitialize(context);
+            } finally {
+                ExecutionContext.BoundaryCallContext.exit(frame, language, context, savedState);
+            }
         }
     }
 

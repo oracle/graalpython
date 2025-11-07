@@ -150,7 +150,7 @@ public class MultibyteCodecUtil {
                         @Cached(inline = false) CallNode callNode) {
             assert (PyUnicodeCheckNode.executeUncached(errors));
             TruffleString str = castToStringNode.execute(inliningTarget, errors);
-            Object cb = lookupErrorNode.execute(inliningTarget, str);
+            Object cb = lookupErrorNode.execute(frame, inliningTarget, str);
             return callNode.execute(frame, cb, exc);
         }
     }

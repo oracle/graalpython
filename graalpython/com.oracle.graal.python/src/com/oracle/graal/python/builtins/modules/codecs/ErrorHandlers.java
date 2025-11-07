@@ -890,7 +890,7 @@ public final class ErrorHandlers {
                         @Cached PyUnicodeDecodeErrorGetObjectNode getObjectNode,
                         @Cached PyObjectSizeNode sizeNode,
                         @Cached PRaiseNode raiseNode) {
-            cache.errorHandlerObject = cache.errorHandlerObject == null ? lookupErrorNode.execute(inliningTarget, errors) : cache.errorHandlerObject;
+            cache.errorHandlerObject = cache.errorHandlerObject == null ? lookupErrorNode.execute(frame, inliningTarget, errors) : cache.errorHandlerObject;
             cache.exceptionObject = makeDecodeExceptionNode.execute(frame, inliningTarget, cache.exceptionObject, encoding, srcObj, startPos, endPos, reason);
             Object resultObj = callNode.execute(frame, cache.errorHandlerObject, cache.exceptionObject);
             DecodingErrorHandlerResult result = parseResultNode.execute(frame, inliningTarget, resultObj);
@@ -967,7 +967,7 @@ public final class ErrorHandlers {
                         @Cached ParseEncodingErrorHandlerResultNode parseResultNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached PRaiseNode raiseNode) {
-            cache.errorHandlerObject = cache.errorHandlerObject == null ? lookupErrorNode.execute(inliningTarget, errors) : cache.errorHandlerObject;
+            cache.errorHandlerObject = cache.errorHandlerObject == null ? lookupErrorNode.execute(frame, inliningTarget, errors) : cache.errorHandlerObject;
             int len = codePointLengthNode.execute(srcObj, TS_ENCODING);
             cache.exceptionObject = makeEncodeExceptionNode.execute(frame, inliningTarget, cache.exceptionObject, encoding, srcObj, startPos, endPos, reason);
             Object resultObj = callNode.execute(frame, cache.errorHandlerObject, cache.exceptionObject);
