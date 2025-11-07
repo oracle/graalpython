@@ -30,6 +30,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T__SIGNAL;
 import static com.oracle.graal.python.nodes.StringLiterals.J_PY_EXTENSION;
 import static com.oracle.graal.python.nodes.StringLiterals.T_PY_EXTENSION;
 import static com.oracle.graal.python.nodes.truffle.TruffleStringMigrationHelpers.isJavaString;
+import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -60,7 +61,7 @@ import org.graalvm.polyglot.SandboxPolicy;
 import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SignalModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
@@ -160,7 +161,6 @@ import com.oracle.truffle.api.utilities.TruffleWeakReference;
                                 "text/x-python-\2\u0100-eval", "text/x-python-\2\u0100-compile", "text/x-python-\0\u0040-eval", "text/x-python-\0\u0040-compile", "text/x-python-\1\u0040-eval",
                                 "text/x-python-\1\u0040-compile", "text/x-python-\2\u0040-eval", "text/x-python-\2\u0040-compile", "text/x-python-\0\u0140-eval", "text/x-python-\0\u0140-compile",
                                 "text/x-python-\1\u0140-eval", "text/x-python-\1\u0140-compile", "text/x-python-\2\u0140-eval", "text/x-python-\2\u0140-compile"}, //
-                byteMimeTypes = {PythonLanguage.MIME_TYPE_BYTECODE}, //
                 defaultMimeType = PythonLanguage.MIME_TYPE, //
                 dependentLanguages = {"nfi", "llvm"}, //
                 interactive = true, internal = false, //
@@ -311,8 +311,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         ArrayList<String> mimeJavaStrings = new ArrayList<>();
         assert mimeTypesComplete(mimeJavaStrings) : "Expected all of {" + String.join(", ", mimeJavaStrings) + "} in the PythonLanguage characterMimeTypes";
     }
-
-    public static final String MIME_TYPE_BYTECODE = "application/x-python-bytecode";
 
     public static final TruffleString[] T_DEFAULT_PYTHON_EXTENSIONS = new TruffleString[]{T_PY_EXTENSION, tsLiteral(".pyc")};
 
@@ -557,11 +555,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         if (!request.getArgumentNames().isEmpty()) {
             throw new IllegalStateException("parse with arguments is only allowed for " + MIME_TYPE + " mime type");
         }
-        if (MIME_TYPE_BYTECODE.equals(source.getMimeType())) {
-            byte[] bytes = source.getBytes().toByteArray();
-            CodeUnit code = MarshalModuleBuiltins.deserializeCodeUnit(null, context, bytes);
-            return callTargetFromBytecode(context, source, code);
-        }
 
         String mime = source.getMimeType();
         String prefix = mime.substring(0, MIME_PREFIX.length());
@@ -586,7 +579,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return parse(context, source, type, false, optimize, false, null, FutureFeature.fromFlags(flags));
     }
 
-    public RootCallTarget callTargetFromBytecode(PythonContext context, Source source, CodeUnit code) {
+    public static RootCallTarget callTargetFromBytecode(PythonContext context, Source source, CodeUnit code) {
         boolean internal = shouldMarkSourceInternal(context);
         SourceBuilder builder = null;
         // The original file path should be passed as the name
@@ -616,7 +609,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             // TODO lazily load source in bytecode DSL interpreter too
             rootNode = ((BytecodeDSLCodeUnit) code).createRootNode(context, lazySource.getSource());
         } else {
-            rootNode = PBytecodeRootNode.create(this, (BytecodeCodeUnit) code, lazySource, internal);
+            rootNode = PBytecodeRootNode.create(context.getLanguage(), (BytecodeCodeUnit) code, lazySource, internal);
         }
 
         return PythonUtils.getOrCreateCallTarget(rootNode);
@@ -999,10 +992,17 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         singleContext = false;
     }
 
-    private final ConcurrentHashMap<TruffleString, CallTarget> cachedCode = new ConcurrentHashMap<>();
+    public record CodeCacheKey(TruffleString filename, long codeHash) {
+    }
+
+    private final ConcurrentHashMap<CodeCacheKey, CallTarget> cachedCode = new ConcurrentHashMap<>();
+
+    public CallTarget cacheCode(TruffleString filename, Supplier<CallTarget> createCode) {
+        return cacheCode(new CodeCacheKey(filename, 0), createCode);
+    }
 
     @TruffleBoundary
-    public CallTarget cacheCode(TruffleString filename, Supplier<CallTarget> createCode) {
+    public CallTarget cacheCode(CodeCacheKey filename, Supplier<CallTarget> createCode) {
         if (!singleContext) {
             return cachedCode.computeIfAbsent(filename, f -> {
                 LOGGER.log(Level.FINEST, () -> "Caching CallTarget for " + filename);
@@ -1011,6 +1011,19 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         } else {
             return createCode.get();
         }
+    }
+
+    public long cacheKeyForBytecode(byte[] code, int length) {
+        if (singleContext) {
+            // No caching in single context
+            return 0;
+        }
+        byte[] hashBytes = ImpModuleBuiltins.SourceHashNode.hashSource(0, code, length);
+        return ARRAY_ACCESSOR.getLong(hashBytes, 0);
+    }
+
+    public long cacheKeyForBytecode(byte[] code) {
+        return cacheKeyForBytecode(code, code.length);
     }
 
     private static final Source LINEBREAK_REGEX_SOURCE = Source.newBuilder("regex", "/\r\n|[\n\u000B\u000C\r\u0085\u2028\u2029]/", "re_linebreak") //

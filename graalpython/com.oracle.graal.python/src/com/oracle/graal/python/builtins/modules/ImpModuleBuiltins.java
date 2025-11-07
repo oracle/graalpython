@@ -53,6 +53,7 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_PYD;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_SO;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NAME;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
+import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -60,6 +61,9 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
+
+import org.bouncycastle.crypto.macs.SipHash;
+import org.bouncycastle.crypto.params.KeyParameter;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
@@ -72,7 +76,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins.Marshal.MarshalError;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.ModuleSpec;
@@ -125,6 +128,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
@@ -480,7 +484,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                 Object code = null;
 
                 try {
-                    code = MarshalModuleBuiltins.Marshal.load(context, bytes, size);
+                    code = MarshalModuleBuiltins.Marshal.load(context, bytes, size, 0);
                 } catch (MarshalError | NumberFormatException e) {
                     raiseFrozenError(inliningTarget, raiseNode, FROZEN_INVALID, name);
                 }
@@ -646,9 +650,11 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
     }
 
     private static RootCallTarget createCallTarget(PythonContext context, FrozenInfo info) {
-        String name = PythonLanguage.FROZEN_FILENAME_PREFIX + info.name + PythonLanguage.FROZEN_FILENAME_SUFFIX;
-        Source source = Source.newBuilder("python", "", name).content(Source.CONTENT_NONE).build();
-        return context.getLanguage().callTargetFromBytecode(context, source, info.code);
+        return (RootCallTarget) context.getLanguage().cacheCode(new PythonLanguage.CodeCacheKey(info.origName, System.identityHashCode(info.code)), () -> {
+            String name = PythonLanguage.FROZEN_FILENAME_PREFIX + info.name + PythonLanguage.FROZEN_FILENAME_SUFFIX;
+            Source source = Source.newBuilder("python", "", name).content(Source.CONTENT_NONE).build();
+            return PythonLanguage.callTargetFromBytecode(context, source, info.code);
+        });
     }
 
     /*
@@ -702,22 +708,28 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "source", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer)
     @GenerateNodeFactory
     public abstract static class SourceHashNode extends PythonBinaryClinicBuiltinNode {
-        @TruffleBoundary
-        @Specialization
+        @Specialization(limit = "2")
         static PBytes run(long magicNumber, Object sourceBuffer,
+                        @CachedLibrary("sourceBuffer") PythonBufferAccessLibrary bufferLib,
                         @Bind PythonLanguage language) {
-            long sourceHash = BytesNodes.HashBufferNode.executeUncached(sourceBuffer);
-            return PFactory.createBytes(language, computeHash(magicNumber, sourceHash));
+            try {
+                byte[] hash = hashSource(magicNumber, bufferLib.getInternalOrCopiedByteArray(sourceBuffer), bufferLib.getBufferLength(sourceBuffer));
+                return PFactory.createBytes(language, hash);
+            } finally {
+                bufferLib.release(sourceBuffer);
+            }
         }
 
         @TruffleBoundary
-        private static byte[] computeHash(long magicNumber, long sourceHash) {
-            byte[] hash = new byte[Long.BYTES];
-            long hashCode = magicNumber ^ sourceHash;
-            for (int i = 0; i < hash.length; i++) {
-                hash[i] = (byte) (hashCode << (8 * i));
-            }
-            return hash;
+        public static byte[] hashSource(long magicNumber, byte[] bytes, int length) {
+            SipHash sipHash = new SipHash(1, 3);
+            byte[] key = new byte[16];
+            ARRAY_ACCESSOR.putLong(key, 0, magicNumber);
+            sipHash.init(new KeyParameter(key));
+            sipHash.update(bytes, 0, length);
+            byte[] out = new byte[sipHash.getMacSize()];
+            sipHash.doFinal(out, 0);
+            return out;
         }
 
         @Override

@@ -490,7 +490,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                         @Cached PyCodecLookupErrorNode lookupErrorNode,
                         @Cached PRaiseNode raiseNode) {
             try {
-                Object errorHandler = lookupErrorNode.execute(inliningTarget, errorAction);
+                Object errorHandler = lookupErrorNode.execute(frame, inliningTarget, errorAction);
                 if (errorHandler == null) {
                     throw raiseNode.raise(inliningTarget, LookupError, UNKNOWN_ERROR_HANDLER, errorAction);
                 }
@@ -975,6 +975,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static PTuple lookup(VirtualFrame frame, Node inliningTarget, TruffleString encoding,
+                        @Cached CodecsRegistry.EnsureRegistryInitializedNode ensureRegistryInitializedNode,
                         @Cached(inline = false) CallUnaryMethodNode callNode,
                         @Cached PyObjectTypeCheck typeCheck,
                         @Cached(inline = false) PyObjectSizeNode sizeNode,
@@ -986,7 +987,7 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                         @Cached PRaiseNode raiseNode) {
             TruffleString normalizedEncoding = normalizeEncodingNameNode.execute(inliningTarget, encoding);
             PythonContext context = PythonContext.get(inliningTarget);
-            ensureRegistryInitialized(context);
+            ensureRegistryInitializedNode.execute(frame, inliningTarget, context);
             PTuple result = getSearchPath(context, normalizedEncoding);
             if (hasSearchPathProfile.profile(inliningTarget, result != null)) {
                 return result;
@@ -1040,21 +1041,18 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
         return typeCheck.execute(inliningTarget, result, PythonBuiltinClassType.PTuple) && sizeNode.execute(frame, inliningTarget, result) == len;
     }
 
-    private static void ensureRegistryInitialized(PythonContext context) {
-        CodecsRegistry.ensureRegistryInitialized(context);
-    }
-
     @Builtin(name = "register", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class RegisterNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object lookup(Object searchFunction,
+        static Object lookup(VirtualFrame frame, Object searchFunction,
                         @Bind Node inliningTarget,
+                        @Cached CodecsRegistry.EnsureRegistryInitializedNode ensureRegistryInitializedNode,
                         @Cached PyCallableCheckNode callableCheckNode,
                         @Cached PRaiseNode raiseNode) {
             if (callableCheckNode.execute(inliningTarget, searchFunction)) {
                 PythonContext context = PythonContext.get(inliningTarget);
-                ensureRegistryInitialized(context);
+                ensureRegistryInitializedNode.execute(frame, inliningTarget, context);
                 add(context, searchFunction);
                 return PNone.NONE;
             } else {
@@ -1116,10 +1114,10 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object register(TruffleString name, Object handler,
+        Object register(VirtualFrame frame, TruffleString name, Object handler,
                         @Bind Node inliningTarget,
                         @Cached PyCodecRegisterErrorNode registerErrorNode) {
-            registerErrorNode.execute(inliningTarget, name, handler);
+            registerErrorNode.execute(frame, inliningTarget, name, handler);
             return PNone.NONE;
         }
     }
@@ -1135,10 +1133,10 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object lookup(TruffleString name,
+        Object lookup(VirtualFrame frame, TruffleString name,
                         @Bind Node inliningTarget,
                         @Cached PyCodecLookupErrorNode errorNode) {
-            return errorNode.execute(inliningTarget, name);
+            return errorNode.execute(frame, inliningTarget, name);
         }
     }
 

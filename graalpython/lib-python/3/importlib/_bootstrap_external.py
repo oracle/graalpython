@@ -756,9 +756,10 @@ def _validate_hash_pyc(data, source_hash, name, exc_details):
         )
 
 
-def _compile_bytecode(data, name=None, bytecode_path=None, source_path=None):
+# GraalPy change: add cache_key
+def _compile_bytecode(data, name=None, bytecode_path=None, source_path=None, cache_key=-1):
     """Compile bytecode as found in a pyc."""
-    code = marshal.loads(data)
+    code = marshal.loads(data, cache_key=cache_key)
     if isinstance(code, _code_type):
         _bootstrap._verbose_message('code object from {!r}', bytecode_path)
         if source_path is not None:
@@ -1102,6 +1103,8 @@ class SourceLoader(_LoaderBasics):
                         'name': fullname,
                         'path': bytecode_path,
                     }
+                    # GraalPy change: add cache_key
+                    cache_key = 0
                     try:
                         flags = _classify_pyc(data, fullname, exc_details)
                         bytes_data = memoryview(data)[16:]
@@ -1118,6 +1121,7 @@ class SourceLoader(_LoaderBasics):
                                 )
                                 _validate_hash_pyc(data, source_hash, fullname,
                                                    exc_details)
+                                cache_key = int.from_bytes(source_hash, byteorder=sys.byteorder, signed=True)
                         else:
                             _validate_timestamp_pyc(
                                 data,
@@ -1133,7 +1137,8 @@ class SourceLoader(_LoaderBasics):
                                                     source_path)
                         return _compile_bytecode(bytes_data, name=fullname,
                                                  bytecode_path=bytecode_path,
-                                                 source_path=source_path)
+                                                 source_path=source_path,
+                                                 cache_key=cache_key)
         if source_bytes is None:
             source_bytes = self.get_data(source_path)
         code_object = self.source_to_code(source_bytes, source_path)
