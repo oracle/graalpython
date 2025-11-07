@@ -170,81 +170,42 @@ def build_java_class(module, ns, name, base, new_style=False):
     return resultClass
 
 
+_CUSTOM_JAVA_SUBCLASS_BACKSTOPS = {}
+
+
 @builtin
 def build_new_style_java_class(module, ns, name, base):
     import polyglot
+    import types
 
-    # First, generate the Java subclass using the Truffle API. Instances of
-    # this class is what we want to generate.
     JavaClass = __graalpython__.extend(base)
+    if JavaClass not in _CUSTOM_JAVA_SUBCLASS_BACKSTOPS:
+        class MroClass:
+            def __getattr__(self, name):
+                sentinel = object()
+                # An attribute access on the Java instance failed, check the
+                # delegate and then the static Java members
+                result = getattr(self.this, name, sentinel)
+                if result is sentinel:
+                    return getattr(self.getClass().static, name)
+                else:
+                    return result
 
-    # Second, generate the delegate object class. Code calling from Java will
-    # end up delegating methods to an instance of this type and the Java object
-    # will use this delegate instance to manage dynamic attributes.
-    #
-    # The __init__ function would not do what the user thinks, so we take it
-    # out and call it explicitly in the factory below. The `self` passed into
-    # those Python-defined methods is the delegate instance, but that would be
-    # confusing for users. So we wrap all methods to get to the Java instance
-    # and pass that one as `self`.
-    delegate_namespace = dict(**ns)
-    delegate_namespace["__java_init__"] = delegate_namespace.pop("__init__", lambda self, *a, **kw: None)
+            def __setattr__(self, name, value):
+                # An attribute access on the Java instance failed, use the delegate
+                setattr(self.this, name, value)
 
-    def python_to_java_decorator(fun):
-        return lambda self, *args, **kwds: fun(self.__this__, *args, **kwds)
+            def __delattr__(self, name):
+                # An attribute access on the Java instance failed, use the delegate
+                delattr(self.this, name)
 
-    for n, v in delegate_namespace.items():
-        if type(v) == type(python_to_java_decorator):
-            delegate_namespace[n] = python_to_java_decorator(v)
-    DelegateClass = type(f"PythonDelegateClassFor{base}", (object,), delegate_namespace)
-    DelegateClass.__qualname__ = DelegateClass.__name__
+        # This may race, so we allow_method_overwrites, at the only danger to
+        # insert a few useless classes into the MRO
+        polyglot.register_interop_type(JavaClass, MroClass, allow_method_overwrites=True)
 
-    # Third, generate the class used to inject into the MRO of the generated
-    # Java subclass. Code calling from Python will go through this class for
-    # lookup.
-    #
-    # The `self` passed into those Python-defined methods will be the Java
-    # instance. We add `__getattr__`, `__setattr__`, and `__delattr__`
-    # implementations to look to the Python delegate object when the Java-side
-    # lookup fails. For convenience, we also allow retrieving static fields
-    # from Java.
-    mro_namespace = dict(**ns)
-
-    def java_getattr(self, name):
-        if name == "super":
-            return __graalpython__.super(self)
-        sentinel = object()
-        result = getattr(self.this, name, sentinel)
-        if result is sentinel:
-            return getattr(self.getClass().static, name)
-        else:
-            return result
-
-    mro_namespace['__getattr__'] = java_getattr
-    mro_namespace['__setattr__'] = lambda self, name, value: setattr(self.this, name, value)
-    mro_namespace['__delattr__'] = lambda self, name: delattr(self.this, name)
-
-    @classmethod
-    def factory(cls, *args, **kwds):
-        # create the delegate object
-        delegate = DelegateClass()
-        # create the Java object (remove the class argument and add the delegate instance)
-        java_object = polyglot.__new__(JavaClass, *(args[1:] + (delegate, )))
-        delegate.__this__ = java_object
-        # call the __init__ function on the delegate object now that the Java instance is available
-        delegate.__java_init__(*args[1:], **kwds)
-        return java_object
-
-    mro_namespace['__constructor__'] = factory
-    if '__new__' not in mro_namespace:
-        mro_namespace['__new__'] = classmethod(lambda cls, *args, **kwds: cls.__constructor__(*args, **kwds))
-    MroClass = type(f"PythonMROMixinFor{base}", (object,), mro_namespace)
-    MroClass.__qualname__ = MroClass.__name__
-    polyglot.register_interop_type(JavaClass, MroClass)
-
-    # Finally, generate a factory that implements the factory and type checking
-    # methods and denies inheriting again
-    class FactoryMeta(type):
+    # A class to make sure that the returned Python class can be used for
+    # issubclass and isinstance checks with the Java instances
+    class JavaSubclassMeta(type):
         @property
         def __bases__(self):
             return (JavaClass,)
@@ -257,16 +218,62 @@ def build_new_style_java_class(module, ns, name, base):
 
         def __new__(mcls, name, bases, namespace):
             if bases:
-                raise NotImplementedError("Grandchildren of Java classes are not supported")
+                new_class = None
+
+                class custom_super():
+                    def __init__(self, start_type=None, object_or_type=None):
+                        assert start_type is None and object_or_type is None, "super() calls in Python class inheriting from Java must not receive arguments"
+                        f = sys._getframe(1)
+                        self.self = f.f_locals[f.f_code.co_varnames[0]]
+
+                    def __getattribute__(self, name):
+                        if name == "__class__":
+                            return __class__
+                        if name == "self":
+                            return object.__getattribute__(self, "self")
+                        for t in new_class.mro()[1:]:
+                            if t == DelegateSuperclass:
+                                break
+                            if name in t.__dict__:
+                                value = t.__dict__[name]
+                                if get := getattr(value, "__get__", None):
+                                    return get(self.self.this)
+                                return value
+                        return getattr(__graalpython__.super(self.self), name)
+
+                # Wrap all methods so that the `self` inside is always a Java object, and
+                # adapt the globals in the functions to provide a custom super() if
+                # necessary
+                def self_as_java_wrapper(k, value):
+                    if type(value) is not types.FunctionType:
+                        return value
+                    if k in ("__new__", "__class_getitem__"):
+                        return value
+                    if "super" in value.__code__.co_names:
+                        value = types.FunctionType(
+                            value.__code__,
+                            value.__globals__ | {"super": custom_super},
+                            name=value.__name__,
+                            argdefs=value.__defaults__,
+                            closure=value.__closure__,
+                        )
+                    return lambda self, *args, **kwds: value(self.__this__, *args, **kwds)
+                namespace = {k: self_as_java_wrapper(k, v) for k, v in namespace.items()}
+                new_class = type.__new__(mcls, name, bases, namespace)
+                return new_class
             return type.__new__(mcls, name, bases, namespace)
 
-    class FactoryClass(metaclass=FactoryMeta):
-        @classmethod
+        def __getattr__(self, name):
+            return getattr(JavaClass, name)
+
+    # A class that defines the required construction for the Java instances, so
+    # the Python code can actually override __new__ to affect the construction
+    # of the Java object
+    class DelegateSuperclass(metaclass=JavaSubclassMeta):
         def __new__(cls, *args, **kwds):
-            return MroClass.__new__(*args, **kwds)
+            delegate = object.__new__(cls)
+            java_object = polyglot.__new__(JavaClass, *(args + (delegate,)))
+            delegate.__this__ = java_object
+            return java_object
 
-    FactoryClass.__name__ = ns['__qualname__'].rsplit(".", 1)[-1]
-    FactoryClass.__qualname__ = ns['__qualname__']
-    FactoryClass.__module__ = ns['__module__']
-
-    return FactoryClass
+    return type(name, (DelegateSuperclass,), ns)

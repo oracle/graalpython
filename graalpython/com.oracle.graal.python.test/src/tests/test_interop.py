@@ -1416,6 +1416,68 @@ class InteropTests(unittest.TestCase):
         assert repr(Integer).startswith('<JavaClass[java.lang.Integer] at')
         assert repr(i) == '22'
 
+    def test_natural_subclassing(self):
+        from java.util.logging import Level
+
+        class PythonLevel(Level, new_style=True):
+            def __new__(cls, name="default name", level=2):
+                return super().__new__(cls, name, level)
+
+            def __init__(self):
+                self.misc_value = 42
+
+            def getName(self):
+                return super().getName() + " from Python with super()"
+
+            def pythonName(self):
+                return f"PythonName for Level {self.intValue()} named {super().getName()}"
+
+            def callStaticFromPython(self, name):
+                return self.parse(name)
+
+        pl = PythonLevel()
+        assert issubclass(PythonLevel, Level)
+        assert issubclass(PythonLevel, PythonLevel)
+        assert isinstance(pl, PythonLevel)
+        assert isinstance(pl, Level)
+        assert pl.getName() == "default name from Python with super()"
+        assert pl.intValue() == 2
+        assert pl.misc_value == 42
+        del pl.misc_value
+        try:
+            pl.misc_value
+        except AttributeError:
+            pass
+        else:
+            assert False
+        pl.misc_value = 43
+        assert pl.misc_value == 43
+        assert pl.pythonName() == "PythonName for Level 2 named default name"
+        assert pl.callStaticFromPython("INFO").getName() == "INFO"
+        assert PythonLevel.parse("INFO").getName() == "INFO"
+
+        class PythonLevel2(PythonLevel):
+            def __new__(cls):
+                return super().__new__(cls, "deeper name")
+
+            def pythonName(self):
+                return super().pythonName() + " from subclass"
+
+            def getName(self):
+                return super().getName() + " from subclass"
+
+
+        pl = PythonLevel2()
+        assert issubclass(PythonLevel2, Level)
+        assert issubclass(PythonLevel2, PythonLevel2)
+        assert isinstance(pl, PythonLevel2)
+        assert isinstance(pl, Level)
+        assert pl.getName() == "deeper name from Python with super() from subclass"
+        assert pl.pythonName() == "PythonName for Level 2 named deeper name from subclass"
+        assert pl.callStaticFromPython("INFO").getName() == "INFO"
+        assert PythonLevel2.parse("INFO").getName() == "INFO"
+
+
     def test_jython_star_import(self):
         if __graalpython__.jython_emulation_enabled:
             g = {}
