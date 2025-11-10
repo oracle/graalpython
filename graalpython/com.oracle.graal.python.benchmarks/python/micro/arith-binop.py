@@ -1,4 +1,4 @@
-# Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2025, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -35,17 +35,37 @@ def docompute(num):
     return sum_
 
 
-def measure(num):
+def measure(num, length):
     sum_ = 0
     for run in range(num):
-        sum_ += docompute(10000)  # 10000
+        sum_ += docompute(length)  # 10000
     return sum_
 
 
-def __benchmark__(num=5):
-    return measure(num)
+def __benchmark__(num=5, length=10000):
+    return measure(num, length)
 
 
 def __teardown__():
     # teardown example
     print("arith-binop teardown")
+
+
+def run():
+    __benchmark__(num=1, length=2000)
+
+
+def warmupIterations():
+    return 10
+
+
+def iterations():
+    return 25
+
+
+def summary():
+    return {
+        "name": "OutlierRemovalAverageSummary",
+        "lower-threshold": 0.0,
+        "upper-threshold": 0.3,
+    }
