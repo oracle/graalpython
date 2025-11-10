@@ -78,8 +78,10 @@ enum ArgBehavior {
     PyObjectAsTruffleString("POINTER", NfiType.POINTER, "J", "jlong", "long", null, ToPythonStringNode::create, ToPythonStringNode.getUncached(), null, null, null),
     PyObjectWrapper("POINTER", NfiType.POINTER, "J", "jlong", "long", null, ToPythonWrapperNode::create, ToPythonWrapperNode.getUncached(), null, null, null),
     Pointer("POINTER", NfiType.POINTER, "J", "jlong", "long", null, null, null),
+    PointerZZZ("POINTER_ZZZ", NfiType.RAW_POINTER, "J", "jlong", "long", null, null, null),
     WrappedPointer("POINTER", NfiType.POINTER, "J", "jlong", "long", null, WrappedPointerToPythonNodeGen::create, WrappedPointerToPythonNodeGen.getUncached()),
     TruffleStringPointer("POINTER", NfiType.POINTER, "J", "jlong", "long", null, CharPtrToPythonNode::create, CharPtrToPythonNode.getUncached()),
+    TruffleStringPointerZZZ("POINTER_ZZZ", NfiType.RAW_POINTER, "J", "jlong", "long", null, CharPtrToPythonNode::create, CharPtrToPythonNode.getUncached()),
     Char8("SINT8", NfiType.SINT8, "C", "jbyte", "byte", null, null, null),
     UChar8("UINT8", NfiType.SINT8, "C", "jbyte", "byte", null, null, null),
     Char16("SINT16", NfiType.SINT16, "C", "jchar", "char", null, null, null),
@@ -145,6 +147,7 @@ public enum ArgDescriptor {
     PyObjectReturn(ArgBehavior.PyObject, "PyObject*", true, true),
     PyObjectRawPointer(ArgBehavior.Pointer, "PyObject*"),
     Pointer(ArgBehavior.Pointer, "void*"),
+    PointerZZZ(ArgBehavior.PointerZZZ, "void*"),
     Py_ssize_t(ArgBehavior.Int64, "Py_ssize_t"),
     Py_hash_t(ArgBehavior.Int64, "Py_hash_t"),
     Int(ArgBehavior.Int32, "int"),
@@ -173,9 +176,12 @@ public enum ArgDescriptor {
     CHAR_CONST_PTR("char*const*"),
     CHAR_CONST_ARRAY("char*const []"),
     CHAR_PTR(ArgBehavior.Pointer, "char*"),
+    CHAR_PTR_ZZZ(ArgBehavior.PointerZZZ, "char*"),
     CHAR_PTR_LIST(ArgBehavior.Pointer, "char**"),
     ConstCharPtrAsTruffleString(ArgBehavior.TruffleStringPointer, "const char*"),
+    ConstCharPtrAsTruffleStringZZZ(ArgBehavior.TruffleStringPointerZZZ, "const char*"),
     ConstCharPtr(ArgBehavior.Pointer, "const char*"),
+    ConstCharPtrZZZ(ArgBehavior.PointerZZZ, "const char*"),
     CharPtrAsTruffleString(ArgBehavior.TruffleStringPointer, "char*"),
     CONST_CHAR_PTR_LIST("const char**"),
     CONST_PY_BUFFER("const Py_buffer*"),
@@ -186,10 +192,12 @@ public enum ArgDescriptor {
     CONST_PY_UNICODE("const Py_UNICODE*"),
     CONST_PYCONFIG_PTR("const PyConfig*"),
     CONST_PYPRECONFIG_PTR("const PyPreConfig*"),
-    CONST_UNSIGNED_CHAR_PTR(ArgBehavior.Pointer, "const unsigned char*"),
+    CONST_UNSIGNED_CHAR_PTR_ZZZ(ArgBehavior.PointerZZZ, "const unsigned char*"),
     CONST_VOID_PTR(ArgBehavior.Pointer, "const void*"),
+    CONST_VOID_PTR_ZZZ(ArgBehavior.PointerZZZ, "const void*"),
     CONST_VOID_PTR_LIST("const void**"),
     CONST_WCHAR_PTR(ArgBehavior.Pointer, "const wchar_t*"),
+    CONST_WCHAR_PTR_ZZZ(ArgBehavior.PointerZZZ, "const wchar_t*"),
     CROSSINTERPDATAFUNC("crossinterpdatafunc"),
     FILE_PTR("FILE*"),
     FREEFUNC("freefunc"),
@@ -204,6 +212,7 @@ public enum ArgDescriptor {
     PY_AUDITHOOKFUNCTION("Py_AuditHookFunction"),
     Py_buffer("Py_buffer"),
     PY_BUFFER_PTR(ArgBehavior.Pointer, "Py_buffer*"),
+    PY_BUFFER_PTR_ZZZ(ArgBehavior.PointerZZZ, "Py_buffer*"),
     CONST_PY_BUFFER_PTR(ArgBehavior.Pointer, "const Py_buffer*"),
     PY_C_FUNCTION(ArgBehavior.Pointer, "PyCFunction"),
     PyByteArrayObject(ArgBehavior.PyObject, "PyByteArrayObject*"),
@@ -245,7 +254,7 @@ public enum ArgDescriptor {
     PySequenceMethods(ArgBehavior.Pointer, "PySequenceMethods*"),
     PyMappingMethods(ArgBehavior.Pointer, "PyMappingMethods*"),
     PyAsyncMethods(ArgBehavior.Pointer, "PyAsyncMethods*"),
-    PyBufferProcs(ArgBehavior.Pointer, "PyBufferProcs*"),
+    PyBufferProcsZZZ(ArgBehavior.PointerZZZ, "PyBufferProcs*"),
     PyMethodDescrObject(ArgBehavior.PyObject, "PyMethodDescrObject*"),
     PySendResult(ArgBehavior.Int32, "PySendResult"),
     PySetObject(ArgBehavior.PyObject, "PySetObject*"),
@@ -282,6 +291,7 @@ public enum ArgDescriptor {
     PyObjectConstPtr(ArgBehavior.Pointer, "PyObject*const*"),
     PYOBJECT_CONST_PTR_LIST("PyObject*const**"),
     PyObjectPtr(ArgBehavior.Pointer, "PyObject**"),
+    PyObjectPtrZZZ(ArgBehavior.PointerZZZ, "PyObject**"),
     PYOBJECTARENAALLOCATOR_PTR("PyObjectArenaAllocator*"),
     PYPRECONFIG_PTR("PyPreConfig*"),
     PYSTATUS("PyStatus"),
@@ -487,13 +497,17 @@ public enum ArgDescriptor {
         return behavior.javaSignature;
     }
 
+    public boolean isRawPyObjectOrPointer() {
+        return behavior == ArgBehavior.PointerZZZ || behavior == ArgBehavior.TruffleStringPointerZZZ;
+    }
+
     public boolean isPyObjectOrPointer() {
-        return behavior == ArgBehavior.PyObject || behavior == ArgBehavior.PyObjectBorrowed || behavior == ArgBehavior.Pointer || behavior == ArgBehavior.WrappedPointer ||
-                        behavior == ArgBehavior.TruffleStringPointer;
+        return behavior == ArgBehavior.PyObject || behavior == ArgBehavior.PyObjectBorrowed || behavior == ArgBehavior.Pointer || behavior == ArgBehavior.PointerZZZ ||
+                        behavior == ArgBehavior.WrappedPointer || behavior == ArgBehavior.TruffleStringPointer || behavior == ArgBehavior.TruffleStringPointerZZZ;
     }
 
     public boolean isPointer() {
-        return behavior == ArgBehavior.Pointer || behavior == ArgBehavior.WrappedPointer || behavior == ArgBehavior.TruffleStringPointer;
+        return behavior == ArgBehavior.Pointer || behavior == ArgBehavior.WrappedPointer || behavior == ArgBehavior.TruffleStringPointer || behavior == ArgBehavior.TruffleStringPointerZZZ;
     }
 
     public boolean isPyObject() {

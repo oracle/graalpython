@@ -45,7 +45,7 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.C
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyBufferProcs;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyBufferProcsZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
@@ -414,21 +414,21 @@ public final class PythonCextTypeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = ArgDescriptor.Void, args = {PyTypeObject, PyBufferProcs}, call = Ignored)
+    @CApiBuiltin(ret = ArgDescriptor.Void, args = {PyTypeObject, PyBufferProcsZZZ}, call = Ignored)
     abstract static class GraalPyPrivate_Type_SetBufferProcs extends CApiBinaryBuiltinNode {
 
         @Specialization
-        static Object setBuiltinClassType(PythonBuiltinClassType clazz, Object bufferProcs,
+        static Object setBuiltinClassType(PythonBuiltinClassType clazz, long bufferProcs,
                         @Bind Node inliningTarget,
-                        @Shared @Cached HiddenAttr.WriteNode writeAttrNode) {
+                        @Shared @Cached HiddenAttr.WriteLongNode writeAttrNode) {
             writeAttrNode.execute(inliningTarget, PythonContext.get(inliningTarget).lookupType(clazz), AS_BUFFER, bufferProcs);
             return PNone.NO_VALUE;
         }
 
         @Specialization(guards = "isPythonClass(object)")
-        static Object set(PythonAbstractObject object, Object bufferProcs,
+        static Object set(PythonAbstractObject object, long bufferProcs,
                         @Bind Node inliningTarget,
-                        @Shared @Cached HiddenAttr.WriteNode writeAttrNode) {
+                        @Shared @Cached HiddenAttr.WriteLongNode writeAttrNode) {
             writeAttrNode.execute(inliningTarget, object, AS_BUFFER, bufferProcs);
             return PNone.NO_VALUE;
         }

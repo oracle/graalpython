@@ -236,7 +236,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
             context.getGcState().setEnabled(false);
             CApiContext cApiContext = context.getCApiContext();
             if (cApiContext != null) {
-                CStructAccess.WriteIntNode.writeUncached(cApiContext.getGCState(), CFields.GCState__enabled, 0);
+                CStructAccess.writeIntField(cApiContext.getGCState(), CFields.GCState__enabled, 0);
             }
             return PNone.NONE;
         }
@@ -252,7 +252,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
             context.getGcState().setEnabled(true);
             CApiContext cApiContext = context.getCApiContext();
             if (cApiContext != null) {
-                CStructAccess.WriteIntNode.writeUncached(cApiContext.getGCState(), CFields.GCState__enabled, 1);
+                CStructAccess.writeIntField(cApiContext.getGCState(), CFields.GCState__enabled, 1);
             }
             return PNone.NONE;
         }
@@ -283,7 +283,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
             context.getGcState().setDebug(flags);
             CApiContext cApiContext = context.getCApiContext();
             if (cApiContext != null) {
-                CStructAccess.WriteIntNode.writeUncached(cApiContext.getGCState(), CFields.GCState__debug, flags);
+                CStructAccess.writeIntField(cApiContext.getGCState(), CFields.GCState__debug, flags);
             }
             return PNone.NONE;
         }

@@ -46,12 +46,13 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.C
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.INT64_T;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PointerZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyListObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
+import static com.oracle.graal.python.nfi2.NativeMemory.writePtr;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_S;
 
 import java.util.Arrays;
@@ -68,7 +69,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.XDecRefPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.SetItemScalarNode;
@@ -301,17 +301,16 @@ public final class PythonCextListBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = INT64_T, args = {PyObject, Pointer}, call = Ignored)
+    @CApiBuiltin(ret = INT64_T, args = {PyObject, PointerZZZ}, call = Ignored)
     abstract static class GraalPyPrivate_List_ClearManagedOrGetItems extends CApiBinaryBuiltinNode {
 
         @Specialization
-        static long doGeneric(PList self, Object outItems,
+        static long doGeneric(PList self, long outItems,
                         @Bind Node inliningTarget,
-                        @Cached CStructAccess.WritePointerNode writePointerNode,
                         @Cached XDecRefPointerNode xDecRefPointerNode) {
             SequenceStorage sequenceStorage = self.getSequenceStorage();
             if (sequenceStorage instanceof NativeObjectSequenceStorage nativeStorage) {
-                writePointerNode.write(outItems, nativeStorage.getPtr());
+                writePtr(outItems, nativeStorage.getPtr());
                 int length = nativeStorage.length();
                 nativeStorage.setNewLength(0);
                 return length;
@@ -332,13 +331,12 @@ public final class PythonCextListBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = INT64_T, args = {PyObject, Pointer}, call = Ignored)
+    @CApiBuiltin(ret = INT64_T, args = {PyObject, PointerZZZ}, call = Ignored)
     abstract static class GraalPyPrivate_List_TryGetItems extends CApiBinaryBuiltinNode {
 
         @Specialization
-        static long doGeneric(PList self, Object outItems,
+        static long doGeneric(PList self, long outItems,
                         @Bind Node inliningTarget,
-                        @Cached CStructAccess.WritePointerNode writePointerNode,
                         @Cached PySequenceArrayWrapper.ToNativeStorageNode toNativeStorageNode) {
             SequenceStorage sequenceStorage = self.getSequenceStorage();
             if (sequenceStorage instanceof ObjectSequenceStorage objectStorage) {
@@ -346,7 +344,7 @@ public final class PythonCextListBuiltins {
                 self.setSequenceStorage(sequenceStorage);
             }
             if (sequenceStorage instanceof NativeObjectSequenceStorage nativeStorage) {
-                writePointerNode.write(outItems, nativeStorage.getPtr());
+                writePtr(outItems, nativeStorage.getPtr());
                 return nativeStorage.length();
             }
             return 0;

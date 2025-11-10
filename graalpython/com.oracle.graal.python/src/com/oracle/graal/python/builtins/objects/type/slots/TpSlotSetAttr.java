@@ -40,7 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.type.slots;
 
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.wrapPointer;
 import static com.oracle.graal.python.builtins.objects.type.slots.BuiltinSlotWrapperSignature.J_DOLLAR_SELF;
+import static com.oracle.graal.python.nfi2.NativeMemory.free;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETATTR__;
@@ -57,7 +59,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.FreeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeRawNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -261,15 +263,14 @@ public class TpSlotSetAttr {
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached InlinedConditionProfile isSetAttrProfile,
                         @Cached AsCharPointerNode asCharPointerNode,
-                        @Cached FreeNode freeNode,
-                        @Cached PythonToNativeNode nameToNativeNode,
+                        @Cached PythonToNativeRawNode nameToNativeNode,
                         @Cached PythonToNativeNode selfToNativeNode,
                         @Cached PythonToNativeNode valueToNativeNode,
                         @Cached ExternalFunctionInvokeNode externalInvokeNode,
                         @Cached CheckInquiryResultNode checkResultNode) {
             assert PyUnicodeCheckNode.executeUncached(name);
             boolean isSetAttr = isSetAttrProfile.profile(inliningTarget, slots.tp_setattr() == slot);
-            Object nameArg;
+            long nameArg;
             if (isSetAttr) {
                 nameArg = asCharPointerNode.execute(name);
             } else {
@@ -278,11 +279,11 @@ public class TpSlotSetAttr {
             Object result;
             PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, null);
             try {
-                result = externalInvokeNode.call(frame, inliningTarget, threadState, C_API_TIMING, T___SETATTR__, slot.callable, selfToNativeNode.execute(self), nameArg,
+                result = externalInvokeNode.call(frame, inliningTarget, threadState, C_API_TIMING, T___SETATTR__, slot.callable, selfToNativeNode.execute(self), wrapPointer(nameArg),
                                 valueToNativeNode.execute(value));
             } finally {
                 if (isSetAttr) {
-                    freeNode.free(nameArg);
+                    free(nameArg);
                 } else {
                     Reference.reachabilityFence(nameArg);
                 }

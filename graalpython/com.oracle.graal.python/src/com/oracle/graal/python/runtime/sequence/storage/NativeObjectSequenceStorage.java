@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,7 +44,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 
 public final class NativeObjectSequenceStorage extends NativeSequenceStorage {
 
-    private NativeObjectSequenceStorage(Object ptr, int length, int capacity) {
+    private NativeObjectSequenceStorage(long ptr, int length, int capacity) {
         super(ptr, length, capacity);
     }
 
@@ -52,7 +52,7 @@ public final class NativeObjectSequenceStorage extends NativeSequenceStorage {
      * @param ownsMemory whether the memory should be freed when this object dies. Should be true
      *            when actually used as a sequence storage
      */
-    public static NativeObjectSequenceStorage create(Object ptr, int length, int capacity, boolean ownsMemory) {
+    public static NativeObjectSequenceStorage create(long ptr, int length, int capacity, boolean ownsMemory) {
         NativeObjectSequenceStorage storage = new NativeObjectSequenceStorage(ptr, length, capacity);
         if (ownsMemory) {
             CApiTransitions.registerNativeSequenceStorage(storage);

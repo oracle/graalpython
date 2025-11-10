@@ -30,6 +30,8 @@ import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyHeapTypeObject__ht_name;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyHeapTypeObject__ht_qualname;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_name;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointer;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_BUILTINS;
 import static com.oracle.graal.python.nodes.ErrorMessages.ATTR_NAME_MUST_BE_STRING;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___ABSTRACTMETHODS__;
@@ -90,6 +92,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
@@ -894,7 +897,7 @@ public final class TypeBuiltins extends PythonBuiltins {
             @Specialization
             static void set(Node inliningTarget, PythonAbstractNativeObject type, TruffleString value,
                             @Bind PythonLanguage language,
-                            @Cached(inline = false) CStructAccess.WritePointerNode writePointerNode,
+                            @Cached CoerceNativePointerToLongNode coerceNode,
                             @Cached(inline = false) CStructAccess.WriteObjectNewRefNode writeObject,
                             @Cached HiddenAttr.WriteNode writeAttrNode,
                             @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
@@ -902,7 +905,8 @@ public final class TypeBuiltins extends PythonBuiltins {
                 value = switchEncodingNode.execute(value, TruffleString.Encoding.UTF_8);
                 byte[] bytes = copyToByteArrayNode.execute(value, TruffleString.Encoding.UTF_8);
                 PBytes utf8Bytes = PFactory.createBytes(language, bytes);
-                writePointerNode.writeToObj(type, PyTypeObject__tp_name, PySequenceArrayWrapper.ensureNativeSequence(utf8Bytes));
+                long typeRawPtr = ensurePointer(type.getPtr(), inliningTarget, coerceNode);
+                writePtrField(typeRawPtr, PyTypeObject__tp_name, PySequenceArrayWrapper.ensureNativeSequence(utf8Bytes));
                 PString pString = PFactory.createString(language, value);
                 writeAttrNode.execute(inliningTarget, pString, HiddenAttr.PSTRING_UTF8, utf8Bytes);
                 writeObject.writeToObject(type, PyHeapTypeObject__ht_name, pString);

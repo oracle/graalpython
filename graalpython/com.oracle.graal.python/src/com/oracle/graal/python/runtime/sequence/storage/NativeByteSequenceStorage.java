@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,17 +40,18 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
+import static com.oracle.graal.python.nfi2.NativeMemory.readByteArrayElement;
+import static com.oracle.graal.python.nfi2.NativeMemory.writeByteArrayElement;
+
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
-import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
 @ExportLibrary(PythonBufferAccessLibrary.class)
 public final class NativeByteSequenceStorage extends NativeSequenceStorage {
 
-    private NativeByteSequenceStorage(Object ptr, int length, int capacity) {
+    private NativeByteSequenceStorage(long ptr, int length, int capacity) {
         super(ptr, length, capacity);
     }
 
@@ -58,7 +59,7 @@ public final class NativeByteSequenceStorage extends NativeSequenceStorage {
      * @param ownsMemory whether the memory should be freed when this object dies. Should be true
      *            when actually used as a sequence storage
      */
-    public static NativeByteSequenceStorage create(Object ptr, int length, int capacity, boolean ownsMemory) {
+    public static NativeByteSequenceStorage create(long ptr, int length, int capacity, boolean ownsMemory) {
         NativeByteSequenceStorage storage = new NativeByteSequenceStorage(ptr, length, capacity);
         if (ownsMemory) {
             CApiTransitions.registerNativeSequenceStorage(storage);
@@ -89,14 +90,12 @@ public final class NativeByteSequenceStorage extends NativeSequenceStorage {
     }
 
     @ExportMessage
-    byte readByte(int byteOffset,
-                    @Cached CStructAccess.ReadByteNode readNode) {
-        return readNode.readArrayElement(getPtr(), byteOffset);
+    byte readByte(int byteOffset) {
+        return readByteArrayElement(getPtr(), byteOffset);
     }
 
     @ExportMessage
-    void writeByte(int byteOffset, byte value,
-                    @Cached CStructAccess.WriteByteNode writeNode) {
-        writeNode.writeArrayElement(getPtr(), byteOffset, value);
+    void writeByte(int byteOffset, byte value) {
+        writeByteArrayElement(getPtr(), byteOffset, value);
     }
 }

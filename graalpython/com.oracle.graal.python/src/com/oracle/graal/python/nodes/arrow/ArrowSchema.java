@@ -40,11 +40,12 @@
  */
 package com.oracle.graal.python.nodes.arrow;
 
+import static com.oracle.graal.python.nfi2.NativeMemory.POINTER_SIZE;
+
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.util.PythonUtils;
-import sun.misc.Unsafe;
 
-import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.POINTER_SIZE;
+import sun.misc.Unsafe;
 
 /**
  * C Data Interface of ArrowSchema

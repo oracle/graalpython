@@ -68,6 +68,15 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMo
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyObject__ob_refcnt;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyObject__ob_type;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_as_buffer;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointer;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointerUncached;
+import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.nfi2.NativeMemory.calloc;
+import static com.oracle.graal.python.nfi2.NativeMemory.mallocByteArray;
+import static com.oracle.graal.python.nfi2.NativeMemory.readByteArrayElement;
+import static com.oracle.graal.python.nfi2.NativeMemory.readByteArrayElements;
+import static com.oracle.graal.python.nfi2.NativeMemory.writeByteArrayElement;
+import static com.oracle.graal.python.nfi2.NativeMemory.writeByteArrayElements;
 import static com.oracle.graal.python.nodes.HiddenAttr.METHOD_DEF_PTR;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___COMPLEX__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
@@ -110,6 +119,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureTruffleStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionFromNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformPExceptionToNativeNode;
@@ -459,63 +469,47 @@ public abstract class CExtNodes {
     @GenerateUncached
     @GenerateInline(false) // footprint reduction 60 -> 41
     public abstract static class AsCharPointerNode extends Node {
-        public abstract Object execute(Object obj, boolean allocatePyMem);
-
-        public abstract Object execute(TruffleString obj, boolean allocatePyMem);
-
-        public final Object execute(Object obj) {
-            return execute(obj, false);
-        }
+        public abstract long execute(Object obj);
 
         @Specialization
-        static Object doPString(PString str, boolean allocatePyMem,
+        static long doPString(PString str,
                         @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Shared @Cached TruffleString.SwitchEncodingNode switchEncoding,
-                        @Shared @Cached CStructAccess.AllocateNode alloc,
                         @Shared @Cached CStructAccess.WriteTruffleStringNode writeTruffleString) {
             TruffleString value = castToStringNode.execute(inliningTarget, str);
-            TruffleString utf8Str = switchEncoding.execute(value, Encoding.UTF_8);
-            Object mem = alloc.alloc(utf8Str.byteLength(Encoding.UTF_8) + 1, allocatePyMem);
-            writeTruffleString.write(mem, utf8Str, Encoding.UTF_8);
-            return mem;
+            return doString(value, switchEncoding, writeTruffleString);
         }
 
         @Specialization
-        static Object doString(TruffleString str, boolean allocatePyMem,
+        static long doString(TruffleString str,
                         @Shared @Cached TruffleString.SwitchEncodingNode switchEncoding,
-                        @Shared @Cached CStructAccess.AllocateNode alloc,
                         @Shared @Cached CStructAccess.WriteTruffleStringNode writeTruffleString) {
             TruffleString utf8Str = switchEncoding.execute(str, Encoding.UTF_8);
-            Object mem = alloc.alloc(utf8Str.byteLength(Encoding.UTF_8) + 1, allocatePyMem);
+            long mem = calloc(utf8Str.byteLength(Encoding.UTF_8) + 1);
             writeTruffleString.write(mem, utf8Str, Encoding.UTF_8);
             return mem;
         }
 
         @Specialization
-        static Object doBytes(PBytes bytes, boolean allocatePyMem,
+        static long doBytes(PBytes bytes,
                         @Bind Node inliningTarget,
-                        @Shared @Cached SequenceStorageNodes.ToByteArrayNode toBytesNode,
-                        @Shared @Cached CStructAccess.AllocateNode alloc,
-                        @Shared @Cached CStructAccess.WriteByteNode write) {
-            return doByteArray(toBytesNode.execute(inliningTarget, bytes.getSequenceStorage()), allocatePyMem, alloc, write);
+                        @Shared @Cached SequenceStorageNodes.ToByteArrayNode toBytesNode) {
+            return doByteArray(toBytesNode.execute(inliningTarget, bytes.getSequenceStorage()));
         }
 
         @Specialization
-        static Object doBytes(PByteArray bytes, boolean allocatePyMem,
+        static long doBytes(PByteArray bytes,
                         @Bind Node inliningTarget,
-                        @Shared @Cached SequenceStorageNodes.ToByteArrayNode toBytesNode,
-                        @Shared @Cached CStructAccess.AllocateNode alloc,
-                        @Shared @Cached CStructAccess.WriteByteNode write) {
-            return doByteArray(toBytesNode.execute(inliningTarget, bytes.getSequenceStorage()), allocatePyMem, alloc, write);
+                        @Shared @Cached SequenceStorageNodes.ToByteArrayNode toBytesNode) {
+            return doByteArray(toBytesNode.execute(inliningTarget, bytes.getSequenceStorage()));
         }
 
         @Specialization
-        static Object doByteArray(byte[] arr, boolean allocatePyMem,
-                        @Shared @Cached CStructAccess.AllocateNode alloc,
-                        @Shared @Cached CStructAccess.WriteByteNode write) {
-            Object mem = alloc.alloc(arr.length + 1, allocatePyMem);
-            write.writeByteArray(mem, arr);
+        static long doByteArray(byte[] arr) {
+            long mem = mallocByteArray(arr.length + 1L);
+            writeByteArrayElements(mem, 0, arr, 0, arr.length);
+            writeByteArrayElement(mem, arr.length, (byte) 0);
             return mem;
         }
 
@@ -556,24 +550,28 @@ public abstract class CExtNodes {
             return switchEncodingNode.execute(fromBytes.execute(byteArray, 0, byteArray.length, Encoding.UTF_8, copy), TS_ENCODING);
         }
 
-        @Specialization(guards = "!isCArrayWrapper(charPtr)", limit = "3")
-        static TruffleString doPointer(Object charPtr, boolean copy,
-                        @Cached CStructAccess.ReadByteNode read,
-                        @CachedLibrary("charPtr") InteropLibrary lib,
-                        @Cached TruffleString.FromNativePointerNode fromNative,
+        @Specialization
+        static TruffleString doPointer(long charPtr, @SuppressWarnings("unused") boolean copy,
                         @Shared @Cached TruffleString.FromByteArrayNode fromBytes,
                         @Shared("switchEncoding") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
 
             int length = 0;
-            while (read.readArrayElement(charPtr, length) != 0) {
+            while (readByteArrayElement(charPtr, length) != 0) {
                 length++;
             }
 
-            if (lib.isPointer(charPtr)) {
-                return switchEncodingNode.execute(fromNative.execute(charPtr, 0, length, Encoding.UTF_8, copy), TS_ENCODING);
-            }
-            byte[] result = read.readByteArray(charPtr, length);
+            byte[] result = readByteArrayElements(charPtr, 0L, length);
             return switchEncodingNode.execute(fromBytes.execute(result, Encoding.UTF_8, false), TS_ENCODING);
+        }
+
+        @Specialization(guards = "!isCArrayWrapper(charPtr)")
+        static TruffleString doPointer(Object charPtr, boolean copy,
+                        @Bind Node inliningTarget,
+                        @Cached CoerceNativePointerToLongNode coerceNode,
+                        @Shared @Cached TruffleString.FromByteArrayNode fromBytes,
+                        @Shared("switchEncoding") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
+            long rawCharPtr = ensurePointer(charPtr, inliningTarget, coerceNode);
+            return doPointer(rawCharPtr, copy, fromBytes, switchEncodingNode);
         }
 
         static boolean isCArrayWrapper(Object object) {
@@ -874,7 +872,7 @@ public abstract class CExtNodes {
      * </p>
      */
     @TruffleBoundary
-    public static Object lookupNativeMemberInMRO(PythonManagedClass cls, @SuppressWarnings("unused") CFields nativeMemberName, HiddenAttr managedMemberName) {
+    public static long lookupNativeMemberInMRO(PythonManagedClass cls, CFields nativeMemberName, HiddenAttr managedMemberName) {
         NativeCAPISymbol symbol = null;
         // We need to point to PyType_GenericAlloc or PyObject_GC_Del
         if (managedMemberName == HiddenAttr.ALLOC) {
@@ -897,33 +895,33 @@ public abstract class CExtNodes {
             symbol = FUN_NO_OP_CLEAR;
         }
         if (symbol != null) {
-            Object func = HiddenAttr.ReadNode.executeUncached(cls, managedMemberName, null);
-            if (func != null) {
+            long func = HiddenAttr.ReadLongNode.executeUncached(cls, managedMemberName, NULLPTR);
+            if (func != NULLPTR) {
                 return func;
             }
-            return CApiContext.getNativeSymbol(null, symbol);
+            return CApiContext.getNativeSymbol(null, symbol).getAddress();
         }
         MroSequenceStorage mroStorage = GetMroStorageNode.executeUncached(cls);
         int n = mroStorage.length();
         for (int i = 0; i < n; i++) {
             PythonAbstractClass mroCls = (PythonAbstractClass) SequenceStorageNodes.GetItemDynamicNode.executeUncached(mroStorage, i);
             if (PGuards.isManagedClass(mroCls)) {
-                Object result = HiddenAttr.ReadNode.executeUncached((PythonObject) mroCls, managedMemberName, null);
-                if (result != null) {
+                long result = HiddenAttr.ReadLongNode.executeUncached((PythonObject) mroCls, managedMemberName, NULLPTR);
+                if (result != NULLPTR) {
                     return result;
                 }
             } else {
                 assert PGuards.isNativeClass(mroCls) : "invalid class inheritance structure; expected native class";
-                Object result = CStructAccess.ReadPointerNode.getUncached().readFromObj((PythonNativeClass) mroCls, nativeMemberName);
-                if (!PGuards.isNullOrZero(result, InteropLibrary.getUncached())) {
+                long result = CStructAccess.readPtrField(ensurePointerUncached(((PythonNativeClass) mroCls).getPtr()), nativeMemberName);
+                if (result != NULLPTR) {
                     return result;
                 }
             }
         }
         if (managedMemberName == HiddenAttr.CLEAR && (TypeNodes.GetTypeFlagsNode.executeUncached(cls) & TypeFlags.HAVE_GC) != 0) {
-            return CApiContext.getNativeSymbol(null, FUN_NO_OP_CLEAR);
+            return CApiContext.getNativeSymbol(null, FUN_NO_OP_CLEAR).getAddress();
         }
-        return HiddenAttr.ReadNode.executeUncached(PythonContext.get(null).lookupType(PythonBuiltinClassType.PythonObject), managedMemberName, NO_VALUE);
+        return HiddenAttr.ReadLongNode.executeUncached(PythonContext.get(null).lookupType(PythonBuiltinClassType.PythonObject), managedMemberName, NULLPTR);
     }
 
     /**
@@ -1793,10 +1791,8 @@ public abstract class CExtNodes {
                  * similar. We ignore that for now since the size will usually be very small and/or
                  * we could also use a Truffle buffer object.
                  */
-                Object mdState = CStructAccess.AllocateNode.allocUncached(mSize == 0 ? 1 : mSize); // ensure
-                                                                                                   // non-null
-                                                                                                   // value
-                assert mdState != null && !InteropLibrary.getUncached().isNull(mdState);
+                long mdState = calloc(mSize == 0 ? 1 : mSize); // ensure non-null value
+                assert mdState != NULLPTR;
                 module.setNativeModuleState(mdState);
             }
 

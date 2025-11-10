@@ -41,6 +41,10 @@
 package com.oracle.graal.python.builtins.objects.type;
 
 import static com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ensureExecutableUncached;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointerUncached;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readPtrField;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
+import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ABS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AITER__;
@@ -166,7 +170,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.UnaryFu
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ReadPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.WritePointerNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
@@ -1040,11 +1043,11 @@ public record TpSlots(TpSlot nb_bool, //
             return getter.get(slots);
         }
 
-        public Object getNativeValue(TpSlots slots, Object defaultValue) {
+        public long getNativeValue(TpSlots slots, long defaultValue) {
             return TpSlot.toNative(this, getter.get(slots), defaultValue);
         }
 
-        private Object getNativeValue(TpSlot slot, Object defaultValue) {
+        private long getNativeValue(TpSlot slot, long defaultValue) {
             return TpSlot.toNative(this, slot, defaultValue);
         }
 
@@ -1335,7 +1338,7 @@ public record TpSlots(TpSlot nb_bool, //
                         // processed slot field, because user could have assigned some incompatible
                         // existing slot value into the slots field we're reading here
                         TpSlotWrapper newWrapper = existingSlotWrapper.cloneWith(newPythonSlot);
-                        toNative(pythonClass.getPtr(), def, newWrapper, ctx.getNativeNull());
+                        toNative(ensurePointerUncached(pythonClass.getPtr()), def, ensurePointerUncached(newWrapper));
                         // we need to continue with the new closure pointer
                         field = def.readFromNative(pythonClass);
                     }
@@ -1405,25 +1408,22 @@ public record TpSlots(TpSlot nb_bool, //
         }
     }
 
-    public static void toNative(Object ptrToWrite, TpSlotMeta def, TpSlot value, Object nullValue) {
-        assert !(ptrToWrite instanceof PythonAbstractNativeObject); // this should be the pointer
-        Object slotNativeValue = def.getNativeValue(value, nullValue);
-        toNative(ptrToWrite, def, slotNativeValue, nullValue);
+    public static void toNative(long ptrToWrite, TpSlotMeta def, TpSlot value) {
+        long slotNativeValue = def.getNativeValue(value, NULLPTR);
+        toNative(ptrToWrite, def, slotNativeValue);
     }
 
     /**
      * Writes back given managed slot to the native klass slots. This should be called any time we
      * update the slots on the managed side to reflect that change in native.
      */
-    private static void toNative(Object prtToWrite, TpSlotMeta def, Object slotNativeValue, Object nullValue) {
-        assert !(slotNativeValue instanceof TpSlot); // this should be the native representation
-        assert !(prtToWrite instanceof PythonAbstractNativeObject); // this should be the pointer
+    private static void toNative(long prtToWrite, TpSlotMeta def, long slotNativeValue) {
         CompilerAsserts.neverPartOfCompilation();
         CFields fieldToWrite = def.nativeGroupOrField;
         if (def.nativeField != null) {
-            prtToWrite = ReadPointerNode.getUncached().read(prtToWrite, def.nativeGroupOrField);
-            if (InteropLibrary.getUncached().isNull(prtToWrite)) {
-                if (slotNativeValue == nullValue) {
+            prtToWrite = readPtrField(prtToWrite, def.nativeGroupOrField);
+            if (prtToWrite == NULLPTR) {
+                if (slotNativeValue == NULLPTR) {
                     return;
                 } else {
                     throw new IllegalStateException("Trying to write a native slot whose group is not allocated. " +
@@ -1432,7 +1432,7 @@ public record TpSlots(TpSlot nb_bool, //
             }
             fieldToWrite = def.nativeField;
         }
-        WritePointerNode.getUncached().write(prtToWrite, fieldToWrite, slotNativeValue);
+        writePtrField(prtToWrite, fieldToWrite, slotNativeValue);
     }
 
     @TruffleBoundary
@@ -1688,16 +1688,16 @@ public record TpSlots(TpSlot nb_bool, //
             slots.set(slot, newValue);
             if (klass instanceof PythonAbstractNativeObject nativeClass) {
                 // Update the slots on the native side if this is a native class
-                toNative(nativeClass.getPtr(), slot, newValue, nativeNull);
+                toNative(ensurePointerUncached(nativeClass.getPtr()), slot, newValue);
             }
             if (klass instanceof PythonManagedClass managedClass) {
                 // Update the slots on the native side if this is a managed class that has a
                 // native mirror allocated already
                 PythonClassNativeWrapper classNativeWrapper = managedClass.getClassNativeWrapper();
                 if (classNativeWrapper != null) {
-                    Object replacement = classNativeWrapper.getReplacementIfInitialized();
-                    if (replacement != null) {
-                        toNative(replacement, slot, newValue, nativeNull);
+                    long replacement = classNativeWrapper.getReplacementIfInitialized();
+                    if (replacement != NULLPTR) {
+                        toNative(replacement, slot, newValue);
                     }
                 }
             }

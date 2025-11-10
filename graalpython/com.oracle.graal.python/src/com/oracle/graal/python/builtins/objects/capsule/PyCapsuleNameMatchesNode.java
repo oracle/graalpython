@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,8 +40,11 @@
  */
 package com.oracle.graal.python.builtins.objects.capsule;
 
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointer;
+import static com.oracle.graal.python.nfi2.NativeMemory.readByteArrayElement;
+
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -124,9 +127,9 @@ public abstract class PyCapsuleNameMatchesNode extends Node {
         }
 
         @Fallback
-        static byte doNative(Object ptr, int i,
-                        @Cached(inline = false) CStructAccess.ReadByteNode readByteNode) {
-            return readByteNode.readArrayElement(ptr, i);
+        static byte doNative(Node inliningTarget, Object ptr, int i,
+                        @Cached CoerceNativePointerToLongNode coerceNode) {
+            return readByteArrayElement(ensurePointer(ptr, inliningTarget, coerceNode), i);
         }
     }
 }

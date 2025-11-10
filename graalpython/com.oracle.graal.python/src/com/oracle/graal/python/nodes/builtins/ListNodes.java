@@ -43,6 +43,9 @@ package com.oracle.graal.python.nodes.builtins;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyListObject__allocated;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyListObject__ob_item;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyVarObject__ob_size;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointer;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readPtrField;
 import static com.oracle.graal.python.nodes.ErrorMessages.DESCRIPTOR_REQUIRES_S_OBJ_RECEIVED_P;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
@@ -50,7 +53,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -340,12 +343,13 @@ public abstract class ListNodes {
 
         @Specialization
         NativeSequenceStorage getNative(PythonAbstractNativeObject list,
-                        @Cached CStructAccess.ReadPointerNode getContents,
-                        @Cached CStructAccess.ReadI64Node readI64Node) {
+                        @Bind Node inliningTarget,
+                        @Cached CoerceNativePointerToLongNode coerceNode) {
             assert IsSubtypeNode.getUncached().execute(GetClassNode.executeUncached(list), PythonBuiltinClassType.PList);
-            Object array = getContents.readFromObj(list, PyListObject__ob_item);
-            int size = (int) readI64Node.readFromObj(list, PyVarObject__ob_size);
-            int allocated = (int) readI64Node.readFromObj(list, PyListObject__allocated);
+            long listRawPtr = ensurePointer(list.getPtr(), inliningTarget, coerceNode);
+            long array = readPtrField(listRawPtr, PyListObject__ob_item);
+            int size = (int) readLongField(listRawPtr, PyVarObject__ob_size);
+            int allocated = (int) readLongField(listRawPtr, PyListObject__allocated);
             return NativeObjectSequenceStorage.create(array, size, allocated, false);
         }
     }

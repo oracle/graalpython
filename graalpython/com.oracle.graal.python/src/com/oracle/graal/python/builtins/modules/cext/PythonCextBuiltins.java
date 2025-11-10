@@ -52,6 +52,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PointerZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyCodeObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyFrameObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
@@ -76,6 +77,9 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMe
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMemberDef__name;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMemberDef__offset;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMemberDef__type;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.wrapPointer;
+import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.nfi2.NativeMemory.readPtrArrayElement;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_BUILTINS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__WEAKREF;
 import static com.oracle.graal.python.nodes.ErrorMessages.INDEX_OUT_OF_RANGE;
@@ -102,8 +106,6 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Level;
-
-import org.graalvm.collections.Pair;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -812,6 +814,8 @@ public final class PythonCextBuiltins {
                 transformExceptionToNativeNode.execute(e);
                 if (cachedSelf.getRetDescriptor().isIntType()) {
                     return -1;
+                } else if (cachedSelf.getRetDescriptor().isRawPyObjectOrPointer()) {
+                    return NULLPTR;
                 } else if (cachedSelf.getRetDescriptor().isPyObjectOrPointer()) {
                     return PythonContext.get(this).getNativeNull();
                 } else if (cachedSelf.getRetDescriptor().isFloatType()) {
@@ -1116,13 +1120,13 @@ public final class PythonCextBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, PyObject, Py_ssize_t, Int, Py_ssize_t, ConstCharPtrAsTruffleString, Int, Pointer, Pointer, Pointer, Pointer}, call = Ignored)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, PyObject, Py_ssize_t, Int, Py_ssize_t, ConstCharPtrAsTruffleString, Int, PointerZZZ, Pointer, Pointer, Pointer}, call = Ignored)
     abstract static class GraalPyPrivate_MemoryViewFromBuffer extends CApi11BuiltinNode {
 
         @Specialization
         static Object wrap(Object bufferStructPointer, Object ownerObj, long lenObj,
                         Object readonlyObj, Object itemsizeObj, TruffleString format,
-                        Object ndimObj, Object bufPointer, Object shapePointer, Object stridesPointer, Object suboffsetsPointer,
+                        Object ndimObj, long bufPointer, Object shapePointer, Object stridesPointer, Object suboffsetsPointer,
                         @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile zeroDimProfile,
                         @Cached CStructAccess.ReadI64Node readShapeNode,
@@ -1165,7 +1169,7 @@ public final class PythonCextBuiltins {
                 bufferLifecycleManager = new NativeBufferLifecycleManager.NativeBufferLifecycleManagerFromType(bufferStructPointer);
             }
             return PFactory.createMemoryView(language, PythonContext.get(inliningTarget), bufferLifecycleManager, buffer, owner, len, readonly, itemsize,
-                            BufferFormat.forMemoryView(format, lengthNode, atIndexNode), format, ndim, bufPointer, 0, shape, strides, suboffsets, flags);
+                            BufferFormat.forMemoryView(format, lengthNode, atIndexNode), format, ndim, wrapPointer(bufPointer), 0, shape, strides, suboffsets, flags);
         }
     }
 
@@ -1788,34 +1792,26 @@ public final class PythonCextBuiltins {
      *     }
      * </pre>
      */
-    @CApiBuiltin(ret = Void, args = {Pointer}, call = Ignored)
+    @CApiBuiltin(ret = Void, args = {PointerZZZ}, call = Ignored)
     abstract static class GraalPyPrivate_InitBuiltinTypesAndStructs extends CApiUnaryBuiltinNode {
+
+        record ClassPtrPair(PythonManagedClass clazz, long ptr) {
+        }
 
         @TruffleBoundary
         @Specialization
-        Object doGeneric(Object builtinTypesArrayPointer) {
-            List<Pair<PythonManagedClass, Object>> builtinTypes = new LinkedList<>();
+        Object doGeneric(long builtinTypesArrayPointer) {
+            List<ClassPtrPair> builtinTypes = new LinkedList<>();
             PythonContext context = getContext();
-            CStructAccess.ReadPointerNode readPointerNode = CStructAccess.ReadPointerNode.getUncached();
             try {
                 // first phase: lookup built-in type by name, create wrappers and set native pointer
-                InteropLibrary lib = null;
                 for (int i = 0;; i += 2) {
-                    Object typeStructPtr = readPointerNode.readArrayElement(builtinTypesArrayPointer, i);
-                    /*
-                     * Most pointer types will be the same. So, we store the last looked up library
-                     * in a local variable. However, It may happen that there are different types of
-                     * pointer objects involved, so we need to update the library if the current one
-                     * does not accept the object.
-                     */
-                    if (lib == null || !lib.accepts(typeStructPtr)) {
-                        lib = InteropLibrary.getUncached(typeStructPtr);
-                    }
+                    long typeStructPtr = readPtrArrayElement(builtinTypesArrayPointer, i);
                     // if we reach the sentinel, stop the loop
-                    if (lib.isNull(typeStructPtr)) {
+                    if (typeStructPtr == 0L) {
                         break;
                     }
-                    Object namePtr = readPointerNode.readArrayElement(builtinTypesArrayPointer, i + 1);
+                    long namePtr = readPtrArrayElement(builtinTypesArrayPointer, i + 1);
                     TruffleString name = FromCharPointerNodeGen.getUncached().execute(namePtr, false);
 
                     // lookup the built-in type by name
@@ -1825,13 +1821,13 @@ public final class PythonCextBuiltins {
                     LOGGER.fine(() -> "setting type store for built-in class " + name + " to " + PythonUtils.formatPointer(typeStructPtr));
                     PythonClassNativeWrapper.wrapStaticTypeStructForManagedClass(clazz, TypeNodes.GetNameNode.executeUncached(clazz), typeStructPtr);
 
-                    builtinTypes.add(Pair.create(clazz, typeStructPtr));
+                    builtinTypes.add(new ClassPtrPair(clazz, typeStructPtr));
                 }
 
                 // second phase: initialize the native type store
-                for (Pair<PythonManagedClass, Object> pair : builtinTypes) {
-                    LOGGER.fine(() -> "initializing built-in class " + TypeNodes.GetNameNode.executeUncached(pair.getLeft()));
-                    PythonClassNativeWrapper.initNative(pair.getLeft(), pair.getRight());
+                for (ClassPtrPair pair : builtinTypes) {
+                    LOGGER.fine(() -> "initializing built-in class " + TypeNodes.GetNameNode.executeUncached(pair.clazz()));
+                    PythonClassNativeWrapper.initNative(pair.clazz(), pair.ptr());
                 }
 
                 return PNone.NO_VALUE;

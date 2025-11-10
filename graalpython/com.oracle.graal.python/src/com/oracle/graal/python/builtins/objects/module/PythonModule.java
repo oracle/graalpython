@@ -54,7 +54,7 @@ public final class PythonModule extends PythonObject {
      * multiphase extension module initialization mechanism.
      */
     private Object nativeModuleDef;
-    private Object nativeModuleState;
+    private long nativeModuleState;
 
     /**
      * Replicates the native references of this module's native state in Java.
@@ -147,11 +147,11 @@ public final class PythonModule extends PythonObject {
         this.nativeModuleDef = nativeModuleDef;
     }
 
-    public Object getNativeModuleState() {
+    public long getNativeModuleState() {
         return nativeModuleState;
     }
 
-    public void setNativeModuleState(Object nativeModuleState) {
+    public void setNativeModuleState(long nativeModuleState) {
         this.nativeModuleState = nativeModuleState;
     }
 

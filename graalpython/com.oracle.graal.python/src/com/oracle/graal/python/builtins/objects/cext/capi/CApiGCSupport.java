@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.GC_LOGGER;
+import static com.oracle.graal.python.nfi2.NativeMemory.free;
 
 import java.util.logging.Level;
 
@@ -50,10 +51,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupportFactory.P
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.FreeNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -128,43 +127,39 @@ public abstract class CApiGCSupport {
         abstract void execute(Node inliningTarget, long gc);
 
         @Specialization
-        static void doGeneric(Node inliningTarget, long gc,
-                        @Cached CoerceNativePointerToLongNode coerceToLongNode,
-                        @Cached(inline = false) CStructAccess.ReadPointerNode readPointerNode,
-                        @Cached(inline = false) CStructAccess.ReadI64Node readI64Node,
-                        @Cached(inline = false) CStructAccess.WriteLongNode writeLongNode) {
+        static void doGeneric(Node inliningTarget, long gc) {
             assert PythonLanguage.get(inliningTarget).getEngineOption(PythonOptions.PythonGC);
 
             long gcUntagged = HandlePointerConverter.pointerToStub(gc);
             // #define _PyObject_GC_IS_TRACKED(o) (_PyGCHead_UNTAG(_Py_AS_GC(o))->_gc_next != 0)
-            long gcNext = readI64Node.read(gcUntagged, CFields.PyGC_Head___gc_next);
+            long gcNext = CStructAccess.readLongField(gcUntagged, CFields.PyGC_Head___gc_next);
             // if (!_PyObject_GC_IS_TRACKED(op))
             if (gcNext == 0) {
                 if (GC_LOGGER.isLoggable(Level.FINER)) {
                     GC_LOGGER.finer(PythonUtils.formatJString("tracking GC object 0x%x (op=0x%x)", gc, gc + CStructs.PyGC_Head.size()));
                 }
                 // PyGC_Head *generation0 = tstate->gc->generation0;
-                Object gcState = PythonContext.get(inliningTarget).getCApiContext().getGCState();
-                assert gcState != null;
-                long gen0 = coerceToLongNode.execute(inliningTarget, readPointerNode.read(gcState, CFields.GCState__generation0));
+                long gcState = PythonContext.get(inliningTarget).getCApiContext().getGCState();
+                assert gcState != 0L;
+                long gen0 = CStructAccess.readPtrField(gcState, CFields.GCState__generation0);
                 assert gen0 != 0;
                 assert !HandlePointerConverter.pointsToPyHandleSpace(gen0);
 
                 // PyGC_Head *last = (PyGC_Head*)(generation0->_gc_prev);
-                long last = readI64Node.read(gen0, CFields.PyGC_Head___gc_prev);
+                long last = CStructAccess.readLongField(gen0, CFields.PyGC_Head___gc_prev);
 
                 // _PyGCHead_SET_NEXT(last, gc);
-                writeLongNode.write(HandlePointerConverter.pointerToStub(last), CFields.PyGC_Head___gc_next, gc);
+                CStructAccess.writeLongField(HandlePointerConverter.pointerToStub(last), CFields.PyGC_Head___gc_next, gc);
 
                 // _PyGCHead_SET_PREV(gc, last);
-                long curGcPrev = readI64Node.read(gcUntagged, CFields.PyGC_Head___gc_prev);
-                writeLongNode.write(gcUntagged, CFields.PyGC_Head___gc_prev, computePrevValue(curGcPrev, last));
+                long curGcPrev = CStructAccess.readLongField(gcUntagged, CFields.PyGC_Head___gc_prev);
+                CStructAccess.writeLongField(gcUntagged, CFields.PyGC_Head___gc_prev, computePrevValue(curGcPrev, last));
 
                 // _PyGCHead_SET_NEXT(gc, generation0);
-                writeLongNode.write(gcUntagged, CFields.PyGC_Head___gc_next, gen0);
+                CStructAccess.writeLongField(gcUntagged, CFields.PyGC_Head___gc_next, gen0);
 
                 // generation0->_gc_prev = (uintptr_t)gc;
-                writeLongNode.write(gen0, CFields.PyGC_Head___gc_prev, gc);
+                CStructAccess.writeLongField(gen0, CFields.PyGC_Head___gc_prev, gc);
             } else if (GC_LOGGER.isLoggable(Level.FINER)) {
                 GC_LOGGER.finer(PythonUtils.formatJString("GC object 0x%x (op=0x%x) already tracked", gc, gc + CStructs.PyGC_Head.size()));
             }
@@ -293,10 +288,7 @@ public abstract class CApiGCSupport {
 
         @Specialization
         static void doGeneric(Node inliningTarget, long op,
-                        @Cached GCListRemoveNode gcListRemoveNode,
-                        @Cached(inline = false) CStructAccess.GetElementPtrNode getElementPtrNode,
-                        @Cached(inline = false) CStructAccess.ReadI32Node readI32Node,
-                        @Cached(inline = false) CStructAccess.WriteIntNode writeIntNode) {
+                        @Cached GCListRemoveNode gcListRemoveNode) {
             if (GC_LOGGER.isLoggable(Level.FINE)) {
                 GC_LOGGER.fine(PythonUtils.formatJString("releasing native object stub 0x%x", op));
             }
@@ -311,19 +303,19 @@ public abstract class CApiGCSupport {
             long gcUntagged = gcListRemoveNode.execute(inliningTarget, opUntagged);
 
             // GCState *gcstate = get_gc_state();
-            Object gcState = PythonContext.get(inliningTarget).getCApiContext().getGCState();
-            assert gcState != null;
+            long gcState = PythonContext.get(inliningTarget).getCApiContext().getGCState();
+            assert gcState != 0L;
             // compute start address of embedded array; essentially '&gcstate->generations[0]'
-            Object generations = getElementPtrNode.getElementPtr(gcState, CFields.GCState__generations);
+            long generations = CStructAccess.getFieldPtr(gcState, CFields.GCState__generations);
             // if (gcstate->generations[0].count > 0) {
-            int count = readI32Node.read(generations, CFields.GCGeneration__count);
+            int count = CStructAccess.readStructArrayIntField(generations, 0, CFields.GCGeneration__count);
             if (count > 0) {
                 // gcstate->generations[0].count--;
-                writeIntNode.write(generations, CFields.GCGeneration__count, count - 1);
+                CStructAccess.writeStructArrayIntField(generations, 0, CFields.GCGeneration__count, count - 1);
             }
 
             // PyObject_Free(((char *)op)-presize)
-            FreeNode.executeUncached(gcUntagged);
+            free(gcUntagged);
         }
     }
 }

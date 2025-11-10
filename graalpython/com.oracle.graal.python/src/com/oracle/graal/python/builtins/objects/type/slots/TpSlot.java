@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.TpSlotWrapper;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.TpSlotMeta;
@@ -88,11 +89,11 @@ public abstract class TpSlot {
     /**
      * Transforms the slot object to an interop object that can be sent to native.
      */
-    public static Object toNative(TpSlotMeta slotMeta, TpSlot slot, Object defaultValue) {
+    public static long toNative(TpSlotMeta slotMeta, TpSlot slot, long defaultValue) {
         if (slot == null) {
             return defaultValue;
         } else if (slot instanceof TpSlotNative nativeSlot) {
-            return nativeSlot.getCallable();
+            return nativeSlot.getCallable().getAddress();
         } else if (slot instanceof TpSlotManaged managedSlot) {
             // This returns PyProcsWrapper, which will, in its toNative message, register the
             // pointer in C API context, such that we can map back from a pointer that we get from C
@@ -103,21 +104,21 @@ public abstract class TpSlot {
         }
     }
 
-    private static Object getNativeWrapper(TpSlotMeta slotMeta, TpSlotManaged slot) {
+    private static long getNativeWrapper(TpSlotMeta slotMeta, TpSlotManaged slot) {
         if (slot == TpSlotHashFun.HASH_NOT_IMPLEMENTED) {
             // If there are more such cases, we should add generic mapping mechanism
             // This translation other way around is also done in TpSlots.fromNative
             // We must not cache this in the singleton slot object, it would hold onto and leak
             // Python objects
-            return CApiContext.getNativeSymbol(null, FUN_PYOBJECT_HASH_NOT_IMPLEMENTED);
+            return CApiContext.getNativeSymbol(null, FUN_PYOBJECT_HASH_NOT_IMPLEMENTED).getAddress();
         } else if (slot == TpSlotIterNext.NEXT_NOT_IMPLEMENTED) {
-            return CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_PY_OBJECT_NEXT_NOT_IMPLEMENTED);
+            return CApiContext.getNativeSymbol(null, NativeCAPISymbol.FUN_PY_OBJECT_NEXT_NOT_IMPLEMENTED).getAddress();
         }
         assert PythonContext.get(null).ownsGil(); // without GIL: use AtomicReference & CAS
         if (slot.slotWrapper == null) {
             slot.slotWrapper = slotMeta.createNativeWrapper(slot);
         }
-        return slot.slotWrapper;
+        return CStructAccess.ensurePointerUncached(slot.slotWrapper);
     }
 
     /**

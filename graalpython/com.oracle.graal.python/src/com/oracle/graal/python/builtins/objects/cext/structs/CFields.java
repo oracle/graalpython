@@ -51,7 +51,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_SSIZE_T_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyAsyncMethods;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyBufferProcs;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyBufferProcsZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyGetSetDef;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyMappingMethods;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyMemberDef;
@@ -263,7 +263,7 @@ public enum CFields {
     PyTypeObject__tp_str(reprfunc),
     PyTypeObject__tp_getattro(getattrofunc),
     PyTypeObject__tp_setattro(setattrofunc),
-    PyTypeObject__tp_as_buffer(PyBufferProcs),
+    PyTypeObject__tp_as_buffer(PyBufferProcsZZZ),
     PyTypeObject__tp_flags(UNSIGNED_LONG),
     PyTypeObject__tp_doc(ConstCharPtr),
     PyTypeObject__tp_traverse(traverseproc),
@@ -299,7 +299,7 @@ public enum CFields {
     PyHeapTypeObject__as_number(PyNumberMethods),
     PyHeapTypeObject__as_mapping(PyMappingMethods),
     PyHeapTypeObject__as_sequence(PySequenceMethods),
-    PyHeapTypeObject__as_buffer(PyBufferProcs),
+    PyHeapTypeObject__as_buffer(PyBufferProcsZZZ),
     PyHeapTypeObject__ht_name(PyObject),
     PyHeapTypeObject__ht_slots(PyObject),
     PyHeapTypeObject__ht_qualname(PyObject),

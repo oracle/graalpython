@@ -47,11 +47,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeStorageReference;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.TruffleLogger;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
@@ -61,7 +58,7 @@ public abstract class NativeSequenceStorage extends SequenceStorage implements T
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(NativeSequenceStorage.class);
 
     /* native pointer object */
-    private Object ptr;
+    private long ptr;
     private NativeStorageReference reference;
 
     /**
@@ -74,7 +71,7 @@ public abstract class NativeSequenceStorage extends SequenceStorage implements T
      */
     private Object[] replicatedNativeReferences;
 
-    NativeSequenceStorage(Object ptr, int length, int capacity) {
+    NativeSequenceStorage(long ptr, int length, int capacity) {
         super(length, capacity);
         this.ptr = ptr;
         if (LOGGER.isLoggable(Level.FINE)) {
@@ -82,11 +79,11 @@ public abstract class NativeSequenceStorage extends SequenceStorage implements T
         }
     }
 
-    public final Object getPtr() {
+    public final long getPtr() {
         return ptr;
     }
 
-    public final void setPtr(Object ptr) {
+    public final void setPtr(long ptr) {
         if (reference != null) {
             reference.setPtr(ptr);
         }
@@ -136,14 +133,12 @@ public abstract class NativeSequenceStorage extends SequenceStorage implements T
     }
 
     @ExportMessage
-    boolean isPointer(
-                    @Shared @CachedLibrary(limit = "1") InteropLibrary lib) {
-        return lib.isPointer(ptr);
+    boolean isPointer() {
+        return true;
     }
 
     @ExportMessage
-    long asPointer(
-                    @Shared @CachedLibrary(limit = "1") InteropLibrary lib) throws UnsupportedMessageException {
-        return lib.asPointer(ptr);
+    long asPointer() {
+        return ptr;
     }
 }

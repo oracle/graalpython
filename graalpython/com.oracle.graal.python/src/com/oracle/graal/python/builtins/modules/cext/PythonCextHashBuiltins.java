@@ -42,7 +42,7 @@ package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_VOID_PTR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_VOID_PTR_ZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.INT8_T_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_hash_t;
@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.lib.PyObjectHashNode;
+import com.oracle.graal.python.nfi2.NativeMemory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -108,16 +109,15 @@ public final class PythonCextHashBuiltins {
         }
     }
 
-    @CApiBuiltin(name = "_Py_HashBytes", ret = Py_hash_t, args = {CONST_VOID_PTR, Py_ssize_t}, call = Direct)
+    @CApiBuiltin(name = "_Py_HashBytes", ret = Py_hash_t, args = {CONST_VOID_PTR_ZZZ, Py_ssize_t}, call = Direct)
     abstract static class _Py_HashBytes extends CApiBinaryBuiltinNode {
 
         @Specialization
         @TruffleBoundary
-        static long doI(Object value, long size,
-                        @Cached CStructAccess.ReadByteNode readNode,
+        static long doI(long value, long size,
                         @Cached TruffleString.FromByteArrayNode toString,
                         @Cached HashCodeNode hashNode) {
-            byte[] array = readNode.readByteArray(value, (int) size);
+            byte[] array = NativeMemory.readByteArrayElements(value, 0, (int) size);
             TruffleString string = toString.execute(array, TS_ENCODING_BINARY, false);
             return PyObjectHashNode.hash(string, hashNode);
         }

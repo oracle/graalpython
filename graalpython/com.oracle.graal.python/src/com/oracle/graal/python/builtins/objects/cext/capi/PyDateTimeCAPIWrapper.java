@@ -41,6 +41,10 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_INIT_NATIVE_DATETIME;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.allocate;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointerUncached;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
+import static com.oracle.graal.python.nfi2.NativeMemory.free;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DATE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DATETIME;
 import static com.oracle.graal.python.nodes.StringLiterals.T_TIME;
@@ -49,11 +53,9 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinRegistry;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNewRefNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefRawNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.SetBasicSizeNode;
@@ -127,7 +129,7 @@ public abstract class PyDateTimeCAPIWrapper {
         Object datetimeModule = AbstractImportNode.importModule(T_DATETIME);
         capiContext.timezoneType = PyObjectGetAttr.executeUncached(datetimeModule, T_TIMEZONE);
 
-        Object pointerObject = allocatePyDatetimeCAPI(datetimeModule);
+        Object pointerObject = CStructAccess.wrapPointer(allocatePyDatetimeCAPI(datetimeModule));
 
         PyCapsule capsule = PFactory.createCapsuleJavaName(context.getLanguage(), pointerObject, T_PYDATETIME_CAPSULE_NAME);
         PyObjectSetAttr.executeUncached(datetimeModule, T_DATETIME_CAPI, capsule);
@@ -142,52 +144,50 @@ public abstract class PyDateTimeCAPIWrapper {
      */
     public static void destroyWrapper(PyCapsule capsule) {
         CompilerAsserts.neverPartOfCompilation();
-        CStructAccess.FreeNode.executeUncached(capsule.getPointer());
+        free(ensurePointerUncached(capsule.getPointer()));
     }
 
-    private static Object allocatePyDatetimeCAPI(Object datetimeModule) {
-        CStructAccess.AllocateNode allocNode = CStructAccessFactory.AllocateNodeGen.getUncached();
-        CStructAccess.WritePointerNode writePointerNode = CStructAccessFactory.WritePointerNodeGen.getUncached();
-
+    private static long allocatePyDatetimeCAPI(Object datetimeModule) {
         PyObjectGetAttr getAttr = PyObjectGetAttr.getUncached();
-        PythonToNativeNewRefNode toNativeNode = PythonToNativeNewRefNodeGen.getUncached();
+        PythonToNativeNewRefRawNode toNativeNode = PythonToNativeNewRefRawNode.getUncached();
 
         PythonManagedClass date = (PythonManagedClass) getAttr.execute(null, datetimeModule, T_DATE);
         SetBasicSizeNode.executeUncached(date, CStructs.PyDateTime_Date.size());
-        Object dateType = toNativeNode.execute(date);
+        long dateType = toNativeNode.execute(date);
 
         PythonManagedClass dt = (PythonManagedClass) getAttr.execute(null, datetimeModule, T_DATETIME);
         SetBasicSizeNode.executeUncached(dt, CStructs.PyDateTime_DateTime.size());
-        Object datetimeType = toNativeNode.execute(dt);
+        long datetimeType = toNativeNode.execute(dt);
 
         PythonManagedClass time = (PythonManagedClass) getAttr.execute(null, datetimeModule, T_TIME);
         SetBasicSizeNode.executeUncached(time, CStructs.PyDateTime_Time.size());
-        Object timeType = toNativeNode.execute(time);
+        long timeType = toNativeNode.execute(time);
 
         PythonManagedClass delta = (PythonManagedClass) getAttr.execute(null, datetimeModule, T_TIMEDELTA);
         SetBasicSizeNode.executeUncached(delta, CStructs.PyDateTime_Delta.size());
-        Object deltaType = toNativeNode.execute(delta);
+        long deltaType = toNativeNode.execute(delta);
 
-        Object tzInfoType = toNativeNode.execute(getAttr.execute(null, datetimeModule, T_TZINFO));
+        long tzInfoType = toNativeNode.execute(getAttr.execute(null, datetimeModule, T_TZINFO));
         Object timezoneType = getAttr.execute(null, datetimeModule, T_TIMEZONE);
-        Object timezoneUTC = toNativeNode.execute(getAttr.execute(null, timezoneType, T_UTC));
+        long timezoneUTC = toNativeNode.execute(getAttr.execute(null, timezoneType, T_UTC));
 
-        Object mem = allocNode.alloc(CStructs.PyDateTime_CAPI);
-        writePointerNode.write(mem, CFields.PyDateTime_CAPI__DateType, dateType);
-        writePointerNode.write(mem, CFields.PyDateTime_CAPI__DateTimeType, datetimeType);
-        writePointerNode.write(mem, CFields.PyDateTime_CAPI__TimeType, timeType);
-        writePointerNode.write(mem, CFields.PyDateTime_CAPI__DeltaType, deltaType);
-        writePointerNode.write(mem, CFields.PyDateTime_CAPI__TZInfoType, tzInfoType);
-        writePointerNode.write(mem, CFields.PyDateTime_CAPI__TimeZone_UTC, timezoneUTC);
-        writePointerNode.write(mem, CFields.PyDateTime_CAPI__Date_FromDate, PythonCextBuiltinRegistry.GraalPyPrivate_DateTimeCAPI_Date_FromDate);
-        writePointerNode.write(mem, CFields.PyDateTime_CAPI__DateTime_FromDateAndTime, PythonCextBuiltinRegistry.GraalPyPrivate_DateTimeCAPI_DateTime_FromDateAndTime);
-        writePointerNode.write(mem, CFields.PyDateTime_CAPI__Time_FromTime, PythonCextBuiltinRegistry.GraalPyPrivate_DateTimeCAPI_Time_FromTime);
-        writePointerNode.write(mem, CFields.PyDateTime_CAPI__Delta_FromDelta, PythonCextBuiltinRegistry.GraalPyPrivate_DateTimeCAPI_Delta_FromDelta);
-        writePointerNode.write(mem, CFields.PyDateTime_CAPI__TimeZone_FromTimeZone, PythonCextBuiltinRegistry.GraalPyPrivate_DateTimeCAPI_TimeZone_FromTimeZone);
-        writePointerNode.write(mem, CFields.PyDateTime_CAPI__DateTime_FromTimestamp, PythonCextBuiltinRegistry.GraalPyPrivate_DateTimeCAPI_DateTime_FromTimestamp);
-        writePointerNode.write(mem, CFields.PyDateTime_CAPI__Date_FromTimestamp, PythonCextBuiltinRegistry.GraalPyPrivate_DateTimeCAPI_Date_FromTimestamp);
-        writePointerNode.write(mem, CFields.PyDateTime_CAPI__DateTime_FromDateAndTimeAndFold, PythonCextBuiltinRegistry.GraalPyPrivate_DateTimeCAPI_DateTime_FromDateAndTimeAndFold);
-        writePointerNode.write(mem, CFields.PyDateTime_CAPI__Time_FromTimeAndFold, PythonCextBuiltinRegistry.GraalPyPrivate_DateTimeCAPI_Time_FromTimeAndFold);
+        long mem = allocate(CStructs.PyDateTime_CAPI);
+        writePtrField(mem, CFields.PyDateTime_CAPI__DateType, dateType);
+        writePtrField(mem, CFields.PyDateTime_CAPI__DateTimeType, datetimeType);
+        writePtrField(mem, CFields.PyDateTime_CAPI__TimeType, timeType);
+        writePtrField(mem, CFields.PyDateTime_CAPI__DeltaType, deltaType);
+        writePtrField(mem, CFields.PyDateTime_CAPI__TZInfoType, tzInfoType);
+        writePtrField(mem, CFields.PyDateTime_CAPI__TimeZone_UTC, timezoneUTC);
+        writePtrField(mem, CFields.PyDateTime_CAPI__Date_FromDate, ensurePointerUncached(PythonCextBuiltinRegistry.GraalPyPrivate_DateTimeCAPI_Date_FromDate));
+        writePtrField(mem, CFields.PyDateTime_CAPI__DateTime_FromDateAndTime, ensurePointerUncached(PythonCextBuiltinRegistry.GraalPyPrivate_DateTimeCAPI_DateTime_FromDateAndTime));
+        writePtrField(mem, CFields.PyDateTime_CAPI__Time_FromTime, ensurePointerUncached(PythonCextBuiltinRegistry.GraalPyPrivate_DateTimeCAPI_Time_FromTime));
+        writePtrField(mem, CFields.PyDateTime_CAPI__Delta_FromDelta, ensurePointerUncached(PythonCextBuiltinRegistry.GraalPyPrivate_DateTimeCAPI_Delta_FromDelta));
+        writePtrField(mem, CFields.PyDateTime_CAPI__TimeZone_FromTimeZone, ensurePointerUncached(PythonCextBuiltinRegistry.GraalPyPrivate_DateTimeCAPI_TimeZone_FromTimeZone));
+        writePtrField(mem, CFields.PyDateTime_CAPI__DateTime_FromTimestamp, ensurePointerUncached(PythonCextBuiltinRegistry.GraalPyPrivate_DateTimeCAPI_DateTime_FromTimestamp));
+        writePtrField(mem, CFields.PyDateTime_CAPI__Date_FromTimestamp, ensurePointerUncached(PythonCextBuiltinRegistry.GraalPyPrivate_DateTimeCAPI_Date_FromTimestamp));
+        writePtrField(mem, CFields.PyDateTime_CAPI__DateTime_FromDateAndTimeAndFold,
+                        ensurePointerUncached(PythonCextBuiltinRegistry.GraalPyPrivate_DateTimeCAPI_DateTime_FromDateAndTimeAndFold));
+        writePtrField(mem, CFields.PyDateTime_CAPI__Time_FromTimeAndFold, ensurePointerUncached(PythonCextBuiltinRegistry.GraalPyPrivate_DateTimeCAPI_Time_FromTimeAndFold));
 
         return mem;
     }

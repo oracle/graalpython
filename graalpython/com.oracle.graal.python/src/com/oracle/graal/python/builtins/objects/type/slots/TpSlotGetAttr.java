@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.type.slots;
 
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.wrapPointer;
+import static com.oracle.graal.python.nfi2.NativeMemory.free;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTR__;
@@ -55,7 +57,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.FreeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeRawNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.PythonDispatchers.BinaryPythonSlotDispatcherNode;
@@ -245,14 +247,13 @@ public class TpSlotGetAttr {
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached InlinedConditionProfile isGetAttrProfile,
                         @Cached AsCharPointerNode asCharPointerNode,
-                        @Cached FreeNode freeNode,
-                        @Cached PythonToNativeNode nameToNativeNode,
+                        @Cached PythonToNativeRawNode nameToNativeNode,
                         @Cached PythonToNativeNode selfToNativeNode,
                         @Cached NativeToPythonTransferNode toPythonNode,
                         @Cached ExternalFunctionInvokeNode externalInvokeNode,
                         @Cached PyObjectCheckFunctionResultNode checkResultNode) {
             boolean isGetAttr = isGetAttrProfile.profile(inliningTarget, slots.tp_getattr() == slot);
-            Object nameArg;
+            long nameArg;
             if (isGetAttr) {
                 nameArg = asCharPointerNode.execute(name);
             } else {
@@ -261,10 +262,10 @@ public class TpSlotGetAttr {
             Object result;
             PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, null);
             try {
-                result = externalInvokeNode.call(frame, inliningTarget, threadState, C_API_TIMING, T___GETATTR__, slot.callable, selfToNativeNode.execute(self), nameArg);
+                result = externalInvokeNode.call(frame, inliningTarget, threadState, C_API_TIMING, T___GETATTR__, slot.callable, selfToNativeNode.execute(self), wrapPointer(nameArg));
             } finally {
                 if (isGetAttr) {
-                    freeNode.free(nameArg);
+                    free(nameArg);
                 } else {
                     Reference.reachabilityFence(nameArg);
                 }

@@ -134,6 +134,10 @@ public abstract class CArrayWrappers {
         return byteArrayToNativeInt8(data, true);
     }
 
+    public static long stringToNativeUtf8BytesUncached(TruffleString string) {
+        return stringToNativeUtf8Bytes(string, TruffleString.SwitchEncodingNode.getUncached(), TruffleString.CopyToByteArrayNode.getUncached());
+    }
+
     @TruffleBoundary
     private static long allocateBoundary(long size) {
         return UNSAFE.allocateMemory(size);

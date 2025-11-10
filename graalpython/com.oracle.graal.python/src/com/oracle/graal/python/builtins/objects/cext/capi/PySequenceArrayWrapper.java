@@ -158,7 +158,7 @@ public final class PySequenceArrayWrapper {
     }
 
     @TruffleBoundary
-    public static Object ensureNativeSequence(PSequence sequence) {
+    public static long ensureNativeSequence(PSequence sequence) {
         boolean loggable = LOGGER.isLoggable(Level.FINE);
         if (loggable) {
             LOGGER.fine(String.format("ensureNativeSequence(%s)", sequence));
@@ -169,7 +169,7 @@ public final class PySequenceArrayWrapper {
          * Hence, if an MroSequenceStorage goes to native, we will create an additional
          * NativeSequenceStorage and link to it.
          */
-        Object result;
+        long result;
         SequenceStorage sequenceStorage = sequence.getSequenceStorage();
         if (sequenceStorage instanceof NativeSequenceStorage nativeStorage) {
             result = nativeStorage.getPtr();

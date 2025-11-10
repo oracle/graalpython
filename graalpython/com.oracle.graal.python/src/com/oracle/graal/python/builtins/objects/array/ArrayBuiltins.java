@@ -28,7 +28,6 @@ package com.oracle.graal.python.builtins.objects.array;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.EOFError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_READ;
@@ -153,8 +152,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
@@ -972,17 +969,8 @@ public final class ArrayBuiltins extends PythonBuiltins {
         static Object bufferinfo(PArray self,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached ArrayNodes.EnsureNativeStorageNode ensureNativeStorageNode,
-                        @CachedLibrary(limit = "1") InteropLibrary lib) {
-            Object nativePointer = ensureNativeStorageNode.execute(inliningTarget, self).getPtr();
-            if (!(nativePointer instanceof Long)) {
-                try {
-                    nativePointer = lib.asPointer(nativePointer);
-                } catch (UnsupportedMessageException e) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw PRaiseNode.raiseStatic(inliningTarget, NotImplementedError);
-                }
-            }
+                        @Cached ArrayNodes.EnsureNativeStorageNode ensureNativeStorageNode) {
+            long nativePointer = ensureNativeStorageNode.execute(inliningTarget, self).getPtr();
             return PFactory.createTuple(language, new Object[]{nativePointer, self.getLength()});
         }
     }

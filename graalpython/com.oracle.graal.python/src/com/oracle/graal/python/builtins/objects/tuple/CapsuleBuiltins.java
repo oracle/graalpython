@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.tuple;
 
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointerUncached;
+import static com.oracle.graal.python.nfi2.NativeMemory.readByteArrayElement;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.Collections;
@@ -52,7 +54,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -87,7 +88,7 @@ public class CapsuleBuiltins extends PythonBuiltins {
                 StringBuilder builder = new StringBuilder("\"");
                 int i = 0;
                 byte b;
-                while ((b = CStructAccess.ReadByteNode.getUncached().readArrayElement(self.getNamePtr(), i++)) != 0) {
+                while ((b = readByteArrayElement(ensurePointerUncached(self.getNamePtr()), i++)) != 0) {
                     builder.append((char) b);
                 }
                 builder.append('"');

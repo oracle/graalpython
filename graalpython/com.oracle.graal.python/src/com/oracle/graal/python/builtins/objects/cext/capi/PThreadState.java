@@ -40,15 +40,17 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.nfi2.NativeMemory.mallocPtrArray;
+import static com.oracle.graal.python.nfi2.NativeMemory.writePtrArrayElement;
+
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonStructNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeRawNode;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ReadObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -124,14 +126,14 @@ public final class PThreadState extends PythonStructNativeWrapper {
 
         PDict threadStateDict = threadState.getDict();
         if (threadStateDict != null) {
-            assert threadStateDict == ReadObjectNode.getUncached().read(nativeThreadState, CFields.PyThreadState__dict);
+            assert PythonToNativeRawNode.executeUncached(threadStateDict) == CStructAccess.readPtrField(nativeThreadState, CFields.PyThreadState__dict);
             return threadStateDict;
         }
 
         threadStateDict = PFactory.createDict(context.getLanguage());
         threadState.setDict(threadStateDict);
-        assert ReadObjectNode.getUncached().read(nativeThreadState, CFields.PyThreadState__dict) == PNone.NO_VALUE;
-        CStructAccess.WritePointerNode.writeUncached(nativeThreadState, CFields.PyThreadState__dict, PythonToNativeNode.executeUncached(threadStateDict));
+        assert CStructAccess.readPtrField(nativeThreadState, CFields.PyThreadState__dict) == NULLPTR;
+        CStructAccess.writePtrField(nativeThreadState, CFields.PyThreadState__dict, PythonToNativeRawNode.executeUncached(threadStateDict));
 
         return threadStateDict;
     }
@@ -148,30 +150,29 @@ public final class PThreadState extends PythonStructNativeWrapper {
      */
     @TruffleBoundary
     private static long allocateCLayout() {
-        long ptr = CStructAccess.AllocateNode.allocUncachedPointer(CStructs.PyThreadState.size());
-        CStructAccess.WritePointerNode writePtrNode = CStructAccess.WritePointerNode.getUncached();
+
+        long ptr = CStructAccess.allocate(CStructs.PyThreadState);
         PythonContext pythonContext = PythonContext.get(null);
         /*
          * As in CPython, the thread state dict is initialized lazily. This is necessary to avoid
          * cycles in the bootstrapping process because creating the dict will need the GC state
          * which needs the thread state.
          */
-        writePtrNode.write(ptr, CFields.PyThreadState__dict, pythonContext.getNativeNull());
+        CStructAccess.writePtrField(ptr, CFields.PyThreadState__dict, NULLPTR);
         CApiContext cApiContext = pythonContext.getCApiContext();
-        Object smallInts = CStructAccess.AllocateNode.allocUncached((PY_NSMALLNEGINTS + PY_NSMALLPOSINTS) * CStructAccess.POINTER_SIZE);
-        writePtrNode.write(ptr, CFields.PyThreadState__small_ints, smallInts);
+        long smallInts = mallocPtrArray(PY_NSMALLNEGINTS + PY_NSMALLPOSINTS);
+        CStructAccess.writePtrField(ptr, CFields.PyThreadState__small_ints, smallInts);
         for (int i = -PY_NSMALLNEGINTS; i < PY_NSMALLPOSINTS; i++) {
-            writePtrNode.writeArrayElement(smallInts, i + PY_NSMALLNEGINTS, CApiTransitions.HandlePointerConverter.intToPointer(i));
+            writePtrArrayElement(smallInts, i + PY_NSMALLNEGINTS, CApiTransitions.HandlePointerConverter.intToPointer(i));
         }
-        writePtrNode.write(ptr, CFields.PyThreadState__gc, cApiContext.getGCState());
-        CStructAccess.WriteIntNode writeIntNode = CStructAccess.WriteIntNode.getUncached();
+        CStructAccess.writePtrField(ptr, CFields.PyThreadState__gc, cApiContext.getGCState());
         // py_recursion_limit = Py_DEFAULT_RECURSION_LIMIT (1000)
         // (cpython/Include/internal/pycore_runtime_init.h)
         int recLimit = pythonContext.getSysModuleState().getRecursionLimit();
-        writeIntNode.write(ptr, CFields.PyThreadState__py_recursion_limit, recLimit);
-        writeIntNode.write(ptr, CFields.PyThreadState__py_recursion_remaining, recLimit);
+        CStructAccess.writeIntField(ptr, CFields.PyThreadState__py_recursion_limit, recLimit);
+        CStructAccess.writeIntField(ptr, CFields.PyThreadState__py_recursion_remaining, recLimit);
         // c_recursion_remaining = Py_C_RECURSION_LIMIT (1000) (cpython/Include/cpython/pystate.h)
-        writeIntNode.write(ptr, CFields.PyThreadState__c_recursion_remaining, recLimit);
+        CStructAccess.writeIntField(ptr, CFields.PyThreadState__c_recursion_remaining, recLimit);
         return ptr;
     }
 }

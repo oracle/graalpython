@@ -1008,6 +1008,11 @@ public final class PythonUtils {
         return String.valueOf(pointer);
     }
 
+    public static String formatPointer(long pointer) {
+        CompilerAsserts.neverPartOfCompilation();
+        return String.format("0x%016x", pointer);
+    }
+
     public static long coerceToLong(Object allocated, InteropLibrary lib) {
         if (allocated instanceof Long) {
             return (long) allocated;

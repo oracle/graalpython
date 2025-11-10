@@ -43,6 +43,9 @@ package com.oracle.graal.python.builtins.objects.bytes;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.isSpace;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyBytesObject__ob_sval;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyVarObject__ob_size;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointer;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.getFieldPtr;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_BYTESLIKE_GOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.NON_HEX_NUMBER_IN_FROMHEX;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
@@ -70,7 +73,7 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrar
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.ToBytesNodeGen;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.ToBytesWithoutFrameNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalByteArrayNode;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
@@ -1004,11 +1007,12 @@ public abstract class BytesNodes {
 
         @Specialization
         NativeByteSequenceStorage getNative(PythonAbstractNativeObject bytes,
-                        @Cached CStructAccess.GetElementPtrNode getContents,
-                        @Cached CStructAccess.ReadI64Node readI64Node) {
+                        @Bind Node inliningTarget,
+                        @Cached CoerceNativePointerToLongNode coerceNode) {
             assert PyBytesCheckNode.executeUncached(bytes) || PyByteArrayCheckNode.executeUncached(bytes);
-            Object array = getContents.getElementPtr(bytes.getPtr(), PyBytesObject__ob_sval);
-            int size = (int) readI64Node.readFromObj(bytes, PyVarObject__ob_size);
+            long bytesRawPtr = ensurePointer(bytes.getPtr(), inliningTarget, coerceNode);
+            long array = getFieldPtr(bytesRawPtr, PyBytesObject__ob_sval);
+            int size = (int) readLongField(bytesRawPtr, PyVarObject__ob_size);
             return NativeByteSequenceStorage.create(array, size, size, false);
         }
     }

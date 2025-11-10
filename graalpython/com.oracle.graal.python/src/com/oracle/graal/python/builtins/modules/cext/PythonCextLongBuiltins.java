@@ -43,7 +43,7 @@ package com.oracle.graal.python.builtins.modules.cext;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_UNSIGNED_CHAR_PTR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_UNSIGNED_CHAR_PTR_ZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstPyLongObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
@@ -57,6 +57,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_CHAR_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_LONG;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_LONG_LONG;
+import static com.oracle.graal.python.nfi2.NativeMemory.readByteArrayElements;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 
 import java.math.BigInteger;
@@ -477,18 +478,17 @@ public final class PythonCextLongBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {CONST_UNSIGNED_CHAR_PTR, SIZE_T, Int, Int}, call = Direct)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {CONST_UNSIGNED_CHAR_PTR_ZZZ, SIZE_T, Int, Int}, call = Direct)
     abstract static class _PyLong_FromByteArray extends CApiQuaternaryBuiltinNode {
         @Specialization
-        static Object convert(Object charPtr, long size, int littleEndian, int signed,
+        static Object convert(long charPtr, long size, int littleEndian, int signed,
                         @Bind Node inliningTarget,
-                        @Cached CStructAccess.ReadByteNode readByteNode,
                         @Cached IntNodes.PyLongFromByteArray fromByteArray,
                         @Cached PRaiseNode raiseNode) {
             if (size != (int) size) {
                 throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.BYTE_ARRAY_TOO_LONG_TO_CONVERT_TO_INT);
             }
-            byte[] bytes = readByteNode.readByteArray(charPtr, (int) size);
+            byte[] bytes = readByteArrayElements(charPtr, 0, (int) size);
             return fromByteArray.execute(inliningTarget, bytes, littleEndian != 0, signed != 0);
         }
     }

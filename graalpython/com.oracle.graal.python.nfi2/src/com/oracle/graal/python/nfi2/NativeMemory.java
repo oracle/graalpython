@@ -49,6 +49,9 @@ import sun.misc.Unsafe;
 
 public final class NativeMemory {
 
+    public static final long NULLPTR = 0L;
+    public static final long POINTER_SIZE = Long.BYTES;
+
     static final Unsafe UNSAFE = initUnsafe();
 
     private NativeMemory() {
@@ -59,16 +62,215 @@ public final class NativeMemory {
         return UNSAFE.allocateMemory(size);
     }
 
+    public static long calloc(long size) {
+        long ptr = malloc(size);
+        memset(ptr, (byte) 0, size);
+        return ptr;
+    }
+
     public static void free(long ptr) {
         UNSAFE.freeMemory(ptr);
     }
 
-    public static long javaStringToNativeUtf8(String s) {
+    public static void memcpy(long dst, long src, long size) {
+        UNSAFE.copyMemory(null, src, null, dst, size);
+    }
+
+    public static void memset(long dst, byte value, long count) {
+        UNSAFE.setMemory(dst, count, value);
+    }
+
+    public static long mallocByteArray(long count) {
+        assert count > 0;
+        return malloc(count);
+    }
+
+    public static long callocByteArray(long count) {
+        assert count > 0;
+        return calloc(count);
+    }
+
+    public static long mallocShortArray(long count) {
+        assert count > 0;
+        assert canMultiplyWithoutOverflow(count, Short.BYTES);
+        return malloc(count * Short.BYTES);
+    }
+
+    public static long callocShortArray(long count) {
+        assert count > 0;
+        assert canMultiplyWithoutOverflow(count, Short.BYTES);
+        return calloc(count * Short.BYTES);
+    }
+
+    public static long mallocIntArray(long count) {
+        assert count > 0;
+        assert canMultiplyWithoutOverflow(count, Integer.BYTES);
+        return malloc(count * Integer.BYTES);
+    }
+
+    public static long callocIntArray(long count) {
+        assert count > 0;
+        assert canMultiplyWithoutOverflow(count, Integer.BYTES);
+        return calloc(count * Integer.BYTES);
+    }
+
+    public static long mallocLongArray(long count) {
+        assert count > 0;
+        assert canMultiplyWithoutOverflow(count, Long.BYTES);
+        return malloc(count * Long.BYTES);
+    }
+
+    public static long callocLongArray(long count) {
+        assert count > 0;
+        assert canMultiplyWithoutOverflow(count, Long.BYTES);
+        return calloc(count * Long.BYTES);
+    }
+
+    public static long mallocPtrArray(long count) {
+        assert count > 0;
+        assert canMultiplyWithoutOverflow(count, (int) POINTER_SIZE);
+        return malloc(count * POINTER_SIZE);
+    }
+
+    public static long callocPtrArray(long count) {
+        assert count > 0;
+        assert canMultiplyWithoutOverflow(count, (int) POINTER_SIZE);
+        return calloc(count * POINTER_SIZE);
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public static byte readByte(long pointer) {
+        return UNSAFE.getByte(pointer);
+    }
+
+    public static void writeByte(long pointer, byte value) {
+        UNSAFE.putByte(pointer, value);
+    }
+
+    public static byte readByteArrayElement(long arrayPtr, long index) {
+        return readByte(arrayPtr + index);
+    }
+
+    public static void writeByteArrayElement(long arrayPtr, long index, byte value) {
+        writeByte(arrayPtr + index, value);
+    }
+
+    public static byte[] readByteArrayElements(long arrayPtr, long srcIndex, int count) {
+        byte[] result = new byte[count];
+        readByteArrayElements(arrayPtr, srcIndex, result, 0, count);
+        return result;
+    }
+
+    public static void readByteArrayElements(long arrayPtr, long srcIndex, byte[] dst, int dstIndex, int count) {
+        UNSAFE.copyMemory(null, arrayPtr + srcIndex, dst, Unsafe.ARRAY_BYTE_BASE_OFFSET + (long) dstIndex, count);
+    }
+
+    public static void writeByteArrayElements(long arrayPtr, long dstIndex, byte[] src, int offset, int count) {
+        UNSAFE.copyMemory(src, Unsafe.ARRAY_BYTE_BASE_OFFSET + (long) offset, null, arrayPtr + dstIndex, count);
+    }
+
+    public static void copyByteArray(long dstArray, long dstIndex, long srcArray, long srcIndex, long count) {
+        memcpy(dstArray + dstIndex, srcArray + srcIndex, count);
+    }
+
+    public static short readShort(long pointer) {
+        return UNSAFE.getShort(pointer);
+    }
+
+    public static void writeShort(long pointer, short value) {
+        UNSAFE.putShort(pointer, value);
+    }
+
+    public static short readShortArrayElement(long arrayPtr, long index) {
+        assert canMultiplyWithoutOverflow(index, Short.BYTES);
+        return readShort(arrayPtr + index * Short.BYTES);
+    }
+
+    public static void writeShortArrayElement(long arrayPtr, long index, short value) {
+        assert canMultiplyWithoutOverflow(index, Short.BYTES);
+        writeShort(arrayPtr + index * Short.BYTES, value);
+    }
+
+    public static int readInt(long pointer) {
+        return UNSAFE.getInt(pointer);
+    }
+
+    public static void writeInt(long pointer, int value) {
+        UNSAFE.putInt(pointer, value);
+    }
+
+    public static int readIntArrayElement(long arrayPtr, long index) {
+        assert canMultiplyWithoutOverflow(index, Integer.BYTES);
+        return readInt(arrayPtr + index * Integer.BYTES);
+    }
+
+    public static void writeIntArrayElement(long arrayPtr, long index, int value) {
+        assert canMultiplyWithoutOverflow(index, Integer.BYTES);
+        writeInt(arrayPtr + index * Integer.BYTES, value);
+    }
+
+    public static long readLong(long pointer) {
+        return UNSAFE.getLong(pointer);
+    }
+
+    public static void writeLong(long pointer, long value) {
+        UNSAFE.putLong(pointer, value);
+    }
+
+    public static long readLongArrayElement(long arrayPtr, long index) {
+        assert canMultiplyWithoutOverflow(index, Long.BYTES);
+        return readLong(arrayPtr + index * Long.BYTES);
+    }
+
+    public static void writeLongArrayElement(long arrayPtr, long index, long value) {
+        assert canMultiplyWithoutOverflow(index, Long.BYTES);
+        writeLong(arrayPtr + index * Long.BYTES, value);
+    }
+
+    public static void writePtrArrayElements(long arrayPtr, long dstIndex, long[] src, int offset, int count) {
+        assert canMultiplyWithoutOverflow(dstIndex, (int) POINTER_SIZE);
+        UNSAFE.copyMemory(src, Unsafe.ARRAY_BYTE_BASE_OFFSET + (long) offset * POINTER_SIZE, null, arrayPtr + dstIndex * POINTER_SIZE, (long) count * POINTER_SIZE);
+    }
+
+    public static long readPtr(long pointer) {
+        return UNSAFE.getLong(pointer);
+    }
+
+    public static void writePtr(long pointer, long value) {
+        UNSAFE.putLong(pointer, value);
+    }
+
+    public static long readPtrArrayElement(long arrayPtr, long index) {
+        assert canMultiplyWithoutOverflow(index, (int) POINTER_SIZE);
+        return readPtr(arrayPtr + index * POINTER_SIZE);
+    }
+
+    public static void writePtrArrayElement(long arrayPtr, long index, long value) {
+        assert canMultiplyWithoutOverflow(index, (int) POINTER_SIZE);
+        writePtr(arrayPtr + index * POINTER_SIZE, value);
+    }
+
+    public static void copyPtrArray(long dstArray, long dstIndex, long srcArray, long srcIndex, long count) {
+        assert canMultiplyWithoutOverflow(dstIndex, (int) POINTER_SIZE);
+        assert canMultiplyWithoutOverflow(srcIndex, (int) POINTER_SIZE);
+        assert canMultiplyWithoutOverflow(count, (int) POINTER_SIZE);
+        memcpy(dstArray + dstIndex * POINTER_SIZE, srcArray + srcIndex * POINTER_SIZE, count * POINTER_SIZE);
+    }
+
+    static long javaStringToNativeUtf8(String s) {
         byte[] utf8 = s.getBytes(StandardCharsets.UTF_8);
         long ptr = NativeMemory.malloc(utf8.length + 1);
         UNSAFE.copyMemory(utf8, UNSAFE.arrayBaseOffset(byte[].class), null, ptr, utf8.length);
         UNSAFE.putByte(ptr + utf8.length, (byte) 0);
         return ptr;
+    }
+
+    private static boolean canMultiplyWithoutOverflow(long value, int stride) {
+        assert value >= 0 : "Value must be non-negative";
+        assert stride > 0 && (stride & (stride - 1)) == 0 : "Stride must be a power of two";
+        int bitsNeeded = Integer.numberOfTrailingZeros(stride);
+        return (value >>> (63 - bitsNeeded)) == 0;
     }
 
     private static Unsafe initUnsafe() {

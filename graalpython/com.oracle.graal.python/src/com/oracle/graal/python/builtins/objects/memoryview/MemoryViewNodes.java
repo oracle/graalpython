@@ -45,11 +45,13 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImpleme
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointer;
 
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.BufferStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
@@ -244,11 +246,12 @@ public class MemoryViewNodes {
         @Specialization(guards = "ptr != null")
         static Object doNative(PMemoryView self, Object ptr, int offset,
                         @Bind Node inliningTarget,
+                        @Cached CoerceNativePointerToLongNode coerceNode,
                         @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Shared @Cached UnpackValueNode unpackValueNode) {
             int itemSize = self.getItemSize();
             checkBufferBounds(inliningTarget, self, bufferLib, offset, itemSize);
-            NativeByteSequenceStorage buffer = NativeByteSequenceStorage.create(ptr, itemSize + offset, itemSize + offset, false);
+            NativeByteSequenceStorage buffer = NativeByteSequenceStorage.create(ensurePointer(ptr, inliningTarget, coerceNode), itemSize + offset, itemSize + offset, false);
             return unpackValueNode.execute(inliningTarget, self.getFormat(), self.getFormatString(), buffer, offset);
         }
 
@@ -275,11 +278,12 @@ public class MemoryViewNodes {
         @Specialization(guards = "ptr != null")
         static void doNative(VirtualFrame frame, PMemoryView self, Object ptr, int offset, Object object,
                         @Bind Node inliningTarget,
+                        @Cached CoerceNativePointerToLongNode coerceNode,
                         @Shared @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Shared @Cached PackValueNode packValueNode) {
             int itemSize = self.getItemSize();
             checkBufferBounds(inliningTarget, self, bufferLib, offset, itemSize);
-            NativeByteSequenceStorage buffer = NativeByteSequenceStorage.create(ptr, itemSize + offset, itemSize + offset, false);
+            NativeByteSequenceStorage buffer = NativeByteSequenceStorage.create(ensurePointer(ptr, inliningTarget, coerceNode), itemSize + offset, itemSize + offset, false);
             packValueNode.execute(frame, inliningTarget, self.getFormat(), self.getFormatString(), object, buffer, offset);
         }
 

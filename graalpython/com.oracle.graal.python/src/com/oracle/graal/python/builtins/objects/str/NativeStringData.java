@@ -60,7 +60,7 @@ public final class NativeStringData {
         this.storage = storage;
     }
 
-    public static NativeStringData create(int charSize, boolean isAscii, Object ptr, int length) {
+    public static NativeStringData create(int charSize, boolean isAscii, long ptr, int length) {
         return new NativeStringData(charSize, isAscii, NativeByteSequenceStorage.create(ptr, length, length, true));
     }
 
@@ -72,7 +72,7 @@ public final class NativeStringData {
         return kind != 0 ? kind : KIND_1BYTE;
     }
 
-    public Object getPtr() {
+    public long getPtr() {
         return storage.getPtr();
     }
 

@@ -45,7 +45,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemErro
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CHAR_PTR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CHAR_PTR_ZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
@@ -53,6 +53,8 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyVarObject__ob_size;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointer;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.getFieldPtr;
 
 import java.util.Arrays;
 
@@ -75,6 +77,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetByteArrayNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
@@ -401,28 +404,28 @@ public final class PythonCextBytesBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = CHAR_PTR, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = CHAR_PTR_ZZZ, args = {PyObject}, call = Direct)
     abstract static class PyBytes_AsString extends CApiUnaryBuiltinNode {
         @Specialization
-        static Object doBytes(PBytes bytes) {
+        static long doBytes(PBytes bytes) {
             return PySequenceArrayWrapper.ensureNativeSequence(bytes);
         }
 
         @Specialization
-        static Object doNative(PythonAbstractNativeObject obj,
+        static long doNative(PythonAbstractNativeObject obj,
                         @Bind Node inliningTarget,
+                        @Cached CoerceNativePointerToLongNode coerceNode,
                         @Cached GetPythonObjectClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached CStructAccess.GetElementPtrNode getArray,
                         @Cached PRaiseNode raiseNode) {
             if (isSubtypeNode.execute(getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PBytes)) {
-                return getArray.getElementPtr(obj.getPtr(), CFields.PyBytesObject__ob_sval);
+                return getFieldPtr(ensurePointer(obj.getPtr(), inliningTarget, coerceNode), CFields.PyBytesObject__ob_sval);
             }
             return doError(obj, raiseNode);
         }
 
         @Fallback
-        static Object doError(Object obj,
+        static long doError(Object obj,
                         @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.TypeError, ErrorMessages.EXPECTED_S_P_FOUND, "bytes", obj);
         }

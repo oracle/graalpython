@@ -55,14 +55,16 @@ import static com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.T_UT
 import static com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.T_UTF_32_LE;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_WCHAR_PTR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_WCHAR_PTR_ZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_SSIZE_T_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_UCS4;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_UNICODE_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PointerZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectConstPtr;
@@ -70,6 +72,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.VA_LIST_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor._PY_ERROR_HANDLER;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.wrapPointer;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP;
 import static com.oracle.graal.python.nodes.ErrorMessages.PRECISION_TOO_LARGE;
 import static com.oracle.graal.python.nodes.ErrorMessages.SEPARATOR_EXPECTED_STR_INSTANCE_P_FOUND;
@@ -787,10 +790,10 @@ public final class PythonCextUnicodeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, Py_ssize_t, Int, Int}, call = Ignored)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PointerZZZ, Py_ssize_t, Int, Int}, call = Ignored)
     abstract static class GraalPyPrivate_Unicode_New extends CApiQuaternaryBuiltinNode {
         @Specialization
-        static Object doGeneric(Object ptr, long elements, int charSize, int isAscii,
+        static Object doGeneric(long ptr, long elements, int charSize, int isAscii,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached HiddenAttr.WriteNode writeNode,
@@ -1018,10 +1021,10 @@ public final class PythonCextUnicodeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {CONST_WCHAR_PTR, Py_ssize_t}, call = Direct)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {CONST_WCHAR_PTR_ZZZ, Py_ssize_t}, call = Direct)
     abstract static class PyUnicode_FromWideChar extends CApiBinaryBuiltinNode {
         @Specialization
-        Object doInt(Object arr, long size,
+        Object doInt(long arr, long size,
                         @Bind Node inliningTarget,
                         @Cached ReadUnicodeArrayNode readArray,
                         @Cached TruffleString.FromIntArrayUTF32Node fromArray) {
@@ -1085,11 +1088,11 @@ public final class PythonCextUnicodeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = ConstCharPtr, args = {PyObject, PY_SSIZE_T_PTR}, call = Ignored)
+    @CApiBuiltin(ret = ConstCharPtrZZZ, args = {PyObject, PY_SSIZE_T_PTR}, call = Ignored)
     abstract static class GraalPyPrivate_Unicode_AsUTF8AndSize extends CApiBinaryBuiltinNode {
 
         @Specialization
-        static Object doUnicode(PString s, Object sizePtr,
+        static long doUnicode(PString s, Object sizePtr,
                         @Bind Node inliningTarget,
                         @CachedLibrary(limit = "2") InteropLibrary lib,
                         @Cached InlinedConditionProfile hasSizeProfile,
@@ -1111,7 +1114,7 @@ public final class PythonCextUnicodeBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        static Object doError(Object s, Object sizePtr,
+        static long doError(Object s, Object sizePtr,
                         @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, BAD_ARG_TYPE_FOR_BUILTIN_OP);
         }
@@ -1125,11 +1128,11 @@ public final class PythonCextUnicodeBuiltins {
                         @Cached CStructAccess.WriteLongNode writeLongNode,
                         @Cached EncodeNativeStringNode encodeNativeStringNode,
                         @Cached CStructAccess.WritePointerNode writePointerNode,
-                        @Cached CStructAccess.AllocateNode allocateNode,
+                        @Cached CStructAccess.AllocatePyMemNode allocateNode,
                         @Cached CStructAccess.WriteTruffleStringNode writeTruffleStringNode) {
             TruffleString utf8Str = encodeNativeStringNode.execute(UTF_8, s, T_STRICT);
             int len = utf8Str.byteLength(UTF_8);
-            Object mem = allocateNode.alloc(len + 1, true);
+            long mem = allocateNode.alloc(len + 1);
             writeTruffleStringNode.write(mem, utf8Str, UTF_8);
             writePointerNode.writeToObj(s, CFields.PyCompactUnicodeObject__utf8, mem);
             writeLongNode.writeToObject(s, CFields.PyCompactUnicodeObject__utf8_length, len);
@@ -1159,7 +1162,7 @@ public final class PythonCextUnicodeBuiltins {
             if (hasSizeProfile.profile(inliningTarget, !lib.isNull(sizePtr))) {
                 writeLongNode.write(sizePtr, wcharBytes.getSequenceStorage().length() / wcharSize);
             }
-            return PySequenceArrayWrapper.ensureNativeSequence(wcharBytes);
+            return wrapPointer(PySequenceArrayWrapper.ensureNativeSequence(wcharBytes));
         }
 
         @Fallback
@@ -1184,6 +1187,7 @@ public final class PythonCextUnicodeBuiltins {
         }
     }
 
+    // TODO(NFI2) Remove or fix and add test for GraalPyPrivate_Unicode_FillUnicode
     @CApiBuiltin(ret = Int, args = {PyObject}, call = Ignored)
     abstract static class GraalPyPrivate_Unicode_FillUnicode extends CApiUnaryBuiltinNode {
         public static final int WCHAR_T_SIZE = PythonLanguage.getPythonOS() == PythonOS.PLATFORM_WIN32 ? 2 : 4;
@@ -1194,16 +1198,18 @@ public final class PythonCextUnicodeBuiltins {
                         @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode cast,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Cached CStructAccess.AllocateNode allocateNode,
+                        @Cached CStructAccess.AllocatePyMemNode allocateNode,
                         @Cached CStructAccess.WriteTruffleStringNode writeTruffleStringNode) {
             TruffleString str = switchEncodingNode.execute(cast.castKnownString(inliningTarget, s), WCHAR_T_ENCODING);
             int len = str.byteLength(WCHAR_T_ENCODING);
-            Object mem = allocateNode.alloc(len + WCHAR_T_SIZE, true);
+            long mem = allocateNode.alloc(len + WCHAR_T_SIZE);
             writeTruffleStringNode.write(mem, str, WCHAR_T_ENCODING);
+            // writePtrField(s.getPtr(), CFields.PyASCIIObject__wstr, mem);
             return 0;
         }
     }
 
+    // TODO(NFI2) Remove GraalPyPrivate_Unicode_AsWideChar
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Int}, call = Ignored)
     abstract static class GraalPyPrivate_Unicode_AsWideChar extends CApiBinaryBuiltinNode {
         @Specialization

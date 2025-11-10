@@ -41,6 +41,11 @@
 package com.oracle.graal.python.builtins.objects.cext.common;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointer;
+import static com.oracle.graal.python.nfi2.NativeMemory.readByteArrayElement;
+import static com.oracle.graal.python.nfi2.NativeMemory.readByteArrayElements;
+import static com.oracle.graal.python.nfi2.NativeMemory.readIntArrayElement;
+import static com.oracle.graal.python.nfi2.NativeMemory.readShortArrayElement;
 import static com.oracle.graal.python.nodes.ErrorMessages.RETURNED_NULL_WO_SETTING_EXCEPTION;
 import static com.oracle.graal.python.nodes.ErrorMessages.RETURNED_RESULT_WITH_EXCEPTION_SET;
 import static com.oracle.graal.python.nodes.StringLiterals.T_IGNORE;
@@ -252,59 +257,56 @@ public abstract class CExtCommonNodes {
     @ImportStatic(CApiGuards.class)
     public abstract static class ReadUnicodeArrayNode extends PNodeWithContext {
 
-        public abstract int[] execute(Node inliningTarget, Object array, int length, int elementSize);
+        public abstract int[] execute(Node inliningTarget, long array, int length, int elementSize);
 
-        public static int[] executeUncached(Object array, int length, int elementSize) {
+        public static int[] executeUncached(long array, int length, int elementSize) {
             return ReadUnicodeArrayNodeGen.getUncached().execute(null, array, length, elementSize);
         }
 
         @Specialization(guards = "elementSize == 1")
-        static int[] read1(Node inliningTarget, Object array, int length, @SuppressWarnings("unused") int elementSize,
-                        @Shared @Cached InlinedConditionProfile calcLength,
-                        @Cached(inline = false) CStructAccess.ReadByteNode read) {
+        static int[] read1(Node inliningTarget, long array, int length, @SuppressWarnings("unused") int elementSize,
+                        @Shared @Cached InlinedConditionProfile calcLength) {
             int len = length;
             if (calcLength.profile(inliningTarget, len == -1)) {
                 do {
                     len++;
-                } while (read.readArrayElement(array, len) != 0);
+                } while (readByteArrayElement(array, len) != 0);
             }
             int[] result = new int[len];
             for (int i = 0; i < len; i++) {
-                result[i] = read.readArrayElement(array, i) & 0xFF;
+                result[i] = readByteArrayElement(array, i) & 0xFF;
             }
             return result;
         }
 
         @Specialization(guards = "elementSize == 2")
-        static int[] read2(Node inliningTarget, Object array, int length, @SuppressWarnings("unused") int elementSize,
-                        @Shared @Cached InlinedConditionProfile calcLength,
-                        @Cached(inline = false) CStructAccess.ReadI16Node read) {
+        static int[] read2(Node inliningTarget, long array, int length, @SuppressWarnings("unused") int elementSize,
+                        @Shared @Cached InlinedConditionProfile calcLength) {
             int len = length;
             if (calcLength.profile(inliningTarget, len == -1)) {
                 do {
                     len++;
-                } while (read.readArrayElement(array, len) != 0);
+                } while (readShortArrayElement(array, len) != 0);
             }
             int[] result = new int[len];
             for (int i = 0; i < len; i++) {
-                result[i] = read.readArrayElement(array, i) & 0xFFFF;
+                result[i] = readShortArrayElement(array, i) & 0xFFFF;
             }
             return result;
         }
 
         @Specialization(guards = "elementSize == 4")
-        static int[] read4(Node inliningTarget, Object array, int length, @SuppressWarnings("unused") int elementSize,
-                        @Shared @Cached InlinedConditionProfile calcLength,
-                        @Cached(inline = false) CStructAccess.ReadI32Node read) {
+        static int[] read4(Node inliningTarget, long array, int length, @SuppressWarnings("unused") int elementSize,
+                        @Shared @Cached InlinedConditionProfile calcLength) {
             int len = length;
             if (calcLength.profile(inliningTarget, len == -1)) {
                 do {
                     len++;
-                } while (read.readArrayElement(array, len) != 0);
+                } while (readIntArrayElement(array, len) != 0);
             }
             int[] result = new int[len];
             for (int i = 0; i < len; i++) {
-                result[i] = read.readArrayElement(array, i);
+                result[i] = readIntArrayElement(array, i);
             }
             return result;
         }
@@ -648,9 +650,9 @@ public abstract class CExtCommonNodes {
         }
 
         @Specialization
-        static byte[] doForeign(Object obj, long n,
-                        @Cached(inline = false) CStructAccess.ReadByteNode readNode) {
-            return readNode.readByteArray(obj, (int) n);
+        static byte[] doForeign(Node inliningTarget, Object obj, long n,
+                        @Cached CoerceNativePointerToLongNode coerceNode) {
+            return readByteArrayElements(ensurePointer(obj, inliningTarget, coerceNode), 0, (int) n);
         }
 
         private static byte[] subRangeIfNeeded(byte[] bytes, long n) {

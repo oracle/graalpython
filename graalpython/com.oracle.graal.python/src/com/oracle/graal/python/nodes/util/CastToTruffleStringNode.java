@@ -43,12 +43,16 @@ package com.oracle.graal.python.nodes.util;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyASCIIObject__length;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyASCIIObject__state;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyUnicodeObject__data;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointer;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readIntField;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readPtrField;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked0Node;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked1Node;
@@ -60,6 +64,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -138,17 +143,14 @@ public abstract class CastToTruffleStringNode extends PNodeWithContext {
 
         @Specialization
         static TruffleString read(Object pointer,
-                        @Cached CStructAccess.ReadI32Node readI32,
-                        @Cached CStructAccess.ReadI64Node readI64,
-                        @Cached CStructAccess.ReadPointerNode readPointer,
-                        @Cached CStructAccess.ReadByteNode readByte,
-                        @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached TruffleString.FromNativePointerWithCompactionUTF32Node fromNative,
-                        @Cached TruffleString.FromByteArrayWithCompactionUTF32Node fromBytes) {
-            int state = readI32.read(pointer, PyASCIIObject__state);
+                        @Bind Node inliningTarget,
+                        @Cached CoerceNativePointerToLongNode coerceNode,
+                        @Cached TruffleString.FromNativePointerWithCompactionUTF32Node fromNative) {
+            long rawPointer = ensurePointer(pointer, inliningTarget, coerceNode);
+            int state = readIntField(rawPointer, PyASCIIObject__state);
             int kind = (state >> CFields.PyASCIIObject__state_kind_shift) & 0x7;
-            Object data = readPointer.read(pointer, PyUnicodeObject__data);
-            long length = readI64.read(pointer, PyASCIIObject__length);
+            long data = readPtrField(rawPointer, PyUnicodeObject__data);
+            long length = readLongField(rawPointer, PyASCIIObject__length);
 
             TruffleString.CompactionLevel compactionLevel;
             if (kind == 1) {
@@ -163,11 +165,7 @@ public abstract class CastToTruffleStringNode extends PNodeWithContext {
             }
             int bytes = PythonUtils.toIntError(length * kind);
 
-            if (lib.isPointer(data) || data instanceof Long) {
-                return fromNative.execute(data, 0, bytes, compactionLevel, false);
-            }
-            byte[] result = readByte.readByteArray(data, bytes);
-            return fromBytes.execute(result, 0, result.length, compactionLevel, false);
+            return fromNative.execute(data, 0, bytes, compactionLevel, false);
         }
     }
 

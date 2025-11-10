@@ -45,6 +45,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.IterResult;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_SSIZE_T_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PointerZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadState;
@@ -103,7 +104,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_PY_TYPE_GENERIC_ALLOC("PyType_GenericAlloc", PyObjectTransfer, PyTypeObject, Py_ssize_t),
     FUN_PY_OBJECT_GET_DICT_PTR("_PyObject_GetDictPtr", Pointer, PyObject),
     FUN_PY_UNICODE_GET_LENGTH("PyUnicode_GetLength", Py_ssize_t, PyObject),
-    FUN_PYMEM_ALLOC("PyMem_Calloc", Pointer, SIZE_T, SIZE_T),
+    FUN_PYMEM_ALLOC("PyMem_Calloc", PointerZZZ, SIZE_T, SIZE_T),
     FUN_PY_DEALLOC("_Py_Dealloc", Void, Pointer),
     FUN_PYOBJECT_HASH_NOT_IMPLEMENTED("PyObject_HashNotImplemented", ArgDescriptor.Py_hash_t, PyObject),
     FUN_PY_GC_COLLECT_NO_FAIL("_PyGC_CollectNoFail", Py_ssize_t, PyThreadState),

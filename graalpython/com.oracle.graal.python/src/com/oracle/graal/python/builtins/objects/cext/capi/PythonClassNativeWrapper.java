@@ -40,15 +40,18 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointerUncached;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readPtrField;
+import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.nfi2.NativeMemory.calloc;
+
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.FirstToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
-import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.AllocateNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -60,14 +63,12 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.SetTypeFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.SetBasicSizeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.SetItemSizeNodeGen;
 import com.oracle.graal.python.nodes.HiddenAttr;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -78,15 +79,16 @@ import com.oracle.truffle.api.strings.TruffleString;
  */
 public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWrapper {
     private final CStringWrapper nameWrapper;
-    private Object replacement;
+    private long replacement;
 
     private PythonClassNativeWrapper(PythonManagedClass object, TruffleString name, TruffleString.SwitchEncodingNode switchEncoding) {
         super(object);
         this.nameWrapper = new CStringWrapper(switchEncoding.execute(name, TruffleString.Encoding.UTF_8), TruffleString.Encoding.UTF_8);
     }
 
-    public CStringWrapper getNameWrapper() {
-        return nameWrapper;
+    @TruffleBoundary
+    public long getNameWrapper() {
+        return ensurePointerUncached(nameWrapper);
     }
 
     public static PythonClassNativeWrapper wrap(PythonManagedClass obj, TruffleString name, TruffleString.SwitchEncodingNode switchEncoding) {
@@ -102,7 +104,7 @@ public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWr
     /**
      * Creates a wrapper that uses existing native memory as native replacement object.
      */
-    public static void wrapStaticTypeStructForManagedClass(PythonManagedClass clazz, TruffleString name, Object pointer) {
+    public static void wrapStaticTypeStructForManagedClass(PythonManagedClass clazz, TruffleString name, long pointer) {
         /*
          * This *MUST NOT* happen, otherwise we would allocate a fresh native type store and then
          * the native pointer of the wrapper would not be equal to the corresponding native global
@@ -115,50 +117,48 @@ public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWr
         PythonClassNativeWrapper wrapper = new PythonClassNativeWrapper(clazz, name, TruffleString.SwitchEncodingNode.getUncached());
         clazz.setNativeWrapper(wrapper);
 
-        CStructAccess.ReadI64Node readI64 = CStructAccess.ReadI64Node.getUncached();
-        CStructAccess.ReadPointerNode readPointer = CStructAccess.ReadPointerNode.getUncached();
         InteropLibrary lib = InteropLibrary.getUncached();
 
         // some values are retained from the native representation
-        long basicsize = readI64.read(pointer, CFields.PyTypeObject__tp_basicsize);
+        long basicsize = readLongField(pointer, CFields.PyTypeObject__tp_basicsize);
         if (basicsize != 0) {
             SetBasicSizeNodeGen.getUncached().execute(null, clazz, basicsize);
         }
-        long itemsize = readI64.read(pointer, CFields.PyTypeObject__tp_itemsize);
+        long itemsize = readLongField(pointer, CFields.PyTypeObject__tp_itemsize);
         if (itemsize != 0) {
             SetItemSizeNodeGen.getUncached().execute(null, clazz, itemsize);
         }
-        long vectorcall_offset = readI64.read(pointer, CFields.PyTypeObject__tp_vectorcall_offset);
+        long vectorcall_offset = readLongField(pointer, CFields.PyTypeObject__tp_vectorcall_offset);
         if (vectorcall_offset != 0) {
             HiddenAttr.WriteNode.executeUncached(clazz, HiddenAttr.VECTORCALL_OFFSET, vectorcall_offset);
         }
-        Object alloc_fun = readPointer.read(pointer, CFields.PyTypeObject__tp_alloc);
-        if (!PGuards.isNullOrZero(alloc_fun, lib)) {
-            HiddenAttr.WriteNode.executeUncached(clazz, HiddenAttr.ALLOC, alloc_fun);
+        long alloc_fun = readPtrField(pointer, CFields.PyTypeObject__tp_alloc);
+        if (alloc_fun != NULLPTR) {
+            HiddenAttr.WriteLongNode.executeUncached(clazz, HiddenAttr.ALLOC, alloc_fun);
         }
-        Object dealloc_fun = readPointer.read(pointer, CFields.PyTypeObject__tp_dealloc);
-        if (!PGuards.isNullOrZero(dealloc_fun, lib)) {
-            HiddenAttr.WriteNode.executeUncached(clazz, HiddenAttr.DEALLOC, dealloc_fun);
+        long dealloc_fun = readPtrField(pointer, CFields.PyTypeObject__tp_dealloc);
+        if (dealloc_fun != NULLPTR) {
+            HiddenAttr.WriteLongNode.executeUncached(clazz, HiddenAttr.DEALLOC, dealloc_fun);
         }
-        Object free_fun = readPointer.read(pointer, CFields.PyTypeObject__tp_free);
-        if (!PGuards.isNullOrZero(free_fun, lib)) {
-            HiddenAttr.WriteNode.executeUncached(clazz, HiddenAttr.FREE, free_fun);
+        long free_fun = readPtrField(pointer, CFields.PyTypeObject__tp_free);
+        if (free_fun != NULLPTR) {
+            HiddenAttr.WriteLongNode.executeUncached(clazz, HiddenAttr.FREE, free_fun);
         }
-        Object traverse_fun = readPointer.read(pointer, CFields.PyTypeObject__tp_traverse);
-        if (!PGuards.isNullOrZero(traverse_fun, lib)) {
-            HiddenAttr.WriteNode.executeUncached(clazz, HiddenAttr.TRAVERSE, traverse_fun);
+        long traverse_fun = readPtrField(pointer, CFields.PyTypeObject__tp_traverse);
+        if (traverse_fun != NULLPTR) {
+            HiddenAttr.WriteLongNode.executeUncached(clazz, HiddenAttr.TRAVERSE, traverse_fun);
         }
-        Object is_gc_fun = readPointer.read(pointer, CFields.PyTypeObject__tp_is_gc);
-        if (!PGuards.isNullOrZero(is_gc_fun, lib)) {
-            HiddenAttr.WriteNode.executeUncached(clazz, HiddenAttr.IS_GC, is_gc_fun);
+        long is_gc_fun = readPtrField(pointer, CFields.PyTypeObject__tp_is_gc);
+        if (is_gc_fun != NULLPTR) {
+            HiddenAttr.WriteLongNode.executeUncached(clazz, HiddenAttr.IS_GC, is_gc_fun);
         }
-        Object clear_fun = readPointer.read(pointer, CFields.PyTypeObject__tp_clear);
-        if (!PGuards.isNullOrZero(clear_fun, lib)) {
-            HiddenAttr.WriteNode.executeUncached(clazz, HiddenAttr.CLEAR, clear_fun);
+        long clear_fun = readPtrField(pointer, CFields.PyTypeObject__tp_clear);
+        if (clear_fun != NULLPTR) {
+            HiddenAttr.WriteLongNode.executeUncached(clazz, HiddenAttr.CLEAR, clear_fun);
         }
-        Object as_buffer = readPointer.read(pointer, CFields.PyTypeObject__tp_as_buffer);
-        if (!PGuards.isNullOrZero(as_buffer, lib)) {
-            HiddenAttr.WriteNode.executeUncached(clazz, HiddenAttr.AS_BUFFER, as_buffer);
+        long as_buffer = readPtrField(pointer, CFields.PyTypeObject__tp_as_buffer);
+        if (as_buffer != NULLPTR) {
+            HiddenAttr.WriteLongNode.executeUncached(clazz, HiddenAttr.AS_BUFFER, as_buffer);
         }
 
         /*
@@ -167,7 +167,7 @@ public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWr
          * tp_new/tp_alloc/tp_dealloc/tp_free functions must be consistent with
          * 'Py_TPFLAGS_HAVE_GC'.
          */
-        long flags = readI64.read(pointer, CFields.PyTypeObject__tp_flags);
+        long flags = readLongField(pointer, CFields.PyTypeObject__tp_flags);
         if (flags == 0) {
             flags = GetTypeFlagsNode.executeUncached(clazz) | TypeFlags.READY | TypeFlags.IMMUTABLETYPE;
         }
@@ -178,16 +178,10 @@ public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWr
          * 'getReplacement' for more explanation).
          */
         wrapper.replacement = pointer;
-        long ptr;
-        try {
-            ptr = lib.asPointer(pointer);
-        } catch (UnsupportedMessageException e) {
-            throw CompilerDirectives.shouldNotReachHere(e);
-        }
-        CApiTransitions.createReference(wrapper, ptr, false);
+        CApiTransitions.createReference(wrapper, pointer, false);
     }
 
-    public static void initNative(PythonManagedClass clazz, Object pointer) {
+    public static void initNative(PythonManagedClass clazz, long pointer) {
         PythonClassNativeWrapper classNativeWrapper = clazz.getClassNativeWrapper();
         if (classNativeWrapper == null) {
             throw CompilerDirectives.shouldNotReachHere();
@@ -201,8 +195,8 @@ public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWr
         return PythonUtils.formatJString("PythonClassNativeWrapper(%s, isNative=%s)", getDelegate(), isNative());
     }
 
-    public Object getReplacement() {
-        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, replacement == null)) {
+    public long getReplacement() {
+        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, replacement == NULLPTR)) {
             initializeReplacement();
         }
         return replacement;
@@ -236,9 +230,8 @@ public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWr
          */
         boolean isBuiltinClass = clazz instanceof PythonBuiltinClass;
 
-        long ptr = AllocateNode.allocUncachedPointer(size);
-        // TODO: need to convert to interop pointer for NFI for now
-        replacement = new NativePointer(ptr);
+        long ptr = calloc(size);
+        replacement = ptr;
         CApiTransitions.createReference(this, ptr, true);
         ToNativeTypeNode.initializeType(this, ptr, heaptype);
         assert !isBuiltinClass || getRefCount() == IMMORTAL_REFCNT;
@@ -247,7 +240,7 @@ public final class PythonClassNativeWrapper extends PythonAbstractObjectNativeWr
     /**
      * Does not initialize the replacement.
      */
-    public Object getReplacementIfInitialized() {
+    public long getReplacementIfInitialized() {
         return replacement;
     }
 

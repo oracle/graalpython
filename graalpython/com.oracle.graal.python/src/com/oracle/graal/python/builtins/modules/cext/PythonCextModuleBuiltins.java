@@ -47,6 +47,7 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.C
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PointerZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyModuleDef;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyModuleObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyModuleObjectTransfer;
@@ -54,6 +55,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ensureExecutableUncached;
+import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_NEEDS_S_AS_FIRST_ARG;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___FILE__;
@@ -287,8 +289,8 @@ public final class PythonCextModuleBuiltins {
                 Object mTraverse = readPointerNode.read(mdDef, CFields.PyModuleDef__m_traverse);
                 if (!lib.isNull(mTraverse)) {
                     long mSize = readI64Node.read(mdDef, CFields.PyModuleDef__m_size);
-                    Object mdState = self.getNativeModuleState();
-                    if (mSize <= 0 || (mdState != null && !lib.isNull(mdState))) {
+                    long mdState = self.getNativeModuleState();
+                    if (mSize <= 0 || mdState != NULLPTR) {
                         PythonThreadState threadState = getThreadStateNode.execute(inliningTarget);
                         NfiBoundFunction traverseExecutable = ensureExecutableUncached(mTraverse, PExternalFunctionWrapper.TRAVERSEPROC);
                         // TODO(NFI2) call directly
@@ -335,10 +337,10 @@ public final class PythonCextModuleBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = ArgDescriptor.Void, args = {PyModuleObject, Pointer}, call = Ignored)
+    @CApiBuiltin(ret = ArgDescriptor.Void, args = {PyModuleObject, PointerZZZ}, call = Ignored)
     abstract static class GraalPyPrivate_Module_SetState extends CApiBinaryBuiltinNode {
         @Specialization
-        static Object set(PythonModule object, Object value) {
+        static Object set(PythonModule object, long value) {
             object.setNativeModuleState(value);
             return PNone.NO_VALUE;
         }

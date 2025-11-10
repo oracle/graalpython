@@ -114,7 +114,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.GetNativeW
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers;
 import com.oracle.graal.python.builtins.objects.cext.copying.NativeLibraryLocator;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ReadI32Node;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
@@ -1242,7 +1242,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
                 } else {
                     assert pn.isNative();
                     long untagged = HandlePointerConverter.pointerToStub(pn.getNativePointer());
-                    return ReadI32Node.readUncached(untagged, CFields.GraalPyObject__handle_table_index);
+                    return CStructAccess.readIntField(untagged, CFields.GraalPyObject__handle_table_index);
                 }
             } else {
                 return -1;

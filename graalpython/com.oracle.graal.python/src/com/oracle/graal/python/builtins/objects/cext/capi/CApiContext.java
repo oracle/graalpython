@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import static com.oracle.graal.python.PythonLanguage.CONTEXT_INSENSITIVE_SINGLETONS;
 import static com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper.IMMORTAL_REFCNT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.pollReferenceQueue;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readIntField;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___FILE__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DASH;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
@@ -172,7 +173,7 @@ public final class CApiContext extends CExtContext {
      * Pointer to the native {@code GCState GC state}. This corresponds to CPython's
      * {@code PyInterpreterState.gc}.
      */
-    private Object gcState;
+    private long gcState;
 
     /** Same as {@code import.c: extensions} but we don't keep a PDict; just a bare Java HashMap. */
     private final HashMap<Pair<TruffleString, TruffleString>, PythonModule> extensions = new HashMap<>(4);
@@ -288,7 +289,7 @@ public final class CApiContext extends CExtContext {
      * CPython, those are usually statically allocated (or at least immortal) and once hand out a
      * pointer for a {@code PyMethodDef}, we need to ensure that it stays valid until the end.
      */
-    private final HashMap<PyMethodDefHelper, Object> methodDefinitions = new HashMap<>(4);
+    private final HashMap<PyMethodDefHelper, Long> methodDefinitions = new HashMap<>(4);
 
     /**
      * This list holds a strong reference to all loaded extension libraries to keep the library
@@ -459,7 +460,7 @@ public final class CApiContext extends CExtContext {
             // It may be that the singleton was never used in native and there is nothing to free.
             if (singletonNativeWrapper.isNative()) {
                 long pointer = CApiTransitions.HandlePointerConverter.pointerToStub(singletonNativeWrapper.getNativePointer());
-                int handleTableIndex = CStructAccess.ReadI32Node.readUncached(pointer, CFields.GraalPyObject__handle_table_index);
+                int handleTableIndex = readIntField(pointer, CFields.GraalPyObject__handle_table_index);
                 CApiTransitions.nativeStubLookupRemove(handleContext, handleTableIndex);
                 CApiTransitions.releaseNativeWrapperUncached(singletonNativeWrapper);
             }
@@ -478,16 +479,16 @@ public final class CApiContext extends CExtContext {
      * in the GC) is sent to native. This could, e.g., be the thread-state dict that is allocated
      * when creating the {@link PThreadState native thread state}.
      */
-    public Object createGCState() {
+    public long createGCState() {
         CompilerAsserts.neverPartOfCompilation();
-        assert gcState == null;
+        assert gcState == 0L;
         PythonContext.GCState state = getContext().getGcState();
-        Object ptr = CStructAccess.AllocateNode.allocUncached(CStructs.GCState);
-        CStructAccess.WriteIntNode.writeUncached(ptr, CFields.GCState__enabled, PInt.intValue(state.isEnabled()));
-        CStructAccess.WriteIntNode.writeUncached(ptr, CFields.GCState__debug, state.getDebug());
-        Object generations = CStructAccess.GetElementPtrNode.getUncached().getElementPtr(ptr, CFields.GCState__generations);
+        long ptr = CStructAccess.allocate(CStructs.GCState);
+        CStructAccess.writeIntField(ptr, CFields.GCState__enabled, PInt.intValue(state.isEnabled()));
+        CStructAccess.writeIntField(ptr, CFields.GCState__debug, state.getDebug());
+        long generations = CStructAccess.getFieldPtr(ptr, CFields.GCState__generations);
         for (int i = 0; i < state.getThresholds().length; i++) {
-            CStructAccess.WriteIntNode.getUncached().writeStructArrayElement(generations, i, CFields.GCGeneration__threshold, state.getThresholds()[i]);
+            CStructAccess.writeStructArrayIntField(generations, i, CFields.GCGeneration__threshold, state.getThresholds()[i]);
         }
         gcState = ptr;
         return gcState;
@@ -498,8 +499,8 @@ public final class CApiContext extends CExtContext {
      * {@link #createGCState()} was called the first time which should happen very early during C
      * API context initialization.
      */
-    public Object getGCState() {
-        assert gcState != null;
+    public long getGCState() {
+        assert gcState != 0L;
         return gcState;
     }
 
@@ -508,9 +509,9 @@ public final class CApiContext extends CExtContext {
      */
     private void freeGCState() {
         CompilerAsserts.neverPartOfCompilation();
-        if (gcState != null) {
-            FreeNode.executeUncached(gcState);
-            gcState = null;
+        if (gcState != 0L) {
+            NativeMemory.free(gcState);
+            gcState = 0L;
         }
     }
 
@@ -909,11 +910,11 @@ public final class CApiContext extends CExtContext {
              * This is because the native object stub could take part in GC and will then already
              * require the GC state.
              */
-            Object gcState = cApiContext.createGCState();
+            long gcState = cApiContext.createGCState();
             PythonThreadState currentThreadState = context.getThreadState(context.getLanguage());
-            Object nativeThreadState = PThreadState.getOrCreateNativeThreadState(currentThreadState);
+            long nativeThreadState = PThreadState.getOrCreateNativeThreadState(currentThreadState);
 
-            long builtinArrayPtr = NativeMemory.malloc(PythonCextBuiltinRegistry.builtins.length * CStructAccess.POINTER_SIZE);
+            long builtinArrayPtr = NativeMemory.mallocPtrArray(PythonCextBuiltinRegistry.builtins.length);
             try {
                 for (int id = 0; id < PythonCextBuiltinRegistry.builtins.length; id++) {
                     CApiBuiltinExecutable builtin = PythonCextBuiltinRegistry.builtins[id];
@@ -921,8 +922,7 @@ public final class CApiContext extends CExtContext {
                 }
                 NfiDowncallSignature initSignature = Nfi.createDowncallSignature(NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER);
                 // TODO(NFI2) ENV parameter
-                // TODO(NFI2) unwrap gcState, should just be a long
-                Object nativeThreadLocalVarPointer = initSignature.invoke(nfiContext, initFunction, 0L, builtinArrayPtr, ((NativePointer) gcState).asPointer(), ((NativePointer) nativeThreadState).asPointer());
+                Object nativeThreadLocalVarPointer = initSignature.invoke(nfiContext, initFunction, 0L, builtinArrayPtr, gcState, nativeThreadState);
                 assert InteropLibrary.getUncached().isPointer(nativeThreadLocalVarPointer);
                 assert !InteropLibrary.getUncached().isNull(nativeThreadLocalVarPointer);
                 currentThreadState.setNativeThreadLocalVarPointer(nativeThreadLocalVarPointer);
@@ -1150,7 +1150,7 @@ public final class CApiContext extends CExtContext {
                 PyDateTimeCAPIWrapper.destroyWrapper(pyDateTimeCAPICapsule);
             }
             // free all allocated PyMethodDef structures
-            for (Object pyMethodDefPointer : methodDefinitions.values()) {
+            for (Long pyMethodDefPointer : methodDefinitions.values()) {
                 PyMethodDefHelper.free(pyMethodDefPointer);
             }
         } finally {
@@ -1334,10 +1334,8 @@ public final class CApiContext extends CExtContext {
     }
 
     @TruffleBoundary
-    public Object getOrAllocateNativePyMethodDef(PyMethodDefHelper pyMethodDef) {
-        Object pyMethodDefPointer = methodDefinitions.computeIfAbsent(pyMethodDef, PyMethodDefHelper::allocate);
-        assert CApiContext.isPointerObject(pyMethodDefPointer);
-        return pyMethodDefPointer;
+    public long getOrAllocateNativePyMethodDef(PyMethodDefHelper pyMethodDef) {
+        return methodDefinitions.computeIfAbsent(pyMethodDef, PyMethodDefHelper::allocate);
     }
 
     /**

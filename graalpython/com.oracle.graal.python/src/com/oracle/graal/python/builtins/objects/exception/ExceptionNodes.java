@@ -41,6 +41,8 @@
 package com.oracle.graal.python.builtins.objects.exception;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointer;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readByteField;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COLON_SPACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NO_MESSAGE;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -50,6 +52,7 @@ import java.util.IllegalFormatException;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.exception.BaseExceptionBuiltins.AddNoteNode;
@@ -246,9 +249,9 @@ public final class ExceptionNodes {
         @Specialization(guards = "check.execute(inliningTarget, exception)", limit = "1")
         static boolean doNative(Node inliningTarget, PythonAbstractNativeObject exception,
                         @SuppressWarnings("unused") @Cached PyExceptionInstanceCheckNode check,
-                        @Cached(inline = false) CStructAccess.ReadByteNode read) {
-
-            return read.readFromObj(exception, CFields.PyBaseExceptionObject__suppress_context) != 0;
+                        @Cached CoerceNativePointerToLongNode coerceNode) {
+            long rawPtr = ensurePointer(exception.getPtr(), inliningTarget, coerceNode);
+            return readByteField(rawPtr, CFields.PyBaseExceptionObject__suppress_context) != 0;
         }
 
         @Specialization

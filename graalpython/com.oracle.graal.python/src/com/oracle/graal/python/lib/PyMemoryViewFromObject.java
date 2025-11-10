@@ -42,6 +42,7 @@ package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.wrapPointer;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.pickle.PPickleBuffer;
@@ -184,7 +185,7 @@ public abstract class PyMemoryViewFromObject extends PNodeWithContext {
             return PFactory.createMemoryView(context.getLanguage(inliningTarget), context, bufferLifecycleManager, pythonBuffer, cBuffer.getObj(), cBuffer.getLen(), cBuffer.isReadOnly(),
                             cBuffer.getItemSize(),
                             BufferFormat.forMemoryView(format, lengthNode, atIndexNode),
-                            format, cBuffer.getDims(), cBuffer.getBuf(), 0, shape, strides, suboffsets, flags);
+                            format, cBuffer.getDims(), wrapPointer(cBuffer.getBuf()), 0, shape, strides, suboffsets, flags);
         } else if (bufferAcquireLib.hasBuffer(object)) {
             // Managed object that implements PythonBufferAcquireLibrary
             Object buffer = bufferAcquireLib.acquire(object, BufferFlags.PyBUF_FULL_RO, frame, interopCallData);

@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi.transitions;
 
+import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
+
 import com.oracle.graal.python.builtins.objects.cext.capi.PyMemoryViewWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
@@ -63,20 +65,20 @@ import com.oracle.truffle.api.nodes.Node;
 @GenerateCached(false)
 public abstract class GetReplacementNode extends Node {
 
-    public abstract Object execute(Node inliningTarget, PythonNativeWrapper wrapper);
+    public abstract long execute(Node inliningTarget, PythonNativeWrapper wrapper);
 
     @Specialization
-    static Object doReplacingWrapper(PyMemoryViewWrapper wrapper) {
+    static long doReplacingWrapper(PyMemoryViewWrapper wrapper) {
         return wrapper.getReplacement();
     }
 
     @Specialization
-    static Object doReplacingWrapper(PythonClassNativeWrapper wrapper) {
+    static long doReplacingWrapper(PythonClassNativeWrapper wrapper) {
         return wrapper.getReplacement();
     }
 
     @Fallback
-    static Object doWrapper(Node inliningTarget, PythonNativeWrapper wrapper) {
-        return null;
+    static long doWrapper(Node inliningTarget, PythonNativeWrapper wrapper) {
+        return NULLPTR;
     }
 }

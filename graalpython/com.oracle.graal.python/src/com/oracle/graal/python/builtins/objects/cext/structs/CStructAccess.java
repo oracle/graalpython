@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.structs;
 
+import static com.oracle.graal.python.nfi2.NativeMemory.POINTER_SIZE;
+
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
@@ -55,8 +57,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.AllocateNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.FreeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.GetElementPtrNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.ReadCharPtrNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.ReadI32NodeGen;
@@ -65,7 +65,7 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactor
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.WriteIntNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.WriteLongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.WritePointerNodeGen;
-import com.oracle.graal.python.nfi2.NfiBoundFunction;
+import com.oracle.graal.python.nfi2.NativeMemory;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -81,7 +81,6 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 import sun.misc.Unsafe;
@@ -89,126 +88,86 @@ import sun.misc.Unsafe;
 @SuppressWarnings("truffle-inlining")
 public class CStructAccess {
 
+    public static long allocate(CStructs struct) {
+        return NativeMemory.calloc(struct.size());
+    }
+
+    public static long getFieldPtr(long structBasePtr, CFields field) {
+        return structBasePtr + field.offset();
+    }
+
+    public static byte readByteField(long structBasePtr, CFields field) {
+        assert field.type.isI8();
+        return NativeMemory.readByte(getFieldPtr(structBasePtr, field));
+    }
+
+    public static void writeByteField(long structBasePtr, CFields field, byte value) {
+        assert field.type.isI8();
+        NativeMemory.writeByte(getFieldPtr(structBasePtr, field), value);
+    }
+
+    public static int readIntField(long structBasePtr, CFields field) {
+        assert field.type.isI32();
+        return NativeMemory.readInt(getFieldPtr(structBasePtr, field));
+    }
+
+    public static void writeIntField(long structBasePtr, CFields field, int value) {
+        assert field.type.isI32();
+        NativeMemory.writeInt(getFieldPtr(structBasePtr, field), value);
+    }
+
+    public static int readStructArrayIntField(long arrayPtr, long index, CFields field) {
+        return readIntField(getArrayElementPtr(arrayPtr, index, field.struct), field);
+    }
+
+    public static void writeStructArrayIntField(long arrayPtr, long index, CFields field, int value) {
+        writeIntField(getArrayElementPtr(arrayPtr, index, field.struct), field, value);
+    }
+
+    public static long readLongField(long structBasePtr, CFields field) {
+        assert field.type.isI64();
+        return NativeMemory.readLong(getFieldPtr(structBasePtr, field));
+    }
+
+    public static void writeLongField(long structBasePtr, CFields field, long value) {
+        assert field.type.isI64();
+        NativeMemory.writeLong(getFieldPtr(structBasePtr, field), value);
+    }
+
+    public static long readPtrField(long structBasePtr, CFields field) {
+        assert field.type.isPyObjectOrPointer();
+        return NativeMemory.readLong(getFieldPtr(structBasePtr, field));
+    }
+
+    public static void writePtrField(long structBasePtr, CFields field, long value) {
+        assert field.type.isPyObjectOrPointer();
+        NativeMemory.writeLong(getFieldPtr(structBasePtr, field), value);
+    }
+
+    private static long getArrayElementPtr(long arrayPtr, long index, CStructs struct) {
+        return arrayPtr + index * struct.size();
+    }
+
     private static boolean validPointer(Object pointer) {
         return !(pointer instanceof PythonAbstractObject) && !(pointer instanceof PythonNativeWrapper);
     }
 
-    @ImportStatic(PGuards.class)
     @GenerateUncached
     @GenerateInline(false)
-    public abstract static class AllocateNode extends Node {
+    public abstract static class AllocatePyMemNode extends Node {
 
-        abstract Object execute(long count, long elsize, boolean allocatePyMem);
+        abstract long execute(long count, long elsize);
 
-        public final Object alloc(CStructs struct) {
-            return execute(1, struct.size(), false);
+        // TODO(NFi2) review usages
+        public long alloc(int size) {
+            return execute(1, size);
         }
 
-        public final Object calloc(long count, CStructs elstruct) {
-            return execute(count, elstruct.size(), false);
-        }
-
-        public final Object alloc(CStructs struct, boolean allocatePyMem) {
-            return execute(1, struct.size(), allocatePyMem);
-        }
-
-        public final Object alloc(long size) {
-            return execute(1, size, false);
-        }
-
-        public final Object calloc(long count, long elSize) {
-            return execute(count, elSize, false);
-        }
-
-        public Object alloc(int size, boolean allocatePyMem) {
-            return execute(1, size, allocatePyMem);
-        }
-
-        @Specialization(guards = "!allocatePyMem")
-        static Object allocLong(long count, long size, @SuppressWarnings("unused") boolean allocatePyMem,
-                        @Bind Node inliningTarget,
-                        @Cached InlinedBranchProfile overflowProfile) {
-            assert count >= 0;
-            assert size >= 0;
-            // non-zero size to get unique pointers
-            try {
-                long totalSize = Math.multiplyExact(count, size);
-                long memory = allocUncachedPointer(totalSize);
-                return new NativePointer(memory);
-            } catch (ArithmeticException e) {
-                overflowProfile.enter(inliningTarget);
-                return NativePointer.createNull();
-            }
-        }
-
-        @Specialization(guards = "allocatePyMem")
-        static Object allocLongPyMem(long count, long elsize, @SuppressWarnings("unused") boolean allocatePyMem,
+        @Specialization
+        static long allocLongPyMem(long count, long elsize,
                         @Cached PCallCapiFunction call) {
             assert elsize >= 0;
-            return call.call(NativeCAPISymbol.FUN_PYMEM_ALLOC, count, elsize);
-        }
-
-        public static Object allocUncached(CStructs struct) {
-            return AllocateNodeGen.getUncached().alloc(struct);
-        }
-
-        public static Object callocUncached(long count, CStructs elstruct) {
-            return AllocateNodeGen.getUncached().calloc(count, elstruct);
-        }
-
-        public static Object allocUncached(long size) {
-            return AllocateNodeGen.getUncached().alloc(size);
-        }
-
-        public static long allocUncachedPointer(long size) {
-            long memory = UNSAFE.allocateMemory(size == 0 ? 1 : size);
-            UNSAFE.setMemory(memory, size, (byte) 0);
-            return memory;
-        }
-
-        public static Object callocUncached(long count, long elSize) {
-            return AllocateNodeGen.getUncached().calloc(count, elSize);
-        }
-    }
-
-    @ImportStatic(PGuards.class)
-    @GenerateUncached
-    @GenerateInline(false)
-    public abstract static class FreeNode extends Node {
-
-        public static void executeUncached(Object pointer) {
-            CStructAccessFactory.FreeNodeGen.getUncached().execute(pointer);
-        }
-
-        abstract void execute(Object pointer);
-
-        public final void free(Object pointer) {
-            execute(pointer);
-        }
-
-        @Specialization
-        public static void freeLong(long pointer) {
-            UNSAFE.freeMemory(pointer);
-        }
-
-        @Specialization
-        static void freeNativePointer(NativePointer pointer) {
-            UNSAFE.freeMemory(pointer.asPointer());
-        }
-
-        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"}, limit = "3")
-        static void freePointer(Object pointer,
-                        @CachedLibrary("pointer") InteropLibrary lib) {
-            UNSAFE.freeMemory(asPointer(pointer, lib));
-        }
-
-        @NeverDefault
-        public static FreeNode create() {
-            return FreeNodeGen.create();
-        }
-
-        public static FreeNode getUncached() {
-            return FreeNodeGen.getUncached();
+            return (long) call.call(NativeCAPISymbol.FUN_PYMEM_ALLOC, count, elsize);
         }
     }
 
@@ -366,10 +325,6 @@ public class CStructAccess {
             return desc.isI16();
         }
 
-        public final int readOffset(Object pointer, long offset) {
-            return execute(pointer, offset);
-        }
-
         public final int readArrayElement(Object pointer, long element) {
             return execute(pointer, element * Short.BYTES);
         }
@@ -400,10 +355,6 @@ public class CStructAccess {
     @GenerateInline(false)
     public abstract static class ReadI32Node extends ReadBaseNode {
 
-        public static int readUncached(Object pointer, CFields field) {
-            return ReadI32NodeGen.getUncached().read(pointer, field);
-        }
-
         abstract int execute(Object pointer, long offset);
 
         public final int read(Object pointer, CFields field) {
@@ -417,10 +368,6 @@ public class CStructAccess {
 
         public final boolean accepts(ArgDescriptor desc) {
             return desc.isI32();
-        }
-
-        public final int readOffset(Object pointer, long offset) {
-            return execute(pointer, offset);
         }
 
         public final int readArrayElement(Object pointer, long element) {
@@ -826,11 +773,6 @@ public class CStructAccess {
             return execute(pointer, element * POINTER_SIZE);
         }
 
-        public final TruffleString readStructArrayElement(Object pointer, long element, CFields field) {
-            assert accepts(field);
-            return execute(pointer, element * field.struct.size() + field.offset());
-        }
-
         @Specialization
         static TruffleString readLong(long pointer, long offset,
                         @Shared @Cached FromCharPointerNode toPython) {
@@ -1069,22 +1011,8 @@ public class CStructAccess {
             return desc.isI32();
         }
 
-        public final void writeArray(Object pointer, int[] values) {
-            writeArray(pointer, values, values.length, 0, 0);
-        }
-
-        public final void writeArray(Object pointer, int[] values, int length, int sourceOffset, long targetOffset) {
-            for (int i = 0; i < length; i++) {
-                execute(pointer, (i + targetOffset) * Integer.BYTES, values[i + sourceOffset]);
-            }
-        }
-
         public final void writeArrayElement(Object pointer, long element, int value) {
             execute(pointer, element * Integer.BYTES, value);
-        }
-
-        public final void writeStructArrayElement(Object pointer, long element, CFields field, int value) {
-            execute(pointer, element * field.struct.size() + field.offset(), value);
         }
 
         @Specialization
@@ -1132,16 +1060,6 @@ public class CStructAccess {
             execute(pointer, 0, value);
         }
 
-        public final void writeIntArray(Object pointer, int[] values) {
-            writeIntArray(pointer, values, values.length, 0, 0);
-        }
-
-        public final void writeIntArray(Object pointer, int[] values, int length, int sourceOffset, long targetOffset) {
-            for (int i = 0; i < length; i++) {
-                execute(pointer, (i + targetOffset) * Long.BYTES, values[i + sourceOffset]);
-            }
-        }
-
         public final boolean accepts(ArgDescriptor desc) {
             return desc.isI64();
         }
@@ -1171,14 +1089,13 @@ public class CStructAccess {
         }
     }
 
-    @ImportStatic(PGuards.class)
     @GenerateUncached
     @GenerateInline(false)
     public abstract static class WriteTruffleStringNode extends Node implements CStructAccessNode {
 
-        abstract void execute(Object dstPointer, int dstOffset, TruffleString src, int srcOffset, int length, TruffleString.Encoding encoding);
+        abstract void execute(long dstPointer, int dstOffset, TruffleString src, int srcOffset, int length, TruffleString.Encoding encoding);
 
-        public final void write(Object dstPointer, TruffleString src, TruffleString.Encoding encoding) {
+        public final void write(long dstPointer, TruffleString src, TruffleString.Encoding encoding) {
             execute(dstPointer, 0, src, 0, src.byteLength(encoding), encoding);
         }
 
@@ -1188,26 +1105,8 @@ public class CStructAccess {
 
         @Specialization
         static void writeLong(long dstPointer, int dstOffset, TruffleString src, int srcOffset, int length, TruffleString.Encoding encoding,
-                        @Cached @Shared TruffleString.CopyToNativeMemoryNode copyToNativeMemoryNode) {
-            copyToNativeMemoryNode.execute(src, srcOffset, new NativePointer(dstPointer), dstOffset, length, encoding);
-        }
-
-        @Specialization(guards = {"!isLong(dstPointer)", "lib.isPointer(dstPointer)"}, limit = "3")
-        static void writePointer(Object dstPointer, int dstOffset, TruffleString src, int srcOffset, int length, TruffleString.Encoding encoding,
-                        @SuppressWarnings("unused") @CachedLibrary("dstPointer") InteropLibrary lib,
-                        @Cached @Shared TruffleString.CopyToNativeMemoryNode copyToNativeMemoryNode) {
-            copyToNativeMemoryNode.execute(src, srcOffset, dstPointer, dstOffset, length, encoding);
-        }
-
-        @Specialization(guards = {"!isLong(dstPointer)", "!lib.isPointer(dstPointer)"})
-        static void writeManaged(Object dstPointer, int dstOffset, TruffleString src, int srcOffset, int length, TruffleString.Encoding encoding,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached PCallCapiFunction call,
-                        @Cached TruffleString.ReadByteNode readByteNode) {
-            assert validPointer(dstPointer);
-            for (int i = 0; i < length; i++) {
-                call.call(NativeCAPISymbol.FUN_WRITE_CHAR_MEMBER, dstPointer, dstOffset + i, readByteNode.execute(src, srcOffset + i, encoding));
-            }
+                        @Cached TruffleString.CopyToNativeMemoryNode copyToNativeMemoryNode) {
+            copyToNativeMemoryNode.execute(src, srcOffset, wrapPointer(dstPointer), dstOffset, length, encoding);
         }
     }
 
@@ -1215,10 +1114,6 @@ public class CStructAccess {
     @GenerateUncached
     @GenerateInline(false)
     public abstract static class WritePointerNode extends Node implements CStructAccessNode {
-
-        public static void writeUncached(Object pointer, CFields field, Object value) {
-            WritePointerNodeGen.getUncached().write(pointer, field, value);
-        }
 
         public static void writeUncached(Object pointer, long offset, Object value) {
             WritePointerNodeGen.getUncached().execute(pointer, offset, value);
@@ -1251,12 +1146,6 @@ public class CStructAccess {
             execute(pointer, element * POINTER_SIZE, value);
         }
 
-        public final void writePointerArray(Object pointer, long[] values, int length, int sourceOffset, long targetOffset) {
-            for (int i = 0; i < length; i++) {
-                execute(pointer, (i + targetOffset) * POINTER_SIZE, values[i + sourceOffset]);
-            }
-        }
-
         @Specialization
         static void writeLong(long pointer, long offset, Object value,
                         @Bind Node inliningTarget,
@@ -1265,7 +1154,7 @@ public class CStructAccess {
             UNSAFE.putLong(pointer + offset, coerceToLongNode.execute(inliningTarget, value));
         }
 
-        @Specialization(guards = {"!isLong(pointer)", "isPointer(pointer, lib)"}, limit = "3")
+        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"}, limit = "3")
         static void writePointer(Object pointer, long offset, Object value,
                         @Bind Node inliningTarget,
                         @CachedLibrary("pointer") InteropLibrary lib,
@@ -1273,16 +1162,12 @@ public class CStructAccess {
             writeLong(asPointer(pointer, lib), offset, value, inliningTarget, coerceToLongNode);
         }
 
-        @Specialization(guards = {"!isLong(pointer)", "!isPointer(pointer, lib)"})
+        @Specialization(guards = {"!isLong(pointer)", "!lib.isPointer(pointer)"})
         static void writeManaged(Object pointer, long offset, Object value,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached PCallCapiFunction call) {
             assert validPointer(pointer);
             call.call(NativeCAPISymbol.FUN_WRITE_POINTER_MEMBER, pointer, offset, value);
-        }
-
-        static boolean isPointer(Object o, InteropLibrary lib) {
-            return o instanceof NfiBoundFunction || lib.isPointer(o);
         }
 
         public static WritePointerNode getUncached() {
@@ -1370,7 +1255,6 @@ public class CStructAccess {
         }
     }
 
-    public static final long POINTER_SIZE = 8;
     private static final Unsafe UNSAFE = PythonUtils.initUnsafe();
 
     static long asPointer(Object value, InteropLibrary lib) {
@@ -1382,4 +1266,18 @@ public class CStructAccess {
         }
     }
 
+    // The following are temporary helpers which should not be needed after all pointers are raw
+    // longs.
+    // These methods serve as markers for what still needs to be done.
+    public static long ensurePointer(Object value, Node inliningTarget, CoerceNativePointerToLongNode coerceNode) {
+        return coerceNode.execute(inliningTarget, value);
+    }
+
+    public static long ensurePointerUncached(Object value) {
+        return CoerceNativePointerToLongNode.executeUncached(value);
+    }
+
+    public static Object wrapPointer(long pointer) {
+        return new NativePointer(pointer);
+    }
 }

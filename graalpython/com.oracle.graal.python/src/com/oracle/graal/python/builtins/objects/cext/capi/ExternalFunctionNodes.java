@@ -56,6 +56,9 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ensureExecutableUncached;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.wrapPointer;
+import static com.oracle.graal.python.nfi2.NativeMemory.free;
+import static com.oracle.graal.python.nfi2.NativeMemory.readPtrArrayElement;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.util.PythonUtils.tsArray;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -89,7 +92,6 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.StorageToNativeNode;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -1343,13 +1345,11 @@ public abstract class ExternalFunctionNodes {
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "key"), true, false);
         @Child private ReadIndexedArgumentNode readArgNode;
         @Child private CExtNodes.AsCharPointerNode asCharPointerNode;
-        @Child private CStructAccess.FreeNode free;
 
         GetAttrFuncRootNode(PythonLanguage language, TruffleString name, PExternalFunctionWrapper provider) {
             super(language, name, false, provider);
             this.readArgNode = ReadIndexedArgumentNode.create(1);
             this.asCharPointerNode = AsCharPointerNodeGen.create();
-            this.free = CStructAccess.FreeNode.create();
         }
 
         @Override
@@ -1358,13 +1358,13 @@ public abstract class ExternalFunctionNodes {
             Object arg = readArgNode.execute(frame);
             // TODO we should use 'CStringWrapper' for 'arg' but it does currently not support
             // PString
-            return new Object[]{self, asCharPointerNode.execute(arg)};
+            return new Object[]{self, wrapPointer(asCharPointerNode.execute(arg))};
         }
 
         @Override
         protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
             ensureReleaseNativeWrapperNode().execute(cArguments[0]);
-            free.free(cArguments[1]);
+            free(((NativePointer) cArguments[1]).asPointer());
         }
 
         @Override
@@ -1381,14 +1381,12 @@ public abstract class ExternalFunctionNodes {
         @Child private ReadIndexedArgumentNode readArg1Node;
         @Child private ReadIndexedArgumentNode readArg2Node;
         @Child private CExtNodes.AsCharPointerNode asCharPointerNode;
-        @Child private CStructAccess.FreeNode free;
 
         SetAttrFuncRootNode(PythonLanguage language, TruffleString name, PExternalFunctionWrapper provider) {
             super(language, name, false, provider);
             this.readArg1Node = ReadIndexedArgumentNode.create(1);
             this.readArg2Node = ReadIndexedArgumentNode.create(2);
             this.asCharPointerNode = AsCharPointerNodeGen.create();
-            this.free = CStructAccess.FreeNode.create();
         }
 
         @Override
@@ -1398,14 +1396,14 @@ public abstract class ExternalFunctionNodes {
             Object arg2 = readArg2Node.execute(frame);
             // TODO we should use 'CStringWrapper' for 'arg1' but it does currently not support
             // PString
-            return new Object[]{self, asCharPointerNode.execute(arg1), arg2};
+            return new Object[]{self, wrapPointer(asCharPointerNode.execute(arg1)), arg2};
         }
 
         @Override
         protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
             ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
             releaseNativeWrapperNode.execute(cArguments[0]);
-            free.free(cArguments[1]);
+            free(((NativePointer) cArguments[1]).asPointer());
             releaseNativeWrapperNode.execute(cArguments[2]);
         }
 
@@ -2029,29 +2027,25 @@ public abstract class ExternalFunctionNodes {
         static void doObjectCachedLen(NativeObjectSequenceStorage storage,
                         @Bind Node inliningTarget,
                         @Cached("storage.length()") int cachedLen,
-                        @Shared @Cached CStructAccess.ReadPointerNode readNode,
-                        @Shared @Cached CExtNodes.XDecRefPointerNode decRefPointerNode,
-                        @Shared @Cached CStructAccess.FreeNode freeNode) {
+                        @Shared @Cached CExtNodes.XDecRefPointerNode decRefPointerNode) {
             for (int i = 0; i < cachedLen; i++) {
-                Object elementPointer = readNode.readArrayElement(storage.getPtr(), i);
+                Object elementPointer = readPtrArrayElement(storage.getPtr(), i);
                 decRefPointerNode.execute(inliningTarget, elementPointer);
             }
             // in this case, the runtime still exclusively owns the memory
-            freeNode.free(storage.getPtr());
+            free(storage.getPtr());
         }
 
         @Specialization(replaces = "doObjectCachedLen")
         static void doObjectGeneric(NativeObjectSequenceStorage storage,
                         @Bind Node inliningTarget,
-                        @Shared @Cached CStructAccess.ReadPointerNode readNode,
-                        @Shared @Cached CExtNodes.XDecRefPointerNode decRefPointerNode,
-                        @Shared @Cached CStructAccess.FreeNode freeNode) {
+                        @Shared @Cached CExtNodes.XDecRefPointerNode decRefPointerNode) {
             for (int i = 0; i < storage.length(); i++) {
-                Object elementPointer = readNode.readArrayElement(storage.getPtr(), i);
+                Object elementPointer = readPtrArrayElement(storage.getPtr(), i);
                 decRefPointerNode.execute(inliningTarget, elementPointer);
             }
             // in this case, the runtime still exclusively owns the memory
-            freeNode.free(storage.getPtr());
+            free(storage.getPtr());
         }
     }
 

@@ -41,8 +41,10 @@
 package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CHAR_PTR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CHAR_PTR_ZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointer;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.getFieldPtr;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
@@ -50,8 +52,8 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnar
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -65,28 +67,28 @@ import com.oracle.truffle.api.nodes.Node;
 
 public final class PythonCextByteArrayBuiltins {
 
-    @CApiBuiltin(ret = CHAR_PTR, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = CHAR_PTR_ZZZ, args = {PyObject}, call = Direct)
     abstract static class PyByteArray_AsString extends CApiUnaryBuiltinNode {
         @Specialization
-        static Object doByteArray(PByteArray bytes) {
+        static long doByteArray(PByteArray bytes) {
             return PySequenceArrayWrapper.ensureNativeSequence(bytes);
         }
 
         @Specialization
-        static Object doNative(PythonAbstractNativeObject obj,
+        static long doNative(PythonAbstractNativeObject obj,
                         @Bind Node inliningTarget,
+                        @Cached CoerceNativePointerToLongNode coerceNode,
                         @Cached GetPythonObjectClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
-                        @Cached CStructAccess.GetElementPtrNode getArray,
                         @Cached PRaiseNode raiseNode) {
             if (isSubtypeNode.execute(getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PByteArray)) {
-                return getArray.getElementPtr(obj.getPtr(), CFields.PyByteArrayObject__ob_start);
+                return getFieldPtr(ensurePointer(obj.getPtr(), inliningTarget, coerceNode), CFields.PyByteArrayObject__ob_start);
             }
             return doError(obj, raiseNode);
         }
 
         @Fallback
-        static Object doError(Object obj,
+        static long doError(Object obj,
                         @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.TypeError, ErrorMessages.EXPECTED_S_P_FOUND, "bytearray", obj);
         }

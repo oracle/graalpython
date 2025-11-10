@@ -47,6 +47,16 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CAp
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PollingState.RQ_POLLING;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PollingState.RQ_READY;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PollingState.RQ_UNINITIALIZED;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointer;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointerUncached;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.wrapPointer;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeLongField;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
+import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.nfi2.NativeMemory.calloc;
+import static com.oracle.graal.python.nfi2.NativeMemory.free;
+import static com.oracle.graal.python.nfi2.NativeMemory.mallocPtrArray;
+import static com.oracle.graal.python.nfi2.NativeMemory.writePtrArrayElements;
 
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
@@ -83,13 +93,15 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.Py
 import com.oracle.graal.python.builtins.objects.cext.capi.TruffleObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.FirstToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativePtrToPythonNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonInternalNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonReturnNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonTransferNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeInternalNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNewRefNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonInternalNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonReturnNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeInternalNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNewRefRawNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeRawNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
@@ -98,8 +110,6 @@ import com.oracle.graal.python.builtins.objects.cext.common.HandleStack;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.AllocateNode;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.FreeNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
@@ -272,7 +282,8 @@ public abstract class CApiTransitions {
 
         /**
          * Indicates if the native memory {@link #pointer} was allocated from Java using
-         * {@link AllocateNode} and thus must be freed using {@link FreeNode}. For any
+         * {@link com.oracle.graal.python.nfi2.NativeMemory#malloc(long)} and thus must be freed
+         * using {@link com.oracle.graal.python.nfi2.NativeMemory#free(long)}. For any
          * {@link PythonObjectReference} the last collection is always on the Java side, since the
          * native side can only drop the ob_refcnt to
          * {@link PythonAbstractObjectNativeWrapper#MANAGED_REFCNT} at which point the
@@ -382,7 +393,7 @@ public abstract class CApiTransitions {
 
     public static final class NativeStorageReference extends IdReference<NativeSequenceStorage> {
         private final SequenceStorage.StorageType type;
-        private Object ptr;
+        private long ptr;
         private int size;
 
         public NativeStorageReference(HandleContext handleContext, NativeSequenceStorage storage) {
@@ -399,7 +410,7 @@ public abstract class CApiTransitions {
             return ptr;
         }
 
-        public void setPtr(Object ptr) {
+        public void setPtr(long ptr) {
             this.ptr = ptr;
         }
 
@@ -654,12 +665,12 @@ public abstract class CApiTransitions {
             try {
                 int size = referencesToBeFreed.size();
                 LOGGER.fine(() -> PythonUtils.formatJString("releasing %d NativeObjectReference instances", size));
-                long pointer = AllocateNode.allocUncachedPointer(size * Long.BYTES);
+                long pointer = mallocPtrArray(size);
                 for (int i = 0; i < size; i++) {
                     CStructAccess.WriteLongNode.writeLong(pointer, i * Long.BYTES, referencesToBeFreed.get(i));
                 }
                 PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_BULK_DEALLOC, pointer, size);
-                FreeNode.freeLong(pointer);
+                free(pointer);
                 referencesToBeFreed.clear();
             } finally {
                 CExtCommonNodes.ReadAndClearNativeException.executeUncached(threadState);
@@ -672,7 +683,7 @@ public abstract class CApiTransitions {
 
     @TruffleBoundary
     public static void releaseNativeWrapperUncached(PythonNativeWrapper nativeWrapper) {
-        releaseNativeWrapper(nativeWrapper, FreeNode.getUncached());
+        releaseNativeWrapper(nativeWrapper);
     }
 
     /**
@@ -681,7 +692,7 @@ public abstract class CApiTransitions {
      * {@code toNative}, either a <it>handle pointer</it> is allocated or some off-heap memory is
      * allocated. This method takes care of that and will also free any off-heap memory.
      */
-    public static void releaseNativeWrapper(PythonNativeWrapper nativeWrapper, FreeNode freeNode) {
+    public static void releaseNativeWrapper(PythonNativeWrapper nativeWrapper) {
 
         // If wrapper already received toNative, release the handle or free the native memory.
         if (nativeWrapper.isNative()) {
@@ -689,6 +700,7 @@ public abstract class CApiTransitions {
             if (LOGGER.isLoggable(Level.FINE)) {
                 LOGGER.fine(PythonUtils.formatJString("Freeing pointer: 0x%x (wrapper: %s ;; object: %s)", nativePointer, nativeWrapper, nativeWrapper.getDelegate()));
             }
+            PythonContext pythonContext = PythonContext.get(null);
             if (HandlePointerConverter.pointsToPyHandleSpace(nativePointer)) {
                 if (HandlePointerConverter.pointsToPyIntHandle(nativePointer)) {
                     return;
@@ -696,12 +708,12 @@ public abstract class CApiTransitions {
                     return;
                 }
                 // In this case, we are up to free a native object stub.
-                assert tableEntryRemoved(PythonContext.get(freeNode).nativeContext, nativeWrapper);
+                assert tableEntryRemoved(pythonContext.nativeContext, nativeWrapper);
                 nativePointer = HandlePointerConverter.pointerToStub(nativePointer);
             } else {
-                nativeLookupRemove(PythonContext.get(freeNode).nativeContext, nativePointer);
+                nativeLookupRemove(pythonContext.nativeContext, nativePointer);
             }
-            freeNode.free(nativePointer);
+            free(nativePointer);
         }
     }
 
@@ -792,7 +804,7 @@ public abstract class CApiTransitions {
         } else {
             long rawPointer = HandlePointerConverter.pointerToStub(pointer);
             LOGGER.fine(() -> PythonUtils.formatJString("releasing native object stub 0x%x", rawPointer));
-            FreeNode.executeUncached(rawPointer);
+            free(rawPointer);
         }
     }
 
@@ -801,12 +813,12 @@ public abstract class CApiTransitions {
         assert ref.isAllocatedFromJava();
         assert !ref.gc;
         LOGGER.fine(() -> PythonUtils.formatJString("releasing %s", ref.toString()));
-        FreeNode.executeUncached(ref.pointer);
+        free(ref.pointer);
     }
 
     private static void freeNativeStorage(NativeStorageReference ref) {
         LOGGER.fine(() -> PythonUtils.formatJString("releasing %s", ref.toString()));
-        FreeNode.executeUncached(ref.ptr);
+        free(ensurePointerUncached(ref.ptr));
     }
 
     /**
@@ -903,12 +915,12 @@ public abstract class CApiTransitions {
         }
         if (idx != -1) {
             int len = idx + 1;
-            Object array = CStructAccess.AllocateNode.allocUncached((long) len * Long.BYTES);
+            long array = mallocPtrArray(len);
             try {
-                CStructAccess.WritePointerNode.getUncached().writePointerArray(array, ptrArray, len, 0, 0);
-                CExtNodes.PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_SHUTDOWN_BULK_DEALLOC, array, len);
+                writePtrArrayElements(array, 0, ptrArray, 0, len);
+                CExtNodes.PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_SHUTDOWN_BULK_DEALLOC, wrapPointer(array), len);
             } finally {
-                CStructAccess.FreeNode.executeUncached(array);
+                free(array);
                 context.nativeWeakRef.clear();
             }
         }
@@ -1164,8 +1176,6 @@ public abstract class CApiTransitions {
 
         @Specialization(guards = "!isPrimitiveNativeWrapper(wrapper)")
         static long doOther(Node inliningTarget, PythonAbstractObjectNativeWrapper wrapper, long initialRefCount,
-                        @Cached(inline = false) CStructAccess.WriteLongNode writeLongNode,
-                        @Cached(inline = false) CStructAccess.WritePointerNode writePointerNode,
                         @Shared @Cached(inline = false) CStructAccess.WriteDoubleNode writeDoubleNode,
                         @Exclusive @Cached InlinedConditionProfile isVarObjectProfile,
                         @Exclusive @Cached InlinedConditionProfile isGcProfile,
@@ -1198,12 +1208,12 @@ public abstract class CApiTransitions {
                 assert delegate instanceof PTuple;
                 SequenceStorage sequenceStorage = ((PTuple) delegate).getSequenceStorage();
                 long realPointer = HandlePointerConverter.pointerToStub(taggedPointer);
-                writeLongNode.write(realPointer, CFields.GraalPyVarObject__ob_size, sequenceStorage.length());
-                Object obItemPtr = 0L;
+                writeLongField(realPointer, CFields.GraalPyVarObject__ob_size, sequenceStorage.length());
+                long obItemPtr = NULLPTR;
                 if (sequenceStorage instanceof NativeSequenceStorage nativeSequenceStorage) {
                     obItemPtr = nativeSequenceStorage.getPtr();
                 }
-                writePointerNode.write(realPointer, CFields.GraalPyVarObject__ob_item, obItemPtr);
+                writePtrField(realPointer, CFields.GraalPyVarObject__ob_item, obItemPtr);
             } else if (ctype == CStructs.GraalPyFloatObject) {
                 assert delegate instanceof Double || delegate instanceof PFloat;
                 long realPointer = HandlePointerConverter.pointerToStub(taggedPointer);
@@ -1237,12 +1247,7 @@ public abstract class CApiTransitions {
         @Specialization
         static long doGeneric(Node inliningTarget, PythonAbstractObjectNativeWrapper wrapper, Object type, CStructs ctype, long initialRefCount, boolean gc,
                         @Cached(inline = false) GilNode gil,
-                        @Cached(inline = false) CStructAccess.AllocateNode allocateNode,
-                        @Cached(inline = false) CStructAccess.WriteLongNode writeLongNode,
                         @Cached(inline = false) CStructAccess.WriteObjectNewRefNode writeObjectNode,
-                        @Cached(inline = false) CStructAccess.ReadI32Node readI32Node,
-                        @Cached(inline = false) CStructAccess.WriteIntNode writeIntNode,
-                        @Cached(inline = false) CStructAccess.GetElementPtrNode getElementPtrNode,
                         @Cached CoerceNativePointerToLongNode coerceToLongNode,
                         @Cached PyObjectGCTrackNode gcTrackNode) {
 
@@ -1254,25 +1259,24 @@ public abstract class CApiTransitions {
              * Python's GC, we will also allocate space for 'PyGC_Head'.
              */
             long presize = gc ? CStructs.PyGC_Head.size() : 0;
-            Object nativeObjectStub = allocateNode.alloc(ctype.size() + presize);
+            long stubPointer = calloc(ctype.size() + presize);
 
             PythonContext pythonContext = PythonContext.get(inliningTarget);
             HandleContext handleContext = pythonContext.nativeContext;
-            long stubPointer = coerceToLongNode.execute(inliningTarget, nativeObjectStub);
             long taggedPointer = HandlePointerConverter.stubToPointer(stubPointer);
 
             long taggedGCHead = 0;
             if (gc) {
                 // adjust allocation count of generation
                 // GCState *gcstate = get_gc_state();
-                Object gcState = pythonContext.getCApiContext().getGCState();
-                assert gcState != null;
+                long gcState = pythonContext.getCApiContext().getGCState();
+                assert gcState != 0L;
                 // compute start address of embedded array; essentially '&gcstate->generations[0]'
-                Object generations = getElementPtrNode.getElementPtr(gcState, CFields.GCState__generations);
+                long generations = CStructAccess.getFieldPtr(gcState, CFields.GCState__generations);
 
                 // gcstate->generations[0].count++;
-                int count = readI32Node.read(generations, CFields.GCGeneration__count);
-                writeIntNode.write(generations, CFields.GCGeneration__count, count + 1);
+                int count = CStructAccess.readIntField(generations, CFields.GCGeneration__count);
+                CStructAccess.writeIntField(generations, CFields.GCGeneration__count, count + 1);
 
                 /*
                  * The corresponding location in CPython (i.e. 'typeobject.c: PyType_GenericAlloc')
@@ -1287,7 +1291,7 @@ public abstract class CApiTransitions {
                 taggedPointer += presize;
             }
 
-            writeLongNode.write(stubPointer, CFields.PyObject__ob_refcnt, initialRefCount);
+            CStructAccess.writeLongField(stubPointer, CFields.PyObject__ob_refcnt, initialRefCount);
 
             // TODO(fa): this should not require the GIL (GR-51314)
             boolean acquired = gil.acquire();
@@ -1297,7 +1301,7 @@ public abstract class CApiTransitions {
                 // We don't allow 'handleTableIndex == 0' to avoid that zeroed memory
                 // accidentally maps to some valid object.
                 assert idx > 0;
-                writeIntNode.write(stubPointer, CFields.GraalPyObject__handle_table_index, idx);
+                CStructAccess.writeIntField(stubPointer, CFields.GraalPyObject__handle_table_index, idx);
                 Object ref;
                 if (initialRefCount > MANAGED_REFCNT) {
                     ref = wrapper;
@@ -1600,9 +1604,9 @@ public abstract class CApiTransitions {
                 return new NativePointer(l);
             }
 
-            Object replacement = getReplacementNode.execute(inliningTarget, (PythonNativeWrapper) wrapper);
-            if (replacement != null) {
-                return replacement;
+            long replacement = getReplacementNode.execute(inliningTarget, (PythonNativeWrapper) wrapper);
+            if (replacement != NULLPTR) {
+                return wrapPointer(replacement);
             }
 
             // avoid usage of InteropLibrary in case of refcounted objects
@@ -1644,6 +1648,7 @@ public abstract class CApiTransitions {
         }
     }
 
+    // TODO(NFI2) replace usages with PythonToNativeRawNode
     @GenerateUncached
     @GenerateInline(false)
     public abstract static class PythonToNativeNode extends CExtToNativeNode {
@@ -1667,6 +1672,35 @@ public abstract class CApiTransitions {
 
         public static PythonToNativeNode getUncached() {
             return PythonToNativeNodeGen.getUncached();
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline(false)
+    public abstract static class PythonToNativeRawNode extends Node {
+
+        public abstract long execute(Object object);
+
+        @TruffleBoundary
+        public static long executeUncached(Object obj) {
+            return PythonToNativeRawNodeGen.getUncached().execute(obj);
+        }
+
+        @Specialization
+        static long doGeneric(Object obj,
+                        @Bind Node inliningTarget,
+                        @Cached PythonToNativeInternalNode internalNode,
+                        @Cached CoerceNativePointerToLongNode coerceNode) {
+            return ensurePointer(internalNode.execute(inliningTarget, obj, false), inliningTarget, coerceNode);
+        }
+
+        @NeverDefault
+        public static PythonToNativeRawNode create() {
+            return PythonToNativeRawNodeGen.create();
+        }
+
+        public static PythonToNativeRawNode getUncached() {
+            return PythonToNativeRawNodeGen.getUncached();
         }
     }
 
@@ -1697,6 +1731,7 @@ public abstract class CApiTransitions {
      * increase it since it will finally decrease it.
      * </p>
      */
+    // TODO(NFI2) replace usage with PythonToNativeNewRefRawNode
     @GenerateUncached
     @GenerateInline(false)
     public abstract static class PythonToNativeNewRefNode extends CExtToNativeNode {
@@ -1720,6 +1755,63 @@ public abstract class CApiTransitions {
 
         public static PythonToNativeNewRefNode getUncached() {
             return PythonToNativeNewRefNodeGen.getUncached();
+        }
+    }
+
+    /**
+     * Same as {@code PythonToNativeRawNode} but ensures that a new Python reference is
+     * returned.<br/>
+     * Concept:<br/>
+     * <p>
+     * If the value to convert is a managed object or a Java primitive, we will (1) do nothing if a
+     * fresh wrapper is created, or (2) increase the reference count by 1 if the wrapper already
+     * exists.
+     * </p>
+     * <p>
+     * If the value to convert is a {@link PythonAbstractNativeObject} (i.e. a wrapped native
+     * pointer), the reference count will be increased by 1. This is necessary because if the
+     * currently returning upcall function already got a new reference, it won't have increased the
+     * refcnt but will eventually decreases it.<br/>
+     * Consider following example:<br/>
+     *
+     * <pre>
+     *     some.py: nativeLong0 * nativeLong1
+     * </pre>
+     *
+     * Assume that {@code nativeLong0} is a native object with a native type. It will call
+     * {@code nativeType->tp_as_number.nb_multiply}. This one then often uses
+     * {@code PyNumber_Multiply} which should just pass through the newly created native reference.
+     * But it will decrease the reference count since it wraps the gained native pointer. So, the
+     * intermediate upcall should effectively not alter the refcnt which means that we need to
+     * increase it since it will finally decrease it.
+     * </p>
+     */
+    @GenerateUncached
+    @GenerateInline(false)
+    public abstract static class PythonToNativeNewRefRawNode extends Node {
+
+        public abstract long execute(Object object);
+
+        @TruffleBoundary
+        public static long executeUncached(Object obj) {
+            return PythonToNativeNewRefRawNodeGen.getUncached().execute(obj);
+        }
+
+        @Specialization
+        static long doGeneric(Object obj,
+                        @Bind Node inliningTarget,
+                        @Cached PythonToNativeInternalNode internalNode,
+                        @Cached CoerceNativePointerToLongNode coerceNode) {
+            return ensurePointer(internalNode.execute(inliningTarget, obj, true), inliningTarget, coerceNode);
+        }
+
+        @NeverDefault
+        public static PythonToNativeNewRefRawNode create() {
+            return PythonToNativeNewRefRawNodeGen.create();
+        }
+
+        public static PythonToNativeNewRefRawNode getUncached() {
+            return PythonToNativeNewRefRawNodeGen.getUncached();
         }
     }
 
@@ -1813,7 +1905,7 @@ public abstract class CApiTransitions {
                     return PNone.NO_VALUE;
                 }
                 if (wrapper == null) {
-                    int collecting = readI32Node.read(pythonContext.getCApiContext().getGCState(), CFields.GCState__collecting);
+                    int collecting = CStructAccess.readIntField(pythonContext.getCApiContext().getGCState(), CFields.GCState__collecting);
                     if (collecting == 1) {
                         return PNone.NO_VALUE;
                     }

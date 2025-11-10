@@ -42,8 +42,10 @@ package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleStringZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PointerZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyASCIIObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyByteArrayObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyCFunctionObject;
@@ -61,7 +63,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyModuleObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectPtr;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectPtrZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectWrapper;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PySetObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PySliceObject;
@@ -76,6 +78,8 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.getter;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.setter;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.vectorcallfunc;
+import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.nfi2.NativeMemory.calloc;
 import static com.oracle.graal.python.nodes.HiddenAttr.METHOD_DEF_PTR;
 import static com.oracle.graal.python.nodes.HiddenAttr.PROMOTED_START;
 import static com.oracle.graal.python.nodes.HiddenAttr.PROMOTED_STEP;
@@ -139,12 +143,12 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextSlotBuiltins {
 
-    @CApiBuiltin(name = "GraalPyPrivate_Get_PyListObject_ob_item", ret = PyObjectPtr, args = {PyListObject}, call = Ignored)
-    @CApiBuiltin(name = "GraalPyPrivate_Get_PyTupleObject_ob_item", ret = PyObjectPtr, args = {PyTupleObject}, call = Ignored)
+    @CApiBuiltin(name = "GraalPyPrivate_Get_PyListObject_ob_item", ret = PyObjectPtrZZZ, args = {PyListObject}, call = Ignored)
+    @CApiBuiltin(name = "GraalPyPrivate_Get_PyTupleObject_ob_item", ret = PyObjectPtrZZZ, args = {PyTupleObject}, call = Ignored)
     abstract static class GraalPyPrivate_Get_PSequence_ob_item extends CApiUnaryBuiltinNode {
 
         @Specialization
-        static Object get(PSequence object) {
+        static long get(PSequence object) {
             assert !(object.getSequenceStorage() instanceof NativeByteSequenceStorage);
             return PySequenceArrayWrapper.ensureNativeSequence(object);
         }
@@ -338,11 +342,11 @@ public final class PythonCextSlotBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Pointer, args = {PyByteArrayObject}, call = Ignored)
+    @CApiBuiltin(ret = PointerZZZ, args = {PyByteArrayObject}, call = Ignored)
     abstract static class GraalPyPrivate_Get_PyByteArrayObject_ob_start extends CApiUnaryBuiltinNode {
 
         @Specialization
-        static Object doObStart(PByteArray object) {
+        static long doObStart(PByteArray object) {
             assert !(object.getSequenceStorage() instanceof NativeObjectSequenceStorage);
             return PySequenceArrayWrapper.ensureNativeSequence(object);
         }
@@ -413,15 +417,15 @@ public final class PythonCextSlotBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = ConstCharPtrAsTruffleString, args = {PyGetSetDef}, call = Ignored)
+    @CApiBuiltin(ret = ConstCharPtrAsTruffleStringZZZ, args = {PyGetSetDef}, call = Ignored)
     abstract static class GraalPyPrivate_Get_PyGetSetDef_doc extends CApiUnaryBuiltinNode {
         @Specialization
-        Object get(PythonObject object,
+        long get(PythonObject object,
                         @Cached(parameters = "T___DOC__") GetFixedAttributeNode getAttrNode,
                         @Cached AsCharPointerNode asCharPointerNode) {
             Object doc = getAttrNode.execute(null, object);
             if (PGuards.isPNone(doc)) {
-                return getNULL();
+                return NULLPTR;
             } else {
                 return asCharPointerNode.execute(doc);
             }
@@ -436,15 +440,15 @@ public final class PythonCextSlotBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = ConstCharPtrAsTruffleString, args = {PyGetSetDef}, call = Ignored)
+    @CApiBuiltin(ret = ConstCharPtrAsTruffleStringZZZ, args = {PyGetSetDef}, call = Ignored)
     abstract static class GraalPyPrivate_Get_PyGetSetDef_name extends CApiUnaryBuiltinNode {
         @Specialization
-        Object get(PythonObject object,
+        long get(PythonObject object,
                         @Cached(parameters = "T___NAME__") GetFixedAttributeNode getAttrNode,
                         @Cached AsCharPointerNode asCharPointerNode) {
             Object name = getAttrNode.execute(null, object);
             if (PGuards.isPNone(name)) {
-                return getNULL();
+                return NULLPTR;
             } else {
                 return asCharPointerNode.execute(name);
             }
@@ -562,12 +566,11 @@ public final class PythonCextSlotBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Pointer, args = {PyModuleObject}, call = Ignored)
+    @CApiBuiltin(ret = PointerZZZ, args = {PyModuleObject}, call = Ignored)
     abstract static class GraalPyPrivate_Get_PyModuleObject_md_state extends CApiUnaryBuiltinNode {
         @Specialization
-        static Object get(PythonModule object,
-                        @Bind Node inliningTarget) {
-            return object.getNativeModuleState() != null ? object.getNativeModuleState() : PythonContext.get(inliningTarget).getNativeNull();
+        static Object get(PythonModule object) {
+            return object.getNativeModuleState();
         }
     }
 
@@ -672,15 +675,14 @@ public final class PythonCextSlotBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Pointer, args = {PyUnicodeObject}, call = Ignored)
+    @CApiBuiltin(ret = PointerZZZ, args = {PyUnicodeObject}, call = Ignored)
     abstract static class GraalPyPrivate_Get_PyUnicodeObject_data extends CApiUnaryBuiltinNode {
 
         @Specialization
-        static Object get(PString object,
+        static long get(PString object,
                         @Bind Node inliningTarget,
                         @Cached TruffleString.GetCodeRangeNode getCodeRangeNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Cached CStructAccess.AllocateNode allocateNode,
                         @Cached CStructAccess.WriteTruffleStringNode writeTruffleStringNode,
                         @Cached HiddenAttr.ReadNode readAttrNode,
                         @Cached HiddenAttr.WriteNode writeAttrNode) {
@@ -710,7 +712,7 @@ public final class PythonCextSlotBuiltins {
             }
             string = switchEncodingNode.execute(string, encoding);
             int byteLength = string.byteLength(encoding);
-            Object ptr = allocateNode.alloc(byteLength + /* null terminator */ charSize);
+            long ptr = calloc(byteLength + /* null terminator */ charSize);
             writeTruffleStringNode.write(ptr, string, encoding);
             /*
              * Set native data, so we can just return the pointer the next time.

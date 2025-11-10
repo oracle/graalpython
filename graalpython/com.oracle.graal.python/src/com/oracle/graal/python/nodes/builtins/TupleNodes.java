@@ -42,11 +42,14 @@ package com.oracle.graal.python.nodes.builtins;
 
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTupleObject__ob_item;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyVarObject__ob_size;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointer;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readPtrField;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.CreateStorageFromIteratorNode;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
@@ -145,11 +148,12 @@ public abstract class TupleNodes {
 
         @Specialization
         NativeObjectSequenceStorage getNative(PythonAbstractNativeObject tuple,
-                        @Cached CStructAccess.ReadPointerNode getContents,
-                        @Cached CStructAccess.ReadI64Node readI64Node) {
+                        @Bind Node inliningTarget,
+                        @Cached CoerceNativePointerToLongNode coerceNode) {
             assert PyTupleCheckNode.executeUncached(tuple);
-            Object array = getContents.readFromObj(tuple, PyTupleObject__ob_item);
-            int size = (int) readI64Node.readFromObj(tuple, PyVarObject__ob_size);
+            long tupleRawPtr = ensurePointer(tuple.getPtr(), inliningTarget, coerceNode);
+            long array = readPtrField(tupleRawPtr, PyTupleObject__ob_item);
+            int size = (int) readLongField(tupleRawPtr, PyVarObject__ob_size);
             return NativeObjectSequenceStorage.create(array, size, size, false);
         }
     }

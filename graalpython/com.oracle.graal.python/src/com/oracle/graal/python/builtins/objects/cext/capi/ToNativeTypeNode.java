@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.lookupNativeI64MemberInMRO;
 import static com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.lookupNativeMemberInMRO;
+import static com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.stringToNativeUtf8BytesUncached;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyObject__ob_refcnt;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyObject__ob_type;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_alloc;
@@ -54,20 +55,19 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTy
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_traverse;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_vectorcall_offset;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_weaklistoffset;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeIntField;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeLongField;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
+import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNewRefNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefRawNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeRawNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.WritePointerNode;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -98,83 +98,70 @@ import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.strings.TruffleString;
 
 public abstract class ToNativeTypeNode {
 
-    private static Object allocatePyAsyncMethods(TpSlots slots, Object nullValue) {
-        Object mem = CStructAccess.AllocateNode.allocUncached(CStructs.PyAsyncMethods);
-        CStructAccess.WritePointerNode writePointerNode = CStructAccess.WritePointerNode.getUncached();
-        writeGroupSlots(CFields.PyTypeObject__tp_as_async, slots, writePointerNode, mem, nullValue);
+    private static long allocatePyAsyncMethods(TpSlots slots) {
+        long mem = CStructAccess.allocate(CStructs.PyAsyncMethods);
+        writeGroupSlots(CFields.PyTypeObject__tp_as_async, slots, mem);
         return mem;
     }
 
-    private static void writeGroupSlots(CFields groupField, TpSlots slots, WritePointerNode writePointerNode, Object groupPointer, Object nullValue) {
+    private static void writeGroupSlots(CFields groupField, TpSlots slots, long groupPointer) {
         for (TpSlotMeta def : TpSlotMeta.VALUES) {
             if (def.getNativeGroupOrField() == groupField) {
-                writePointerNode.write(groupPointer, def.getNativeField(), def.getNativeValue(slots, nullValue));
+                CStructAccess.writePtrField(groupPointer, def.getNativeField(), def.getNativeValue(slots, NULLPTR));
             }
         }
     }
 
-    private static Object allocatePyMappingMethods(TpSlots slots, Object nullValue) {
-        Object mem = CStructAccess.AllocateNode.allocUncached(CStructs.PyMappingMethods);
-        CStructAccess.WritePointerNode writePointerNode = CStructAccess.WritePointerNode.getUncached();
-        writeGroupSlots(CFields.PyTypeObject__tp_as_mapping, slots, writePointerNode, mem, nullValue);
+    private static long allocatePyMappingMethods(TpSlots slots) {
+        long mem = CStructAccess.allocate(CStructs.PyMappingMethods);
+        writeGroupSlots(CFields.PyTypeObject__tp_as_mapping, slots, mem);
         return mem;
     }
 
-    private static Object allocatePyNumberMethods(TpSlots slots, Object nullValue) {
-        Object mem = CStructAccess.AllocateNode.allocUncached(CStructs.PyNumberMethods);
-        CStructAccess.WritePointerNode writePointerNode = CStructAccess.WritePointerNode.getUncached();
-        writeGroupSlots(CFields.PyTypeObject__tp_as_number, slots, writePointerNode, mem, nullValue);
+    private static long allocatePyNumberMethods(TpSlots slots) {
+        long mem = CStructAccess.allocate(CStructs.PyNumberMethods);
+        writeGroupSlots(CFields.PyTypeObject__tp_as_number, slots, mem);
         return mem;
     }
 
-    private static Object allocatePySequenceMethods(TpSlots slots, Object nullValue) {
-        Object mem = CStructAccess.AllocateNode.allocUncached(CStructs.PyNumberMethods);
-        CStructAccess.WritePointerNode writePointerNode = CStructAccess.WritePointerNode.getUncached();
-        writeGroupSlots(CFields.PyTypeObject__tp_as_sequence, slots, writePointerNode, mem, nullValue);
+    private static long allocatePySequenceMethods(TpSlots slots) {
+        long mem = CStructAccess.allocate(CStructs.PyNumberMethods);
+        writeGroupSlots(CFields.PyTypeObject__tp_as_sequence, slots, mem);
         return mem;
     }
 
-    private static Object lookup(PythonManagedClass clazz, CFields member, HiddenAttr hiddenName) {
-        Object result = lookupNativeMemberInMRO(clazz, member, hiddenName);
-        if (result == PNone.NO_VALUE) {
-            return PythonContext.get(null).getNativeNull();
-        }
-        return result;
+    private static long lookup(PythonManagedClass clazz, CFields member, HiddenAttr hiddenName) {
+        return lookupNativeMemberInMRO(clazz, member, hiddenName);
     }
 
     private static long lookupSize(PythonManagedClass clazz, CFields member, HiddenAttr hiddenName) {
         return lookupNativeI64MemberInMRO(clazz, member, hiddenName);
     }
 
-    static void initializeType(PythonClassNativeWrapper obj, Object mem, boolean heaptype) {
+    static void initializeType(PythonClassNativeWrapper obj, long mem, boolean heaptype) {
         CompilerAsserts.neverPartOfCompilation();
 
         PythonManagedClass clazz = (PythonManagedClass) obj.getDelegate();
         TpSlots slots = GetTpSlotsNode.executeUncached(clazz);
         boolean isType = IsBuiltinClassExactProfile.profileClassSlowPath(clazz, PythonBuiltinClassType.PythonClass);
 
-        PythonToNativeNode toNative = PythonToNativeNodeGen.getUncached();
-        PythonToNativeNewRefNode toNativeNewRef = PythonToNativeNewRefNodeGen.getUncached();
-        CStructAccess.WritePointerNode writePtrNode = CStructAccessFactory.WritePointerNodeGen.getUncached();
-        CStructAccess.WriteLongNode writeI64Node = CStructAccessFactory.WriteLongNodeGen.getUncached();
-        CStructAccess.WriteIntNode writeI32Node = CStructAccessFactory.WriteIntNodeGen.getUncached();
+        PythonToNativeRawNode toNative = PythonToNativeRawNode.getUncached();
+        PythonToNativeNewRefRawNode toNativeNewRef = PythonToNativeNewRefRawNode.getUncached();
         GetTypeFlagsNode getTypeFlagsNode = GetTypeFlagsNodeGen.getUncached();
 
         PythonContext ctx = PythonContext.get(null);
         PythonLanguage language = ctx.getLanguage();
-        Object nullValue = ctx.getNativeNull();
 
         // make this object immortal
-        writeI64Node.write(mem, PyObject__ob_refcnt, PythonAbstractObjectNativeWrapper.IMMORTAL_REFCNT);
+        writeLongField(mem, PyObject__ob_refcnt, PythonAbstractObjectNativeWrapper.IMMORTAL_REFCNT);
         if (isType) {
             // self-reference
-            writePtrNode.write(mem, PyObject__ob_type, mem);
+            writePtrField(mem, PyObject__ob_type, mem);
         } else {
-            writePtrNode.write(mem, PyObject__ob_type, toNative.execute(GetClassNode.executeUncached(clazz)));
+            writePtrField(mem, PyObject__ob_type, toNative.execute(GetClassNode.executeUncached(clazz)));
         }
 
         long flags = getTypeFlagsNode.execute(clazz);
@@ -193,12 +180,12 @@ public abstract class ToNativeTypeNode {
             base = ctx.lookupType(builtinClass);
         }
 
-        writeI64Node.write(mem, CFields.PyVarObject__ob_size, 0L);
+        writeLongField(mem, CFields.PyVarObject__ob_size, 0L);
 
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_name, clazz.getClassNativeWrapper().getNameWrapper());
-        writeI64Node.write(mem, CFields.PyTypeObject__tp_basicsize, GetBasicSizeNode.executeUncached(clazz));
-        writeI64Node.write(mem, CFields.PyTypeObject__tp_itemsize, GetItemSizeNode.executeUncached(clazz));
-        // writeI64Node.write(mem, CFields.PyTypeObject__tp_weaklistoffset,
+        writePtrField(mem, CFields.PyTypeObject__tp_name, clazz.getClassNativeWrapper().getNameWrapper());
+        writeLongField(mem, CFields.PyTypeObject__tp_basicsize, GetBasicSizeNode.executeUncached(clazz));
+        writeLongField(mem, CFields.PyTypeObject__tp_itemsize, GetItemSizeNode.executeUncached(clazz));
+        // writeStructMemberLong(mem, CFields.PyTypeObject__tp_weaklistoffset,
         // GetWeakListOffsetNode.executeUncached(clazz));
         /*
          * TODO msimacek: this should use GetWeakListOffsetNode as in the commented out code above.
@@ -210,47 +197,48 @@ public abstract class ToNativeTypeNode {
         } else {
             weaklistoffset = lookupNativeI64MemberInMRO(clazz, PyTypeObject__tp_weaklistoffset, SpecialAttributeNames.T___WEAKLISTOFFSET__);
         }
-        Object asAsync = slots.has_as_async() ? allocatePyAsyncMethods(slots, nullValue) : nullValue;
-        Object asNumber = slots.has_as_number() ? allocatePyNumberMethods(slots, nullValue) : nullValue;
-        Object asSequence = slots.has_as_sequence() ? allocatePySequenceMethods(slots, nullValue) : nullValue;
-        Object asMapping = slots.has_as_mapping() ? allocatePyMappingMethods(slots, nullValue) : nullValue;
-        Object asBuffer = lookup(clazz, PyTypeObject__tp_as_buffer, HiddenAttr.AS_BUFFER);
-        writeI64Node.write(mem, CFields.PyTypeObject__tp_weaklistoffset, weaklistoffset);
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_dealloc, lookup(clazz, PyTypeObject__tp_dealloc, HiddenAttr.DEALLOC));
-        writeI64Node.write(mem, CFields.PyTypeObject__tp_vectorcall_offset, lookupSize(clazz, PyTypeObject__tp_vectorcall_offset, HiddenAttr.VECTORCALL_OFFSET));
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_getattr, nullValue);
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_as_async, asAsync);
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_as_number, asNumber);
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_as_sequence, asSequence);
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_as_mapping, asMapping);
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_as_buffer, asBuffer);
-        writeI64Node.write(mem, CFields.PyTypeObject__tp_flags, flags);
+        long asAsync = slots.has_as_async() ? allocatePyAsyncMethods(slots) : NULLPTR;
+        long asNumber = slots.has_as_number() ? allocatePyNumberMethods(slots) : NULLPTR;
+        long asSequence = slots.has_as_sequence() ? allocatePySequenceMethods(slots) : NULLPTR;
+        long asMapping = slots.has_as_mapping() ? allocatePyMappingMethods(slots) : NULLPTR;
+        long asBuffer = lookup(clazz, PyTypeObject__tp_as_buffer, HiddenAttr.AS_BUFFER);
+        writeLongField(mem, CFields.PyTypeObject__tp_weaklistoffset, weaklistoffset);
+        writePtrField(mem, CFields.PyTypeObject__tp_dealloc, lookup(clazz, PyTypeObject__tp_dealloc, HiddenAttr.DEALLOC));
+        writeLongField(mem, CFields.PyTypeObject__tp_vectorcall_offset, lookupSize(clazz, PyTypeObject__tp_vectorcall_offset, HiddenAttr.VECTORCALL_OFFSET));
+        writePtrField(mem, CFields.PyTypeObject__tp_getattr, NULLPTR);
+        writePtrField(mem, CFields.PyTypeObject__tp_as_async, asAsync);
+        writePtrField(mem, CFields.PyTypeObject__tp_as_number, asNumber);
+        writePtrField(mem, CFields.PyTypeObject__tp_as_sequence, asSequence);
+        writePtrField(mem, CFields.PyTypeObject__tp_as_mapping, asMapping);
+        writePtrField(mem, CFields.PyTypeObject__tp_as_buffer, asBuffer);
+        writeLongField(mem, CFields.PyTypeObject__tp_flags, flags);
 
         // return a C string wrapper that really allocates 'char*' on TO_NATIVE
         Object docObj = clazz.getAttribute(SpecialAttributeNames.T___DOC__);
+        long docPtr;
         try {
-            docObj = new CStringWrapper(CastToTruffleStringNode.executeUncached(docObj).switchEncodingUncached(TruffleString.Encoding.UTF_8), TruffleString.Encoding.UTF_8);
+            docPtr = stringToNativeUtf8BytesUncached(CastToTruffleStringNode.executeUncached(docObj));
         } catch (CannotCastException e) {
             // if not directly a string, give up (we don't call descriptors here)
-            docObj = ctx.getNativeNull();
+            docPtr = NULLPTR;
         }
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_doc, docObj);
+        writePtrField(mem, CFields.PyTypeObject__tp_doc, docPtr);
 
-        Object tpTraverse = nullValue;
-        Object tpIsGc = nullValue;
+        long tpTraverse = NULLPTR;
+        long tpIsGc = NULLPTR;
         if ((flags & TypeFlags.HAVE_GC) != 0) {
             tpTraverse = lookup(clazz, PyTypeObject__tp_traverse, HiddenAttr.TRAVERSE);
             tpIsGc = lookup(clazz, PyTypeObject__tp_is_gc, HiddenAttr.IS_GC);
         }
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_traverse, tpTraverse);
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_is_gc, tpIsGc);
+        writePtrField(mem, CFields.PyTypeObject__tp_traverse, tpTraverse);
+        writePtrField(mem, CFields.PyTypeObject__tp_is_gc, tpIsGc);
 
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_methods, nullValue);
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_members, nullValue);
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_getset, nullValue);
+        writePtrField(mem, CFields.PyTypeObject__tp_methods, NULLPTR);
+        writePtrField(mem, CFields.PyTypeObject__tp_members, NULLPTR);
+        writePtrField(mem, CFields.PyTypeObject__tp_getset, NULLPTR);
         if (!isType) {
             // "object" base needs to be initialized explicitly in capi.c
-            writePtrNode.write(mem, CFields.PyTypeObject__tp_base, toNative.execute(base));
+            writePtrField(mem, CFields.PyTypeObject__tp_base, toNative.execute(base));
         }
 
         // TODO(fa): we could cache the dict instance on the class' native wrapper
@@ -261,48 +249,48 @@ public abstract class ToNativeTypeNode {
             // copy all mappings to the new storage
             dict.setDictStorage(HashingStorageAddAllToOther.executeUncached(dictStorage, storage));
         }
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_dict, toNative.execute(dict));
+        writePtrField(mem, CFields.PyTypeObject__tp_dict, toNative.execute(dict));
 
         for (TpSlotMeta def : TpSlotMeta.VALUES) {
             if (!def.hasGroup() && def.hasNativeWrapperFactory()) {
-                writePtrNode.write(mem, def.getNativeGroupOrField(), def.getNativeValue(slots, nullValue));
+                writePtrField(mem, def.getNativeGroupOrField(), def.getNativeValue(slots, NULLPTR));
             }
         }
 
         // TODO properly implement 'tp_dictoffset' for builtin classes
-        writeI64Node.write(mem, CFields.PyTypeObject__tp_dictoffset, GetDictOffsetNode.executeUncached(clazz));
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_alloc, lookup(clazz, PyTypeObject__tp_alloc, HiddenAttr.ALLOC));
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_free, lookup(clazz, PyTypeObject__tp_free, HiddenAttr.FREE));
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_clear, lookup(clazz, PyTypeObject__tp_clear, HiddenAttr.CLEAR));
+        writeLongField(mem, CFields.PyTypeObject__tp_dictoffset, GetDictOffsetNode.executeUncached(clazz));
+        writePtrField(mem, CFields.PyTypeObject__tp_alloc, lookup(clazz, PyTypeObject__tp_alloc, HiddenAttr.ALLOC));
+        writePtrField(mem, CFields.PyTypeObject__tp_free, lookup(clazz, PyTypeObject__tp_free, HiddenAttr.FREE));
+        writePtrField(mem, CFields.PyTypeObject__tp_clear, lookup(clazz, PyTypeObject__tp_clear, HiddenAttr.CLEAR));
         if (clazz.basesTuple == null) {
             clazz.basesTuple = PFactory.createTuple(language, GetBaseClassesNode.executeUncached(clazz));
         }
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_bases, toNative.execute(clazz.basesTuple));
+        writePtrField(mem, CFields.PyTypeObject__tp_bases, toNative.execute(clazz.basesTuple));
         if (clazz.mroStore == null) {
             clazz.mroStore = PFactory.createTuple(language, GetMroStorageNode.executeUncached(clazz));
         }
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_mro, toNative.execute(clazz.mroStore));
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_cache, nullValue);
+        writePtrField(mem, CFields.PyTypeObject__tp_mro, toNative.execute(clazz.mroStore));
+        writePtrField(mem, CFields.PyTypeObject__tp_cache, NULLPTR);
         PDict subclasses = GetSubclassesNode.executeUncached(clazz);
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_subclasses, toNativeNewRef.execute(subclasses));
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_weaklist, nullValue);
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_del, lookup(clazz, PyTypeObject__tp_del, HiddenAttr.DEL));
-        writeI32Node.write(mem, CFields.PyTypeObject__tp_version_tag, 0);
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_finalize, nullValue);
-        writePtrNode.write(mem, CFields.PyTypeObject__tp_vectorcall, nullValue);
+        writePtrField(mem, CFields.PyTypeObject__tp_subclasses, toNativeNewRef.execute(subclasses));
+        writePtrField(mem, CFields.PyTypeObject__tp_weaklist, NULLPTR);
+        writePtrField(mem, CFields.PyTypeObject__tp_del, lookup(clazz, PyTypeObject__tp_del, HiddenAttr.DEL));
+        writeIntField(mem, CFields.PyTypeObject__tp_version_tag, 0);
+        writePtrField(mem, CFields.PyTypeObject__tp_finalize, NULLPTR);
+        writePtrField(mem, CFields.PyTypeObject__tp_vectorcall, NULLPTR);
 
         if (heaptype) {
             assert (flags & TypeFlags.HEAPTYPE) != 0;
-            writePtrNode.write(mem, CFields.PyHeapTypeObject__as_async, asAsync);
-            writePtrNode.write(mem, CFields.PyHeapTypeObject__as_number, asNumber);
-            writePtrNode.write(mem, CFields.PyHeapTypeObject__as_mapping, asMapping);
-            writePtrNode.write(mem, CFields.PyHeapTypeObject__as_sequence, asSequence);
-            writePtrNode.write(mem, CFields.PyHeapTypeObject__as_buffer, asBuffer);
-            writePtrNode.write(mem, CFields.PyHeapTypeObject__ht_name, toNativeNewRef.execute(clazz.getName()));
-            writePtrNode.write(mem, CFields.PyHeapTypeObject__ht_qualname, toNativeNewRef.execute(clazz.getQualName()));
-            writePtrNode.write(mem, CFields.PyHeapTypeObject__ht_module, nullValue);
+            writePtrField(mem, CFields.PyHeapTypeObject__as_async, asAsync);
+            writePtrField(mem, CFields.PyHeapTypeObject__as_number, asNumber);
+            writePtrField(mem, CFields.PyHeapTypeObject__as_mapping, asMapping);
+            writePtrField(mem, CFields.PyHeapTypeObject__as_sequence, asSequence);
+            writePtrField(mem, CFields.PyHeapTypeObject__as_buffer, asBuffer);
+            writePtrField(mem, CFields.PyHeapTypeObject__ht_name, toNativeNewRef.execute(clazz.getName()));
+            writePtrField(mem, CFields.PyHeapTypeObject__ht_qualname, toNativeNewRef.execute(clazz.getQualName()));
+            writePtrField(mem, CFields.PyHeapTypeObject__ht_module, NULLPTR);
             Object dunderSlots = clazz.getAttribute(SpecialAttributeNames.T___SLOTS__);
-            writePtrNode.write(mem, CFields.PyHeapTypeObject__ht_slots, dunderSlots != PNone.NO_VALUE ? toNativeNewRef.execute(dunderSlots) : nullValue);
+            writePtrField(mem, CFields.PyHeapTypeObject__ht_slots, dunderSlots != PNone.NO_VALUE ? toNativeNewRef.execute(dunderSlots) : NULLPTR);
         }
     }
 }
