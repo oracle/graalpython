@@ -229,7 +229,7 @@ public abstract class MaterializeFrameNode extends Node {
                 pyFrame.setBci(bytecodeNode.getBytecodeIndex(frameToMaterialize));
                 pyFrame.setLocation(bytecodeNode);
             } else {
-                assert false : String.format("%s, root: %s", location, location != null ? location.getRootNode() : "null");
+                assert location == PythonLanguage.get(null).unavailableSafepointLocation : String.format("%s, root: %s", location, location != null ? location.getRootNode() : "null");
                 pyFrame.setBci(-1);
                 pyFrame.setLocation(location);
             }
