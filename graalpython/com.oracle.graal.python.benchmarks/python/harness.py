@@ -236,7 +236,7 @@ def has_low_variance(durations, durations_len):
 
 class BenchRunner(object):
     def __init__(self, bench_file, bench_args=None, iterations=1, warmup=-1, warmup_runs=0, startup=None,
-                 live_results=False):
+                 live_results=False, self_measurement=False):
         assert isinstance(iterations, int), \
             "BenchRunner iterations argument must be an int, got %s instead" % iterations
         assert isinstance(warmup, int), \
@@ -256,6 +256,7 @@ class BenchRunner(object):
         self.warmup = warmup if warmup > 0 else -1
         self.startup = startup
         self.live_results = live_results
+        self.self_measurement = self_measurement
 
     @staticmethod
     def get_bench_module(bench_file):
@@ -325,6 +326,7 @@ class BenchRunner(object):
                                                                   duration_str))
 
         report_startup = bool(self.startup)
+        benchmark_returns_duration = self.self_measurement
 
         cleanup = False
         cleanup_attr = self._get_attr(ATTR_CLEANUP)
@@ -354,9 +356,9 @@ class BenchRunner(object):
                 start = monotonic_best_accuracy()
                 result = bench_func(*args)
                 cur_time = monotonic_best_accuracy()
-                duration = cur_time - start
+                duration = cur_time - start if not benchmark_returns_duration else result
                 timestamps[durations_len] = cur_time
-                durations[durations_len] = cur_time - start
+                durations[durations_len] = duration
                 durations_len += 1
                 if live_report:
                     report_iteration(iteration, duration)
@@ -436,6 +438,7 @@ def run_benchmark(args):
     bench_args = []
     paths = []
     live_results = False
+    self_measurement = False
 
     i = 0
     while i < len(args):
@@ -472,12 +475,17 @@ def run_benchmark(args):
             paths = arg.split("=")[1].split(",")
         elif arg == "--live-results":
             live_results = True
+        elif arg == "--self-measurement":
+            self_measurement = True
 
         elif bench_file is None:
             bench_file = arg
         else:
             bench_args.append(arg)
         i += 1
+        
+    if startup and self_measurement:
+        raise RuntimeError("It is not allowed to use the startup argument when self_measurement is enabled")
 
     min_required_iterations = max(startup) if startup else 0
     if startup and iterations < min_required_iterations:
@@ -497,7 +505,7 @@ def run_benchmark(args):
     if GRAALPYTHON:
         print(f"### using bytecode DSL interpreter: {__graalpython__.is_bytecode_dsl_interpreter}")
 
-    BenchRunner(bench_file, bench_args=bench_args, iterations=iterations, warmup=warmup, warmup_runs=warmup_runs, startup=startup, live_results=live_results).run()
+    BenchRunner(bench_file, bench_args=bench_args, iterations=iterations, warmup=warmup, warmup_runs=warmup_runs, startup=startup, live_results=live_results, self_measurement=self_measurement).run()
 
 
 if __name__ == '__main__':
