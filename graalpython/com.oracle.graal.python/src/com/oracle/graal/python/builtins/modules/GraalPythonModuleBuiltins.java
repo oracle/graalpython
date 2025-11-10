@@ -174,7 +174,6 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
@@ -225,7 +224,6 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         super.initialize(core);
         addBuiltinConstant("is_native", TruffleOptions.AOT);
         addBuiltinConstant("is_bytecode_dsl_interpreter", PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER);
-        addBuiltinConstant("truffle_runtime", PythonUtils.toTruffleStringUncached(Truffle.getRuntime().getName()));
         PythonContext ctx = core.getContext();
         TruffleString encodingOpt = ctx.getLanguage().getEngineOption(PythonOptions.StandardStreamEncoding);
         TruffleString standardStreamEncoding = null;

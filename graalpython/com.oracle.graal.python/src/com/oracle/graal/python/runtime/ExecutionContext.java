@@ -447,15 +447,11 @@ public abstract class ExecutionContext {
                 }
                 // ReadCallerFrameNode.getCallerFrame must have the assumption invalidated
                 assert node.needsCallerFrame() : "stack walk did not invalidate caller frame assumption";
-            } else {
-                // We may have been called via uncached call where we always pass frame reference,
-                // but make sure that even if the next call is cached, we get passed the rereference
-                // from our callers
-                if (!node.needsCallerFrame()) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    node.setNeedsCallerFrame();
-                }
             }
+            // Else: we may have been called via uncached call where we always pass frame reference.
+            // We assume uncached execution will eventually flip to cached execution, and then we'll
+            // go to the other branch and setNeedsCallerFrame. This helps to prevent one-off
+            // initializations (importing a module) from invalidating the assumption
 
             // force the frame so that it can be accessed later
             if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER && node instanceof PBytecodeDSLRootNode) {

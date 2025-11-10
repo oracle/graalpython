@@ -53,8 +53,7 @@ NUM_ITERATIONS = 1000000 if sys.implementation.name == "graalpy" else 5
 # Because of splitting, the code may not stabilize after first iteration and we may
 # see some stack walks during first few iterations. With default runtime or splitting
 # disabled, these tests should pass with STABILIZES_AT=1
-STABILIZES_AT = 1 if sys.implementation.name != "graalpy" or __graalpython__.truffle_runtime == 'Interpreted' else 10
-STABILIZES_AT = int(os.environ.get('GRAALPY_TEST_INDIRECT_CALL_STABILIZES_AT', STABILIZES_AT))
+STABILIZES_AT = int(os.environ.get('GRAALPY_TEST_INDIRECT_CALL_STABILIZES_AT', 10))
 
 has_stack_walk_check = False
 if sys.implementation.name == "graalpy":
