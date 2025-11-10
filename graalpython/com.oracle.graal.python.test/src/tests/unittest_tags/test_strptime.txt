@@ -6,6 +6,7 @@ test.test_strptime.CalculationTests.test_day_of_week_calculation @ darwin-arm64,
 test.test_strptime.CalculationTests.test_gregorian_calculation @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_strptime.CalculationTests.test_julian_calculation @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_strptime.CalculationTests.test_week_0 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_strptime.CalculationTests.test_week_of_year_and_day_of_week_calculation @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_strptime.JulianTests.test_all_julian_days @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_strptime.LocaleTime_Tests.test_am_pm @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_strptime.LocaleTime_Tests.test_date_time @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -41,9 +42,11 @@ test.test_strptime.StrptimeTests.test_time_locale @ darwin-arm64,linux-aarch64,l
 # Seems to be dependent on the actual time/date/timezone of the machine, at least on GraalPy. Needs investigation
 !test.test_strptime.StrptimeTests.test_timezone
 test.test_strptime.StrptimeTests.test_unconverteddata @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_strptime.StrptimeTests.test_weekday @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_strptime.StrptimeTests.test_weekday_locale @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_strptime.StrptimeTests.test_year @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_strptime.TimeRETests.test_blankpattern @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_strptime.TimeRETests.test_compile @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_strptime.TimeRETests.test_locale_data_w_regex_metacharacters @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_strptime.TimeRETests.test_matching_with_escapes @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_strptime.TimeRETests.test_pattern @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
