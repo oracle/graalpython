@@ -56,6 +56,7 @@ ITER_15 = ['-i', '15']
 ITER_10 = ['-i', '10']
 ITER_6 = ['-i', '6']
 ITER_5 = ['-i', '5']
+ITER_3 = ['-i', '3']
 WARMUP_2 = ['-w', '2']
 
 # For benchmarking with Truffle compilation
@@ -118,6 +119,8 @@ MICRO_BENCHMARKS = {
     'regexp-char-class-match': ITER_10,
     'regexp-char-class-no-match': ITER_10,
     'virtualize-in-try-catch-oom': ITER_10,
+    'phase_shift_warmup_baseline': ITER_5 + ['--self-measurement'] + ['500'],
+    'phase_shift_warmup': ITER_3 + ['--self-measurement'] + ['1600', '500'],
 }
 
 # For benchmarking the interpreter with --engine.Compilation=false
