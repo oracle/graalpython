@@ -1,4 +1,4 @@
-# Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,32 +37,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-
-import subprocess, sys, re
-
-
-# This benchmark computes the best possible result of the phase_shift_warmup
-# benchmark. It executes the script phase_shift_script_baseline in a subprocess.
-# The phase_shift_script_baseline script runs only the second phase of the 
-# full script phase_shift_script, and so the second phase starts with a clean
-# compilation queue. The second phase runs (phase2it + 200) iterations of a
-# certain workflow consisting of a large number of generated functions and measures
-# the sum of the time of the last 200 iterations. The better the time the better
-# is the code of the tested workflow warmed up.
-def __benchmark__(phase2it=0):
-    orig_vm_argv = sys.orig_argv
-    for i, arg in enumerate(orig_vm_argv):
-        if arg.endswith('harness.py'):
-            orig_vm_argv = orig_vm_argv[:i]
-            break
-    tt: int = 0
-    result = subprocess.run([*orig_vm_argv,
-    "--experimental-options",
-    "--engine.CompilerThreads=1",
-    re.sub(r'harness\.py', "micro/phase_shift_script_baseline.py", sys.argv[0]), str(phase2it)], capture_output=True, text=True, check=False)
-    m = re.search(r"LAST_200_IT_TIME = (\d+) ms", result.stdout)
-    if m:
-        tt = int(m.group(1))
-    print(result.stdout)
-    return tt * 1000000                
-
+__graalpython__.import_current_as_named_module_with_delegate(
+    module_name="unicodedata",
+    delegate_name="_cpython_unicodedata",
+    delegate_attributes=['ucd_3_2_0'],
+    wrap_methods=False,
+    owner_globals=globals())

@@ -41,18 +41,6 @@
 import subprocess, sys, re
 
 
-# This benchmark executes the script phase_shift_script in a subprocess.
-# The phase_shift_script script runs in two phases. The first phase runs (phase1it)
-# iterations of a certain workflow consisting of a large number of generated functions.
-# The second phase runs (phase2it + 200) iterations of a different workflow consisting
-# of a large, but approx. 5 times smaller, number of other generated
-# functions and measures the sum of the time of the last 200 iterations.
-# The better the time the better is the code of the second phase workflow
-# warmed up. Since the second phase runs after the first phase, the compilation queue
-# is pretty filled up when the second phase starts. This benchmark measures how
-# well the compilation queue performs in this situation, which can be compared
-# with the phase_shift_warmup_baseline benchmark, where the same workflow starts
-# with a clean compilation queue.
 def __benchmark__(phase1it=0, phase2it=0):
     orig_vm_argv = sys.orig_argv
     for i, arg in enumerate(orig_vm_argv):
@@ -61,8 +49,9 @@ def __benchmark__(phase1it=0, phase2it=0):
             break
     tt: int = 0
     result = subprocess.run([*orig_vm_argv,
-    "--experimental-options",
-    "--engine.CompilerThreads=1",
+    "--vm.Dpolyglot.engine.AllowExperimentalOptions=true",
+    "--vm.Dpolyglot.engine.CompilerIdleDelay=0",
+    "--vm.Dpolyglot.engine.CompilerThreads=1",
     re.sub(r'harness\.py', "micro/phase_shift_script.py", sys.argv[0]), str(phase1it), str(phase2it)], capture_output=True, text=True, check=False)
     m = re.search(r"LAST_200_IT_TIME = (\d+) ms", result.stdout)
     if m:
