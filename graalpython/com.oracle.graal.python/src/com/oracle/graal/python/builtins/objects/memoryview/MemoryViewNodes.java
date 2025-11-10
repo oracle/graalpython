@@ -75,6 +75,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -88,6 +89,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedIntValueProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public class MemoryViewNodes {
@@ -195,34 +197,20 @@ public class MemoryViewNodes {
     abstract static class ReadBytesAtNode extends Node {
         public abstract void execute(Node inliningTarget, byte[] dest, int destOffset, int len, PMemoryView self, Object ptr, int offset);
 
-        @Specialization(guards = {"ptr != null", "cachedLen == len", "cachedLen <= 8"}, limit = "4")
-        @ExplodeLoop
-        static void doNativeCached(byte[] dest, int destOffset, @SuppressWarnings("unused") int len, @SuppressWarnings("unused") PMemoryView self, Object ptr, int offset,
-                        @Cached("len") int cachedLen,
-                        @Shared @Cached(inline = false) CStructAccess.ReadByteNode readNode) {
-            readNode.readByteArray(ptr, dest, cachedLen, offset, destOffset);
+        @Specialization(guards = "ptr != null")
+        static void doNativeCached(Node inliningTarget, byte[] dest, int destOffset, @SuppressWarnings("unused") int len, @SuppressWarnings("unused") PMemoryView self, Object ptr, int offset,
+                        @Exclusive @Cached InlinedIntValueProfile lengthProfile,
+                        @Cached(inline = false) CStructAccess.ReadByteNode readNode) {
+            readNode.readByteArray(ptr, dest, lengthProfile.profile(inliningTarget, len), offset, destOffset);
         }
 
-        @Specialization(guards = "ptr != null", replaces = "doNativeCached")
-        static void doNativeGeneric(byte[] dest, int destOffset, int len, @SuppressWarnings("unused") PMemoryView self, Object ptr, int offset,
-                        @Shared @Cached(inline = false) CStructAccess.ReadByteNode readNode) {
-            readNode.readByteArray(ptr, dest, len, offset, destOffset);
-        }
-
-        @Specialization(guards = {"ptr == null", "cachedLen == len", "cachedLen <= 8"}, limit = "4")
-        @ExplodeLoop
-        void doManagedCached(byte[] dest, int destOffset, @SuppressWarnings("unused") int len, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
+        @Specialization(guards = "ptr == null", limit = "3")
+        static void doManagedCached(Node inliningTarget, byte[] dest, int destOffset, @SuppressWarnings("unused") int len, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
                         @CachedLibrary("self.getBuffer()") PythonBufferAccessLibrary bufferLib,
-                        @Cached("len") int cachedLen) {
-            checkBufferBounds(this, self, bufferLib, offset, cachedLen);
+                        @Exclusive @Cached InlinedIntValueProfile lenProfile) {
+            int cachedLen = lenProfile.profile(inliningTarget, len);
+            checkBufferBounds(inliningTarget, self, bufferLib, offset, cachedLen);
             bufferLib.readIntoByteArray(self.getBuffer(), offset, dest, destOffset, cachedLen);
-        }
-
-        @Specialization(guards = "ptr == null", replaces = "doManagedCached", limit = "3")
-        void doManagedGeneric(byte[] dest, int destOffset, int len, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
-                        @CachedLibrary("self.getBuffer()") PythonBufferAccessLibrary bufferLib) {
-            checkBufferBounds(this, self, bufferLib, offset, len);
-            bufferLib.readIntoByteArray(self.getBuffer(), offset, dest, destOffset, len);
         }
     }
 
@@ -232,34 +220,20 @@ public class MemoryViewNodes {
     abstract static class WriteBytesAtNode extends Node {
         public abstract void execute(Node inliningTarget, byte[] src, int srcOffset, int len, PMemoryView self, Object ptr, int offset);
 
-        @Specialization(guards = {"ptr != null", "cachedLen == len", "cachedLen <= 8"}, limit = "4")
-        @ExplodeLoop
-        static void doNativeCached(byte[] src, int srcOffset, @SuppressWarnings("unused") int len, @SuppressWarnings("unused") PMemoryView self, Object ptr, int offset,
-                        @Cached("len") int cachedLen,
-                        @Shared @Cached(inline = false) CStructAccess.WriteByteNode writeNode) {
-            writeNode.writeByteArray(ptr, src, cachedLen, srcOffset, offset);
+        @Specialization(guards = "ptr != null")
+        static void doNativeCached(Node inliningTarget, byte[] src, int srcOffset, int len, @SuppressWarnings("unused") PMemoryView self, Object ptr, int offset,
+                        @Exclusive @Cached InlinedIntValueProfile lenProfile,
+                        @Cached(inline = false) CStructAccess.WriteByteNode writeNode) {
+            writeNode.writeByteArray(ptr, src, lenProfile.profile(inliningTarget, len), srcOffset, offset);
         }
 
-        @Specialization(guards = "ptr != null", replaces = "doNativeCached")
-        static void doNativeGeneric(byte[] src, int srcOffset, int len, @SuppressWarnings("unused") PMemoryView self, Object ptr, int offset,
-                        @Shared @Cached(inline = false) CStructAccess.WriteByteNode writeNode) {
-            writeNode.writeByteArray(ptr, src, len, srcOffset, offset);
-        }
-
-        @Specialization(guards = {"ptr == null", "cachedLen == len", "cachedLen <= 8"}, limit = "4")
-        @ExplodeLoop
-        void doManagedCached(byte[] src, int srcOffset, @SuppressWarnings("unused") int len, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
+        @Specialization(guards = "ptr == null", limit = "3")
+        static void doManagedCached(Node inliningTarget, byte[] src, int srcOffset, int len, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
                         @CachedLibrary("self.getBuffer()") PythonBufferAccessLibrary bufferLib,
-                        @Cached("len") int cachedLen) {
-            checkBufferBounds(this, self, bufferLib, offset, cachedLen);
+                        @Exclusive @Cached InlinedIntValueProfile lenProfile) {
+            int cachedLen = lenProfile.profile(inliningTarget, len);
+            checkBufferBounds(inliningTarget, self, bufferLib, offset, cachedLen);
             bufferLib.writeFromByteArray(self.getBuffer(), offset, src, srcOffset, cachedLen);
-        }
-
-        @Specialization(guards = "ptr == null", replaces = "doManagedCached", limit = "3")
-        void doManagedGeneric(byte[] src, int srcOffset, int len, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
-                        @CachedLibrary("self.getBuffer()") PythonBufferAccessLibrary bufferLib) {
-            checkBufferBounds(this, self, bufferLib, offset, len);
-            bufferLib.writeFromByteArray(self.getBuffer(), offset, src, srcOffset, len);
         }
     }
 
