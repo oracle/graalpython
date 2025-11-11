@@ -8,7 +8,7 @@ GraalPy includes a module named `standalone` to create a Python binary for Linux
 
 > **Prerequisite:** GraalPy 23.1.0 or later. [Download here](https://github.com/oracle/graalpython/releases) or verify your version with `graalpy --version`.
 
-## Quickstart
+## Quickstart of Python Standalone Applications
 
 To create an native executable from a Python file with its dependencies, use this command:
 
