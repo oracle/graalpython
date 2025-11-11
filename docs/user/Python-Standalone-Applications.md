@@ -1,15 +1,16 @@
 # Python Standalone Applications
 
-GraalPy enables you to create a Python application or library as a native application or JAR file with no external dependencies.
-The [Truffle framework](https://github.com/oracle/graal/tree/master/truffle) on which GraalPy is built virtualizes all filesystem accesses, including those to the standard library and installed pure Python packages.
-Packages that include native code can still circumvent this, however!
+GraalPy enables you to package your Python applications or libraries into native executables or JAR files with no external dependencies. This means users can run your application without installing Python or any packages.
 
-GraalPy includes a module named `standalone` to create a Python binary for Linux, macOS, and Windows. 
-The modules bundles all your application's resources into a single file.
+GraalPy uses the [Truffle framework](https://github.com/oracle/graal/tree/master/truffle) to bundle your Python code, dependencies, and the Python runtime into standalone executables. Truffle's filesystem virtualization allows everything to work from a single file, though packages with native C extensions may have limitations.
 
-> Prerequisite: GraalPy distribution beginning with version 23.1.0. See [GraalPy releases](https://github.com/oracle/graalpython/releases).
+GraalPy includes a module named `standalone` to create a Python binary for Linux, macOS, and Windows. The module bundles all your application's resources into a single file.
 
-For example, if you want to produce a native executable from a Python file named _my\_script.py_ along with packages you have installed in a virtual environment named _my\_venv_, run the following command:
+> **Prerequisite:** GraalPy 23.1.0 or later. [Download here](https://github.com/oracle/graalpython/releases) or verify your version with `graalpy --version`.
+
+## Quickstart
+
+To create an native executable from a Python file with its dependencies, use this command:
 
 ```bash
 graalpy -m standalone native \
@@ -18,10 +19,15 @@ graalpy -m standalone native \
       --venv my_env
 ```
 
-It produces a native _my_binary_ file which includes your Python code, the GraalPy runtime, and the Python standard library in a single, self-contained executable.
+Where:
+
+* `--module my_script.py` states the main Python file that contains your application's entry point
+* `--output my_binary` states the name for your standalone executable (no file extension needed)
+* `--venv my_env` states the path to virtual environment with installed packages (you can omit this if there are no dependencies)
+
+This produces a native _my_binary_ file which includes your Python code, the GraalPy runtime, and the Python standard library in a single, self-contained executable.
 Use `graalpy -m standalone native --help` for further options.
 
-### Security Considerations of Python Standalone Applications
+### Security Considerations
 
-Creating a native executable or a JAR file that includes Python code could be seen as a mild form of obfuscation, but it does not protect your source code.
-Python source code is not stored verbatim into the executable (only the GraalPy bytecode is stored), but bytecode is easy to convert back into Python source code.
+Standalone executables do not protect your source code. Your Python code becomes bytecode, and bytecode can be easily decompiled back to readable Python code.
