@@ -24,4 +24,5 @@ test.test_platform.PlatformTest.test_uname_processor @ linux-x86_64
 test.test_platform.PlatformTest.test_uname_replace @ linux-x86_64
 test.test_platform.PlatformTest.test_uname_slices @ linux-x86_64
 test.test_platform.PlatformTest.test_version @ linux-x86_64
+test.test_platform.PlatformTest.test_win32_ver @ linux-x86_64
 test.test_platform.PlatformTest.test_win32_ver_on_non_windows @ linux-x86_64
