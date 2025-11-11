@@ -7,6 +7,7 @@ test.test_glob.GlobTests.test_glob_empty_pattern @ linux-x86_64
 test.test_glob.GlobTests.test_glob_literal @ linux-x86_64
 test.test_glob.GlobTests.test_glob_many_open_files @ linux-x86_64
 test.test_glob.GlobTests.test_glob_nested_directory @ linux-x86_64
+test.test_glob.GlobTests.test_glob_non_directory @ linux-x86_64
 test.test_glob.GlobTests.test_glob_one_directory @ linux-x86_64
 test.test_glob.GlobTests.test_glob_symlinks @ linux-x86_64
 test.test_glob.GlobTests.test_hidden_glob @ linux-x86_64

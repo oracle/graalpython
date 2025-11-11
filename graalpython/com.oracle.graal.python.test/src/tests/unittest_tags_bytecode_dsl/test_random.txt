@@ -83,6 +83,7 @@ test.test_random.SystemRandom_TestBasicOps.test_seedargs @ linux-x86_64
 test.test_random.SystemRandom_TestBasicOps.test_shuffle @ linux-x86_64
 test.test_random.TestDistributions.test_avg_std @ linux-x86_64
 test.test_random.TestDistributions.test_betavariate_return_zero @ linux-x86_64
+test.test_random.TestDistributions.test_binomialvariate @ linux-x86_64
 test.test_random.TestDistributions.test_constant @ linux-x86_64
 test.test_random.TestDistributions.test_gammavariate_alpha_between_zero_and_one @ linux-x86_64
 test.test_random.TestDistributions.test_gammavariate_alpha_equal_one @ linux-x86_64

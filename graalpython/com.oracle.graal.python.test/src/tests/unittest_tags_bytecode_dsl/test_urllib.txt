@@ -4,7 +4,11 @@ test.test_urllib.PathName2URLTests.test_long_drive_letter @ linux-x86_64
 test.test_urllib.PathName2URLTests.test_roundtrip_pathname2url @ linux-x86_64
 test.test_urllib.PathName2URLTests.test_simple_compare @ linux-x86_64
 test.test_urllib.Pathname_Tests.test_basic @ linux-x86_64
+test.test_urllib.Pathname_Tests.test_pathname2url_nonascii @ linux-x86_64
+test.test_urllib.Pathname_Tests.test_pathname2url_posix @ linux-x86_64
 test.test_urllib.Pathname_Tests.test_quoting @ linux-x86_64
+test.test_urllib.Pathname_Tests.test_url2pathname_nonascii @ linux-x86_64
+test.test_urllib.Pathname_Tests.test_url2pathname_posix @ linux-x86_64
 test.test_urllib.ProxyTests.test_getproxies_environment_keep_no_proxies @ linux-x86_64
 test.test_urllib.ProxyTests.test_proxy_bypass_environment_always_match @ linux-x86_64
 test.test_urllib.ProxyTests.test_proxy_bypass_environment_host_match @ linux-x86_64
@@ -31,6 +35,7 @@ test.test_urllib.URLopener_Tests.test_local_file_open @ linux-x86_64
 test.test_urllib.URLopener_Tests.test_quoted_open @ linux-x86_64
 test.test_urllib.URLopener_Tests.test_urlopener_retrieve_file @ linux-x86_64
 test.test_urllib.URLopener_Tests.test_urlopener_retrieve_remote @ linux-x86_64
+test.test_urllib.UnquotingTests.test_unquote_rejects_none_and_tuple @ linux-x86_64
 test.test_urllib.UnquotingTests.test_unquote_to_bytes @ linux-x86_64
 test.test_urllib.UnquotingTests.test_unquote_with_unicode @ linux-x86_64
 test.test_urllib.UnquotingTests.test_unquoting @ linux-x86_64

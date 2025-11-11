@@ -24,3 +24,4 @@ test.test_hmac.TestVectorsTestCase.test_sha512_rfc4231 @ linux-x86_64
 test.test_hmac.TestVectorsTestCase.test_sha_vectors @ linux-x86_64
 test.test_hmac.TestVectorsTestCase.test_with_digestmod_no_default @ linux-x86_64
 test.test_hmac.TestVectorsTestCase.test_with_fallback @ linux-x86_64
+test.test_hmac.UpdateTestCase.test_with_str_update @ linux-x86_64

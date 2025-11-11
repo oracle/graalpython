@@ -25,6 +25,7 @@ test.test_xmlrpc.HeadersServerTestCase.test_header @ linux-x86_64
 test.test_xmlrpc.HeadersServerTestCase.test_header_empty @ linux-x86_64
 test.test_xmlrpc.HeadersServerTestCase.test_header_items @ linux-x86_64
 test.test_xmlrpc.HeadersServerTestCase.test_header_many @ linux-x86_64
+test.test_xmlrpc.HeadersServerTestCase.test_header_tuple @ linux-x86_64
 test.test_xmlrpc.HelperTestCase.test_escape @ linux-x86_64
 test.test_xmlrpc.KeepaliveServerTestCase1.test_two @ linux-x86_64
 test.test_xmlrpc.KeepaliveServerTestCase2.test_close @ linux-x86_64

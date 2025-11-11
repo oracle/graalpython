@@ -14,6 +14,7 @@ test.test_long.LongTest.test_floordiv @ linux-x86_64
 test.test_long.LongTest.test_format @ linux-x86_64
 test.test_long.LongTest.test_from_bytes @ linux-x86_64
 test.test_long.LongTest.test_huge_rshift @ linux-x86_64
+test.test_long.LongTest.test_is_integer @ linux-x86_64
 test.test_long.LongTest.test_karatsuba @ linux-x86_64
 test.test_long.LongTest.test_logs @ linux-x86_64
 test.test_long.LongTest.test_long @ linux-x86_64

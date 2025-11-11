@@ -4,6 +4,7 @@ test.test_time.TestAsctime4dyear.test_year @ linux-x86_64
 test.test_time.TestLocale.test_bug_3061 @ linux-x86_64
 test.test_time.TestPytime.test_localtime_timezone @ linux-x86_64
 test.test_time.TestPytime.test_short_times @ linux-x86_64
+test.test_time.TestPytime.test_strptime_timezone @ linux-x86_64
 test.test_time.TestStrftime4dyear.test_large_year @ linux-x86_64
 test.test_time.TestStrftime4dyear.test_negative @ linux-x86_64
 test.test_time.TestStrftime4dyear.test_year @ linux-x86_64
@@ -25,6 +26,7 @@ test.test_time.TimeTestCase.test_sleep @ linux-x86_64
 test.test_time.TimeTestCase.test_strftime @ linux-x86_64
 test.test_time.TimeTestCase.test_strftime_bounding_check @ linux-x86_64
 test.test_time.TimeTestCase.test_strftime_format_check @ linux-x86_64
+test.test_time.TimeTestCase.test_strptime @ linux-x86_64
 test.test_time.TimeTestCase.test_strptime_bytes @ linux-x86_64
 test.test_time.TimeTestCase.test_strptime_exception_context @ linux-x86_64
 test.test_time.TimeTestCase.test_thread_time @ linux-x86_64

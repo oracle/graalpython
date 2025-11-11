@@ -15,6 +15,7 @@ test.test_funcattrs.FunctionPropertiesTest.test___code__ @ linux-x86_64
 test.test_funcattrs.FunctionPropertiesTest.test___globals__ @ linux-x86_64
 test.test_funcattrs.FunctionPropertiesTest.test___name__ @ linux-x86_64
 test.test_funcattrs.FunctionPropertiesTest.test___qualname__ @ linux-x86_64
+test.test_funcattrs.FunctionPropertiesTest.test___type_params__ @ linux-x86_64
 test.test_funcattrs.FunctionPropertiesTest.test_blank_func_defaults @ linux-x86_64
 test.test_funcattrs.FunctionPropertiesTest.test_cell_new @ linux-x86_64
 test.test_funcattrs.FunctionPropertiesTest.test_copying___code__ @ linux-x86_64

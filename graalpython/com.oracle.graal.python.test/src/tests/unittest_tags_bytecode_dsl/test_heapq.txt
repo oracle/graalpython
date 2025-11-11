@@ -15,6 +15,7 @@ test.test_heapq.TestHeapPython.test_heappop_max @ linux-x86_64
 test.test_heapq.TestHeapPython.test_heappushpop @ linux-x86_64
 test.test_heapq.TestHeapPython.test_heapsort @ linux-x86_64
 test.test_heapq.TestHeapPython.test_merge @ linux-x86_64
+test.test_heapq.TestHeapPython.test_merge_does_not_suppress_index_error @ linux-x86_64
 test.test_heapq.TestHeapPython.test_merge_stability @ linux-x86_64
 test.test_heapq.TestHeapPython.test_naive_nbest @ linux-x86_64
 test.test_heapq.TestHeapPython.test_nbest @ linux-x86_64

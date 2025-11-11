@@ -14,6 +14,8 @@ test.test_http_cookies.CookieTests.test_secure_httponly_true_if_have_value @ lin
 test.test_http_cookies.CookieTests.test_secure_httponly_true_if_present @ linux-x86_64
 test.test_http_cookies.CookieTests.test_set_secure_httponly_attrs @ linux-x86_64
 test.test_http_cookies.CookieTests.test_special_attrs @ linux-x86_64
+test.test_http_cookies.CookieTests.test_unquote @ linux-x86_64
+test.test_http_cookies.CookieTests.test_unquote_large @ linux-x86_64
 test.test_http_cookies.MorselTests.test_copy @ linux-x86_64
 test.test_http_cookies.MorselTests.test_defaults @ linux-x86_64
 test.test_http_cookies.MorselTests.test_eq @ linux-x86_64

@@ -101,6 +101,7 @@ test.test_socket.GeneralModuleTests.test_socket_fileno_rejects_other_types @ lin
 test.test_socket.GeneralModuleTests.test_socket_fileno_requires_socket_fd @ linux-x86_64
 test.test_socket.GeneralModuleTests.test_socket_fileno_requires_valid_fd @ linux-x86_64
 test.test_socket.GeneralModuleTests.test_socket_methods @ linux-x86_64
+test.test_socket.GeneralModuleTests.test_socket_type @ linux-x86_64
 test.test_socket.GeneralModuleTests.test_socketkind_enum @ linux-x86_64
 test.test_socket.GeneralModuleTests.test_str_for_enums @ linux-x86_64
 test.test_socket.GeneralModuleTests.test_unknown_socket_family_repr @ linux-x86_64
@@ -135,6 +136,11 @@ test.test_socket.NonBlockingTCPTests.testAccept @ linux-x86_64
 test.test_socket.NonBlockingTCPTests.testInheritFlagsBlocking @ linux-x86_64
 test.test_socket.NonBlockingTCPTests.testInheritFlagsTimeout @ linux-x86_64
 test.test_socket.NonBlockingTCPTests.testRecv @ linux-x86_64
+test.test_socket.PurePythonSocketPairTest.test_injected_authentication_failure @ linux-x86_64
+test.test_socket.PurePythonSocketPairTest.test_ipv4 @ linux-x86_64
+test.test_socket.PurePythonSocketPairTest.test_ipv6 @ linux-x86_64
+test.test_socket.PurePythonSocketPairTest.test_recv @ linux-x86_64
+test.test_socket.PurePythonSocketPairTest.test_send @ linux-x86_64
 test.test_socket.SendfileUsingSendTest.testCount @ linux-x86_64
 test.test_socket.SendfileUsingSendTest.testCountSmall @ linux-x86_64
 test.test_socket.SendfileUsingSendTest.testCountWithOffset @ linux-x86_64

@@ -7,6 +7,7 @@ test.test_functools.TestCachedProperty.test_object_with_slots @ linux-x86_64
 test.test_functools.TestCachedProperty.test_reuse_different_names @ linux-x86_64
 test.test_functools.TestCachedProperty.test_reuse_same_name @ linux-x86_64
 test.test_functools.TestCachedProperty.test_set_name_not_called @ linux-x86_64
+test.test_functools.TestCachedProperty.test_subclass_with___set__ @ linux-x86_64
 test.test_functools.TestCachedProperty.test_threaded @ linux-x86_64
 test.test_functools.TestCmpToKeyC.test_bad_cmp @ linux-x86_64
 test.test_functools.TestCmpToKeyC.test_cmp_to_key @ linux-x86_64
@@ -18,10 +19,12 @@ test.test_functools.TestCmpToKeyC.test_sort_int_str @ linux-x86_64
 test.test_functools.TestCmpToKeyPy.test_bad_cmp @ linux-x86_64
 test.test_functools.TestCmpToKeyPy.test_cmp_to_key @ linux-x86_64
 test.test_functools.TestCmpToKeyPy.test_cmp_to_key_arguments @ linux-x86_64
+test.test_functools.TestCmpToKeyPy.test_cmp_to_signature @ linux-x86_64
 test.test_functools.TestCmpToKeyPy.test_hash @ linux-x86_64
 test.test_functools.TestCmpToKeyPy.test_obj_field @ linux-x86_64
 test.test_functools.TestCmpToKeyPy.test_sort_int @ linux-x86_64
 test.test_functools.TestCmpToKeyPy.test_sort_int_str @ linux-x86_64
+test.test_functools.TestLRUC.test_common_signatures @ linux-x86_64
 test.test_functools.TestLRUC.test_copy @ linux-x86_64
 test.test_functools.TestLRUC.test_deepcopy @ linux-x86_64
 test.test_functools.TestLRUC.test_kwargs_order @ linux-x86_64
@@ -48,6 +51,7 @@ test.test_functools.TestLRUC.test_lru_with_maxsize_none @ linux-x86_64
 test.test_functools.TestLRUC.test_lru_with_types @ linux-x86_64
 test.test_functools.TestLRUC.test_need_for_rlock @ linux-x86_64
 test.test_functools.TestLRUC.test_pickle @ linux-x86_64
+test.test_functools.TestLRUPy.test_common_signatures @ linux-x86_64
 test.test_functools.TestLRUPy.test_copy @ linux-x86_64
 test.test_functools.TestLRUPy.test_deepcopy @ linux-x86_64
 test.test_functools.TestLRUPy.test_kwargs_order @ linux-x86_64

@@ -45,12 +45,15 @@ test.test_ntpath.PathLikeTests.test_path_relpath @ linux-x86_64
 test.test_ntpath.PathLikeTests.test_path_split @ linux-x86_64
 test.test_ntpath.PathLikeTests.test_path_splitdrive @ linux-x86_64
 test.test_ntpath.PathLikeTests.test_path_splitext @ linux-x86_64
+test.test_ntpath.PathLikeTests.test_path_splitroot @ linux-x86_64
 test.test_ntpath.TestNtpath.test_commonpath @ linux-x86_64
 test.test_ntpath.TestNtpath.test_commonprefix @ linux-x86_64
 test.test_ntpath.TestNtpath.test_expanduser @ linux-x86_64
 test.test_ntpath.TestNtpath.test_expandvars @ linux-x86_64
 test.test_ntpath.TestNtpath.test_expandvars_nonascii @ linux-x86_64
 test.test_ntpath.TestNtpath.test_isabs @ linux-x86_64
+test.test_ntpath.TestNtpath.test_isdevdrive_fallback @ linux-x86_64
+test.test_ntpath.TestNtpath.test_isfile_anonymous_pipe @ linux-x86_64
 test.test_ntpath.TestNtpath.test_ismount @ linux-x86_64
 test.test_ntpath.TestNtpath.test_join @ linux-x86_64
 test.test_ntpath.TestNtpath.test_normpath @ linux-x86_64
@@ -61,3 +64,4 @@ test.test_ntpath.TestNtpath.test_sameopenfile @ linux-x86_64
 test.test_ntpath.TestNtpath.test_split @ linux-x86_64
 test.test_ntpath.TestNtpath.test_splitdrive @ linux-x86_64
 test.test_ntpath.TestNtpath.test_splitext @ linux-x86_64
+test.test_ntpath.TestNtpath.test_splitroot @ linux-x86_64

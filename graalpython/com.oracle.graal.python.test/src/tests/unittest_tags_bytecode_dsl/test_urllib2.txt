@@ -20,6 +20,10 @@ test.test_urllib2.HandlerTests.test_http_body_pipe @ linux-x86_64
 test.test_urllib2.HandlerTests.test_http_closed @ linux-x86_64
 test.test_urllib2.HandlerTests.test_http_doubleslash @ linux-x86_64
 test.test_urllib2.HandlerTests.test_http_handler_debuglevel @ linux-x86_64
+test.test_urllib2.HandlerTests.test_http_handler_global_debuglevel @ linux-x86_64
+test.test_urllib2.HandlerTests.test_http_handler_local_debuglevel @ linux-x86_64
+test.test_urllib2.HandlerTests.test_https_handler_global_debuglevel @ linux-x86_64
+test.test_urllib2.HandlerTests.test_https_handler_local_debuglevel @ linux-x86_64
 test.test_urllib2.HandlerTests.test_invalid_closed @ linux-x86_64
 test.test_urllib2.HandlerTests.test_invalid_redirect @ linux-x86_64
 test.test_urllib2.HandlerTests.test_proxy @ linux-x86_64

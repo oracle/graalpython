@@ -2,6 +2,8 @@ DocTestCase.json @ linux-x86_64
 DocTestCase.json.encoder.JSONEncoder.encode @ linux-x86_64
 test.test_json.TestCTest.test_cjson @ linux-x86_64
 test.test_json.TestPyTest.test_pyjson @ linux-x86_64
+test.test_json.test_decode.TestCDecode.test_bytes @ linux-x86_64
+test.test_json.test_decode.TestCDecode.test_constant_invalid_case @ linux-x86_64
 test.test_json.test_decode.TestCDecode.test_decimal @ linux-x86_64
 test.test_json.test_decode.TestCDecode.test_decoder_optimizations @ linux-x86_64
 test.test_json.test_decode.TestCDecode.test_empty_objects @ linux-x86_64
@@ -12,8 +14,12 @@ test.test_json.test_decode.TestCDecode.test_invalid_input_type @ linux-x86_64
 test.test_json.test_decode.TestCDecode.test_keys_reuse @ linux-x86_64
 test.test_json.test_decode.TestCDecode.test_limit_int @ linux-x86_64
 test.test_json.test_decode.TestCDecode.test_negative_index @ linux-x86_64
+test.test_json.test_decode.TestCDecode.test_nonascii_digits_rejected @ linux-x86_64
 test.test_json.test_decode.TestCDecode.test_object_pairs_hook @ linux-x86_64
+test.test_json.test_decode.TestCDecode.test_parse_constant @ linux-x86_64
 test.test_json.test_decode.TestCDecode.test_string_with_utf8_bom @ linux-x86_64
+test.test_json.test_decode.TestPyDecode.test_bytes @ linux-x86_64
+test.test_json.test_decode.TestPyDecode.test_constant_invalid_case @ linux-x86_64
 test.test_json.test_decode.TestPyDecode.test_decimal @ linux-x86_64
 test.test_json.test_decode.TestPyDecode.test_decoder_optimizations @ linux-x86_64
 test.test_json.test_decode.TestPyDecode.test_empty_objects @ linux-x86_64
@@ -24,7 +30,9 @@ test.test_json.test_decode.TestPyDecode.test_invalid_input_type @ linux-x86_64
 test.test_json.test_decode.TestPyDecode.test_keys_reuse @ linux-x86_64
 test.test_json.test_decode.TestPyDecode.test_limit_int @ linux-x86_64
 test.test_json.test_decode.TestPyDecode.test_negative_index @ linux-x86_64
+test.test_json.test_decode.TestPyDecode.test_nonascii_digits_rejected @ linux-x86_64
 test.test_json.test_decode.TestPyDecode.test_object_pairs_hook @ linux-x86_64
+test.test_json.test_decode.TestPyDecode.test_parse_constant @ linux-x86_64
 test.test_json.test_decode.TestPyDecode.test_string_with_utf8_bom @ linux-x86_64
 test.test_json.test_default.TestCDefault.test_default @ linux-x86_64
 test.test_json.test_default.TestCDefault.test_ordereddict @ linux-x86_64
@@ -71,6 +79,7 @@ test.test_json.test_fail.TestCFail.test_unexpected_data @ linux-x86_64
 test.test_json.test_fail.TestPyFail.test_extra_data @ linux-x86_64
 test.test_json.test_fail.TestPyFail.test_failures @ linux-x86_64
 test.test_json.test_fail.TestPyFail.test_linecol @ linux-x86_64
+test.test_json.test_fail.TestPyFail.test_non_string_keys_dict @ linux-x86_64
 test.test_json.test_fail.TestPyFail.test_not_serializable @ linux-x86_64
 test.test_json.test_fail.TestPyFail.test_truncated_input @ linux-x86_64
 test.test_json.test_fail.TestPyFail.test_unexpected_data @ linux-x86_64
@@ -146,6 +155,7 @@ test.test_json.test_unicode.TestCUnicode.test_encoding3 @ linux-x86_64
 test.test_json.test_unicode.TestCUnicode.test_encoding4 @ linux-x86_64
 test.test_json.test_unicode.TestCUnicode.test_encoding5 @ linux-x86_64
 test.test_json.test_unicode.TestCUnicode.test_encoding6 @ linux-x86_64
+test.test_json.test_unicode.TestCUnicode.test_encoding7 @ linux-x86_64
 test.test_json.test_unicode.TestCUnicode.test_object_pairs_hook_with_unicode @ linux-x86_64
 test.test_json.test_unicode.TestCUnicode.test_unicode_decode @ linux-x86_64
 test.test_json.test_unicode.TestCUnicode.test_unicode_preservation @ linux-x86_64
@@ -157,6 +167,7 @@ test.test_json.test_unicode.TestPyUnicode.test_encoding3 @ linux-x86_64
 test.test_json.test_unicode.TestPyUnicode.test_encoding4 @ linux-x86_64
 test.test_json.test_unicode.TestPyUnicode.test_encoding5 @ linux-x86_64
 test.test_json.test_unicode.TestPyUnicode.test_encoding6 @ linux-x86_64
+test.test_json.test_unicode.TestPyUnicode.test_encoding7 @ linux-x86_64
 test.test_json.test_unicode.TestPyUnicode.test_object_pairs_hook_with_unicode @ linux-x86_64
 test.test_json.test_unicode.TestPyUnicode.test_unicode_decode @ linux-x86_64
 test.test_json.test_unicode.TestPyUnicode.test_unicode_preservation @ linux-x86_64

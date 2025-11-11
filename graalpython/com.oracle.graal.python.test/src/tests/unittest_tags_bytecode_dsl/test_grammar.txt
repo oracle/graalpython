@@ -3,6 +3,7 @@ test.test_grammar.GrammarTests.test_annotations_inheritance @ linux-x86_64
 test.test_grammar.GrammarTests.test_assert @ linux-x86_64
 test.test_grammar.GrammarTests.test_assert_failures @ linux-x86_64
 test.test_grammar.GrammarTests.test_async_await @ linux-x86_64
+test.test_grammar.GrammarTests.test_async_with @ linux-x86_64
 test.test_grammar.GrammarTests.test_atoms @ linux-x86_64
 test.test_grammar.GrammarTests.test_binary_mask_ops @ linux-x86_64
 test.test_grammar.GrammarTests.test_break_continue_loop @ linux-x86_64

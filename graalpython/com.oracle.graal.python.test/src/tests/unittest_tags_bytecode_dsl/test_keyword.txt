@@ -6,6 +6,7 @@ test.test_keyword.Test_iskeyword.test_changing_the_softkwlist_does_not_affect_is
 test.test_keyword.Test_iskeyword.test_keywords_are_sorted @ linux-x86_64
 test.test_keyword.Test_iskeyword.test_match_and_case_are_soft_keywords @ linux-x86_64
 test.test_keyword.Test_iskeyword.test_none_value_is_not_a_keyword @ linux-x86_64
+test.test_keyword.Test_iskeyword.test_soft_keywords @ linux-x86_64
 test.test_keyword.Test_iskeyword.test_softkeywords_are_sorted @ linux-x86_64
 test.test_keyword.Test_iskeyword.test_true_is_a_keyword @ linux-x86_64
 test.test_keyword.Test_iskeyword.test_uppercase_true_is_not_a_keyword @ linux-x86_64

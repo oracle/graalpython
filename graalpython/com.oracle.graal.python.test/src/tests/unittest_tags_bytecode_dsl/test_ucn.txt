@@ -1,6 +1,7 @@
 test.test_ucn.UnicodeNamesTest.test_aliases @ linux-x86_64
 test.test_ucn.UnicodeNamesTest.test_aliases_names_in_pua_range @ linux-x86_64
 test.test_ucn.UnicodeNamesTest.test_ascii_letters @ linux-x86_64
+test.test_ucn.UnicodeNamesTest.test_bmp_characters @ linux-x86_64
 test.test_ucn.UnicodeNamesTest.test_cjk_unified_ideographs @ linux-x86_64
 test.test_ucn.UnicodeNamesTest.test_errors @ linux-x86_64
 test.test_ucn.UnicodeNamesTest.test_general @ linux-x86_64

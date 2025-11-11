@@ -61,3 +61,4 @@ test.test_call.TestCallingConventionsStatic.test_varargs @ linux-x86_64
 test.test_call.TestCallingConventionsStatic.test_varargs_ext @ linux-x86_64
 test.test_call.TestCallingConventionsStatic.test_varargs_keywords @ linux-x86_64
 test.test_call.TestCallingConventionsStatic.test_varargs_keywords_ext @ linux-x86_64
+test.test_call.TestFunctionWithManyArgs.test_function_with_many_args @ linux-x86_64

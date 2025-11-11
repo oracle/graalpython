@@ -5,6 +5,7 @@ test.test_site.HelperFunctionsTests.test_addpackage_import_bad_exec @ linux-x86_
 test.test_site.HelperFunctionsTests.test_addpackage_import_bad_pth_file @ linux-x86_64
 test.test_site.HelperFunctionsTests.test_addpackage_import_bad_syntax @ linux-x86_64
 test.test_site.HelperFunctionsTests.test_addsitedir @ linux-x86_64
+test.test_site.HelperFunctionsTests.test_addsitedir_dotfile @ linux-x86_64
 test.test_site.HelperFunctionsTests.test_get_path @ linux-x86_64
 test.test_site.HelperFunctionsTests.test_getsitepackages @ linux-x86_64
 test.test_site.HelperFunctionsTests.test_getuserbase @ linux-x86_64

@@ -1,3 +1,4 @@
+test.test_multiprocessing_spawn.test_misc.ChallengeResponseTest.test_challengeresponse @ linux-x86_64
 test.test_multiprocessing_spawn.test_misc.MiscTestCase.test__all__ @ linux-x86_64
 test.test_multiprocessing_spawn.test_misc.MiscTestCase.test_spawn_sys_executable_none_allows_import @ linux-x86_64
 test.test_multiprocessing_spawn.test_misc.OtherTest.test_answer_challenge_auth_failure @ linux-x86_64
@@ -17,6 +18,7 @@ test.test_multiprocessing_spawn.test_misc.TestResourceTracker.test_resource_trac
 test.test_multiprocessing_spawn.test_misc.TestResourceTracker.test_too_long_name_resource @ linux-x86_64
 test.test_multiprocessing_spawn.test_misc.TestSimpleQueue.test_close @ linux-x86_64
 test.test_multiprocessing_spawn.test_misc.TestSimpleQueue.test_empty @ linux-x86_64
+test.test_multiprocessing_spawn.test_misc.TestSimpleQueue.test_empty_exceptions @ linux-x86_64
 test.test_multiprocessing_spawn.test_misc.TestStartMethod.test_get_all @ linux-x86_64
 test.test_multiprocessing_spawn.test_misc.TestStartMethod.test_nested_startmethod @ linux-x86_64
 test.test_multiprocessing_spawn.test_misc.TestStdinBadfiledescriptor.test_flushing @ linux-x86_64

@@ -6,6 +6,11 @@ test.test_uuid.TestInternalsWithoutExtModule.test_parse_mac @ linux-x86_64
 test.test_uuid.TestInternalsWithoutExtModule.test_parse_mac_aix @ linux-x86_64
 test.test_uuid.TestInternalsWithoutExtModule.test_random_getnode @ linux-x86_64
 test.test_uuid.TestUUIDWithoutExtModule.test_UUID @ linux-x86_64
+test.test_uuid.TestUUIDWithoutExtModule.test_cli_name_required_for_uuid3 @ linux-x86_64
+test.test_uuid.TestUUIDWithoutExtModule.test_cli_namespace_required_for_uuid3 @ linux-x86_64
+test.test_uuid.TestUUIDWithoutExtModule.test_cli_uuid3_ouputted_with_valid_namespace_and_name @ linux-x86_64
+test.test_uuid.TestUUIDWithoutExtModule.test_cli_uuid4_outputted_with_no_args @ linux-x86_64
+test.test_uuid.TestUUIDWithoutExtModule.test_cli_uuid5_ouputted_with_valid_namespace_and_name @ linux-x86_64
 test.test_uuid.TestUUIDWithoutExtModule.test_exceptions @ linux-x86_64
 test.test_uuid.TestUUIDWithoutExtModule.test_getnode @ linux-x86_64
 test.test_uuid.TestUUIDWithoutExtModule.test_pickle_roundtrip @ linux-x86_64

@@ -42,6 +42,7 @@ test.test_itertools.TestBasicOps.test_starmap @ linux-x86_64
 test.test_itertools.TestBasicOps.test_takewhile @ linux-x86_64
 test.test_itertools.TestBasicOps.test_tee @ linux-x86_64
 test.test_itertools.TestBasicOps.test_tee_concurrent @ linux-x86_64
+test.test_itertools.TestBasicOps.test_tee_dealloc_segfault @ linux-x86_64
 test.test_itertools.TestBasicOps.test_tee_del_backward @ linux-x86_64
 test.test_itertools.TestBasicOps.test_tee_reenter @ linux-x86_64
 test.test_itertools.TestBasicOps.test_zip @ linux-x86_64
@@ -72,6 +73,7 @@ test.test_itertools.TestExamples.test_takewhile @ linux-x86_64
 test.test_itertools.TestExamples.test_zip @ linux-x86_64
 test.test_itertools.TestExamples.test_zip_longest @ linux-x86_64
 test.test_itertools.TestGC.test_accumulate @ linux-x86_64
+test.test_itertools.TestGC.test_batched @ linux-x86_64
 test.test_itertools.TestGC.test_chain @ linux-x86_64
 test.test_itertools.TestGC.test_chain_from_iterable @ linux-x86_64
 test.test_itertools.TestGC.test_combinations @ linux-x86_64
@@ -95,7 +97,9 @@ test.test_itertools.TestGC.test_takewhile @ linux-x86_64
 test.test_itertools.TestGC.test_zip @ linux-x86_64
 test.test_itertools.TestGC.test_zip_longest @ linux-x86_64
 test.test_itertools.TestPurePythonRoughEquivalents.test_islice_recipe @ linux-x86_64
+test.test_itertools.TestPurePythonRoughEquivalents.test_tee_recipe @ linux-x86_64
 test.test_itertools.TestVariousIteratorArgs.test_accumulate @ linux-x86_64
+test.test_itertools.TestVariousIteratorArgs.test_batched @ linux-x86_64
 test.test_itertools.TestVariousIteratorArgs.test_chain @ linux-x86_64
 test.test_itertools.TestVariousIteratorArgs.test_compress @ linux-x86_64
 test.test_itertools.TestVariousIteratorArgs.test_cycle @ linux-x86_64

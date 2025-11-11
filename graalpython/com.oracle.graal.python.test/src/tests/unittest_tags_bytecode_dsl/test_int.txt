@@ -34,3 +34,7 @@ test.test_int.IntTestCases.test_non_numeric_input_types @ linux-x86_64
 test.test_int.IntTestCases.test_string_float @ linux-x86_64
 test.test_int.IntTestCases.test_underscores @ linux-x86_64
 test.test_int.IntTestCases.test_unicode @ linux-x86_64
+test.test_int.PyLongModuleTests.test_pylong_int_divmod @ linux-x86_64
+test.test_int.PyLongModuleTests.test_pylong_int_to_decimal @ linux-x86_64
+test.test_int.PyLongModuleTests.test_pylong_int_to_decimal_2 @ linux-x86_64
+test.test_int.PyLongModuleTests.test_pylong_str_to_int @ linux-x86_64
