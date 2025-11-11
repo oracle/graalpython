@@ -1,6 +1,8 @@
 test.test_filecmp.DirCompareTestCase.test_cmpfiles @ linux-x86_64
+test.test_filecmp.DirCompareTestCase.test_cmpfiles_invalid_names @ linux-x86_64
 test.test_filecmp.DirCompareTestCase.test_default_ignores @ linux-x86_64
 test.test_filecmp.DirCompareTestCase.test_dircmp @ linux-x86_64
+test.test_filecmp.DirCompareTestCase.test_dircmp_invalid_names @ linux-x86_64
 test.test_filecmp.DirCompareTestCase.test_dircmp_subdirs_type @ linux-x86_64
 test.test_filecmp.DirCompareTestCase.test_report_full_closure @ linux-x86_64
 test.test_filecmp.DirCompareTestCase.test_report_partial_closure @ linux-x86_64

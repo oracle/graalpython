@@ -34,6 +34,7 @@ test.test_codecs.ExceptionChainingTest.test_multiple_args_is_not_wrapped @ linux
 test.test_codecs.ExceptionChainingTest.test_new_override_is_not_wrapped @ linux-x86_64
 test.test_codecs.ExceptionChainingTest.test_non_str_arg_is_not_wrapped @ linux-x86_64
 test.test_codecs.ExceptionChainingTest.test_unflagged_non_text_codec_handling @ linux-x86_64
+test.test_codecs.ExceptionNotesTest.test_unflagged_non_text_codec_handling @ linux-x86_64
 test.test_codecs.IDNACodecTest.test_builtin_decode @ linux-x86_64
 test.test_codecs.IDNACodecTest.test_builtin_decode_length_limit @ linux-x86_64
 test.test_codecs.IDNACodecTest.test_builtin_encode @ linux-x86_64
@@ -53,8 +54,10 @@ test.test_codecs.RawUnicodeEscapeTest.test_bug1098990_a @ linux-x86_64
 test.test_codecs.RawUnicodeEscapeTest.test_bug1098990_b @ linux-x86_64
 test.test_codecs.RawUnicodeEscapeTest.test_bug1175396 @ linux-x86_64
 test.test_codecs.RawUnicodeEscapeTest.test_empty @ linux-x86_64
+test.test_codecs.RawUnicodeEscapeTest.test_escape_decode @ linux-x86_64
 test.test_codecs.RawUnicodeEscapeTest.test_escape_encode @ linux-x86_64
 test.test_codecs.RawUnicodeEscapeTest.test_mixed_readline_and_read @ linux-x86_64
+test.test_codecs.RawUnicodeEscapeTest.test_raw_decode @ linux-x86_64
 test.test_codecs.RawUnicodeEscapeTest.test_raw_encode @ linux-x86_64
 test.test_codecs.RawUnicodeEscapeTest.test_readlinequeue @ linux-x86_64
 test.test_codecs.Rot13Test.test_decode @ linux-x86_64

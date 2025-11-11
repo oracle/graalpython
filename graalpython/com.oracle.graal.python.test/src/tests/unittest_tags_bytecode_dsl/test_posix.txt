@@ -1,6 +1,10 @@
 test.test_posix.PosixTester.testNoArgFunctions @ linux-x86_64
 test.test_posix.PosixTester.test_access @ linux-x86_64
 test.test_posix.PosixTester.test_chdir @ linux-x86_64
+test.test_posix.PosixTester.test_chmod_dir @ linux-x86_64
+test.test_posix.PosixTester.test_chmod_dir_symlink @ linux-x86_64
+test.test_posix.PosixTester.test_chmod_file @ linux-x86_64
+test.test_posix.PosixTester.test_chmod_file_symlink @ linux-x86_64
 test.test_posix.PosixTester.test_chown @ linux-x86_64
 test.test_posix.PosixTester.test_dup @ linux-x86_64
 test.test_posix.PosixTester.test_dup2 @ linux-x86_64

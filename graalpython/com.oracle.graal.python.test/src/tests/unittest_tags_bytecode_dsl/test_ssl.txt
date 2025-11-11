@@ -6,6 +6,7 @@ test.test_ssl.BasicSocketTests.test_errors_sslwrap @ linux-x86_64
 test.test_ssl.BasicSocketTests.test_get_default_verify_paths @ linux-x86_64
 test.test_ssl.BasicSocketTests.test_malformed_cert @ linux-x86_64
 test.test_ssl.BasicSocketTests.test_malformed_key @ linux-x86_64
+test.test_ssl.BasicSocketTests.test_options @ linux-x86_64
 test.test_ssl.BasicSocketTests.test_parse_cert @ linux-x86_64
 test.test_ssl.BasicSocketTests.test_parse_cert_CVE_2019_5010 @ linux-x86_64
 test.test_ssl.BasicSocketTests.test_private_init @ linux-x86_64
@@ -87,6 +88,8 @@ test.test_ssl.ThreadedTests.test_ecc_cert @ linux-x86_64
 test.test_ssl.ThreadedTests.test_getpeercert @ linux-x86_64
 test.test_ssl.ThreadedTests.test_getpeercert_enotconn @ linux-x86_64
 test.test_ssl.ThreadedTests.test_handshake_timeout @ linux-x86_64
+test.test_ssl.ThreadedTests.test_legacy_server_connect @ linux-x86_64
+test.test_ssl.ThreadedTests.test_no_legacy_server_connect @ linux-x86_64
 test.test_ssl.ThreadedTests.test_nonblocking_send @ linux-x86_64
 test.test_ssl.ThreadedTests.test_npn_protocols @ linux-x86_64
 test.test_ssl.ThreadedTests.test_read_write_after_close_raises_valuerror @ linux-x86_64

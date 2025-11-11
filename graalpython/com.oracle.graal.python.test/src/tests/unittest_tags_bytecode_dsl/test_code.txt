@@ -1,3 +1,4 @@
+test.test_code.CodeTest.test_code_hash_uses_bytecode @ linux-x86_64
 test.test_code.CodeTest.test_constructor @ linux-x86_64
 test.test_code.CodeTest.test_qualname @ linux-x86_64
 test.test_code.CodeTest.test_replace @ linux-x86_64

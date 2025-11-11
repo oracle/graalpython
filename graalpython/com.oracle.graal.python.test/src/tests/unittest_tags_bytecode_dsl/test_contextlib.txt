@@ -76,6 +76,7 @@ test.test_contextlib.TestRedirectStdout.test_no_redirect_in_init @ linux-x86_64
 test.test_contextlib.TestRedirectStdout.test_redirect_to_string_io @ linux-x86_64
 test.test_contextlib.TestSuppress.test_cm_is_reentrant @ linux-x86_64
 test.test_contextlib.TestSuppress.test_exact_exception @ linux-x86_64
+test.test_contextlib.TestSuppress.test_exception_groups @ linux-x86_64
 test.test_contextlib.TestSuppress.test_exception_hierarchy @ linux-x86_64
 test.test_contextlib.TestSuppress.test_instance_docs @ linux-x86_64
 test.test_contextlib.TestSuppress.test_multiple_exception_args @ linux-x86_64

@@ -15,6 +15,8 @@ test.test_fileinput.FileInputTests.test_iteration_buffering @ linux-x86_64
 test.test_fileinput.FileInputTests.test_nextfile_oserror_deleting_backup @ linux-x86_64
 test.test_fileinput.FileInputTests.test_pathlib_file @ linux-x86_64
 test.test_fileinput.FileInputTests.test_pathlib_file_inplace @ linux-x86_64
+test.test_fileinput.FileInputTests.test_pathlike_file @ linux-x86_64
+test.test_fileinput.FileInputTests.test_pathlike_file_inplace @ linux-x86_64
 test.test_fileinput.FileInputTests.test_readline @ linux-x86_64
 test.test_fileinput.FileInputTests.test_readline_binary_mode @ linux-x86_64
 test.test_fileinput.FileInputTests.test_readline_buffering @ linux-x86_64

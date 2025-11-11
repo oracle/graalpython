@@ -2,6 +2,7 @@ test.test_dictviews.DictSetTest.test_abc_registry @ linux-x86_64
 test.test_dictviews.DictSetTest.test_compare_error @ linux-x86_64
 test.test_dictviews.DictSetTest.test_constructors_not_callable @ linux-x86_64
 test.test_dictviews.DictSetTest.test_copy @ linux-x86_64
+test.test_dictviews.DictSetTest.test_deeply_nested_repr @ linux-x86_64
 test.test_dictviews.DictSetTest.test_dict_items @ linux-x86_64
 test.test_dictviews.DictSetTest.test_dict_keys @ linux-x86_64
 test.test_dictviews.DictSetTest.test_dict_mixed_keys_items @ linux-x86_64

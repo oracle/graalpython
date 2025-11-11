@@ -5,6 +5,8 @@ test.test_bisect.TestBisectPython.test_keyword_args @ linux-x86_64
 test.test_bisect.TestBisectPython.test_large_pyrange @ linux-x86_64
 test.test_bisect.TestBisectPython.test_large_range @ linux-x86_64
 test.test_bisect.TestBisectPython.test_lookups_with_key_function @ linux-x86_64
+test.test_bisect.TestBisectPython.test_lt_returns_non_bool @ linux-x86_64
+test.test_bisect.TestBisectPython.test_lt_returns_notimplemented @ linux-x86_64
 test.test_bisect.TestBisectPython.test_negative_lo @ linux-x86_64
 test.test_bisect.TestBisectPython.test_optionalSlicing @ linux-x86_64
 test.test_bisect.TestBisectPython.test_precomputed @ linux-x86_64

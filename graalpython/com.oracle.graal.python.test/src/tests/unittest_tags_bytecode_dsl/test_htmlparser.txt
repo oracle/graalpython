@@ -44,3 +44,4 @@ test.test_htmlparser.HTMLParserTestCase.test_starttag_junk_chars @ linux-x86_64
 test.test_htmlparser.HTMLParserTestCase.test_tolerant_parsing @ linux-x86_64
 test.test_htmlparser.HTMLParserTestCase.test_unclosed_entityref @ linux-x86_64
 test.test_htmlparser.HTMLParserTestCase.test_valid_doctypes @ linux-x86_64
+test.test_htmlparser.TestInheritance.test_base_class_methods_called @ linux-x86_64

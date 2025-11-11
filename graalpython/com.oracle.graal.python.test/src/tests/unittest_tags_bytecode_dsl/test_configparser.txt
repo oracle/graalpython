@@ -11,6 +11,7 @@ test.test_configparser.ConfigParserTestCase.test_case_sensitivity_mapping_access
 test.test_configparser.ConfigParserTestCase.test_clear @ linux-x86_64
 test.test_configparser.ConfigParserTestCase.test_default_case_sensitivity @ linux-x86_64
 test.test_configparser.ConfigParserTestCase.test_defaults_keyword @ linux-x86_64
+test.test_configparser.ConfigParserTestCase.test_get_after_duplicate_option_error @ linux-x86_64
 test.test_configparser.ConfigParserTestCase.test_interpolation @ linux-x86_64
 test.test_configparser.ConfigParserTestCase.test_interpolation_missing_value @ linux-x86_64
 test.test_configparser.ConfigParserTestCase.test_invalid_multiline_value @ linux-x86_64
@@ -38,6 +39,7 @@ test.test_configparser.ConfigParserTestCaseExtendedInterpolation.test_clear @ li
 test.test_configparser.ConfigParserTestCaseExtendedInterpolation.test_default_case_sensitivity @ linux-x86_64
 test.test_configparser.ConfigParserTestCaseExtendedInterpolation.test_endless_loop @ linux-x86_64
 test.test_configparser.ConfigParserTestCaseExtendedInterpolation.test_extended_interpolation @ linux-x86_64
+test.test_configparser.ConfigParserTestCaseExtendedInterpolation.test_get_after_duplicate_option_error @ linux-x86_64
 test.test_configparser.ConfigParserTestCaseExtendedInterpolation.test_invalid_multiline_value @ linux-x86_64
 test.test_configparser.ConfigParserTestCaseExtendedInterpolation.test_other_errors @ linux-x86_64
 test.test_configparser.ConfigParserTestCaseExtendedInterpolation.test_parse_errors @ linux-x86_64
@@ -60,6 +62,7 @@ test.test_configparser.ConfigParserTestCaseLegacyInterpolation.test_case_sensiti
 test.test_configparser.ConfigParserTestCaseLegacyInterpolation.test_clear @ linux-x86_64
 test.test_configparser.ConfigParserTestCaseLegacyInterpolation.test_default_case_sensitivity @ linux-x86_64
 test.test_configparser.ConfigParserTestCaseLegacyInterpolation.test_defaults_keyword @ linux-x86_64
+test.test_configparser.ConfigParserTestCaseLegacyInterpolation.test_get_after_duplicate_option_error @ linux-x86_64
 test.test_configparser.ConfigParserTestCaseLegacyInterpolation.test_interpolation @ linux-x86_64
 test.test_configparser.ConfigParserTestCaseLegacyInterpolation.test_interpolation_missing_value @ linux-x86_64
 test.test_configparser.ConfigParserTestCaseLegacyInterpolation.test_invalid_multiline_value @ linux-x86_64
@@ -83,6 +86,7 @@ test.test_configparser.ConfigParserTestCaseNoInterpolation.test_case_sensitivity
 test.test_configparser.ConfigParserTestCaseNoInterpolation.test_clear @ linux-x86_64
 test.test_configparser.ConfigParserTestCaseNoInterpolation.test_default_case_sensitivity @ linux-x86_64
 test.test_configparser.ConfigParserTestCaseNoInterpolation.test_empty_case @ linux-x86_64
+test.test_configparser.ConfigParserTestCaseNoInterpolation.test_get_after_duplicate_option_error @ linux-x86_64
 test.test_configparser.ConfigParserTestCaseNoInterpolation.test_invalid_multiline_value @ linux-x86_64
 test.test_configparser.ConfigParserTestCaseNoInterpolation.test_no_interpolation @ linux-x86_64
 test.test_configparser.ConfigParserTestCaseNoInterpolation.test_none_as_default_interpolation @ linux-x86_64
@@ -104,6 +108,7 @@ test.test_configparser.ConfigParserTestCaseNoValue.test_case_sensitivity_mapping
 test.test_configparser.ConfigParserTestCaseNoValue.test_clear @ linux-x86_64
 test.test_configparser.ConfigParserTestCaseNoValue.test_default_case_sensitivity @ linux-x86_64
 test.test_configparser.ConfigParserTestCaseNoValue.test_defaults_keyword @ linux-x86_64
+test.test_configparser.ConfigParserTestCaseNoValue.test_get_after_duplicate_option_error @ linux-x86_64
 test.test_configparser.ConfigParserTestCaseNoValue.test_interpolation @ linux-x86_64
 test.test_configparser.ConfigParserTestCaseNoValue.test_interpolation_missing_value @ linux-x86_64
 test.test_configparser.ConfigParserTestCaseNoValue.test_items @ linux-x86_64
@@ -128,6 +133,7 @@ test.test_configparser.ConfigParserTestCaseNonStandardDefaultSection.test_case_s
 test.test_configparser.ConfigParserTestCaseNonStandardDefaultSection.test_clear @ linux-x86_64
 test.test_configparser.ConfigParserTestCaseNonStandardDefaultSection.test_default_case_sensitivity @ linux-x86_64
 test.test_configparser.ConfigParserTestCaseNonStandardDefaultSection.test_defaults_keyword @ linux-x86_64
+test.test_configparser.ConfigParserTestCaseNonStandardDefaultSection.test_get_after_duplicate_option_error @ linux-x86_64
 test.test_configparser.ConfigParserTestCaseNonStandardDefaultSection.test_interpolation @ linux-x86_64
 test.test_configparser.ConfigParserTestCaseNonStandardDefaultSection.test_interpolation_missing_value @ linux-x86_64
 test.test_configparser.ConfigParserTestCaseNonStandardDefaultSection.test_invalid_multiline_value @ linux-x86_64
@@ -153,6 +159,7 @@ test.test_configparser.ConfigParserTestCaseNonStandardDelimiters.test_case_sensi
 test.test_configparser.ConfigParserTestCaseNonStandardDelimiters.test_clear @ linux-x86_64
 test.test_configparser.ConfigParserTestCaseNonStandardDelimiters.test_default_case_sensitivity @ linux-x86_64
 test.test_configparser.ConfigParserTestCaseNonStandardDelimiters.test_defaults_keyword @ linux-x86_64
+test.test_configparser.ConfigParserTestCaseNonStandardDelimiters.test_get_after_duplicate_option_error @ linux-x86_64
 test.test_configparser.ConfigParserTestCaseNonStandardDelimiters.test_interpolation @ linux-x86_64
 test.test_configparser.ConfigParserTestCaseNonStandardDelimiters.test_interpolation_missing_value @ linux-x86_64
 test.test_configparser.ConfigParserTestCaseNonStandardDelimiters.test_invalid_multiline_value @ linux-x86_64
@@ -177,6 +184,7 @@ test.test_configparser.ConvertersTestCase.test_case_sensitivity_mapping_access @
 test.test_configparser.ConvertersTestCase.test_clear @ linux-x86_64
 test.test_configparser.ConvertersTestCase.test_converters @ linux-x86_64
 test.test_configparser.ConvertersTestCase.test_default_case_sensitivity @ linux-x86_64
+test.test_configparser.ConvertersTestCase.test_get_after_duplicate_option_error @ linux-x86_64
 test.test_configparser.ConvertersTestCase.test_invalid_multiline_value @ linux-x86_64
 test.test_configparser.ConvertersTestCase.test_parse_errors @ linux-x86_64
 test.test_configparser.ConvertersTestCase.test_popitem @ linux-x86_64
@@ -194,6 +202,7 @@ test.test_configparser.CopyTestCase.test_case_sensitivity @ linux-x86_64
 test.test_configparser.CopyTestCase.test_case_sensitivity_mapping_access @ linux-x86_64
 test.test_configparser.CopyTestCase.test_clear @ linux-x86_64
 test.test_configparser.CopyTestCase.test_default_case_sensitivity @ linux-x86_64
+test.test_configparser.CopyTestCase.test_get_after_duplicate_option_error @ linux-x86_64
 test.test_configparser.CopyTestCase.test_invalid_multiline_value @ linux-x86_64
 test.test_configparser.CopyTestCase.test_parse_errors @ linux-x86_64
 test.test_configparser.CopyTestCase.test_popitem @ linux-x86_64
@@ -241,6 +250,7 @@ test.test_configparser.MultilineValuesTestCase.test_case_sensitivity_mapping_acc
 test.test_configparser.MultilineValuesTestCase.test_clear @ linux-x86_64
 test.test_configparser.MultilineValuesTestCase.test_default_case_sensitivity @ linux-x86_64
 test.test_configparser.MultilineValuesTestCase.test_dominating_multiline_values @ linux-x86_64
+test.test_configparser.MultilineValuesTestCase.test_get_after_duplicate_option_error @ linux-x86_64
 test.test_configparser.MultilineValuesTestCase.test_invalid_multiline_value @ linux-x86_64
 test.test_configparser.MultilineValuesTestCase.test_parse_errors @ linux-x86_64
 test.test_configparser.MultilineValuesTestCase.test_popitem @ linux-x86_64
@@ -259,6 +269,7 @@ test.test_configparser.RawConfigParserTestCase.test_case_sensitivity_mapping_acc
 test.test_configparser.RawConfigParserTestCase.test_clear @ linux-x86_64
 test.test_configparser.RawConfigParserTestCase.test_default_case_sensitivity @ linux-x86_64
 test.test_configparser.RawConfigParserTestCase.test_defaults_keyword @ linux-x86_64
+test.test_configparser.RawConfigParserTestCase.test_get_after_duplicate_option_error @ linux-x86_64
 test.test_configparser.RawConfigParserTestCase.test_interpolation @ linux-x86_64
 test.test_configparser.RawConfigParserTestCase.test_invalid_multiline_value @ linux-x86_64
 test.test_configparser.RawConfigParserTestCase.test_items @ linux-x86_64
@@ -280,6 +291,7 @@ test.test_configparser.RawConfigParserTestCaseNonStandardDelimiters.test_case_se
 test.test_configparser.RawConfigParserTestCaseNonStandardDelimiters.test_clear @ linux-x86_64
 test.test_configparser.RawConfigParserTestCaseNonStandardDelimiters.test_default_case_sensitivity @ linux-x86_64
 test.test_configparser.RawConfigParserTestCaseNonStandardDelimiters.test_defaults_keyword @ linux-x86_64
+test.test_configparser.RawConfigParserTestCaseNonStandardDelimiters.test_get_after_duplicate_option_error @ linux-x86_64
 test.test_configparser.RawConfigParserTestCaseNonStandardDelimiters.test_interpolation @ linux-x86_64
 test.test_configparser.RawConfigParserTestCaseNonStandardDelimiters.test_invalid_multiline_value @ linux-x86_64
 test.test_configparser.RawConfigParserTestCaseNonStandardDelimiters.test_items @ linux-x86_64
@@ -304,6 +316,7 @@ test.test_configparser.SortedTestCase.test_case_sensitivity_mapping_access @ lin
 test.test_configparser.SortedTestCase.test_clear @ linux-x86_64
 test.test_configparser.SortedTestCase.test_default_case_sensitivity @ linux-x86_64
 test.test_configparser.SortedTestCase.test_defaults_keyword @ linux-x86_64
+test.test_configparser.SortedTestCase.test_get_after_duplicate_option_error @ linux-x86_64
 test.test_configparser.SortedTestCase.test_interpolation @ linux-x86_64
 test.test_configparser.SortedTestCase.test_invalid_multiline_value @ linux-x86_64
 test.test_configparser.SortedTestCase.test_items @ linux-x86_64
@@ -325,6 +338,7 @@ test.test_configparser.StrictTestCase.test_case_sensitivity @ linux-x86_64
 test.test_configparser.StrictTestCase.test_case_sensitivity_mapping_access @ linux-x86_64
 test.test_configparser.StrictTestCase.test_clear @ linux-x86_64
 test.test_configparser.StrictTestCase.test_default_case_sensitivity @ linux-x86_64
+test.test_configparser.StrictTestCase.test_get_after_duplicate_option_error @ linux-x86_64
 test.test_configparser.StrictTestCase.test_invalid_multiline_value @ linux-x86_64
 test.test_configparser.StrictTestCase.test_parse_errors @ linux-x86_64
 test.test_configparser.StrictTestCase.test_popitem @ linux-x86_64

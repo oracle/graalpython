@@ -1,5 +1,6 @@
 DocTestCase.test.test_generators.__test__.conjoin @ linux-x86_64
 DocTestCase.test.test_generators.__test__.coroutine @ linux-x86_64
+DocTestCase.test.test_generators.__test__.email @ linux-x86_64
 DocTestCase.test.test_generators.__test__.fun @ linux-x86_64
 DocTestCase.test.test_generators.__test__.pep @ linux-x86_64
 DocTestCase.test.test_generators.__test__.refleaks @ linux-x86_64

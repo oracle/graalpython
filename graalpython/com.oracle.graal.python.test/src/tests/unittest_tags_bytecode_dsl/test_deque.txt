@@ -8,6 +8,7 @@ test.test_deque.TestBasic.test_big_stack_right @ linux-x86_64
 test.test_deque.TestBasic.test_clear @ linux-x86_64
 test.test_deque.TestBasic.test_comparisons @ linux-x86_64
 test.test_deque.TestBasic.test_contains @ linux-x86_64
+test.test_deque.TestBasic.test_contains_count_index_stop_crashes @ linux-x86_64
 test.test_deque.TestBasic.test_contains_count_stop_crashes @ linux-x86_64
 test.test_deque.TestBasic.test_copy @ linux-x86_64
 test.test_deque.TestBasic.test_copy_method @ linux-x86_64

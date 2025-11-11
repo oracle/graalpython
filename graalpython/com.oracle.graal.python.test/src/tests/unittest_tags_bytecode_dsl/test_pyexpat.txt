@@ -30,6 +30,8 @@ test.test_pyexpat.ParseTest.test_parse_bytes @ linux-x86_64
 test.test_pyexpat.ParseTest.test_parse_file @ linux-x86_64
 test.test_pyexpat.ParseTest.test_parse_str @ linux-x86_64
 test.test_pyexpat.PositionTest.test @ linux-x86_64
+test.test_pyexpat.ReparseDeferralTest.test_getter_setter_round_trip @ linux-x86_64
+test.test_pyexpat.ReparseDeferralTest.test_reparse_deferral_disabled @ linux-x86_64
 test.test_pyexpat.SetAttributeTest.test_buffer_text @ linux-x86_64
 test.test_pyexpat.SetAttributeTest.test_invalid_attributes @ linux-x86_64
 test.test_pyexpat.SetAttributeTest.test_namespace_prefixes @ linux-x86_64

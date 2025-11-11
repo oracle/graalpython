@@ -308,6 +308,7 @@ test.test_io.PyBufferedRandomTest.test_no_extraneous_read @ linux-x86_64
 test.test_io.PyBufferedRandomTest.test_nonnormalized_close_error_on_close @ linux-x86_64
 test.test_io.PyBufferedRandomTest.test_read @ linux-x86_64
 test.test_io.PyBufferedRandomTest.test_read1 @ linux-x86_64
+test.test_io.PyBufferedRandomTest.test_read1_after_write @ linux-x86_64
 test.test_io.PyBufferedRandomTest.test_read1_arbitrary @ linux-x86_64
 test.test_io.PyBufferedRandomTest.test_read_all @ linux-x86_64
 test.test_io.PyBufferedRandomTest.test_read_and_write @ linux-x86_64
@@ -322,7 +323,9 @@ test.test_io.PyBufferedRandomTest.test_readlines @ linux-x86_64
 test.test_io.PyBufferedRandomTest.test_readonly_attributes @ linux-x86_64
 test.test_io.PyBufferedRandomTest.test_repr @ linux-x86_64
 test.test_io.PyBufferedRandomTest.test_seek_and_tell @ linux-x86_64
+test.test_io.PyBufferedRandomTest.test_seek_character_device_file @ linux-x86_64
 test.test_io.PyBufferedRandomTest.test_slow_close_from_thread @ linux-x86_64
+test.test_io.PyBufferedRandomTest.test_tell_character_device_file @ linux-x86_64
 test.test_io.PyBufferedRandomTest.test_threads @ linux-x86_64
 test.test_io.PyBufferedRandomTest.test_truncate @ linux-x86_64
 test.test_io.PyBufferedRandomTest.test_truncate_after_read_or_write @ linux-x86_64
@@ -372,6 +375,8 @@ test.test_io.PyBufferedReaderTest.test_readinto_array @ linux-x86_64
 test.test_io.PyBufferedReaderTest.test_readlines @ linux-x86_64
 test.test_io.PyBufferedReaderTest.test_readonly_attributes @ linux-x86_64
 test.test_io.PyBufferedReaderTest.test_repr @ linux-x86_64
+test.test_io.PyBufferedReaderTest.test_seek_character_device_file @ linux-x86_64
+test.test_io.PyBufferedReaderTest.test_tell_character_device_file @ linux-x86_64
 test.test_io.PyBufferedReaderTest.test_threads @ linux-x86_64
 test.test_io.PyBufferedReaderTest.test_truncate_on_read_only @ linux-x86_64
 test.test_io.PyBufferedReaderTest.test_uninitialized @ linux-x86_64
@@ -483,6 +488,7 @@ test.test_io.PyTextIOWrapperTest.test_issue1395_5 @ linux-x86_64
 test.test_io.PyTextIOWrapperTest.test_issue2282 @ linux-x86_64
 test.test_io.PyTextIOWrapperTest.test_issue22849 @ linux-x86_64
 test.test_io.PyTextIOWrapperTest.test_issue25862 @ linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_issue35928 @ linux-x86_64
 test.test_io.PyTextIOWrapperTest.test_line_buffering @ linux-x86_64
 test.test_io.PyTextIOWrapperTest.test_multi_close @ linux-x86_64
 test.test_io.PyTextIOWrapperTest.test_multibyte_seek_and_tell @ linux-x86_64
@@ -503,6 +509,7 @@ test.test_io.PyTextIOWrapperTest.test_reconfigure_defaults @ linux-x86_64
 test.test_io.PyTextIOWrapperTest.test_reconfigure_encoding_read @ linux-x86_64
 test.test_io.PyTextIOWrapperTest.test_reconfigure_errors @ linux-x86_64
 test.test_io.PyTextIOWrapperTest.test_reconfigure_line_buffering @ linux-x86_64
+test.test_io.PyTextIOWrapperTest.test_reconfigure_locale @ linux-x86_64
 test.test_io.PyTextIOWrapperTest.test_reconfigure_newline @ linux-x86_64
 test.test_io.PyTextIOWrapperTest.test_reconfigure_write @ linux-x86_64
 test.test_io.PyTextIOWrapperTest.test_reconfigure_write_fromascii @ linux-x86_64

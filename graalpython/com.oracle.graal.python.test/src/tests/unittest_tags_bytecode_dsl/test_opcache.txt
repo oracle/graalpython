@@ -24,3 +24,4 @@ test.test_opcache.TestLoadMethodCache.test_metaclass_set_descriptor_after_optimi
 test.test_opcache.TestLoadMethodCache.test_metaclass_swap @ linux-x86_64
 test.test_opcache.TestLoadMethodCache.test_type_descriptor_shadows_attribute_member @ linux-x86_64
 test.test_opcache.TestLoadMethodCache.test_type_descriptor_shadows_attribute_method @ linux-x86_64
+test.test_opcache.TestLoadSuperAttrCache.test_descriptor_not_double_executed_on_spec_fail @ linux-x86_64

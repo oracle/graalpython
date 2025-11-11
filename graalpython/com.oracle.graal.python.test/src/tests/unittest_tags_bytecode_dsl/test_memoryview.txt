@@ -103,5 +103,7 @@ test.test_memoryview.BytesMemoryviewTest.test_tolist @ linux-x86_64
 test.test_memoryview.BytesMemoryviewTest.test_toreadonly @ linux-x86_64
 test.test_memoryview.BytesMemoryviewTest.test_writable_readonly @ linux-x86_64
 test.test_memoryview.OtherTest.test_copy @ linux-x86_64
+test.test_memoryview.OtherTest.test_half_float @ linux-x86_64
 test.test_memoryview.OtherTest.test_memoryview_hex @ linux-x86_64
 test.test_memoryview.OtherTest.test_pickle @ linux-x86_64
+test.test_memoryview.OtherTest.test_picklebuffer_reference_loop @ linux-x86_64

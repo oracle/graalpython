@@ -4,11 +4,13 @@ test.test_class.ClassTests.testClassWithExtCall @ linux-x86_64
 test.test_class.ClassTests.testConstructorErrorMessages @ linux-x86_64
 test.test_class.ClassTests.testForExceptionsRaisedInInstanceGetattr2 @ linux-x86_64
 test.test_class.ClassTests.testGetSetAndDel @ linux-x86_64
+test.test_class.ClassTests.testHasAttrString @ linux-x86_64
 test.test_class.ClassTests.testHashComparisonOfMethods @ linux-x86_64
 test.test_class.ClassTests.testHashStuff @ linux-x86_64
 test.test_class.ClassTests.testInit @ linux-x86_64
 test.test_class.ClassTests.testListAndDictOps @ linux-x86_64
 test.test_class.ClassTests.testMisc @ linux-x86_64
+test.test_class.ClassTests.testPredefinedAttrs @ linux-x86_64
 test.test_class.ClassTests.testSFBug532646 @ linux-x86_64
 test.test_class.ClassTests.testSetattrNonStringName @ linux-x86_64
 test.test_class.ClassTests.testSetattrWrapperNameIntern @ linux-x86_64

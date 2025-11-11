@@ -16,6 +16,7 @@ test.test_posixpath.PathLikeTests.test_path_relpath @ linux-x86_64
 test.test_posixpath.PathLikeTests.test_path_split @ linux-x86_64
 test.test_posixpath.PathLikeTests.test_path_splitdrive @ linux-x86_64
 test.test_posixpath.PathLikeTests.test_path_splitext @ linux-x86_64
+test.test_posixpath.PathLikeTests.test_path_splitroot @ linux-x86_64
 test.test_posixpath.PosixCommonTest.test_abspath @ linux-x86_64
 test.test_posixpath.PosixCommonTest.test_abspath_issue3426 @ linux-x86_64
 test.test_posixpath.PosixCommonTest.test_commonprefix @ linux-x86_64
@@ -50,7 +51,9 @@ test.test_posixpath.PosixPathTest.test_dirname @ linux-x86_64
 test.test_posixpath.PosixPathTest.test_expanduser @ linux-x86_64
 test.test_posixpath.PosixPathTest.test_expanduser_home_envvar @ linux-x86_64
 test.test_posixpath.PosixPathTest.test_expanduser_pwd @ linux-x86_64
+test.test_posixpath.PosixPathTest.test_expanduser_pwd2 @ linux-x86_64
 test.test_posixpath.PosixPathTest.test_isabs @ linux-x86_64
+test.test_posixpath.PosixPathTest.test_isjunction @ linux-x86_64
 test.test_posixpath.PosixPathTest.test_islink @ linux-x86_64
 test.test_posixpath.PosixPathTest.test_ismount @ linux-x86_64
 test.test_posixpath.PosixPathTest.test_ismount_different_device @ linux-x86_64
@@ -75,3 +78,4 @@ test.test_posixpath.PosixPathTest.test_relpath @ linux-x86_64
 test.test_posixpath.PosixPathTest.test_relpath_bytes @ linux-x86_64
 test.test_posixpath.PosixPathTest.test_split @ linux-x86_64
 test.test_posixpath.PosixPathTest.test_splitext @ linux-x86_64
+test.test_posixpath.PosixPathTest.test_splitroot @ linux-x86_64

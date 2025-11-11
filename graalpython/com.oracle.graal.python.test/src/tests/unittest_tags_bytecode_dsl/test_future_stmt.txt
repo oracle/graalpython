@@ -1,12 +1,14 @@
 test.test_future_stmt.test_future.AnnotationsFutureTestCase.test_annotation_with_complex_target @ linux-x86_64
 test.test_future_stmt.test_future.AnnotationsFutureTestCase.test_annotations_forbidden @ linux-x86_64
 test.test_future_stmt.test_future.AnnotationsFutureTestCase.test_annotations_symbol_table_pass @ linux-x86_64
+test.test_future_stmt.test_future.AnnotationsFutureTestCase.test_fstring_debug_annotations @ linux-x86_64
 test.test_future_stmt.test_future.AnnotationsFutureTestCase.test_get_type_hints_on_func_with_variadic_arg @ linux-x86_64
 test.test_future_stmt.test_future.FutureTest.test_badfuture10 @ linux-x86_64
 test.test_future_stmt.test_future.FutureTest.test_badfuture3 @ linux-x86_64
 test.test_future_stmt.test_future.FutureTest.test_badfuture4 @ linux-x86_64
 test.test_future_stmt.test_future.FutureTest.test_badfuture5 @ linux-x86_64
 test.test_future_stmt.test_future.FutureTest.test_badfuture6 @ linux-x86_64
+test.test_future_stmt.test_future.FutureTest.test_badfuture7 @ linux-x86_64
 test.test_future_stmt.test_future.FutureTest.test_badfuture8 @ linux-x86_64
 test.test_future_stmt.test_future.FutureTest.test_badfuture9 @ linux-x86_64
 test.test_future_stmt.test_future.FutureTest.test_ensure_flags_dont_clash @ linux-x86_64

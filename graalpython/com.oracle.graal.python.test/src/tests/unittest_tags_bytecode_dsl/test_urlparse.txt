@@ -31,7 +31,10 @@ test.test_urlparse.UrlParseTestCase.test_noslash @ linux-x86_64
 test.test_urlparse.UrlParseTestCase.test_parse_fragments @ linux-x86_64
 test.test_urlparse.UrlParseTestCase.test_parse_qs_encoding @ linux-x86_64
 test.test_urlparse.UrlParseTestCase.test_parse_qs_separator @ linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_parse_qsl_bytes @ linux-x86_64
 test.test_urlparse.UrlParseTestCase.test_parse_qsl_encoding @ linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_parse_qsl_errors @ linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_parse_qsl_false_value @ linux-x86_64
 test.test_urlparse.UrlParseTestCase.test_parse_qsl_max_num_fields @ linux-x86_64
 test.test_urlparse.UrlParseTestCase.test_parse_qsl_separator @ linux-x86_64
 test.test_urlparse.UrlParseTestCase.test_port_casting_failure_message @ linux-x86_64
@@ -42,6 +45,7 @@ test.test_urlparse.UrlParseTestCase.test_quote_errors @ linux-x86_64
 test.test_urlparse.UrlParseTestCase.test_quote_from_bytes @ linux-x86_64
 test.test_urlparse.UrlParseTestCase.test_result_pairs @ linux-x86_64
 test.test_urlparse.UrlParseTestCase.test_roundtrips @ linux-x86_64
+test.test_urlparse.UrlParseTestCase.test_roundtrips_normalization @ linux-x86_64
 test.test_urlparse.UrlParseTestCase.test_splitting_bracketed_hosts @ linux-x86_64
 test.test_urlparse.UrlParseTestCase.test_telurl_params @ linux-x86_64
 test.test_urlparse.UrlParseTestCase.test_unparse_parse @ linux-x86_64

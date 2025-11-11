@@ -1,5 +1,7 @@
 test.test_sysconfig.MakefileTests.test_parse_makefile @ linux-x86_64
 test.test_sysconfig.TestSysConfig.test_EXT_SUFFIX_in_vars @ linux-x86_64
+test.test_sysconfig.TestSysConfig.test_config_vars_depend_on_site_initialization @ linux-x86_64
+test.test_sysconfig.TestSysConfig.test_config_vars_recalculation_after_site_initialization @ linux-x86_64
 test.test_sysconfig.TestSysConfig.test_get_config_h_filename @ linux-x86_64
 test.test_sysconfig.TestSysConfig.test_get_config_vars @ linux-x86_64
 test.test_sysconfig.TestSysConfig.test_get_default_scheme @ linux-x86_64
@@ -12,7 +14,9 @@ test.test_sysconfig.TestSysConfig.test_get_scheme_names @ linux-x86_64
 test.test_sysconfig.TestSysConfig.test_ldshared_value @ linux-x86_64
 test.test_sysconfig.TestSysConfig.test_main @ linux-x86_64
 test.test_sysconfig.TestSysConfig.test_nt_venv_scheme @ linux-x86_64
+test.test_sysconfig.TestSysConfig.test_paths_depend_on_site_initialization @ linux-x86_64
 test.test_sysconfig.TestSysConfig.test_posix_venv_scheme @ linux-x86_64
 test.test_sysconfig.TestSysConfig.test_srcdir_independent_of_cwd @ linux-x86_64
+test.test_sysconfig.TestSysConfig.test_symlink @ linux-x86_64
 test.test_sysconfig.TestSysConfig.test_user_similar @ linux-x86_64
 test.test_sysconfig.TestSysConfig.test_venv_scheme @ linux-x86_64

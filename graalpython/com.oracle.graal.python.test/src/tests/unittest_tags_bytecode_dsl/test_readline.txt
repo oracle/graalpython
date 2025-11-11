@@ -1,0 +1,4 @@
+test.test_readline.TestReadline.test_auto_history_disabled @ linux-x86_64
+test.test_readline.TestReadline.test_auto_history_enabled @ linux-x86_64
+test.test_readline.TestReadline.test_gh123321_threadsafe @ linux-x86_64
+test.test_readline.TestReadline.test_init @ linux-x86_64

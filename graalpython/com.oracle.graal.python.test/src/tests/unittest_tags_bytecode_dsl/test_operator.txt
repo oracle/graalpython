@@ -19,6 +19,8 @@ test.test_operator.COperatorTestCase.test_floordiv @ linux-x86_64
 test.test_operator.COperatorTestCase.test_ge @ linux-x86_64
 test.test_operator.COperatorTestCase.test_getitem @ linux-x86_64
 test.test_operator.COperatorTestCase.test_gt @ linux-x86_64
+test.test_operator.COperatorTestCase.test_iconcat_without_getitem @ linux-x86_64
+test.test_operator.COperatorTestCase.test_index @ linux-x86_64
 test.test_operator.COperatorTestCase.test_indexOf @ linux-x86_64
 test.test_operator.COperatorTestCase.test_inplace @ linux-x86_64
 test.test_operator.COperatorTestCase.test_invert @ linux-x86_64
@@ -35,6 +37,7 @@ test.test_operator.COperatorTestCase.test_mod @ linux-x86_64
 test.test_operator.COperatorTestCase.test_mul @ linux-x86_64
 test.test_operator.COperatorTestCase.test_ne @ linux-x86_64
 test.test_operator.COperatorTestCase.test_neg @ linux-x86_64
+test.test_operator.COperatorTestCase.test_not_ @ linux-x86_64
 test.test_operator.COperatorTestCase.test_pos @ linux-x86_64
 test.test_operator.COperatorTestCase.test_pow @ linux-x86_64
 test.test_operator.COperatorTestCase.test_rshift @ linux-x86_64
@@ -66,6 +69,8 @@ test.test_operator.PyOperatorTestCase.test_floordiv @ linux-x86_64
 test.test_operator.PyOperatorTestCase.test_ge @ linux-x86_64
 test.test_operator.PyOperatorTestCase.test_getitem @ linux-x86_64
 test.test_operator.PyOperatorTestCase.test_gt @ linux-x86_64
+test.test_operator.PyOperatorTestCase.test_iconcat_without_getitem @ linux-x86_64
+test.test_operator.PyOperatorTestCase.test_index @ linux-x86_64
 test.test_operator.PyOperatorTestCase.test_indexOf @ linux-x86_64
 test.test_operator.PyOperatorTestCase.test_inplace @ linux-x86_64
 test.test_operator.PyOperatorTestCase.test_invert @ linux-x86_64
@@ -82,6 +87,7 @@ test.test_operator.PyOperatorTestCase.test_mod @ linux-x86_64
 test.test_operator.PyOperatorTestCase.test_mul @ linux-x86_64
 test.test_operator.PyOperatorTestCase.test_ne @ linux-x86_64
 test.test_operator.PyOperatorTestCase.test_neg @ linux-x86_64
+test.test_operator.PyOperatorTestCase.test_not_ @ linux-x86_64
 test.test_operator.PyOperatorTestCase.test_pos @ linux-x86_64
 test.test_operator.PyOperatorTestCase.test_pow @ linux-x86_64
 test.test_operator.PyOperatorTestCase.test_rshift @ linux-x86_64
