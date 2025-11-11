@@ -57,12 +57,5 @@ test.test_pdb.PdbTestCase.test_readrc_homedir @ linux-x86_64
 test.test_pdb.PdbTestCase.test_readrc_kwarg @ linux-x86_64
 test.test_pdb.PdbTestCase.test_run_module @ linux-x86_64
 test.test_pdb.PdbTestCase.test_run_pdb_with_pdb @ linux-x86_64
-test.test_pdb.PdbTestCase.test_pdbrc_alias @ linux-x86_64
-test.test_pdb.PdbTestCase.test_pdbrc_basic @ linux-x86_64
-test.test_pdb.PdbTestCase.test_pdbrc_commands @ linux-x86_64
-test.test_pdb.PdbTestCase.test_pdbrc_empty_line @ linux-x86_64
-test.test_pdb.PdbTestCase.test_pdbrc_semicolon @ linux-x86_64
-test.test_pdb.PdbTestCase.test_relative_imports @ linux-x86_64
-test.test_pdb.PdbTestCase.test_relative_imports_on_plain_module @ linux-x86_64
 test.test_pdb.PdbTestCase.test_spec @ linux-x86_64
 test.test_pdb.PdbTestCase.test_step_into_botframe @ linux-x86_64

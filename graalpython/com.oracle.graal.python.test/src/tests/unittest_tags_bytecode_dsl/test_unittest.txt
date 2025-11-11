@@ -486,7 +486,6 @@ test.test_unittest.testmock.testasync.AsyncContextManagerTest.test_mock_customiz
 test.test_unittest.testmock.testasync.AsyncContextManagerTest.test_mock_customize_async_context_manager_with_coroutine @ linux-x86_64
 test.test_unittest.testmock.testasync.AsyncContextManagerTest.test_mock_supports_async_context_manager @ linux-x86_64
 test.test_unittest.testmock.testasync.AsyncContextManagerTest.test_set_return_value_of_aenter @ linux-x86_64
-test.test_unittest.testmock.testasync.AsyncIteratorTest.test_aiter_set_return_value @ linux-x86_64
 test.test_unittest.testmock.testasync.AsyncIteratorTest.test_mock_aiter_and_anext_asyncmock @ linux-x86_64
 test.test_unittest.testmock.testasync.AsyncIteratorTest.test_mock_async_for @ linux-x86_64
 test.test_unittest.testmock.testasync.AsyncMagicMethods.test_async_magic_methods_return_async_mocks @ linux-x86_64

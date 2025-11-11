@@ -33,8 +33,10 @@ test.test_tarfile.Bz2MiscReadTest.test_empty_tarfile @ linux-x86_64
 test.test_tarfile.Bz2MiscReadTest.test_extract_directory @ linux-x86_64
 test.test_tarfile.Bz2MiscReadTest.test_extract_hardlink @ linux-x86_64
 test.test_tarfile.Bz2MiscReadTest.test_extract_pathlike_dir @ linux-x86_64
+test.test_tarfile.Bz2MiscReadTest.test_extract_pathlike_name @ linux-x86_64
 test.test_tarfile.Bz2MiscReadTest.test_extractall @ linux-x86_64
 test.test_tarfile.Bz2MiscReadTest.test_extractall_pathlike_dir @ linux-x86_64
+test.test_tarfile.Bz2MiscReadTest.test_extractall_pathlike_name @ linux-x86_64
 test.test_tarfile.Bz2MiscReadTest.test_extractfile_attrs @ linux-x86_64
 test.test_tarfile.Bz2MiscReadTest.test_fail_comp @ linux-x86_64
 test.test_tarfile.Bz2MiscReadTest.test_fileobj_with_offset @ linux-x86_64
@@ -197,8 +199,10 @@ test.test_tarfile.GzipMiscReadTest.test_empty_tarfile @ linux-x86_64
 test.test_tarfile.GzipMiscReadTest.test_extract_directory @ linux-x86_64
 test.test_tarfile.GzipMiscReadTest.test_extract_hardlink @ linux-x86_64
 test.test_tarfile.GzipMiscReadTest.test_extract_pathlike_dir @ linux-x86_64
+test.test_tarfile.GzipMiscReadTest.test_extract_pathlike_name @ linux-x86_64
 test.test_tarfile.GzipMiscReadTest.test_extractall @ linux-x86_64
 test.test_tarfile.GzipMiscReadTest.test_extractall_pathlike_dir @ linux-x86_64
+test.test_tarfile.GzipMiscReadTest.test_extractall_pathlike_name @ linux-x86_64
 test.test_tarfile.GzipMiscReadTest.test_extractfile_attrs @ linux-x86_64
 test.test_tarfile.GzipMiscReadTest.test_fail_comp @ linux-x86_64
 test.test_tarfile.GzipMiscReadTest.test_fileobj_with_offset @ linux-x86_64
@@ -300,8 +304,10 @@ test.test_tarfile.LzmaMiscReadTest.test_empty_tarfile @ linux-x86_64
 test.test_tarfile.LzmaMiscReadTest.test_extract_directory @ linux-x86_64
 test.test_tarfile.LzmaMiscReadTest.test_extract_hardlink @ linux-x86_64
 test.test_tarfile.LzmaMiscReadTest.test_extract_pathlike_dir @ linux-x86_64
+test.test_tarfile.LzmaMiscReadTest.test_extract_pathlike_name @ linux-x86_64
 test.test_tarfile.LzmaMiscReadTest.test_extractall @ linux-x86_64
 test.test_tarfile.LzmaMiscReadTest.test_extractall_pathlike_dir @ linux-x86_64
+test.test_tarfile.LzmaMiscReadTest.test_extractall_pathlike_name @ linux-x86_64
 test.test_tarfile.LzmaMiscReadTest.test_extractfile_attrs @ linux-x86_64
 test.test_tarfile.LzmaMiscReadTest.test_fail_comp @ linux-x86_64
 test.test_tarfile.LzmaMiscReadTest.test_fileobj_with_offset @ linux-x86_64
@@ -398,8 +404,10 @@ test.test_tarfile.MiscReadTest.test_empty_tarfile @ linux-x86_64
 test.test_tarfile.MiscReadTest.test_extract_directory @ linux-x86_64
 test.test_tarfile.MiscReadTest.test_extract_hardlink @ linux-x86_64
 test.test_tarfile.MiscReadTest.test_extract_pathlike_dir @ linux-x86_64
+test.test_tarfile.MiscReadTest.test_extract_pathlike_name @ linux-x86_64
 test.test_tarfile.MiscReadTest.test_extractall @ linux-x86_64
 test.test_tarfile.MiscReadTest.test_extractall_pathlike_dir @ linux-x86_64
+test.test_tarfile.MiscReadTest.test_extractall_pathlike_name @ linux-x86_64
 test.test_tarfile.MiscReadTest.test_extractfile_attrs @ linux-x86_64
 test.test_tarfile.MiscReadTest.test_fileobj_with_offset @ linux-x86_64
 test.test_tarfile.MiscReadTest.test_find_members @ linux-x86_64
@@ -537,6 +545,7 @@ test.test_tarfile.TestExtractionFilters.test_custom_filter @ linux-x86_64
 test.test_tarfile.TestExtractionFilters.test_data_filter @ linux-x86_64
 test.test_tarfile.TestExtractionFilters.test_deep_symlink @ linux-x86_64
 test.test_tarfile.TestExtractionFilters.test_default_filter_warns @ linux-x86_64
+test.test_tarfile.TestExtractionFilters.test_default_filter_warns_not @ linux-x86_64
 test.test_tarfile.TestExtractionFilters.test_errorlevel @ linux-x86_64
 test.test_tarfile.TestExtractionFilters.test_fully_trusted_filter @ linux-x86_64
 test.test_tarfile.TestExtractionFilters.test_parent_symlink @ linux-x86_64

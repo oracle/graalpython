@@ -1,5 +1,8 @@
 test.test_pathlib.CompatiblePathTest.test_rtruediv @ linux-x86_64
 test.test_pathlib.CompatiblePathTest.test_truediv @ linux-x86_64
+test.test_pathlib.NTFlavourTest.test_parse_parts @ linux-x86_64
+test.test_pathlib.NTFlavourTest.test_parse_parts_common @ linux-x86_64
+test.test_pathlib.NTFlavourTest.test_splitroot @ linux-x86_64
 test.test_pathlib.PathSubclassTest.test_absolute_common @ linux-x86_64
 test.test_pathlib.PathSubclassTest.test_chmod @ linux-x86_64
 test.test_pathlib.PathSubclassTest.test_chmod_follow_symlinks_true @ linux-x86_64

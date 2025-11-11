@@ -89,6 +89,7 @@ test.test_tempfile.TestTemporaryDirectory.test_delete_false @ linux-x86_64
 test.test_tempfile.TestTemporaryDirectory.test_exit_on_shutdown @ linux-x86_64
 test.test_tempfile.TestTemporaryDirectory.test_explicit_cleanup @ linux-x86_64
 test.test_tempfile.TestTemporaryDirectory.test_explicit_cleanup_ignore_errors @ linux-x86_64
+test.test_tempfile.TestTemporaryDirectory.test_explict_cleanup_ignore_errors @ linux-x86_64
 test.test_tempfile.TestTemporaryDirectory.test_mkdtemp_failure @ linux-x86_64
 test.test_tempfile.TestTemporaryDirectory.test_modes @ linux-x86_64
 test.test_tempfile.TestTemporaryDirectory.test_multiple_close @ linux-x86_64
