@@ -36,20 +36,25 @@ import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 
 /*
  * NOTE: We are not using IndirectCallContext here in this file
@@ -67,10 +72,25 @@ public final class ForeignAbstractClassBuiltins extends PythonBuiltins {
     @Builtin(name = J___BASES__, minNumOfPositionalArgs = 1, isGetter = true, isSetter = false)
     @GenerateNodeFactory
     abstract static class BasesNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        static Object getBases(Object self,
+        @Specialization(limit = "2")
+        static Object getBases(VirtualFrame frame, Object self,
+                        @Bind Node inliningTarget,
+                        @CachedLibrary("self") InteropLibrary lib,
+                        @Cached PyObjectGetIter getIter,
+                        @Cached SequenceStorageNodes.CreateStorageFromIteratorNode createStorageFromIteratorNode,
                         @Bind PythonLanguage language) {
-            return PFactory.createEmptyTuple(language);
+            if (lib.hasMetaParents(self)) {
+                try {
+                    Object parents = lib.getMetaParents(self);
+                    Object iterObj = getIter.execute(frame, inliningTarget, parents);
+                    SequenceStorage storage = createStorageFromIteratorNode.execute(frame, iterObj);
+                    return PFactory.createTuple(language, storage);
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                }
+            } else {
+                return PFactory.createEmptyTuple(language);
+            }
         }
     }
 

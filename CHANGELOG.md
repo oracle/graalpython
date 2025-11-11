@@ -8,6 +8,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * Allocation reporting via Truffle has been removed. Python object sizes were never reported correctly, so the data was misleading and there was a non-neglible overhead for object allocations even when reporting was inactive.
 * Better `readline` support via JLine. Autocompletion and history now works in `pdb`
 * Remove the intrinsified _ctypes module in favor of the native CPython version. This makes GraalPy's ctypes implementation more compatible and reduces the memory footprint of using ctypes.
+* Add a new, more natural style of subclassing Java classes from Python by passing the `new_style=True` keyword. Multiple levels of inheritance are supported, and `super()` calls both in the constructor override via `__new__` as well as in Java method overrides work as expected.
 
 ## Version 25.0.1
 * Allow users to keep going on unsupported JDK/OS/ARCH combinations at their own risk by opting out of early failure using `-Dtruffle.UseFallbackRuntime=true`, `-Dpolyglot.engine.userResourceCache=/set/to/a/writeable/dir`, `-Dpolyglot.engine.allowUnsupportedPlatform=true`, and `-Dpolyglot.python.UnsupportedPlatformEmulates=[linux|macos|windows]` and `-Dorg.graalvm.python.resources.exclude=native.files`.

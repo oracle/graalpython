@@ -38,10 +38,10 @@
 # SOFTWARE.
 
 if [ -n "$GITHUB_RUN_ID" ]; then
-    dnf install -y gcc-toolset-12-gcc-gfortran openblas-devel
+    dnf install -y gcc-toolset-12-gcc-gfortran gcc-toolset-12-gcc-c++ openblas-devel
     if [ -n "$1" ]; then
-        scl enable gcc-toolset-12 "pip wheel \"numpy==$1\""
+        scl enable gcc-toolset-12 "pip wheel \"gensim==$1\""
     else
-        scl enable gcc-toolset-12 "pip wheel numpy"
+        scl enable gcc-toolset-12 "pip wheel gensim"
     fi
 fi
