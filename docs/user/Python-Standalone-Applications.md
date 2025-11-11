@@ -28,6 +28,6 @@ Where:
 This produces a native _my_binary_ file which includes your Python code, the GraalPy runtime, and the Python standard library in a single, self-contained executable.
 Use `graalpy -m standalone native --help` for further options.
 
-### Security Considerations
+### Security Considerations of Python Standalone Applications
 
 Standalone executables do not protect your source code. Your Python code becomes bytecode, and bytecode can be easily decompiled back to readable Python code.
