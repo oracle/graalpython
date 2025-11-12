@@ -41,6 +41,14 @@
 import subprocess, sys, re
 
 
+# This benchmark computes the best possible result of the phase_shift_warmup
+# benchmark. It executes the script phase_shift_script_baseline in a subprocess.
+# The phase_shift_script_baseline script runs only the second phase of the 
+# full script phase_shift_script, and so the second phase starts with a clean
+# compilation queue. The second phase runs (phase2it + 200) iterations of a
+# certain workflow consisting of a large number of generated functions and measures
+# the sum of the time of the last 200 iterations. The better the time the better
+# is the code of the tested workflow warmed up.
 def __benchmark__(phase2it=0):
     orig_vm_argv = sys.orig_argv
     for i, arg in enumerate(orig_vm_argv):
@@ -55,5 +63,6 @@ def __benchmark__(phase2it=0):
     m = re.search(r"LAST_200_IT_TIME = (\d+) ms", result.stdout)
     if m:
         tt = int(m.group(1))
+    print(result.stdout)
     return tt * 1000000                
 
