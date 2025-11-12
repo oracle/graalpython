@@ -279,7 +279,7 @@ import com.oracle.truffle.api.strings.TruffleString;
  *              - it has some quirks, so we follow the same algorithm using the the slotdefs ({@link #SLOTDEFS}).
  *              - This is not called for native types: nor static, neither heap types
  *      - When Python class goes to native (in ToNativeTypeNode) we convert the slots to native in
- *          {@link TpSlot#toNative(TpSlotMeta, TpSlot, Object)}
+ *          {@link TpSlot#toNative(TpSlotMeta, TpSlot, long)}
  *          - TpSlotNative slots are unwrapped
  *          - For managed slots we create corresponding {@link PyProcsWrapper}
  *              - when {@link PyProcsWrapper} goes to native, it registers itself in a map in context, so

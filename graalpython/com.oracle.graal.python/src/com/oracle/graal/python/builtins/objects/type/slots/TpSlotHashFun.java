@@ -96,7 +96,7 @@ public abstract class TpSlotHashFun {
     /**
      * Mirror of the {@code PyObject_HashNotImplemented} slot on the managed side. We translate this
      * slot singleton instance to a pointer to the {@code PyObject_HashNotImplemented} C function in
-     * {@link TpSlot#toNative(TpSlotMeta, TpSlot, Object)} and vice versa in
+     * {@link TpSlot#toNative(TpSlotMeta, TpSlot, long)} and vice versa in
      * {@code TpSlot#fromNative(PythonContext, Object, InteropLibrary)}.
      */
     public static class PyObjectHashNotImplemented extends TpSlotHashBuiltin<HashNotImplementedNode> {

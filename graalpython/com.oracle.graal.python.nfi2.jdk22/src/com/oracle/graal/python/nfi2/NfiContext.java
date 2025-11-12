@@ -92,13 +92,14 @@ public final class NfiContext {
         long nativeName = NativeMemory.javaStringToNativeUtf8(name);
         try {
             ensureDlopenDlsym();
-            if ((flags & (RTLD_LAZY | RTLD_NOW)) == 0) {
-                flags |= RTLD_NOW;
+            int callFlags = flags;
+            if ((callFlags & (RTLD_LAZY | RTLD_NOW)) == 0) {
+                callFlags |= RTLD_NOW;
             }
             if (ImageInfo.inImageCode()) {
-                lib = (long) ForeignFunctions.invoke(dlopenDescriptor, dlopenPtr, nativeName, flags);
+                lib = (long) ForeignFunctions.invoke(dlopenDescriptor, dlopenPtr, nativeName, callFlags);
             } else {
-                lib = (long) dlopen.invokeExact(nativeName, flags);
+                lib = (long) dlopen.invokeExact(nativeName, callFlags);
             }
         } catch (Throwable e) {
             throw CompilerDirectives.shouldNotReachHere(e);
@@ -113,6 +114,7 @@ public final class NfiContext {
         return library;
     }
 
+    @SuppressWarnings("static-method")
     long lookupOptionalSymbol(long library, String name) {
         // TODO(NFI2) if logging enabled, keep track of ptr->name mappings
         long nativeName = NativeMemory.javaStringToNativeUtf8(name);
