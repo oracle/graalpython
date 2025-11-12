@@ -22,78 +22,27 @@ The created example demonstrates useful default options for the Python context, 
 ## Reducing Binary Size
 
 Python is a feature-rich language with an extensive standard library.
-CPython's philosophy of "batteries included" means it ships with many built-in modules and libraries.
-As a compatible Python implementation, GraalPy includes most of these same "batteries."
-However, this can result in large native executables when embedding GraalPy in Java applications.
+This can result in large native executables when embedding GraalPy in Java applications.
 You can significantly reduce the size by excluding components your application doesn't need by considering what your Python code actually uses.
 
-### Available Optimizations
-
-GraalPy provides several system properties that exclude specific language components.
-When used together, these can reduce executable size by approximately 20%.
-
-| Property                                  | Removes                                                      | Size Impact | Use Case                              |
-| ----------------------------------------- | ------------------------------------------------------------ | ----------- | ------------------------------------- |
-| `python.WithoutSSL=true`                  | SSL/TLS support (`ssl` module)                              | **High**    | No HTTPS or certificates needed       |
-| `python.WithoutDigest=true`               | Crypto hash modules (`_md5`, `_sha1`, `_sha256`, etc.)      | **Medium**  | No cryptographic hashing required     |
-| `python.WithoutCompressionLibraries=true` | Compression modules (`zlib`, `lzma`, `bzip2`, `zipimporter`) | **Medium**  | No compression/decompression needed   |
-| `python.WithoutJavaInet=true`             | Network socket support (`socket` module)                    | **Medium**  | No network access required            |
-| `python.WithoutNativePosix=true`          | Native POSIX API backend                                    | **Low**     | Embedded Java-only scenarios          |
-| `python.WithoutPlatformAccess=true`       | System process access (`signal`, `subprocess`)              | **Low**     | Security-focused deployments          |
-| `python.AutomaticAsyncActions=false`      | Automatic async thread management                           | **Low**     | Manual async action control           |
-
-## Build Configuration Examples
-
-### Maven Configuration
-
-To apply size optimizations in Maven, configure these build arguments to your _pom.xml_ file within the native plugin configuration:
-
-```xml
-<plugin>
-    <groupId>org.graalvm.buildtools</groupId>
-    <artifactId>native-maven-plugin</artifactId>
-    <version>0.9.28</version>
-    <configuration>
-        <buildArgs>
-            <!-- Remove unused Python components for smaller size -->
-            <buildArg>-Dpython.WithoutSSL=true</buildArg>
-            <buildArg>-Dpython.WithoutDigest=true</buildArg>
-            <buildArg>-Dpython.WithoutCompressionLibraries=true</buildArg>
-            <buildArg>-Dpython.WithoutJavaInet=true</buildArg>
-            <buildArg>-Dpython.WithoutNativePosix=true</buildArg>
-            <buildArg>-Dpython.WithoutPlatformAccess=true</buildArg>
-            <buildArg>-Dpython.AutomaticAsyncActions=false</buildArg>
-            
-            <!-- Remove pre-initialized Python context -->
-            <buildArg>-Dimage-build-time.PreinitializeContexts=</buildArg>
-            
-            <!-- Increase memory for the build process -->
-            <buildArg>-J-Xmx8g</buildArg>
-        </buildArgs>
-    </configuration>
-</plugin>
-```
-
-> Note: Remove any `'-Dpython.WithoutX=true'` entries for components your application needs.
-
-## Removing Pre-initialized Python Heap
+### Removing Pre-initialized Python Heap
 
 By default, GraalPy includes a pre-initialized Python context in the executable for faster startup.
-However, this adds several thousand Python objects to your binary.
+Disabling this reduces the binary size by about 15MiB.
 You should remove this if:
-- Creating more than one context
+- You are creating more than one context
 - Binary size is more important than a slight startup delay
 
 To remove the pre-initialized heap, add this flag to your build configuration:
 
 ```bash
--Dimage-build-time.PreinitializeContexts=
+-Dpolyglot.image-build-time.PreinitializeContexts=
 ```
 
 ### Disabling Runtime Compilation of Python Code
 
 If binary size is significantly more important than execution speed, you can disable JIT compilation entirely.
-
+This will reduce binary size by around 40%.
 You should use this if:
 
 - Your Python scripts are very short-running
@@ -117,6 +66,3 @@ Since every application is different, experiment with different combinations to 
 ## Shipping Python Packages
 
 Our Maven archetype by default is set up to include all needed Python files in the native binary itself, so the image is self-contained.
-
-In custom embeddings, the Python standard library is copied next to the native image.
-When moving the native image, the standard library folder needs to be kept next to it.
