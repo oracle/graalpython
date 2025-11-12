@@ -1,8 +1,5 @@
 test.test_pathlib.CompatiblePathTest.test_rtruediv @ linux-x86_64
 test.test_pathlib.CompatiblePathTest.test_truediv @ linux-x86_64
-test.test_pathlib.NTFlavourTest.test_parse_parts @ linux-x86_64
-test.test_pathlib.NTFlavourTest.test_parse_parts_common @ linux-x86_64
-test.test_pathlib.NTFlavourTest.test_splitroot @ linux-x86_64
 test.test_pathlib.PathSubclassTest.test_absolute_common @ linux-x86_64
 test.test_pathlib.PathSubclassTest.test_chmod @ linux-x86_64
 test.test_pathlib.PathSubclassTest.test_chmod_follow_symlinks_true @ linux-x86_64
@@ -106,7 +103,6 @@ test.test_pathlib.PathTest.test_is_symlink @ linux-x86_64
 test.test_pathlib.PathTest.test_iterdir @ linux-x86_64
 test.test_pathlib.PathTest.test_iterdir_nodir @ linux-x86_64
 test.test_pathlib.PathTest.test_iterdir_symlink @ linux-x86_64
-test.test_pathlib.PathTest.test_link_to @ linux-x86_64
 test.test_pathlib.PathTest.test_lstat @ linux-x86_64
 test.test_pathlib.PathTest.test_lstat_nosymlink @ linux-x86_64
 test.test_pathlib.PathTest.test_mkdir @ linux-x86_64
@@ -145,9 +141,6 @@ test.test_pathlib.PathTest.test_unsupported_flavour @ linux-x86_64
 test.test_pathlib.PathTest.test_with @ linux-x86_64
 test.test_pathlib.PathTest.test_with_segments @ linux-x86_64
 test.test_pathlib.PathTest.test_write_text_with_newlines @ linux-x86_64
-test.test_pathlib.PosixFlavourTest.test_parse_parts @ linux-x86_64
-test.test_pathlib.PosixFlavourTest.test_parse_parts_common @ linux-x86_64
-test.test_pathlib.PosixFlavourTest.test_splitroot @ linux-x86_64
 test.test_pathlib.PosixPathAsPureTest.test_anchor_common @ linux-x86_64
 test.test_pathlib.PosixPathAsPureTest.test_as_bytes_common @ linux-x86_64
 test.test_pathlib.PosixPathAsPureTest.test_as_posix_common @ linux-x86_64
@@ -227,7 +220,6 @@ test.test_pathlib.PosixPathTest.test_is_symlink @ linux-x86_64
 test.test_pathlib.PosixPathTest.test_iterdir @ linux-x86_64
 test.test_pathlib.PosixPathTest.test_iterdir_nodir @ linux-x86_64
 test.test_pathlib.PosixPathTest.test_iterdir_symlink @ linux-x86_64
-test.test_pathlib.PosixPathTest.test_link_to @ linux-x86_64
 test.test_pathlib.PosixPathTest.test_lstat @ linux-x86_64
 test.test_pathlib.PosixPathTest.test_lstat_nosymlink @ linux-x86_64
 test.test_pathlib.PosixPathTest.test_mkdir @ linux-x86_64

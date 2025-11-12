@@ -17,7 +17,6 @@ test.test_future_stmt.test_future.FutureTest.test_future2 @ linux-x86_64
 test.test_future_stmt.test_future.FutureTest.test_future_multiple_features @ linux-x86_64
 test.test_future_stmt.test_future.FutureTest.test_future_multiple_imports @ linux-x86_64
 test.test_future_stmt.test_future.FutureTest.test_future_single_import @ linux-x86_64
-test.test_future_stmt.test_future.FutureTest.test_parserhack @ linux-x86_64
 test.test_future_stmt.test_future.FutureTest.test_unicode_literals_exec @ linux-x86_64
 test.test_future_stmt.test_future_flags.FutureTest.test_attributes @ linux-x86_64
 test.test_future_stmt.test_future_flags.FutureTest.test_names @ linux-x86_64

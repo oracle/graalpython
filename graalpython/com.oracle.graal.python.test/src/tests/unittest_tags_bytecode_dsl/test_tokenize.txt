@@ -80,7 +80,6 @@ test.test_tokenize.TestTokenizerAdheresToPep0263.test_no_coding_cookie_and_utf8_
 test.test_tokenize.TestTokenizerAdheresToPep0263.test_utf8_coding_cookie_and_no_utf8_bom @ linux-x86_64
 test.test_tokenize.TestTokenizerAdheresToPep0263.test_utf8_coding_cookie_and_utf8_bom @ linux-x86_64
 test.test_tokenize.Test_Tokenize.test__tokenize_decodes_with_specified_encoding @ linux-x86_64
-test.test_tokenize.Test_Tokenize.test__tokenize_does_not_decode_with_encoding_none @ linux-x86_64
 test.test_tokenize.TokenizeTest.test_additive @ linux-x86_64
 test.test_tokenize.TokenizeTest.test_async @ linux-x86_64
 test.test_tokenize.TokenizeTest.test_basic @ linux-x86_64

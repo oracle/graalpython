@@ -42,7 +42,6 @@ test.test_unparse.UnparseTestCase.test_huge_float @ linux-x86_64
 test.test_unparse.UnparseTestCase.test_imaginary_literals @ linux-x86_64
 test.test_unparse.UnparseTestCase.test_import_from_level_none @ linux-x86_64
 test.test_unparse.UnparseTestCase.test_integer_parens @ linux-x86_64
-test.test_unparse.UnparseTestCase.test_invalid_fstring_backslash @ linux-x86_64
 test.test_unparse.UnparseTestCase.test_invalid_fstring_value @ linux-x86_64
 test.test_unparse.UnparseTestCase.test_invalid_raise @ linux-x86_64
 test.test_unparse.UnparseTestCase.test_invalid_yield_from @ linux-x86_64

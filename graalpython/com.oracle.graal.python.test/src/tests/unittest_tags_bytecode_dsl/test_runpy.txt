@@ -19,7 +19,6 @@ test.test_runpy.RunModuleTestCase.test_run_package_init_exceptions @ linux-x86_6
 test.test_runpy.RunModuleTestCase.test_submodule_imported_warning @ linux-x86_64
 test.test_runpy.RunPathTestCase.test_basic_script @ linux-x86_64
 test.test_runpy.RunPathTestCase.test_basic_script_no_suffix @ linux-x86_64
-test.test_runpy.RunPathTestCase.test_basic_script_with_path_object @ linux-x86_64
 test.test_runpy.RunPathTestCase.test_basic_script_with_pathlike_object @ linux-x86_64
 test.test_runpy.RunPathTestCase.test_directory @ linux-x86_64
 test.test_runpy.RunPathTestCase.test_directory_compiled @ linux-x86_64
@@ -28,5 +27,4 @@ test.test_runpy.RunPathTestCase.test_encoding @ linux-x86_64
 test.test_runpy.RunPathTestCase.test_main_recursion_error @ linux-x86_64
 test.test_runpy.RunPathTestCase.test_script_compiled @ linux-x86_64
 test.test_runpy.RunPathTestCase.test_zipfile @ linux-x86_64
-test.test_runpy.RunPathTestCase.test_zipfile_compiled @ linux-x86_64
 test.test_runpy.RunPathTestCase.test_zipfile_error @ linux-x86_64

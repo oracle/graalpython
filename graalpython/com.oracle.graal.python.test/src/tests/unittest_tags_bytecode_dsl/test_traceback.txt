@@ -120,14 +120,6 @@ test.test_traceback.TracebackCases.test_print_exception @ linux-x86_64
 test.test_traceback.TracebackCases.test_print_exception_exc @ linux-x86_64
 test.test_traceback.TracebackCases.test_recursion_error_during_traceback @ linux-x86_64
 test.test_traceback.TracebackCases.test_signatures @ linux-x86_64
-test.test_traceback.TracebackErrorLocationCaretTests.test_basic_caret @ linux-x86_64
-test.test_traceback.TracebackErrorLocationCaretTests.test_byte_offset_multiline @ linux-x86_64
-test.test_traceback.TracebackErrorLocationCaretTests.test_caret_exception_group @ linux-x86_64
-test.test_traceback.TracebackErrorLocationCaretTests.test_caret_in_type_annotation @ linux-x86_64
-test.test_traceback.TracebackErrorLocationCaretTests.test_caret_multiline_expression @ linux-x86_64
-test.test_traceback.TracebackErrorLocationCaretTests.test_caret_multiline_expression_bin_op @ linux-x86_64
-test.test_traceback.TracebackErrorLocationCaretTests.test_traceback_specialization_with_syntax_error @ linux-x86_64
-test.test_traceback.TracebackErrorLocationCaretTests.test_traceback_very_long_line @ linux-x86_64
 test.test_traceback.TracebackFormatTests.test_exception_group_deep_recursion_traceback @ linux-x86_64
 test.test_traceback.TracebackFormatTests.test_format_stack @ linux-x86_64
 test.test_traceback.TracebackFormatTests.test_print_exception_bad_type_python @ linux-x86_64

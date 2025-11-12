@@ -38,4 +38,3 @@ test.test_source_encoding.MiscSourceEncodingTest.test_issue2301 @ linux-x86_64
 test.test_source_encoding.MiscSourceEncodingTest.test_issue3297 @ linux-x86_64
 test.test_source_encoding.MiscSourceEncodingTest.test_issue4626 @ linux-x86_64
 test.test_source_encoding.MiscSourceEncodingTest.test_issue7820 @ linux-x86_64
-test.test_source_encoding.MiscSourceEncodingTest.test_pep263 @ linux-x86_64
