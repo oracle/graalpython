@@ -31,7 +31,6 @@ test.test_subprocess.POSIXProcessTestCase.test_exception_bad_executable @ linux-
 test.test_subprocess.POSIXProcessTestCase.test_exception_cwd @ linux-x86_64
 test.test_subprocess.POSIXProcessTestCase.test_exception_errpipe_bad_data @ linux-x86_64
 test.test_subprocess.POSIXProcessTestCase.test_exception_errpipe_normal @ linux-x86_64
-test.test_subprocess.POSIXProcessTestCase.test_extra_groups_error @ linux-x86_64
 test.test_subprocess.POSIXProcessTestCase.test_extra_groups_invalid_gid_t_values @ linux-x86_64
 test.test_subprocess.POSIXProcessTestCase.test_group_error @ linux-x86_64
 test.test_subprocess.POSIXProcessTestCase.test_invalid_args @ linux-x86_64

@@ -63,7 +63,6 @@ test.test_pickletools.OptimizedPickleTests.test_builtin_functions @ linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_builtin_types @ linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_bytearray @ linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_bytearray_memoization @ linux-x86_64
-test.test_pickletools.OptimizedPickleTests.test_bytearray_memoization_bug @ linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_bytes @ linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_bytes_memoization @ linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_c_methods @ linux-x86_64
@@ -109,7 +108,6 @@ test.test_pickletools.OptimizedPickleTests.test_optimize_binput_and_memoize @ li
 test.test_pickletools.OptimizedPickleTests.test_optimize_long_binget @ linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_optional_frames @ linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_pickle_setstate_None @ linux-x86_64
-test.test_pickletools.OptimizedPickleTests.test_picklebuffer_error @ linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_proto @ linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_py_methods @ linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_recursive_dict @ linux-x86_64

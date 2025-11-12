@@ -11,7 +11,6 @@ test.test_pickle.CDumpPickle_LoadPickle.test_builtin_functions @ linux-x86_64
 test.test_pickle.CDumpPickle_LoadPickle.test_builtin_types @ linux-x86_64
 test.test_pickle.CDumpPickle_LoadPickle.test_bytearray @ linux-x86_64
 test.test_pickle.CDumpPickle_LoadPickle.test_bytearray_memoization @ linux-x86_64
-test.test_pickle.CDumpPickle_LoadPickle.test_bytearray_memoization_bug @ linux-x86_64
 test.test_pickle.CDumpPickle_LoadPickle.test_bytes @ linux-x86_64
 test.test_pickle.CDumpPickle_LoadPickle.test_bytes_memoization @ linux-x86_64
 test.test_pickle.CDumpPickle_LoadPickle.test_bytes_memoization @ linux-x86_64
@@ -136,7 +135,6 @@ test.test_pickle.CPicklerTests.test_builtin_functions @ linux-x86_64
 test.test_pickle.CPicklerTests.test_builtin_types @ linux-x86_64
 test.test_pickle.CPicklerTests.test_bytearray @ linux-x86_64
 test.test_pickle.CPicklerTests.test_bytearray_memoization @ linux-x86_64
-test.test_pickle.CPicklerTests.test_bytearray_memoization_bug @ linux-x86_64
 test.test_pickle.CPicklerTests.test_bytes @ linux-x86_64
 test.test_pickle.CPicklerTests.test_bytes_memoization @ linux-x86_64
 test.test_pickle.CPicklerTests.test_bytes_memoization @ linux-x86_64
@@ -382,7 +380,6 @@ test.test_pickle.DumpPickle_CLoadPickle.test_builtin_functions @ linux-x86_64
 test.test_pickle.DumpPickle_CLoadPickle.test_builtin_types @ linux-x86_64
 test.test_pickle.DumpPickle_CLoadPickle.test_bytearray @ linux-x86_64
 test.test_pickle.DumpPickle_CLoadPickle.test_bytearray_memoization @ linux-x86_64
-test.test_pickle.DumpPickle_CLoadPickle.test_bytearray_memoization_bug @ linux-x86_64
 test.test_pickle.DumpPickle_CLoadPickle.test_bytes @ linux-x86_64
 test.test_pickle.DumpPickle_CLoadPickle.test_bytes_memoization @ linux-x86_64
 test.test_pickle.DumpPickle_CLoadPickle.test_bytes_memoization @ linux-x86_64
@@ -509,7 +506,6 @@ test.test_pickle.InMemoryPickleTests.test_builtin_types @ linux-x86_64
 test.test_pickle.InMemoryPickleTests.test_bytearray @ linux-x86_64
 test.test_pickle.InMemoryPickleTests.test_bytearray8 @ linux-x86_64
 test.test_pickle.InMemoryPickleTests.test_bytearray_memoization @ linux-x86_64
-test.test_pickle.InMemoryPickleTests.test_bytearray_memoization_bug @ linux-x86_64
 test.test_pickle.InMemoryPickleTests.test_bytes @ linux-x86_64
 test.test_pickle.InMemoryPickleTests.test_bytes_memoization @ linux-x86_64
 test.test_pickle.InMemoryPickleTests.test_bytes_memoization @ linux-x86_64
@@ -670,7 +666,6 @@ test.test_pickle.PyPicklerTests.test_builtin_functions @ linux-x86_64
 test.test_pickle.PyPicklerTests.test_builtin_types @ linux-x86_64
 test.test_pickle.PyPicklerTests.test_bytearray @ linux-x86_64
 test.test_pickle.PyPicklerTests.test_bytearray_memoization @ linux-x86_64
-test.test_pickle.PyPicklerTests.test_bytearray_memoization_bug @ linux-x86_64
 test.test_pickle.PyPicklerTests.test_bytes @ linux-x86_64
 test.test_pickle.PyPicklerTests.test_bytes_memoization @ linux-x86_64
 test.test_pickle.PyPicklerTests.test_bytes_memoization @ linux-x86_64
