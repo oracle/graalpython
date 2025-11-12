@@ -43,16 +43,11 @@ package com.oracle.graal.python.nfi2;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.Linker;
 import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
 
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public final class NfiUpcallSignature {
-
-    private static final MethodType UPCALL_METHOD_TYPE = MethodType.methodType(Object.class, Object[].class);
-
     private final NfiType resType;
     private final NfiType[] argTypes;
 
@@ -72,16 +67,12 @@ public final class NfiUpcallSignature {
 
     @SuppressWarnings({"unused", "restricted"})
     public long createClosure(NfiContext context, String name, MethodHandle staticMethodHandle) {
-        // TODO(NFI2) if logging enabled, wrap the handle in a method that logs the name and args
-        MethodHandle handle = staticMethodHandle; // handle_closureLoggingWrapper.bindTo(name).bindTo(this).bindTo(staticMethodHandle);
-        handle = handle.asType(UPCALL_METHOD_TYPE).asVarargsCollector(Object[].class);
         Class<?>[] javaArgTypes = new Class<?>[argTypes.length];
         for (int i = 0; i < argTypes.length; i++) {
             javaArgTypes[i] = argTypes[i].asJavaType();
         }
-        handle = handle.asType(MethodType.methodType(resType.asJavaType(), javaArgTypes));
         FunctionDescriptor functionDescriptor = NfiContext.createFunctionDescriptor(resType, argTypes);
-        return Linker.nativeLinker().upcallStub(handle, functionDescriptor, context.arena).address();
+        return Linker.nativeLinker().upcallStub(staticMethodHandle, functionDescriptor, context.arena).address();
     }
 
     @SuppressWarnings("unused")
@@ -107,18 +98,5 @@ public final class NfiUpcallSignature {
         sb.append("): ");
         sb.append(resType);
         return sb.toString();
-    }
-
-    static final MethodHandle handle_closureWrapper;
-
-    static {
-        MethodType callType = MethodType.methodType(Object.class, String.class, NfiUpcallSignature.class,
-                        MethodHandle.class, Object[].class);
-        try {
-            handle_closureWrapper = MethodHandles.lookup().findStatic(NfiUpcallSignature.class,
-                            "closureLoggingWrapper", callType);
-        } catch (NoSuchMethodException | IllegalAccessException ex) {
-            throw CompilerDirectives.shouldNotReachHere(ex);
-        }
     }
 }

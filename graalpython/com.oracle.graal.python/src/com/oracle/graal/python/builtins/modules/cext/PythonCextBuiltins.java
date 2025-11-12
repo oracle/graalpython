@@ -201,6 +201,7 @@ import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
@@ -595,7 +596,7 @@ public final class PythonCextBuiltins {
         private final ArgDescriptor ret;
         private final ArgDescriptor[] args;
         private final boolean acquireGil;
-        @CompilationFinal private CallTarget callTarget;
+        @CompilationFinal private RootCallTarget callTarget;
         private final CApiCallPath call;
         private final String name;
         private final int id;
@@ -610,9 +611,15 @@ public final class PythonCextBuiltins {
             this.id = id;
         }
 
-        CallTarget getCallTarget() {
+        public RootCallTarget getCallTarget() {
             if (callTarget == null) {
-                throw CompilerDirectives.shouldNotReachHere("call target slow path not implemented");
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                NfiType[] argTypes = new NfiType[args.length];
+                for (int i = 0; i < args.length; i++) {
+                    argTypes[i] = args[i].getNFI2Type();
+                }
+                NfiUpcallSignature signature = Nfi.createUpcallSignature(ret.getNFI2Type(), argTypes);
+                callTarget = new ExecuteCApiBuiltinRootNode(this, signature).getCallTarget();
             }
             return callTarget;
         }
@@ -681,12 +688,7 @@ public final class PythonCextBuiltins {
             long pointer = context.getCApiContext().getClosurePointer(this);
             if (pointer == -1) {
                 try {
-                    NfiType[] argTypes = new NfiType[args.length];
-                    for (int i = 0; i < args.length; i++) {
-                        argTypes[i] = args[i].getNFI2Type();
-                    }
-                    NfiUpcallSignature signature = Nfi.createUpcallSignature(ret.getNFI2Type(), argTypes);
-                    pointer = signature.createClosure(context.ensureNfiContext(), name, handle_executeBuiltinWrapper.bindTo(new ExecuteCApiBuiltinRootNode(this, signature).getCallTarget()));
+                    pointer = ((ExecuteCApiBuiltinRootNode) getCallTarget().getRootNode()).signature.createClosure(context.ensureNfiContext(), name, PythonCextBuiltinRegistry.getMethodHandle(id));
                     context.getCApiContext().setClosurePointer(null, null, this, pointer);
                     LOGGER.finer(CApiBuiltinExecutable.class.getSimpleName() + " toNative: " + id + " / " + name() + " -> " + pointer);
                 } catch (Throwable t) {
@@ -881,6 +883,11 @@ public final class PythonCextBuiltins {
          * </p>
          */
         Ignored,
+        /**
+         * This builtin is not used as a node, it defines a static 'upcall' function that
+         * takes the appropriate primitive arguments - there is no conversion.
+         */
+        Static,
     }
 
     @Target(ElementType.TYPE)
