@@ -108,6 +108,7 @@ import com.oracle.graal.python.builtins.objects.set.SetNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.CallSlotTpIterNextNode;
 import com.oracle.graal.python.builtins.objects.typing.PTypeAliasType;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.compiler.OpCodes.MakeTypeParamKind;
@@ -3377,7 +3378,11 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             }
         }
 
-        @Specialization(guards = "iterCheck.execute(inliningTarget, iter)", limit = "1")
+        static boolean hasIterSlot(TpSlots slots) {
+            return PyIterCheckNode.checkSlots(slots);
+        }
+
+        @Specialization(guards = "hasIterSlot(slots)", limit = "1")
         static boolean doIterator(VirtualFrame virtualFrame,
                         LocalAccessor yieldedValue,
                         LocalAccessor returnedValue,
@@ -3385,16 +3390,22 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @SuppressWarnings("unused") PNone arg,
                         @Bind Node inliningTarget,
                         @Bind BytecodeNode bytecode,
-                        @SuppressWarnings("unused") @Cached PyIterCheckNode iterCheck,
-                        @Cached PyIterNextNode getNextNode,
+                        @SuppressWarnings("unused") @Cached GetObjectSlotsNode getSlots,
+                        @Bind("getSlots.execute(inliningTarget, iter)") TpSlots slots,
+                        @Cached CallSlotTpIterNextNode callIterNext,
+                        @Exclusive @Cached InlinedBranchProfile exhaustedNoException,
                         @Shared @Cached IsBuiltinObjectProfile stopIterationProfile,
                         @Shared @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
             try {
-                Object value = getNextNode.execute(virtualFrame, inliningTarget, iter);
+                Object value = callIterNext.execute(virtualFrame, inliningTarget, slots.tp_iternext(), iter);
                 yieldedValue.setObject(bytecode, virtualFrame, value);
                 return false;
             } catch (IteratorExhausted e) {
+                exhaustedNoException.enter(inliningTarget);
                 returnedValue.setObject(bytecode, virtualFrame, PNone.NONE);
+                return true;
+            } catch (PException e) {
+                handleException(virtualFrame, e, inliningTarget, bytecode, stopIterationProfile, getValue, returnedValue);
                 return true;
             }
         }

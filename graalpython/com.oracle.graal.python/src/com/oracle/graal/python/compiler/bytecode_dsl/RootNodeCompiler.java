@@ -2638,7 +2638,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
              *
              * end:
              * # Step 4: return returnValue
-             * returnValue (result)
+             * load returnValue (result)
              * @formatter:on
              */
             b.beginBlock();
