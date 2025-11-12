@@ -71,7 +71,6 @@ test.test_descr.ClassPropertiesAndMethods.test_python_lists @ linux-x86_64
 test.test_descr.ClassPropertiesAndMethods.test_qualname @ linux-x86_64
 test.test_descr.ClassPropertiesAndMethods.test_qualname_dict @ linux-x86_64
 test.test_descr.ClassPropertiesAndMethods.test_recursive_call @ linux-x86_64
-test.test_descr.ClassPropertiesAndMethods.test_remove_subclass @ linux-x86_64
 test.test_descr.ClassPropertiesAndMethods.test_repr_as_str @ linux-x86_64
 test.test_descr.ClassPropertiesAndMethods.test_repr_with_module_str_subclass @ linux-x86_64
 test.test_descr.ClassPropertiesAndMethods.test_restored_object_new @ linux-x86_64
