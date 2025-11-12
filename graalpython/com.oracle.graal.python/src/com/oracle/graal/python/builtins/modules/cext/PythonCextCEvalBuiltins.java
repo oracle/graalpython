@@ -72,13 +72,13 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.lib.PyEvalGetGlobals;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
-import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
-import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
+import com.oracle.graal.python.nodes.frame.ReadFrameNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.GilNode;
@@ -143,11 +143,9 @@ public final class PythonCextCEvalBuiltins {
     abstract static class PyEval_GetFrame extends CApiNullaryBuiltinNode {
         @Specialization
         Object getFrame(
-                        @Bind Node inliningTarget,
-                        @Cached GetCurrentFrameRef getCurrentFrameRef,
-                        @Cached ReadCallerFrameNode readCallerFrameNode) {
-            PFrame.Reference reference = getCurrentFrameRef.execute(null, inliningTarget);
-            return readCallerFrameNode.executeWith(reference, 0, false);
+                        @Cached ReadFrameNode readFrameNode) {
+            PFrame pFrame = readFrameNode.getCurrentPythonFrame(null);
+            return pFrame != null ? pFrame : getNativeNull();
         }
     }
 
@@ -212,11 +210,9 @@ public final class PythonCextCEvalBuiltins {
         @Specialization
         Object get(
                         @Bind Node inliningTarget,
-                        @Cached GetCurrentFrameRef getCurrentFrameRef,
-                        @Cached ReadCallerFrameNode readCallerFrameNode) {
-            PFrame.Reference frameRef = getCurrentFrameRef.execute(null, inliningTarget);
-            PFrame pFrame = readCallerFrameNode.executeWith(frameRef, 0, false);
-            return pFrame.getGlobals();
+                        @Cached PyEvalGetGlobals getGlobals) {
+            PythonObject globals = getGlobals.execute(null, inliningTarget);
+            return globals != null ? globals : getNativeNull();
         }
     }
 }

@@ -86,11 +86,11 @@ public abstract class GetCurrentFrameRef extends Node {
             // pass the info on the next call
             flag[0] = ConditionProfile.create();
             if (ref == null) {
-                ref = PArguments.getCurrentFrameInfo(ReadCallerFrameNode.getCurrentFrame(this, FrameInstance.FrameAccess.READ_ONLY, CallerFlags.NEEDS_FRAME_REFERENCE));
+                ref = PArguments.getCurrentFrameInfo(ReadFrameNode.getCurrentFrame(this, FrameInstance.FrameAccess.READ_ONLY, CallerFlags.NEEDS_FRAME_REFERENCE));
             }
         }
         if (flag[0].profile(ref == null)) {
-            ref = PArguments.getCurrentFrameInfo(ReadCallerFrameNode.getCurrentFrame(this, FrameInstance.FrameAccess.READ_ONLY, CallerFlags.NEEDS_FRAME_REFERENCE));
+            ref = PArguments.getCurrentFrameInfo(ReadFrameNode.getCurrentFrame(this, FrameInstance.FrameAccess.READ_ONLY, CallerFlags.NEEDS_FRAME_REFERENCE));
         }
 
         return ref;
@@ -103,7 +103,7 @@ public abstract class GetCurrentFrameRef extends Node {
             PythonContext context = PythonContext.get(this);
             ref = context.peekTopFrameInfo(context.getLanguage(this));
             if (ref == null) {
-                return PArguments.getCurrentFrameInfo(ReadCallerFrameNode.getCurrentFrame(this, FrameInstance.FrameAccess.READ_ONLY, CallerFlags.NEEDS_FRAME_REFERENCE));
+                return PArguments.getCurrentFrameInfo(ReadFrameNode.getCurrentFrame(this, FrameInstance.FrameAccess.READ_ONLY, CallerFlags.NEEDS_FRAME_REFERENCE));
             }
             return ref;
         }

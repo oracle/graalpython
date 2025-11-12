@@ -235,7 +235,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.SpecialMethodNotFound;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.frame.GetFrameLocalsNode;
-import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
+import com.oracle.graal.python.nodes.frame.ReadFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -315,7 +315,6 @@ import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedCountingConditionProfile;
@@ -805,7 +804,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         static Object[] inheritGlobals(VirtualFrame frame, Node inliningTarget, @SuppressWarnings("unused") PNone globals, Object locals, TruffleString mode,
-                        @Exclusive @Cached ReadCallerFrameNode readCallerFrameNode,
+                        @Exclusive @Cached ReadFrameNode readFrameNode,
                         @Exclusive @Cached GetOrCreateDictNode getOrCreateDictNode,
                         @Exclusive @Cached InlinedConditionProfile haveCallerFrameProfile,
                         @Exclusive @Cached InlinedConditionProfile inheritLocalsProfile,
@@ -813,7 +812,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Exclusive @Cached GetFrameLocalsNode getFrameLocalsNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             boolean inheritLocals = inheritLocalsProfile.profile(inliningTarget, locals instanceof PNone);
-            PFrame callerFrame = readCallerFrameNode.executeWith(frame, 0, inheritLocals);
+            PFrame callerFrame = readFrameNode.getCurrentPythonFrame(frame, inheritLocals);
             Object[] args = PArguments.create();
             boolean haveCallerFrame = haveCallerFrameProfile.profile(inliningTarget, callerFrame != null);
             if (haveCallerFrame) {
@@ -823,7 +822,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
             if (inheritLocals) {
                 if (haveCallerFrame) {
-                    Object callerLocals = getFrameLocalsNode.execute(inliningTarget, callerFrame);
+                    Object callerLocals = getFrameLocalsNode.execute(frame, inliningTarget, callerFrame);
                     setCustomLocals(args, callerLocals);
                 } else {
                     setCustomLocals(args, PArguments.getGlobals(args));
@@ -981,8 +980,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
         protected abstract Object executeInternal(VirtualFrame frame, Object source, TruffleString filename, TruffleString mode, int flags, boolean dontInherit, int optimize,
                         int featureVersion);
 
-        private int inheritFlags(VirtualFrame frame, int flags, ReadCallerFrameNode readCallerFrame) {
-            PFrame fr = readCallerFrame.executeWith(frame, 0, false);
+        private int inheritFlags(VirtualFrame frame, int flags, ReadFrameNode readCallerFrame) {
+            PFrame fr = readCallerFrame.getCurrentPythonFrame(frame);
             if (fr != null) {
                 PCode code = PFactory.createCode(PythonLanguage.get(this), fr.getTarget());
                 flags |= code.getFlags() & PyCF_MASK;
@@ -993,7 +992,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         Object doCompile(VirtualFrame frame, TruffleString expression, TruffleString filename, TruffleString mode, int flags, boolean dontInherit, int optimize,
                         int featureVersion,
-                        @Shared @Cached ReadCallerFrameNode readCallerFrame,
+                        @Shared @Cached ReadFrameNode readCallerFrame,
                         @Exclusive @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
             if (!dontInherit) {
                 flags = inheritFlags(frame, flags, readCallerFrame);
@@ -1084,7 +1083,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @CachedLibrary("wSource") InteropLibrary interopLib,
                         @Cached PyUnicodeFSDecoderNode asPath,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Shared @Cached ReadCallerFrameNode readCallerFrame,
+                        @Shared @Cached ReadFrameNode readCallerFrame,
                         @Cached PRaiseNode raiseNode) {
             if (wSource instanceof PCode) {
                 return wSource;
@@ -2257,19 +2256,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = "globals", needsFrame = true, callerFlags = CallerFlags.NEEDS_PFRAME)
     @GenerateNodeFactory
     abstract static class GlobalsNode extends PythonBuiltinNode {
-        private final ConditionProfile condProfile = ConditionProfile.create();
 
         @Specialization
         public Object globals(VirtualFrame frame,
                         @Bind Node inliningTarget,
-                        @Cached PyEvalGetGlobals getGlobals,
-                        @Cached GetOrCreateDictNode getDict) {
-            Object globals = getGlobals.execute(frame, inliningTarget);
-            if (condProfile.profile(globals instanceof PythonModule)) {
-                return getDict.execute(inliningTarget, globals);
-            } else {
-                return globals;
-            }
+                        @Cached PyEvalGetGlobals getGlobals) {
+            return getGlobals.execute(frame, inliningTarget);
         }
     }
 

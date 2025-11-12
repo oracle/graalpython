@@ -93,7 +93,7 @@ public final class PythonCextFrameBuiltins {
         static Object get(PFrame frame,
                         @Bind Node inliningTarget,
                         @Cached GetFrameLocalsNode getFrameLocalsNode) {
-            return getFrameLocalsNode.execute(inliningTarget, frame);
+            return getFrameLocalsNode.execute(null, inliningTarget, frame);
         }
     }
 

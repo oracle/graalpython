@@ -50,7 +50,7 @@ import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.exception.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
-import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
+import com.oracle.graal.python.nodes.frame.ReadFrameNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
@@ -74,6 +74,7 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -403,19 +404,19 @@ public abstract class ExecutionContext {
             Reference callerInfo = PArguments.getCallerFrameInfo(frame);
             if (callerInfo == null) {
                 // we didn't request the caller frame reference. now we need it.
-                CompilerDirectives.transferToInterpreter();
+                CompilerDirectives.transferToInterpreterAndInvalidate();
 
-                // n.b. We need to use 'ReadCallerFrameNode.getCallerFrame' instead of
+                // n.b. We need to use 'ReadFrameNode.getCallerFrame' instead of
                 // 'Truffle.getRuntime().getCallerFrame()' because we still need to skip
                 // non-Python frames, even if we do not skip frames of builtin functions.
-                com.oracle.truffle.api.frame.Frame callerFrame = ReadCallerFrameNode.getCallerFrame(info, FrameInstance.FrameAccess.READ_ONLY, ReadCallerFrameNode.AllFramesSelector.INSTANCE, 0,
+                Frame callerFrame = ReadFrameNode.getCallerFrame(info, FrameInstance.FrameAccess.READ_ONLY, ReadFrameNode.AllFramesSelector.INSTANCE, 1,
                                 CallerFlags.NEEDS_FRAME_REFERENCE);
                 if (callerFrame != null) {
                     callerInfo = PArguments.getCurrentFrameInfo(callerFrame);
                 } else {
                     callerInfo = Reference.EMPTY;
                 }
-                // ReadCallerFrameNode.getCallerFrame must have the assumption invalidated
+                // ReadFrameNode.getCallerFrame must have the assumption invalidated
             }
             // Else: we may have been called via uncached call where we always pass frame reference.
             // We assume uncached execution will eventually flip to cached execution, and then we'll

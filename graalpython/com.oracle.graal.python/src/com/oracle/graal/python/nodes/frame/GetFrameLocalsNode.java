@@ -69,6 +69,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.MaterializedFrame;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
@@ -83,23 +84,23 @@ import com.oracle.truffle.api.strings.TruffleString;
 @GenerateInline(inlineByDefault = true)
 @GenerateCached
 public abstract class GetFrameLocalsNode extends Node {
-    public abstract Object execute(Node inliningTarget, PFrame pyFrame);
+    public abstract Object execute(Frame frame, Node inliningTarget, PFrame pyFrame);
 
-    public final Object executeCached(PFrame pyFrame) {
-        return execute(this, pyFrame);
+    public final Object executeCached(VirtualFrame frame, PFrame pyFrame) {
+        return execute(frame, this, pyFrame);
     }
 
     public static Object executeUncached(PFrame pyFrame) {
-        return GetFrameLocalsNodeGen.getUncached().execute(null, pyFrame);
+        return GetFrameLocalsNodeGen.getUncached().execute(null, null, pyFrame);
     }
 
     @Specialization(guards = "!pyFrame.hasCustomLocals()")
-    static Object doLoop(Node inliningTarget, PFrame pyFrame,
+    static Object doLoop(VirtualFrame frame, Node inliningTarget, PFrame pyFrame,
                     @Cached InlinedBranchProfile create,
                     @Cached(inline = false) CopyLocalsToDict copyLocalsToDict,
-                    @Cached ReadCallerFrameNode readCallerFrameNode) {
+                    @Cached ReadFrameNode readFrameNode) {
         if (pyFrame.getLocals() == null) {
-            pyFrame = readCallerFrameNode.executeWith(pyFrame.getRef(), ReadCallerFrameNode.AllFramesSelector.INSTANCE, 0, true);
+            pyFrame = readFrameNode.getFrameForReference(frame, pyFrame.getRef(), ReadFrameNode.AllFramesSelector.INSTANCE, 0, true);
         }
         MaterializedFrame locals = pyFrame.getLocals();
         // It doesn't have custom locals, so it has to be a builtin dict or null

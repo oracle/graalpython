@@ -106,7 +106,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
+import com.oracle.graal.python.nodes.frame.ReadFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
@@ -216,7 +216,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
         @Child IsSubClassNode isSubClassNode;
         @Child GetOrCreateDictNode getDictNode;
         @Child GetDictFromGlobalsNode getDictFromGlobalsNode;
-        @Child ReadCallerFrameNode readCallerNode;
+        @Child ReadFrameNode readFrameNode;
         @Child PyObjectLookupAttr lookupAttrNode;
         @Child PyObjectCallMethodObjArgs callMethodNode;
         @Child PyDictGetItem dictGetItemNode;
@@ -408,13 +408,12 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
         }
 
         private PFrame getCallerFrame(VirtualFrame frame, int stackLevel, TruffleString[] skipFilePrefixes) {
-            if (readCallerNode == null) {
+            if (readFrameNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 reportPolymorphicSpecialize();
-                readCallerNode = insert(ReadCallerFrameNode.create());
+                readFrameNode = insert(ReadFrameNode.create());
             }
-            PFrame.Reference ref = PArguments.getCurrentFrameInfo(frame);
-            ReadCallerFrameNode.FrameSelector selector = ReadCallerFrameNode.SkipInternalFramesSelector.INSTANCE;
+            ReadFrameNode.FrameSelector selector = ReadFrameNode.VisiblePythonFramesSelector.INSTANCE;
             if (skipFilePrefixes != null) {
                 /*
                  * CPython would always count the first frame into the stacklevel even if it is
@@ -423,9 +422,9 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                  * always skipped by the filter.
                  */
                 stackLevel--;
-                selector = rootNode -> ReadCallerFrameNode.SkipInternalFramesSelector.INSTANCE.skip(rootNode) || isFilenameToSkip(skipFilePrefixes, rootNode);
+                selector = rootNode -> ReadFrameNode.VisiblePythonFramesSelector.INSTANCE.skip(rootNode) || isFilenameToSkip(skipFilePrefixes, rootNode);
             }
-            return readCallerNode.executeWith(ref, selector, stackLevel, false);
+            return readFrameNode.getFrameForReference(frame, PArguments.getCurrentFrameInfo(frame), selector, stackLevel, false);
         }
 
         @TruffleBoundary

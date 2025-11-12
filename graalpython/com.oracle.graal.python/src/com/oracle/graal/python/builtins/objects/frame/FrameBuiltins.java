@@ -38,7 +38,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.code.PCode;
-import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -53,7 +52,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.frame.GetFrameLocalsNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
-import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
+import com.oracle.graal.python.nodes.frame.ReadFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -73,8 +72,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -295,18 +292,8 @@ public final class FrameBuiltins extends PythonBuiltins {
         @Specialization
         Object getUpdating(VirtualFrame frame, PFrame self,
                         @Bind Node inliningTarget,
-                        @Cached InlinedConditionProfile profile,
-                        @Cached MaterializeFrameNode materializeNode,
                         @Cached GetFrameLocalsNode getFrameLocalsNode) {
-            // Special case because this builtin can be called without going through an invoke node:
-            // we need to sync the values of the frame if and only if 'self' represents the current
-            // frame. If 'self' represents another frame on the stack, the values are already
-            // refreshed.
-            if (profile.profile(inliningTarget, frame != null && PArguments.getCurrentFrameInfo(frame) == self.getRef())) {
-                PFrame pyFrame = materializeNode.executeOnStack(false, true, frame);
-                assert pyFrame == self;
-            }
-            Object locals = getFrameLocalsNode.execute(inliningTarget, self);
+            Object locals = getFrameLocalsNode.execute(frame, inliningTarget, self);
             self.setLocalsAccessed(true);
             return locals;
         }
@@ -319,68 +306,14 @@ public final class FrameBuiltins extends PythonBuiltins {
 
         @Specialization
         Object getBackref(VirtualFrame frame, PFrame self,
-                        @Bind Node inliningTarget,
-                        @Cached InlinedBranchProfile noBackref,
-                        @Cached InlinedBranchProfile topRef,
-                        @Cached InlinedConditionProfile notMaterialized,
-                        @Cached ReadCallerFrameNode readCallerFrame) {
-            PFrame.Reference backref;
-            for (PFrame cur = self;; cur = backref.getPyFrame()) {
-                backref = cur.getBackref();
-                if (backref == Reference.EMPTY) {
-                    return PNone.NONE;
-                }
-                PFrame callerFrame;
-                if (backref == null) {
-                    noBackref.enter(inliningTarget);
-                    // The backref is not there. There's three cases:
-
-                    // a) self is still on the stack and the caller isn't filled in
-                    // b) this frame has returned, but not (yet) to a Python caller
-                    // c) this frame has no caller (it is/was a top frame)
-                    callerFrame = readCallerFrame.executeWith(cur.getRef(), ReadCallerFrameNode.AllFramesSelector.INSTANCE, 0, false);
-
-                    // We don't need to mark the caller frame as 'escaped' because if 'self' is
-                    // escaped, the caller frame will be escaped when leaving the current function.
-
-                    if (callerFrame == null) {
-                        topRef.enter(inliningTarget);
-                        // so we won't do this again
-                        cur.setBackref(PFrame.Reference.EMPTY);
-                        return PNone.NONE;
-                    } else {
-                        backref = callerFrame.getRef();
-                        cur.setBackref(backref);
-                    }
-                } else {
-                    callerFrame = materialize(frame, inliningTarget, readCallerFrame, backref, notMaterialized);
-                }
-                assert callerFrame.getRef() == backref;
-                RootNode rootNode = callerFrame.getLocation().getRootNode();
-                if (rootNode != null && !rootNode.isInternal()) {
-                    return callerFrame;
-                }
+                        @Cached ReadFrameNode readCallerFrame) {
+            PFrame backref = readCallerFrame.getFrameForReference(frame, self.getRef(), 1, false);
+            if (backref != null) {
+                backref.getRef().markAsEscaped();
+                return backref;
+            } else {
+                return PNone.NONE;
             }
-        }
-
-        private static PFrame materialize(VirtualFrame frame, Node inliningTarget, ReadCallerFrameNode readCallerFrameNode, PFrame.Reference backref, InlinedConditionProfile notMaterialized) {
-            if (notMaterialized.profile(inliningTarget, backref.getPyFrame() == null)) {
-                // Special case: the backref's PFrame object is not yet available; this is because
-                // the frame is still on the stack. So we need to find and materialize it.
-                for (int i = 0;; i++) {
-                    PFrame caller = readCallerFrameNode.executeWith(frame, i, false);
-                    if (caller == null) {
-                        break;
-                    } else if (caller.getRef() == backref) {
-                        // now, the PFrame object is available since the readCallerFrameNode
-                        // materialized it
-                        assert backref.getPyFrame() != null;
-                        return caller;
-                    }
-                }
-                assert false : "could not find frame of backref on the stack";
-            }
-            return backref.getPyFrame();
         }
 
         @NeverDefault

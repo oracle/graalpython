@@ -91,7 +91,7 @@ import com.oracle.graal.python.nodes.bytecode.FrameInfo;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
+import com.oracle.graal.python.nodes.frame.ReadFrameNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -292,9 +292,9 @@ public final class SuperBuiltins extends PythonBuiltins {
         PNone init(VirtualFrame frame, SuperObject self, @SuppressWarnings("unused") PNone clsArg, @SuppressWarnings("unused") PNone objArg,
                         @Bind Node inliningTarget,
                         @Shared @Cached PRaiseNode raiseNode,
-                        @Cached ReadCallerFrameNode readCaller,
+                        @Cached ReadFrameNode readCaller,
                         @Shared @Cached CellBuiltins.GetRefNode getRefNode) {
-            PFrame target = readCaller.executeWith(frame, ReadCallerFrameNode.SkipPythonBuiltinFramesSelector.INSTANCE, 0, true);
+            PFrame target = readCaller.getCurrentPythonFrame(frame, true);
             if (target == null) {
                 throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.NO_CURRENT_FRAME, "super()");
             }

@@ -139,8 +139,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetI
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
-import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -176,6 +174,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameType
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.SetTypeFlagsNodeGen;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun;
+import com.oracle.graal.python.lib.PyEvalGetGlobals;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
@@ -197,7 +196,6 @@ import com.oracle.graal.python.nodes.classes.AbstractObjectGetBasesNode;
 import com.oracle.graal.python.nodes.classes.AbstractObjectIsSubclassNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListNode;
-import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -1930,7 +1928,6 @@ public abstract class TypeNodes {
         public abstract PythonClass execute(VirtualFrame frame, PDict namespaceOrig, TruffleString name, PTuple bases, Object metaclass, PKeyword[] kwds);
 
         @Child private ReadAttributeFromObjectNode readAttrNode;
-        @Child private ReadCallerFrameNode readCallerFrameNode;
         @Child private CastToTruffleStringNode castToStringNode;
 
         private ReadAttributeFromObjectNode ensureReadAttrNode() {
@@ -1939,14 +1936,6 @@ public abstract class TypeNodes {
                 readAttrNode = insert(ReadAttributeFromObjectNode.create());
             }
             return readAttrNode;
-        }
-
-        private ReadCallerFrameNode getReadCallerFrameNode() {
-            if (readCallerFrameNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                readCallerFrameNode = insert(ReadCallerFrameNode.create());
-            }
-            return readCallerFrameNode;
         }
 
         private CastToTruffleStringNode ensureCastToStringNode() {
@@ -1978,7 +1967,8 @@ public abstract class TypeNodes {
                         @Cached PRaiseNode raise,
                         @Cached ExceptionNodes.FormatNoteNode formatNoteNode,
                         @Cached AllocateTypeWithMetaclassNode typeMetaclass,
-                        @Cached GetOrCreateDictNode getOrCreateDictNode) {
+                        @Cached GetOrCreateDictNode getOrCreateDictNode,
+                        @Cached PyEvalGetGlobals getGlobals) {
             PDict namespace = PFactory.createDict(language);
             namespace.setDictStorage(initNode.execute(frame, namespaceOrig, PKeyword.EMPTY_KEYWORDS));
             PythonClass newType = typeMetaclass.execute(frame, name, bases, namespace, metaclass);
@@ -1986,13 +1976,7 @@ public abstract class TypeNodes {
             // set '__module__' attribute
             Object moduleAttr = ensureReadAttrNode().execute(newType, SpecialAttributeNames.T___MODULE__);
             if (moduleAttr == PNone.NO_VALUE) {
-                PythonObject globals;
-                if (getRootNode() instanceof BuiltinFunctionRootNode) {
-                    PFrame callerFrame = getReadCallerFrameNode().executeWith(frame, 0, false);
-                    globals = callerFrame != null ? callerFrame.getGlobals() : null;
-                } else {
-                    globals = PArguments.getGlobals(frame);
-                }
+                PythonObject globals = getGlobals.execute(frame, inliningTarget);
                 if (globals != null) {
                     TruffleString moduleName = getModuleNameFromGlobals(inliningTarget, globals, getItemGlobals);
                     if (moduleName != null) {

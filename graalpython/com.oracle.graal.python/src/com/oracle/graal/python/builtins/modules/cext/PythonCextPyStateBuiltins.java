@@ -66,8 +66,7 @@ import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
-import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
+import com.oracle.graal.python.nodes.frame.ReadFrameNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -216,12 +215,10 @@ public final class PythonCextPyStateBuiltins {
     @CApiBuiltin(ret = PyFrameObjectTransfer, args = {PyThreadState}, call = Direct)
     abstract static class PyThreadState_GetFrame extends CApiUnaryBuiltinNode {
         @Specialization
-        PFrame get(@SuppressWarnings("unused") Object threadState,
-                        @Bind Node inliningTarget,
-                        @Cached GetCurrentFrameRef getCurrentFrameRef,
-                        @Cached ReadCallerFrameNode readCallerFrameNode) {
-            PFrame.Reference frameRef = getCurrentFrameRef.execute(null, inliningTarget);
-            return readCallerFrameNode.executeWith(frameRef, 0, false);
+        Object get(@SuppressWarnings("unused") Object threadState,
+                        @Cached ReadFrameNode readFrameNode) {
+            PFrame pFrame = readFrameNode.getCurrentPythonFrame(null);
+            return pFrame != null ? pFrame : getNativeNull();
         }
     }
 
