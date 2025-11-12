@@ -11,6 +11,7 @@ test.test_yield_from.TestPEP380Operation.test_broken_getattr_handling @ linux-x8
 test.test_yield_from.TestPEP380Operation.test_catching_exception_from_subgen_and_returning @ linux-x86_64
 test.test_yield_from.TestPEP380Operation.test_close_with_cleared_frame @ linux-x86_64
 test.test_yield_from.TestPEP380Operation.test_conversion_of_sendNone_to_next @ linux-x86_64
+test.test_yield_from.TestPEP380Operation.test_custom_iterator_return @ linux-x86_64
 test.test_yield_from.TestPEP380Operation.test_delegating_close @ linux-x86_64
 test.test_yield_from.TestPEP380Operation.test_delegating_generators_claim_to_be_running @ linux-x86_64
 test.test_yield_from.TestPEP380Operation.test_delegating_throw @ linux-x86_64
