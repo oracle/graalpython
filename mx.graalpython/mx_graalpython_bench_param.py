@@ -195,6 +195,8 @@ MICRO_BENCHMARKS_SMALL = {
     'c-call-method': ITER_5 + ['50000'],
     'c-call-method-int-float': ITER_5 + ['500000'],
     'regexp': ITER_5 + WARMUP_2,
+    'c-upcall': ITER_5 + [str(2**28)],
+    'c-to-c': ITER_5 + [str(2**31 - 1)],
     'startup': ITER_5 + ['50'],
     'startup-imports': ITER_5 + ['10'],
 }
@@ -226,6 +228,8 @@ MICRO_NATIVE_BENCHMARKS = {
     'c-call-method': ITER_5 + ['5000000'],
     'c-call-method-int-float': ITER_5 + ['5000000'],
     'c-instantiate-large': ITER_5 + ['1000'],
+    'c-upcall': ITER_5 + [str(2**28)],
+    'c-to-c': ITER_5 + [str(2**31 - 1)],
 }
 
 
