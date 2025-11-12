@@ -344,7 +344,7 @@ public class CallDispatchers {
         @Specialization
         static Object doDirect(VirtualFrame frame, Node inliningTarget, DirectCallNode callNode, PFunction callee, Object[] arguments,
                         @Cached SimpleDirectInvokeNode invoke) {
-            assert callee.getCallTarget() == callNode.getCallTarget();
+            assert callee.getCallTarget() == callNode.getCallTarget() : String.format("%s != %s", callee.getCallTarget(), callNode.getCallTarget());
             PArguments.setGlobals(arguments, callee.getGlobals());
             PArguments.setFunctionObject(arguments, callee);
             return invoke.execute(frame, inliningTarget, callNode, arguments);

@@ -462,7 +462,8 @@ public final class CodeBuiltins extends PythonBuiltins {
             }
 
             result.add(PFactory.createTuple(language, new int[]{startInstructionIndex, instructionIndex, triple[2]}));
-            assert tripleIndex == triples.size() : "every bytecode range should have been converted to an instruction range";
+            assert tripleIndex == triples.size() : String.format("every bytecode range should have been converted to " +
+                            "an instruction range, %d != %d, function: %s", tripleIndex, triples.size(), bytecodeNode.getRootNode());
 
             return result;
         }

@@ -3332,7 +3332,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         Frame localFrame = getLocalFrame(virtualFrame);
         if (pyFrame.localsAccessed()) {
             enterTraceProfile(bci, TRACE_PROFILE_SYNC_LOCALS_BACK);
-            GetFrameLocalsNode.syncLocalsBackToFrame(co, pyFrame, localFrame, null);
+            GetFrameLocalsNode.syncLocalsBackToFrame(co, pyFrame, localFrame);
         }
     }
 
@@ -6219,7 +6219,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
          *
          * TODO We should revisit this when the AST interpreter is removed.
          */
-        return MarshalModuleBuiltins.serializeCodeUnit(this, PythonContext.get(this), co);
+        return MarshalModuleBuiltins.serializeCodeUnit(null, PythonContext.get(this), co);
     }
 
     @Override

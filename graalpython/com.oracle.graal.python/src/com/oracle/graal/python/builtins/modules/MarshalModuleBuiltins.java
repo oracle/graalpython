@@ -112,6 +112,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
+import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnitAndRoot;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNodeGen;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -120,11 +121,11 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -342,6 +343,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         private static final char TYPE_ARRAY = ']';
         // These are constants that show up in the Bytecode DSL interpreter.
         private static final char TYPE_GRAALPYTHON_DSL_CODE_UNIT = 'D';
+        private static final char TYPE_GRAALPYTHON_DSL_CODE_UNIT_AND_ROOT = 'K';
         private static final char TYPE_DSL_SOURCE = '$';
         private static final char TYPE_DSL_EMPTY_KEYWORDS = 'k';
 
@@ -787,6 +789,16 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             } else if (v instanceof BigInteger) {
                 writeByte(TYPE_BIG_INTEGER);
                 writeBigInteger((BigInteger) v);
+            } else if (v instanceof BytecodeDSLCodeUnitAndRoot unitAndRoot) {
+                // BytecodeDSLCodeUnit data should be deserialized to BytecodeDSLCodeUnit if we are
+                // deserializing a constant in the constants array of BytecodeDSLCodeUnit, otherwise
+                // if we are deserializing a constant operand of MakeFunction operation, we should
+                // deserialize it to BytecodeDSLCodeUnitAndRoot.
+                // In the deserializer we would have to pass down some context to know whether to
+                // deserialize to one or the other. Instead, we write this extra byte that allows us
+                // to distinguish this locally during deserialization.
+                writeByte(TYPE_GRAALPYTHON_DSL_CODE_UNIT_AND_ROOT);
+                writeReferenceOrComplexObject(unitAndRoot.getCodeUnit());
             } else {
                 writeReferenceOrComplexObject(v);
             }
@@ -1160,6 +1172,13 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                     return addRef.run(readBytecodeCodeUnit());
                 case TYPE_GRAALPYTHON_DSL_CODE_UNIT:
                     return addRef.run(readBytecodeDSLCodeUnit());
+                case TYPE_GRAALPYTHON_DSL_CODE_UNIT_AND_ROOT:
+                    Object co = readObject();
+                    if (co instanceof BytecodeDSLCodeUnit dslUnit) {
+                        return new BytecodeDSLCodeUnitAndRoot(dslUnit);
+                    } else {
+                        throw new MarshalError(ValueError, ErrorMessages.BAD_MARSHAL_DATA);
+                    }
                 case TYPE_DSL_SOURCE:
                     return getSource();
                 case TYPE_DSL_EMPTY_KEYWORDS:
@@ -1540,7 +1559,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
     }
 
     @TruffleBoundary
-    public static byte[] serializeCodeUnit(Node node, PythonContext context, CodeUnit code) {
+    public static byte[] serializeCodeUnit(Node locationForRaise, PythonContext context, CodeUnit code) {
         try {
             Marshal marshal = new Marshal(context, CURRENT_VERSION, null, null);
             marshal.writeCodeUnit(code);
@@ -1548,7 +1567,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         } catch (IOException e) {
             throw CompilerDirectives.shouldNotReachHere(e);
         } catch (Marshal.MarshalError me) {
-            throw PRaiseNode.raiseStatic(node, me.type, me.message, me.arguments);
+            throw PRaiseNode.raiseStatic(locationForRaise, me.type, me.message, me.arguments);
         }
     }
 

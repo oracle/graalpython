@@ -52,6 +52,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.bytecode.OperationProxy.Proxyable;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -60,6 +61,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
+@Proxyable(storeBytecodeIndex = true)
 @GenerateUncached
 @GenerateInline(false) // used in bytecode root node
 public abstract class GetANextNode extends PNodeWithContext {
@@ -74,7 +76,7 @@ public abstract class GetANextNode extends PNodeWithContext {
     }
 
     @Specialization
-    Object doGeneric(VirtualFrame frame, Object receiver,
+    public static Object doGeneric(VirtualFrame frame, Object receiver,
                     @Bind Node inliningTarget,
                     @Cached GetClassNode getAsyncIterType,
                     @Cached GetCachedTpSlotsNode getSlots,

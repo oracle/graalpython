@@ -95,6 +95,7 @@ import com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompiler.Bytecod
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
+import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnitAndRoot;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNodeGen;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNodeGen.Builder;
@@ -451,7 +452,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                         null,
                         nodes);
         rootNode.setMetadata(codeUnit, ctx.errorCallback);
-        if (codeUnit.isGenerator() && savedYieldFromGenerator) {
+        if (codeUnit.isGeneratorOrCoroutine() && savedYieldFromGenerator) {
             rootNode.yieldFromGeneratorIndex = yieldFromGenerator.getLocalIndex();
         }
 
@@ -1058,36 +1059,61 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         });
     }
 
-    private boolean beginComprehension(ComprehensionTy comp, int index, Builder b) {
+    private void emitComprehension(ComprehensionTy[] generators, int index, Builder b,
+                    BytecodeLocal collectionLocal,
+                    BiConsumer<StatementCompiler, BytecodeLocal> accumulateProducer) {
+        ComprehensionTy comp = generators[index];
         boolean newStatement = beginSourceSection(comp, b);
-
-        BytecodeLocal localIter = b.createLocal();
-        BytecodeLocal localValue = b.createLocal();
         StatementCompiler statementCompiler = new StatementCompiler(b);
 
-        b.beginStoreLocal(localIter);
-        b.beginGetIter();
-        if (index == 0) {
-            b.emitLoadArgument(PArguments.USER_ARGUMENTS_OFFSET);
+        if (comp.isAsync) {
+            ExprTy iter = null;
+            if (index > 0) {
+                iter = comp.iter;
+            }
+            statementCompiler.emitAsyncFor(iter, comp.target, null, true, index,
+                            (stmtComp, idx) -> emitComprehensionBody(generators, idx, collectionLocal, accumulateProducer, stmtComp));
         } else {
-            comp.iter.accept(statementCompiler);
+            BytecodeLocal localIter = b.createLocal();
+            BytecodeLocal localValue = b.createLocal();
+
+            b.beginStoreLocal(localIter);
+            if (index == 0) {
+                // The iterator is the function argument for the outermost generator
+                b.emitLoadArgument(PArguments.USER_ARGUMENTS_OFFSET);
+            } else {
+                b.beginGetIter();
+                comp.iter.accept(statementCompiler);
+                b.endGetIter();
+            }
+            b.endStoreLocal();
+
+            b.beginWhile();
+
+            b.beginBlock();
+            b.emitTraceLineAtLoopHeader(currentLocation.startLine);
+            b.beginForIterate(localValue);
+            b.emitLoadLocal(localIter);
+            b.endForIterate();
+            b.endBlock();
+
+            b.beginBlock();
+
+            comp.target.accept(statementCompiler.new StoreVisitor(() -> b.emitLoadLocal(localValue)));
+            emitComprehensionBody(generators, index, collectionLocal, accumulateProducer, statementCompiler);
+
+            b.endBlock();
+            b.endWhile();
         }
-        b.endGetIter();
-        b.endStoreLocal();
 
-        b.beginWhile();
+        endSourceSection(b, newStatement);
+    }
 
-        b.beginBlock();
-        b.emitTraceLineAtLoopHeader(currentLocation.startLine);
-        b.beginForIterate(localValue);
-        b.emitLoadLocal(localIter);
-        b.endForIterate();
-        b.endBlock();
-
-        b.beginBlock();
-
-        comp.target.accept(statementCompiler.new StoreVisitor(() -> b.emitLoadLocal(localValue)));
-
+    private void emitComprehensionBody(ComprehensionTy[] generators, int index,
+                    BytecodeLocal collectionLocal, BiConsumer<StatementCompiler, BytecodeLocal> accumulateProducer,
+                    StatementCompiler statementCompiler) {
+        ComprehensionTy comp = generators[index];
+        Builder b = statementCompiler.b;
         if (comp.ifs != null) {
             for (int i = 0; i < comp.ifs.length; i++) {
                 b.beginIfThen();
@@ -1096,56 +1122,62 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             }
         }
 
-        return newStatement;
-    }
+        if (index == generators.length - 1) {
+            accumulateProducer.accept(statementCompiler, collectionLocal);
+        } else {
+            emitComprehension(generators, index + 1, b, collectionLocal, accumulateProducer);
+        }
 
-    private void endComprehension(ComprehensionTy comp, Builder b, boolean newStatement) {
         if (comp.ifs != null) {
             for (int i = 0; i < len(comp.ifs); i++) {
                 b.endBlock();
                 b.endIfThen();
             }
         }
-
-        b.endBlock();
-        b.endWhile();
-
-        endSourceSection(b, newStatement);
     }
 
-    private BytecodeDSLCompilerResult buildComprehensionCodeUnit(SSTNode node, ComprehensionTy[] generators, String name,
+    private enum ComprehensionType {
+        LIST("<listcomp>"),
+        SET("<setcomp>"),
+        DICT("<dictcomp>"),
+        GENEXPR("<genexpr>");
+
+        private final String name;
+
+        ComprehensionType(String name) {
+            this.name = name;
+        }
+    }
+
+    private BytecodeDSLCompilerResult buildComprehensionCodeUnit(SSTNode node, ComprehensionTy[] generators, ComprehensionType type,
                     Consumer<StatementCompiler> emptyCollectionProducer,
                     BiConsumer<StatementCompiler, BytecodeLocal> accumulateProducer) {
-        return compileRootNode(name, new ArgumentInfo(1, 0, 0, false, false), node.getSourceRange(), b -> {
+        if (scope.isCoroutine() && type != ComprehensionType.GENEXPR && scopeType != CompilationScope.AsyncFunction && scopeType != CompilationScope.Comprehension) {
+            throw ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "asynchronous comprehension outside of an asynchronous function");
+        }
+        return compileRootNode(type.name, new ArgumentInfo(1, 0, 0, false, false), node.getSourceRange(), b -> {
             beginRootNode(node, null, b);
 
-            if (node instanceof GeneratorExp) {
+            assert scope.isGenerator() == (type == ComprehensionType.GENEXPR);
+            if (scope.isCoroutine() || scope.isGenerator()) {
                 b.beginResumeYieldGenerator();
                 b.emitYieldGenerator();
                 b.endResumeYieldGenerator();
             }
 
             StatementCompiler statementCompiler = new StatementCompiler(b);
-            boolean isGenerator = emptyCollectionProducer == null;
             BytecodeLocal collectionLocal = null;
-            if (!isGenerator) {
+            if (!scope.isGenerator()) {
                 collectionLocal = b.createLocal();
                 b.beginStoreLocal(collectionLocal);
                 emptyCollectionProducer.accept(statementCompiler);
                 b.endStoreLocal();
             }
 
-            boolean[] newStatement = new boolean[generators.length];
-            for (int i = 0; i < generators.length; i++) {
-                newStatement[i] = beginComprehension(generators[i], i, b);
-            }
-            accumulateProducer.accept(statementCompiler, collectionLocal);
-            for (int i = generators.length - 1; i >= 0; i--) {
-                endComprehension(generators[i], b, newStatement[i]);
-            }
+            emitComprehension(generators, 0, b, collectionLocal, accumulateProducer);
 
             beginReturn(b);
-            if (isGenerator) {
+            if (scope.isGenerator()) {
                 // TODO: what if someone sends us some value?
                 b.emitLoadConstant(PNone.NONE);
             } else {
@@ -1159,7 +1191,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
     @Override
     public BytecodeDSLCompilerResult visit(ExprTy.ListComp node) {
-        return buildComprehensionCodeUnit(node, node.generators, "<listcomp>",
+        return buildComprehensionCodeUnit(node, node.generators, ComprehensionType.LIST,
                         (statementCompiler) -> {
                             statementCompiler.b.beginMakeList();
                             statementCompiler.b.endMakeList();
@@ -1174,7 +1206,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
     @Override
     public BytecodeDSLCompilerResult visit(ExprTy.DictComp node) {
-        return buildComprehensionCodeUnit(node, node.generators, "<dictcomp>",
+        return buildComprehensionCodeUnit(node, node.generators, ComprehensionType.DICT,
                         (statementCompiler) -> {
                             statementCompiler.b.beginMakeDict(0);
                             statementCompiler.b.endMakeDict();
@@ -1190,7 +1222,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
     @Override
     public BytecodeDSLCompilerResult visit(ExprTy.SetComp node) {
-        return buildComprehensionCodeUnit(node, node.generators, "<setcomp>",
+        return buildComprehensionCodeUnit(node, node.generators, ComprehensionType.SET,
                         (statementCompiler) -> {
                             statementCompiler.b.beginMakeSet();
                             statementCompiler.b.endMakeSet();
@@ -1205,9 +1237,20 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
     @Override
     public BytecodeDSLCompilerResult visit(ExprTy.GeneratorExp node) {
-        return buildComprehensionCodeUnit(node, node.generators, "<genexpr>",
+        return buildComprehensionCodeUnit(node, node.generators, ComprehensionType.GENEXPR,
                         null,
-                        (statementCompiler, collection) -> emitYield((statementCompiler_) -> node.element.accept(statementCompiler_), statementCompiler));
+                        (statementCompiler, collection) -> {
+                            emitYield((statementCompiler_) -> {
+                                boolean isAsync = node.generators[node.generators.length - 1].isAsync;
+                                if (isAsync) {
+                                    statementCompiler.b.beginAsyncGenWrap();
+                                }
+                                node.element.accept(statementCompiler_);
+                                if (isAsync) {
+                                    statementCompiler.b.endAsyncGenWrap();
+                                }
+                            }, statementCompiler);
+                        });
     }
 
     @Override
@@ -2149,14 +2192,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         @Override
         public Void visit(ExprTy.DictComp node) {
-            boolean newStatement = beginSourceSection(node, b);
-
-            b.beginCallUnaryMethod();
-            emitMakeFunction(node, "<dictcomp>", COMPREHENSION_ARGS);
-            node.generators[0].iter.accept(this);
-            b.endCallUnaryMethod();
-
-            endSourceSection(b, newStatement);
+            emitMakeAndCallComprehension(node, node.generators, ComprehensionType.DICT);
             return null;
         }
 
@@ -2201,14 +2237,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         @Override
         public Void visit(ExprTy.GeneratorExp node) {
-            boolean newStatement = beginSourceSection(node, b);
-
-            b.beginCallUnaryMethod();
-            emitMakeFunction(node, "<genexpr>", COMPREHENSION_ARGS);
-            node.generators[0].iter.accept(this);
-            b.endCallUnaryMethod();
-
-            endSourceSection(b, newStatement);
+            emitMakeAndCallComprehension(node, node.generators, ComprehensionType.GENEXPR);
             return null;
         }
 
@@ -2269,15 +2298,45 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         @Override
         public Void visit(ExprTy.ListComp node) {
-            boolean newStatement = beginSourceSection(node, b);
-
-            b.beginCallUnaryMethod();
-            emitMakeFunction(node, "<listcomp>", COMPREHENSION_ARGS);
-            node.generators[0].iter.accept(this);
-            b.endCallUnaryMethod();
-
-            endSourceSection(b, newStatement);
+            emitMakeAndCallComprehension(node, node.generators, ComprehensionType.LIST);
             return null;
+        }
+
+        private void emitMakeAndCallComprehension(ExprTy node, ComprehensionTy[] generators, ComprehensionType type) {
+            boolean newStatement = beginSourceSection(node, b);
+            Scope comprehensionScope = ctx.scopeEnvironment.lookupScope(node);
+            if (comprehensionScope.isCoroutine() && type != ComprehensionType.GENEXPR) {
+                emitYieldFrom(() -> {
+                    // @formatter:off
+                    b.beginGetAwaitable();
+                        b.beginCallComprehension();
+                            emitMakeFunction(node, type.name, COMPREHENSION_ARGS);
+                            emitGetIter(generators);
+                        b.endCallComprehension();
+                    b.endGetAwaitable();
+                    // @formatter:on
+                });
+            } else {
+                // @formatter:off
+                b.beginCallComprehension();
+                    emitMakeFunction(node, type.name, COMPREHENSION_ARGS);
+                    emitGetIter(generators);
+                b.endCallComprehension();
+                // @formatter:on
+            }
+            endSourceSection(b, newStatement);
+        }
+
+        private void emitGetIter(ComprehensionTy[] generators) {
+            if (generators[0].isAsync) {
+                b.beginGetAIter();
+                generators[0].iter.accept(this);
+                b.endGetAIter();
+            } else {
+                b.beginGetIter();
+                generators[0].iter.accept(this);
+                b.endGetIter();
+            }
         }
 
         @Override
@@ -2452,14 +2511,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         @Override
         public Void visit(ExprTy.SetComp node) {
-            boolean newStatement = beginSourceSection(node, b);
-
-            b.beginCallUnaryMethod();
-            emitMakeFunction(node, "<setcomp>", COMPREHENSION_ARGS);
-            node.generators[0].iter.accept(this);
-            b.endCallUnaryMethod();
-
-            endSourceSection(b, newStatement);
+            emitMakeAndCallComprehension(node, node.generators, ComprehensionType.SET);
             return null;
         }
 
@@ -2575,10 +2627,16 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "'yield' outside function");
             }
             emitYield((statementCompiler) -> {
+                if (scopeType == CompilationScope.AsyncFunction) {
+                    b.beginAsyncGenWrap();
+                }
                 if (node.value != null) {
                     node.value.accept(this);
                 } else {
                     statementCompiler.b.emitLoadConstant(PNone.NONE);
+                }
+                if (scopeType == CompilationScope.AsyncFunction) {
+                    b.endAsyncGenWrap();
                 }
             }, this);
 
@@ -2605,7 +2663,19 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         }
 
         public void emitYieldFrom(Runnable generatorOrCoroutineProducer) {
+            b.beginBlock();
+            BytecodeLocal returnValue = b.createLocal();
+            emitYieldFrom(generatorOrCoroutineProducer, returnValue);
+            b.emitLoadLocal(returnValue);
+            b.endBlock();
+        }
+
+        public void emitYieldFrom(Runnable generatorOrCoroutineProducer, BytecodeLocal returnValue) {
             /**
+             * Runs a yield from loop - getting values from a generator and yielding them until
+             * the generator ends by throwing StopIteration. The return value (value field in
+             * the StopIteration exception) is stored into the given {@code BytecodeLocal}.
+             *
              * @formatter:off
              * generator = <value>
              * returnValue = None
@@ -2636,17 +2706,13 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
              *     returnValue = e.value
              *     goto end
              *
-             * end:
-             * # Step 4: return returnValue
-             * load returnValue (result)
+             * end: # Step 4: resultValue local is assigned
              * @formatter:on
              */
-            b.beginBlock();
-
             BytecodeLocal generator = b.createLocal();
-            BytecodeLocal returnValue = b.createLocal();
             BytecodeLocal sentValue = b.createLocal();
             BytecodeLocal yieldValue = b.createLocal();
+            b.beginBlock();
             BytecodeLabel end = b.createLabel();
 
             b.beginStoreLocal(generator);
@@ -2709,10 +2775,8 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             b.endBlock();
             b.endWhile();
 
-            // Step 4: return returnValue
+            // Step 4: the returnValue local is assigned when branching to "end" label
             b.emitLabel(end);
-            b.emitLoadLocal(returnValue);
-
             b.endBlock();
         }
 
@@ -3199,8 +3263,94 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         @Override
         public Void visit(StmtTy.AsyncFor node) {
-            emitNotImplemented("async for", b);
+            if (!scope.isFunction()) {
+                ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "'async for' outside function");
+            }
+            if (scopeType != CompilationScope.AsyncFunction) {
+                ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "'async for' outside async function");
+            }
+            boolean newStatement = beginSourceSection(node, b);
+            emitAsyncFor(node.iter, node.target, node.orElse, false, node, (stmtCompiler, n) -> {
+                stmtCompiler.visitSequence(n.body);
+            });
+            endSourceSection(b, newStatement);
             return null;
+        }
+
+        /**
+         * @param iterOrNull If {@code null}, then it assumes that the first argument holds the
+         *            iterator, i.e., it won't call {@code __aiter__} on it and just use it as is.
+         *            This is the calling convention for async comprehensions.
+         */
+        private <T> void emitAsyncFor(ExprTy iterOrNull, ExprTy target, StmtTy[] orElse, boolean isComprehension,
+                        T arg, BiConsumer<StatementCompiler, T> body) {
+            assert !isComprehension || orElse == null;
+            BytecodeLocal iterLocal = b.createLocal();
+            b.beginStoreLocal(iterLocal);
+            if (iterOrNull == null) {
+                b.emitLoadArgument(PArguments.USER_ARGUMENTS_OFFSET);
+            } else {
+                b.beginGetAIter();
+                iterOrNull.accept(this);
+                b.endGetAIter();
+            }
+            b.endStoreLocal();
+
+            b.beginBlock();
+            BytecodeLocal result = b.createLocal();
+            BytecodeLabel loopEnd = b.createLabel();
+            BytecodeLabel currentBreakLabel = null;
+            BytecodeLabel oldContinueLabel = continueLabel;
+            BytecodeLabel oldBreakLabel = breakLabel;
+            if (!isComprehension) {
+                currentBreakLabel = b.createLabel();
+                breakLabel = currentBreakLabel;
+            }
+            // @formatter:off
+            b.beginWhile();
+                // infinite loop, we break out of it explicitly by jump to "loopEnd"
+                b.emitLoadConstant(true);
+                // body:
+                b.beginBlock();
+                    if (!isComprehension) {
+                        continueLabel = b.createLabel();
+                    }
+                    target.accept(new StoreVisitor(() -> {
+                        b.beginBlock();
+                            b.beginTryCatch();
+                                // try:
+                                emitYieldFrom(() -> {
+                                    b.beginGetANext();
+                                        b.emitLoadLocal(iterLocal);
+                                    b.endGetANext();
+                                }, result);
+                                // catch:
+                                b.beginBlock();
+                                    // rethrows the exception unless its StopAsyncIteration
+                                    b.beginExpectStopAsyncIteration();
+                                        b.emitLoadException();
+                                    b.endExpectStopAsyncIteration();
+                                    b.emitBranch(loopEnd);
+                                b.endBlock();
+                            b.endTryCatch();
+                            b.emitLoadLocal(result);
+                        b.endBlock();
+                    }));
+                    body.accept(this, arg);
+                    if (!isComprehension) {
+                        b.emitLabel(continueLabel);
+                    }
+                b.endBlock();
+            b.endWhile();
+            b.emitLabel(loopEnd);
+            if (!isComprehension) {
+                visitSequence(orElse);
+                b.emitLabel(currentBreakLabel);
+                breakLabel = oldBreakLabel;
+                continueLabel = oldContinueLabel;
+            }
+            b.endBlock();
+            // @formatter:on
         }
 
         @Override
@@ -3763,7 +3913,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             addConstant(qualifiedName);
             addConstant(codeUnit);
 
-            b.beginMakeFunction(functionName, qualifiedName, codeUnit);
+            b.beginMakeFunction(functionName, qualifiedName, new BytecodeDSLCodeUnitAndRoot(codeUnit));
 
             if (defaultArgsLocal != null) {
                 assert argsForDefaults == null;
@@ -5063,6 +5213,9 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             if (inExceptStar) {
                 ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "'break', 'continue' and 'return' cannot appear in an except* block");
             }
+            if (node.value != null && scope.isGenerator() && scope.isCoroutine()) {
+                ctx.errorCallback.onError(ErrorType.Syntax, currentLocation, "'return' with value in async generator");
+            }
             beginReturn(b);
             if (node.value != null) {
                 node.value.accept(this);
@@ -5922,16 +6075,33 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             // exceptional exit
             if (async) {
                 // call, await, and handle result of __aexit__
+                BytecodeLocal savedException = b.createLocal();
+                BytecodeLocal prevPrevSaved = enterSaveExceptionBlock(savedException);
+                emitSaveCurrentException(savedException);
+                emitSetCurrentException();
+
+                // @formatter:off
                 b.beginAsyncContextManagerExit();
-                b.emitLoadException();
-                emitAwait(() -> {
-                    b.beginAsyncContextManagerCallExit();
                     b.emitLoadException();
-                    b.emitLoadLocal(exit);
-                    b.emitLoadLocal(contextManager);
-                    b.endAsyncContextManagerCallExit();
-                });
+                    b.beginBlock();
+                        BytecodeLocal tmp = b.createLocal();
+                        b.beginStoreLocal(tmp);
+                        emitAwait(() -> {
+                            b.beginAsyncContextManagerCallExit();
+                            b.emitLoadException();
+                            b.emitLoadLocal(exit);
+                            b.emitLoadLocal(contextManager);
+                            b.endAsyncContextManagerCallExit();
+                        });
+                        b.endStoreLocal();
+                        // restore the exception just before invoking the AsyncContextManagerExit operation
+                        emitRestoreCurrentException(savedException);
+                        b.emitLoadLocal(tmp);
+                    b.endBlock();
                 b.endAsyncContextManagerExit();
+                // @formatter:on
+
+                exitSaveExceptionBlock(prevPrevSaved);
             } else {
                 // call __exit__
                 b.beginContextManagerExit();

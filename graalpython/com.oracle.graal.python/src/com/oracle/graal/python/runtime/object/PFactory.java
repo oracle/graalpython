@@ -830,6 +830,11 @@ public final class PFactory {
         return PAsyncGen.create(language, function, rootNode, callTargets, arguments);
     }
 
+    public static PAsyncGen createAsyncGenerator(PythonLanguage language, PFunction function, PBytecodeDSLRootNode rootNode, ContinuationRootNode continuationRootNode,
+                    MaterializedFrame continuationFrame) {
+        return new PAsyncGen(language, function, rootNode, continuationRootNode, continuationFrame);
+    }
+
     public static PANextAwaitable createANextAwaitable(PythonLanguage language, Object wrapped, Object defaultValue) {
         return new PANextAwaitable(PythonBuiltinClassType.PAnextAwaitable, PythonBuiltinClassType.PAnextAwaitable.getInstanceShape(language), wrapped, defaultValue);
     }

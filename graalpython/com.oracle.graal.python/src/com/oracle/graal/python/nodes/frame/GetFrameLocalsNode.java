@@ -201,45 +201,57 @@ public abstract class GetFrameLocalsNode extends Node {
     /**
      * Equivalent of CPython's {@code PyFrame_LocalsToFast}
      */
-    public static void syncLocalsBackToFrame(CodeUnit co, PFrame pyFrame, Frame localFrame, BytecodeNode bytecodeNode) {
+    public static void syncLocalsBackToFrame(CodeUnit co, PFrame pyFrame, Frame localFrame) {
         if (!pyFrame.hasCustomLocals()) {
             PDict localsDict = (PDict) pyFrame.getLocalsDict();
-            copyLocalsArray(localFrame, localsDict, bytecodeNode, co.varnames, 0, false);
-            copyLocalsArray(localFrame, localsDict, bytecodeNode, co.cellvars, co.varnames.length, true);
-            copyLocalsArray(localFrame, localsDict, bytecodeNode, co.freevars, co.varnames.length + co.cellvars.length, true);
+            copyLocalsArray(localFrame, localsDict, co.varnames, 0, false);
+            copyLocalsArray(localFrame, localsDict, co.cellvars, co.varnames.length, true);
+            copyLocalsArray(localFrame, localsDict, co.freevars, co.varnames.length + co.cellvars.length, true);
         }
     }
 
-    private static void copyLocalsArray(Frame localFrame, PDict localsDict, BytecodeNode bytecodeNode, TruffleString[] namesArray, int offset, boolean deref) {
-        if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-            for (int i = 0; i < namesArray.length; i++) {
-                TruffleString varname = namesArray[i];
-                Object value = getDictItemUncached(localsDict, varname);
-                if (deref) {
-                    PCell cell = (PCell) bytecodeNode.getLocalValue(0, localFrame, offset + i);
-                    cell.setRef(value);
-                } else {
-                    if (value == null) {
-                        value = PNone.NONE;
-                        // TODO warn: "assigning None to unbound local %s"
-                    }
-                    bytecodeNode.setLocalValue(0, localFrame, offset + i, value);
+    /**
+     * Equivalent of CPython's {@code PyFrame_LocalsToFast}
+     */
+    public static void syncLocalsBackToFrame(CodeUnit co, BytecodeNode bytecodeNode, PFrame pyFrame, Frame localFrame) {
+        if (!pyFrame.hasCustomLocals()) {
+            PDict localsDict = (PDict) pyFrame.getLocalsDict();
+            copyLocalsArray(localFrame, bytecodeNode, localsDict, co.varnames, 0, false);
+            copyLocalsArray(localFrame, bytecodeNode, localsDict, co.cellvars, co.varnames.length, true);
+            copyLocalsArray(localFrame, bytecodeNode, localsDict, co.freevars, co.varnames.length + co.cellvars.length, true);
+        }
+    }
+
+    private static void copyLocalsArray(Frame localFrame, BytecodeNode bytecodeNode, PDict localsDict, TruffleString[] namesArray, int offset, boolean deref) {
+        for (int i = 0; i < namesArray.length; i++) {
+            TruffleString varname = namesArray[i];
+            Object value = getDictItemUncached(localsDict, varname);
+            if (deref) {
+                PCell cell = (PCell) bytecodeNode.getLocalValue(0, localFrame, offset + i);
+                cell.setRef(value);
+            } else {
+                if (value == null) {
+                    value = PNone.NONE;
+                    // TODO warn: "assigning None to unbound local %s"
                 }
+                bytecodeNode.setLocalValue(0, localFrame, offset + i, value);
             }
-        } else {
-            for (int i = 0; i < namesArray.length; i++) {
-                TruffleString varname = namesArray[i];
-                Object value = getDictItemUncached(localsDict, varname);
-                if (deref) {
-                    PCell cell = (PCell) localFrame.getObject(offset + i);
-                    cell.setRef(value);
-                } else {
-                    if (value == null) {
-                        value = PNone.NONE;
-                        // TODO warn: "assigning None to unbound local %s"
-                    }
-                    localFrame.setObject(offset + i, value);
+        }
+    }
+
+    private static void copyLocalsArray(Frame localFrame, PDict localsDict, TruffleString[] namesArray, int offset, boolean deref) {
+        for (int i = 0; i < namesArray.length; i++) {
+            TruffleString varname = namesArray[i];
+            Object value = getDictItemUncached(localsDict, varname);
+            if (deref) {
+                PCell cell = (PCell) localFrame.getObject(offset + i);
+                cell.setRef(value);
+            } else {
+                if (value == null) {
+                    value = PNone.NONE;
+                    // TODO warn: "assigning None to unbound local %s"
                 }
+                localFrame.setObject(offset + i, value);
             }
         }
     }
