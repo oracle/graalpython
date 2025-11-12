@@ -120,7 +120,13 @@ public class SSLCipherSelector {
             } else if (cipherString.startsWith("@SECLEVEL=")) {
                 throw PRaiseNode.raiseStatic(node, NotImplementedError, toTruffleStringUncached("@SECLEVEL not implemented"));
             } else {
-                throw PConstructAndRaiseNode.raiseUncachedSSLError(ErrorMessages.NO_CIPHER_CAN_BE_SELECTED);
+                EncapsulatingNodeReference nodeRef = EncapsulatingNodeReference.getCurrent();
+                Node prev = nodeRef.set(node);
+                try {
+                    throw PConstructAndRaiseNode.raiseUncachedSSLError(ErrorMessages.NO_CIPHER_CAN_BE_SELECTED);
+                } finally {
+                    nodeRef.set(prev);
+                }
             }
         } else if (cipherString.equals("DEFAULT")) {
             selectCiphersFromList(node, "ALL:!COMPLEMENTOFDEFAULT:!eNULL", selected, deleted);
