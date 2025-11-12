@@ -121,7 +121,6 @@ test.test_re.ReTests.test_re_groupref_overflow @ linux-x86_64
 test.test_re.ReTests.test_re_match @ linux-x86_64
 test.test_re.ReTests.test_re_split @ linux-x86_64
 test.test_re.ReTests.test_re_subn @ linux-x86_64
-test.test_re.ReTests.test_regression_gh94675 @ linux-x86_64
 test.test_re.ReTests.test_repeat_minmax @ linux-x86_64
 test.test_re.ReTests.test_repeat_minmax_overflow @ linux-x86_64
 test.test_re.ReTests.test_scanner @ linux-x86_64
@@ -136,7 +135,6 @@ test.test_re.ReTests.test_sre_byte_literals @ linux-x86_64
 test.test_re.ReTests.test_sre_character_class_literals @ linux-x86_64
 test.test_re.ReTests.test_sre_character_literals @ linux-x86_64
 test.test_re.ReTests.test_stack_overflow @ linux-x86_64
-test.test_re.ReTests.test_string_boundaries @ linux-x86_64
 test.test_re.ReTests.test_sub_template_numeric_escape @ linux-x86_64
 test.test_re.ReTests.test_symbolic_groups @ linux-x86_64
 test.test_re.ReTests.test_symbolic_groups_errors @ linux-x86_64

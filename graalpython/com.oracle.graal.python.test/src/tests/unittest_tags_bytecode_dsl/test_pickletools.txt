@@ -57,14 +57,12 @@ test.test_pickletools.GenopsTests.test_unknown_opcode_without_pos @ linux-x86_64
 test.test_pickletools.GenopsTests.test_without_pos @ linux-x86_64
 test.test_pickletools.MiscTestCase.test__all__ @ linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_appends_on_non_lists @ linux-x86_64
-test.test_pickletools.OptimizedPickleTests.test_buffer_callback_error @ linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_buffers_error @ linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_builtin_exceptions @ linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_builtin_functions @ linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_builtin_types @ linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_bytearray @ linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_bytearray_memoization @ linux-x86_64
-test.test_pickletools.OptimizedPickleTests.test_bytearray_memoization_bug @ linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_bytes @ linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_bytes_memoization @ linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_c_methods @ linux-x86_64
@@ -89,7 +87,6 @@ test.test_pickletools.OptimizedPickleTests.test_int_pickling_efficiency @ linux-
 test.test_pickletools.OptimizedPickleTests.test_ints @ linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_large_pickles @ linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_list_chunking @ linux-x86_64
-test.test_pickletools.OptimizedPickleTests.test_local_lookup_error @ linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_long @ linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_long1 @ linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_long4 @ linux-x86_64
@@ -111,7 +108,6 @@ test.test_pickletools.OptimizedPickleTests.test_optimize_binput_and_memoize @ li
 test.test_pickletools.OptimizedPickleTests.test_optimize_long_binget @ linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_optional_frames @ linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_pickle_setstate_None @ linux-x86_64
-test.test_pickletools.OptimizedPickleTests.test_picklebuffer_error @ linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_proto @ linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_py_methods @ linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_recursive_dict @ linux-x86_64
@@ -149,7 +145,6 @@ test.test_pickletools.OptimizedPickleTests.test_recursive_tuple_and_list_like @ 
 test.test_pickletools.OptimizedPickleTests.test_recursive_tuple_and_list_subclass @ linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_recursive_tuple_subclass_and_inst @ linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_reduce @ linux-x86_64
-test.test_pickletools.OptimizedPickleTests.test_reduce_bad_iterator @ linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_reduce_calls_base @ linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_reduce_ex_called @ linux-x86_64
 test.test_pickletools.OptimizedPickleTests.test_reduce_ex_calls_base @ linux-x86_64

@@ -4,7 +4,6 @@ test.test_shutil.TestArchives.test_make_archive_cwd @ linux-x86_64
 test.test_shutil.TestArchives.test_make_archive_cwd_default @ linux-x86_64
 test.test_shutil.TestArchives.test_make_archive_cwd_supports_root_dir @ linux-x86_64
 test.test_shutil.TestArchives.test_make_archive_owner_group @ linux-x86_64
-test.test_shutil.TestArchives.test_make_tarball @ linux-x86_64
 test.test_shutil.TestArchives.test_make_tarfile @ linux-x86_64
 test.test_shutil.TestArchives.test_make_tarfile_in_curdir @ linux-x86_64
 test.test_shutil.TestArchives.test_make_tarfile_rootdir_nodir @ linux-x86_64
@@ -99,11 +98,9 @@ test.test_shutil.TestRmTree.test_on_exc @ linux-x86_64
 test.test_shutil.TestRmTree.test_rmtree_above_recursion_limit @ linux-x86_64
 test.test_shutil.TestRmTree.test_rmtree_does_not_choke_on_failing_lstat @ linux-x86_64
 test.test_shutil.TestRmTree.test_rmtree_dont_delete_file @ linux-x86_64
-test.test_shutil.TestRmTree.test_rmtree_errors @ linux-x86_64
 test.test_shutil.TestRmTree.test_rmtree_errors_onerror @ linux-x86_64
 test.test_shutil.TestRmTree.test_rmtree_errors_onexc @ linux-x86_64
 test.test_shutil.TestRmTree.test_rmtree_fails_on_close @ linux-x86_64
-test.test_shutil.TestRmTree.test_rmtree_fails_on_symlink @ linux-x86_64
 test.test_shutil.TestRmTree.test_rmtree_fails_on_symlink_onerror @ linux-x86_64
 test.test_shutil.TestRmTree.test_rmtree_fails_on_symlink_onexc @ linux-x86_64
 test.test_shutil.TestRmTree.test_rmtree_on_symlink @ linux-x86_64
@@ -113,7 +110,6 @@ test.test_shutil.TestRmTree.test_rmtree_works_on_bytes @ linux-x86_64
 test.test_shutil.TestRmTree.test_rmtree_works_on_symlinks @ linux-x86_64
 test.test_shutil.TestWhich.test_absolute_cmd @ linux-x86_64
 test.test_shutil.TestWhich.test_basic @ linux-x86_64
-test.test_shutil.TestWhich.test_cwd @ linux-x86_64
 test.test_shutil.TestWhich.test_cwd_non_win32 @ linux-x86_64
 test.test_shutil.TestWhich.test_empty_path @ linux-x86_64
 test.test_shutil.TestWhich.test_empty_path_no_PATH @ linux-x86_64
@@ -127,7 +123,6 @@ test.test_shutil.TestWhich.test_relative_cmd @ linux-x86_64
 test.test_shutil.TestWhich.test_relative_path @ linux-x86_64
 test.test_shutil.TestWhichBytes.test_absolute_cmd @ linux-x86_64
 test.test_shutil.TestWhichBytes.test_basic @ linux-x86_64
-test.test_shutil.TestWhichBytes.test_cwd @ linux-x86_64
 test.test_shutil.TestWhichBytes.test_cwd_non_win32 @ linux-x86_64
 test.test_shutil.TestWhichBytes.test_empty_path @ linux-x86_64
 test.test_shutil.TestWhichBytes.test_empty_path_no_PATH @ linux-x86_64

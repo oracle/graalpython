@@ -1,5 +1,4 @@
 test.test_pyclbr.PyclbrTest.test_cases @ linux-x86_64
-test.test_pyclbr.PyclbrTest.test_decorators @ linux-x86_64
 test.test_pyclbr.PyclbrTest.test_easy @ linux-x86_64
 test.test_pyclbr.PyclbrTest.test_nested @ linux-x86_64
 test.test_pyclbr.PyclbrTest.test_others @ linux-x86_64

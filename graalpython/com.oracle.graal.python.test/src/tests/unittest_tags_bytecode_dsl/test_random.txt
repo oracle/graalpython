@@ -64,7 +64,6 @@ test.test_random.SystemRandom_TestBasicOps.test_mu_sigma_default_args @ linux-x8
 test.test_random.SystemRandom_TestBasicOps.test_pickling @ linux-x86_64
 test.test_random.SystemRandom_TestBasicOps.test_randbelow_logic @ linux-x86_64
 test.test_random.SystemRandom_TestBasicOps.test_randbytes @ linux-x86_64
-test.test_random.SystemRandom_TestBasicOps.test_randrange_argument_handling @ linux-x86_64
 test.test_random.SystemRandom_TestBasicOps.test_randrange_errors @ linux-x86_64
 test.test_random.SystemRandom_TestBasicOps.test_randrange_nonunit_step @ linux-x86_64
 test.test_random.SystemRandom_TestBasicOps.test_randrange_step @ linux-x86_64

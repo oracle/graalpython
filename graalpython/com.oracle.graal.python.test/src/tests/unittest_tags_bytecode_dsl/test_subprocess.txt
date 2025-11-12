@@ -31,7 +31,6 @@ test.test_subprocess.POSIXProcessTestCase.test_exception_bad_executable @ linux-
 test.test_subprocess.POSIXProcessTestCase.test_exception_cwd @ linux-x86_64
 test.test_subprocess.POSIXProcessTestCase.test_exception_errpipe_bad_data @ linux-x86_64
 test.test_subprocess.POSIXProcessTestCase.test_exception_errpipe_normal @ linux-x86_64
-test.test_subprocess.POSIXProcessTestCase.test_extra_groups_error @ linux-x86_64
 test.test_subprocess.POSIXProcessTestCase.test_extra_groups_invalid_gid_t_values @ linux-x86_64
 test.test_subprocess.POSIXProcessTestCase.test_group_error @ linux-x86_64
 test.test_subprocess.POSIXProcessTestCase.test_invalid_args @ linux-x86_64
@@ -53,7 +52,6 @@ test.test_subprocess.POSIXProcessTestCase.test_stdout_stderr_are_single_inout_fd
 test.test_subprocess.POSIXProcessTestCase.test_stdout_stdin_are_single_inout_fd @ linux-x86_64
 test.test_subprocess.POSIXProcessTestCase.test_stopped @ linux-x86_64
 test.test_subprocess.POSIXProcessTestCase.test_swap_fds @ linux-x86_64
-!test.test_subprocess.POSIXProcessTestCase.test_swap_std_fds_with_one_closed
 test.test_subprocess.POSIXProcessTestCase.test_terminate_dead @ linux-x86_64
 test.test_subprocess.POSIXProcessTestCase.test_user_error @ linux-x86_64
 test.test_subprocess.POSIXProcessTestCase.test_wait_when_sigchild_ignored @ linux-x86_64

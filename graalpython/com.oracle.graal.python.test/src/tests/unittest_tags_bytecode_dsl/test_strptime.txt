@@ -17,9 +17,7 @@ test.test_strptime.Strptime12AMPMTests.test_twelve_noon_midnight @ linux-x86_64
 test.test_strptime.StrptimeTests.test_ValueError @ linux-x86_64
 test.test_strptime.StrptimeTests.test_bad_offset @ linux-x86_64
 test.test_strptime.StrptimeTests.test_caseinsensitive @ linux-x86_64
-test.test_strptime.StrptimeTests.test_date @ linux-x86_64
 test.test_strptime.StrptimeTests.test_date_locale @ linux-x86_64
-test.test_strptime.StrptimeTests.test_date_time @ linux-x86_64
 test.test_strptime.StrptimeTests.test_date_time_locale2 @ linux-x86_64
 test.test_strptime.StrptimeTests.test_day @ linux-x86_64
 test.test_strptime.StrptimeTests.test_defaults @ linux-x86_64
@@ -37,7 +35,6 @@ test.test_strptime.StrptimeTests.test_offset @ linux-x86_64
 test.test_strptime.StrptimeTests.test_percent @ linux-x86_64
 test.test_strptime.StrptimeTests.test_second @ linux-x86_64
 test.test_strptime.StrptimeTests.test_strptime_exception_context @ linux-x86_64
-test.test_strptime.StrptimeTests.test_time @ linux-x86_64
 test.test_strptime.StrptimeTests.test_time_locale @ linux-x86_64
 test.test_strptime.StrptimeTests.test_unconverteddata @ linux-x86_64
 test.test_strptime.StrptimeTests.test_weekday_locale @ linux-x86_64

@@ -47,7 +47,11 @@ baseline_dir="$parent2_dir/unittest_tags/"
 
 for path in $(ls $parent_dir/*.txt); do
     f=$(basename "$path")
-    comm -3 <(grep 'linux-x86_64' $baseline_dir/$f | egrep -v '^(#|!)' | sed 's/@.*//' | sort) <(egrep -v '^(#|!)' $f | sed 's/@.*//' | sort)
+    comm -3 <(grep 'linux-x86_64' $baseline_dir/$f | egrep -v '^(#|!)' | sed 's/@.*//' | sort) <(grep 'linux-x86_64' $f | egrep -v '^(#|!)' | sed 's/@.*//' | sort) > /tmp/log 2>&1
+    if [ -s "/tmp/log" ]; then
+        echo "----------- $f"
+        cat "/tmp/log"
+    fi
 done
 
 for path in $(ls $baseline_dir/*.txt); do

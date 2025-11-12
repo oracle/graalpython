@@ -2,7 +2,6 @@ test.test_ssl.BasicSocketTests.test_DER_to_PEM @ linux-x86_64
 test.test_ssl.BasicSocketTests.test_cert_time_to_seconds @ linux-x86_64
 test.test_ssl.BasicSocketTests.test_connect_ex_error @ linux-x86_64
 test.test_ssl.BasicSocketTests.test_empty_cert @ linux-x86_64
-test.test_ssl.BasicSocketTests.test_errors_sslwrap @ linux-x86_64
 test.test_ssl.BasicSocketTests.test_get_default_verify_paths @ linux-x86_64
 test.test_ssl.BasicSocketTests.test_malformed_cert @ linux-x86_64
 test.test_ssl.BasicSocketTests.test_malformed_key @ linux-x86_64

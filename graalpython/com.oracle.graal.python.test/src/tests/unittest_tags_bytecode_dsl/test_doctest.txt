@@ -13,8 +13,6 @@ DocTestCase.doctest.__test__.whitespace normalization @ linux-x86_64
 DocTestCase.doctest._ellipsis_match @ linux-x86_64
 DocTestCase.doctest.script_from_examples @ linux-x86_64
 DocTestCase.doctest.set_unittest_reportflags @ linux-x86_64
-test.test_doctest.TestDocTestFinder.test_empty_namespace_package @ linux-x86_64
-test.test_doctest.TestDocTestFinder.test_issue35753 @ linux-x86_64
 test.test_doctest.test_doctest.TestDocTestFinder.test_empty_namespace_package @ linux-x86_64
 test.test_doctest.test_doctest.TestDocTestFinder.test_issue35753 @ linux-x86_64
 test.test_doctest.test_doctest2.Test.test_testmod @ linux-x86_64

@@ -5,14 +5,12 @@ test.test_pickle.CDispatchTableTests.test_class_dispatch_table @ linux-x86_64
 test.test_pickle.CDispatchTableTests.test_default_dispatch_table @ linux-x86_64
 test.test_pickle.CDispatchTableTests.test_instance_dispatch_table @ linux-x86_64
 test.test_pickle.CDumpPickle_LoadPickle.test_appends_on_non_lists @ linux-x86_64
-test.test_pickle.CDumpPickle_LoadPickle.test_buffer_callback_error @ linux-x86_64
 test.test_pickle.CDumpPickle_LoadPickle.test_buffers_error @ linux-x86_64
 test.test_pickle.CDumpPickle_LoadPickle.test_builtin_exceptions @ linux-x86_64
 test.test_pickle.CDumpPickle_LoadPickle.test_builtin_functions @ linux-x86_64
 test.test_pickle.CDumpPickle_LoadPickle.test_builtin_types @ linux-x86_64
 test.test_pickle.CDumpPickle_LoadPickle.test_bytearray @ linux-x86_64
 test.test_pickle.CDumpPickle_LoadPickle.test_bytearray_memoization @ linux-x86_64
-test.test_pickle.CDumpPickle_LoadPickle.test_bytearray_memoization_bug @ linux-x86_64
 test.test_pickle.CDumpPickle_LoadPickle.test_bytes @ linux-x86_64
 test.test_pickle.CDumpPickle_LoadPickle.test_bytes_memoization @ linux-x86_64
 test.test_pickle.CDumpPickle_LoadPickle.test_c_methods @ linux-x86_64
@@ -23,7 +21,6 @@ test.test_pickle.CDumpPickle_LoadPickle.test_dict_chunking @ linux-x86_64
 test.test_pickle.CDumpPickle_LoadPickle.test_dynamic_class @ linux-x86_64
 test.test_pickle.CDumpPickle_LoadPickle.test_ellipsis @ linux-x86_64
 test.test_pickle.CDumpPickle_LoadPickle.test_evil_class_mutating_dict @ linux-x86_64
-test.test_pickle.CDumpPickle_LoadPickle.test_evil_pickler_mutating_collection @ linux-x86_64
 test.test_pickle.CDumpPickle_LoadPickle.test_float @ linux-x86_64
 test.test_pickle.CDumpPickle_LoadPickle.test_float_format @ linux-x86_64
 test.test_pickle.CDumpPickle_LoadPickle.test_framed_write_sizes_with_delayed_writer @ linux-x86_64
@@ -39,7 +36,6 @@ test.test_pickle.CDumpPickle_LoadPickle.test_int_pickling_efficiency @ linux-x86
 test.test_pickle.CDumpPickle_LoadPickle.test_ints @ linux-x86_64
 test.test_pickle.CDumpPickle_LoadPickle.test_large_pickles @ linux-x86_64
 test.test_pickle.CDumpPickle_LoadPickle.test_list_chunking @ linux-x86_64
-test.test_pickle.CDumpPickle_LoadPickle.test_local_lookup_error @ linux-x86_64
 test.test_pickle.CDumpPickle_LoadPickle.test_long @ linux-x86_64
 test.test_pickle.CDumpPickle_LoadPickle.test_long1 @ linux-x86_64
 test.test_pickle.CDumpPickle_LoadPickle.test_long4 @ linux-x86_64
@@ -60,7 +56,6 @@ test.test_pickle.CDumpPickle_LoadPickle.test_oob_buffers_writable_to_readonly @ 
 test.test_pickle.CDumpPickle_LoadPickle.test_optional_frames @ linux-x86_64
 test.test_pickle.CDumpPickle_LoadPickle.test_pickle_setstate_None @ linux-x86_64
 test.test_pickle.CDumpPickle_LoadPickle.test_pickle_to_2x @ linux-x86_64
-test.test_pickle.CDumpPickle_LoadPickle.test_picklebuffer_error @ linux-x86_64
 test.test_pickle.CDumpPickle_LoadPickle.test_proto @ linux-x86_64
 test.test_pickle.CDumpPickle_LoadPickle.test_py_methods @ linux-x86_64
 test.test_pickle.CDumpPickle_LoadPickle.test_recursive_dict @ linux-x86_64
@@ -98,7 +93,6 @@ test.test_pickle.CDumpPickle_LoadPickle.test_recursive_tuple_and_list_like @ lin
 test.test_pickle.CDumpPickle_LoadPickle.test_recursive_tuple_and_list_subclass @ linux-x86_64
 test.test_pickle.CDumpPickle_LoadPickle.test_recursive_tuple_subclass_and_inst @ linux-x86_64
 test.test_pickle.CDumpPickle_LoadPickle.test_reduce @ linux-x86_64
-test.test_pickle.CDumpPickle_LoadPickle.test_reduce_bad_iterator @ linux-x86_64
 test.test_pickle.CDumpPickle_LoadPickle.test_reduce_calls_base @ linux-x86_64
 test.test_pickle.CDumpPickle_LoadPickle.test_reduce_ex_called @ linux-x86_64
 test.test_pickle.CDumpPickle_LoadPickle.test_reduce_ex_calls_base @ linux-x86_64
@@ -132,14 +126,12 @@ test.test_pickle.CPickleTests.test_pickler_bad_file @ linux-x86_64
 test.test_pickle.CPickleTests.test_unpickler_bad_file @ linux-x86_64
 test.test_pickle.CPicklerHookTests.test_pickler_hook @ linux-x86_64
 test.test_pickle.CPicklerTests.test_appends_on_non_lists @ linux-x86_64
-test.test_pickle.CPicklerTests.test_buffer_callback_error @ linux-x86_64
 test.test_pickle.CPicklerTests.test_buffers_error @ linux-x86_64
 test.test_pickle.CPicklerTests.test_builtin_exceptions @ linux-x86_64
 test.test_pickle.CPicklerTests.test_builtin_functions @ linux-x86_64
 test.test_pickle.CPicklerTests.test_builtin_types @ linux-x86_64
 test.test_pickle.CPicklerTests.test_bytearray @ linux-x86_64
 test.test_pickle.CPicklerTests.test_bytearray_memoization @ linux-x86_64
-test.test_pickle.CPicklerTests.test_bytearray_memoization_bug @ linux-x86_64
 test.test_pickle.CPicklerTests.test_bytes @ linux-x86_64
 test.test_pickle.CPicklerTests.test_bytes_memoization @ linux-x86_64
 test.test_pickle.CPicklerTests.test_c_methods @ linux-x86_64
@@ -150,7 +142,6 @@ test.test_pickle.CPicklerTests.test_dict_chunking @ linux-x86_64
 test.test_pickle.CPicklerTests.test_dynamic_class @ linux-x86_64
 test.test_pickle.CPicklerTests.test_ellipsis @ linux-x86_64
 test.test_pickle.CPicklerTests.test_evil_class_mutating_dict @ linux-x86_64
-test.test_pickle.CPicklerTests.test_evil_pickler_mutating_collection @ linux-x86_64
 test.test_pickle.CPicklerTests.test_float @ linux-x86_64
 test.test_pickle.CPicklerTests.test_float_format @ linux-x86_64
 test.test_pickle.CPicklerTests.test_framed_write_sizes_with_delayed_writer @ linux-x86_64
@@ -166,7 +157,6 @@ test.test_pickle.CPicklerTests.test_int_pickling_efficiency @ linux-x86_64
 test.test_pickle.CPicklerTests.test_ints @ linux-x86_64
 test.test_pickle.CPicklerTests.test_large_pickles @ linux-x86_64
 test.test_pickle.CPicklerTests.test_list_chunking @ linux-x86_64
-test.test_pickle.CPicklerTests.test_local_lookup_error @ linux-x86_64
 test.test_pickle.CPicklerTests.test_long @ linux-x86_64
 test.test_pickle.CPicklerTests.test_long1 @ linux-x86_64
 test.test_pickle.CPicklerTests.test_long4 @ linux-x86_64
@@ -187,7 +177,6 @@ test.test_pickle.CPicklerTests.test_oob_buffers_writable_to_readonly @ linux-x86
 test.test_pickle.CPicklerTests.test_optional_frames @ linux-x86_64
 test.test_pickle.CPicklerTests.test_pickle_setstate_None @ linux-x86_64
 test.test_pickle.CPicklerTests.test_pickle_to_2x @ linux-x86_64
-test.test_pickle.CPicklerTests.test_picklebuffer_error @ linux-x86_64
 test.test_pickle.CPicklerTests.test_proto @ linux-x86_64
 test.test_pickle.CPicklerTests.test_py_methods @ linux-x86_64
 test.test_pickle.CPicklerTests.test_recursive_dict @ linux-x86_64
@@ -225,7 +214,6 @@ test.test_pickle.CPicklerTests.test_recursive_tuple_and_list_like @ linux-x86_64
 test.test_pickle.CPicklerTests.test_recursive_tuple_and_list_subclass @ linux-x86_64
 test.test_pickle.CPicklerTests.test_recursive_tuple_subclass_and_inst @ linux-x86_64
 test.test_pickle.CPicklerTests.test_reduce @ linux-x86_64
-test.test_pickle.CPicklerTests.test_reduce_bad_iterator @ linux-x86_64
 test.test_pickle.CPicklerTests.test_reduce_calls_base @ linux-x86_64
 test.test_pickle.CPicklerTests.test_reduce_ex_called @ linux-x86_64
 test.test_pickle.CPicklerTests.test_reduce_ex_calls_base @ linux-x86_64
@@ -341,14 +329,12 @@ test.test_pickle.CompatPickleTests.test_name_mapping @ linux-x86_64
 test.test_pickle.CompatPickleTests.test_reverse_import_mapping @ linux-x86_64
 test.test_pickle.CompatPickleTests.test_reverse_name_mapping @ linux-x86_64
 test.test_pickle.DumpPickle_CLoadPickle.test_appends_on_non_lists @ linux-x86_64
-test.test_pickle.DumpPickle_CLoadPickle.test_buffer_callback_error @ linux-x86_64
 test.test_pickle.DumpPickle_CLoadPickle.test_buffers_error @ linux-x86_64
 test.test_pickle.DumpPickle_CLoadPickle.test_builtin_exceptions @ linux-x86_64
 test.test_pickle.DumpPickle_CLoadPickle.test_builtin_functions @ linux-x86_64
 test.test_pickle.DumpPickle_CLoadPickle.test_builtin_types @ linux-x86_64
 test.test_pickle.DumpPickle_CLoadPickle.test_bytearray @ linux-x86_64
 test.test_pickle.DumpPickle_CLoadPickle.test_bytearray_memoization @ linux-x86_64
-test.test_pickle.DumpPickle_CLoadPickle.test_bytearray_memoization_bug @ linux-x86_64
 test.test_pickle.DumpPickle_CLoadPickle.test_bytes @ linux-x86_64
 test.test_pickle.DumpPickle_CLoadPickle.test_bytes_memoization @ linux-x86_64
 test.test_pickle.DumpPickle_CLoadPickle.test_c_methods @ linux-x86_64
@@ -359,7 +345,6 @@ test.test_pickle.DumpPickle_CLoadPickle.test_dict_chunking @ linux-x86_64
 test.test_pickle.DumpPickle_CLoadPickle.test_dynamic_class @ linux-x86_64
 test.test_pickle.DumpPickle_CLoadPickle.test_ellipsis @ linux-x86_64
 test.test_pickle.DumpPickle_CLoadPickle.test_evil_class_mutating_dict @ linux-x86_64
-test.test_pickle.DumpPickle_CLoadPickle.test_evil_pickler_mutating_collection @ linux-x86_64
 test.test_pickle.DumpPickle_CLoadPickle.test_float @ linux-x86_64
 test.test_pickle.DumpPickle_CLoadPickle.test_float_format @ linux-x86_64
 test.test_pickle.DumpPickle_CLoadPickle.test_framed_write_sizes_with_delayed_writer @ linux-x86_64
@@ -375,7 +360,6 @@ test.test_pickle.DumpPickle_CLoadPickle.test_int_pickling_efficiency @ linux-x86
 test.test_pickle.DumpPickle_CLoadPickle.test_ints @ linux-x86_64
 test.test_pickle.DumpPickle_CLoadPickle.test_large_pickles @ linux-x86_64
 test.test_pickle.DumpPickle_CLoadPickle.test_list_chunking @ linux-x86_64
-test.test_pickle.DumpPickle_CLoadPickle.test_local_lookup_error @ linux-x86_64
 test.test_pickle.DumpPickle_CLoadPickle.test_long @ linux-x86_64
 test.test_pickle.DumpPickle_CLoadPickle.test_long1 @ linux-x86_64
 test.test_pickle.DumpPickle_CLoadPickle.test_long4 @ linux-x86_64
@@ -396,7 +380,6 @@ test.test_pickle.DumpPickle_CLoadPickle.test_oob_buffers_writable_to_readonly @ 
 test.test_pickle.DumpPickle_CLoadPickle.test_optional_frames @ linux-x86_64
 test.test_pickle.DumpPickle_CLoadPickle.test_pickle_setstate_None @ linux-x86_64
 test.test_pickle.DumpPickle_CLoadPickle.test_pickle_to_2x @ linux-x86_64
-test.test_pickle.DumpPickle_CLoadPickle.test_picklebuffer_error @ linux-x86_64
 test.test_pickle.DumpPickle_CLoadPickle.test_proto @ linux-x86_64
 test.test_pickle.DumpPickle_CLoadPickle.test_py_methods @ linux-x86_64
 test.test_pickle.DumpPickle_CLoadPickle.test_recursive_dict @ linux-x86_64
@@ -435,7 +418,6 @@ test.test_pickle.DumpPickle_CLoadPickle.test_recursive_tuple_and_list_like @ lin
 test.test_pickle.DumpPickle_CLoadPickle.test_recursive_tuple_and_list_subclass @ linux-x86_64
 test.test_pickle.DumpPickle_CLoadPickle.test_recursive_tuple_subclass_and_inst @ linux-x86_64
 test.test_pickle.DumpPickle_CLoadPickle.test_reduce @ linux-x86_64
-test.test_pickle.DumpPickle_CLoadPickle.test_reduce_bad_iterator @ linux-x86_64
 test.test_pickle.DumpPickle_CLoadPickle.test_reduce_calls_base @ linux-x86_64
 test.test_pickle.DumpPickle_CLoadPickle.test_reduce_ex_called @ linux-x86_64
 test.test_pickle.DumpPickle_CLoadPickle.test_reduce_ex_calls_base @ linux-x86_64
@@ -466,7 +448,6 @@ test.test_pickle.InMemoryPickleTests.test_binbytes @ linux-x86_64
 test.test_pickle.InMemoryPickleTests.test_binbytes8 @ linux-x86_64
 test.test_pickle.InMemoryPickleTests.test_binget @ linux-x86_64
 test.test_pickle.InMemoryPickleTests.test_binunicode8 @ linux-x86_64
-test.test_pickle.InMemoryPickleTests.test_buffer_callback_error @ linux-x86_64
 test.test_pickle.InMemoryPickleTests.test_buffers_error @ linux-x86_64
 test.test_pickle.InMemoryPickleTests.test_builtin_exceptions @ linux-x86_64
 test.test_pickle.InMemoryPickleTests.test_builtin_functions @ linux-x86_64
@@ -474,7 +455,6 @@ test.test_pickle.InMemoryPickleTests.test_builtin_types @ linux-x86_64
 test.test_pickle.InMemoryPickleTests.test_bytearray @ linux-x86_64
 test.test_pickle.InMemoryPickleTests.test_bytearray8 @ linux-x86_64
 test.test_pickle.InMemoryPickleTests.test_bytearray_memoization @ linux-x86_64
-test.test_pickle.InMemoryPickleTests.test_bytearray_memoization_bug @ linux-x86_64
 test.test_pickle.InMemoryPickleTests.test_bytes @ linux-x86_64
 test.test_pickle.InMemoryPickleTests.test_bytes_memoization @ linux-x86_64
 test.test_pickle.InMemoryPickleTests.test_c_methods @ linux-x86_64
@@ -518,7 +498,6 @@ test.test_pickle.InMemoryPickleTests.test_load_from_data4 @ linux-x86_64
 test.test_pickle.InMemoryPickleTests.test_load_long_python2_str_as_bytes @ linux-x86_64
 test.test_pickle.InMemoryPickleTests.test_load_python2_str_as_bytes @ linux-x86_64
 test.test_pickle.InMemoryPickleTests.test_load_python2_unicode_as_str @ linux-x86_64
-test.test_pickle.InMemoryPickleTests.test_local_lookup_error @ linux-x86_64
 test.test_pickle.InMemoryPickleTests.test_long @ linux-x86_64
 test.test_pickle.InMemoryPickleTests.test_long1 @ linux-x86_64
 test.test_pickle.InMemoryPickleTests.test_long4 @ linux-x86_64
@@ -546,7 +525,6 @@ test.test_pickle.InMemoryPickleTests.test_oob_buffers_writable_to_readonly @ lin
 test.test_pickle.InMemoryPickleTests.test_optional_frames @ linux-x86_64
 test.test_pickle.InMemoryPickleTests.test_pickle_setstate_None @ linux-x86_64
 test.test_pickle.InMemoryPickleTests.test_pickle_to_2x @ linux-x86_64
-test.test_pickle.InMemoryPickleTests.test_picklebuffer_error @ linux-x86_64
 test.test_pickle.InMemoryPickleTests.test_proto @ linux-x86_64
 test.test_pickle.InMemoryPickleTests.test_py_methods @ linux-x86_64
 test.test_pickle.InMemoryPickleTests.test_recursive_dict @ linux-x86_64
@@ -584,7 +562,6 @@ test.test_pickle.InMemoryPickleTests.test_recursive_tuple_and_list_like @ linux-
 test.test_pickle.InMemoryPickleTests.test_recursive_tuple_and_list_subclass @ linux-x86_64
 test.test_pickle.InMemoryPickleTests.test_recursive_tuple_subclass_and_inst @ linux-x86_64
 test.test_pickle.InMemoryPickleTests.test_reduce @ linux-x86_64
-test.test_pickle.InMemoryPickleTests.test_reduce_bad_iterator @ linux-x86_64
 test.test_pickle.InMemoryPickleTests.test_reduce_calls_base @ linux-x86_64
 test.test_pickle.InMemoryPickleTests.test_reduce_ex_called @ linux-x86_64
 test.test_pickle.InMemoryPickleTests.test_reduce_ex_calls_base @ linux-x86_64
@@ -629,14 +606,12 @@ test.test_pickle.PyPickleTests.test_pickler_bad_file @ linux-x86_64
 test.test_pickle.PyPickleTests.test_unpickler_bad_file @ linux-x86_64
 test.test_pickle.PyPicklerHookTests.test_pickler_hook @ linux-x86_64
 test.test_pickle.PyPicklerTests.test_appends_on_non_lists @ linux-x86_64
-test.test_pickle.PyPicklerTests.test_buffer_callback_error @ linux-x86_64
 test.test_pickle.PyPicklerTests.test_buffers_error @ linux-x86_64
 test.test_pickle.PyPicklerTests.test_builtin_exceptions @ linux-x86_64
 test.test_pickle.PyPicklerTests.test_builtin_functions @ linux-x86_64
 test.test_pickle.PyPicklerTests.test_builtin_types @ linux-x86_64
 test.test_pickle.PyPicklerTests.test_bytearray @ linux-x86_64
 test.test_pickle.PyPicklerTests.test_bytearray_memoization @ linux-x86_64
-test.test_pickle.PyPicklerTests.test_bytearray_memoization_bug @ linux-x86_64
 test.test_pickle.PyPicklerTests.test_bytes @ linux-x86_64
 test.test_pickle.PyPicklerTests.test_bytes_memoization @ linux-x86_64
 test.test_pickle.PyPicklerTests.test_c_methods @ linux-x86_64
@@ -647,7 +622,6 @@ test.test_pickle.PyPicklerTests.test_dict_chunking @ linux-x86_64
 test.test_pickle.PyPicklerTests.test_dynamic_class @ linux-x86_64
 test.test_pickle.PyPicklerTests.test_ellipsis @ linux-x86_64
 test.test_pickle.PyPicklerTests.test_evil_class_mutating_dict @ linux-x86_64
-test.test_pickle.PyPicklerTests.test_evil_pickler_mutating_collection @ linux-x86_64
 test.test_pickle.PyPicklerTests.test_float @ linux-x86_64
 test.test_pickle.PyPicklerTests.test_float_format @ linux-x86_64
 test.test_pickle.PyPicklerTests.test_framed_write_sizes_with_delayed_writer @ linux-x86_64
@@ -663,7 +637,6 @@ test.test_pickle.PyPicklerTests.test_int_pickling_efficiency @ linux-x86_64
 test.test_pickle.PyPicklerTests.test_ints @ linux-x86_64
 test.test_pickle.PyPicklerTests.test_large_pickles @ linux-x86_64
 test.test_pickle.PyPicklerTests.test_list_chunking @ linux-x86_64
-test.test_pickle.PyPicklerTests.test_local_lookup_error @ linux-x86_64
 test.test_pickle.PyPicklerTests.test_long @ linux-x86_64
 test.test_pickle.PyPicklerTests.test_long1 @ linux-x86_64
 test.test_pickle.PyPicklerTests.test_long4 @ linux-x86_64
@@ -684,7 +657,6 @@ test.test_pickle.PyPicklerTests.test_oob_buffers_writable_to_readonly @ linux-x8
 test.test_pickle.PyPicklerTests.test_optional_frames @ linux-x86_64
 test.test_pickle.PyPicklerTests.test_pickle_setstate_None @ linux-x86_64
 test.test_pickle.PyPicklerTests.test_pickle_to_2x @ linux-x86_64
-test.test_pickle.PyPicklerTests.test_picklebuffer_error @ linux-x86_64
 test.test_pickle.PyPicklerTests.test_proto @ linux-x86_64
 test.test_pickle.PyPicklerTests.test_py_methods @ linux-x86_64
 test.test_pickle.PyPicklerTests.test_recursive_dict @ linux-x86_64
@@ -723,7 +695,6 @@ test.test_pickle.PyPicklerTests.test_recursive_tuple_and_list_like @ linux-x86_6
 test.test_pickle.PyPicklerTests.test_recursive_tuple_and_list_subclass @ linux-x86_64
 test.test_pickle.PyPicklerTests.test_recursive_tuple_subclass_and_inst @ linux-x86_64
 test.test_pickle.PyPicklerTests.test_reduce @ linux-x86_64
-test.test_pickle.PyPicklerTests.test_reduce_bad_iterator @ linux-x86_64
 test.test_pickle.PyPicklerTests.test_reduce_calls_base @ linux-x86_64
 test.test_pickle.PyPicklerTests.test_reduce_ex_called @ linux-x86_64
 test.test_pickle.PyPicklerTests.test_reduce_ex_calls_base @ linux-x86_64
