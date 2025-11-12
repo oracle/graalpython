@@ -2854,7 +2854,9 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
              *     returnValue = e.value
              *     goto end
              *
-             * end: # Step 4: returnValue local is assigned
+             * end:
+             * # Step 4: return returnValue
+             * load returnValue (result)
              * @formatter:on
              */
             BytecodeLocal generator = b.createLocal();
