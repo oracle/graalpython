@@ -37,3 +37,5 @@ test.test_timeit.TestTimeit.test_timeit_function_zero_iters @ linux-x86_64
 test.test_timeit.TestTimeit.test_timeit_globals_args @ linux-x86_64
 test.test_timeit.TestTimeit.test_timeit_zero_iters @ linux-x86_64
 test.test_timeit.TestTimeit.test_timer_empty_stmt @ linux-x86_64
+test.test_timeit.TestTimeit.test_timer_invalid_setup @ linux-x86_64
+test.test_timeit.TestTimeit.test_timer_invalid_stmt @ linux-x86_64

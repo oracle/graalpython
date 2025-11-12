@@ -790,7 +790,9 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                         if (bodyNode instanceof StmtTy.Expr expr) {
                             // Return the value of the last statement for interop eval.
                             beginReturn(b);
+                            boolean closeTag = beginSourceSection(expr, b);
                             expr.value.accept(statementCompiler);
+                            endSourceSection(b, closeTag);
                             endReturn(b);
                         } else {
                             bodyNode.accept(statementCompiler);
