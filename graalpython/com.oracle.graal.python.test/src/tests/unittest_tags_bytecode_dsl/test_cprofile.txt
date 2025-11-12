@@ -1,5 +1,4 @@
 test.test_cprofile.CProfileTest.test_output_file_when_changing_directory @ linux-x86_64
-test.test_cprofile.CProfileTest.test_run_profile_as_module @ linux-x86_64
 test.test_cprofile.CProfileTest.test_throw @ linux-x86_64
 test.test_cprofile.TestCommandLine.test_sort @ linux-x86_64
 test.test_profile.ProfileTest.test_output_file_when_changing_directory @ linux-x86_64
