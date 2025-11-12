@@ -49,9 +49,8 @@ def __benchmark__(phase2it=0):
             break
     tt: int = 0
     result = subprocess.run([*orig_vm_argv,
-    "--vm.Dpolyglot.engine.AllowExperimentalOptions=true",
-    "--vm.Dpolyglot.engine.CompilerIdleDelay=0",
-    "--vm.Dpolyglot.engine.CompilerThreads=1",
+    "--experimental-options",
+    "--engine.CompilerThreads=1",
     re.sub(r'harness\.py', "micro/phase_shift_script_baseline.py", sys.argv[0]), str(phase2it)], capture_output=True, text=True, check=False)
     m = re.search(r"LAST_200_IT_TIME = (\d+) ms", result.stdout)
     if m:
