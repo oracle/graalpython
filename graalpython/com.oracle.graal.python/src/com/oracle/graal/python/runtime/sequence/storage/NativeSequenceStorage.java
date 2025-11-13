@@ -73,6 +73,7 @@ public abstract class NativeSequenceStorage extends SequenceStorage implements T
 
     NativeSequenceStorage(long ptr, int length, int capacity) {
         super(length, capacity);
+        assert ptr != 0;
         this.ptr = ptr;
         if (LOGGER.isLoggable(Level.FINE)) {
             LOGGER.fine(PythonUtils.formatJString("new %s", this));
@@ -84,6 +85,7 @@ public abstract class NativeSequenceStorage extends SequenceStorage implements T
     }
 
     public final void setPtr(long ptr) {
+        assert ptr != 0;
         if (reference != null) {
             reference.setPtr(ptr);
         }

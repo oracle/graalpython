@@ -86,9 +86,15 @@ public final class NfiBoundFunction {
     @Override
     @TruffleBoundary
     public String toString() {
-        return "NfiBoundFunction[" +
-                        "ptr=" + ptr + ", " +
-                        "boundHandle=" + boundHandle + ", " +
-                        "signature=" + signature + ']';
+        if (ImageInfo.inImageCode()) {
+            return "NfiBoundFunction[" +
+                            "ptr=" + ptr + ", " +
+                            "signature=" + signature + ']';
+        } else {
+            return "NfiBoundFunction[" +
+                            "ptr=" + ptr + ", " +
+                            "boundHandle=" + boundHandle + ", " +
+                            "signature=" + signature + ']';
+        }
     }
 }

@@ -156,7 +156,7 @@ public abstract class GetDictIfExistsNode extends PNodeWithContext {
         if (lib.isNull(dictPtr)) {
             return null;
         } else {
-            Object dictObject = readObjectNode.readGeneric(dictPtr, 0);
+            Object dictObject = readObjectNode.read(dictPtr, 0);
             if (dictObject == PNone.NO_VALUE) {
                 createDict.enter(inliningTarget);
                 PDict dict = PFactory.createDict(PythonLanguage.get(inliningTarget));

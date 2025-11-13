@@ -57,7 +57,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.GetElementPtrNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.ReadCharPtrNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.ReadI32NodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.ReadObjectNodeGen;
@@ -93,7 +92,7 @@ public class CStructAccess {
     }
 
     public static long getFieldPtr(long structBasePtr, CFields field) {
-        return structBasePtr + field.offset();
+        return NativeMemory.getFieldPtr(structBasePtr, field.offset());
     }
 
     public static byte readByteField(long structBasePtr, CFields field) {
@@ -172,52 +171,6 @@ public class CStructAccess {
     }
 
     public abstract static class ReadBaseNode extends Node implements CStructAccessNode {
-
-        abstract Object executeGeneric(Object pointer, long offset);
-
-        public final Object readGeneric(Object pointer, long offset) {
-            return executeGeneric(pointer, offset);
-        }
-    }
-
-    @ImportStatic(PGuards.class)
-    @GenerateUncached
-    @GenerateInline(false)
-    public abstract static class GetElementPtrNode extends ReadBaseNode {
-
-        abstract Object execute(Object pointer, long offset);
-
-        public final Object getElementPtr(Object pointer, CFields field) {
-            assert accepts(field);
-            return execute(pointer, field.offset());
-        }
-
-        public final boolean accepts(ArgDescriptor desc) {
-            return true;
-        }
-
-        @Specialization
-        static long getLong(long pointer, long offset) {
-            return pointer + offset;
-        }
-
-        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"}, limit = "3")
-        static long getPointer(Object pointer, long offset,
-                        @CachedLibrary("pointer") InteropLibrary lib) {
-            return getLong(asPointer(pointer, lib), offset);
-        }
-
-        @Specialization(guards = {"!isLong(pointer)", "!lib.isPointer(pointer)"})
-        static Object getManaged(Object pointer, long offset,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached PCallCapiFunction call) {
-            assert validPointer(pointer);
-            return call.call(NativeCAPISymbol.FUN_PTR_ADD, pointer, offset);
-        }
-
-        public static GetElementPtrNode getUncached() {
-            return GetElementPtrNodeGen.getUncached();
-        }
     }
 
     @ImportStatic(PGuards.class)
@@ -696,6 +649,10 @@ public class CStructAccess {
         public final Object read(Object pointer, CFields field) {
             assert accepts(field);
             return execute(pointer, field.offset());
+        }
+
+        public final Object read(Object pointer, long offset) {
+            return execute(pointer, offset);
         }
 
         public final Object readFromObj(PythonNativeObject self, CFields field) {

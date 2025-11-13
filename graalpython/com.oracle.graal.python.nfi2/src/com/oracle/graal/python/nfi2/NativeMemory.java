@@ -138,6 +138,11 @@ public final class NativeMemory {
         return calloc(count * POINTER_SIZE);
     }
 
+    public static long getFieldPtr(long basePtr, long offset) {
+        assert basePtr >= 0 && offset >= 0 && basePtr + offset >= 0;
+        return basePtr + offset;
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     public static byte readByte(long pointer) {
@@ -256,6 +261,22 @@ public final class NativeMemory {
         assert canMultiplyWithoutOverflow(srcIndex, (int) POINTER_SIZE);
         assert canMultiplyWithoutOverflow(count, (int) POINTER_SIZE);
         memcpy(dstArray + dstIndex * POINTER_SIZE, srcArray + srcIndex * POINTER_SIZE, count * POINTER_SIZE);
+    }
+
+    public static float readFloat(long pointer) {
+        return UNSAFE.getFloat(pointer);
+    }
+
+    public static void writeFloat(long pointer, float value) {
+        UNSAFE.putFloat(pointer, value);
+    }
+
+    public static double readDouble(long pointer) {
+        return UNSAFE.getDouble(pointer);
+    }
+
+    public static void writeDouble(long pointer, double value) {
+        UNSAFE.putDouble(pointer, value);
     }
 
     static long javaStringToNativeUtf8(String s) {
