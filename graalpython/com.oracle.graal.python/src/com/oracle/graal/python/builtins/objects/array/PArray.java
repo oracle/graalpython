@@ -26,7 +26,6 @@
 package com.oracle.graal.python.builtins.objects.array;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferError;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.wrapPointer;
 import static com.oracle.graal.python.util.BufferFormat.T_UNICODE_TYPE_CODE_U;
 import static com.oracle.graal.python.util.BufferFormat.T_UNICODE_TYPE_CODE_W;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_BYTE_ARRAY;
@@ -430,11 +429,11 @@ public final class PArray extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    Object getNativePointer(
+    long getNativePointer(
                     @Bind Node inliningTarget,
                     @Cached PySequenceArrayWrapper.ToNativeStorageNode toNativeStorageNode) {
         NativeSequenceStorage newStorage = toNativeStorageNode.execute(inliningTarget, storage, true);
         setSequenceStorage(newStorage);
-        return wrapPointer(newStorage.getPtr());
+        return newStorage.getPtr();
     }
 }

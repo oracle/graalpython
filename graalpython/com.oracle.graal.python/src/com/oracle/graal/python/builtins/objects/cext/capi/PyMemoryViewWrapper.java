@@ -44,7 +44,6 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMe
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMemoryViewObject__flags;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyObject__ob_refcnt;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyObject__ob_type;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointerUncached;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.getFieldPtr;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeIntField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeLongField;
@@ -113,12 +112,11 @@ public final class PyMemoryViewWrapper extends PythonAbstractObjectNativeWrapper
         if (object.getBuffer() != null) {
             long buf = object.getBufferPointer();
             if (buf == NULLPTR) {
-                Object bufObj = PythonBufferAccessLibrary.getUncached().getNativePointer(object.getBuffer());
-                if (bufObj == null) {
+                buf = PythonBufferAccessLibrary.getUncached().getNativePointer(object.getBuffer());
+                if (buf == NULLPTR) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw shouldNotReachHere("Cannot convert managed object to native storage: " + object.getBuffer().getClass().getSimpleName());
                 }
-                buf = ensurePointerUncached(bufObj);
             }
             if (object.getOffset() != 0) {
                 buf = buf + object.getOffset();

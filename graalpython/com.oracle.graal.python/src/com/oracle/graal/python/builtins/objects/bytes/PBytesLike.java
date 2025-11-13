@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.bytes;
 
-import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.wrapPointer;
-
 import java.nio.ByteOrder;
 
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
@@ -166,11 +164,11 @@ public abstract class PBytesLike extends PSequence {
     }
 
     @ExportMessage
-    Object getNativePointer(
+    long getNativePointer(
                     @Bind Node inliningTarget,
                     @Cached PySequenceArrayWrapper.ToNativeStorageNode toNativeStorageNode) {
         NativeSequenceStorage newStorage = toNativeStorageNode.execute(inliningTarget, store, true);
         setSequenceStorage(newStorage);
-        return wrapPointer(newStorage.getPtr());
+        return newStorage.getPtr();
     }
 }

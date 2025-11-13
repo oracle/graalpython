@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.memoryview;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.wrapPointer;
 import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 
 import java.nio.ByteOrder;
@@ -483,10 +482,10 @@ public final class PMemoryView extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    Object getNativePointer(
+    long getNativePointer(
                     @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
         if (getBufferPointer() != NULLPTR) {
-            return wrapPointer(getBufferPointer());
+            return getBufferPointer();
         } else {
             return bufferLib.getNativePointer(buffer);
         }

@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.buffer;
 
+import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.util.BufferFormat.T_UINT_8_TYPE_CODE;
 
 import java.nio.ByteOrder;
@@ -646,8 +647,8 @@ public abstract class PythonBufferAccessLibrary extends Library {
      * interop pointer or a long.
      */
     @Abstract(ifExported = "isNative")
-    public Object getNativePointer(@SuppressWarnings("unused") Object receiver) {
-        return null;
+    public long getNativePointer(@SuppressWarnings("unused") Object receiver) {
+        return NULLPTR;
     }
 
     static final LibraryFactory<PythonBufferAccessLibrary> FACTORY = LibraryFactory.resolve(PythonBufferAccessLibrary.class);
