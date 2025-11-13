@@ -46,6 +46,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemErro
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.modules.TypingModuleBuiltins.T_GENERIC_ALIAS;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_EXCEPTION_GROUP;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ANNOTATIONS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AENTER__;
@@ -81,9 +82,11 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.dict.DictNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.exception.BaseExceptionGroupBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.ChainExceptionsNode;
 import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.exception.PBaseExceptionGroup;
 import com.oracle.graal.python.builtins.objects.exception.StopIterationBuiltins;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -145,6 +148,7 @@ import com.oracle.graal.python.lib.PyObjectAsciiNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectDelItem;
 import com.oracle.graal.python.lib.PyObjectFunctionStr;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectGetMethod;
@@ -166,6 +170,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.WriteUnraisableNode;
 import com.oracle.graal.python.nodes.argument.keywords.ConcatDictToStorageNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
@@ -191,7 +196,11 @@ import com.oracle.graal.python.nodes.call.special.CallQuaternaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.exception.EncapsulateExceptionGroupNode;
 import com.oracle.graal.python.nodes.exception.ExceptMatchNode;
+import com.oracle.graal.python.nodes.exception.HandleExceptionsInHandlerNode;
+import com.oracle.graal.python.nodes.exception.ValidExceptionNode;
 import com.oracle.graal.python.nodes.frame.DeleteGlobalNode;
 import com.oracle.graal.python.nodes.frame.GetFrameLocalsNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
@@ -262,6 +271,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -325,6 +335,8 @@ import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 @OperationProxy(IsNode.class)
 @OperationProxy(FormatNode.class)
 @OperationProxy(ExceptMatchNode.class)
+@OperationProxy(HandleExceptionsInHandlerNode.class)
+@OperationProxy(EncapsulateExceptionGroupNode.class)
 @OperationProxy(GetYieldFromIterNode.class)
 @OperationProxy(GetAwaitableNode.class)
 @OperationProxy(SetupAnnotationsNode.class)
@@ -3654,6 +3666,210 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Cached CallTypingFuncObjectNode callTypingFuncObjectNode) {
             params = unpackTypeVarTuplesNode.execute(frame, inliningTarget, params);
             return callTypingFuncObjectNode.execute(frame, inliningTarget, T_GENERIC_ALIAS, PythonBuiltinClassType.PGeneric, params);
+        }
+    }
+
+    /**
+     * Returns false, if provided argument is PNone, else returns true.
+     */
+    @Operation
+    public static final class IsNotNone {
+        @Specialization
+        static boolean makeNone(PNone none) {
+            return false;
+        }
+
+        @Fallback
+        static boolean makeOther(Object o) {
+            return true;
+        }
+    }
+
+    /**
+     * Returns true, if the exception is reraise of the matched exception group or it was raised
+     * excplicitly. Returns false for new exceptions.
+     */
+    @Operation
+    public static final class IsExceptionGroup {
+        @Specialization
+        static boolean checkException(VirtualFrame frame, PException exception, PException exceptionOrig) {
+            if (exception.getUnreifiedException() instanceof PBaseExceptionGroup exceptionGroup) {
+                PException parent = exceptionGroup.getParent();
+                if (parent == exceptionOrig) {
+                    // this is an explicit raise of a matched exceptions group.
+                    return true;
+                } else if (exceptionGroup == exceptionOrig.getUnreifiedException()) {
+                    // reraise
+                    return true;
+                }
+            }
+            // new exception; no rethrow or reraise
+            return false;
+        }
+
+        @Specialization
+        static boolean checkExceptionGroup(VirtualFrame frame, PBaseExceptionGroup exceptionGroup, PException exceptionOrig) {
+            PException parent = exceptionGroup.getParent();
+            if (parent == exceptionOrig) {
+                // this is a rethrow of a matched exceptions group.
+                return true;
+            } else if (exceptionGroup == exceptionOrig.getUnreifiedException()) {
+                // reraise
+                return true;
+            }
+            return false;
+        }
+
+        @Fallback
+        static boolean checkOther(VirtualFrame frame, Object object, Object excOrig) {
+            return false;
+        }
+    }
+
+    @Operation(storeBytecodeIndex = true)
+    public static final class GetCaughtException {
+        @Specialization
+        static Object execute(VirtualFrame frame,
+                        @Cached ExceptionStateNodes.GetCaughtExceptionNode getCaughtExceptionNode) {
+            Object exception = getCaughtExceptionNode.execute(frame);
+            return exception;
+        }
+    }
+
+    @ImportStatic(PGuards.class)
+    @Operation(storeBytecodeIndex = true)
+    @GenerateInline(false)
+    @ConstantOperand(type = LocalAccessor.class)
+    @ConstantOperand(type = LocalAccessor.class)
+    public static final class SplitExceptionGroups {
+        @TruffleBoundary
+        private static void raiseIfNoExceptionTuples(Node inliningTarget, Object clause, ValidExceptionNode isValidException, IsSubtypeNode isSubtypeNode,
+                        SequenceStorageNodes.GetItemScalarNode getItemNode) {
+            if (clause instanceof PTuple clauseTuple) {
+                SequenceStorage storage = clauseTuple.getSequenceStorage();
+                int length = storage.length();
+                for (int i = 0; i < length; i++) {
+                    Object clauseType = getItemNode.execute(inliningTarget, storage, i);
+                    raiseIfNoException(inliningTarget, clauseType, isValidException, isSubtypeNode, getItemNode);
+                }
+            }
+        }
+
+        @TruffleBoundary
+        private static void raiseIfNoException(Node inliningTarget, Object clause, ValidExceptionNode isValidException, IsSubtypeNode isSubtypeNode,
+                        SequenceStorageNodes.GetItemScalarNode getItemNode) {
+            if (clause instanceof PTuple) {
+                raiseIfNoExceptionTuples(inliningTarget, clause, isValidException, isSubtypeNode, getItemNode);
+            } else {
+                if (!isValidException.execute(clause)) {
+                    throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CATCHING_CLS_NOT_ALLOWED);
+                } else if (isSubtypeNode.execute(clause, PythonBuiltinClassType.PBaseExceptionGroup)) {
+                    throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.NO_EXCEPTION_GROUPS_IN_EXCEPT_STAR);
+                }
+            }
+        }
+
+        public static final TruffleString T_SPLIT = tsLiteral("split");
+
+        @Specialization(guards = "isNone(e)")
+        public static boolean matchObject(VirtualFrame frame,
+                        LocalAccessor matchedGroup, LocalAccessor unmatchedGroup,
+                        PNone e, Object clause, Object exceptionOrig,
+                        @Bind Node inliningTarget,
+                        @Bind BytecodeNode bytecode) {
+            matchedGroup.setObject(bytecode, frame, PNone.NONE);
+            unmatchedGroup.setObject(bytecode, frame, PNone.NONE);
+            return false;
+        }
+
+        @Specialization(guards = "containsPBaseExceptionGroup(exceptionGroup)")
+        public static boolean makePythonGroup(VirtualFrame frame,
+                        LocalAccessor matchedGroup, LocalAccessor unmatchedGroup,
+                        PException exceptionGroup, Object clause, PException exceptionOrig,
+                        @Bind Node inliningTarget,
+                        @Bind BytecodeNode bytecode,
+                        @Shared @Cached ValidExceptionNode isValidException,
+                        @Shared @Cached IsSubtypeNode isSubtypeNode,
+                        @Exclusive @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
+                        @Shared @Cached BaseExceptionGroupBuiltins.BaseExceptionGroupNode exceptionGroupNode,
+                        @Cached InlinedConditionProfile isExceptionGroup,
+                        @Cached PyObjectCallMethodObjArgs callSplit,
+                        @Cached InlinedConditionProfile pExceptionGroupProfileMatched,
+                        @Cached InlinedConditionProfile pExceptionGroupProfileUnmatched) {
+            raiseIfNoException(inliningTarget, clause, isValidException, isSubtypeNode, getItemNode);
+
+            if (exceptionGroup.getUnreifiedException() instanceof PBaseExceptionGroup group) {
+                PythonLanguage language = PythonLanguage.get(inliningTarget);
+                PTuple rv = (PTuple) callSplit.execute(frame, inliningTarget, group, T_SPLIT, clause);
+
+                Object matched = getItemNode.execute(inliningTarget, rv.getSequenceStorage(), 0);
+                Object unmatched = getItemNode.execute(inliningTarget, rv.getSequenceStorage(), 1);
+
+                matchedGroup.setObject(bytecode, frame, matched);
+                unmatchedGroup.setObject(bytecode, frame, unmatched);
+
+                boolean didSomethingMatch = false;
+                if (pExceptionGroupProfileMatched.profile(inliningTarget, matched instanceof PBaseExceptionGroup)) {
+                    didSomethingMatch = true;
+
+                    PBaseExceptionGroup matchedCast = (PBaseExceptionGroup) matched;
+                    if (group.getParent() != null) {
+                        matchedCast.setParent(group.getParent());
+                    } else {
+                        matchedCast.setParent(exceptionGroup);
+                    }
+                    matchedCast.setContextExplicitly(group.getContext());
+                    PException matchedException = PException.fromExceptionInfo(matched, PythonOptions.isPExceptionWithJavaStacktrace(language));
+                    matchedGroup.setObject(bytecode, frame, matchedException);
+                } else {
+                    matchedGroup.setObject(bytecode, frame, PNone.NONE);
+                }
+
+                if (pExceptionGroupProfileUnmatched.profile(inliningTarget, unmatched instanceof PBaseExceptionGroup)) {
+                    PBaseExceptionGroup unmatchedCast = (PBaseExceptionGroup) unmatched;
+                    if (group.getParent() != null) {
+                        unmatchedCast.setParent(group.getParent());
+                    } else {
+                        unmatchedCast.setParent(exceptionGroup);
+                    }
+                    unmatchedCast.setContextExplicitly(group.getContext());
+                    PException unmatchedException = PException.fromExceptionInfo(unmatched, PythonOptions.isPExceptionWithJavaStacktrace(language));
+                    unmatchedGroup.setObject(bytecode, frame, unmatchedException);
+                } else {
+                    unmatchedGroup.setObject(bytecode, frame, PNone.NONE);
+                }
+
+                return didSomethingMatch;
+            }
+
+            return false;
+        }
+
+        @Specialization(guards = "!containsPBaseExceptionGroup(exception)")
+        public static boolean makePythonSingle(VirtualFrame frame,
+                        LocalAccessor matchedGroup, LocalAccessor unmatchedGroup,
+                        PException exception, Object clause, PException exceptionOrig,
+                        @Bind Node inliningTarget,
+                        @Bind BytecodeNode bytecode,
+                        @Shared @Cached ValidExceptionNode isValidException,
+                        @Shared @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached ExceptMatchNode exceptMatchNode,
+                        @Exclusive @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
+                        @Shared @Cached BaseExceptionGroupBuiltins.BaseExceptionGroupNode exceptionGroupNode,
+                        @Cached PyObjectGetAttr getAttr) {
+            raiseIfNoException(inliningTarget, clause, isValidException, isSubtypeNode, getItemNode);
+            if (exceptMatchNode.executeMatch(exception, clause)) {
+                PythonLanguage language = PythonLanguage.get(inliningTarget);
+                PBaseExceptionGroup group = exceptionGroupNode.execute(frame,
+                                getAttr.execute(inliningTarget, PythonContext.get(inliningTarget).getBuiltins(), T_EXCEPTION_GROUP),
+                                StringLiterals.T_EMPTY_STRING,
+                                PFactory.createList(PythonLanguage.get(inliningTarget), new Object[]{exception.getUnreifiedException()}));
+                group.setParent(exceptionOrig);
+                matchedGroup.setObject(bytecode, frame, PException.fromExceptionInfo(group, PythonOptions.isPExceptionWithJavaStacktrace(language)));
+                unmatchedGroup.setObject(bytecode, frame, PNone.NONE);
+                return true;
+            }
+            return false;
         }
     }
 }

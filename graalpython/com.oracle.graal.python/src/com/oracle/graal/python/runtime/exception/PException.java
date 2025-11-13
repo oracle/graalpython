@@ -44,6 +44,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.exception.PBaseExceptionGroup;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
@@ -415,6 +416,9 @@ public final class PException extends AbstractTruffleException {
     public PException getExceptionForReraise(boolean rootNodeVisible) {
         ensureReified();
         PException pe = PException.fromObject(pythonException, getLocation(), false);
+        if (pe.getUnreifiedException() instanceof PBaseExceptionGroup grp) {
+            grp.setContainsReraises(true);
+        }
         if (rootNodeVisible) {
             pe.skipFirstTracebackFrame();
         }

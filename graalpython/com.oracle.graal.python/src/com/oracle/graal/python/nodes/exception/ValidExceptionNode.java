@@ -52,7 +52,6 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
@@ -60,7 +59,7 @@ import com.oracle.truffle.api.nodes.Node;
 @GenerateUncached
 @GenerateInline(false)       // footprint reduction 36 -> 18
 public abstract class ValidExceptionNode extends PNodeWithContext {
-    public abstract boolean execute(Frame frame, Object type);
+    public abstract boolean execute(Object type);
 
     protected static boolean isPythonExceptionType(PythonBuiltinClassType type) {
         PythonBuiltinClassType base = type;

@@ -98,7 +98,7 @@ public abstract class RaiseNode extends PNodeWithContext {
                         @Exclusive @Cached CallNode callConstructor,
                         @Exclusive @Cached PyExceptionInstanceCheckNode check,
                         @Exclusive @Cached ExceptionNodes.SetCauseNode setCauseNode) {
-            if (!validException.execute(frame, causeClass)) {
+            if (!validException.execute(causeClass)) {
                 baseCheckFailedProfile.enter(inliningTarget);
                 throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.EXCEPTION_CAUSES_MUST_DERIVE_FROM_BASE_EX);
             }
@@ -179,7 +179,7 @@ public abstract class RaiseNode extends PNodeWithContext {
 
     private static void checkBaseClass(VirtualFrame frame, Node inliningTarget, Object pythonClass, ValidExceptionNode validException, PRaiseNode raise,
                     InlinedBranchProfile baseCheckFailedProfile) {
-        if (!validException.execute(frame, pythonClass)) {
+        if (!validException.execute(pythonClass)) {
             baseCheckFailedProfile.enter(inliningTarget);
             throw raiseNoException(inliningTarget, raise);
         }

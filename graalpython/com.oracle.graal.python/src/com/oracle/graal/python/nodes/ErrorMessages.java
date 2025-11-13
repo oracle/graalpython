@@ -1697,4 +1697,5 @@ public abstract class ErrorMessages {
                     "ISO week directive '%V' must be used with the ISO year directive '%G' and a weekday directive ('%A', '%a', '%w', or '%u').");
     public static final TruffleString ISO_WEEK_DIRECTIVE_IS_INCOMPATIBLE_WITH = tsLiteral("ISO week directive '%V' is incompatible with the year directive '%Y'. Use the ISO year '%G' instead.");
     public static final TruffleString INCONSISTENT_USE_OF_COLON_IN_S = tsLiteral("Inconsistent use of : in %s");
+    public static final TruffleString NO_EXCEPTION_GROUPS_IN_EXCEPT_STAR = tsLiteral("catching ExceptionGroup with except* is not allowed. Use except instead.");
 }
