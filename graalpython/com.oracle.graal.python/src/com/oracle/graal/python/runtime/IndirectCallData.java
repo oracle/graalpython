@@ -41,6 +41,7 @@
 package com.oracle.graal.python.runtime;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -154,6 +155,32 @@ public abstract class IndirectCallData {
         }
     }
 
+    public abstract static class IndirectCallDataBase extends Node {
+        @CompilationFinal protected CallerFlagsAssumptionSet callerFlagsAssumptionSet = new CallerFlagsAssumptionSet();
+        @Child private MaterializeFrameNode materializeFrameNode;
+
+        public int getCallerFlags() {
+            return callerFlagsAssumptionSet.getCallerFlags();
+        }
+
+        public void updateCallerFlags(int callerFlags) {
+            callerFlagsAssumptionSet.updateCallerFlags(callerFlags);
+        }
+
+        public abstract boolean isUncached();
+
+        public MaterializeFrameNode getMaterializeFrameNode() {
+            if (isUncached()) {
+                return MaterializeFrameNode.getUncached();
+            }
+            if (materializeFrameNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                materializeFrameNode = insert(MaterializeFrameNode.create());
+            }
+            return materializeFrameNode;
+        }
+    }
+
     /**
      * Truffle interop overrides the {@link com.oracle.truffle.api.nodes.EncapsulatingNodeReference}
      * with its own node when doing transition to uncached, or it does not transition to uncached at
@@ -162,8 +189,7 @@ public abstract class IndirectCallData {
      * <p>
      * This scheme is used also for our interop buffer Truffle libraries.
      */
-    public static final class InteropCallData {
-        @CompilationFinal private CallerFlagsAssumptionSet callerFlagsAssumptionSet = new CallerFlagsAssumptionSet();
+    public static final class InteropCallData extends IndirectCallDataBase {
 
         private static final InteropCallData UNCACHED = new InteropCallData();
 
@@ -173,14 +199,6 @@ public abstract class IndirectCallData {
 
         public boolean isUncached() {
             return this == UNCACHED;
-        }
-
-        public int getCallerFlags() {
-            return callerFlagsAssumptionSet.getCallerFlags();
-        }
-
-        public void updateCallerFlags(int callerFlags) {
-            callerFlagsAssumptionSet.updateCallerFlags(callerFlags);
         }
 
         @NeverDefault
@@ -202,9 +220,7 @@ public abstract class IndirectCallData {
      * situation we still need to maintain a mapping of this node and its parent like for
      * {@link InteropCallData}.
      */
-    public static final class BoundaryCallData extends Node {
-
-        @CompilationFinal private CallerFlagsAssumptionSet callerFlagsAssumptionSet = new CallerFlagsAssumptionSet();
+    public static final class BoundaryCallData extends IndirectCallDataBase {
 
         private static final BoundaryCallData UNCACHED = new BoundaryCallData();
 
@@ -214,14 +230,6 @@ public abstract class IndirectCallData {
 
         public boolean isUncached() {
             return this == UNCACHED;
-        }
-
-        public int getCallerFlags() {
-            return callerFlagsAssumptionSet.getCallerFlags();
-        }
-
-        public void updateCallerFlags(int callerFlags) {
-            callerFlagsAssumptionSet.updateCallerFlags(callerFlags);
         }
 
         @NeverDefault

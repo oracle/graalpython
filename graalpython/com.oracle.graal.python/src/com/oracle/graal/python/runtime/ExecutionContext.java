@@ -53,6 +53,7 @@ import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
 import com.oracle.graal.python.nodes.frame.ReadFrameNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
+import com.oracle.graal.python.runtime.IndirectCallData.IndirectCallDataBase;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -513,7 +514,7 @@ public abstract class ExecutionContext {
 
         private static Object enterWithPythonFrame(VirtualFrame frame, BoundaryCallData boundaryCallData, PythonThreadState pythonThreadState) {
             assert frame != null;
-            return IndirectCallContext.enterWithPythonFrame(frame, boundaryCallData, pythonThreadState, boundaryCallData.getCallerFlags(), EMPTY_SAVED_STATE);
+            return IndirectCallContext.enterWithPythonFrame(frame, boundaryCallData, boundaryCallData, pythonThreadState, boundaryCallData.getCallerFlags(), EMPTY_SAVED_STATE);
         }
 
         public static void exit(VirtualFrame frame, PythonLanguage language, PythonContext context, Object savedState) {
@@ -596,7 +597,7 @@ public abstract class ExecutionContext {
 
         private static Object enterWithPythonFrame(VirtualFrame frame, InteropCallData callData, PythonThreadState pythonThreadState) {
             assert frame != null;
-            return IndirectCallContext.enterWithPythonFrame(frame, null, pythonThreadState, callData.getCallerFlags(), null);
+            return IndirectCallContext.enterWithPythonFrame(frame, callData, null, pythonThreadState, callData.getCallerFlags(), null);
         }
 
         public static void exit(VirtualFrame frame, PythonLanguage language, PythonContext context, Object savedState) {
@@ -635,8 +636,8 @@ public abstract class ExecutionContext {
 
     // Common code shared by BoundaryCallContext and InteropCallContext
     public abstract static class IndirectCallContext {
-        private static Object enterWithPythonFrame(VirtualFrame frame, Node encapsulatingNodeToPush, PythonThreadState pythonThreadState,
-                        int callerFlags, Object defaultReturn) {
+        private static Object enterWithPythonFrame(VirtualFrame frame, IndirectCallDataBase callData, Node encapsulatingNodeToPush,
+                        PythonThreadState pythonThreadState, int callerFlags, Object defaultReturn) {
             CompilerAsserts.partialEvaluationConstant(encapsulatingNodeToPush == null);
             CompilerAsserts.partialEvaluationConstant(defaultReturn);
             if (callerFlags == 0) {
@@ -654,11 +655,11 @@ public abstract class ExecutionContext {
                 }
             }
 
-            return enterSlowPath(frame, encapsulatingNodeToPush, pythonThreadState, callerFlags, defaultReturn);
+            return enterSlowPath(frame, callData, encapsulatingNodeToPush, pythonThreadState, callerFlags, defaultReturn);
         }
 
-        private static Object enterSlowPath(VirtualFrame frame, Node encapsulatingNodeToPush, PythonThreadState pythonThreadState,
-                        int callerFlags, Object defaultReturn) {
+        private static Object enterSlowPath(VirtualFrame frame, IndirectCallDataBase callData, Node encapsulatingNodeToPush,
+                        PythonThreadState pythonThreadState, int callerFlags, Object defaultReturn) {
             PFrame.Reference info = null;
             if (CallerFlags.needsFrameReference(callerFlags)) {
                 PFrame.Reference prev = pythonThreadState.popTopFrameInfo();
@@ -666,6 +667,12 @@ public abstract class ExecutionContext {
                                 "This indicates that a call into Python code happened without a proper enter through IndirectCalleeContext";
                 info = PArguments.getCurrentFrameInfo(frame);
                 pythonThreadState.setTopFrameInfo(info);
+                if (CallerFlags.needsPFrame(callerFlags)) {
+                    callData.getMaterializeFrameNode().executeOnStack(false, CallerFlags.needsLocals(callerFlags), frame);
+                } else if (info.getPyFrame() != null) {
+                    // Avoid passing stale locals
+                    info.getPyFrame().setLocals(null);
+                }
             }
             AbstractTruffleException curExc = pythonThreadState.getCaughtException();
             AbstractTruffleException exceptionState = PArguments.getException(frame);

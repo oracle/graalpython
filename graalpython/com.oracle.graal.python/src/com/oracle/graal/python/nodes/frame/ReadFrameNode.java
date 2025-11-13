@@ -161,7 +161,7 @@ public abstract class ReadFrameNode extends Node {
         }
         int i = 0;
         PFrame.Reference curFrameInfo = startFrameInfo;
-        while (true) {
+        while (curFrameInfo != null) {
             if (curFrameInfo == PFrame.Reference.EMPTY) {
                 // We reached the top of the stack
                 return null;
@@ -208,7 +208,7 @@ public abstract class ReadFrameNode extends Node {
     }
 
     private static PFrame.Reference getBackref(PFrame.Reference reference) {
-        if (reference.getPyFrame() != null) {
+        if (reference.getPyFrame() != null && reference.getPyFrame().getBackref() != null) {
             return reference.getPyFrame().getBackref();
         }
         return reference.getCallerInfo();
@@ -346,6 +346,7 @@ public abstract class ReadFrameNode extends Node {
         return Truffle.getRuntime().iterateFrames(new FrameInstanceVisitor<>() {
             int i = startFrame != null ? -1 : 0;
             boolean first = true;
+            RootNode prevRootNode;
 
             public StackWalkResult visitFrame(FrameInstance frameInstance) {
                 RootNode rootNode = ReadFrameNode.getRootNode(frameInstance);
@@ -369,6 +370,7 @@ public abstract class ReadFrameNode extends Node {
                     // through thread state. We will eventually arrive at the Python frame that did
                     // BoundaryCallContext.enter, find the IndirectCallData via the callNode and
                     // tell it to pass the PFrame.Reference in thread state next time
+                    prevRootNode = rootNode;
                     return null;
                 }
                 IndirectCallData.setCallerFlagsOnIndirectCallData(callNode, callerFlags);
@@ -386,17 +388,19 @@ public abstract class ReadFrameNode extends Node {
                         if (i == level) {
                             Frame frame = ReadFrameNode.getFrame(frameInstance, frameAccess);
                             assert PArguments.isPythonFrame(frame);
-                            pRootNode.updateCallerFlags(callerFlags);
+                            if (prevRootNode instanceof PRootNode prevPRootNode && prevPRootNode.setsUpCalleeContext()) {
+                                // Update the flags in the callee
+                                prevPRootNode.updateCallerFlags(callerFlags);
+                            }
                             return new StackWalkResult(pRootNode, callNode, frame);
                         }
                         i += 1;
                     }
                 }
                 // For any Python root node we traverse we need the PFrame.Reference to be passed in
-                // call arguments next time. If we are at the frame
-                // that we need, we still need caller frame info if our frame is escaped, see
-                // CalleeContext#exitEscaped
+                // call arguments next time.
                 pRootNode.updateCallerFlags(CallerFlags.NEEDS_FRAME_REFERENCE);
+                prevRootNode = pRootNode;
                 return null; // if 'null' continue iterating
             }
         });
