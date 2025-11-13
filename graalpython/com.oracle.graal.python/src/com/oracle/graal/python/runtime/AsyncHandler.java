@@ -61,6 +61,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
@@ -164,19 +165,30 @@ public class AsyncHandler {
                     Node prev = null;
                     Node location = access.getLocation();
                     boolean locationAdoptable = location.isAdoptable();
+                    EncapsulatingNodeReference encapsulatingNodeRef = EncapsulatingNodeReference.getCurrent();
                     if (locationAdoptable) {
                         // If the location is not adoptable, then we are in
-                        // IndirectCallContext and SimpleIndirectInvokeNode will do
+                        // IndirectCallContext and SimpleIndirectInvokeNode below will do
                         // IndirectCalleeContext.enter and transfer the state from thread state to
-                        // the frame. If we were woken-up in middle of Python frame code, we will
-                        // have to do a stack walk, but we still need the location
-                        prev = EncapsulatingNodeReference.getCurrent().set(location);
+                        // the frame. Otherwise, we were woken-up in middle of Python frame code, we
+                        // will have to do a stack walk if caller frame is needed, but we still need
+                        // the "call" location
+                        if (location instanceof PBytecodeDSLRootNode) {
+                            // PBytecodeDSLRootNode is not usable as a location. To resolve the BCI
+                            // stored in the frame, we need the currently executing BytecodeNode,
+                            // using PBytecodeRootNode.getBytecodeNode() is not correct. We use the
+                            // dummy node to pass our assertions during stack walking that "call
+                            // node" is never PBytecodeDSLRootNode
+                            prev = encapsulatingNodeRef.set(language.unavailableSafepointLocation);
+                        } else {
+                            prev = encapsulatingNodeRef.set(location);
+                        }
                     }
                     try {
                         CallDispatchers.SimpleIndirectInvokeNode.executeUncached(context.getAsyncHandler().callTarget, args);
                     } catch (PException e) {
                         if (locationAdoptable) {
-                            EncapsulatingNodeReference.getCurrent().set(prev);
+                            encapsulatingNodeRef.set(prev);
                         }
                         handleException(e);
                     } finally {

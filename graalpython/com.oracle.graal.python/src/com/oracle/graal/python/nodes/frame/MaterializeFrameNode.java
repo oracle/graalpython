@@ -152,7 +152,8 @@ public abstract class MaterializeFrameNode extends Node {
      */
     public final PFrame execute(Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize) {
         assert !PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER || frameToMaterialize.getArguments().length != 2 : "caller forgot to unwrap continuation frame";
-        assert !PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER || !(location instanceof PBytecodeDSLRootNode) : location.getClass().getSimpleName();
+        assert !PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER || !(location instanceof PBytecodeDSLRootNode) : String.format("Materialized frame: location must not be PBytecodeDSLRootNode, was: %s",
+                        location);
         return executeImpl(location, markAsEscaped, forceSync, frameToMaterialize);
     }
 
@@ -228,7 +229,7 @@ public abstract class MaterializeFrameNode extends Node {
                 pyFrame.setBci(bytecodeNode.getBytecodeIndex(frameToMaterialize));
                 pyFrame.setLocation(bytecodeNode);
             } else {
-                assert false : String.format("%s, root: %s", location, location != null ? location.getRootNode() : "null");
+                assert location == PythonLanguage.get(null).unavailableSafepointLocation : String.format("%s, root: %s", location, location != null ? location.getRootNode() : "null");
                 pyFrame.setBci(-1);
                 pyFrame.setLocation(location);
             }
