@@ -1324,10 +1324,16 @@ public final class CApiContext extends CExtContext {
         }
     }
 
+    // TODO(NFI2) remove
+    private static final MethodType UPCALL_METHOD_TYPE = MethodType.methodType(Object.class, Object[].class);
+
     public long registerClosure(String name, NfiUpcallSignature signature, Object executable, Object delegate) {
         CompilerAsserts.neverPartOfCompilation();
         PythonContext context = getContext();
+        // TODO(NFI2) migrate the callers to have direct upcalls to static methods
         MethodHandle methodHandle = handle_executeWrapper.bindTo(new ExecuteClosureWrapperRootNode(signature).getCallTarget()).bindTo(executable);
+
+        methodHandle = methodHandle.asType(UPCALL_METHOD_TYPE).asVarargsCollector(Object[].class);
         long pointer = signature.createClosure(context.ensureNfiContext(), name, methodHandle);
         setClosurePointer(null, delegate, executable, pointer);
         return pointer;
