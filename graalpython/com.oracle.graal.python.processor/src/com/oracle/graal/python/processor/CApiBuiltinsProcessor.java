@@ -217,7 +217,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             case "byte":
                 return "ValueLayout.JAVA_BYTE";
             case "int":
-               return "ValueLayout.JAVA_INT";
+                return "ValueLayout.JAVA_INT";
             case "float":
                 return "ValueLayout.JAVA_FLOAT";
             case "double":
@@ -407,7 +407,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                     String call = name(findValue(builtin, "call", VariableElement.class));
                     // boolean inlined = findValue(builtin, "inlined", Boolean.class);
                     VariableElement[] args = findValues(builtin, "args", VariableElement.class).toArray(new VariableElement[0]);
-                    if (((TypeElement) element).getQualifiedName().toString().equals("com.oracle.graal.python.builtins.objects.cext.capi.CApiFunction.Dummy")) {
+                    if (element instanceof TypeElement te && te.getQualifiedName().toString().equals("com.oracle.graal.python.builtins.objects.cext.capi.CApiFunction.Dummy")) {
                         additionalBuiltins.add(new CApiBuiltinDesc(element, builtinName, ret, args, acquireGil, call, null));
                     } else {
                         if (!isValidReturnType(ret)) {
@@ -434,7 +434,11 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                         } else {
                             genName += "NodeGen";
                         }
-                        verifyNodeClass(((TypeElement) element), builtin);
+                        if (element instanceof TypeElement te) {
+                            verifyNodeClass(te, builtin);
+                        } else {
+                            verifyStaticMethod((ExecutableElement) element, builtin);
+                        }
                         javaBuiltins.add(new CApiBuiltinDesc(element, name, ret, args, acquireGil, call, genName));
                     }
                 }
@@ -443,6 +447,14 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         javaBuiltins.sort((a, b) -> a.name.compareTo(b.name));
         for (int i = 0; i < javaBuiltins.size(); i++) {
             javaBuiltins.get(i).id = i;
+        }
+    }
+
+    private void verifyStaticMethod(ExecutableElement e, AnnotationMirror annotation) {
+        if (!e.getModifiers().contains(Modifier.STATIC)) {
+            processingEnv.getMessager().printError("CApiBuiltins must be nodes or static methods", e);
+        } else if (e.getParameters().size() != findValues(annotation, "args", VariableElement.class).size()) {
+            processingEnv.getMessager().printError("Arity mismatch between declared arguments and static method", e);
         }
     }
 
@@ -524,7 +536,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         for (var entry : javaBuiltins) {
             String name = entry.name;
             CApiBuiltinDesc value = entry;
-            if (value.call.equals("Direct") || value.call.equals("Static") || value.call.equals("NotImplemented")) {
+            if (value.call.equals("Direct") || value.call.equals("NotImplemented")) {
                 lines.add("#undef " + name);
                 String line = "PyAPI_FUNC(" + getCSignature(value.returnType) + ") " + name + "(";
                 for (int i = 0; i < value.arguments.length; i++) {
@@ -532,7 +544,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                 }
                 line += ") {";
                 lines.add(line);
-                if (value.call.equals("Direct") || value.call.equals("Static")) {
+                if (value.call.equals("Direct")) {
                     line = "    " + (isVoid(value.returnType) ? "" : "return ") + "GraalPyPrivate_Upcall_" + name + "(";
                     for (int i = 0; i < value.arguments.length; i++) {
                         line += (i == 0 ? "" : ", ");
@@ -613,7 +625,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         int id = 0;
         for (var entry : javaBuiltins) {
             assert (id++) == entry.id;
-            String prefix = (entry.call.equals("Direct") || entry.call.equals("Static")) ? "PUBLIC" : "PRIVATE";
+            String prefix = entry.call.equals("Direct") ? "PUBLIC" : "PRIVATE";
             String line = "    " + prefix + "_BUILTIN(" + entry.name + ", " + getCSignature(entry.returnType);
             for (var arg : entry.arguments) {
                 line += ", " + getCSignature(arg);
@@ -706,8 +718,8 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
 
         for (var builtin : javaBuiltins) {
             lines.add("            case " + builtin.id + ":");
-            if (builtin.call.equals("Static")) {
-                lines.add("                throw new RuntimeException(\"Static builtins should never need a node, they are called via a static 'upcall' method.\");");
+            if (builtin.origin instanceof ExecutableElement) {
+                lines.add("                throw new RuntimeException(\"Static builtins should never need a node, they are just a static method.\");");
             } else {
                 lines.add("                return " + builtin.factory + ".create();");
             }
@@ -725,7 +737,17 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         lines.add("        try {");
         for (var builtin : javaBuiltins) {
             String argString = Arrays.stream(builtin.arguments).map(b -> capiTypeToJavaPrimitiveType(b) + ".class").collect(Collectors.joining(", "));
-            lines.add("            HANDLE_" + builtin.name + " = MethodHandles.lookup().findStatic(PythonCextBuiltinRegistry.class, \"upcall_" + builtin.name + "\", MethodType.methodType(" + capiTypeToJavaPrimitiveType(builtin.returnType) + ".class" + (builtin.arguments.length > 0 ? ", " : "") + argString + "));");
+            String classString;
+            String methodString;
+            if (builtin.origin instanceof TypeElement) {
+                classString = "PythonCextBuiltinRegistry";
+                methodString = "\"upcall_" + builtin.name + "\"";
+            } else {
+                classString = ((TypeElement) builtin.origin.getEnclosingElement()).getQualifiedName().toString();
+                methodString = '"' + builtin.origin.getSimpleName().toString() + '"';
+            }
+            lines.add("            HANDLE_" + builtin.name + " = MethodHandles.lookup().findStatic(" + classString + ".class, " + methodString + ", MethodType.methodType(" +
+                            capiTypeToJavaPrimitiveType(builtin.returnType) + ".class" + (builtin.arguments.length > 0 ? ", " : "") + argString + "));");
         }
         lines.add("        } catch (NoSuchMethodException | IllegalAccessException e) {");
         lines.add("            throw new RuntimeException(e);");
@@ -751,13 +773,17 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             if (capiTypeToJavaPrimitiveType(builtin.returnType).equals("void")) {
                 lines.add("        var desc_" + builtin.name + " = FunctionDescriptor.ofVoid(" + argString + ");");
             } else {
-                lines.add("        var desc_" + builtin.name + " = FunctionDescriptor.of(" + capiTypeToMemoryLayout(builtin.returnType) + (builtin.arguments.length > 0 ? ", " : "") + argString + ");");
+                lines.add("        var desc_" + builtin.name + " = FunctionDescriptor.of(" + capiTypeToMemoryLayout(builtin.returnType) + (builtin.arguments.length > 0 ? ", " : "") + argString +
+                                ");");
             }
             lines.add("        RuntimeForeignAccess.registerForDirectUpcall(HANDLE_" + builtin.name + ", desc_" + builtin.name + ");");
         }
         lines.add("    }");
 
         for (var builtin : javaBuiltins) {
+            if (builtin.origin instanceof ExecutableElement) {
+                continue;
+            }
             lines.add("");
             String argString = IntStream.range(0, builtin.arguments.length).mapToObj(i -> capiTypeToJavaPrimitiveType(builtin.arguments[i]) + " " + argName(i)).collect(Collectors.joining(", "));
             lines.add("    public static " + capiTypeToJavaPrimitiveType(builtin.returnType) + " upcall_" + builtin.name + "(" + argString + ") {");
@@ -765,15 +791,14 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             String retString = capiTypeToJavaPrimitiveType(builtin.returnType);
             if (retString.equals("void")) {
                 retString = "";
-            } else if (builtin.call.equals("Static")) {
-                retString = "return ";
             } else {
                 retString = "return (" + retString + ")";
             }
-            if (builtin.call.equals("Static")) {
-                lines.add("        " + retString + ((TypeElement) builtin.origin).getQualifiedName().toString() + ".upcall(" + paramString + ");");
-            } else {
+            if (builtin.origin instanceof TypeElement) {
                 lines.add("        " + retString + builtin.name + ".getCallTarget().call(" + paramString + ");");
+            } else {
+                lines.add("        " + retString + ((TypeElement) builtin.origin.getEnclosingElement()).getQualifiedName().toString() + "." + builtin.origin.getSimpleName().toString() + "(" +
+                                paramString + ");");
             }
             lines.add("    }");
         }
@@ -792,7 +817,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         lines.add("");
         for (var builtin : allBuiltins) {
             lines.add("        hasMember = reallyHasMember(capiLibrary, \"" + builtin.name + "\");");
-            if (builtin.call.equals("CImpl") || builtin.call.equals("Direct") || builtin.call.equals("Static") || builtin.call.equals("NotImplemented")) {
+            if (builtin.call.equals("CImpl") || builtin.call.equals("Direct") || builtin.call.equals("NotImplemented")) {
                 lines.add("        if (!hasMember) messages.add(\"missing implementation: " + builtin.name + "\");");
             }
         }

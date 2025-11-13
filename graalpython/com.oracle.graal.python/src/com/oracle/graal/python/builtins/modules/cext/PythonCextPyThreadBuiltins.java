@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
-import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Static;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_THREAD_TYPE_LOCK;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
@@ -178,12 +177,9 @@ public final class PythonCextPyThreadBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = UNSIGNED_LONG, args = {}, call = Static)
-    abstract static class PyThread_get_thread_ident extends CApiNullaryBuiltinNode {
-        @SuppressWarnings("deprecation") // deprecated in JDK19
-        @Specialization
-        public static long upcall() {
-            return Thread.currentThread().getId();
-        }
+    @SuppressWarnings("deprecation") // deprecated in JDK19
+    @CApiBuiltin(ret = UNSIGNED_LONG, args = {}, call = Direct)
+    public static long PyThread_get_thread_ident() {
+        return Thread.currentThread().getId();
     }
 }

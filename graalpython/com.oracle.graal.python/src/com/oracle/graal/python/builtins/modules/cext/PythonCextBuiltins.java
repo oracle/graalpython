@@ -883,11 +883,6 @@ public final class PythonCextBuiltins {
          * </p>
          */
         Ignored,
-        /**
-         * This builtin is not used as a node, it defines a static 'upcall' function that
-         * takes the appropriate primitive arguments - there is no conversion.
-         */
-        Static,
     }
 
     @Target(ElementType.TYPE)
@@ -906,7 +901,7 @@ public final class PythonCextBuiltins {
      * also used in {@link CApiFunction} to list all functions that are implemented in C code or
      * that are not currently implemented.
      */
-    @Target(ElementType.TYPE)
+    @Target({ElementType.TYPE, ElementType.METHOD})
     @Retention(RetentionPolicy.SOURCE)
     @Repeatable(value = CApiBuiltins.class)
     public @interface CApiBuiltin {
