@@ -126,10 +126,6 @@ public record PyMethodDefHelper(TruffleString name, Object meth, int flags, Truf
         return result;
     }
 
-    public static Object create(CApiContext cApiContext, PBuiltinMethod builtinMethod) {
-        return create(cApiContext, builtinMethod.getBuiltinFunction());
-    }
-
     /**
      * Allocates a native {@code PyMethodDef} struct and initializes it.
      *

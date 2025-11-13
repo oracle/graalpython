@@ -89,8 +89,6 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
-import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -234,48 +232,6 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
         @Override
         public TpSlotWrapper cloneWith(TpSlotManaged slot) {
             return new GetAttrWrapper(slot);
-        }
-    }
-
-    @ExportLibrary(InteropLibrary.class)
-    public static final class BinaryFuncWrapper extends PyProcsWrapper {
-
-        public BinaryFuncWrapper(Object delegate) {
-            super(delegate);
-        }
-
-        @ExportMessage
-        Object execute(Object[] arguments,
-                        @Bind Node inliningTarget,
-                        @Cached PythonToNativeNewRefNode toNativeNode,
-                        @Cached CallBinaryMethodNode executeNode,
-                        @Cached NativeToPythonNode toJavaNode,
-                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
-                        @Exclusive @Cached GilNode gil) throws ArityException {
-            boolean mustRelease = gil.acquire();
-            CApiTiming.enter();
-            try {
-                if (arguments.length != 2) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw ArityException.create(2, 2, arguments.length);
-                }
-                try {
-                    return toNativeNode.execute(executeNode.executeObject(null, getDelegate(), toJavaNode.execute(arguments[0]), toJavaNode.execute(arguments[1])));
-                } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "BinaryFuncWrapper", getDelegate());
-                }
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(inliningTarget, e);
-                return PythonContext.get(gil).getNativeNull();
-            } finally {
-                CApiTiming.exit(timing);
-                gil.release(mustRelease);
-            }
-        }
-
-        @Override
-        protected NfiUpcallSignature getSignature() {
-            return Nfi.createUpcallSignature(NfiType.POINTER, NfiType.POINTER, NfiType.POINTER);
         }
     }
 
@@ -436,52 +392,6 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
         @Override
         protected NfiUpcallSignature getSignature() {
             return Nfi.createUpcallSignature(NfiType.POINTER, NfiType.POINTER, NfiType.POINTER);
-        }
-    }
-
-    @ExportLibrary(InteropLibrary.class)
-    public static final class UnaryFuncLegacyWrapper extends PyProcsWrapper {
-
-        public UnaryFuncLegacyWrapper(Object delegate) {
-            super(delegate);
-        }
-
-        @ExportMessage
-        Object execute(Object[] arguments,
-                        @Bind Node inliningTarget,
-                        @Cached PythonToNativeNewRefNode toNativeNode,
-                        @Cached CallUnaryMethodNode executeNode,
-                        @Cached NativeToPythonNode toJavaNode,
-                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
-                        @Exclusive @Cached GilNode gil) throws ArityException {
-            boolean mustRelease = gil.acquire();
-            CApiTiming.enter();
-            try {
-                /*
-                 * Accept a second argumenthere, since these functions are sometimes called using
-                 * METH_O with a "NULL" value.
-                 */
-                if (arguments.length > 2) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw ArityException.create(1, 2, arguments.length);
-                }
-                try {
-                    return toNativeNode.execute(executeNode.executeObject(null, getDelegate(), toJavaNode.execute(arguments[0])));
-                } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "UnaryFuncWrapper", getDelegate());
-                }
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(inliningTarget, e);
-                return PythonContext.get(gil).getNativeNull();
-            } finally {
-                CApiTiming.exit(timing);
-                gil.release(mustRelease);
-            }
-        }
-
-        @Override
-        protected NfiUpcallSignature getSignature() {
-            return Nfi.createUpcallSignature(NfiType.POINTER, NfiType.POINTER);
         }
     }
 
@@ -1121,50 +1031,6 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
         @Override
         protected NfiUpcallSignature getSignature() {
             return Nfi.createUpcallSignature(NfiType.POINTER, NfiType.POINTER, NfiType.POINTER, NfiType.SINT32);
-        }
-    }
-
-    @ExportLibrary(InteropLibrary.class)
-    public static final class SsizeargfuncWrapper extends PyProcsWrapper {
-
-        public SsizeargfuncWrapper(Object delegate) {
-            super(delegate);
-        }
-
-        @ExportMessage
-        Object execute(Object[] arguments,
-                        @Bind Node inliningTarget,
-                        @Cached PythonToNativeNewRefNode toNativeNode,
-                        @Cached CallBinaryMethodNode executeNode,
-                        @Cached NativeToPythonNode toJavaNode,
-                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
-                        @Exclusive @Cached GilNode gil) throws ArityException {
-            boolean mustRelease = gil.acquire();
-            CApiTiming.enter();
-            try {
-                if (arguments.length != 2) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw ArityException.create(2, 2, arguments.length);
-                }
-                assert arguments[1] instanceof Number;
-                try {
-                    Object result = executeNode.executeObject(null, getDelegate(), toJavaNode.execute(arguments[0]), arguments[1]);
-                    return toNativeNode.execute(result);
-                } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "SsizeargfuncWrapper", getDelegate());
-                }
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(inliningTarget, e);
-                return PythonContext.get(toJavaNode).getNativeNull();
-            } finally {
-                CApiTiming.exit(timing);
-                gil.release(mustRelease);
-            }
-        }
-
-        @Override
-        protected NfiUpcallSignature getSignature() {
-            return Nfi.createUpcallSignature(NfiType.POINTER, NfiType.POINTER, NfiType.SINT64);
         }
     }
 
