@@ -111,15 +111,15 @@ public final class PyMemoryViewWrapper extends PythonAbstractObjectNativeWrapper
         long view = getFieldPtr(mem, CFields.PyMemoryViewObject__view);
 
         if (object.getBuffer() != null) {
-            Object bufObj = object.getBufferPointer();
-            if (bufObj == null) {
-                bufObj = PythonBufferAccessLibrary.getUncached().getNativePointer(object.getBuffer());
+            long buf = object.getBufferPointer();
+            if (buf == NULLPTR) {
+                Object bufObj = PythonBufferAccessLibrary.getUncached().getNativePointer(object.getBuffer());
                 if (bufObj == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw shouldNotReachHere("Cannot convert managed object to native storage: " + object.getBuffer().getClass().getSimpleName());
                 }
+                buf = ensurePointerUncached(bufObj);
             }
-            long buf = ensurePointerUncached(bufObj);
             if (object.getOffset() != 0) {
                 buf = buf + object.getOffset();
             }

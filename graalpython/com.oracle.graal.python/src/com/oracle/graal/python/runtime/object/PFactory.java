@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.runtime.object;
 
+import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 
@@ -462,7 +463,7 @@ public final class PFactory {
     }
 
     public static PMemoryView createMemoryView(PythonLanguage language, PythonContext context, BufferLifecycleManager bufferLifecycleManager, Object buffer, Object owner,
-                    int len, boolean readonly, int itemsize, BufferFormat format, TruffleString formatString, int ndim, Object bufPointer,
+                    int len, boolean readonly, int itemsize, BufferFormat format, TruffleString formatString, int ndim, long bufPointer,
                     int offset, int[] shape, int[] strides, int[] suboffsets, int flags) {
         PythonBuiltinClassType cls = PythonBuiltinClassType.PMemoryView;
         return new PMemoryView(cls, cls.getInstanceShape(language), context, bufferLifecycleManager, buffer, owner, len, readonly, itemsize, format, formatString,
@@ -473,7 +474,7 @@ public final class PFactory {
                     TruffleString.CodePointLengthNode lengthNode, TruffleString.CodePointAtIndexUTF32Node atIndexNode) {
         PythonBuiltinClassType cls = PythonBuiltinClassType.PMemoryView;
         return new PMemoryView(cls, cls.getInstanceShape(language), null, null, buffer, owner, length, readonly, itemsize,
-                        BufferFormat.forMemoryView(format, lengthNode, atIndexNode), format, 1, null, 0, new int[]{length / itemsize}, new int[]{itemsize}, null,
+                        BufferFormat.forMemoryView(format, lengthNode, atIndexNode), format, 1, NULLPTR, 0, new int[]{length / itemsize}, new int[]{itemsize}, null,
                         PMemoryView.FLAG_C | PMemoryView.FLAG_FORTRAN);
     }
 

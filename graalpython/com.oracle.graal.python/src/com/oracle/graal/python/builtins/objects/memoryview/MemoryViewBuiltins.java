@@ -441,20 +441,20 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
         private static boolean recursive(VirtualFrame frame, Node inliningTarget, PyObjectRichCompareBool eqNode, CExtNodes.PCallCapiFunction callCapiFunction,
                         PMemoryView self, PMemoryView other,
                         ReadItemAtNode readSelf, ReadItemAtNode readOther,
-                        int dim, int ndim, Object selfPtr, int initialSelfOffset, Object otherPtr, int initialOtherOffset) {
+                        int dim, int ndim, long selfPtr, int initialSelfOffset, long otherPtr, int initialOtherOffset) {
             int selfOffset = initialSelfOffset;
             int otherOffset = initialOtherOffset;
             for (int i = 0; i < self.getBufferShape()[dim]; i++) {
-                Object selfXPtr = selfPtr;
+                long selfXPtr = selfPtr;
                 int selfXOffset = selfOffset;
-                Object otherXPtr = otherPtr;
+                long otherXPtr = otherPtr;
                 int otherXOffset = otherOffset;
                 if (self.getBufferSuboffsets() != null && self.getBufferSuboffsets()[dim] >= 0) {
-                    selfXPtr = callCapiFunction.call(NativeCAPISymbol.FUN_ADD_SUBOFFSET, selfPtr, selfOffset, self.getBufferSuboffsets()[dim]);
+                    selfXPtr = (long) callCapiFunction.call(NativeCAPISymbol.FUN_ADD_SUBOFFSET, selfPtr, selfOffset, self.getBufferSuboffsets()[dim]);
                     selfXOffset = 0;
                 }
                 if (other.getBufferSuboffsets() != null && other.getBufferSuboffsets()[dim] >= 0) {
-                    otherXPtr = callCapiFunction.call(NativeCAPISymbol.FUN_ADD_SUBOFFSET, otherPtr, otherOffset, other.getBufferSuboffsets()[dim]);
+                    otherXPtr = (long) callCapiFunction.call(NativeCAPISymbol.FUN_ADD_SUBOFFSET, otherPtr, otherOffset, other.getBufferSuboffsets()[dim]);
                     otherXOffset = 0;
                 }
                 if (dim == ndim - 1) {
@@ -510,18 +510,18 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
             }
         }
 
-        private PList recursiveBoundary(VirtualFrame frame, PMemoryView self, MemoryViewNodes.ReadItemAtNode readItemAtNode, int dim, int ndim, Object ptr, int offset, PythonLanguage language) {
+        private PList recursiveBoundary(VirtualFrame frame, PMemoryView self, MemoryViewNodes.ReadItemAtNode readItemAtNode, int dim, int ndim, long ptr, int offset, PythonLanguage language) {
             return recursive(frame, self, readItemAtNode, dim, ndim, ptr, offset, language);
         }
 
-        private PList recursive(VirtualFrame frame, PMemoryView self, MemoryViewNodes.ReadItemAtNode readItemAtNode, int dim, int ndim, Object ptr, int initialOffset, PythonLanguage language) {
+        private PList recursive(VirtualFrame frame, PMemoryView self, MemoryViewNodes.ReadItemAtNode readItemAtNode, int dim, int ndim, long ptr, int initialOffset, PythonLanguage language) {
             int offset = initialOffset;
             Object[] objects = new Object[self.getBufferShape()[dim]];
             for (int i = 0; i < self.getBufferShape()[dim]; i++) {
-                Object xptr = ptr;
+                long xptr = ptr;
                 int xoffset = offset;
                 if (self.getBufferSuboffsets() != null && self.getBufferSuboffsets()[dim] >= 0) {
-                    xptr = getCallCapiFunction().call(NativeCAPISymbol.FUN_ADD_SUBOFFSET, ptr, offset, self.getBufferSuboffsets()[dim]);
+                    xptr = (long) getCallCapiFunction().call(NativeCAPISymbol.FUN_ADD_SUBOFFSET, ptr, offset, self.getBufferSuboffsets()[dim]);
                     xoffset = 0;
                 }
                 if (dim == ndim - 1) {

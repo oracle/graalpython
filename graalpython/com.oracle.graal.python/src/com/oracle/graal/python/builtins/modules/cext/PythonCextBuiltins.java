@@ -77,7 +77,6 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMe
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMemberDef__name;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMemberDef__offset;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMemberDef__type;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.wrapPointer;
 import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nfi2.NativeMemory.readPtrArrayElement;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_BUILTINS;
@@ -1173,7 +1172,7 @@ public final class PythonCextBuiltins {
                 bufferLifecycleManager = new NativeBufferLifecycleManager.NativeBufferLifecycleManagerFromType(bufferStructPointer);
             }
             return PFactory.createMemoryView(language, PythonContext.get(inliningTarget), bufferLifecycleManager, buffer, owner, len, readonly, itemsize,
-                            BufferFormat.forMemoryView(format, lengthNode, atIndexNode), format, ndim, wrapPointer(bufPointer), 0, shape, strides, suboffsets, flags);
+                            BufferFormat.forMemoryView(format, lengthNode, atIndexNode), format, ndim, bufPointer, 0, shape, strides, suboffsets, flags);
         }
     }
 
