@@ -40,7 +40,7 @@ from pathlib import Path
 import mx
 import mx_benchmark
 import mx_polybench
-from mx_benchmark import StdOutRule, java_vm_registry, OutputCapturingVm, GuestVm, VmBenchmarkSuite, AveragingBenchmarkMixin
+from mx_benchmark import StdOutRule, java_vm_registry, OutputCapturingVm, GuestVm, VmBenchmarkSuite, AveragingBenchmarkMixin, bm_exec_context
 from mx_graalpython_bench_param import HARNESS_PATH
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -956,7 +956,7 @@ class LiveHeapTracker(mx_benchmark.Tracker):
         if self.bmSuite:
             bench_name = f"{self.bmSuite.name()}-{bench_name}"
         ts = datetime.now().strftime("%Y%m%d-%H%M%S")
-        vm = self.bmSuite.execution_context.virtual_machine
+        vm = bm_exec_context().get('vm')
         if isinstance(vm, GraalPythonVm) and vm.launcher_type == "jvm":
             jmap_command = mx.get_jdk().exe_path('jmap')
         else:
