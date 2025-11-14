@@ -24,6 +24,11 @@ DEFAULT_ENV = {
 JOB_EXCLUSION_TERMS = (
     "enterprise",
     "corporate-compliance",
+
+    # Jobs failing in GitHub Actions:buffer overflow, out of memory, auditwheel incompatible with runner ubuntu-latest's glibc version
+    "darwin",
+    "python-svm-unittest",
+    "cpython-gate",
 )
 
 
