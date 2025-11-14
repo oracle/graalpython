@@ -190,7 +190,7 @@
             "windows:amd64:jdk-latest"   : tier3,
         }),
         "python-svm-build": gpgate + platform_spec(no_jobs) + platform_spec({
-            "linux:amd64:jdk-latest"     : tier2                     + provide(GPY_NATIVE_STANDALONE),
+            "linux:amd64:jdk-latest"     : tier1                     + provide(GPY_NATIVE_STANDALONE),
             "linux:aarch64:jdk-latest"   : tier3                     + provide(GPY_NATIVE_STANDALONE),
             "darwin:aarch64:jdk-latest"  : tier3                     + provide(GPY_NATIVE_STANDALONE),
             "windows:amd64:jdk-latest"   : tier3                     + provide(GPY_NATIVE_STANDALONE),
