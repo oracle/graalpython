@@ -722,44 +722,18 @@ public abstract class ExecutionContext {
      * asks for it using {@link PRootNode#getCallerFlags()}.
      */
     public abstract static class IndirectCalleeContext {
-        /**
-         * Prepare an indirect call from code that doesn't have access to the current Python
-         * {@link VirtualFrame}, or doesn't have a frame, e.g., foreign code, to a Python function.
-         * <p>
-         * Unlike {@link #enter(PythonLanguage, PythonContext, Object[], RootCallTarget)}, this
-         * method does not assume that the call target argument is a constant.
-         */
-        public static Object enterIndirect(PythonLanguage language, PythonContext context, Object[] pArguments, RootCallTarget callTarget) {
-            return enter(context.getThreadState(language), pArguments, needsExceptionState(callTarget));
-        }
 
         /**
-         * @see #enterIndirect(PythonLanguage, PythonContext, Object[], RootCallTarget)
+         * @see #enter(PythonThreadState, Object[])
          */
-        public static Object enterIndirect(PythonThreadState threadState, Object[] pArguments, RootCallTarget callTarget) {
-            return enter(threadState, pArguments, needsExceptionState(callTarget));
-        }
-
-        /**
-         * @see #enter(PythonThreadState, Object[], RootCallTarget)
-         */
-        public static Object enter(PythonLanguage language, PythonContext context, Object[] pArguments, RootCallTarget callTarget) {
-            return enter(context.getThreadState(language), pArguments, needsExceptionState(callTarget));
+        public static Object enter(PythonLanguage language, PythonContext context, Object[] pArguments) {
+            return enter(context.getThreadState(language), pArguments);
         }
 
         /**
          * Prepare a call from a foreign frame to a Python function.
          */
-        public static Object enter(PythonThreadState threadState, Object[] pArguments, RootCallTarget callTarget) {
-            return enter(threadState, pArguments, needsExceptionState(callTarget));
-        }
-
-        private static boolean needsExceptionState(RootCallTarget callTarget) {
-            PRootNode calleeRootNode = (PRootNode) callTarget.getRootNode();
-            return CallerFlags.needsExceptionState(calleeRootNode.getCallerFlags());
-        }
-
-        private static Object enter(PythonThreadState threadState, Object[] pArguments, boolean needsExceptionState) {
+        public static Object enter(PythonThreadState threadState, Object[] pArguments) {
             // We decided on if and how to materialize PFrame.Reference/PFrame itself at the point
             // of transition from code with access to virtual frame to the code without access to it
             // (e.g., TruffleBoundary code) in IndirectCallContext
@@ -769,7 +743,7 @@ public abstract class ExecutionContext {
             // If someone set the exception in the arguments explicitly, we do not override it. This
             // is used in top level code, async handlers, etc., where we want to avoid pointless
             // stack-walking
-            if (needsExceptionState && PArguments.getException(pArguments) == null) {
+            if (PArguments.getException(pArguments) == null) {
                 AbstractTruffleException curExc = threadState.getCaughtException();
                 if (curExc != null) {
                     threadState.setCaughtException(null);
