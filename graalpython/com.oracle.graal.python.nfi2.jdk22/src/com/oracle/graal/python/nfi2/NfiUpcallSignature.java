@@ -69,16 +69,14 @@ public final class NfiUpcallSignature {
     @SuppressWarnings({"unused", "restricted"})
     public long createClosure(NfiContext context, String name, MethodHandle staticMethodHandle) {
         // TODO(NFI2) if logging enabled, wrap the handle in a method that logs the name and args
-        // MethodHandle handle = staticMethodHandle; // handle_closureLoggingWrapper.bindTo(name).bindTo(this).bindTo(staticMethodHandle);
-        // handle = handle.asType(UPCALL_METHOD_TYPE).asVarargsCollector(Object[].class);
         Class<?>[] javaArgTypes = new Class<?>[argTypes.length];
         for (int i = 0; i < argTypes.length; i++) {
             javaArgTypes[i] = argTypes[i].asJavaType();
         }
-        // TODO(NFI2): once CApiContext#registerClosure is migrated, remove the next line, it shouldn't be needed
+        // TODO(NFI2): once CApiContext#registerClosure is migrated, remove the next line, it
+        // shouldn't be needed
         staticMethodHandle = staticMethodHandle.asType(MethodType.methodType(resType.asJavaType(), javaArgTypes));
         FunctionDescriptor functionDescriptor = NfiContext.createFunctionDescriptor(resType, argTypes);
-        // return Linker.nativeLinker().upcallStub(handle, functionDescriptor, context.arena).address();
         return Linker.nativeLinker().upcallStub(staticMethodHandle, functionDescriptor, context.arena).address();
     }
 
