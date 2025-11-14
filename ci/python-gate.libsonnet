@@ -302,11 +302,11 @@
         local jdk_version = self.jdk_version,
         local artifact_name = name + os + arch,
         setup+: [
-            ["unpack-artifact", artifact_name],
+            [".github/scripts/unpack-artifact", artifact_name],
             if (std.startsWith(artifact_name, "graalpy")) then
-                ["set-export", "GRAALPY_HOME", "mxbuild/*/GRAALPY_*_STANDALONE"]
+                [".github/scripts/set-export", "GRAALPY_HOME", "mxbuild/*/GRAALPY_*_STANDALONE"]
             else 
-                ["set-export", "GRAAL_JDK_HOME", "../graal/sdk/mxbuild/*/GRAALVM_COMMUNITY_JAVA" + jdk_version + "/graalvm-community-*"]
+                [".github/scripts/set-export", "GRAAL_JDK_HOME", "../graal/sdk/mxbuild/*/GRAALVM_COMMUNITY_JAVA" + jdk_version + "/graalvm-community-*"]
         ],
         environment+: {
             MX_BUILD_SHALLOW_DEPENDENCY_CHECKS: "true",

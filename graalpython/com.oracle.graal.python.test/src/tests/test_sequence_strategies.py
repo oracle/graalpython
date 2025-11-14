@@ -40,6 +40,9 @@ import sys
 
 
 if sys.implementation.name == "graalpy":
+    print("[DEBUG] INTERPRETER IS GRAALPY")
+    print("[DEBUG] HAS_ATTR:", hasattr(__graalpython__,"using_native_primitive_storage_strategy"))
+    print("[DEBUG] VALUE:", getattr(__graalpython__,"using_native_primitive_storage_strategy", None))
     if not hasattr(__graalpython__, 'get_storage_strategy'):
         raise SystemError("This test must run with --python.EnableDebuggingBuiltins=true")
 
