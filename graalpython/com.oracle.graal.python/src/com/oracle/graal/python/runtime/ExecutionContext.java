@@ -79,8 +79,10 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.DenyReplace;
 import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.UnadoptableNode;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedCountingConditionProfile;
 
@@ -199,7 +201,6 @@ public abstract class ExecutionContext {
          * the stack up once.
          */
         @GenerateCached(false)
-        @GenerateUncached
         @GenerateInline
         @ImportStatic({PArguments.class, CallerFlags.class})
         protected abstract static class PassCallerFrameNode extends Node {
@@ -240,10 +241,25 @@ public abstract class ExecutionContext {
             protected static void passEmptyCallerFrame(VirtualFrame frame, Object[] callArguments, int callerFlags) {
                 PArguments.setCallerFrameInfo(callArguments, PFrame.Reference.EMPTY);
             }
+
+            @DenyReplace
+            @GenerateCached(false)
+            private static final class Uncached extends PassCallerFrameNode implements UnadoptableNode {
+                private static final Uncached INSTANCE = new Uncached();
+
+                @Override
+                protected void execute(VirtualFrame frame, Node inliningTarget, Object[] callArguments, int callerFlags) {
+                    // Always pass the reference when uncached
+                    passCallerFrame(frame, callArguments, callerFlags, MaterializeFrameNode.getUncached());
+                }
+            }
+
+            public static PassCallerFrameNode getUncached() {
+                return Uncached.INSTANCE;
+            }
         }
 
         @GenerateCached(false)
-        @GenerateUncached
         @GenerateInline
         @ImportStatic(PArguments.class)
         protected abstract static class PassExceptionStateNode extends Node {
@@ -326,6 +342,29 @@ public abstract class ExecutionContext {
                 // If we're here, it can only be because some top-level call
                 // inside Python led us here
                 PArguments.setException(callArguments, PException.NO_EXCEPTION);
+            }
+
+            @DenyReplace
+            @GenerateCached(false)
+            private static final class Uncached extends PassExceptionStateNode implements UnadoptableNode {
+                private static final Uncached INSTANCE = new Uncached();
+
+                @Override
+                protected void execute(VirtualFrame frame, Node inliningTarget, Object[] callArguments, boolean needsExceptionState) {
+                    if (PArguments.isPythonFrame(frame)) {
+                        AbstractTruffleException exception = PArguments.getException(frame);
+                        // Always pass the exception when we have it
+                        if (exception != null) {
+                            PArguments.setException(callArguments, exception);
+                        } else if (needsExceptionState) {
+                            passExceptionStateFromStackWalk(frame, null, callArguments, true);
+                        }
+                    }
+                }
+            }
+
+            public static PassExceptionStateNode getUncached() {
+                return Uncached.INSTANCE;
             }
         }
     }
