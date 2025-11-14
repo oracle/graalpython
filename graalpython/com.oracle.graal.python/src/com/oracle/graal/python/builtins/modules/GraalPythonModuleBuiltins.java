@@ -290,7 +290,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             mod.setAttribute(tsLiteral("foreign_number_list"), PNone.NO_VALUE);
             mod.setAttribute(tsLiteral("foreign_wrapper"), PNone.NO_VALUE);
         } else {
-            addBuiltinConstant("using_native_primitive_storage_strategy", context.getLanguage().getEngineOption(PythonOptions.UseNativePrimitiveStorageStrategy));
+            mod.setAttribute(tsLiteral("using_native_primitive_storage_strategy"), context.getLanguage().getEngineOption(PythonOptions.UseNativePrimitiveStorageStrategy));
         }
         if (PythonImageBuildOptions.WITHOUT_PLATFORM_ACCESS || !context.getOption(PythonOptions.RunViaLauncher)) {
             mod.setAttribute(tsLiteral("list_files"), PNone.NO_VALUE);

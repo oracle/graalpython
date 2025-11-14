@@ -862,9 +862,12 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
 def graalpy_standalone(standalone_type, enterprise=False, dev=False, build=True):
     assert standalone_type in ['native', 'jvm']
     if standalone_type == 'native' and mx_gate.get_jacoco_agent_args():
+        print("[DEBUG] GRAALPY STANDALONE IS RUNNING ON JVM")
         return graalpy_standalone('jvm', enterprise=enterprise, dev=dev, build=build)
 
+    print("[DEBUG] GRAALPY STANDALONE IS RUNNING NATIVELY")
     home = graalpy_standalone_home(standalone_type, enterprise=enterprise, dev=dev, build=build)
+    print(f"[DEBUG] GRAALPY STANDALONE HOME: {home}")
     launcher = os.path.join(home, 'bin', _graalpy_launcher())
     return make_coverage_launcher_if_needed(launcher)
 
@@ -1190,6 +1193,7 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
         "--python.EnableDebuggingBuiltins",
         *args,
     ]
+
     if env is None:
         env = os.environ.copy()
     env['PYTHONHASHSEED'] = '0'
@@ -1229,6 +1233,8 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
         args += paths
     else:
         args.append(os.path.relpath(_python_unittest_root()))
+
+    print(f"[DEBUG] args: {args}")
 
     mx.logv(shlex.join([python_binary] + args))
     if lock:
