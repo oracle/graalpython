@@ -139,6 +139,21 @@ public abstract class ReadFrameNode extends Node {
         return getFrameForReference(frame, frame != null ? PArguments.getCurrentFrameInfo(frame) : null, AllPythonFramesSelector.INSTANCE, 0, needsLocals);
     }
 
+    public final PFrame refreshFrame(VirtualFrame frame, PFrame.Reference reference, boolean needsLocals) {
+        return getFrameForReference(frame, reference, 0, needsLocals);
+    }
+
+    public final PFrame ensureFresh(VirtualFrame frame, PFrame pFrame) {
+        return ensureFresh(frame, pFrame, false);
+    }
+
+    public final PFrame ensureFresh(VirtualFrame frame, PFrame pFrame, boolean needsLocals) {
+        if (pFrame.isStale() || (needsLocals && pFrame.getLocals() == null) || (frame != null && PArguments.getCurrentFrameInfo(frame) == pFrame.getRef())) {
+            return refreshFrame(frame, pFrame.getRef(), needsLocals);
+        }
+        return pFrame;
+    }
+
     public final PFrame getFrameForReference(Frame frame, PFrame.Reference startFrameInfo, int level, boolean needsLocals) {
         return getFrameForReference(frame, startFrameInfo, AllPythonFramesSelector.INSTANCE, level, needsLocals);
     }
@@ -174,7 +189,7 @@ public abstract class ReadFrameNode extends Node {
                     if (frame != null && PArguments.getCurrentFrameInfo(frame) == curFrameInfo) {
                         return materializeFrameNode.execute(this, false, needsLocals, frame);
                     }
-                    if (curFrameInfo.getPyFrame() != null && (!needsLocals || curFrameInfo.getPyFrame().getLocals() != null)) {
+                    if (curFrameInfo.getPyFrame() != null && !curFrameInfo.getPyFrame().isStale() && (!needsLocals || curFrameInfo.getPyFrame().getLocals() != null)) {
                         return curFrameInfo.getPyFrame();
                     }
                     // We don't have the frame for the reference, fall back to the stack walk

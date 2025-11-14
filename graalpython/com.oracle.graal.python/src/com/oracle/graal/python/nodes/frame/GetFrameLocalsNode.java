@@ -99,8 +99,8 @@ public abstract class GetFrameLocalsNode extends Node {
                     @Cached InlinedBranchProfile create,
                     @Cached(inline = false) CopyLocalsToDict copyLocalsToDict,
                     @Cached ReadFrameNode readFrameNode) {
-        if (pyFrame.getLocals() == null) {
-            pyFrame = readFrameNode.getFrameForReference(frame, pyFrame.getRef(), ReadFrameNode.AllFramesSelector.INSTANCE, 0, true);
+        if (pyFrame.isStale() || pyFrame.getLocals() == null) {
+            pyFrame = readFrameNode.refreshFrame(frame, pyFrame.getRef(), true);
         }
         MaterializedFrame locals = pyFrame.getLocals();
         // It doesn't have custom locals, so it has to be a builtin dict or null

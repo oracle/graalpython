@@ -98,6 +98,8 @@ public final class PFrame extends PythonBuiltinObject {
 
     private PFrame.Reference backref = null;
 
+    private boolean stale;
+
     public Object getLocalTraceFun() {
         return localTraceFun;
     }
@@ -215,11 +217,20 @@ public final class PFrame extends PythonBuiltinObject {
      * In most cases, you should use {@link GetFrameLocalsNode}.
      */
     public MaterializedFrame getLocals() {
+        assert !stale;
         return locals;
     }
 
     public void setLocals(MaterializedFrame locals) {
         this.locals = locals;
+    }
+
+    public boolean isStale() {
+        return stale;
+    }
+
+    public void setStale(boolean stale) {
+        this.stale = stale;
     }
 
     /**
@@ -275,6 +286,7 @@ public final class PFrame extends PythonBuiltinObject {
 
     @TruffleBoundary
     public int getLine() {
+        assert !stale;
         if (line == UNINITIALIZED_LINE) {
             if (location == null) {
                 line = -1;

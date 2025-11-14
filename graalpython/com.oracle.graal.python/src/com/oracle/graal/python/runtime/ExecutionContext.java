@@ -231,8 +231,7 @@ public abstract class ExecutionContext {
                     assert thisInfo.getPyFrame() == pyFrame;
                     assert pyFrame.getRef() == thisInfo;
                 } else if (thisInfo.getPyFrame() != null) {
-                    // Don't pass stale locals
-                    thisInfo.getPyFrame().setLocals(null);
+                    thisInfo.getPyFrame().setStale(true);
                 }
                 PArguments.setCallerFrameInfo(callArguments, thisInfo);
             }
@@ -710,7 +709,7 @@ public abstract class ExecutionContext {
                     callData.getMaterializeFrameNode().executeOnStack(false, CallerFlags.needsLocals(callerFlags), frame);
                 } else if (info.getPyFrame() != null) {
                     // Avoid passing stale locals
-                    info.getPyFrame().setLocals(null);
+                    info.getPyFrame().setStale(true);
                 }
             }
             AbstractTruffleException curExc = pythonThreadState.getCaughtException();

@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
+import com.oracle.graal.python.nodes.frame.ReadFrameNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
@@ -86,6 +87,7 @@ public final class PythonCextTracebackBuiltins {
         static int tbHere(PFrame frame,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
+                        @Cached ReadFrameNode readFrameNode,
                         @Cached CExtCommonNodes.ReadAndClearNativeException readAndClearNativeException,
                         @Cached CExtCommonNodes.TransformExceptionToNativeNode transformExceptionToNativeNode) {
             PythonLanguage language = context.getLanguage(inliningTarget);
@@ -93,6 +95,7 @@ public final class PythonCextTracebackBuiltins {
             Object currentException = readAndClearNativeException.execute(inliningTarget, threadState);
             if (currentException instanceof PBaseException) {
                 Object traceback = ExceptionNodes.GetTracebackNode.executeUncached(currentException);
+                frame = readFrameNode.ensureFresh(null, frame);
                 PTraceback newTraceback = PFactory.createTraceback(language, frame, frame.getLine(), traceback instanceof PTraceback ptb ? ptb : null);
                 ExceptionNodes.SetTracebackNode.executeUncached(currentException, newTraceback);
             }

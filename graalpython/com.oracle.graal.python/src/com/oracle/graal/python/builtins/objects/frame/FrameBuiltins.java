@@ -38,7 +38,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.code.PCode;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
@@ -51,7 +50,6 @@ import com.oracle.graal.python.lib.PyLongCheckExactNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.frame.GetFrameLocalsNode;
-import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -72,7 +70,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PFrame)
@@ -91,12 +88,10 @@ public final class FrameBuiltins extends PythonBuiltins {
         @Specialization
         TruffleString repr(VirtualFrame frame, PFrame self,
                         @Cached GetCodeNode getCodeNode,
-                        @Bind Node inliningTarget,
-                        @Cached InlinedConditionProfile profile,
-                        @Cached MaterializeFrameNode materializeFrameNode,
+                        @Cached ReadFrameNode readFrameNode,
                         @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
+            self = readFrameNode.ensureFresh(frame, self);
             PCode code = getCodeNode.executeObject(frame, self);
-            LinenoNode.syncLocationIfNeeded(frame, self, inliningTarget, profile, materializeFrameNode);
             int lineno = self.getLine();
             return simpleTruffleStringFormatNode.format("<frame at 0x%s, file '%s', line %d, code %s>",
                             objectHashCodeAsHexString(self), code.getFilename(), lineno, code.getName());
@@ -154,43 +149,26 @@ public final class FrameBuiltins extends PythonBuiltins {
     public abstract static class LinenoNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        Object delete(VirtualFrame frame, PFrame self, DescriptorDeleteMarker ignored,
+        Object delete(PFrame self, DescriptorDeleteMarker ignored,
                         @Bind Node inliningTarget,
                         @Cached @Cached.Exclusive PRaiseNode raise) {
-            raise.raise(inliningTarget, PythonBuiltinClassType.AttributeError, ErrorMessages.CANNOT_DELETE);
-            return PNone.NONE;
+            throw raise.raise(inliningTarget, PythonBuiltinClassType.AttributeError, ErrorMessages.CANNOT_DELETE);
         }
 
         @Specialization(guards = "isNoValue(newLineno)")
         int get(VirtualFrame frame, PFrame self, Object newLineno,
-                        @Bind Node inliningTarget,
-                        @Cached @Cached.Exclusive InlinedConditionProfile profile,
-                        @Cached @Cached.Exclusive MaterializeFrameNode frameNode) {
-            syncLocationIfNeeded(frame, self, inliningTarget, profile, frameNode);
-            return self.getLine();
+                        @Cached @Cached.Exclusive ReadFrameNode readFrameNode) {
+            return readFrameNode.ensureFresh(frame, self).getLine();
         }
 
-        static void syncLocationIfNeeded(VirtualFrame frame, PFrame self, Node inliningTarget, InlinedConditionProfile isCurrentFrameProfile, MaterializeFrameNode materializeNode) {
-            // Special case because this builtin can be called without going through an invoke node:
-            // we need to sync the location of the frame if and only if 'self' represents the
-            // current frame. If 'self' represents another frame on the stack, the location is
-            // already set
-            if (isCurrentFrameProfile.profile(inliningTarget, frame != null && PArguments.getCurrentFrameInfo(frame) == self.getRef())) {
-                PFrame pyFrame = materializeNode.executeOnStack(false, false, frame);
-                assert pyFrame == self;
-            }
-        }
-
-        @SuppressWarnings("truffle-static-method") // this is used for location here
         @Specialization(guards = {"!isNoValue(newLineno)", "!isDeleteMarker(newLineno)"})
-        PNone set(VirtualFrame frame, PFrame self, Object newLineno,
+        static PNone set(VirtualFrame frame, PFrame self, Object newLineno,
                         @Bind Node inliningTarget,
-                        @Cached @Cached.Exclusive InlinedConditionProfile isCurrentFrameProfile,
-                        @Cached @Cached.Exclusive MaterializeFrameNode materializeNode,
+                        @Cached @Cached.Exclusive ReadFrameNode readFrameNode,
                         @Cached @Cached.Exclusive PRaiseNode raise,
                         @Cached PyLongCheckExactNode isLong,
                         @Cached PyLongAsLongAndOverflowNode toLong) {
-            syncLocationIfNeeded(frame, self, inliningTarget, isCurrentFrameProfile, materializeNode);
+            readFrameNode.ensureFresh(frame, self);
             if (self.isTraceArgument()) {
                 if (isLong.execute(inliningTarget, newLineno)) {
                     try {
@@ -207,7 +185,7 @@ public final class FrameBuiltins extends PythonBuiltins {
                     throw raise.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.LINENO_MUST_BE_AN_INTEGER);
                 }
             } else {
-                PythonContext context = getContext();
+                PythonContext context = PythonContext.get(inliningTarget);
                 throw raise.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.CANT_JUMP_FROM_S_EVENT,
                                 context.getThreadState(context.getLanguage(inliningTarget)).getTracingWhat().pythonName);
             }
@@ -219,8 +197,9 @@ public final class FrameBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetLastiNode extends PythonUnaryBuiltinNode {
         @Specialization
-        int get(PFrame self) {
-            return self.getLasti();
+        int get(VirtualFrame frame, PFrame self,
+                        @Cached ReadFrameNode readFrameNode) {
+            return readFrameNode.ensureFresh(frame, self).getLasti();
         }
     }
 

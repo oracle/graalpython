@@ -190,6 +190,7 @@ public abstract class MaterializeFrameNode extends Node {
     static PFrame alreadyEscapedFrame(@SuppressWarnings("unused") Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize,
                     @Shared("syncValuesNode") @Cached SyncFrameValuesNode syncValuesNode) {
         PFrame pyFrame = getPFrame(frameToMaterialize);
+        pyFrame.setStale(false);
         if (forceSync) {
             syncValuesNode.execute(pyFrame, frameToMaterialize, location);
         } else {
@@ -243,6 +244,7 @@ public abstract class MaterializeFrameNode extends Node {
 
         // on a freshly created PFrame, we do always sync the arguments
         PArguments.synchronizeArgs(frameToMaterialize, escapedFrame);
+        escapedFrame.setStale(false);
         if (forceSync) {
             syncValuesNode.execute(escapedFrame, frameToMaterialize, location);
         } else {
