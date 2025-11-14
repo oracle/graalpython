@@ -229,6 +229,8 @@ MICRO_NATIVE_BENCHMARKS = {
     'c-call-method-int-float': ITER_5 + ['5000000'],
     'c-instantiate-large': ITER_5 + ['1000'],
     'c-upcall': ITER_5 + [str(2**28)],
+    'c-upcall-builtin-function': ITER_5 + [str(2**26)],
+    'c-upcall-slot': ITER_5 + [str(2**20)],
     'c-to-c': ITER_5 + [str(2**31 - 1)],
 }
 
