@@ -178,6 +178,7 @@ jobs:
         working-directory: main
         if: ${{ matrix.setup_steps }}
         run: |
+          ls -la .github/scripts
           ${{ matrix.setup_steps }}
       - name: Run on Unix
         working-directory: main
