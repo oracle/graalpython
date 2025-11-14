@@ -1165,4 +1165,10 @@ def graalpython_polybench_runner(polybench_run: mx_polybench.PolybenchRunFunctio
 
 
 mx_polybench.register_polybench_benchmark_suite(mx_suite=SUITE, name="python", languages=["python"], benchmark_distribution="GRAALPYTHON_POLYBENCH_BENCHMARKS",
-                                                benchmark_file_filter=".*py$", runner=graalpython_polybench_runner, tags={"gate", "benchmark", "instructions"})
+                                                # Match all python files, except for:
+                                                #  * harness.py
+                                                #  * tests/__init__.py
+                                                # These two are necessary for running the C-extension-module benchmarks,
+                                                # but are not benchmarks themselves.
+                                                benchmark_file_filter=r"^(?!.*(harness\.py|tests/__init__\.py)$).*\.py$",
+                                                runner=graalpython_polybench_runner, tags={"gate", "benchmark", "instructions"})

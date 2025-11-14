@@ -141,6 +141,12 @@ PyInit_c_method_module(void)
 """
 
 
+import sys
+import os
+# Add benchmark directory to path to allow import of harness.py
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from harness import ccompile
+
 ccompile("c_method_module", code)
 from c_method_module import NativeCustomType
 
@@ -160,3 +166,28 @@ def measure(num):
 
 def __benchmark__(num=1000000):
     return measure(num)
+
+
+def run():
+    __benchmark__(num=3000)
+
+
+def warmupIterations():
+    return 0
+
+
+def iterations():
+    return 10
+
+
+def summary():
+    return {
+        "name": "OutlierRemovalAverageSummary",
+        "lower-threshold": 0.0,
+        "upper-threshold": 0.7,
+    }
+
+
+def dependencies():
+    # Required to run `ccompile`
+    return ["harness.py", "tests/__init__.py"]

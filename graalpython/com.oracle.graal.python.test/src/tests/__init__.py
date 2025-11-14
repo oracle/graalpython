@@ -71,15 +71,14 @@ def get_setuptools(setuptools='setuptools==67.6.1'):
 
     if not os.path.isdir(setuptools_path / 'setuptools'):
         import subprocess
-        import venv
         print('installing setuptools in %s' % setuptools_path)
-        venv.create(setuptools_path, with_pip=True)
+        system_python = install_venv(setuptools_path)
         if sys.platform.startswith('win32'):
             py_executable = setuptools_path / 'Scripts' / 'python.exe'
         else:
             py_executable = setuptools_path / 'bin' / 'python3'
         extra_args = []
-        if sys.implementation.name == "graalpy" and __graalpython__.is_bytecode_dsl_interpreter:
+        if sys.implementation.name == "graalpy" and not system_python and __graalpython__.is_bytecode_dsl_interpreter:
             extra_args = ['--vm.Dpython.EnableBytecodeDSLInterpreter=true']
         subprocess.run([py_executable, *extra_args, "-m", "pip", "install", "--target", str(setuptools_path), setuptools], check=True)
         print('setuptools is installed in %s' % setuptools_path)
@@ -87,6 +86,21 @@ def get_setuptools(setuptools='setuptools==67.6.1'):
     pyvenv_site = str(setuptools_path)
     if pyvenv_site not in site.getsitepackages():
         site.addsitedir(pyvenv_site)
+
+
+def install_venv(venv_path: Path) -> bool:
+    """Installs a virtual environment at the given path."""
+    if not sys.executable:
+        # When running in a PolyBench benchmark context sys.executable is unset
+        # And thus we must defer to the system's python
+        # Deferring to the system's python is fine as it will only be used to install setuptools
+        import subprocess
+        subprocess.run(["python", "-m", "venv", str(venv_path)], check=True)
+        return True
+    else:
+        import venv
+        venv.create(venv_path, with_pip=True)
+        return False
 
 
 def compile_module_from_string(c_source: str, name: str):
