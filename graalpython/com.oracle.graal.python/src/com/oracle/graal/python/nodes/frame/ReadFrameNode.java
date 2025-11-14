@@ -140,7 +140,7 @@ public abstract class ReadFrameNode extends Node {
     }
 
     public final PFrame getFrameForReference(Frame frame, PFrame.Reference startFrameInfo, int level, boolean needsLocals) {
-        return getFrameForReference(frame, startFrameInfo, VisiblePythonFramesSelector.INSTANCE, level, needsLocals);
+        return getFrameForReference(frame, startFrameInfo, AllPythonFramesSelector.INSTANCE, level, needsLocals);
     }
 
     public final PFrame getFrameForReference(Frame frame, PFrame.Reference startFrameInfo, FrameSelector selector, int level, boolean needsLocals) {

@@ -516,8 +516,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
     @NonIdempotent
     public final boolean needsTraceAndProfileInstrumentation() {
-        // We need instrumentation only if the assumption is invalid and the root node is visible.
-        return !getLanguage().noTracingOrProfilingAssumption.isValid() && !isInternal();
+        // We need instrumentation only if the assumption is invalid
+        return !getLanguage().noTracingOrProfilingAssumption.isValid();
     }
 
     @NonIdempotent
@@ -529,7 +529,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
      * Reparses with instrumentations for settrace and setprofile enabled.
      */
     public final void ensureTraceAndProfileEnabled() {
-        assert !isInternal();
         getRootNodes().update(TRACE_AND_PROFILE_CONFIG);
     }
 

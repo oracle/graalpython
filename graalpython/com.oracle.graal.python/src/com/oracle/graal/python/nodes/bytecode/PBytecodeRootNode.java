@@ -2932,7 +2932,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @BytecodeInterpreterSwitch
     private byte checkTracingAndProfilingEnabled(Assumption noTraceOrProfile, MutableLoopData mutableData) {
-        if (!noTraceOrProfile.isValid() && frameIsVisibleToPython()) {
+        if (!noTraceOrProfile.isValid()) {
             PythonContext.PythonThreadState ts = mutableData.getThreadState(this);
             Object profileFun = ts.getProfileFun();
             if (ts.getTraceFun() != null) {
