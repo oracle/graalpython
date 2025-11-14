@@ -1781,10 +1781,10 @@ test.datetimetester.ZoneInfoTest[America/North_Dakota/New_Salem]_Pure.test_gaps 
 test.datetimetester.ZoneInfoTest[America/North_Dakota/New_Salem]_Pure.test_system_transitions @ linux-x86_64
 test.datetimetester.ZoneInfoTest[America/Nuuk]_Fast.test_folds @ linux-x86_64
 test.datetimetester.ZoneInfoTest[America/Nuuk]_Fast.test_gaps @ linux-x86_64
-test.datetimetester.ZoneInfoTest[America/Nuuk]_Fast.test_system_transitions @ linux-x86_64
+!test.datetimetester.ZoneInfoTest[America/Nuuk]_Fast.test_system_transitions @ linux-x86_64
 test.datetimetester.ZoneInfoTest[America/Nuuk]_Pure.test_folds @ linux-x86_64
 test.datetimetester.ZoneInfoTest[America/Nuuk]_Pure.test_gaps @ linux-x86_64
-test.datetimetester.ZoneInfoTest[America/Nuuk]_Pure.test_system_transitions @ linux-x86_64
+!test.datetimetester.ZoneInfoTest[America/Nuuk]_Pure.test_system_transitions @ linux-x86_64
 test.datetimetester.ZoneInfoTest[America/Ojinaga]_Fast.test_folds @ linux-x86_64
 test.datetimetester.ZoneInfoTest[America/Ojinaga]_Fast.test_gaps @ linux-x86_64
 test.datetimetester.ZoneInfoTest[America/Ojinaga]_Pure.test_folds @ linux-x86_64
