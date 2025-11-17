@@ -212,21 +212,9 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         }
     }
 
-    private static String capiTypeToMemoryLayout(VariableElement element) {
-        switch (capiTypeToJavaPrimitiveType(element)) {
-            case "byte":
-                return "ValueLayout.JAVA_BYTE";
-            case "int":
-                return "ValueLayout.JAVA_INT";
-            case "float":
-                return "ValueLayout.JAVA_FLOAT";
-            case "double":
-                return "ValueLayout.JAVA_DOUBLE";
-            case "long":
-                return "ValueLayout.JAVA_LONG";
-            default:
-                throw new RuntimeException("Unexpected memory layout type for CExt registry");
-        }
+    private static String capiTypeToForeignPrimitiveType(VariableElement element) {
+        String type = capiTypeToJavaPrimitiveType(element);
+        return type.equals("byte") ? "char" : type;
     }
 
     private static String argName(int i) {
@@ -595,23 +583,27 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         updateResource("capi.gen.c.h", javaBuiltins, lines);
     }
 
-    private void updateResource(String name, List<CApiBuiltinDesc> javaBuiltins, List<String> lines) throws IOException {
+    private void updateResource(String name, List<CApiBuiltinDesc> javaBuiltins, List<String> lines, StandardLocation loc) throws IOException {
         var origins = javaBuiltins.stream().map((jb) -> jb.origin).toArray(Element[]::new);
         String oldContents = "";
         String newContents = String.join(System.lineSeparator(), lines);
         try {
-            oldContents = processingEnv.getFiler().getResource(StandardLocation.NATIVE_HEADER_OUTPUT, "", name).getCharContent(true).toString();
+            oldContents = processingEnv.getFiler().getResource(loc, "", name).getCharContent(true).toString();
         } catch (IOException e) {
             // pass to regenerate
         }
         if (!oldContents.equals(newContents)) {
-            var file = processingEnv.getFiler().createResource(StandardLocation.NATIVE_HEADER_OUTPUT, "", name, origins);
+            var file = processingEnv.getFiler().createResource(loc, "", name, origins);
             try (var w = file.openWriter()) {
                 w.append(newContents);
             }
         } else {
             processingEnv.getMessager().printNote("Python %s is up to date".formatted(name));
         }
+    }
+
+    private void updateResource(String name, List<CApiBuiltinDesc> javaBuiltins, List<String> lines) throws IOException {
+        updateResource(name, javaBuiltins, lines, StandardLocation.NATIVE_HEADER_OUTPUT);
     }
 
     /**
@@ -668,6 +660,45 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
     }
 
     /**
+     * Generates the native image config for the direct upcalls to the builtins.
+     */
+    private void generateUpcallConfig(List<CApiBuiltinDesc> javaBuiltins) throws IOException {
+        ArrayList<String> lines = new ArrayList<>();
+        lines.add("{");
+        lines.add("  \"foreign\": {");
+        lines.add("    \"directUpcalls\": [");
+
+        for (int i = 0; i < javaBuiltins.size(); i++) {
+            var builtin = javaBuiltins.get(i);
+            String argString = Arrays.stream(builtin.arguments).map(b -> '"' + capiTypeToForeignPrimitiveType(b) + '"').collect(Collectors.joining(", "));
+            String classString;
+            String methodString;
+            if (builtin.origin instanceof TypeElement) {
+                classString = "com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinRegistry";
+                methodString = "upcall_" + builtin.name;
+            } else {
+                classString = ((TypeElement) builtin.origin.getEnclosingElement()).getQualifiedName().toString();
+                methodString = builtin.origin.getSimpleName().toString();
+            }
+            lines.add("      {");
+            lines.add("        \"class\": \"" + classString + "\",");
+            lines.add("        \"method\": \"" + methodString + "\",");
+            lines.add("        \"returnType\": \"" + capiTypeToForeignPrimitiveType(builtin.returnType) + "\",");
+            lines.add("        \"parameterTypes\": [" + argString + "]");
+            if (i < javaBuiltins.size() - 1) {
+                lines.add("      },");
+            } else {
+                lines.add("      }");
+            }
+        }
+        lines.add("    ]");
+        lines.add("  }");
+        lines.add("}");
+
+        updateResource("META-INF/native-image/com.oracle.graal.python.capi/reachability-metadata.json", javaBuiltins, lines, StandardLocation.CLASS_OUTPUT);
+    }
+
+    /**
      * Generates the contents of the PythonCextBuiltinRegistry class: the list of builtins, the
      * CApiBuiltinNode factory function, and the slot query function.
      */
@@ -679,22 +710,16 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         lines.add("// Generated by annotation processor: " + getClass().getName());
         lines.add("package %s".formatted("com.oracle.graal.python.builtins.modules.cext;"));
         lines.add("");
-        lines.add("import java.lang.foreign.FunctionDescriptor;");
-        lines.add("import java.lang.foreign.ValueLayout;");
         lines.add("import java.lang.invoke.MethodHandle;");
         lines.add("import java.lang.invoke.MethodHandles;");
         lines.add("import java.lang.invoke.MethodType;");
-        lines.add("");
-        lines.add("import org.graalvm.nativeimage.hosted.Feature.DuringSetupAccess;");
-        lines.add("import org.graalvm.nativeimage.hosted.Feature;");
-        lines.add("import org.graalvm.nativeimage.hosted.RuntimeForeignAccess;");
         lines.add("");
         lines.add("import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltinExecutable;");
         lines.add("import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltinNode;");
         lines.add("import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath;");
         lines.add("import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;");
         lines.add("");
-        lines.add("public final class PythonCextBuiltinRegistry implements Feature {");
+        lines.add("public final class PythonCextBuiltinRegistry {");
         lines.add("");
         lines.add("    private PythonCextBuiltinRegistry() {");
         lines.add("        // no instances");
@@ -763,21 +788,6 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         }
         lines.add("        }");
         lines.add("        return null;");
-        lines.add("    }");
-
-        lines.add("");
-        lines.add("    @Override");
-        lines.add("    public void duringSetup(DuringSetupAccess access) {");
-        for (var builtin : javaBuiltins) {
-            String argString = Arrays.stream(builtin.arguments).map(b -> capiTypeToMemoryLayout(b)).collect(Collectors.joining(", "));
-            if (capiTypeToJavaPrimitiveType(builtin.returnType).equals("void")) {
-                lines.add("        var desc_" + builtin.name + " = FunctionDescriptor.ofVoid(" + argString + ");");
-            } else {
-                lines.add("        var desc_" + builtin.name + " = FunctionDescriptor.of(" + capiTypeToMemoryLayout(builtin.returnType) + (builtin.arguments.length > 0 ? ", " : "") + argString +
-                                ");");
-            }
-            lines.add("        RuntimeForeignAccess.registerForDirectUpcall(HANDLE_" + builtin.name + ", desc_" + builtin.name + ");");
-        }
         lines.add("    }");
 
         for (var builtin : javaBuiltins) {
@@ -1044,6 +1054,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                 generateCApiHeader(javaBuiltins);
             }
             generateBuiltinRegistry(javaBuiltins);
+            generateUpcallConfig(javaBuiltins);
             generateCApiAsserts(allBuiltins);
             if (trees != null) {
                 // needs jdk.compiler
