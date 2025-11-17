@@ -48,13 +48,15 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PointerZZZ;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyModuleDef;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyModuleDefZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyModuleObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyModuleObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ensureExecutableUncached;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readPtrField;
 import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_NEEDS_S_AS_FIRST_ARG;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
@@ -79,7 +81,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescrip
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins.PrefixSuffixNode;
@@ -104,8 +105,6 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -246,11 +245,11 @@ public final class PythonCextModuleBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {Pointer, PyObject, ConstCharPtrAsTruffleString, Pointer, Int, Int, ConstCharPtrAsTruffleString}, call = Ignored)
+    @CApiBuiltin(ret = Int, args = {PointerZZZ, PyObject, ConstCharPtrAsTruffleString, Pointer, Int, Int, ConstCharPtrAsTruffleString}, call = Ignored)
     abstract static class GraalPyPrivate_Module_AddFunctionToModule extends CApi7BuiltinNode {
 
         @Specialization
-        static Object moduleFunction(Object methodDefPtr, PythonModule mod, TruffleString name, Object cfunc, int flags, int wrapper, Object doc,
+        static Object moduleFunction(long methodDefPtr, PythonModule mod, TruffleString name, Object cfunc, int flags, int wrapper, Object doc,
                         @Bind Node inliningTarget,
                         @Cached ObjectBuiltins.SetattrNode setattrNode,
                         @Cached(inline = true) ReadAttributeFromPythonObjectNode readAttrNode,
@@ -272,9 +271,6 @@ public final class PythonCextModuleBuiltins {
         @Specialization
         static int doGeneric(PythonModule self, Object visitFun, Object arg,
                         @Bind Node inliningTarget,
-                        @Cached CStructAccess.ReadPointerNode readPointerNode,
-                        @Cached CStructAccess.ReadI64Node readI64Node,
-                        @CachedLibrary(limit = "1") InteropLibrary lib,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached ExternalFunctionInvokeNode externalFunctionInvokeNode,
                         @Cached CheckPrimitiveFunctionResultNode checkPrimitiveFunctionResultNode,
@@ -284,11 +280,11 @@ public final class PythonCextModuleBuiltins {
              * As in 'moduleobject.c: module_traverse': 'if (m->md_def && m->md_def->m_traverse &&
              * (m->md_def->m_size <= 0 || m->md_state != NULL))'
              */
-            Object mdDef = self.getNativeModuleDef();
-            if (mdDef != null) {
-                Object mTraverse = readPointerNode.read(mdDef, CFields.PyModuleDef__m_traverse);
-                if (!lib.isNull(mTraverse)) {
-                    long mSize = readI64Node.read(mdDef, CFields.PyModuleDef__m_size);
+            long mdDef = self.getNativeModuleDef();
+            if (mdDef != NULLPTR) {
+                long mTraverse = readPtrField(mdDef, CFields.PyModuleDef__m_traverse);
+                if (mTraverse != NULLPTR) {
+                    long mSize = readLongField(mdDef, CFields.PyModuleDef__m_size);
                     long mdState = self.getNativeModuleState();
                     if (mSize <= 0 || mdState != NULLPTR) {
                         PythonThreadState threadState = getThreadStateNode.execute(inliningTarget);
@@ -328,10 +324,10 @@ public final class PythonCextModuleBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = ArgDescriptor.Void, args = {PyModuleObject, PyModuleDef}, call = Ignored)
+    @CApiBuiltin(ret = ArgDescriptor.Void, args = {PyModuleObject, PyModuleDefZZZ}, call = Ignored)
     abstract static class GraalPyPrivate_Module_SetDef extends CApiBinaryBuiltinNode {
         @Specialization
-        static Object set(PythonModule object, Object value) {
+        static Object set(PythonModule object, long value) {
             object.setNativeModuleDef(value);
             return PNone.NO_VALUE;
         }

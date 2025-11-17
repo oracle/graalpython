@@ -260,8 +260,8 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
                         @Bind PythonContext context,
                         @Bind Node inliningTarget,
                         @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
-            Object nativeModuleDef = extensionModule.getNativeModuleDef();
-            if (nativeModuleDef == null) {
+            long nativeModuleDef = extensionModule.getNativeModuleDef();
+            if (nativeModuleDef == NULLPTR) {
                 return 0;
             }
             PythonLanguage language = context.getLanguage(inliningTarget);
@@ -274,7 +274,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static int doExec(Node node, PythonContext context, PythonModule extensionModule, Object nativeModuleDef) {
+        private static int doExec(Node node, PythonContext context, PythonModule extensionModule, long nativeModuleDef) {
             /*
              * Check if module is already initialized. CPython does that by testing if 'md_state !=
              * NULL'. So, we do the same.

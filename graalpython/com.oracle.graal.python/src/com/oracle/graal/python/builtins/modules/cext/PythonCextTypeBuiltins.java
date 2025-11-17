@@ -45,6 +45,7 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.C
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PointerZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyBufferProcsZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
@@ -54,6 +55,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ensureExecutableUncached;
 import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.METH_CLASS;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_name;
+import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nodes.HiddenAttr.AS_BUFFER;
 import static com.oracle.graal.python.nodes.HiddenAttr.METHOD_DEF_PTR;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
@@ -270,12 +272,12 @@ public final class PythonCextTypeBuiltins {
     @ImportStatic(CExtContext.class)
     abstract static class NewClassMethodNode extends Node {
 
-        abstract Object execute(Node inliningTarget, Object methodDefPtr, TruffleString name, Object methObj, Object flags, Object wrapper, Object type, Object doc);
+        abstract Object execute(Node inliningTarget, long methodDefPtr, TruffleString name, Object methObj, Object flags, Object wrapper, Object type, Object doc);
 
         @Specialization(guards = "isClassOrStaticMethod(flags)")
-        static Object classOrStatic(Node inliningTarget, Object methodDefPtr, TruffleString name, Object methObj, int flags, int wrapper, Object type, Object doc,
+        static Object classOrStatic(Node inliningTarget, long methodDefPtr, TruffleString name, Object methObj, int flags, int wrapper, Object type, Object doc,
                         @Bind PythonLanguage language,
-                        @Exclusive @Cached HiddenAttr.WriteNode writeHiddenAttrNode,
+                        @Exclusive @Cached HiddenAttr.WriteLongNode writeHiddenAttrNode,
                         @Cached(inline = false) WriteAttributeToPythonObjectNode writeAttrNode) {
             PythonAbstractObject func = PExternalFunctionWrapper.createWrapperFunction(name, methObj, type, flags, wrapper, language);
             writeHiddenAttrNode.execute(inliningTarget, func, METHOD_DEF_PTR, methodDefPtr);
@@ -291,10 +293,10 @@ public final class PythonCextTypeBuiltins {
         }
 
         @Specialization(guards = "!isClassOrStaticMethod(flags)")
-        static Object doNativeCallable(Node inliningTarget, Object methodDefPtr, TruffleString name, Object methObj, int flags, int wrapper, Object type, Object doc,
+        static Object doNativeCallable(Node inliningTarget, long methodDefPtr, TruffleString name, Object methObj, int flags, int wrapper, Object type, Object doc,
                         @Bind PythonLanguage language,
                         @Cached PyObjectSetAttrNode setattr,
-                        @Exclusive @Cached HiddenAttr.WriteNode writeNode) {
+                        @Exclusive @Cached HiddenAttr.WriteLongNode writeNode) {
             PythonAbstractObject func = PExternalFunctionWrapper.createWrapperFunction(name, methObj, type, flags, wrapper, language);
             setattr.execute(inliningTarget, func, T___NAME__, name);
             setattr.execute(inliningTarget, func, T___DOC__, doc);
@@ -303,11 +305,11 @@ public final class PythonCextTypeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {Pointer, PyTypeObject, PyObject, ConstCharPtrAsTruffleString, Pointer, Int, Int, ConstCharPtrAsTruffleString}, call = Ignored)
+    @CApiBuiltin(ret = Int, args = {PointerZZZ, PyTypeObject, PyObject, ConstCharPtrAsTruffleString, Pointer, Int, Int, ConstCharPtrAsTruffleString}, call = Ignored)
     abstract static class GraalPyPrivate_Type_AddFunctionToType extends CApi8BuiltinNode {
 
         @Specialization
-        static int classMethod(Object methodDefPtr, Object type, Object dict, TruffleString name, Object cfunc, int flags, int wrapper, Object doc,
+        static int classMethod(long methodDefPtr, Object type, Object dict, TruffleString name, Object cfunc, int flags, int wrapper, Object doc,
                         @Bind Node inliningTarget,
                         @Cached NewClassMethodNode newClassMethodNode,
                         @Cached PyDictSetDefault setDefault) {
@@ -357,24 +359,23 @@ public final class PythonCextTypeBuiltins {
     @GenerateCached(false)
     abstract static class CreateGetSetNode extends Node {
 
-        abstract GetSetDescriptor execute(Node inliningTarget, TruffleString name, Object cls, Object getter, Object setter, Object doc, Object closure);
+        abstract GetSetDescriptor execute(Node inliningTarget, TruffleString name, Object cls, long getter, long setter, Object doc, long closure);
 
         @Specialization
         @TruffleBoundary
-        static GetSetDescriptor createGetSet(Node inliningTarget, TruffleString name, Object cls, Object getter, Object setter, Object doc, Object closure,
-                        @CachedLibrary(limit = "2") InteropLibrary interopLibrary) {
+        static GetSetDescriptor createGetSet(Node inliningTarget, TruffleString name, Object cls, long getter, long setter, Object doc, long closure) {
             assert !(doc instanceof CArrayWrapper);
             // note: 'doc' may be NULL; in this case, we would store 'None'
             PBuiltinFunction get = null;
             PythonLanguage language = PythonLanguage.get(inliningTarget);
-            if (!interopLibrary.isNull(getter)) {
+            if (getter != NULLPTR) {
                 RootCallTarget getterCT = getterCallTarget(name, language);
                 NfiBoundFunction getterFun = ensureExecutableUncached(getter, PExternalFunctionWrapper.GETTER);
                 get = PFactory.createBuiltinFunction(language, name, cls, EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(getterFun, closure), 0, getterCT);
             }
 
             PBuiltinFunction set = null;
-            boolean hasSetter = !interopLibrary.isNull(setter);
+            boolean hasSetter = setter != NULLPTR;
             if (hasSetter) {
                 RootCallTarget setterCT = setterCallTarget(name, language);
                 NfiBoundFunction setterFun = ensureExecutableUncached(setter, PExternalFunctionWrapper.SETTER);
@@ -400,11 +401,11 @@ public final class PythonCextTypeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyTypeObject, PyObject, ConstCharPtrAsTruffleString, Pointer, Pointer, ConstCharPtrAsTruffleString, Pointer}, call = Ignored)
+    @CApiBuiltin(ret = Int, args = {PyTypeObject, PyObject, ConstCharPtrAsTruffleString, PointerZZZ, PointerZZZ, ConstCharPtrAsTruffleString, PointerZZZ}, call = Ignored)
     abstract static class GraalPyPrivate_Type_AddGetSet extends CApi7BuiltinNode {
 
         @Specialization
-        static int doGeneric(Object cls, PDict dict, TruffleString name, Object getter, Object setter, Object doc, Object closure,
+        static int doGeneric(Object cls, PDict dict, TruffleString name, long getter, long setter, Object doc, long closure,
                         @Bind Node inliningTarget,
                         @Cached CreateGetSetNode createGetSetNode,
                         @Cached PyDictSetDefault setDefault) {

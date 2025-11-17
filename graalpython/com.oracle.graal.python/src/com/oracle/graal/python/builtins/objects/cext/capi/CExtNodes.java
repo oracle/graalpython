@@ -70,6 +70,11 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyOb
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_as_buffer;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointer;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointerUncached;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readPtrField;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readStructArrayIntField;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readStructArrayPtrField;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.wrapPointer;
 import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nfi2.NativeMemory.calloc;
 import static com.oracle.graal.python.nfi2.NativeMemory.mallocByteArray;
@@ -112,6 +117,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeRawNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.ResolveHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateStrongRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
@@ -206,11 +212,9 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
@@ -1631,7 +1635,7 @@ public abstract class CExtNodes {
     private static final int SLOT_PY_MOD_EXEC = 2;
     private static final int SLOT_PY_MOD_MULTIPLE_INTERPRETERS = 3;
 
-    private static final NfiDowncallSignature CREATE_SIGNATURE = Nfi.createDowncallSignature(NfiType.POINTER, NfiType.POINTER, NfiType.POINTER);
+    private static final NfiDowncallSignature CREATE_SIGNATURE = Nfi.createDowncallSignature(NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER);
 
     /**
      * Equivalent of {@code PyModule_FromDefAndSpec}. Creates a Python module from a module
@@ -1653,9 +1657,9 @@ public abstract class CExtNodes {
      */
     @TruffleBoundary
     static Object createModule(Node node, CApiContext capiContext, ModuleSpec moduleSpec, Object moduleDefWrapper, Object library) {
-        InteropLibrary interopLib = InteropLibrary.getUncached();
         // call to type the pointer
-        Object moduleDef = moduleDefWrapper instanceof PythonAbstractNativeObject ? ((PythonAbstractNativeObject) moduleDefWrapper).getPtr() : moduleDefWrapper;
+        Object moduleDefObj = moduleDefWrapper instanceof PythonAbstractNativeObject ? ((PythonAbstractNativeObject) moduleDefWrapper).getPtr() : moduleDefWrapper;
+        long moduleDefPtr = ensurePointerUncached(moduleDefObj);
 
         /*
          * The name of the module is taken from the module spec and *NOT* from the module
@@ -1665,34 +1669,34 @@ public abstract class CExtNodes {
         Object mDoc;
         long mSize;
         // do not eagerly read the doc string; this turned out to be unnecessarily expensive
-        Object docPtr = CStructAccess.ReadPointerNode.readUncached(moduleDef, PyModuleDef__m_doc);
-        if (PGuards.isNullOrZero(docPtr, interopLib)) {
+        long docPtr = readPtrField(moduleDefPtr, PyModuleDef__m_doc);
+        if (docPtr == NULLPTR) {
             mDoc = NO_VALUE;
         } else {
             mDoc = FromCharPointerNode.executeUncached(docPtr);
         }
 
-        mSize = CStructAccess.ReadI64Node.getUncached().read(moduleDef, PyModuleDef__m_size);
+        mSize = readLongField(moduleDefPtr, PyModuleDef__m_size);
 
         if (mSize < 0) {
             throw PRaiseNode.raiseStatic(node, PythonBuiltinClassType.SystemError, ErrorMessages.M_SIZE_CANNOT_BE_NEGATIVE, mName);
         }
 
         // parse slot definitions
-        Object createFunction = null;
+        long createFunction = NULLPTR;
         boolean hasExecutionSlots = false;
-        Object slotDefinitions = CStructAccess.ReadPointerNode.readUncached(moduleDef, PyModuleDef__m_slots);
-        if (!interopLib.isNull(slotDefinitions)) {
+        long slotDefinitions = readPtrField(moduleDefPtr, PyModuleDef__m_slots);
+        if (slotDefinitions != NULLPTR) {
             loop: for (int i = 0;; i++) {
-                int slotId = CStructAccess.ReadI32Node.getUncached().readStructArrayElement(slotDefinitions, i, PyModuleDef_Slot__slot);
+                int slotId = readStructArrayIntField(slotDefinitions, i, PyModuleDef_Slot__slot);
                 switch (slotId) {
                     case 0:
                         break loop;
                     case SLOT_PY_MOD_CREATE:
-                        if (createFunction != null) {
+                        if (createFunction != NULLPTR) {
                             throw PRaiseNode.raiseStatic(node, SystemError, ErrorMessages.MODULE_HAS_MULTIPLE_CREATE_SLOTS, mName);
                         }
-                        createFunction = CStructAccess.ReadPointerNode.getUncached().readStructArrayElement(slotDefinitions, i, PyModuleDef_Slot__value);
+                        createFunction = readStructArrayPtrField(slotDefinitions, i, PyModuleDef_Slot__value);
                         break;
                     case SLOT_PY_MOD_EXEC:
                         hasExecutionSlots = true;
@@ -1709,26 +1713,12 @@ public abstract class CExtNodes {
 
         PythonContext context = capiContext.getContext();
         Object module;
-        if (createFunction != null && !interopLib.isNull(createFunction)) {
-            Object[] cArguments = new Object[]{PythonToNativeNode.executeUncached(moduleSpec.originalModuleSpec), moduleDef};
-            try {
-                Object result;
-                if (!interopLib.isExecutable(createFunction)) {
-                    if (!interopLib.isPointer(createFunction)) {
-                        interopLib.toNative(createFunction);
-                    }
-                    result = CREATE_SIGNATURE.invoke(context.ensureNfiContext(), interopLib.asPointer(createFunction), cArguments);
-                } else {
-                    // TODO(NFI2) can this really happen?
-                    result = interopLib.execute(createFunction, cArguments);
-                }
-                PythonThreadState threadState = context.getThreadState(context.getLanguage());
-                TransformExceptionFromNativeNode.getUncached().execute(null, threadState, mName, interopLib.isNull(result), true,
-                                ErrorMessages.CREATION_FAILD_WITHOUT_EXCEPTION, ErrorMessages.CREATION_RAISED_EXCEPTION);
-                module = NativeToPythonTransferNode.executeUncached(result);
-            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-                throw shouldNotReachHere(e);
-            }
+        if (createFunction != NULLPTR) {
+            long result = (long) CREATE_SIGNATURE.invoke(context.ensureNfiContext(), createFunction, PythonToNativeRawNode.executeUncached(moduleSpec.originalModuleSpec), moduleDefPtr);
+            PythonThreadState threadState = context.getThreadState(context.getLanguage());
+            TransformExceptionFromNativeNode.getUncached().execute(null, threadState, mName, result == NULLPTR, true,
+                            ErrorMessages.CREATION_FAILD_WITHOUT_EXCEPTION, ErrorMessages.CREATION_RAISED_EXCEPTION);
+            module = NativeToPythonTransferNode.executeUncached(wrapPointer(result));
 
             /*
              * We are more strict than CPython and require this to be a PythonModule object. This
@@ -1744,16 +1734,16 @@ public abstract class CExtNodes {
                 }
                 // otherwise CPython is just fine
             } else {
-                ((PythonModule) module).setNativeModuleDef(moduleDef);
+                ((PythonModule) module).setNativeModuleDef(moduleDefPtr);
             }
         } else {
             PythonModule pythonModule = PFactory.createPythonModule(mName);
-            pythonModule.setNativeModuleDef(moduleDef);
+            pythonModule.setNativeModuleDef(moduleDefPtr);
             module = pythonModule;
         }
 
-        Object methodDefinitions = CStructAccess.ReadPointerNode.readUncached(moduleDef, PyModuleDef__m_methods);
-        if (!interopLib.isNull(methodDefinitions)) {
+        long methodDefinitions = readPtrField(moduleDefPtr, PyModuleDef__m_methods);
+        if (methodDefinitions != NULLPTR) {
             for (int i = 0;; i++) {
                 PBuiltinFunction fun = createLegacyMethod(methodDefinitions, i, context.getLanguage());
                 if (fun == null) {
@@ -1770,18 +1760,18 @@ public abstract class CExtNodes {
         return module;
     }
 
-    private static final NfiDowncallSignature EXEC_SIGNATURE = Nfi.createDowncallSignature(NfiType.SINT32, NfiType.POINTER);
+    private static final NfiDowncallSignature EXEC_SIGNATURE = Nfi.createDowncallSignature(NfiType.SINT32, NfiType.RAW_POINTER);
 
     /**
      * Equivalent of {@code PyModule_ExecDef}.
      */
     @TruffleBoundary
-    public static int execModule(Node node, CApiContext capiContext, PythonModule module, Object moduleDef) {
+    public static int execModule(Node node, CApiContext capiContext, PythonModule module, long moduleDef) {
         InteropLibrary interopLib = InteropLibrary.getUncached();
         // call to type the pointer
 
         TruffleString mName = ModuleGetNameNode.executeUncached(module);
-        long mSize = CStructAccess.ReadI64Node.getUncached().read(moduleDef, PyModuleDef__m_size);
+        long mSize = readLongField(moduleDef, PyModuleDef__m_size);
 
         try {
             // allocate md_state if necessary
@@ -1797,12 +1787,12 @@ public abstract class CExtNodes {
             }
 
             // parse slot definitions
-            Object slotDefinitions = CStructAccess.ReadPointerNode.readUncached(moduleDef, PyModuleDef__m_slots);
-            if (interopLib.isNull(slotDefinitions)) {
+            long slotDefinitions = readPtrField(moduleDef, PyModuleDef__m_slots);
+            if (slotDefinitions == NULLPTR) {
                 return 0;
             }
             loop: for (int i = 0;; i++) {
-                int slotId = CStructAccess.ReadI32Node.getUncached().readStructArrayElement(slotDefinitions, i, PyModuleDef_Slot__slot);
+                int slotId = readStructArrayIntField(slotDefinitions, i, PyModuleDef_Slot__slot);
                 switch (slotId) {
                     case 0:
                         break loop;
@@ -1810,12 +1800,9 @@ public abstract class CExtNodes {
                         // handled in CreateModuleNode
                         break;
                     case SLOT_PY_MOD_EXEC:
-                        Object execFunction = CStructAccess.ReadPointerNode.getUncached().readStructArrayElement(slotDefinitions, i, PyModuleDef_Slot__value);
+                        long execFunction = readStructArrayPtrField(slotDefinitions, i, PyModuleDef_Slot__value);
                         PythonContext context = capiContext.getContext();
-                        if (!interopLib.isPointer(execFunction)) {
-                            interopLib.toNative(execFunction);
-                        }
-                        Object result = EXEC_SIGNATURE.invoke(context.ensureNfiContext(), interopLib.asPointer(execFunction), PythonToNativeNode.executeUncached(module));
+                        Object result = EXEC_SIGNATURE.invoke(context.ensureNfiContext(), execFunction, PythonToNativeRawNode.executeUncached(module));
                         int iResult = interopLib.asInt(result);
                         /*
                          * It's a bit counterintuitive that we use 'isPrimitiveValue = false' but
@@ -1854,22 +1841,22 @@ public abstract class CExtNodes {
      * </pre>
      */
     @TruffleBoundary
-    static PBuiltinFunction createLegacyMethod(Object methodDef, int element, PythonLanguage language) {
+    static PBuiltinFunction createLegacyMethod(long methodDefPtr, int element, PythonLanguage language) {
         InteropLibrary interopLib = InteropLibrary.getUncached();
-        Object methodNamePtr = CStructAccess.ReadPointerNode.getUncached().readStructArrayElement(methodDef, element, PyMethodDef__ml_name);
-        if (interopLib.isNull(methodNamePtr) || (methodNamePtr instanceof Long && ((long) methodNamePtr) == 0)) {
+        long methodNamePtr = readStructArrayPtrField(methodDefPtr, element, PyMethodDef__ml_name);
+        if (methodNamePtr == NULLPTR) {
             return null;
         }
         TruffleString methodName = FromCharPointerNode.executeUncached(methodNamePtr);
         // note: 'ml_doc' may be NULL; in this case, we would store 'None'
         Object methodDoc = PNone.NONE;
-        Object methodDocPtr = CStructAccess.ReadPointerNode.getUncached().readStructArrayElement(methodDef, element, PyMethodDef__ml_doc);
-        if (!interopLib.isNull(methodDocPtr)) {
+        long methodDocPtr = readStructArrayPtrField(methodDefPtr, element, PyMethodDef__ml_doc);
+        if (methodDocPtr != NULLPTR) {
             methodDoc = FromCharPointerNode.executeUncached(methodDocPtr, false);
         }
 
-        int flags = CStructAccess.ReadI32Node.getUncached().readStructArrayElement(methodDef, element, PyMethodDef__ml_flags);
-        Object mlMethObj = CStructAccess.ReadPointerNode.getUncached().readStructArrayElement(methodDef, element, PyMethodDef__ml_meth);
+        int flags = readStructArrayIntField(methodDefPtr, element, PyMethodDef__ml_flags);
+        long mlMethObj = readStructArrayPtrField(methodDefPtr, element, PyMethodDef__ml_meth);
         // CPy-style methods
         // TODO(fa) support static and class methods
         PExternalFunctionWrapper sig = PExternalFunctionWrapper.fromMethodFlags(flags);
@@ -1877,7 +1864,7 @@ public abstract class CExtNodes {
         NfiBoundFunction fun = ensureExecutableUncached(mlMethObj, sig);
         PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(fun);
         PBuiltinFunction function = PFactory.createBuiltinFunction(language, methodName, null, PythonUtils.EMPTY_OBJECT_ARRAY, kwDefaults, flags, callTarget);
-        HiddenAttr.WriteNode.executeUncached(function, METHOD_DEF_PTR, methodDef);
+        HiddenAttr.WriteLongNode.executeUncached(function, METHOD_DEF_PTR, methodDefPtr);
 
         // write doc string; we need to directly write to the storage otherwise it is disallowed
         // writing to builtin types.

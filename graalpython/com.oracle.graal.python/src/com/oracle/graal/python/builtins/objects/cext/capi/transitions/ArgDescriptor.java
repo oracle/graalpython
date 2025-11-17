@@ -247,8 +247,9 @@ public enum ArgDescriptor {
     PyMemberDef(ArgBehavior.Pointer, "PyMemberDef*"),
     PyModuleObject(ArgBehavior.PyObject, "PyModuleObject*"),
     PyModuleObjectTransfer(ArgBehavior.PyObject, "PyModuleObject*", true, false),
-    PyMethodDef(ArgBehavior.WrappedPointer, "PyMethodDef*"),
-    PyModuleDef(ArgBehavior.Pointer, "PyModuleDef*"), // it's unclear if this should be PyObject
+    PyMethodDefZZZ(ArgBehavior.PointerZZZ, "PyMethodDef*"),
+    PyModuleDefZZZ(ArgBehavior.PointerZZZ, "PyModuleDef*"), // it's unclear if this should be
+                                                            // PyObject
     PyModuleDefSlot(ArgBehavior.Pointer, "PyModuleDef_Slot*"),
     PyNumberMethods(ArgBehavior.Pointer, "PyNumberMethods*"),
     PySequenceMethods(ArgBehavior.Pointer, "PySequenceMethods*"),

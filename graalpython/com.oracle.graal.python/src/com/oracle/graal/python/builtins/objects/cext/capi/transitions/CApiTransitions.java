@@ -49,7 +49,9 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CAp
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PollingState.RQ_UNINITIALIZED;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointer;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointerUncached;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readIntField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.wrapPointer;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeIntField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeLongField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
 import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
@@ -1447,7 +1449,6 @@ public abstract class CApiTransitions {
 
         @Specialization
         static PythonNativeWrapper doGeneric(Node inliningTarget, long pointer,
-                        @Cached(inline = false) CStructAccess.ReadI32Node readI32Node,
                         @Cached InlinedExactClassProfile profile,
                         @Cached UpdateStrongRefNode updateRefNode) {
             if (HandlePointerConverter.pointsToPyIntHandle(pointer)) {
@@ -1456,7 +1457,7 @@ public abstract class CApiTransitions {
                 throw CompilerDirectives.shouldNotReachHere("ResolveHandleNode float");
             }
             HandleContext nativeContext = PythonContext.get(inliningTarget).nativeContext;
-            int idx = readI32Node.read(HandlePointerConverter.pointerToStub(pointer), CFields.GraalPyObject__handle_table_index);
+            int idx = readIntField(HandlePointerConverter.pointerToStub(pointer), CFields.GraalPyObject__handle_table_index);
             Object reference = nativeStubLookupGet(nativeContext, pointer, idx);
             PythonNativeWrapper wrapper;
             if (reference instanceof PythonNativeWrapper) {
@@ -1843,7 +1844,6 @@ public abstract class CApiTransitions {
         @SuppressWarnings({"truffle-static-method", "truffle-sharing"})
         static Object doNonWrapper(Node inliningTarget, Object value, boolean needsTransfer, boolean release,
                         @CachedLibrary("value") InteropLibrary interopLibrary,
-                        @Cached(inline = false) CStructAccess.ReadI32Node readI32Node,
                         @Cached InlinedConditionProfile isNullProfile,
                         @Cached InlinedConditionProfile isZeroProfile,
                         @Cached InlinedConditionProfile createNativeProfile,
@@ -1884,7 +1884,7 @@ public abstract class CApiTransitions {
                 } else if (HandlePointerConverter.pointsToPyFloatHandle(pointer)) {
                     return HandlePointerConverter.pointerToDouble(pointer);
                 }
-                int idx = readI32Node.read(HandlePointerConverter.pointerToStub(pointer), CFields.GraalPyObject__handle_table_index);
+                int idx = readIntField(HandlePointerConverter.pointerToStub(pointer), CFields.GraalPyObject__handle_table_index);
                 Object reference = nativeStubLookupGet(nativeContext, pointer, idx);
                 if (reference instanceof PythonNativeWrapper) {
                     wrapper = (PythonNativeWrapper) reference;
@@ -2089,7 +2089,6 @@ public abstract class CApiTransitions {
         @SuppressWarnings({"truffle-static-method", "truffle-sharing"})
         Object doNonWrapper(long pointer, boolean stealing,
                         @Bind Node inliningTarget,
-                        @Cached CStructAccess.ReadI32Node readI32Node,
                         @Cached InlinedConditionProfile isZeroProfile,
                         @Cached InlinedConditionProfile createNativeProfile,
                         @Cached InlinedConditionProfile isNativeProfile,
@@ -2115,7 +2114,7 @@ public abstract class CApiTransitions {
                 } else if (HandlePointerConverter.pointsToPyFloatHandle(pointer)) {
                     return HandlePointerConverter.pointerToDouble(pointer);
                 }
-                int idx = readI32Node.read(HandlePointerConverter.pointerToStub(pointer), CFields.GraalPyObject__handle_table_index);
+                int idx = readIntField(HandlePointerConverter.pointerToStub(pointer), CFields.GraalPyObject__handle_table_index);
                 Object reference = nativeStubLookupGet(nativeContext, pointer, idx);
                 if (reference instanceof PythonNativeWrapper) {
                     wrapper = (PythonNativeWrapper) reference;
@@ -2174,7 +2173,6 @@ public abstract class CApiTransitions {
 
         @Specialization
         static Object doLong(Node inliningTarget, long pointer,
-                        @Cached(inline = false) CStructAccess.ReadI32Node readI32Node,
                         @Cached InlinedBranchProfile isNativeProfile,
                         @Cached InlinedConditionProfile isNativeWrapperProfile,
                         @Cached InlinedConditionProfile isHandleSpaceProfile) {
@@ -2190,7 +2188,7 @@ public abstract class CApiTransitions {
                 } else if (HandlePointerConverter.pointsToPyFloatHandle(pointer)) {
                     return HandlePointerConverter.pointerToDouble(pointer);
                 }
-                int idx = readI32Node.read(HandlePointerConverter.pointerToStub(pointer), CFields.GraalPyObject__handle_table_index);
+                int idx = readIntField(HandlePointerConverter.pointerToStub(pointer), CFields.GraalPyObject__handle_table_index);
                 PythonNativeWrapper wrapper;
                 Object reference = nativeStubLookupGet(nativeContext, pointer, idx);
                 if (reference instanceof PythonNativeWrapper) {
@@ -2325,7 +2323,6 @@ public abstract class CApiTransitions {
 
         @Specialization
         static PythonNativeWrapper doGeneric(Node inliningTarget, long pointer, boolean strict,
-                        @Cached(inline = false) CStructAccess.ReadI32Node readI32Node,
                         @Cached InlinedConditionProfile isNullProfile,
                         @Cached InlinedConditionProfile isNativeProfile,
                         @Cached InlinedExactClassProfile nativeWrapperProfile,
@@ -2342,7 +2339,7 @@ public abstract class CApiTransitions {
                 } else if (HandlePointerConverter.pointsToPyFloatHandle(pointer)) {
                     throw CompilerDirectives.shouldNotReachHere("not implemented NativePtrToPythonWrapperNode float");
                 }
-                int idx = readI32Node.read(HandlePointerConverter.pointerToStub(pointer), CFields.GraalPyObject__handle_table_index);
+                int idx = readIntField(HandlePointerConverter.pointerToStub(pointer), CFields.GraalPyObject__handle_table_index);
                 PythonNativeWrapper wrapper;
                 Object reference = nativeStubLookupGet(nativeContext, pointer, idx);
                 if (reference instanceof PythonNativeWrapper) {
@@ -2481,8 +2478,6 @@ public abstract class CApiTransitions {
         static void doGeneric(Node inliningTarget, PythonAbstractObjectNativeWrapper wrapper, boolean setStrong, boolean keepInGcList, boolean release,
                         @Cached InlinedConditionProfile hasRefProfile,
                         @Cached PyObjectGCTrackNode gcTrackNode,
-                        @Cached(inline = false) CStructAccess.ReadI32Node readI32Node,
-                        @Cached(inline = false) CStructAccess.WriteIntNode writeI32Node,
                         @Cached InlinedConditionProfile isGcProfile,
                         @Cached GetClassNode getClassNode,
                         @Cached(inline = false) GetTypeFlagsNode getTypeFlagsNode,
@@ -2521,7 +2516,7 @@ public abstract class CApiTransitions {
                 assert wrapper.ref == null;
                 HandleContext handleContext = PythonContext.get(inliningTarget).nativeContext;
                 long untaggedPointer = HandlePointerConverter.pointerToStub(taggedPointer);
-                int idx = readI32Node.read(untaggedPointer, CFields.GraalPyObject__handle_table_index);
+                int idx = readIntField(untaggedPointer, CFields.GraalPyObject__handle_table_index);
                 boolean gc = false;
                 if (!(wrapper instanceof PrimitiveNativeWrapper)) {
                     Object type = getClassNode.execute(inliningTarget, wrapper.getDelegate());
@@ -2537,7 +2532,7 @@ public abstract class CApiTransitions {
                 assert gc || wrapper.getRefCount() == MANAGED_REFCNT;
 
                 if (release) {
-                    writeI32Node.write(untaggedPointer, CFields.GraalPyObject__handle_table_index, 0);
+                    writeIntField(untaggedPointer, CFields.GraalPyObject__handle_table_index, 0);
                     wrapper.clearNativePointer();
                     Object removed = CApiTransitions.nativeStubLookupRemove(handleContext, idx);
                     assert wrapper == removed;

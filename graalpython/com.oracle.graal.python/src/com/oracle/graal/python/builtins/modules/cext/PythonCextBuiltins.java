@@ -77,6 +77,9 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMe
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMemberDef__name;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMemberDef__offset;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMemberDef__type;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readStructArrayIntField;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readStructArrayLongField;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readStructArrayPtrField;
 import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nfi2.NativeMemory.readPtrArrayElement;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_BUILTINS;
@@ -1004,14 +1007,14 @@ public final class PythonCextBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyTypeObject, Pointer, Pointer}, call = Ignored)
+    @CApiBuiltin(ret = Int, args = {PyTypeObject, PointerZZZ, PointerZZZ}, call = Ignored)
     abstract static class GraalPyPrivate_Set_Native_Slots extends CApiTernaryBuiltinNode {
 
         @Specialization
-        static int doPythonClass(PythonManagedClass pythonClass, Object nativeGetSets, Object nativeMembers,
+        static int doPythonClass(PythonManagedClass pythonClass, long nativeGetSets, long nativeMembers,
                         @Bind Node inliningTarget,
                         @Cached HiddenAttr.WriteNode writeAttrNode) {
-            writeAttrNode.execute(inliningTarget, pythonClass, NATIVE_SLOTS, new Object[]{nativeGetSets, nativeMembers});
+            writeAttrNode.execute(inliningTarget, pythonClass, NATIVE_SLOTS, new long[]{nativeGetSets, nativeMembers});
             return 0;
         }
     }
@@ -1032,54 +1035,50 @@ public final class PythonCextBuiltins {
         @Specialization
         static Object addInheritedSlots(PythonAbstractNativeObject pythonClass,
                         @Bind Node inliningTarget,
-                        @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached CStructAccess.ReadObjectNode readNativeDict,
-                        @Cached CStructAccess.ReadPointerNode readPointer,
-                        @Cached CStructAccess.ReadI32Node readI32,
-                        @Cached CStructAccess.ReadI64Node readI64,
                         @Cached FromCharPointerNode fromCharPointer,
                         @Cached GraalPyPrivate_Type_AddGetSet addGetSet,
                         @Cached GraalPyPrivate_Type_AddMember addMember,
                         @Cached GetMroStorageNode getMroStorageNode) {
             pythonClass.setTpSlots(TpSlots.fromNative(pythonClass, getCApiContext(inliningTarget).getContext()));
 
-            Object[] getsets = collect(getMroStorageNode.execute(inliningTarget, pythonClass), INDEX_GETSETS);
-            Object[] members = collect(getMroStorageNode.execute(inliningTarget, pythonClass), INDEX_MEMBERS);
+            Long[] getsets = collect(getMroStorageNode.execute(inliningTarget, pythonClass), INDEX_GETSETS);
+            Long[] members = collect(getMroStorageNode.execute(inliningTarget, pythonClass), INDEX_MEMBERS);
 
             PDict dict = (PDict) readNativeDict.readFromObj(pythonClass, CFields.PyTypeObject__tp_dict);
 
-            for (Object getset : getsets) {
-                if (!PGuards.isNullOrZero(getset, lib)) {
+            for (long getset : getsets) {
+                if (getset != NULLPTR) {
                     for (int i = 0;; i++) {
-                        Object namePtr = readPointer.readStructArrayElement(getset, i, PyGetSetDef__name);
-                        if (PGuards.isNullOrZero(namePtr, lib)) {
+                        long namePtr = readStructArrayPtrField(getset, i, PyGetSetDef__name);
+                        if (namePtr == NULLPTR) {
                             break;
                         }
                         TruffleString name = fromCharPointer.execute(namePtr);
-                        Object getter = readPointer.readStructArrayElement(getset, i, PyGetSetDef__get);
-                        Object setter = readPointer.readStructArrayElement(getset, i, PyGetSetDef__set);
-                        Object docPtr = readPointer.readStructArrayElement(getset, i, PyGetSetDef__doc);
-                        Object doc = PGuards.isNullOrZero(docPtr, lib) ? PNone.NO_VALUE : fromCharPointer.execute(docPtr);
-                        Object closure = readPointer.readStructArrayElement(getset, i, PyGetSetDef__closure);
+                        long getter = readStructArrayPtrField(getset, i, PyGetSetDef__get);
+                        long setter = readStructArrayPtrField(getset, i, PyGetSetDef__set);
+                        long docPtr = readStructArrayPtrField(getset, i, PyGetSetDef__doc);
+                        Object doc = docPtr == NULLPTR ? PNone.NO_VALUE : fromCharPointer.execute(docPtr);
+                        long closure = readStructArrayPtrField(getset, i, PyGetSetDef__closure);
 
                         addGetSet.execute(pythonClass, dict, name, getter, setter, doc, closure);
                     }
                 }
             }
 
-            for (Object member : members) {
-                if (!PGuards.isNullOrZero(member, lib)) {
+            for (long member : members) {
+                if (member != NULLPTR) {
                     for (int i = 0;; i++) {
-                        Object namePtr = readPointer.readStructArrayElement(member, i, PyMemberDef__name);
-                        if (PGuards.isNullOrZero(namePtr, lib)) {
+                        long namePtr = readStructArrayPtrField(member, i, PyMemberDef__name);
+                        if (namePtr == NULLPTR) {
                             break;
                         }
                         TruffleString name = fromCharPointer.execute(namePtr);
-                        int type = readI32.readStructArrayElement(member, i, PyMemberDef__type);
-                        long offset = readI64.readStructArrayElement(member, i, PyMemberDef__offset);
-                        int flags = readI32.readStructArrayElement(member, i, PyMemberDef__flags);
-                        Object docPtr = readPointer.readStructArrayElement(member, i, PyMemberDef__doc);
-                        Object doc = PGuards.isNullOrZero(docPtr, lib) ? PNone.NO_VALUE : fromCharPointer.execute(docPtr);
+                        int type = readStructArrayIntField(member, i, PyMemberDef__type);
+                        long offset = readStructArrayLongField(member, i, PyMemberDef__offset);
+                        int flags = readStructArrayIntField(member, i, PyMemberDef__flags);
+                        long docPtr = readStructArrayPtrField(member, i, PyMemberDef__doc);
+                        Object doc = docPtr == NULLPTR ? PNone.NO_VALUE : fromCharPointer.execute(docPtr);
                         boolean canSet = (flags & CConstants.READONLY.intValue()) == 0;
                         addMember.execute(pythonClass, dict, name, type, offset, canSet ? 1 : 0, doc);
                     }
@@ -1092,19 +1091,20 @@ public final class PythonCextBuiltins {
         private static final int INDEX_MEMBERS = 1;
 
         @TruffleBoundary
-        private static Object[] collect(MroSequenceStorage mro, int idx) {
-            ArrayList<Object> l = new ArrayList<>();
+        private static Long[] collect(MroSequenceStorage mro, int idx) {
+            // TODO(NFI2) avoid boxing, return long[]
+            ArrayList<Long> l = new ArrayList<>();
             int mroLength = mro.length();
             for (int i = 0; i < mroLength; i++) {
                 PythonAbstractClass kls = mro.getPythonClassItemNormalized(i);
                 Object value = HiddenAttr.ReadNode.executeUncached((PythonAbstractObject) kls, NATIVE_SLOTS, null);
                 if (value != null) {
-                    Object[] tuple = (Object[]) value;
+                    long[] tuple = (long[]) value;
                     assert tuple.length == 2;
                     l.add(tuple[idx]);
                 }
             }
-            return l.toArray();
+            return l.toArray(Long[]::new);
         }
     }
 

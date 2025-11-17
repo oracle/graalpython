@@ -122,7 +122,7 @@ public record PyMethodDefHelper(TruffleString name, Object meth, int flags, Truf
         PyMethodDefHelper pyMethodDef = new PyMethodDefHelper(builtinFunction.getName(), getMethFromBuiltinFunction(cApiContext, builtinFunction), builtinFunction.getFlags(), doc);
         long result = cApiContext.getOrAllocateNativePyMethodDef(pyMethodDef);
         // store the PyMethodDef pointer to the built-in function object for fast access
-        HiddenAttr.WriteNode.executeUncached(builtinFunction, HiddenAttr.METHOD_DEF_PTR, result);
+        HiddenAttr.WriteLongNode.executeUncached(builtinFunction, HiddenAttr.METHOD_DEF_PTR, result);
         return result;
     }
 

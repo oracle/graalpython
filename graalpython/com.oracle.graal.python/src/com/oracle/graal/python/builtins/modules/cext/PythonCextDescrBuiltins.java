@@ -45,6 +45,7 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.C
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PointerZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
@@ -77,22 +78,22 @@ public final class PythonCextDescrBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, PyTypeObject, Pointer, Pointer, ConstCharPtrAsTruffleString, Pointer}, call = Ignored)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, PyTypeObject, PointerZZZ, PointerZZZ, ConstCharPtrAsTruffleString, PointerZZZ}, call = Ignored)
     abstract static class GraalPyPrivate_Descr_NewGetSet extends CApi6BuiltinNode {
 
         @Specialization
-        static Object doNativeCallable(TruffleString name, Object cls, Object getter, Object setter, Object doc, Object closure,
+        static Object doNativeCallable(TruffleString name, Object cls, long getter, long setter, Object doc, long closure,
                         @Bind Node inliningTarget,
                         @Cached CreateGetSetNode createGetSetNode) {
             return createGetSetNode.execute(inliningTarget, name, cls, getter, setter, doc, closure);
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int, Int, Pointer, PyTypeObject}, call = Ignored)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PointerZZZ, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int, Int, Pointer, PyTypeObject}, call = Ignored)
     abstract static class GraalPyPrivate_Descr_NewClassMethod extends CApi7BuiltinNode {
 
         @Specialization
-        static Object doNativeCallable(Object methodDefPtr, TruffleString name, Object doc, int flags, Object wrapper, Object methObj, Object type,
+        static Object doNativeCallable(long methodDefPtr, TruffleString name, Object doc, int flags, Object wrapper, Object methObj, Object type,
                         @Bind Node inliningTarget,
                         @Cached NewClassMethodNode newClassMethodNode,
                         @Bind PythonLanguage language) {

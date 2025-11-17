@@ -1301,25 +1301,29 @@ public abstract class CExtCommonNodes {
     // TODO(NFI2) review first arg after RAWPOINTER migration (should be just a long)
     @TruffleBoundary
     public static NfiBoundFunction ensureExecutableUncached(Object callable, NativeCExtSymbol descriptor) {
-        PythonContext pythonContext = PythonContext.get(null);
         if (callable instanceof NfiBoundFunction f) {
             // TODO(NFI2) this happens during cpyext tests
             return f;
-        }
-        if (!pythonContext.isNativeAccessAllowed()) {
-            LOGGER.severe(PythonUtils.formatJString("Attempting to bind %s to an NFI signature but native access is not allowed", callable));
-        }
-        if (LOGGER.isLoggable(Level.FINER)) {
-            LOGGER.finer(PythonUtils.formatJString("Binding %s (signature: %s) to NFI signature %s", callable, descriptor.getName(), descriptor.getSignature()));
         }
         InteropLibrary lib = InteropLibrary.getUncached(callable);
         if (!lib.isPointer(callable)) {
             throw shouldNotReachHere();
         }
         try {
-            return descriptor.getSignature().bind(pythonContext.ensureNfiContext(), lib.asPointer(callable));
+            return ensureExecutableUncached(lib.asPointer(callable), descriptor);
         } catch (UnsupportedMessageException e) {
             throw shouldNotReachHere();
         }
+    }
+
+    public static NfiBoundFunction ensureExecutableUncached(long callable, NativeCExtSymbol descriptor) {
+        PythonContext pythonContext = PythonContext.get(null);
+        if (!pythonContext.isNativeAccessAllowed()) {
+            LOGGER.severe(PythonUtils.formatJString("Attempting to bind %s to an NFI signature but native access is not allowed", callable));
+        }
+        if (LOGGER.isLoggable(Level.FINER)) {
+            LOGGER.finer(PythonUtils.formatJString("Binding %s (signature: %s) to NFI signature %s", callable, descriptor.getName(), descriptor.getSignature()));
+        }
+        return descriptor.getSignature().bind(pythonContext.ensureNfiContext(), callable);
     }
 }

@@ -58,7 +58,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.ReadCharPtrNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.ReadI32NodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.ReadObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.ReadPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.WriteIntNodeGen;
@@ -133,6 +132,14 @@ public class CStructAccess {
         NativeMemory.writeLong(getFieldPtr(structBasePtr, field), value);
     }
 
+    public static long readStructArrayLongField(long arrayPtr, long index, CFields field) {
+        return readLongField(getArrayElementPtr(arrayPtr, index, field.struct), field);
+    }
+
+    public static void writeStructArrayLongField(long arrayPtr, long index, CFields field, long value) {
+        writeLongField(getArrayElementPtr(arrayPtr, index, field.struct), field, value);
+    }
+
     public static long readPtrField(long structBasePtr, CFields field) {
         assert field.type.isPyObjectOrPointer();
         return NativeMemory.readLong(getFieldPtr(structBasePtr, field));
@@ -141,6 +148,14 @@ public class CStructAccess {
     public static void writePtrField(long structBasePtr, CFields field, long value) {
         assert field.type.isPyObjectOrPointer();
         NativeMemory.writeLong(getFieldPtr(structBasePtr, field), value);
+    }
+
+    public static long readStructArrayPtrField(long arrayPtr, long index, CFields field) {
+        return readPtrField(getArrayElementPtr(arrayPtr, index, field.struct), field);
+    }
+
+    public static void writeStructArrayPtrField(long arrayPtr, long index, CFields field, long value) {
+        writePtrField(getArrayElementPtr(arrayPtr, index, field.struct), field, value);
     }
 
     private static long getArrayElementPtr(long arrayPtr, long index, CStructs struct) {
@@ -171,60 +186,6 @@ public class CStructAccess {
     }
 
     public abstract static class ReadBaseNode extends Node implements CStructAccessNode {
-    }
-
-    @ImportStatic(PGuards.class)
-    @GenerateUncached
-    @GenerateInline(false)
-    public abstract static class ReadI32Node extends ReadBaseNode {
-
-        abstract int execute(Object pointer, long offset);
-
-        public final int read(Object pointer, CFields field) {
-            assert accepts(field);
-            return execute(pointer, field.offset());
-        }
-
-        public final int readFromObj(PythonNativeObject self, CFields field) {
-            return read(self.getPtr(), field);
-        }
-
-        public final boolean accepts(ArgDescriptor desc) {
-            return desc.isI32();
-        }
-
-        public final int readArrayElement(Object pointer, long element) {
-            return execute(pointer, element * Integer.BYTES);
-        }
-
-        public final int readStructArrayElement(Object pointer, long element, CFields field) {
-            assert accepts(field);
-            return execute(pointer, element * field.struct.size() + field.offset());
-        }
-
-        @Specialization
-        static int readLong(long pointer, long offset) {
-            assert offset >= 0;
-            return UNSAFE.getInt(pointer + offset);
-        }
-
-        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"}, limit = "3")
-        static int readPointer(Object pointer, long offset,
-                        @CachedLibrary("pointer") InteropLibrary lib) {
-            return readLong(asPointer(pointer, lib), offset);
-        }
-
-        @Specialization(guards = {"!isLong(pointer)", "!lib.isPointer(pointer)"})
-        static int readManaged(Object pointer, long offset,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached PCallCapiFunction call) {
-            assert validPointer(pointer);
-            return (int) call.call(NativeCAPISymbol.FUN_READ_INT_MEMBER, pointer, offset);
-        }
-
-        public static ReadI32Node getUncached() {
-            return ReadI32NodeGen.getUncached();
-        }
     }
 
     @ImportStatic(PGuards.class)

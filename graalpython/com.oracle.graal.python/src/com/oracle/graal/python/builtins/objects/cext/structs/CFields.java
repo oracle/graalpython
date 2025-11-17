@@ -55,7 +55,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyGetSetDef;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyMappingMethods;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyMemberDef;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyMethodDef;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyMethodDefZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyModuleDefSlot;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyNumberMethods;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
@@ -125,7 +125,7 @@ public enum CFields {
     PyModuleDef__m_name(ConstCharPtr),
     PyModuleDef__m_doc(ConstCharPtr),
     PyModuleDef__m_size(Py_ssize_t),
-    PyModuleDef__m_methods(PyMethodDef),
+    PyModuleDef__m_methods(PyMethodDefZZZ),
     PyModuleDef__m_slots(PyModuleDefSlot),
     PyModuleDef__m_traverse(traverseproc),
     PyModuleDef__m_clear(inquiry),
@@ -272,7 +272,7 @@ public enum CFields {
     PyTypeObject__tp_weaklistoffset(Py_ssize_t),
     PyTypeObject__tp_iter(getiterfunc),
     PyTypeObject__tp_iternext(iternextfunc),
-    PyTypeObject__tp_methods(PyMethodDef),
+    PyTypeObject__tp_methods(PyMethodDefZZZ),
     PyTypeObject__tp_members(PyMemberDef),
     PyTypeObject__tp_getset(PyGetSetDef),
     PyTypeObject__tp_base(PyTypeObject),

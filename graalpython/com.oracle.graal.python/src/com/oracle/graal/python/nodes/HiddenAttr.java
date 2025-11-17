@@ -123,7 +123,8 @@ public final class HiddenAttr {
 
     boolean hasLongValue() {
         return this == ALLOC || this == AS_BUFFER || this == CLEAR || this == DEALLOC ||
-                        this == DEL || this == FREE || this == IS_GC || this == TRAVERSE;
+                        this == DEL || this == FREE || this == IS_GC || this == TRAVERSE ||
+                        this == METHOD_DEF_PTR;
     }
 
     @Override

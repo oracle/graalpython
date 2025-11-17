@@ -56,10 +56,10 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyInstanceMethodObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyListObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyLongObject;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyMethodDef;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyMethodDefZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyMethodDescrObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyMethodObject;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyModuleDef;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyModuleDefZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyModuleObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
@@ -247,12 +247,12 @@ public final class PythonCextSlotBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyMethodDef, args = {PyCFunctionObject}, call = Ignored)
+    @CApiBuiltin(ret = PyMethodDefZZZ, args = {PyCFunctionObject}, call = Ignored)
     abstract static class GraalPyPrivate_Get_PyCFunctionObject_m_ml extends CApiUnaryBuiltinNode {
         @Specialization
-        static Object get(PythonBuiltinObject object,
+        static long get(PythonBuiltinObject object,
                         @Bind Node inliningTarget,
-                        @Cached HiddenAttr.ReadNode readNode) {
+                        @Cached HiddenAttr.ReadLongNode readNode) {
             PBuiltinFunction resolved;
             if (object instanceof PBuiltinMethod builtinMethod) {
                 resolved = builtinMethod.getBuiltinFunction();
@@ -262,8 +262,8 @@ public final class PythonCextSlotBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw CompilerDirectives.shouldNotReachHere("requesting PyMethodDef for an incompatible function/method type: " + object.getClass().getSimpleName());
             }
-            Object methodDefPtr = readNode.execute(inliningTarget, resolved, METHOD_DEF_PTR, null);
-            if (methodDefPtr != null) {
+            long methodDefPtr = readNode.execute(inliningTarget, resolved, METHOD_DEF_PTR, NULLPTR);
+            if (methodDefPtr != NULLPTR) {
                 return methodDefPtr;
             }
             CApiContext cApiContext = getCApiContext(inliningTarget);
@@ -271,12 +271,12 @@ public final class PythonCextSlotBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyMethodDef, args = {PyCFunctionObject, PyMethodDef}, call = Ignored)
+    @CApiBuiltin(ret = PyMethodDefZZZ, args = {PyCFunctionObject, PyMethodDefZZZ}, call = Ignored)
     abstract static class GraalPyPrivate_Set_PyCFunctionObject_m_ml extends CApiBinaryBuiltinNode {
         @Specialization
-        static Object get(PythonBuiltinObject object, Object methodDefPtr,
+        static long get(PythonBuiltinObject object, long methodDefPtr,
                         @Bind Node inliningTarget,
-                        @Cached HiddenAttr.WriteNode writeNode) {
+                        @Cached HiddenAttr.WriteLongNode writeNode) {
             PBuiltinFunction resolved;
             if (object instanceof PBuiltinMethod builtinMethod) {
                 resolved = builtinMethod.getBuiltinFunction();
@@ -287,7 +287,7 @@ public final class PythonCextSlotBuiltins {
                 throw CompilerDirectives.shouldNotReachHere("writing PyMethodDef for an incompatible function/method type: " + object.getClass().getSimpleName());
             }
             writeNode.execute(inliningTarget, resolved, METHOD_DEF_PTR, methodDefPtr);
-            return PNone.NO_VALUE;
+            return NULLPTR;
         }
     }
 
@@ -463,15 +463,15 @@ public final class PythonCextSlotBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyMethodDef, args = {PyMethodDescrObject}, call = Ignored)
+    @CApiBuiltin(ret = PyMethodDefZZZ, args = {PyMethodDescrObject}, call = Ignored)
     abstract static class GraalPyPrivate_Get_PyMethodDescrObject_d_method extends CApiUnaryBuiltinNode {
 
         @Specialization
-        static Object get(PBuiltinFunction builtinFunction,
+        static long get(PBuiltinFunction builtinFunction,
                         @Bind Node inliningTarget,
-                        @Cached HiddenAttr.ReadNode readNode) {
-            Object methodDefPtr = readNode.execute(inliningTarget, builtinFunction, METHOD_DEF_PTR, null);
-            if (methodDefPtr != null) {
+                        @Cached HiddenAttr.ReadLongNode readNode) {
+            long methodDefPtr = readNode.execute(inliningTarget, builtinFunction, METHOD_DEF_PTR, NULLPTR);
+            if (methodDefPtr != NULLPTR) {
                 return methodDefPtr;
             }
             /*
@@ -517,7 +517,7 @@ public final class PythonCextSlotBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = ConstCharPtrAsTruffleString, args = {PyModuleDef}, call = Ignored)
+    @CApiBuiltin(ret = ConstCharPtrAsTruffleString, args = {PyModuleDefZZZ}, call = Ignored)
     abstract static class GraalPyPrivate_Get_PyModuleDef_m_doc extends CApiUnaryBuiltinNode {
         @Specialization
         static int get(@SuppressWarnings("unused") Object object) {
@@ -525,34 +525,34 @@ public final class PythonCextSlotBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyMethodDef, args = {PyModuleDef}, call = Ignored)
+    @CApiBuiltin(ret = PyMethodDefZZZ, args = {PyModuleDefZZZ}, call = Ignored)
     abstract static class GraalPyPrivate_Get_PyModuleDef_m_methods extends CApiUnaryBuiltinNode {
         @Specialization
-        static int get(@SuppressWarnings("unused") Object object) {
+        static int get(@SuppressWarnings("unused") long object) {
             throw CompilerDirectives.shouldNotReachHere();
         }
     }
 
-    @CApiBuiltin(ret = ConstCharPtrAsTruffleString, args = {PyModuleDef}, call = Ignored)
+    @CApiBuiltin(ret = ConstCharPtrAsTruffleString, args = {PyModuleDefZZZ}, call = Ignored)
     abstract static class GraalPyPrivate_Get_PyModuleDef_m_name extends CApiUnaryBuiltinNode {
         @Specialization
-        static int get(@SuppressWarnings("unused") Object object) {
+        static int get(@SuppressWarnings("unused") long object) {
             throw CompilerDirectives.shouldNotReachHere();
         }
     }
 
-    @CApiBuiltin(ret = Py_ssize_t, args = {PyModuleDef}, call = Ignored)
+    @CApiBuiltin(ret = Py_ssize_t, args = {PyModuleDefZZZ}, call = Ignored)
     abstract static class GraalPyPrivate_Get_PyModuleDef_m_size extends CApiUnaryBuiltinNode {
         @Specialization
-        static int get(@SuppressWarnings("unused") Object object) {
+        static int get(@SuppressWarnings("unused") long object) {
             throw CompilerDirectives.shouldNotReachHere();
         }
     }
 
-    @CApiBuiltin(ret = PyModuleDef, args = {PyModuleObject}, call = Ignored)
+    @CApiBuiltin(ret = PyModuleDefZZZ, args = {PyModuleObject}, call = Ignored)
     abstract static class GraalPyPrivate_Get_PyModuleObject_md_def extends CApiUnaryBuiltinNode {
         @Specialization
-        static Object get(PythonModule object) {
+        static long get(PythonModule object) {
             return object.getNativeModuleDef();
         }
     }

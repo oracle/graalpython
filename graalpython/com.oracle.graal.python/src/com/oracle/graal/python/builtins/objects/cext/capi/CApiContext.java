@@ -44,6 +44,7 @@ import static com.oracle.graal.python.PythonLanguage.CONTEXT_INSENSITIVE_SINGLET
 import static com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper.IMMORTAL_REFCNT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.pollReferenceQueue;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readIntField;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___FILE__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DASH;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
@@ -1223,8 +1224,8 @@ public final class CApiContext extends CExtContext {
             sysModules.setItem(spec.name, result);
 
             // _PyState_AddModule
-            Object moduleDef = module.getNativeModuleDef();
-            int mIndex = PythonUtils.toIntError(CStructAccess.ReadI64Node.getUncached().read(moduleDef, CFields.PyModuleDef_Base__m_index));
+            long moduleDef = module.getNativeModuleDef();
+            int mIndex = PythonUtils.toIntError(readLongField(moduleDef, CFields.PyModuleDef_Base__m_index));
             while (modulesByIndex.size() <= mIndex) {
                 modulesByIndex.add(null);
             }
