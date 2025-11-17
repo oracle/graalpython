@@ -42,11 +42,11 @@ package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyVarObject__ob_size;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_S;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -82,9 +82,8 @@ public abstract class PyTupleSizeNode extends PNodeWithContext {
     @InliningCutoff
     static int sizeNative(Node inliningTarget, PythonAbstractNativeObject tuple,
                     @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                    @SuppressWarnings("unused") @Cached(inline = false) IsSubtypeNode isSubtypeNode,
-                    @Cached(inline = false) CStructAccess.ReadI64Node getSize) {
-        return PythonUtils.toIntError(getSize.readFromObj(tuple, PyVarObject__ob_size));
+                    @SuppressWarnings("unused") @Cached(inline = false) IsSubtypeNode isSubtypeNode) {
+        return PythonUtils.toIntError(readLongField(tuple.getPtr(), PyVarObject__ob_size));
     }
 
     @SuppressWarnings("unused")

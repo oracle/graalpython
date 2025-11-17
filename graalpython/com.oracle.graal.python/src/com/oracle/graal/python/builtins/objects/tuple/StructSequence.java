@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.tuple;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointerUncached;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REDUCE__;
@@ -205,7 +204,7 @@ public class StructSequence {
              * about tp_new in TpSlots.updateSlots. We have to write it manually
              */
             nativeClass.setTpSlots(nativeClass.getTpSlots().copy().set(TpSlots.TpSlotMeta.TP_NEW, newSlot).build());
-            TpSlots.toNative(ensurePointerUncached(nativeClass.getPtr()), TpSlots.TpSlotMeta.TP_NEW, newSlot);
+            TpSlots.toNative(nativeClass.getPtr(), TpSlots.TpSlotMeta.TP_NEW, newSlot);
             TpSlotBuiltin<?> reprSlot = (TpSlotBuiltin<?>) StructSequenceBuiltins.SLOTS.tp_repr();
             writeAttrNode.execute(klass, T___REPR__, reprSlot.createBuiltin(context, klass, T___REPR__, TpSlots.TpSlotMeta.TP_REPR.getNativeSignature()));
             PythonBuiltinClass template = context.lookupType(PythonBuiltinClassType.PFloatInfo);

@@ -233,9 +233,15 @@ public final class NativeMemory {
         writeLong(arrayPtr + index * Long.BYTES, value);
     }
 
-    public static void writePtrArrayElements(long arrayPtr, long dstIndex, long[] src, int offset, int count) {
-        assert canMultiplyWithoutOverflow(dstIndex, (int) POINTER_SIZE);
-        UNSAFE.copyMemory(src, Unsafe.ARRAY_BYTE_BASE_OFFSET + (long) offset * POINTER_SIZE, null, arrayPtr + dstIndex * POINTER_SIZE, (long) count * POINTER_SIZE);
+    public static long[] readLongArrayElements(long arrayPtr, long srcIndex, int count) {
+        long[] result = new long[count];
+        readLongArrayElements(arrayPtr, srcIndex, result, 0, count);
+        return result;
+    }
+
+    public static void readLongArrayElements(long arrayPtr, long srcIndex, long[] dst, int dstIndex, int count) {
+        assert canMultiplyWithoutOverflow(srcIndex, Long.BYTES);
+        UNSAFE.copyMemory(null, arrayPtr + srcIndex * Long.BYTES, dst, Unsafe.ARRAY_LONG_BASE_OFFSET + (long) dstIndex * Long.BYTES, (long) count * Long.BYTES);
     }
 
     public static long readPtr(long pointer) {
@@ -254,6 +260,11 @@ public final class NativeMemory {
     public static void writePtrArrayElement(long arrayPtr, long index, long value) {
         assert canMultiplyWithoutOverflow(index, (int) POINTER_SIZE);
         writePtr(arrayPtr + index * POINTER_SIZE, value);
+    }
+
+    public static void writePtrArrayElements(long arrayPtr, long dstIndex, long[] src, int offset, int count) {
+        assert canMultiplyWithoutOverflow(dstIndex, (int) POINTER_SIZE);
+        UNSAFE.copyMemory(src, Unsafe.ARRAY_BYTE_BASE_OFFSET + (long) offset * POINTER_SIZE, null, arrayPtr + dstIndex * POINTER_SIZE, (long) count * POINTER_SIZE);
     }
 
     public static void copyPtrArray(long dstArray, long dstIndex, long srcArray, long srcIndex, long count) {

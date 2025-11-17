@@ -41,6 +41,8 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.GC_LOGGER;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeLongField;
 import static com.oracle.graal.python.nfi2.NativeMemory.free;
 
 import java.util.logging.Level;
@@ -132,7 +134,7 @@ public abstract class CApiGCSupport {
 
             long gcUntagged = HandlePointerConverter.pointerToStub(gc);
             // #define _PyObject_GC_IS_TRACKED(o) (_PyGCHead_UNTAG(_Py_AS_GC(o))->_gc_next != 0)
-            long gcNext = CStructAccess.readLongField(gcUntagged, CFields.PyGC_Head___gc_next);
+            long gcNext = readLongField(gcUntagged, CFields.PyGC_Head___gc_next);
             // if (!_PyObject_GC_IS_TRACKED(op))
             if (gcNext == 0) {
                 if (GC_LOGGER.isLoggable(Level.FINER)) {
@@ -146,13 +148,13 @@ public abstract class CApiGCSupport {
                 assert !HandlePointerConverter.pointsToPyHandleSpace(gen0);
 
                 // PyGC_Head *last = (PyGC_Head*)(generation0->_gc_prev);
-                long last = CStructAccess.readLongField(gen0, CFields.PyGC_Head___gc_prev);
+                long last = readLongField(gen0, CFields.PyGC_Head___gc_prev);
 
                 // _PyGCHead_SET_NEXT(last, gc);
                 CStructAccess.writeLongField(HandlePointerConverter.pointerToStub(last), CFields.PyGC_Head___gc_next, gc);
 
                 // _PyGCHead_SET_PREV(gc, last);
-                long curGcPrev = CStructAccess.readLongField(gcUntagged, CFields.PyGC_Head___gc_prev);
+                long curGcPrev = readLongField(gcUntagged, CFields.PyGC_Head___gc_prev);
                 CStructAccess.writeLongField(gcUntagged, CFields.PyGC_Head___gc_prev, computePrevValue(curGcPrev, last));
 
                 // _PyGCHead_SET_NEXT(gc, generation0);
@@ -169,7 +171,7 @@ public abstract class CApiGCSupport {
         public static boolean isGcTracked(long taggedPointer) {
             // #define _PyObject_GC_IS_TRACKED(o) (_PyGCHead_UNTAG(_Py_AS_GC(o))->_gc_next != 0)
             long gcUntagged = HandlePointerConverter.pointerToStub(taggedPointer - CStructs.PyGC_Head.size());
-            long gcNext = CStructAccess.ReadI64Node.getUncached().read(gcUntagged, CFields.PyGC_Head___gc_next);
+            long gcNext = readLongField(gcUntagged, CFields.PyGC_Head___gc_next);
             return gcNext != 0;
         }
     }
@@ -205,11 +207,8 @@ public abstract class CApiGCSupport {
         public abstract long execute(Node inliningTarget, long opUntagged);
 
         @Specialization
-        static long doGeneric(long opUntagged,
-                        @Cached(inline = false) CStructAccess.ReadI64Node readI64Node,
-                        @Cached(inline = false) CStructAccess.WriteLongNode writeLongNode) {
+        static long doGeneric(long opUntagged) {
             assert PythonLanguage.get(null).getEngineOption(PythonOptions.PythonGC);
-
             // issue a log message before doing the first memory access
             if (GC_LOGGER.isLoggable(Level.FINER)) {
                 GC_LOGGER.finer(PythonUtils.formatJString("attempting to remove 0x%x from GC generation", opUntagged));
@@ -229,7 +228,7 @@ public abstract class CApiGCSupport {
              */
 
             // #define _PyObject_GC_IS_TRACKED(o) (_PyGCHead_UNTAG(_Py_AS_GC(o))->_gc_next != 0)
-            long gcNext = readI64Node.read(gcUntagged, CFields.PyGC_Head___gc_next);
+            long gcNext = readLongField(gcUntagged, CFields.PyGC_Head___gc_next);
             // if (_PyObject_GC_IS_TRACKED(op))
             if (gcNext != 0) {
                 // gc_list_remove
@@ -238,10 +237,10 @@ public abstract class CApiGCSupport {
                 }
 
                 // PyGC_Head *prev = GC_PREV(gc)
-                long prev = maskPrevValue(readI64Node.read(gcUntagged, CFields.PyGC_Head___gc_prev));
+                long prev = maskPrevValue(readLongField(gcUntagged, CFields.PyGC_Head___gc_prev));
 
                 // PyGC_Head *next = GC_NEXT(gc)
-                long next = readI64Node.read(gcUntagged, CFields.PyGC_Head___gc_next);
+                long next = readLongField(gcUntagged, CFields.PyGC_Head___gc_next);
                 /*
                  * We need to remove NEXT_MASK_UNREACHABLE because the object we are up to remove
                  * may be in GC list 'weak_candidates' which sets the bit.
@@ -249,14 +248,14 @@ public abstract class CApiGCSupport {
                 long nextUntagged = HandlePointerConverter.pointerToStub(next & ~CApiGCSupport.NEXT_MASK_UNREACHABLE);
 
                 // _PyGCHead_SET_NEXT(prev, next)
-                writeLongNode.write(HandlePointerConverter.pointerToStub(prev), CFields.PyGC_Head___gc_next, next);
+                writeLongField(HandlePointerConverter.pointerToStub(prev), CFields.PyGC_Head___gc_next, next);
 
                 // _PyGCHead_SET_PREV(next, prev)
-                long curNextPrev = readI64Node.read(nextUntagged, CFields.PyGC_Head___gc_prev);
-                writeLongNode.write(nextUntagged, CFields.PyGC_Head___gc_prev, computePrevValue(curNextPrev, prev));
+                long curNextPrev = readLongField(nextUntagged, CFields.PyGC_Head___gc_prev);
+                writeLongField(nextUntagged, CFields.PyGC_Head___gc_prev, computePrevValue(curNextPrev, prev));
 
                 // UNTAG(gc)->_gc_next = 0
-                writeLongNode.write(gcUntagged, CFields.PyGC_Head___gc_next, 0);
+                writeLongField(gcUntagged, CFields.PyGC_Head___gc_next, 0);
             } else {
                 /*
                  * This is a valid case because objects can manually be untracked or removed from GC

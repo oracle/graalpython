@@ -362,12 +362,10 @@ public abstract class CApiTransitions {
      */
     public static final class NativeObjectReference extends IdReference<PythonAbstractNativeObject> {
 
-        final Object object;
         final long pointer;
 
         public NativeObjectReference(HandleContext handleContext, PythonAbstractNativeObject referent, long pointer) {
             super(handleContext, referent);
-            this.object = referent.object;
             this.pointer = pointer;
             referent.ref = this;
             assert (pointer & 7) == 0;
@@ -1542,11 +1540,10 @@ public abstract class CApiTransitions {
 
         @Specialization
         static Object doNative(Node inliningTarget, PythonAbstractNativeObject obj, boolean needsTransfer,
-                        @CachedLibrary(limit = "2") InteropLibrary lib,
                         @Cached InlinedBranchProfile inlinedBranchProfile,
                         @Exclusive @Cached UpdateStrongRefNode updateRefNode) {
             if (needsTransfer && PythonContext.get(inliningTarget).isNativeAccessAllowed()) {
-                long ptr = PythonUtils.coerceToLong(obj.getPtr(), lib);
+                long ptr = obj.getPtr();
                 long newRefcnt = CApiTransitions.addNativeRefCount(ptr, 1);
                 /*
                  * If a native object was only referenced from managed (i.e. refcnt ==
@@ -1569,7 +1566,7 @@ public abstract class CApiTransitions {
                     }
                 }
             }
-            return obj.getPtr();
+            return wrapPointer(obj.getPtr());
         }
 
         @Specialization
@@ -1865,9 +1862,6 @@ public abstract class CApiTransitions {
             PythonContext pythonContext = PythonContext.get(inliningTarget);
             HandleContext nativeContext = pythonContext.nativeContext;
 
-            if (!interopLibrary.isPointer(value)) {
-                return getManagedReference(value, nativeContext);
-            }
             long pointer;
             try {
                 pointer = interopLibrary.asPointer(value);
@@ -1920,7 +1914,7 @@ public abstract class CApiTransitions {
                         if (LOGGER.isLoggable(Level.FINE)) {
                             LOGGER.fine(() -> "re-creating collected PythonAbstractNativeObject reference" + Long.toHexString(pointer));
                         }
-                        return createAbstractNativeObject(nativeContext, value, needsTransfer, pointer);
+                        return createAbstractNativeObject(nativeContext, pointer, needsTransfer, pointer);
                     }
                     if (isNativeWrapperProfile.profile(inliningTarget, ref instanceof PythonNativeWrapper)) {
                         wrapper = (PythonNativeWrapper) ref;
@@ -1932,7 +1926,7 @@ public abstract class CApiTransitions {
                         return result;
                     }
                 } else {
-                    return createAbstractNativeObject(nativeContext, value, needsTransfer, pointer);
+                    return createAbstractNativeObject(nativeContext, pointer, needsTransfer, pointer);
                 }
             }
             return handleWrapper(inliningTarget, wrapperProfile, updateRefNode, needsTransfer, release, wrapper);
@@ -1978,19 +1972,6 @@ public abstract class CApiTransitions {
             } else {
                 return wrapper.getDelegate();
             }
-        }
-
-        @TruffleBoundary
-        private static Object getManagedReference(Object value, HandleContext nativeContext) {
-            assert value.toString().startsWith("ManagedMemoryBlock");
-            assert PythonContext.get(null).ownsGil();
-            WeakReference<Object> ref = nativeContext.managedNativeLookup.computeIfAbsent(value, o -> new WeakReference<>(new PythonAbstractNativeObject(o)));
-            Object result = ref.get();
-            if (result == null) {
-                // value is weak as well:
-                nativeContext.managedNativeLookup.put(value, new WeakReference<>(result = new PythonAbstractNativeObject(value)));
-            }
-            return result;
         }
     }
 
@@ -2135,7 +2116,7 @@ public abstract class CApiTransitions {
                     Object ref = lookup.get();
                     if (createNativeProfile.profile(inliningTarget, ref == null)) {
                         LOGGER.fine(() -> "re-creating collected PythonAbstractNativeObject reference" + Long.toHexString(pointer));
-                        return createAbstractNativeObject(nativeContext, new NativePointer(pointer), stealing, pointer);
+                        return createAbstractNativeObject(nativeContext, pointer, stealing, pointer);
                     }
                     if (isNativeWrapperProfile.profile(inliningTarget, ref instanceof PythonNativeWrapper)) {
                         wrapper = (PythonNativeWrapper) ref;
@@ -2147,7 +2128,7 @@ public abstract class CApiTransitions {
                         return result;
                     }
                 } else {
-                    return createAbstractNativeObject(nativeContext, new NativePointer(pointer), stealing, pointer);
+                    return createAbstractNativeObject(nativeContext, pointer, stealing, pointer);
                 }
             }
             return NativeToPythonInternalNode.handleWrapper(inliningTarget, wrapperProfile, updateRefNode, stealing, false, wrapper);
@@ -2287,11 +2268,9 @@ public abstract class CApiTransitions {
         UNSAFE.putLong(pointer + TP_REFCNT_OFFSET, newValue);
     }
 
-    private static Object createAbstractNativeObject(HandleContext handleContext, Object obj, boolean transfer, long pointer) {
-        assert isBackendPointerObject(obj) : obj.getClass();
-
+    private static Object createAbstractNativeObject(HandleContext handleContext, long ptr, boolean transfer, long pointer) {
         pollReferenceQueue();
-        PythonAbstractNativeObject result = new PythonAbstractNativeObject(obj);
+        PythonAbstractNativeObject result = new PythonAbstractNativeObject(ptr);
         long refCntDelta = MANAGED_REFCNT - (transfer ? 1 : 0);
         /*
          * Some APIs might be called from tp_dealloc/tp_del/tp_finalize where the refcount is 0. In

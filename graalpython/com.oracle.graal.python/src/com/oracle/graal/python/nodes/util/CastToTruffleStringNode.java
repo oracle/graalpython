@@ -43,15 +43,14 @@ package com.oracle.graal.python.nodes.util;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyASCIIObject__length;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyASCIIObject__state;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyUnicodeObject__data;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointer;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readIntField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readPtrField;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.wrapPointer;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked0Node;
@@ -64,7 +63,6 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -139,14 +137,11 @@ public abstract class CastToTruffleStringNode extends PNodeWithContext {
     @GenerateInline(false) // Footprint reduction 48 -> 29
     public abstract static class ReadNativeStringNode extends PNodeWithContext {
 
-        public abstract TruffleString execute(Object pointer);
+        public abstract TruffleString execute(long pointer);
 
         @Specialization
-        static TruffleString read(Object pointer,
-                        @Bind Node inliningTarget,
-                        @Cached CoerceNativePointerToLongNode coerceNode,
+        static TruffleString read(long rawPointer,
                         @Cached TruffleString.FromNativePointerWithCompactionUTF32Node fromNative) {
-            long rawPointer = ensurePointer(pointer, inliningTarget, coerceNode);
             int state = readIntField(rawPointer, PyASCIIObject__state);
             int kind = (state >> CFields.PyASCIIObject__state_kind_shift) & 0x7;
             long data = readPtrField(rawPointer, PyUnicodeObject__data);

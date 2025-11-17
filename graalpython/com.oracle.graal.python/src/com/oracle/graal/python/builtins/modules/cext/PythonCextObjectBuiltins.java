@@ -59,6 +59,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.VA_LIST_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
 import static com.oracle.graal.python.builtins.objects.ints.PInt.intValue;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNHASHABLE_TYPE_P;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BYTES__;
@@ -93,7 +94,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.Py
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeRawNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.ToPythonWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateStrongRefNode;
 import com.oracle.graal.python.builtins.objects.cext.common.GetNextVaArgNode;
@@ -613,8 +614,7 @@ public abstract class PythonCextObjectBuiltins {
 
         @Specialization
         @TruffleBoundary
-        int doGeneric(Object ptrObject,
-                        @Cached CStructAccess.ReadI64Node readI64) {
+        int doGeneric(Object ptrObject) {
             PythonContext context = getContext();
             PrintWriter stderr = new PrintWriter(context.getStandardErr());
 
@@ -640,7 +640,7 @@ public abstract class PythonCextObjectBuiltins {
                     refCnt = MANAGED_REFCNT;
                 }
             } else {
-                refCnt = readI64.read(PythonToNativeNode.executeUncached(resolved), CFields.PyObject__ob_refcnt);
+                refCnt = readLongField(PythonToNativeRawNode.executeUncached(resolved), CFields.PyObject__ob_refcnt);
             }
             pythonObject = NativeToPythonNode.executeUncached(ptrObject);
 

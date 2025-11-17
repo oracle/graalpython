@@ -53,8 +53,8 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyVarObject__ob_size;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointer;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.getFieldPtr;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
 
 import java.util.Arrays;
 
@@ -77,10 +77,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetByteArrayNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -127,10 +125,9 @@ public final class PythonCextBytesBuiltins {
         @Specialization
         static long doOther(PythonAbstractNativeObject obj,
                         @Bind Node inliningTarget,
-                        @Cached PyBytesCheckNode check,
-                        @Cached CStructAccess.ReadI64Node readI64Node) {
+                        @Cached PyBytesCheckNode check) {
             if (check.execute(inliningTarget, obj)) {
-                return readI64Node.readFromObj(obj, PyVarObject__ob_size);
+                return readLongField(obj.getPtr(), PyVarObject__ob_size);
             }
             return fallback(obj, inliningTarget);
         }
@@ -414,12 +411,11 @@ public final class PythonCextBytesBuiltins {
         @Specialization
         static long doNative(PythonAbstractNativeObject obj,
                         @Bind Node inliningTarget,
-                        @Cached CoerceNativePointerToLongNode coerceNode,
                         @Cached GetPythonObjectClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNode raiseNode) {
             if (isSubtypeNode.execute(getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PBytes)) {
-                return getFieldPtr(ensurePointer(obj.getPtr(), inliningTarget, coerceNode), CFields.PyBytesObject__ob_sval);
+                return getFieldPtr(obj.getPtr(), CFields.PyBytesObject__ob_sval);
             }
             return doError(obj, raiseNode);
         }

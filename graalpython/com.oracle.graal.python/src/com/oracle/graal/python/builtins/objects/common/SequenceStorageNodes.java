@@ -3573,8 +3573,6 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         static void doNativeObjectStorage(Node inliningTarget, NativeObjectSequenceStorage s, int idx,
-                        @Cached(inline = false) CStructAccess.ReadPointerNode readPointerNode,
-                        @Cached(inline = false) CStructAccess.WritePointerNode writePointerNode,
                         @Cached CExtNodes.XDecRefPointerNode decRefNode) {
             int len = s.length();
             long deleted = readPtrArrayElement(s.getPtr(), idx);

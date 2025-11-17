@@ -86,7 +86,6 @@ import static com.oracle.graal.python.nodes.HiddenAttr.METHOD_DEF_PTR;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___COMPLEX__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-import static com.oracle.graal.python.util.PythonUtils.coerceToLong;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
@@ -629,11 +628,9 @@ public abstract class CExtNodes {
                 return l;
             }
 
-            @Specialization(limit = "3")
-            static long doLong(@SuppressWarnings("unused") PythonNativeObject o,
-                            @Bind("o.getPtr()") Object ptr,
-                            @CachedLibrary("ptr") InteropLibrary lib) {
-                return coerceToLong(ptr, lib);
+            @Specialization
+            static long doLong(@SuppressWarnings("unused") PythonNativeObject o) {
+                return o.getPtr();
             }
 
             @Specialization
@@ -916,7 +913,7 @@ public abstract class CExtNodes {
                 }
             } else {
                 assert PGuards.isNativeClass(mroCls) : "invalid class inheritance structure; expected native class";
-                long result = CStructAccess.readPtrField(ensurePointerUncached(((PythonNativeClass) mroCls).getPtr()), nativeMemberName);
+                long result = CStructAccess.readPtrField(((PythonNativeClass) mroCls).getPtr(), nativeMemberName);
                 if (result != NULLPTR) {
                     return result;
                 }
@@ -960,7 +957,7 @@ public abstract class CExtNodes {
                 }
             } else {
                 assert PGuards.isNativeClass(mroCls) : "invalid class inheritance structure; expected native class";
-                return CStructAccess.ReadI64Node.getUncached().readFromObj((PythonNativeClass) mroCls, nativeMemberName);
+                return readLongField(((PythonNativeClass) mroCls).getPtr(), nativeMemberName);
             }
         }
         // return the value from PyBaseObject - assumed to be 0 for vectorcall_offset
@@ -991,7 +988,6 @@ public abstract class CExtNodes {
                         @Bind Node inliningTarget,
                         @Cached GetBaseClassNode getBaseClassNode,
                         @Cached HiddenAttr.ReadNode readAttrNode,
-                        @Cached CStructAccess.ReadI64Node getTypeMemberNode,
                         @Cached PyNumberAsSizeNode asSizeNode) {
             CompilerAsserts.partialEvaluationConstant(builtinCallback);
 
@@ -1015,7 +1011,7 @@ public abstract class CExtNodes {
                     }
                 } else {
                     assert PGuards.isNativeClass(current) : "invalid class inheritance structure; expected native class";
-                    return getTypeMemberNode.readFromObj((PythonNativeClass) current, nativeMember);
+                    return readLongField(((PythonNativeClass) current).getPtr(), nativeMember);
                 }
                 current = getBaseClassNode.execute(inliningTarget, current);
             } while (current != null);
@@ -1102,6 +1098,7 @@ public abstract class CExtNodes {
             CExtNodesFactory.XDecRefPointerNodeGen.getUncached().execute(null, pointer);
         }
 
+        // TODO(NFI2) only one caller still passes an interop pointer
         public abstract void execute(Node inliningTarget, Object pointer);
 
         @Specialization
@@ -1111,7 +1108,6 @@ public abstract class CExtNodes {
                         @Cached InlinedBranchProfile isWrapperProfile,
                         @Cached InlinedBranchProfile isNativeObject,
                         @Cached UpdateStrongRefNode updateRefNode,
-                        @Cached(inline = false) CStructAccess.ReadI64Node readRefcount,
                         @Cached(inline = false) CStructAccess.WriteLongNode writeRefcount,
                         @Cached(inline = false) PCallCapiFunction callDealloc) {
             long pointer;
@@ -1142,7 +1138,7 @@ public abstract class CExtNodes {
             } else if (wrapper == null) {
                 isNativeObject.enter(inliningTarget);
                 assert NativeToPythonNode.executeUncached(new NativePointer(pointer)) instanceof PythonAbstractNativeObject;
-                long refcount = readRefcount.read(pointer, PyObject__ob_refcnt);
+                long refcount = readLongField(pointer, PyObject__ob_refcnt);
                 if (refcount != IMMORTAL_REFCNT) {
                     refcount--;
                     writeRefcount.write(pointer, PyObject__ob_refcnt, refcount);
@@ -1658,8 +1654,7 @@ public abstract class CExtNodes {
     @TruffleBoundary
     static Object createModule(Node node, CApiContext capiContext, ModuleSpec moduleSpec, Object moduleDefWrapper, Object library) {
         // call to type the pointer
-        Object moduleDefObj = moduleDefWrapper instanceof PythonAbstractNativeObject ? ((PythonAbstractNativeObject) moduleDefWrapper).getPtr() : moduleDefWrapper;
-        long moduleDefPtr = ensurePointerUncached(moduleDefObj);
+        long moduleDefPtr = moduleDefWrapper instanceof PythonAbstractNativeObject ? ((PythonAbstractNativeObject) moduleDefWrapper).getPtr() : ensurePointerUncached(moduleDefWrapper);
 
         /*
          * The name of the module is taken from the module spec and *NOT* from the module

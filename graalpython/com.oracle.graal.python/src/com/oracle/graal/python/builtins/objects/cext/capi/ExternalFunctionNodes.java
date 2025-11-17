@@ -2029,7 +2029,7 @@ public abstract class ExternalFunctionNodes {
                         @Cached("storage.length()") int cachedLen,
                         @Shared @Cached CExtNodes.XDecRefPointerNode decRefPointerNode) {
             for (int i = 0; i < cachedLen; i++) {
-                Object elementPointer = readPtrArrayElement(storage.getPtr(), i);
+                long elementPointer = readPtrArrayElement(storage.getPtr(), i);
                 decRefPointerNode.execute(inliningTarget, elementPointer);
             }
             // in this case, the runtime still exclusively owns the memory
@@ -2041,7 +2041,7 @@ public abstract class ExternalFunctionNodes {
                         @Bind Node inliningTarget,
                         @Shared @Cached CExtNodes.XDecRefPointerNode decRefPointerNode) {
             for (int i = 0; i < storage.length(); i++) {
-                Object elementPointer = readPtrArrayElement(storage.getPtr(), i);
+                long elementPointer = readPtrArrayElement(storage.getPtr(), i);
                 decRefPointerNode.execute(inliningTarget, elementPointer);
             }
             // in this case, the runtime still exclusively owns the memory

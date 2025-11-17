@@ -1338,7 +1338,7 @@ public record TpSlots(TpSlot nb_bool, //
                         // processed slot field, because user could have assigned some incompatible
                         // existing slot value into the slots field we're reading here
                         TpSlotWrapper newWrapper = existingSlotWrapper.cloneWith(newPythonSlot);
-                        toNative(ensurePointerUncached(pythonClass.getPtr()), def, ensurePointerUncached(newWrapper));
+                        toNative(pythonClass.getPtr(), def, ensurePointerUncached(newWrapper));
                         // we need to continue with the new closure pointer
                         field = def.readFromNative(pythonClass);
                     }
@@ -1688,7 +1688,7 @@ public record TpSlots(TpSlot nb_bool, //
             slots.set(slot, newValue);
             if (klass instanceof PythonAbstractNativeObject nativeClass) {
                 // Update the slots on the native side if this is a native class
-                toNative(ensurePointerUncached(nativeClass.getPtr()), slot, newValue);
+                toNative(nativeClass.getPtr(), slot, newValue);
             }
             if (klass instanceof PythonManagedClass managedClass) {
                 // Update the slots on the native side if this is a managed class that has a

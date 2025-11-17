@@ -61,6 +61,7 @@ import static com.oracle.graal.python.builtins.modules.io.IONodes.T_R;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_W;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyObject__ob_refcnt;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.cat;
 import static com.oracle.graal.python.lib.PyTraceBackPrint.castToString;
 import static com.oracle.graal.python.lib.PyTraceBackPrint.classNameNoDot;
@@ -170,7 +171,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -961,10 +961,9 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     public abstract static class GetrefcountNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        static long doGeneric(PythonAbstractObject object,
-                        @Cached CStructAccess.ReadI64Node read) {
+        static long doGeneric(PythonAbstractObject object) {
             if (object instanceof PythonAbstractNativeObject nativeKlass) {
-                return read.readFromObj(nativeKlass, PyObject__ob_refcnt);
+                return readLongField(nativeKlass.getPtr(), PyObject__ob_refcnt);
             }
 
             PythonAbstractObjectNativeWrapper wrapper = object.getNativeWrapper();

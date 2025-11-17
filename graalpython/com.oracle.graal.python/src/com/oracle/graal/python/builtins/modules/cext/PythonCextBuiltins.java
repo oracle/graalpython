@@ -77,10 +77,12 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMe
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMemberDef__name;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMemberDef__offset;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMemberDef__type;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readStructArrayIntField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readStructArrayLongField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readStructArrayPtrField;
 import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.nfi2.NativeMemory.readLongArrayElement;
 import static com.oracle.graal.python.nfi2.NativeMemory.readPtrArrayElement;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_BUILTINS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__WEAKREF;
@@ -1123,18 +1125,15 @@ public final class PythonCextBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, PyObject, Py_ssize_t, Int, Py_ssize_t, ConstCharPtrAsTruffleString, Int, PointerZZZ, Pointer, Pointer, Pointer}, call = Ignored)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, PyObject, Py_ssize_t, Int, Py_ssize_t, ConstCharPtrAsTruffleString, Int, PointerZZZ, PointerZZZ, PointerZZZ, PointerZZZ}, call = Ignored)
     abstract static class GraalPyPrivate_MemoryViewFromBuffer extends CApi11BuiltinNode {
 
         @Specialization
         static Object wrap(Object bufferStructPointer, Object ownerObj, long lenObj,
                         Object readonlyObj, Object itemsizeObj, TruffleString format,
-                        Object ndimObj, long bufPointer, Object shapePointer, Object stridesPointer, Object suboffsetsPointer,
+                        Object ndimObj, long bufPointer, long shapePointer, long stridesPointer, long suboffsetsPointer,
                         @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile zeroDimProfile,
-                        @Cached CStructAccess.ReadI64Node readShapeNode,
-                        @Cached CStructAccess.ReadI64Node readStridesNode,
-                        @Cached CStructAccess.ReadI64Node readSuboffsetsNode,
                         @Cached MemoryViewNodes.InitFlagsNode initFlagsNode,
                         @CachedLibrary(limit = "2") InteropLibrary lib,
                         @Cached CastToJavaIntExactNode castToIntNode,
@@ -1150,19 +1149,19 @@ public final class PythonCextBuiltins {
             int[] strides = null;
             int[] suboffsets = null;
             if (zeroDimProfile.profile(inliningTarget, ndim > 0)) {
-                if (!lib.isNull(shapePointer)) {
-                    shape = readShapeNode.readLongAsIntArray(shapePointer, ndim);
+                if (shapePointer != NULLPTR) {
+                    shape = readLongArrayElementsAsInts(shapePointer, ndim);
                 } else {
                     assert ndim == 1;
                     shape = new int[]{len / itemsize};
                 }
-                if (!lib.isNull(stridesPointer)) {
-                    strides = readStridesNode.readLongAsIntArray(stridesPointer, ndim);
+                if (stridesPointer != NULLPTR) {
+                    strides = readLongArrayElementsAsInts(stridesPointer, ndim);
                 } else {
                     strides = PMemoryView.initStridesFromShape(ndim, itemsize, shape);
                 }
-                if (!lib.isNull(suboffsetsPointer)) {
-                    suboffsets = readSuboffsetsNode.readLongAsIntArray(suboffsetsPointer, ndim);
+                if (suboffsetsPointer != NULLPTR) {
+                    suboffsets = readLongArrayElementsAsInts(suboffsetsPointer, ndim);
                 }
             }
             Object buffer = NativeByteSequenceStorage.create(bufPointer, len, len, false);
@@ -1173,6 +1172,14 @@ public final class PythonCextBuiltins {
             }
             return PFactory.createMemoryView(language, PythonContext.get(inliningTarget), bufferLifecycleManager, buffer, owner, len, readonly, itemsize,
                             BufferFormat.forMemoryView(format, lengthNode, atIndexNode), format, ndim, bufPointer, 0, shape, strides, suboffsets, flags);
+        }
+
+        private static int[] readLongArrayElementsAsInts(long pointer, int elements) {
+            int[] result = new int[elements];
+            for (int i = 0; i < result.length; i++) {
+                result[i] = (int) readLongArrayElement(pointer, i);
+            }
+            return result;
         }
     }
 
@@ -1495,7 +1502,6 @@ public final class PythonCextBuiltins {
         static Object doNative(Object weakCandidates,
                         @Bind Node inliningTarget,
                         @Cached CoerceNativePointerToLongNode coerceToLongNode,
-                        @Cached CStructAccess.ReadI64Node readI64Node,
                         @Cached CStructAccess.WriteLongNode writeLongNode,
                         @Cached NativePtrToPythonWrapperNode nativePtrToPythonWrapperNode,
                         @Cached UpdateStrongRefNode updateRefNode) {
@@ -1511,7 +1517,7 @@ public final class PythonCextBuiltins {
             assert !HandlePointerConverter.pointsToPyHandleSpace(head);
 
             // PyGC_Head *gc = GC_NEXT(head)
-            long gc = readI64Node.read(head, CFields.PyGC_Head___gc_next);
+            long gc = readLongField(head, CFields.PyGC_Head___gc_next);
             /*
              * The list's head is not polluted with NEXT_MASK_UNREACHABLE. See 'move_weak_reachable'
              * at the end of the function.
@@ -1534,7 +1540,7 @@ public final class PythonCextBuiltins {
 
                 // next = GC_NEXT(gc)
                 long gcUntagged = HandlePointerConverter.pointerToStub(gc);
-                long nextTaggedWithMask = readI64Node.read(gcUntagged, CFields.PyGC_Head___gc_next);
+                long nextTaggedWithMask = readLongField(gcUntagged, CFields.PyGC_Head___gc_next);
                 // remove NEXT_MASK_UNREACHABLE flag
                 long next = nextTaggedWithMask & ~NEXT_MASK_UNREACHABLE;
                 /*

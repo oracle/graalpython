@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.structs;
 
+import static com.oracle.graal.python.nfi2.NativeMemory.readLongArrayElements;
+
 import com.oracle.graal.python.annotations.CApiStructs;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
@@ -113,8 +115,8 @@ public enum CStructs {
 
     private static void resolve() {
         CompilerAsserts.neverPartOfCompilation();
-        Object sizesPointer = PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_PYTRUFFLE_STRUCT_SIZES);
-        long[] sizes = CStructAccessFactory.ReadI64NodeGen.getUncached().readLongArray(sizesPointer, VALUES.length);
+        long sizesPointer = (long) PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_PYTRUFFLE_STRUCT_SIZES);
+        long[] sizes = readLongArrayElements(sizesPointer, 0L, VALUES.length);
         for (CStructs struct : VALUES) {
             long size = sizes[struct.ordinal()];
             assert size > 0 && size < 1024;

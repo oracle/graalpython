@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext.structs;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+import static com.oracle.graal.python.nfi2.NativeMemory.readLongArrayElements;
 import static com.oracle.graal.python.nodes.ErrorMessages.INTERNAL_INT_OVERFLOW;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
@@ -99,8 +100,8 @@ public enum CConstants {
 
     private static void resolve() {
         CompilerAsserts.neverPartOfCompilation();
-        Object constantsPointer = PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_PYTRUFFLE_CONSTANTS);
-        long[] constants = CStructAccessFactory.ReadI64NodeGen.getUncached().readLongArray(constantsPointer, VALUES.length);
+        long constantsPointer = (long) PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_PYTRUFFLE_CONSTANTS);
+        long[] constants = readLongArrayElements(constantsPointer, 0L, VALUES.length);
         for (CConstants constant : VALUES) {
             constant.longValue = constants[constant.ordinal()];
             if (constant.longValue == -1) {

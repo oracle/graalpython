@@ -54,6 +54,7 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTy
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_name;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_subclasses;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_weaklistoffset;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.BASETYPE;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.BASE_EXC_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.BYTES_SUBCLASS;
@@ -294,9 +295,8 @@ public abstract class TypeNodes {
 
         @Specialization
         @InliningCutoff
-        static long doNative(PythonNativeClass clazz,
-                        @Cached CStructAccess.ReadI64Node getTpFlagsNode) {
-            return getTpFlagsNode.readFromObj(clazz, PyTypeObject__tp_flags);
+        static long doNative(PythonNativeClass clazz) {
+            return readLongField(clazz.getPtr(), PyTypeObject__tp_flags);
         }
 
         @TruffleBoundary
@@ -327,7 +327,7 @@ public abstract class TypeNodes {
                     mroEntry = context.getCore().lookupType((PythonBuiltinClassType) mroEntry);
                 }
                 if (mroEntry instanceof PythonAbstractNativeObject) {
-                    result = setFlags(result, doNative((PythonAbstractNativeObject) mroEntry, CStructAccess.ReadI64Node.getUncached()));
+                    result = setFlags(result, doNative((PythonAbstractNativeObject) mroEntry));
                 } else if (mroEntry != clazz && mroEntry instanceof PythonManagedClass) {
                     long flags = doManaged((PythonManagedClass) mroEntry, null, HiddenAttr.ReadNode.getUncached(), HiddenAttr.WriteNode.getUncached(),
                                     InlinedCountingConditionProfile.getUncached());
@@ -1275,9 +1275,8 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        static boolean doNativeObject(PythonAbstractNativeObject type,
-                        @Cached CStructAccess.ReadI64Node getMember) {
-            return getMember.readFromObj(type, PyTypeObject__tp_dictoffset) != 0;
+        static boolean doNativeObject(PythonAbstractNativeObject type) {
+            return readLongField(type.getPtr(), PyTypeObject__tp_dictoffset) != 0;
         }
 
         @Fallback
@@ -1500,15 +1499,11 @@ public abstract class TypeNodes {
 
         @Specialization
         @InliningCutoff
-        static boolean doNative(PythonAbstractNativeObject left, PythonAbstractNativeObject right,
-                        @CachedLibrary(limit = "1") InteropLibrary lib) {
+        static boolean doNative(PythonAbstractNativeObject left, PythonAbstractNativeObject right) {
             if (left == right) {
                 return true;
             }
-            if (left.getPtr() instanceof Long && right.getPtr() instanceof Long) {
-                return (long) left.getPtr() == (long) right.getPtr();
-            }
-            return lib.isIdentical(left.getPtr(), right.getPtr(), lib);
+            return left.getPtr() == right.getPtr();
         }
 
         @Fallback
@@ -1772,8 +1767,7 @@ public abstract class TypeNodes {
         @Specialization
         static boolean doNativeClass(Node inliningTarget, PythonAbstractNativeObject obj,
                         @Cached IsBuiltinClassProfile profile,
-                        @Cached GetPythonObjectClassNode getClassNode,
-                        @Cached CStructAccess.ReadI64Node getTpFlagsNode) {
+                        @Cached GetPythonObjectClassNode getClassNode) {
             Object type = getClassNode.execute(inliningTarget, obj);
             if (profile.profileClass(inliningTarget, type, PythonBuiltinClassType.PythonClass)) {
                 return true;
@@ -1781,7 +1775,7 @@ public abstract class TypeNodes {
 
             if (PythonNativeClass.isInstance(type)) {
                 // Equivalent of PyType_FastSubclass(Py_TYPE(type), Py_TPFLAGS_TYPE_SUBCLASS);
-                long tp_flags = getTpFlagsNode.readFromObj(PythonNativeClass.cast(type), PyTypeObject__tp_flags);
+                long tp_flags = readLongField(PythonNativeClass.cast(type).getPtr(), PyTypeObject__tp_flags);
                 return (tp_flags & TYPE_SUBCLASS) != 0;
             }
             return false;

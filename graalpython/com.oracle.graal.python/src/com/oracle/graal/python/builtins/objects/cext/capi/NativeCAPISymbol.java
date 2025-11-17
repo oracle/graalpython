@@ -43,7 +43,7 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.INT64_T;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.IterResult;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_SSIZE_T_PTR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_SSIZE_T_PTR_ZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PointerZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
@@ -69,9 +69,9 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_NO_OP_CLEAR("GraalPyPrivate_NoOpClear", Int, PyObject),
     FUN_NO_OP_TRAVERSE("GraalPyPrivate_NoOpTraverse", Int, PyObject, Pointer, Pointer),
 
-    FUN_PYTRUFFLE_CONSTANTS("GraalPyPrivate_Constants", PY_SSIZE_T_PTR),
-    FUN_PYTRUFFLE_STRUCT_OFFSETS("GraalPyPrivate_StructOffsets", PY_SSIZE_T_PTR),
-    FUN_PYTRUFFLE_STRUCT_SIZES("GraalPyPrivate_StructSizes", PY_SSIZE_T_PTR),
+    FUN_PYTRUFFLE_CONSTANTS("GraalPyPrivate_Constants", PY_SSIZE_T_PTR_ZZZ),
+    FUN_PYTRUFFLE_STRUCT_OFFSETS("GraalPyPrivate_StructOffsets", PY_SSIZE_T_PTR_ZZZ),
+    FUN_PYTRUFFLE_STRUCT_SIZES("GraalPyPrivate_StructSizes", PY_SSIZE_T_PTR_ZZZ),
 
     /* C functions for reading native members by offset */
 

@@ -46,7 +46,7 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.C
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_HASH_T_PTR;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_SSIZE_T_PTR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_SSIZE_T_PTR_ZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectPtr;
@@ -54,6 +54,8 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_hash_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
+import static com.oracle.graal.python.nfi2.NativeMemory.readLong;
+import static com.oracle.graal.python.nfi2.NativeMemory.writeLong;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.HASH_MISMATCH;
 import static com.oracle.graal.python.nodes.ErrorMessages.OBJ_P_HAS_NO_ATTR_S;
@@ -145,14 +147,13 @@ public final class PythonCextDictBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, PY_SSIZE_T_PTR, PyObjectPtr, PyObjectPtr, PY_HASH_T_PTR}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyObject, PY_SSIZE_T_PTR_ZZZ, PyObjectPtr, PyObjectPtr, PY_HASH_T_PTR}, call = Direct)
     abstract static class _PyDict_Next extends CApi5BuiltinNode {
 
         @Specialization
-        static int next(PDict dict, Object posPtr, Object keyPtr, Object valuePtr, Object hashPtr,
+        static int next(PDict dict, long posPtr, Object keyPtr, Object valuePtr, Object hashPtr,
                         @Bind Node inliningTarget,
                         @CachedLibrary(limit = "2") InteropLibrary lib,
-                        @Cached CStructAccess.ReadI64Node readI64Node,
                         @Cached CStructAccess.WriteLongNode writeLongNode,
                         @Cached CStructAccess.WritePointerNode writePointerNode,
                         @Cached CApiTransitions.PythonToNativeNode toNativeNode,
@@ -173,7 +174,7 @@ public final class PythonCextDictBuiltins {
              * whole dict at once in the first call (which is required to start with position 0). In
              * order to not violate the ordering, we construct a completely new storage.
              */
-            long pos = readI64Node.read(posPtr);
+            long pos = readLong(posPtr);
             if (pos == 0) {
                 HashingStorage storage = dict.getDictStorage();
                 int len = lenNode.execute(inliningTarget, storage);
@@ -231,7 +232,7 @@ public final class PythonCextDictBuiltins {
                 return 0;
             }
             long newPos = it.getState() + 1;
-            writeLongNode.write(posPtr, newPos);
+            writeLong(posPtr, newPos);
             if (!lib.isNull(keyPtr)) {
                 Object key = itKey.execute(inliningTarget, storage, it);
                 assert promoteKeyNode.execute(inliningTarget, key) == null;
@@ -647,12 +648,12 @@ public final class PythonCextDictBuiltins {
             }
 
             Object key = nextKey.execute(inliningTarget, storage, it);
-            if (isTracked(key, null)) {
+            if (isTracked(key)) {
                 return false;
             }
 
             Object value = nextValue.execute(inliningTarget, storage, it);
-            if (isTracked(value, null)) {
+            if (isTracked(value)) {
                 return false;
             }
             return true;
@@ -662,7 +663,7 @@ public final class PythonCextDictBuiltins {
          * #define _PyObject_GC_MAY_BE_TRACKED(obj) \ (PyObject_IS_GC(obj) && \
          * (!PyTuple_CheckExact(obj) || _PyObject_GC_IS_TRACKED(obj)))
          */
-        static boolean isTracked(Object object, CStructAccess.ReadI64Node readI64Node) {
+        static boolean isTracked(Object object) {
             // TODO(fa): implement properly
             return true;
             // #define _PyObject_GC_IS_TRACKED(o) (_PyGCHead_UNTAG(_Py_AS_GC(o))->_gc_next != 0)

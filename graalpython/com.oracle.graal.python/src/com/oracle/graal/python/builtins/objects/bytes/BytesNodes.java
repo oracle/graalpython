@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.bytes;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.isSpace;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyBytesObject__ob_sval;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyVarObject__ob_size;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointer;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.getFieldPtr;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_BYTESLIKE_GOT_P;
@@ -73,7 +72,6 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrar
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.ToBytesNodeGen;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.ToBytesWithoutFrameNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalByteArrayNode;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
@@ -1006,11 +1004,9 @@ public abstract class BytesNodes {
         public abstract NativeByteSequenceStorage execute(PythonAbstractNativeObject tuple);
 
         @Specialization
-        NativeByteSequenceStorage getNative(PythonAbstractNativeObject bytes,
-                        @Bind Node inliningTarget,
-                        @Cached CoerceNativePointerToLongNode coerceNode) {
+        NativeByteSequenceStorage getNative(PythonAbstractNativeObject bytes) {
             assert PyBytesCheckNode.executeUncached(bytes) || PyByteArrayCheckNode.executeUncached(bytes);
-            long bytesRawPtr = ensurePointer(bytes.getPtr(), inliningTarget, coerceNode);
+            long bytesRawPtr = bytes.getPtr();
             long array = getFieldPtr(bytesRawPtr, PyBytesObject__ob_sval);
             int size = (int) readLongField(bytesRawPtr, PyVarObject__ob_size);
             return NativeByteSequenceStorage.create(array, size, size, false);

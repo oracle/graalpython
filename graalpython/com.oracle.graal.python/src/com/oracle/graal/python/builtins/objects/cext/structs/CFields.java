@@ -101,6 +101,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.traverseproc;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.unaryfunc;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.vectorcallfunc;
+import static com.oracle.graal.python.nfi2.NativeMemory.readLongArrayElements;
 
 import com.oracle.graal.python.annotations.CApiFields;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
@@ -414,8 +415,8 @@ public enum CFields {
 
     private static void resolve() {
         CompilerAsserts.neverPartOfCompilation();
-        Object offsetsPointer = PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_PYTRUFFLE_STRUCT_OFFSETS);
-        long[] offsets = CStructAccessFactory.ReadI64NodeGen.getUncached().readLongArray(offsetsPointer, VALUES.length);
+        long offsetsPointer = (long) PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_PYTRUFFLE_STRUCT_OFFSETS);
+        long[] offsets = readLongArrayElements(offsetsPointer, 0L, VALUES.length);
         for (CFields field : VALUES) {
             field.offset = offsets[field.ordinal()];
             assert field.offset >= 0 && field.offset < 1024;

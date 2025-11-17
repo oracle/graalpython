@@ -52,6 +52,8 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_doc;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointer;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
 import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SEND;
 import static com.oracle.graal.python.nodes.ErrorMessages.BASE_MUST_BE;
@@ -76,7 +78,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.ItemsNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.KeysNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.ValuesNode;
@@ -150,7 +152,6 @@ import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -969,14 +970,14 @@ public final class PythonCextAbstractBuiltins {
                         @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Cached IsTypeNode isType,
                         @Cached TruffleString.SwitchEncodingNode switchEncoding,
-                        @Cached CStructAccess.WritePointerNode writePointerNode) {
-            Object cValue;
+                        @Cached CoerceNativePointerToLongNode coerceNode) {
+            long cValue;
             if (value instanceof TruffleString stringValue) {
-                cValue = new CStringWrapper(switchEncoding.execute(stringValue, TruffleString.Encoding.UTF_8), TruffleString.Encoding.UTF_8);
+                cValue = ensurePointer(new CStringWrapper(switchEncoding.execute(stringValue, TruffleString.Encoding.UTF_8), TruffleString.Encoding.UTF_8), inliningTarget, coerceNode);
             } else {
-                cValue = PythonContext.get(inliningTarget).getNativeNull();
+                cValue = NULLPTR;
             }
-            writePointerNode.write(type.getPtr(), PyTypeObject__tp_doc, cValue);
+            writePtrField(type.getPtr(), PyTypeObject__tp_doc, cValue);
             return 1;
         }
 

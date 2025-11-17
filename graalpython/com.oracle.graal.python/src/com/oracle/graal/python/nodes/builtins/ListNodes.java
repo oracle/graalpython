@@ -43,7 +43,6 @@ package com.oracle.graal.python.nodes.builtins;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyListObject__allocated;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyListObject__ob_item;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyVarObject__ob_size;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointer;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readPtrField;
 import static com.oracle.graal.python.nodes.ErrorMessages.DESCRIPTOR_REQUIRES_S_OBJ_RECEIVED_P;
@@ -53,7 +52,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -342,11 +340,9 @@ public abstract class ListNodes {
         public abstract NativeSequenceStorage execute(PythonAbstractNativeObject list);
 
         @Specialization
-        NativeSequenceStorage getNative(PythonAbstractNativeObject list,
-                        @Bind Node inliningTarget,
-                        @Cached CoerceNativePointerToLongNode coerceNode) {
+        NativeSequenceStorage getNative(PythonAbstractNativeObject list) {
             assert IsSubtypeNode.getUncached().execute(GetClassNode.executeUncached(list), PythonBuiltinClassType.PList);
-            long listRawPtr = ensurePointer(list.getPtr(), inliningTarget, coerceNode);
+            long listRawPtr = list.getPtr();
             long array = readPtrField(listRawPtr, PyListObject__ob_item);
             int size = (int) readLongField(listRawPtr, PyVarObject__ob_size);
             int allocated = (int) readLongField(listRawPtr, PyListObject__allocated);
