@@ -2059,42 +2059,44 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         bci -= oparg;
                         notifyStatement(virtualFrame, instrumentation, mutableData, bci, beginBci);
                         if (CompilerDirectives.hasNextTier()) {
-                            mutableData.loopCount++;
-                        }
-                        if (CompilerDirectives.inInterpreter()) {
-                            if (!useCachedNodes) {
-                                return new InterpreterContinuation(bci, stackTop);
+                            int counter = ++mutableData.loopCount;
+                            if (CompilerDirectives.inInterpreter()) {
+                                if (!useCachedNodes) {
+                                    return new InterpreterContinuation(bci, stackTop);
+                                }
                             }
-                            if (BytecodeOSRNode.pollOSRBackEdge(osrNode, 1)) {
-                                /*
-                                 * Beware of race conditions when adding more things to the
-                                 * interpreterState argument. It gets stored already at this point,
-                                 * but the compilation runs in parallel. The compiled code may get
-                                 * entered from a different invocation of this root, using the
-                                 * interpreterState that was saved here. Don't put any data specific
-                                 * to particular invocation in there (like python-level arguments or
-                                 * variables) or it will get mixed up. To retain such state, put it
-                                 * into the frame instead.
-                                 */
-                                Object osrResult;
-                                try {
-                                    osrResult = BytecodeOSRNode.tryOSR(osrNode, bci, new OSRInterpreterState(stackTop), null, virtualFrame);
-                                } catch (AbstractTruffleException e) {
+                            if (CompilerDirectives.injectBranchProbability(OSRInterpreterState.REPORT_LOOP_PROBABILITY, counter >= OSRInterpreterState.REPORT_LOOP_STRIDE)) {
+                                LoopNode.reportLoopCount(this, counter);
+                                if (CompilerDirectives.inInterpreter() && BytecodeOSRNode.pollOSRBackEdge(osrNode, counter)) {
                                     /*
-                                     * If the OSR execution throws a python exception, it means it
-                                     * has already been processed by the bytecode exception handler
-                                     * therein. We wrap it in order to make sure it doesn't get
-                                     * processed again, which would overwrite the traceback entry
-                                     * with the location of this jump instruction.
+                                     * Beware of race conditions when adding more things to the
+                                     * interpreterState argument. It gets stored already at this
+                                     * point, but the compilation runs in parallel. The compiled
+                                     * code may get entered from a different invocation of this
+                                     * root, using the interpreterState that was saved here. Don't
+                                     * put any data specific to particular invocation in there (like
+                                     * python-level arguments or variables) or it will get mixed up.
+                                     * To retain such state, put it into the frame instead.
                                      */
-                                    throw new OSRException(e);
-                                }
-                                if (osrResult != null) {
-                                    if (CompilerDirectives.hasNextTier() && mutableData.loopCount > 0) {
-                                        LoopNode.reportLoopCount(this, mutableData.loopCount);
+                                    Object osrResult;
+                                    try {
+                                        osrResult = BytecodeOSRNode.tryOSR(osrNode, bci, new OSRInterpreterState(stackTop), null, virtualFrame);
+                                    } catch (AbstractTruffleException e) {
+                                        /*
+                                         * If the OSR execution throws a python exception, it means
+                                         * it has already been processed by the bytecode exception
+                                         * handler therein. We wrap it in order to make sure it
+                                         * doesn't get processed again, which would overwrite the
+                                         * traceback entry with the location of this jump
+                                         * instruction.
+                                         */
+                                        throw new OSRException(e);
                                     }
-                                    return osrResult;
+                                    if (osrResult != null) {
+                                        return osrResult;
+                                    }
                                 }
+                                mutableData.loopCount = 0;
                             }
                         }
                         PythonContext.triggerAsyncActions(this);

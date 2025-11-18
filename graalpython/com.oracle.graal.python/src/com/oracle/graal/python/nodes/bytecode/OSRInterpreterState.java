@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,4 +46,7 @@ final class OSRInterpreterState {
     public OSRInterpreterState(int stackTop) {
         this.stackTop = stackTop;
     }
+
+    static final int REPORT_LOOP_STRIDE = 1 << 8;
+    static final double REPORT_LOOP_PROBABILITY = (double) 1 / (double) REPORT_LOOP_STRIDE;
 }
