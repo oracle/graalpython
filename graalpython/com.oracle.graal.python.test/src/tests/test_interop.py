@@ -575,6 +575,19 @@ class InteropTests(unittest.TestCase):
             assert "getGlobal" in d
             assert d["getGlobal"]().getName() == d["GLOBAL_LOGGER_NAME"]
 
+    def test_java_typing_support(self):
+        import typing
+        import java.lang.Integer as Integer
+        import java.util.List as List
+        assert List.__name__ == "List"
+        assert List.__qualname__ == "java.util.List"
+        assert List.__module__ == "polyglot"
+        assert List.__type_params__ == ()
+        assert List.__annotations__ == {}
+        assert isinstance(List[Integer], typing.GenericAlias)
+        assert List[Integer].__origin__ == List
+        assert List[Integer].__args__ == (Integer,)
+
     def test_java_null_is_none(self):
         import java.lang.Integer as Integer
         x = Integer.getInteger("something_that_does_not_exists")
