@@ -43,6 +43,7 @@ package com.oracle.graal.python.lib;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.nodes.frame.GetFrameLocalsNode;
 import com.oracle.graal.python.nodes.frame.ReadFrameNode;
+import com.oracle.graal.python.runtime.CallerFlags;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -59,7 +60,7 @@ public abstract class PyEvalGetLocals extends Node {
     static Object getLocals(VirtualFrame frame, Node inliningTarget,
                     @Cached(inline = false) ReadFrameNode readFrameNode,
                     @Cached GetFrameLocalsNode getFrameLocalsNode) {
-        PFrame callerFrame = readFrameNode.getCurrentPythonFrame(frame, true);
-        return getFrameLocalsNode.execute(frame, inliningTarget, callerFrame);
+        PFrame callerFrame = readFrameNode.getCurrentPythonFrame(frame, CallerFlags.NEEDS_LOCALS);
+        return getFrameLocalsNode.execute(frame, inliningTarget, callerFrame, true);
     }
 }

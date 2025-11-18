@@ -424,7 +424,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                 stackLevel--;
                 selector = rootNode -> ReadFrameNode.VisiblePythonFramesSelector.INSTANCE.skip(rootNode) || isFilenameToSkip(skipFilePrefixes, rootNode);
             }
-            return readFrameNode.getFrameForReference(frame, PArguments.getCurrentFrameInfo(frame), selector, stackLevel, false);
+            return readFrameNode.getFrameForReference(frame, PArguments.getCurrentFrameInfo(frame), selector, stackLevel, CallerFlags.NEEDS_LASTI);
         }
 
         @TruffleBoundary

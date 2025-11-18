@@ -294,7 +294,7 @@ public final class SuperBuiltins extends PythonBuiltins {
                         @Shared @Cached PRaiseNode raiseNode,
                         @Cached ReadFrameNode readCaller,
                         @Shared @Cached CellBuiltins.GetRefNode getRefNode) {
-            PFrame target = readCaller.getCurrentPythonFrame(frame, true);
+            PFrame target = readCaller.getCurrentPythonFrame(frame, CallerFlags.NEEDS_LOCALS);
             if (target == null) {
                 throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.NO_CURRENT_FRAME, "super()");
             }

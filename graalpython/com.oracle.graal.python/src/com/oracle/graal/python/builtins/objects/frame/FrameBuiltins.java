@@ -57,6 +57,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
+import com.oracle.graal.python.runtime.CallerFlags;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.OverflowException;
@@ -90,7 +91,7 @@ public final class FrameBuiltins extends PythonBuiltins {
                         @Cached GetCodeNode getCodeNode,
                         @Cached ReadFrameNode readFrameNode,
                         @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
-            self = readFrameNode.ensureFresh(frame, self);
+            self = readFrameNode.ensureFresh(frame, self, CallerFlags.NEEDS_LASTI);
             PCode code = getCodeNode.executeObject(frame, self);
             int lineno = self.getLine();
             return simpleTruffleStringFormatNode.format("<frame at 0x%s, file '%s', line %d, code %s>",
@@ -158,7 +159,7 @@ public final class FrameBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNoValue(newLineno)")
         int get(VirtualFrame frame, PFrame self, Object newLineno,
                         @Cached @Cached.Exclusive ReadFrameNode readFrameNode) {
-            return readFrameNode.ensureFresh(frame, self).getLine();
+            return readFrameNode.ensureFresh(frame, self, CallerFlags.NEEDS_LASTI).getLine();
         }
 
         @Specialization(guards = {"!isNoValue(newLineno)", "!isDeleteMarker(newLineno)"})
@@ -168,7 +169,7 @@ public final class FrameBuiltins extends PythonBuiltins {
                         @Cached @Cached.Exclusive PRaiseNode raise,
                         @Cached PyLongCheckExactNode isLong,
                         @Cached PyLongAsLongAndOverflowNode toLong) {
-            readFrameNode.ensureFresh(frame, self);
+            readFrameNode.ensureFresh(frame, self, CallerFlags.NEEDS_LASTI);
             if (self.isTraceArgument()) {
                 if (isLong.execute(inliningTarget, newLineno)) {
                     try {
@@ -199,7 +200,7 @@ public final class FrameBuiltins extends PythonBuiltins {
         @Specialization
         int get(VirtualFrame frame, PFrame self,
                         @Cached ReadFrameNode readFrameNode) {
-            return readFrameNode.ensureFresh(frame, self).getLasti();
+            return readFrameNode.ensureFresh(frame, self, CallerFlags.NEEDS_LASTI).getLasti();
         }
     }
 
@@ -272,7 +273,7 @@ public final class FrameBuiltins extends PythonBuiltins {
         Object getUpdating(VirtualFrame frame, PFrame self,
                         @Bind Node inliningTarget,
                         @Cached GetFrameLocalsNode getFrameLocalsNode) {
-            Object locals = getFrameLocalsNode.execute(frame, inliningTarget, self);
+            Object locals = getFrameLocalsNode.execute(frame, inliningTarget, self, false);
             self.setLocalsAccessed(true);
             return locals;
         }
@@ -286,7 +287,7 @@ public final class FrameBuiltins extends PythonBuiltins {
         @Specialization
         Object getBackref(VirtualFrame frame, PFrame self,
                         @Cached ReadFrameNode readCallerFrame) {
-            PFrame backref = readCallerFrame.getFrameForReference(frame, self.getRef(), 1, false);
+            PFrame backref = readCallerFrame.getFrameForReference(frame, self.getRef(), 1, 0);
             if (backref != null) {
                 backref.getRef().markAsEscaped();
                 return backref;

@@ -812,7 +812,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Exclusive @Cached GetFrameLocalsNode getFrameLocalsNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             boolean inheritLocals = inheritLocalsProfile.profile(inliningTarget, locals instanceof PNone);
-            PFrame callerFrame = readFrameNode.getCurrentPythonFrame(frame, inheritLocals);
+            PFrame callerFrame = readFrameNode.getCurrentPythonFrame(frame, inheritLocals ? CallerFlags.NEEDS_LOCALS : 0);
             Object[] args = PArguments.create();
             boolean haveCallerFrame = haveCallerFrameProfile.profile(inliningTarget, callerFrame != null);
             if (haveCallerFrame) {
@@ -822,7 +822,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
             if (inheritLocals) {
                 if (haveCallerFrame) {
-                    Object callerLocals = getFrameLocalsNode.execute(frame, inliningTarget, callerFrame);
+                    Object callerLocals = getFrameLocalsNode.execute(frame, inliningTarget, callerFrame, true);
                     setCustomLocals(args, callerLocals);
                 } else {
                     setCustomLocals(args, PArguments.getGlobals(args));

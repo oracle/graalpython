@@ -581,7 +581,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         Node oldEncapsulatingNode = encapsulating.set(location);
         try {
             // Force locals dict sync, so that we can sync them back later
-            GetFrameLocalsNode.executeUncached(pyFrame);
+            GetFrameLocalsNode.executeUncached(pyFrame, false);
             Object result = doInvokeProfileOrTraceFunction(virtualFrame, location, threadState, profileFun, pyFrame, event.name, arg);
             syncLocalsBackToFrame(virtualFrame, pyFrame);
             Object realResult = result == PNone.NONE ? null : result;
@@ -629,7 +629,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             }
 
             // Force locals dict sync, so that we can sync them back later
-            GetFrameLocalsNode.executeUncached(pyFrame);
+            GetFrameLocalsNode.executeUncached(pyFrame, false);
             Object result = doInvokeProfileOrTraceFunction(virtualFrame, location, threadState, traceFn, pyFrame, event.pythonName, nonNullArg);
             syncLocalsBackToFrame(virtualFrame, pyFrame);
             // https://github.com/python/cpython/issues/104232

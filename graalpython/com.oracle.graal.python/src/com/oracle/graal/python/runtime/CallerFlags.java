@@ -52,6 +52,11 @@ public abstract class CallerFlags {
     public static final int NEEDS_PFRAME = 1 << 2;
     /** Whether the callee needs the caller PFrame with locals. Implies NEEDS_PFRAME */
     public static final int NEEDS_LOCALS = 1 << 3;
+    /**
+     * Whether the callee needs the current PFrame last instruction index / lineno. Implies
+     * NEEDS_PFRAME
+     */
+    public static final int NEEDS_LASTI = 1 << 4;
 
     public static boolean needsExceptionState(int callerFlags) {
         return (callerFlags & NEEDS_EXCEPTION_STATE) != 0;
@@ -67,5 +72,9 @@ public abstract class CallerFlags {
 
     public static boolean needsLocals(int callerFlags) {
         return (callerFlags & NEEDS_LOCALS) != 0;
+    }
+
+    public static boolean needsLasti(int callerFlags) {
+        return (callerFlags & NEEDS_LASTI) != 0;
     }
 }

@@ -53,6 +53,7 @@ import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.bytecode.FrameInfo;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLFrameInfo;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
+import com.oracle.graal.python.runtime.CallerFlags;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -84,23 +85,27 @@ import com.oracle.truffle.api.strings.TruffleString;
 @GenerateInline(inlineByDefault = true)
 @GenerateCached
 public abstract class GetFrameLocalsNode extends Node {
-    public abstract Object execute(Frame frame, Node inliningTarget, PFrame pyFrame);
+    /**
+     * @param freshFrame whether the frame was just materialized with locals sync and we know for
+     *            sure it won't need sync. If unsure, pass false
+     */
+    public abstract Object execute(Frame frame, Node inliningTarget, PFrame pyFrame, boolean freshFrame);
 
-    public final Object executeCached(VirtualFrame frame, PFrame pyFrame) {
-        return execute(frame, this, pyFrame);
+    public final Object executeCached(VirtualFrame frame, PFrame pyFrame, boolean freshFrame) {
+        return execute(frame, this, pyFrame, freshFrame);
     }
 
-    public static Object executeUncached(PFrame pyFrame) {
-        return GetFrameLocalsNodeGen.getUncached().execute(null, null, pyFrame);
+    public static Object executeUncached(PFrame pyFrame, boolean freshFrame) {
+        return GetFrameLocalsNodeGen.getUncached().execute(null, null, pyFrame, freshFrame);
     }
 
     @Specialization(guards = "!pyFrame.hasCustomLocals()")
-    static Object doLoop(VirtualFrame frame, Node inliningTarget, PFrame pyFrame,
+    static Object doLoop(VirtualFrame frame, Node inliningTarget, PFrame pyFrame, boolean freshFrame,
                     @Cached InlinedBranchProfile create,
                     @Cached(inline = false) CopyLocalsToDict copyLocalsToDict,
                     @Cached ReadFrameNode readFrameNode) {
-        if (pyFrame.isStale() || pyFrame.getLocals() == null) {
-            pyFrame = readFrameNode.refreshFrame(frame, pyFrame.getRef(), true);
+        if (!freshFrame && pyFrame.isStale(frame, CallerFlags.NEEDS_LOCALS)) {
+            pyFrame = readFrameNode.refreshFrame(frame, pyFrame.getRef(), CallerFlags.NEEDS_LOCALS);
         }
         MaterializedFrame locals = pyFrame.getLocals();
         // It doesn't have custom locals, so it has to be a builtin dict or null
@@ -115,7 +120,7 @@ public abstract class GetFrameLocalsNode extends Node {
     }
 
     @Specialization(guards = "pyFrame.hasCustomLocals()")
-    static Object doCustomLocals(PFrame pyFrame) {
+    static Object doCustomLocals(PFrame pyFrame, @SuppressWarnings("unused") boolean freshFrame) {
         Object localsDict = pyFrame.getLocalsDict();
         assert localsDict != null;
         return localsDict;

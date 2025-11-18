@@ -132,40 +132,36 @@ public abstract class ReadFrameNode extends Node {
      * frames)
      */
     public final PFrame getCurrentPythonFrame(VirtualFrame frame) {
-        return getCurrentPythonFrame(frame, false);
+        return getCurrentPythonFrame(frame, 0);
     }
 
-    public final PFrame getCurrentPythonFrame(VirtualFrame frame, boolean needsLocals) {
-        return getFrameForReference(frame, frame != null ? PArguments.getCurrentFrameInfo(frame) : null, AllPythonFramesSelector.INSTANCE, 0, needsLocals);
+    public final PFrame getCurrentPythonFrame(VirtualFrame frame, int callerFlags) {
+        return getFrameForReference(frame, frame != null ? PArguments.getCurrentFrameInfo(frame) : null, AllPythonFramesSelector.INSTANCE, 0, callerFlags);
     }
 
-    public final PFrame refreshFrame(VirtualFrame frame, PFrame.Reference reference, boolean needsLocals) {
-        return getFrameForReference(frame, reference, 0, needsLocals);
+    public final PFrame refreshFrame(VirtualFrame frame, PFrame.Reference reference, int callerFlags) {
+        return getFrameForReference(frame, reference, 0, callerFlags);
     }
 
-    public final PFrame ensureFresh(VirtualFrame frame, PFrame pFrame) {
-        return ensureFresh(frame, pFrame, false);
-    }
-
-    public final PFrame ensureFresh(VirtualFrame frame, PFrame pFrame, boolean needsLocals) {
-        if (pFrame.isStale() || (needsLocals && pFrame.getLocals() == null) || (frame != null && PArguments.getCurrentFrameInfo(frame) == pFrame.getRef())) {
-            return refreshFrame(frame, pFrame.getRef(), needsLocals);
+    public final PFrame ensureFresh(VirtualFrame frame, PFrame pFrame, int callerFlags) {
+        if (pFrame.isStale(frame, callerFlags)) {
+            return refreshFrame(frame, pFrame.getRef(), callerFlags);
         }
         return pFrame;
     }
 
-    public final PFrame getFrameForReference(Frame frame, PFrame.Reference startFrameInfo, int level, boolean needsLocals) {
-        return getFrameForReference(frame, startFrameInfo, AllPythonFramesSelector.INSTANCE, level, needsLocals);
+    public final PFrame getFrameForReference(Frame frame, PFrame.Reference startFrameInfo, int level, int callerFlags) {
+        return getFrameForReference(frame, startFrameInfo, AllPythonFramesSelector.INSTANCE, level, callerFlags);
     }
 
-    public final PFrame getFrameForReference(Frame frame, PFrame.Reference startFrameInfo, FrameSelector selector, int level, boolean needsLocals) {
-        return execute(frame, startFrameInfo, FrameInstance.FrameAccess.READ_ONLY, selector, level, needsLocals);
+    public final PFrame getFrameForReference(Frame frame, PFrame.Reference startFrameInfo, FrameSelector selector, int level, int callerFlags) {
+        return execute(frame, startFrameInfo, FrameInstance.FrameAccess.READ_ONLY, selector, level, callerFlags | CallerFlags.NEEDS_PFRAME);
     }
 
-    protected abstract PFrame execute(Frame frame, PFrame.Reference startFrameInfo, FrameInstance.FrameAccess frameAccess, FrameSelector selector, int level, boolean needsLocals);
+    protected abstract PFrame execute(Frame frame, PFrame.Reference startFrameInfo, FrameInstance.FrameAccess frameAccess, FrameSelector selector, int level, int callerFlags);
 
     @Specialization
-    PFrame read(VirtualFrame frame, PFrame.Reference startFrameInfo, FrameInstance.FrameAccess frameAccess, FrameSelector selector, int level, boolean needsLocals,
+    PFrame read(VirtualFrame frame, PFrame.Reference startFrameInfo, FrameInstance.FrameAccess frameAccess, FrameSelector selector, int level, int callerFlags,
                     @Bind Node inliningTarget,
                     @Cached MaterializeFrameNode materializeFrameNode,
                     @Cached InlinedBranchProfile stackWalkProfile1,
@@ -187,9 +183,9 @@ public abstract class ReadFrameNode extends Node {
                     // We found the right reference
                     // Maybe it's for the frame we're in?
                     if (frame != null && PArguments.getCurrentFrameInfo(frame) == curFrameInfo) {
-                        return materializeFrameNode.execute(this, false, needsLocals, frame);
+                        return materializeFrameNode.execute(this, false, CallerFlags.needsLocals(callerFlags), frame);
                     }
-                    if (curFrameInfo.getPyFrame() != null && !curFrameInfo.getPyFrame().isStale() && (!needsLocals || curFrameInfo.getPyFrame().getLocals() != null)) {
+                    if (curFrameInfo.getPyFrame() != null && !curFrameInfo.getPyFrame().isStale(null, callerFlags)) {
                         return curFrameInfo.getPyFrame();
                     }
                     // We don't have the frame for the reference, fall back to the stack walk
@@ -219,7 +215,7 @@ public abstract class ReadFrameNode extends Node {
          * It is necessary to continue from where we stopped with the backref walk because the
          * original starting frame might not be on stack anymore
          */
-        return readFromStackWalk(curFrameInfo, frameAccess, selector, level - i, needsLocals, materializeFrameNode);
+        return readFromStackWalk(curFrameInfo, frameAccess, selector, level - i, callerFlags, materializeFrameNode);
     }
 
     private static PFrame.Reference getBackref(PFrame.Reference reference) {
@@ -230,12 +226,8 @@ public abstract class ReadFrameNode extends Node {
     }
 
     @TruffleBoundary
-    private PFrame readFromStackWalk(PFrame.Reference startFrameInfo, FrameInstance.FrameAccess frameAccess, FrameSelector selector, int level, boolean needsLocals,
+    private PFrame readFromStackWalk(PFrame.Reference startFrameInfo, FrameInstance.FrameAccess frameAccess, FrameSelector selector, int level, int callerFlags,
                     MaterializeFrameNode materializeFrameNode) {
-        int callerFlags = CallerFlags.NEEDS_PFRAME;
-        if (needsLocals) {
-            callerFlags |= CallerFlags.NEEDS_LOCALS;
-        }
         StackWalkResult callerFrameResult = getFrame(this, startFrameInfo, frameAccess, selector, level, callerFlags);
         if (callerFrameResult != null) {
             Node location = callerFrameResult.callNode;
@@ -246,7 +238,7 @@ public abstract class ReadFrameNode extends Node {
                  */
                 location = callerFrameResult.rootNode;
             }
-            return materializeFrameNode.execute(location, false, needsLocals, callerFrameResult.frame);
+            return materializeFrameNode.execute(location, false, CallerFlags.needsLocals(callerFlags), callerFrameResult.frame);
         }
         return null;
     }

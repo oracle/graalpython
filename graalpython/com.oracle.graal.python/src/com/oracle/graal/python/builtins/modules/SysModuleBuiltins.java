@@ -864,7 +864,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached ReadFrameNode readFrameNode,
                         @Cached PRaiseNode raiseNode) {
-            PFrame requested = readFrameNode.getFrameForReference(frame, PArguments.getCurrentFrameInfo(frame), ReadFrameNode.AllPythonFramesSelector.INSTANCE, depth, false);
+            PFrame requested = readFrameNode.getFrameForReference(frame, PArguments.getCurrentFrameInfo(frame), ReadFrameNode.AllPythonFramesSelector.INSTANCE, depth, 0);
             if (requested == null) {
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.CALL_STACK_NOT_DEEP_ENOUGH);
             }

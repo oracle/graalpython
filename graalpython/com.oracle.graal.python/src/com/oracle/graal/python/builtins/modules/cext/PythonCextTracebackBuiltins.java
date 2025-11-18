@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.nodes.frame.ReadFrameNode;
+import com.oracle.graal.python.runtime.CallerFlags;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
@@ -95,7 +96,7 @@ public final class PythonCextTracebackBuiltins {
             Object currentException = readAndClearNativeException.execute(inliningTarget, threadState);
             if (currentException instanceof PBaseException) {
                 Object traceback = ExceptionNodes.GetTracebackNode.executeUncached(currentException);
-                frame = readFrameNode.ensureFresh(null, frame);
+                frame = readFrameNode.ensureFresh(null, frame, CallerFlags.NEEDS_LASTI);
                 PTraceback newTraceback = PFactory.createTraceback(language, frame, frame.getLine(), traceback instanceof PTraceback ptb ? ptb : null);
                 ExceptionNodes.SetTracebackNode.executeUncached(currentException, newTraceback);
             }

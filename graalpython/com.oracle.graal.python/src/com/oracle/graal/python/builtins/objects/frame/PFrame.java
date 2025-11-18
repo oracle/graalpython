@@ -53,12 +53,15 @@ import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.frame.GetFrameLocalsNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
+import com.oracle.graal.python.nodes.frame.ReadFrameNode;
+import com.oracle.graal.python.runtime.CallerFlags;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.bytecode.BytecodeNode;
 import com.oracle.truffle.api.frame.MaterializedFrame;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 
@@ -67,6 +70,8 @@ public final class PFrame extends PythonBuiltinObject {
 
     private Object[] arguments;
     private MaterializedFrame locals;
+    // Whether the frame has dict locals passed from the caller (happens in eval/exec and class
+    // bodies)
     private final boolean hasCustomLocals;
     private Object localsDict;
     private final Reference virtualFrameInfo;
@@ -98,6 +103,7 @@ public final class PFrame extends PythonBuiltinObject {
 
     private PFrame.Reference backref = null;
 
+    // Whether lasti and locals are stale, see isStale
     private boolean stale;
 
     public Object getLocalTraceFun() {
@@ -225,8 +231,25 @@ public final class PFrame extends PythonBuiltinObject {
         this.locals = locals;
     }
 
-    public boolean isStale() {
-        return stale;
+    /**
+     * PFrame is created once for each real frame, but some information in it, like locals and
+     * lasti+lineno can get out of sync when the frame is still executing. The PFrame is normally
+     * updated by the caller when the callee requests it. But the PFrame might sometimes be passed
+     * down before the callee has set the flags to request the update and thus the callee might see
+     * stale info. This method can tell that this happened and an explicit update via
+     * {@link ReadFrameNode#refreshFrame(VirtualFrame, Reference, int)} is needed.
+     *
+     * @param frame The current frame. If the current executing frame is this PFrame, then sync is
+     *            always needed.
+     * @param callerFlags Specifies which fields should be checked for needing sync. It should be
+     *            flags from {@link CallerFlags}.
+     */
+    public boolean isStale(VirtualFrame frame, int callerFlags) {
+        boolean needsLocals = CallerFlags.needsLocals(callerFlags) && !hasCustomLocals;
+        if (needsLocals && locals == null) {
+            return true;
+        }
+        return (CallerFlags.needsLasti(callerFlags) || needsLocals) && (stale || (frame != null && PArguments.getCurrentFrameInfo(frame) == getRef()));
     }
 
     public void setStale(boolean stale) {

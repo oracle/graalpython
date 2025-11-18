@@ -217,7 +217,7 @@ public abstract class ExecutionContext {
                 if (CallerFlags.needsPFrame(callerFlags)) {
                     // We are handing the PFrame of the current frame to the caller, i.e., it does
                     // not 'escape' since it is still on the stack. Also, force synchronization of
-                    // values
+                    // values if requested
                     if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
                         // For the manual interpreter it is OK to executeOnStack with uncached
                         // `materialize` Node, but once we have uncached Bytecode DSL interpreter,
@@ -227,9 +227,13 @@ public abstract class ExecutionContext {
                         // BoundaryCallContext.enter/exit around TruffleBoundary
                         assert materialize.isAdoptable();
                     }
-                    PFrame pyFrame = materialize.executeOnStack(false, CallerFlags.needsLocals(callerFlags), frame);
-                    assert thisInfo.getPyFrame() == pyFrame;
-                    assert pyFrame.getRef() == thisInfo;
+                    if (thisInfo.getPyFrame() != null && !CallerFlags.needsLocals(callerFlags) && !CallerFlags.needsLasti(callerFlags)) {
+                        thisInfo.getPyFrame().setStale(true);
+                    } else {
+                        PFrame pyFrame = materialize.executeOnStack(false, CallerFlags.needsLocals(callerFlags), frame);
+                        assert thisInfo.getPyFrame() == pyFrame;
+                        assert pyFrame.getRef() == thisInfo;
+                    }
                 } else if (thisInfo.getPyFrame() != null) {
                     thisInfo.getPyFrame().setStale(true);
                 }
