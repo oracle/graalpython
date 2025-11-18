@@ -79,6 +79,9 @@ import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNo
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.ExecutionContext;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -180,9 +183,20 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                  * generator root.
                  */
                 MaterializedFrame generatorFrame = self.getGeneratorFrame();
-                callContext.executePrepareCall(frame, generatorFrame.getArguments(), rootNode.getCallerFlags());
                 Object[] arguments = new Object[]{generatorFrame, sendValue};
-                generatorResult = callNode.call(arguments);
+                if (frame == null) {
+                    PythonContext context = PythonContext.get(inliningTarget);
+                    PythonThreadState threadState = context.getThreadState(context.getLanguage(inliningTarget));
+                    Object state = IndirectCalleeContext.enter(threadState, generatorFrame.getArguments());
+                    try {
+                        generatorResult = callNode.call(arguments);
+                    } finally {
+                        IndirectCalleeContext.exit(threadState, state);
+                    }
+                } else {
+                    callContext.executePrepareCall(frame, generatorFrame.getArguments(), rootNode.getCallerFlags());
+                    generatorResult = callNode.call(arguments);
+                }
             } catch (PException e) {
                 throw handleException(self, inliningTarget, errorProfile, raiseNode, e);
             } finally {
@@ -236,9 +250,20 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                 // See the cached specialization for notes about the arguments handling
                 PRootNode rootNode = PGenerator.unwrapContinuationRoot((ContinuationRootNode) callTarget.getRootNode());
                 MaterializedFrame generatorFrame = self.getGeneratorFrame();
-                callContext.executePrepareCall(frame, generatorFrame.getArguments(), rootNode.getCallerFlags());
                 Object[] arguments = new Object[]{generatorFrame, sendValue};
-                generatorResult = callNode.call(callTarget, arguments);
+                if (frame == null) {
+                    PythonContext context = PythonContext.get(inliningTarget);
+                    PythonThreadState threadState = context.getThreadState(context.getLanguage(inliningTarget));
+                    Object state = IndirectCalleeContext.enter(threadState, generatorFrame.getArguments());
+                    try {
+                        generatorResult = callNode.call(callTarget, arguments);
+                    } finally {
+                        IndirectCalleeContext.exit(threadState, state);
+                    }
+                } else {
+                    callContext.executePrepareCall(frame, generatorFrame.getArguments(), rootNode.getCallerFlags());
+                    generatorResult = callNode.call(callTarget, arguments);
+                }
             } catch (PException e) {
                 throw handleException(self, inliningTarget, errorProfile, raiseNode, e);
             } finally {
