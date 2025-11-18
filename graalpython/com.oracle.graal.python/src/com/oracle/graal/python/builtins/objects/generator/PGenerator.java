@@ -265,7 +265,7 @@ public class PGenerator extends PythonBuiltinObject {
         Object frameInfo = frame.getFrameDescriptor().getInfo();
         // just to avoid interface dispatch we must cast the info object
         if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-            return frameInfo instanceof BytecodeDSLFrameInfo info && info.getCodeUnit().isGeneratorOrCoroutine();
+            return frameInfo instanceof BytecodeDSLFrameInfo info && info.getCodeUnit().isGeneratorOrCoroutine() && frame.getArguments()[0] instanceof MaterializedFrame;
         } else {
             return frameInfo instanceof BytecodeFrameInfo info && info.getCodeUnit().isGeneratorOrCoroutine();
         }
