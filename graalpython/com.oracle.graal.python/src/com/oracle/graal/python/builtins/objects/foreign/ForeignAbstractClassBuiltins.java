@@ -26,21 +26,32 @@
 
 package com.oracle.graal.python.builtins.objects.foreign;
 
+import static com.oracle.graal.python.nodes.BuiltinNames.T_POLYGLOT;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___ANNOTATIONS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___BASES__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___MODULE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___NAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___QUALNAME__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___TYPE_PARAMS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INSTANCECHECK__;
 
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Builtin;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -64,6 +75,8 @@ import com.oracle.truffle.api.nodes.Node;
  */
 @CoreFunctions(extendClasses = PythonBuiltinClassType.ForeignAbstractClass)
 public final class ForeignAbstractClassBuiltins extends PythonBuiltins {
+    public static TpSlots SLOTS = ForeignAbstractClassBuiltinsSlotsGen.SLOTS;
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ForeignAbstractClassBuiltinsFactory.getFactories();
@@ -94,6 +107,66 @@ public final class ForeignAbstractClassBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = J___NAME__, minNumOfPositionalArgs = 1, isGetter = true, isSetter = false)
+    @GenerateNodeFactory
+    abstract static class ForeignNameNode extends PythonUnaryBuiltinNode {
+        @Specialization(limit = "2")
+        static Object foreignName(Object self,
+                        @CachedLibrary("self") InteropLibrary lib,
+                        @Cached PForeignToPTypeNode castStr) {
+            try {
+                return castStr.executeConvert(lib.getMetaSimpleName(self));
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
+    }
+
+    @Builtin(name = J___QUALNAME__, minNumOfPositionalArgs = 1, isGetter = true, isSetter = false)
+    @GenerateNodeFactory
+    abstract static class ForeignQualnameNode extends PythonUnaryBuiltinNode {
+        @Specialization(limit = "2")
+        static Object foreignName(Object self,
+                        @CachedLibrary("self") InteropLibrary lib,
+                        @Cached PForeignToPTypeNode castStr) {
+            try {
+                return castStr.executeConvert(lib.getMetaQualifiedName(self));
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
+    }
+
+    @Builtin(name = J___MODULE__, minNumOfPositionalArgs = 1, isGetter = true, isSetter = false)
+    @GenerateNodeFactory
+    abstract static class ForeignModuleNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static Object foreignModule(@SuppressWarnings("unused") Object self) {
+            return T_POLYGLOT;
+        }
+    }
+
+    @Builtin(name = J___TYPE_PARAMS__, minNumOfPositionalArgs = 1, isGetter = true, isSetter = false)
+    @GenerateNodeFactory
+    abstract static class ForeignTypeParams extends PythonUnaryBuiltinNode {
+        @Specialization
+        static Object foreignTypeParams(@SuppressWarnings("unused") Object self,
+                        @Bind PythonLanguage lang) {
+            return PFactory.createEmptyTuple(lang);
+        }
+    }
+
+    @Builtin(name = J___ANNOTATIONS__, minNumOfPositionalArgs = 1, isGetter = true, isSetter = false)
+    @GenerateNodeFactory
+    abstract static class ForeignAnnotations extends PythonUnaryBuiltinNode {
+        @Specialization
+        static Object foreignAnnotations(@SuppressWarnings("unused") Object self,
+                        @Bind PythonLanguage lang) {
+            // TODO: use the declared members interop API to return annotations
+            return PFactory.createDict(lang);
+        }
+    }
+
     @Builtin(name = J___INSTANCECHECK__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class InstancecheckNode extends PythonBinaryBuiltinNode {
@@ -112,4 +185,13 @@ public final class ForeignAbstractClassBuiltins extends PythonBuiltins {
         }
     }
 
+    @Slot(value = SlotKind.mp_subscript, isComplex = true)
+    @GenerateNodeFactory
+    abstract static class ForeignClassGetItemNode extends MpSubscriptBuiltinNode {
+        @Specialization
+        static Object classGetItem(Object cls, Object key,
+                        @Bind PythonLanguage language) {
+            return PFactory.createGenericAlias(language, cls, key);
+        }
+    }
 }
