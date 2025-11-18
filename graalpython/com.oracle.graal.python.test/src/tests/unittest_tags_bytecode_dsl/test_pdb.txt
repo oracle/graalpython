@@ -11,6 +11,7 @@ DocTestCase.test.test_pdb.test_pdb_issue_gh_101673 @ linux-x86_64
 DocTestCase.test.test_pdb.test_pdb_issue_gh_103225 @ linux-x86_64
 DocTestCase.test.test_pdb.test_pdb_issue_gh_65052 @ linux-x86_64
 DocTestCase.test.test_pdb.test_pdb_pp_repr_exc @ linux-x86_64
+DocTestCase.test.test_pdb.test_pdb_return_to_different_file @ linux-x86_64
 DocTestCase.test.test_pdb.test_pdb_run_with_code_object @ linux-x86_64
 DocTestCase.test.test_pdb.test_pdb_skip_modules @ linux-x86_64
 DocTestCase.test.test_pdb.test_pdb_whatis_command @ linux-x86_64
@@ -39,7 +40,14 @@ test.test_pdb.PdbTestCase.test_module_without_a_main @ linux-x86_64
 test.test_pdb.PdbTestCase.test_non_utf8_encoding @ linux-x86_64
 test.test_pdb.PdbTestCase.test_nonexistent_module @ linux-x86_64
 test.test_pdb.PdbTestCase.test_package_without_a_main @ linux-x86_64
+test.test_pdb.PdbTestCase.test_pdbrc_alias @ linux-x86_64
+test.test_pdb.PdbTestCase.test_pdbrc_basic @ linux-x86_64
+test.test_pdb.PdbTestCase.test_pdbrc_commands @ linux-x86_64
+test.test_pdb.PdbTestCase.test_pdbrc_empty_line @ linux-x86_64
+test.test_pdb.PdbTestCase.test_pdbrc_semicolon @ linux-x86_64
 test.test_pdb.PdbTestCase.test_readrc_homedir @ linux-x86_64
 test.test_pdb.PdbTestCase.test_readrc_kwarg @ linux-x86_64
 test.test_pdb.PdbTestCase.test_run_module @ linux-x86_64
 test.test_pdb.PdbTestCase.test_run_pdb_with_pdb @ linux-x86_64
+test.test_pdb.PdbTestCase.test_spec @ linux-x86_64
+test.test_pdb.PdbTestCase.test_step_into_botframe @ linux-x86_64

@@ -1,4 +1,5 @@
 test.test_types.ClassCreationTests.test_bad___prepare__ @ linux-x86_64
+test.test_types.ClassCreationTests.test_get_original_bases @ linux-x86_64
 test.test_types.ClassCreationTests.test_metaclass_derivation @ linux-x86_64
 test.test_types.ClassCreationTests.test_metaclass_new_error @ linux-x86_64
 test.test_types.ClassCreationTests.test_metaclass_override_callable @ linux-x86_64
@@ -16,6 +17,7 @@ test.test_types.ClassCreationTests.test_new_class_with_mro_entry_genericalias @ 
 test.test_types.ClassCreationTests.test_new_class_with_mro_entry_multiple @ linux-x86_64
 test.test_types.ClassCreationTests.test_new_class_with_mro_entry_multiple_2 @ linux-x86_64
 test.test_types.ClassCreationTests.test_new_class_with_mro_entry_none @ linux-x86_64
+test.test_types.ClassCreationTests.test_one_argument_type @ linux-x86_64
 test.test_types.ClassCreationTests.test_prepare_class @ linux-x86_64
 test.test_types.ClassCreationTests.test_resolve_bases @ linux-x86_64
 test.test_types.ClassCreationTests.test_resolve_bases_with_mro_entry @ linux-x86_64
@@ -93,6 +95,7 @@ test.test_types.UnionTests.test_or_type_repr @ linux-x86_64
 test.test_types.UnionTests.test_or_types_operator @ linux-x86_64
 test.test_types.UnionTests.test_union_args @ linux-x86_64
 test.test_types.UnionTests.test_union_copy @ linux-x86_64
+test.test_types.UnionTests.test_union_of_unhashable @ linux-x86_64
 test.test_types.UnionTests.test_union_parameter_chaining @ linux-x86_64
 test.test_types.UnionTests.test_union_parameter_substitution @ linux-x86_64
 test.test_types.UnionTests.test_union_parameter_substitution_errors @ linux-x86_64

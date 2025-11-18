@@ -48,6 +48,7 @@ test.test_sax.ExpatReaderTest.test_expat_locator_withinfo_nonascii @ linux-x86_6
 test.test_sax.ExpatReaderTest.test_expat_nsattrs_empty @ linux-x86_64
 test.test_sax.ExpatReaderTest.test_expat_nsattrs_wattr @ linux-x86_64
 test.test_sax.ExpatReaderTest.test_expat_text_file @ linux-x86_64
+test.test_sax.ExpatReaderTest.test_flush_reparse_deferral_disabled @ linux-x86_64
 test.test_sax.LexicalHandlerTest.test_handlers @ linux-x86_64
 test.test_sax.MakeParserTest.test_make_parser2 @ linux-x86_64
 test.test_sax.MakeParserTest.test_make_parser3 @ linux-x86_64

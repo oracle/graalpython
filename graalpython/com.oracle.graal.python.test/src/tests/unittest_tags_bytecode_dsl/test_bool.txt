@@ -13,6 +13,7 @@ test.test_bool.BoolTest.test_format @ linux-x86_64
 test.test_bool.BoolTest.test_from_bytes @ linux-x86_64
 test.test_bool.BoolTest.test_hasattr @ linux-x86_64
 test.test_bool.BoolTest.test_int @ linux-x86_64
+test.test_bool.BoolTest.test_interpreter_convert_to_bool_raises @ linux-x86_64
 test.test_bool.BoolTest.test_isinstance @ linux-x86_64
 test.test_bool.BoolTest.test_issubclass @ linux-x86_64
 test.test_bool.BoolTest.test_keyword_args @ linux-x86_64

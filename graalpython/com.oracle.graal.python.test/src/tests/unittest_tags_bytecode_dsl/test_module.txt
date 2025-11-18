@@ -16,6 +16,7 @@ test.test_module.ModuleTests.test_module_repr_source @ linux-x86_64
 test.test_module.ModuleTests.test_module_repr_with_bare_loader @ linux-x86_64
 test.test_module.ModuleTests.test_module_repr_with_bare_loader_and_filename @ linux-x86_64
 test.test_module.ModuleTests.test_module_repr_with_bare_loader_but_no_name @ linux-x86_64
+test.test_module.ModuleTests.test_module_repr_with_fake_namespace_package @ linux-x86_64
 test.test_module.ModuleTests.test_module_repr_with_filename_only @ linux-x86_64
 test.test_module.ModuleTests.test_module_repr_with_full_loader @ linux-x86_64
 test.test_module.ModuleTests.test_module_repr_with_full_loader_and_filename @ linux-x86_64
@@ -23,6 +24,8 @@ test.test_module.ModuleTests.test_module_repr_with_full_loader_but_no_name @ lin
 test.test_module.ModuleTests.test_module_repr_with_loader_as_None @ linux-x86_64
 test.test_module.ModuleTests.test_module_repr_with_name @ linux-x86_64
 test.test_module.ModuleTests.test_module_repr_with_name_and_filename @ linux-x86_64
+test.test_module.ModuleTests.test_module_repr_with_namespace_package @ linux-x86_64
+test.test_module.ModuleTests.test_module_repr_with_namespace_package_and_custom_loader @ linux-x86_64
 test.test_module.ModuleTests.test_no_docstring @ linux-x86_64
 test.test_module.ModuleTests.test_reinit @ linux-x86_64
 test.test_module.ModuleTests.test_repeated_attribute_pops @ linux-x86_64

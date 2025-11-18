@@ -62,5 +62,7 @@ test.test_import.RelativeImportTests.test_import_from_non_package @ linux-x86_64
 test.test_import.RelativeImportTests.test_import_from_unloaded_package @ linux-x86_64
 test.test_import.RelativeImportTests.test_issue3221 @ linux-x86_64
 test.test_import.RelativeImportTests.test_parentless_import_shadowed_by_global @ linux-x86_64
+test.test_import.RelativeImportTests.test_rebinding @ linux-x86_64
+test.test_import.RelativeImportTests.test_rebinding2 @ linux-x86_64
 test.test_import.RelativeImportTests.test_relimport_star @ linux-x86_64
 test.test_import.TestSymbolicallyLinkedPackage.test_symlinked_dir_importable @ linux-x86_64

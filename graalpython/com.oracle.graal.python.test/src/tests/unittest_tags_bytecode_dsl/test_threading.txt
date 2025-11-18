@@ -5,6 +5,7 @@ test.test_threading.BarrierTests.test_abort_and_reset @ linux-x86_64
 test.test_threading.BarrierTests.test_action @ linux-x86_64
 test.test_threading.BarrierTests.test_barrier @ linux-x86_64
 test.test_threading.BarrierTests.test_barrier_10 @ linux-x86_64
+test.test_threading.BarrierTests.test_constructor @ linux-x86_64
 test.test_threading.BarrierTests.test_default_timeout @ linux-x86_64
 test.test_threading.BarrierTests.test_repr @ linux-x86_64
 test.test_threading.BarrierTests.test_reset @ linux-x86_64
@@ -123,6 +124,7 @@ test.test_threading.SemaphoreTests.test_try_acquire @ linux-x86_64
 test.test_threading.SemaphoreTests.test_try_acquire_contended @ linux-x86_64
 test.test_threading.SemaphoreTests.test_with @ linux-x86_64
 !test.test_threading.ThreadJoinOnShutdown.test_4_daemon_threads
+test.test_threading.ThreadJoinOnShutdown.test_thread_from_thread @ linux-x86_64
 test.test_threading.ThreadTests.test_BoundedSemaphore_limit @ linux-x86_64
 test.test_threading.ThreadTests.test_args_argument @ linux-x86_64
 test.test_threading.ThreadTests.test_boolean_target @ linux-x86_64

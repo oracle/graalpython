@@ -66,6 +66,9 @@ test.test_lzma.FileTestCase.test_read_10 @ linux-x86_64
 test.test_lzma.FileTestCase.test_read_bad_args @ linux-x86_64
 test.test_lzma.FileTestCase.test_read_bad_data @ linux-x86_64
 test.test_lzma.FileTestCase.test_read_from_file @ linux-x86_64
+test.test_lzma.FileTestCase.test_read_from_file_with_bytes_filename @ linux-x86_64
+test.test_lzma.FileTestCase.test_read_from_fileobj @ linux-x86_64
+test.test_lzma.FileTestCase.test_read_from_fileobj_with_int_name @ linux-x86_64
 test.test_lzma.FileTestCase.test_read_incomplete @ linux-x86_64
 test.test_lzma.FileTestCase.test_read_multistream @ linux-x86_64
 test.test_lzma.FileTestCase.test_read_multistream_buffer_size_aligned @ linux-x86_64
@@ -95,6 +98,9 @@ test.test_lzma.FileTestCase.test_write_append @ linux-x86_64
 test.test_lzma.FileTestCase.test_write_append_to_file @ linux-x86_64
 test.test_lzma.FileTestCase.test_write_bad_args @ linux-x86_64
 test.test_lzma.FileTestCase.test_write_to_file @ linux-x86_64
+test.test_lzma.FileTestCase.test_write_to_file_with_bytes_filename @ linux-x86_64
+test.test_lzma.FileTestCase.test_write_to_fileobj @ linux-x86_64
+test.test_lzma.FileTestCase.test_write_to_fileobj_with_int_name @ linux-x86_64
 test.test_lzma.FileTestCase.test_writelines @ linux-x86_64
 test.test_lzma.MiscellaneousTestCase.test__decode_filter_properties @ linux-x86_64
 test.test_lzma.MiscellaneousTestCase.test__encode_filter_properties @ linux-x86_64

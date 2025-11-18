@@ -1,6 +1,7 @@
 test.test_trace.TestCommandLine.test_failures @ linux-x86_64
 test.test_trace.TestCommandLine.test_run_as_module @ linux-x86_64
 test.test_trace.TestCommandLine.test_sys_argv_list @ linux-x86_64
+test.test_trace.TestCoverage.test_coverage_ignore @ linux-x86_64
 test.test_trace.TestCoverage.test_coverageresults_update @ linux-x86_64
 test.test_trace.TestCoverageCommandLineOutput.test_cover_files_written_no_highlight @ linux-x86_64
 test.test_trace.TestFuncs.test_arg_errors @ linux-x86_64

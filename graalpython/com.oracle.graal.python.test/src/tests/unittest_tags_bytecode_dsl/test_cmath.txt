@@ -17,6 +17,7 @@ test.test_cmath.CMathTests.test_specific_values @ linux-x86_64
 test.test_cmath.CMathTests.test_user_object @ linux-x86_64
 test.test_cmath.IsCloseTests.test_asymmetry @ linux-x86_64
 test.test_cmath.IsCloseTests.test_complex_near_zero @ linux-x86_64
+test.test_cmath.IsCloseTests.test_complex_special @ linux-x86_64
 test.test_cmath.IsCloseTests.test_complex_values @ linux-x86_64
 test.test_cmath.IsCloseTests.test_decimals @ linux-x86_64
 test.test_cmath.IsCloseTests.test_eight_decimal_places @ linux-x86_64

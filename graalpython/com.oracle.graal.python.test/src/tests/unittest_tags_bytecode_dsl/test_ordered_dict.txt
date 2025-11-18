@@ -162,6 +162,7 @@ test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_fromkeys @ linux-
 test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_highly_nested @ linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_init @ linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_init_calls @ linux-x86_64
+test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_issue119004_attribute_error @ linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_issue24348 @ linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_issue24667 @ linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictSubclassTests.test_iterators @ linux-x86_64
@@ -205,6 +206,7 @@ test.test_ordered_dict.PurePythonOrderedDictTests.test_fromkeys @ linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictTests.test_highly_nested @ linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictTests.test_init @ linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictTests.test_init_calls @ linux-x86_64
+test.test_ordered_dict.PurePythonOrderedDictTests.test_issue119004_attribute_error @ linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictTests.test_issue24348 @ linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictTests.test_issue24667 @ linux-x86_64
 test.test_ordered_dict.PurePythonOrderedDictTests.test_iterators @ linux-x86_64

@@ -9,6 +9,8 @@ test.test_range.RangeTest.test_invalid_invocation @ linux-x86_64
 test.test_range.RangeTest.test_issue11845 @ linux-x86_64
 test.test_range.RangeTest.test_iterator_pickling @ linux-x86_64
 test.test_range.RangeTest.test_iterator_pickling_overflowing_index @ linux-x86_64
+test.test_range.RangeTest.test_iterator_setstate @ linux-x86_64
+test.test_range.RangeTest.test_iterator_unpickle_compat @ linux-x86_64
 test.test_range.RangeTest.test_large_exhausted_iterator_pickling @ linux-x86_64
 test.test_range.RangeTest.test_large_operands @ linux-x86_64
 test.test_range.RangeTest.test_large_range @ linux-x86_64

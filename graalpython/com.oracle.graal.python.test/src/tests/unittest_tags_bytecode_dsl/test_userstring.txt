@@ -11,8 +11,10 @@ test.test_userstring.UserStringTest.test_expandtabs @ linux-x86_64
 test.test_userstring.UserStringTest.test_extended_getslice @ linux-x86_64
 test.test_userstring.UserStringTest.test_find @ linux-x86_64
 test.test_userstring.UserStringTest.test_find_etc_raise_correct_error_messages @ linux-x86_64
+test.test_userstring.UserStringTest.test_find_many_lengths @ linux-x86_64
 test.test_userstring.UserStringTest.test_find_periodic_pattern @ linux-x86_64
 test.test_userstring.UserStringTest.test_find_shift_table_overflow @ linux-x86_64
+test.test_userstring.UserStringTest.test_find_with_memory @ linux-x86_64
 test.test_userstring.UserStringTest.test_fixtype @ linux-x86_64
 test.test_userstring.UserStringTest.test_floatformatting @ linux-x86_64
 test.test_userstring.UserStringTest.test_formatting @ linux-x86_64
@@ -36,6 +38,7 @@ test.test_userstring.UserStringTest.test_partition @ linux-x86_64
 test.test_userstring.UserStringTest.test_removeprefix @ linux-x86_64
 test.test_userstring.UserStringTest.test_removesuffix @ linux-x86_64
 test.test_userstring.UserStringTest.test_replace @ linux-x86_64
+test.test_userstring.UserStringTest.test_replace_uses_two_way_maxcount @ linux-x86_64
 test.test_userstring.UserStringTest.test_rfind @ linux-x86_64
 test.test_userstring.UserStringTest.test_rindex @ linux-x86_64
 test.test_userstring.UserStringTest.test_rjust @ linux-x86_64

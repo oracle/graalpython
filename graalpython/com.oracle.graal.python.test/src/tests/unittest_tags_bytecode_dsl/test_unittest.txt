@@ -481,8 +481,10 @@ test.test_unittest.testmock.testasync.AsyncAutospecTest.test_create_autospec_ins
 test.test_unittest.testmock.testasync.AsyncAutospecTest.test_is_AsyncMock_patch @ linux-x86_64
 test.test_unittest.testmock.testasync.AsyncAutospecTest.test_patch_with_autospec @ linux-x86_64
 test.test_unittest.testmock.testasync.AsyncContextManagerTest.test_context_manager_raise_exception_by_default @ linux-x86_64
+test.test_unittest.testmock.testasync.AsyncContextManagerTest.test_mock_customize_async_context_manager @ linux-x86_64
 test.test_unittest.testmock.testasync.AsyncContextManagerTest.test_mock_customize_async_context_manager_with_coroutine @ linux-x86_64
 test.test_unittest.testmock.testasync.AsyncContextManagerTest.test_mock_supports_async_context_manager @ linux-x86_64
+test.test_unittest.testmock.testasync.AsyncContextManagerTest.test_set_return_value_of_aenter @ linux-x86_64
 test.test_unittest.testmock.testasync.AsyncIteratorTest.test_mock_aiter_and_anext_asyncmock @ linux-x86_64
 test.test_unittest.testmock.testasync.AsyncMagicMethods.test_async_magic_methods_return_async_mocks @ linux-x86_64
 test.test_unittest.testmock.testasync.AsyncMagicMethods.test_asyncmock_has_sync_magic_methods @ linux-x86_64

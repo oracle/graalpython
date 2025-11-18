@@ -26,6 +26,10 @@ test.test_bz2.BZ2FileTest.testIteratorMultiStream @ linux-x86_64
 test.test_bz2.BZ2FileTest.testMixedIterationAndReads @ linux-x86_64
 test.test_bz2.BZ2FileTest.testMultiStreamOrdering @ linux-x86_64
 test.test_bz2.BZ2FileTest.testOpenBytesFilename @ linux-x86_64
+test.test_bz2.BZ2FileTest.testOpenFileWithIntName @ linux-x86_64
+test.test_bz2.BZ2FileTest.testOpenFileWithName @ linux-x86_64
+test.test_bz2.BZ2FileTest.testOpenFileWithoutName @ linux-x86_64
+test.test_bz2.BZ2FileTest.testOpenFilename @ linux-x86_64
 test.test_bz2.BZ2FileTest.testOpenNonexistent @ linux-x86_64
 test.test_bz2.BZ2FileTest.testOpenPathLikeFilename @ linux-x86_64
 test.test_bz2.BZ2FileTest.testPeek @ linux-x86_64

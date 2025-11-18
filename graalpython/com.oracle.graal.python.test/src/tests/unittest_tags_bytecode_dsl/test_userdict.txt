@@ -18,6 +18,7 @@ test.test_userdict.UserDictTest.test_pop @ linux-x86_64
 test.test_userdict.UserDictTest.test_popitem @ linux-x86_64
 test.test_userdict.UserDictTest.test_read @ linux-x86_64
 test.test_userdict.UserDictTest.test_repr @ linux-x86_64
+test.test_userdict.UserDictTest.test_repr_deep @ linux-x86_64
 test.test_userdict.UserDictTest.test_setdefault @ linux-x86_64
 test.test_userdict.UserDictTest.test_update @ linux-x86_64
 test.test_userdict.UserDictTest.test_values @ linux-x86_64

@@ -17,6 +17,7 @@ test.test_bytes.ByteArrayAsStringTest.test_expandtabs @ linux-x86_64
 test.test_bytes.ByteArrayAsStringTest.test_find @ linux-x86_64
 test.test_bytes.ByteArrayAsStringTest.test_find_periodic_pattern @ linux-x86_64
 test.test_bytes.ByteArrayAsStringTest.test_find_shift_table_overflow @ linux-x86_64
+test.test_bytes.ByteArrayAsStringTest.test_find_with_memory @ linux-x86_64
 test.test_bytes.ByteArrayAsStringTest.test_fixtype @ linux-x86_64
 test.test_bytes.ByteArrayAsStringTest.test_index @ linux-x86_64
 test.test_bytes.ByteArrayAsStringTest.test_isalnum @ linux-x86_64
@@ -32,6 +33,7 @@ test.test_bytes.ByteArrayAsStringTest.test_lower @ linux-x86_64
 test.test_bytes.ByteArrayAsStringTest.test_removeprefix @ linux-x86_64
 test.test_bytes.ByteArrayAsStringTest.test_removesuffix @ linux-x86_64
 test.test_bytes.ByteArrayAsStringTest.test_replace @ linux-x86_64
+test.test_bytes.ByteArrayAsStringTest.test_replace_uses_two_way_maxcount @ linux-x86_64
 test.test_bytes.ByteArrayAsStringTest.test_rfind @ linux-x86_64
 test.test_bytes.ByteArrayAsStringTest.test_rindex @ linux-x86_64
 test.test_bytes.ByteArrayAsStringTest.test_rjust @ linux-x86_64
@@ -163,6 +165,7 @@ test.test_bytes.BytesAsStringTest.test_expandtabs @ linux-x86_64
 test.test_bytes.BytesAsStringTest.test_find @ linux-x86_64
 test.test_bytes.BytesAsStringTest.test_find_periodic_pattern @ linux-x86_64
 test.test_bytes.BytesAsStringTest.test_find_shift_table_overflow @ linux-x86_64
+test.test_bytes.BytesAsStringTest.test_find_with_memory @ linux-x86_64
 test.test_bytes.BytesAsStringTest.test_fixtype @ linux-x86_64
 test.test_bytes.BytesAsStringTest.test_index @ linux-x86_64
 test.test_bytes.BytesAsStringTest.test_isalnum @ linux-x86_64
@@ -178,6 +181,7 @@ test.test_bytes.BytesAsStringTest.test_lower @ linux-x86_64
 test.test_bytes.BytesAsStringTest.test_removeprefix @ linux-x86_64
 test.test_bytes.BytesAsStringTest.test_removesuffix @ linux-x86_64
 test.test_bytes.BytesAsStringTest.test_replace @ linux-x86_64
+test.test_bytes.BytesAsStringTest.test_replace_uses_two_way_maxcount @ linux-x86_64
 test.test_bytes.BytesAsStringTest.test_rfind @ linux-x86_64
 test.test_bytes.BytesAsStringTest.test_rindex @ linux-x86_64
 test.test_bytes.BytesAsStringTest.test_rjust @ linux-x86_64

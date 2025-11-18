@@ -75,6 +75,7 @@ test.test_fileio.PyOtherFileTests.testAppend @ linux-x86_64
 test.test_fileio.PyOtherFileTests.testBadModeArgument @ linux-x86_64
 test.test_fileio.PyOtherFileTests.testBytesOpen @ linux-x86_64
 test.test_fileio.PyOtherFileTests.testConstructorHandlesNULChars @ linux-x86_64
+test.test_fileio.PyOtherFileTests.testInvalidFd @ linux-x86_64
 test.test_fileio.PyOtherFileTests.testInvalidInit @ linux-x86_64
 test.test_fileio.PyOtherFileTests.testInvalidModeStrings @ linux-x86_64
 test.test_fileio.PyOtherFileTests.testModeStrings @ linux-x86_64

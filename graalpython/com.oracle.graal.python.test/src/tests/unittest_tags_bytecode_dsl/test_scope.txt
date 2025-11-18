@@ -34,3 +34,4 @@ test.test_scope.ScopeTests.testUnboundLocal @ linux-x86_64
 test.test_scope.ScopeTests.testUnboundLocal_AfterDel @ linux-x86_64
 test.test_scope.ScopeTests.testUnboundLocal_AugAssign @ linux-x86_64
 test.test_scope.ScopeTests.testUnoptimizedNamespaces @ linux-x86_64
+test.test_scope.ScopeTests.test_multiple_nesting @ linux-x86_64

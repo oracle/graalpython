@@ -83,6 +83,7 @@ test.test_statistics.TestApproxEqualErrors.test_bad_rel @ linux-x86_64
 test.test_statistics.TestApproxEqualErrors.test_bad_tol @ linux-x86_64
 test.test_statistics.TestBivariateStatistics.test_small_sample_error @ linux-x86_64
 test.test_statistics.TestBivariateStatistics.test_unequal_size_error @ linux-x86_64
+test.test_statistics.TestCorrelationAndCovariance.test_correlation_spearman @ linux-x86_64
 test.test_statistics.TestCorrelationAndCovariance.test_different_scales @ linux-x86_64
 test.test_statistics.TestCorrelationAndCovariance.test_results @ linux-x86_64
 test.test_statistics.TestFMean.test_basics @ linux-x86_64
@@ -91,6 +92,7 @@ test.test_statistics.TestFMean.test_special_values @ linux-x86_64
 test.test_statistics.TestFMean.test_weights @ linux-x86_64
 test.test_statistics.TestGeometricMean.test_basics @ linux-x86_64
 test.test_statistics.TestGeometricMean.test_big_and_small @ linux-x86_64
+test.test_statistics.TestGeometricMean.test_error_cases @ linux-x86_64
 test.test_statistics.TestGeometricMean.test_mixed_int_and_float @ linux-x86_64
 test.test_statistics.TestGeometricMean.test_special_values @ linux-x86_64
 test.test_statistics.TestGeometricMean.test_various_input_types @ linux-x86_64
@@ -119,6 +121,7 @@ test.test_statistics.TestHarmonicMean.test_types_conserved @ linux-x86_64
 test.test_statistics.TestHarmonicMean.test_with_weights @ linux-x86_64
 test.test_statistics.TestHarmonicMean.test_zero @ linux-x86_64
 test.test_statistics.TestLinearRegression.test_constant_input_error @ linux-x86_64
+test.test_statistics.TestLinearRegression.test_float_output @ linux-x86_64
 test.test_statistics.TestLinearRegression.test_proportional @ linux-x86_64
 test.test_statistics.TestLinearRegression.test_results @ linux-x86_64
 test.test_statistics.TestMean.test_bad_arg_types @ linux-x86_64

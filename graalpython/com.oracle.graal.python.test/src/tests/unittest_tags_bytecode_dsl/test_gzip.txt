@@ -8,6 +8,7 @@ test.test_gzip.TestGzip.test_1647484 @ linux-x86_64
 test.test_gzip.TestGzip.test_append @ linux-x86_64
 test.test_gzip.TestGzip.test_bad_gzip_file @ linux-x86_64
 test.test_gzip.TestGzip.test_buffered_reader @ linux-x86_64
+test.test_gzip.TestGzip.test_bytes_filename @ linux-x86_64
 test.test_gzip.TestGzip.test_compress @ linux-x86_64
 test.test_gzip.TestGzip.test_compress_correct_level @ linux-x86_64
 test.test_gzip.TestGzip.test_compress_mtime @ linux-x86_64
@@ -17,8 +18,13 @@ test.test_gzip.TestGzip.test_decompress_limited @ linux-x86_64
 test.test_gzip.TestGzip.test_decompress_missing_trailer @ linux-x86_64
 test.test_gzip.TestGzip.test_decompress_truncated_trailer @ linux-x86_64
 test.test_gzip.TestGzip.test_exclusive_write @ linux-x86_64
+test.test_gzip.TestGzip.test_fileobj_and_filename @ linux-x86_64
 test.test_gzip.TestGzip.test_fileobj_from_fdopen @ linux-x86_64
 test.test_gzip.TestGzip.test_fileobj_mode @ linux-x86_64
+test.test_gzip.TestGzip.test_fileobj_with_name @ linux-x86_64
+test.test_gzip.TestGzip.test_fileobj_without_name @ linux-x86_64
+test.test_gzip.TestGzip.test_flush_flushes_compressor @ linux-x86_64
+test.test_gzip.TestGzip.test_flush_modes @ linux-x86_64
 test.test_gzip.TestGzip.test_gzip_BadGzipFile_exception @ linux-x86_64
 test.test_gzip.TestGzip.test_io_on_closed_object @ linux-x86_64
 test.test_gzip.TestGzip.test_issue44439 @ linux-x86_64
@@ -49,6 +55,7 @@ test.test_gzip.TestGzip.test_write_bytearray @ linux-x86_64
 test.test_gzip.TestGzip.test_write_incompatible_type @ linux-x86_64
 test.test_gzip.TestGzip.test_write_memoryview @ linux-x86_64
 test.test_gzip.TestGzip.test_write_read_with_pathlike_file @ linux-x86_64
+test.test_gzip.TestGzip.test_write_seek_write @ linux-x86_64
 test.test_gzip.TestGzip.test_zero_padded_file @ linux-x86_64
 test.test_gzip.TestOpen.test_bad_params @ linux-x86_64
 test.test_gzip.TestOpen.test_binary_modes @ linux-x86_64

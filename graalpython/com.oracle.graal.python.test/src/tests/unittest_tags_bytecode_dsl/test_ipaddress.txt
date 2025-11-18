@@ -135,7 +135,9 @@ test.test_ipaddress.IpaddrUnitTest.testIpFromInt @ linux-x86_64
 test.test_ipaddress.IpaddrUnitTest.testIpFromPacked @ linux-x86_64
 test.test_ipaddress.IpaddrUnitTest.testIpType @ linux-x86_64
 test.test_ipaddress.IpaddrUnitTest.testIpv4Mapped @ linux-x86_64
+test.test_ipaddress.IpaddrUnitTest.testIpv4MappedLoopbackCheck @ linux-x86_64
 test.test_ipaddress.IpaddrUnitTest.testIpv4MappedPrivateCheck @ linux-x86_64
+test.test_ipaddress.IpaddrUnitTest.testIpv4MappedProperties @ linux-x86_64
 test.test_ipaddress.IpaddrUnitTest.testMaxPrefixLength @ linux-x86_64
 test.test_ipaddress.IpaddrUnitTest.testNetworkComparison @ linux-x86_64
 test.test_ipaddress.IpaddrUnitTest.testNetworkElementCaching @ linux-x86_64

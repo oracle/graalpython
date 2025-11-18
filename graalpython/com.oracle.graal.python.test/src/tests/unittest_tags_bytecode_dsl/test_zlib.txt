@@ -52,3 +52,11 @@ test.test_zlib.ExceptionTestCase.test_baddecompressobj @ linux-x86_64
 test.test_zlib.ExceptionTestCase.test_badlevel @ linux-x86_64
 test.test_zlib.ExceptionTestCase.test_decompressobj_badflush @ linux-x86_64
 test.test_zlib.VersionTestCase.test_library_version @ linux-x86_64
+test.test_zlib.ZlibDecompressorTest.testDecompress @ linux-x86_64
+test.test_zlib.ZlibDecompressorTest.testDecompress4G @ linux-x86_64
+test.test_zlib.ZlibDecompressorTest.testDecompressChunks10 @ linux-x86_64
+test.test_zlib.ZlibDecompressorTest.testDecompressUnusedData @ linux-x86_64
+test.test_zlib.ZlibDecompressorTest.testDecompressorChunksMaxsize @ linux-x86_64
+test.test_zlib.ZlibDecompressorTest.testPickle @ linux-x86_64
+test.test_zlib.ZlibDecompressorTest.test_decompressor_inputbuf_3 @ linux-x86_64
+test.test_zlib.ZlibDecompressorTest.test_failure @ linux-x86_64

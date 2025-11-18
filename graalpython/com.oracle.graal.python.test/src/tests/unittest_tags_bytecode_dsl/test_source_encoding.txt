@@ -33,8 +33,8 @@ test.test_source_encoding.MiscSourceEncodingTest.test_compilestring @ linux-x86_
 test.test_source_encoding.MiscSourceEncodingTest.test_error_message @ linux-x86_64
 test.test_source_encoding.MiscSourceEncodingTest.test_exec_valid_coding @ linux-x86_64
 test.test_source_encoding.MiscSourceEncodingTest.test_file_parse @ linux-x86_64
+test.test_source_encoding.MiscSourceEncodingTest.test_import_encoded_module @ linux-x86_64
 test.test_source_encoding.MiscSourceEncodingTest.test_issue2301 @ linux-x86_64
 test.test_source_encoding.MiscSourceEncodingTest.test_issue3297 @ linux-x86_64
 test.test_source_encoding.MiscSourceEncodingTest.test_issue4626 @ linux-x86_64
 test.test_source_encoding.MiscSourceEncodingTest.test_issue7820 @ linux-x86_64
-test.test_source_encoding.MiscSourceEncodingTest.test_pep263 @ linux-x86_64

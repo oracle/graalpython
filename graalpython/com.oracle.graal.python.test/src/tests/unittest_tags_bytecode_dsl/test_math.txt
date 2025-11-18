@@ -53,6 +53,7 @@ test.test_math.MathTests.testRemainder @ linux-x86_64
 test.test_math.MathTests.testSin @ linux-x86_64
 test.test_math.MathTests.testSinh @ linux-x86_64
 test.test_math.MathTests.testSqrt @ linux-x86_64
+test.test_math.MathTests.testSumProd @ linux-x86_64
 test.test_math.MathTests.testTan @ linux-x86_64
 test.test_math.MathTests.testTanh @ linux-x86_64
 test.test_math.MathTests.testTanhSign @ linux-x86_64
@@ -65,6 +66,7 @@ test.test_math.MathTests.test_mtestfile @ linux-x86_64
 test.test_math.MathTests.test_nan_constant @ linux-x86_64
 test.test_math.MathTests.test_nextafter @ linux-x86_64
 test.test_math.MathTests.test_prod @ linux-x86_64
+test.test_math.MathTests.test_sumprod_stress @ linux-x86_64
 test.test_math.MathTests.test_testfile @ linux-x86_64
 test.test_math.MathTests.test_trunc @ linux-x86_64
 test.test_math.MathTests.test_ulp @ linux-x86_64

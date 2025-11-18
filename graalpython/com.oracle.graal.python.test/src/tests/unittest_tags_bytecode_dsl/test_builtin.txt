@@ -1,4 +1,5 @@
 DocTestCase.builtins.zip @ linux-x86_64
+test.test_builtin.BuiltinTest.test___ne__ @ linux-x86_64
 test.test_builtin.BuiltinTest.test_abs @ linux-x86_64
 test.test_builtin.BuiltinTest.test_all @ linux-x86_64
 test.test_builtin.BuiltinTest.test_any @ linux-x86_64
@@ -50,6 +51,7 @@ test.test_builtin.BuiltinTest.test_repr @ linux-x86_64
 test.test_builtin.BuiltinTest.test_round @ linux-x86_64
 test.test_builtin.BuiltinTest.test_round_large @ linux-x86_64
 test.test_builtin.BuiltinTest.test_setattr @ linux-x86_64
+test.test_builtin.BuiltinTest.test_singleton_attribute_access @ linux-x86_64
 test.test_builtin.BuiltinTest.test_sum @ linux-x86_64
 test.test_builtin.BuiltinTest.test_type @ linux-x86_64
 test.test_builtin.BuiltinTest.test_vars @ linux-x86_64
@@ -73,6 +75,7 @@ test.test_builtin.TestBreakpoint.test_envar_good_path_noop_0 @ linux-x86_64
 test.test_builtin.TestBreakpoint.test_envar_good_path_other @ linux-x86_64
 test.test_builtin.TestBreakpoint.test_envar_ignored_when_hook_is_set @ linux-x86_64
 test.test_builtin.TestBreakpoint.test_envar_unimportable @ linux-x86_64
+test.test_builtin.TestBreakpoint.test_runtime_error_when_hook_is_lost @ linux-x86_64
 test.test_builtin.TestSorted.test_bad_arguments @ linux-x86_64
 test.test_builtin.TestSorted.test_baddecorator @ linux-x86_64
 test.test_builtin.TestSorted.test_basic @ linux-x86_64
@@ -85,3 +88,4 @@ test.test_builtin.TestType.test_type_doc @ linux-x86_64
 test.test_builtin.TestType.test_type_name @ linux-x86_64
 test.test_builtin.TestType.test_type_nokwargs @ linux-x86_64
 test.test_builtin.TestType.test_type_qualname @ linux-x86_64
+test.test_builtin.TestType.test_type_typeparams @ linux-x86_64

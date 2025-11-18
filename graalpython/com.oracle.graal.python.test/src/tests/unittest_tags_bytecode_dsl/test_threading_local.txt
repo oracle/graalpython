@@ -1,4 +1,4 @@
-!DocTestCase._threading_local
+DocTestCase._threading_local @ linux-x86_64
 test.test_threading_local.PyThreadingLocalTest.test_arguments @ linux-x86_64
 test.test_threading_local.PyThreadingLocalTest.test_derived @ linux-x86_64
 test.test_threading_local.PyThreadingLocalTest.test_derived_cycle_dealloc @ linux-x86_64

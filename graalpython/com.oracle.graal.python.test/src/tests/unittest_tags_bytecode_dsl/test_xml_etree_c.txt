@@ -20,12 +20,11 @@ test.test_xml_etree_c.BasicElementTest.test___copy__ @ linux-x86_64
 test.test_xml_etree_c.BasicElementTest.test___deepcopy__ @ linux-x86_64
 test.test_xml_etree_c.BasicElementTest.test___init__ @ linux-x86_64
 test.test_xml_etree_c.BasicElementTest.test_augmentation_type_errors @ linux-x86_64
-test.test_xml_etree_c.BasicElementTest.test_copy @ linux-x86_64
-!test.test_xml_etree_c.BasicElementTest.test_cyclic_gc
 test.test_xml_etree_c.BasicElementTest.test_get_keyword_args @ linux-x86_64
 test.test_xml_etree_c.BasicElementTest.test_pickle @ linux-x86_64
 test.test_xml_etree_c.BasicElementTest.test_pickle_issue18997 @ linux-x86_64
 test.test_xml_etree_c.BasicElementTest.test_weakref @ linux-x86_64
+test.test_xml_etree_c.BoolTest.test_warning @ linux-x86_64
 test.test_xml_etree_c.BugsTest.test_39495_treebuilder_start @ linux-x86_64
 test.test_xml_etree_c.BugsTest.test_bug_1534630 @ linux-x86_64
 test.test_xml_etree_c.BugsTest.test_bug_200708_close @ linux-x86_64
@@ -48,6 +47,7 @@ test.test_xml_etree_c.BugsTest.test_bug_xmltoolkitX1 @ linux-x86_64
 test.test_xml_etree_c.BugsTest.test_expat224_utf8_bug @ linux-x86_64
 test.test_xml_etree_c.BugsTest.test_expat224_utf8_bug_file @ linux-x86_64
 test.test_xml_etree_c.BugsTest.test_issue10777 @ linux-x86_64
+test.test_xml_etree_c.BugsTest.test_issue123213_correct_extend_exception @ linux-x86_64
 test.test_xml_etree_c.BugsTest.test_issue6233 @ linux-x86_64
 test.test_xml_etree_c.BugsTest.test_issue6565 @ linux-x86_64
 test.test_xml_etree_c.BugsTest.test_lost_tail @ linux-x86_64
@@ -72,6 +72,7 @@ test.test_xml_etree_c.ElementSlicingTest.test_getslice_negative_steps @ linux-x8
 test.test_xml_etree_c.ElementSlicingTest.test_getslice_range @ linux-x86_64
 test.test_xml_etree_c.ElementSlicingTest.test_getslice_single_index @ linux-x86_64
 test.test_xml_etree_c.ElementSlicingTest.test_getslice_steps @ linux-x86_64
+test.test_xml_etree_c.ElementSlicingTest.test_issue123213_setslice_exception @ linux-x86_64
 test.test_xml_etree_c.ElementSlicingTest.test_setslice_range @ linux-x86_64
 test.test_xml_etree_c.ElementSlicingTest.test_setslice_single_index @ linux-x86_64
 test.test_xml_etree_c.ElementTreeTest.test_attlist_default @ linux-x86_64
@@ -173,9 +174,13 @@ test.test_xml_etree_c.XMLPullParserTest.test_events_comment @ linux-x86_64
 test.test_xml_etree_c.XMLPullParserTest.test_events_pi @ linux-x86_64
 test.test_xml_etree_c.XMLPullParserTest.test_events_sequence @ linux-x86_64
 test.test_xml_etree_c.XMLPullParserTest.test_feed_while_iterating @ linux-x86_64
+test.test_xml_etree_c.XMLPullParserTest.test_flush_reparse_deferral_disabled @ linux-x86_64
 test.test_xml_etree_c.XMLPullParserTest.test_ns_events @ linux-x86_64
 test.test_xml_etree_c.XMLPullParserTest.test_ns_events_start @ linux-x86_64
 test.test_xml_etree_c.XMLPullParserTest.test_ns_events_start_end @ linux-x86_64
 test.test_xml_etree_c.XMLPullParserTest.test_simple_xml @ linux-x86_64
+test.test_xml_etree_c.XMLPullParserTest.test_simple_xml_chunk_1 @ linux-x86_64
+test.test_xml_etree_c.XMLPullParserTest.test_simple_xml_chunk_22 @ linux-x86_64
+test.test_xml_etree_c.XMLPullParserTest.test_simple_xml_chunk_5 @ linux-x86_64
 test.test_xml_etree_c.XMLPullParserTest.test_simple_xml_with_ns @ linux-x86_64
 test.test_xml_etree_c.XMLPullParserTest.test_unknown_event @ linux-x86_64

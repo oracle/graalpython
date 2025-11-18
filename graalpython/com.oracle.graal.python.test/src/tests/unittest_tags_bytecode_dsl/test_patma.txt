@@ -252,6 +252,7 @@ test.test_patma.TestPatma.test_patma_245 @ linux-x86_64
 test.test_patma.TestPatma.test_patma_246 @ linux-x86_64
 test.test_patma.TestPatma.test_patma_247 @ linux-x86_64
 test.test_patma.TestPatma.test_patma_248 @ linux-x86_64
+test.test_patma.TestPatma.test_patma_249 @ linux-x86_64
 test.test_patma.TestSyntaxErrors.test_alternative_patterns_bind_different_names_0 @ linux-x86_64
 test.test_patma.TestSyntaxErrors.test_alternative_patterns_bind_different_names_1 @ linux-x86_64
 test.test_patma.TestSyntaxErrors.test_attribute_name_repeated_in_class_pattern @ linux-x86_64

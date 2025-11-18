@@ -26,6 +26,7 @@ test.test_raise.TestRaise.test_raise_from_None @ linux-x86_64
 test.test_raise.TestRaise.test_reraise @ linux-x86_64
 test.test_raise.TestRaise.test_with_reraise1 @ linux-x86_64
 test.test_raise.TestRaise.test_with_reraise2 @ linux-x86_64
+test.test_raise.TestRaise.test_yield_reraise @ linux-x86_64
 test.test_raise.TestRemovedFunctionality.test_strings @ linux-x86_64
 test.test_raise.TestRemovedFunctionality.test_tuples @ linux-x86_64
 test.test_raise.TestTraceback.test_accepts_traceback @ linux-x86_64
