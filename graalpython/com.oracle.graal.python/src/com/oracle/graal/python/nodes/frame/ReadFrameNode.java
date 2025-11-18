@@ -380,7 +380,6 @@ public abstract class ReadFrameNode extends Node {
                     prevRootNode = rootNode;
                     return null;
                 }
-                IndirectCallData.setCallerFlagsOnIndirectCallData(callNode, callerFlags);
                 if (i < 0 && startFrame != null) {
                     // We are still looking for the start frame
                     Frame roFrame = ReadFrameNode.getFrame(frameInstance, FrameInstance.FrameAccess.READ_ONLY);
@@ -395,6 +394,7 @@ public abstract class ReadFrameNode extends Node {
                         if (i == level) {
                             Frame frame = ReadFrameNode.getFrame(frameInstance, frameAccess);
                             assert PArguments.isPythonFrame(frame);
+                            IndirectCallData.setCallerFlagsOnIndirectCallData(callNode, callerFlags);
                             if (prevRootNode instanceof PRootNode prevPRootNode && prevPRootNode.setsUpCalleeContext()) {
                                 // Update the flags in the callee
                                 prevPRootNode.updateCallerFlags(callerFlags);
@@ -406,6 +406,7 @@ public abstract class ReadFrameNode extends Node {
                 }
                 // For any Python root node we traverse we need the PFrame.Reference to be passed in
                 // call arguments next time.
+                IndirectCallData.setCallerFlagsOnIndirectCallData(callNode, CallerFlags.NEEDS_FRAME_REFERENCE);
                 pRootNode.updateCallerFlags(CallerFlags.NEEDS_FRAME_REFERENCE);
                 prevRootNode = pRootNode;
                 return null; // if 'null' continue iterating
