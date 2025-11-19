@@ -915,7 +915,7 @@ public abstract class ExternalFunctionNodes {
             return readCallableNode;
         }
 
-        ReleaseNativeWrapperNode ensureReleaseNativeWrapperNode() {
+        final ReleaseNativeWrapperNode ensureReleaseNativeWrapperNode() {
             if (releaseNativeWrapperNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 releaseNativeWrapperNode = insert(ReleaseNativeWrapperNodeGen.create());
@@ -1007,7 +1007,7 @@ public abstract class ExternalFunctionNodes {
         @Override
         protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
             ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
-            releaseNativeWrapperNode.execute(cArguments[0;
+            releaseNativeWrapperNode.execute(cArguments[0]);
             boolean freed = MethVarargsRoot.releaseArgsTuple(cArguments[1], freeNode, seenNativeArgsTupleStorage);
             if (!seenNativeArgsTupleStorage && freed) {
                 seenNativeArgsTupleStorage = true;
@@ -1230,15 +1230,14 @@ public abstract class ExternalFunctionNodes {
                 }
                 kwnamesTuple = PFactory.createTuple(PythonLanguage.get(this), fastcallKwnames);
             }
-            return new Object[]{self, new CPyObjectArrayWrapper(fastcallArgs), args.length, kwnamesTuple};
+            return new Object[]{self, ensureArrayCreateNode().execute(fastcallArgs), args.length, kwnamesTuple};
         }
 
         @Override
         protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
             ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
             releaseNativeWrapperNode.execute(cArguments[0]);
-            CPyObjectArrayWrapper wrapper = (CPyObjectArrayWrapper) cArguments[1];
-            wrapper.free(ensureReleaseNativeWrapperNode());
+            ensureArrayFreeNode().execute((long)cArguments[1]);
             releaseNativeWrapperNode.execute(cArguments[3]);
         }
 
@@ -1274,7 +1273,7 @@ public abstract class ExternalFunctionNodes {
                 fastcallKwnames[i] = kwargs[i].getName();
                 fastcallArgs[args.length + i] = kwargs[i].getValue();
             }
-            return new Object[]{self, cls, new CPyObjectArrayWrapper(fastcallArgs), args.length, PFactory.createTuple(PythonLanguage.get(this), fastcallKwnames)};
+            return new Object[]{self, cls, ensureArrayCreateNode().execute(fastcallArgs), args.length, PFactory.createTuple(PythonLanguage.get(this), fastcallKwnames)};
         }
 
         @Override
@@ -1282,8 +1281,7 @@ public abstract class ExternalFunctionNodes {
             ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
             releaseNativeWrapperNode.execute(cArguments[0]);
             releaseNativeWrapperNode.execute(cArguments[1]);
-            CPyObjectArrayWrapper wrapper = (CPyObjectArrayWrapper) cArguments[2];
-            wrapper.free(releaseNativeWrapperNode);
+            ensureArrayFreeNode().execute((long)cArguments[2]);
             releaseNativeWrapperNode.execute(cArguments[4]);
         }
 
@@ -1306,15 +1304,14 @@ public abstract class ExternalFunctionNodes {
         protected Object[] prepareCArguments(VirtualFrame frame) {
             Object self = readSelf(frame);
             Object[] args = readVarargsNode.execute(frame);
-            return new Object[]{self, pythonObjectArrayCreateNode.execute(args), args.length};
+            return new Object[]{self, ensureArrayCreateNode().execute(args), args.length};
         }
 
         @Override
         protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
             ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
             releaseNativeWrapperNode.execute(cArguments[0]);
-            CPyObjectArrayWrapper wrapper = (CPyObjectArrayWrapper) cArguments[1];
-            wrapper.free(ensureReleaseNativeWrapperNode());
+            ensureArrayFreeNode().execute((long) cArguments[1]);
         }
 
         @Override
