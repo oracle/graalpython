@@ -208,20 +208,4 @@ public final class PArguments {
     public static Object getArgument(Frame frame, int index) {
         return getArgument(frame.getArguments(), index);
     }
-
-    /**
-     * Synchronizes the arguments array of a Truffle frame with a {@link PFrame}. Copies only those
-     * arguments that are necessary to be synchronized between the two.
-     */
-    public static void synchronizeArgs(Frame frameToMaterialize, PFrame escapedFrame) {
-        Object[] arguments = frameToMaterialize.getArguments();
-        Object[] copiedArgs = new Object[arguments.length];
-
-        // copy only some carefully picked internal arguments
-        setSpecialArgument(copiedArgs, getSpecialArgument(arguments));
-        setGlobals(copiedArgs, getGlobals(arguments));
-        setFunctionObject(copiedArgs, getFunctionObject(arguments));
-
-        escapedFrame.setArguments(copiedArgs);
-    }
 }

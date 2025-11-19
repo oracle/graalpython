@@ -153,7 +153,7 @@ public class CallDispatchers {
         }
 
         @Specialization
-        static Object doDirect(VirtualFrame frame, Node inliningTarget, RootCallTarget callTarget, Object[] arguments,
+        static Object doIndirect(VirtualFrame frame, Node inliningTarget, RootCallTarget callTarget, Object[] arguments,
                         @Cached InlinedConditionProfile profileIsNullFrame,
                         @Cached ExecutionContext.CallContext callContext,
                         @Cached IndirectCallNode callNode) {
@@ -167,7 +167,7 @@ public class CallDispatchers {
                     IndirectCalleeContext.exit(threadState, state);
                 }
             } else {
-                callContext.prepareIndirectCall(frame, arguments, callTarget);
+                callContext.prepareCall(frame, arguments, callTarget);
                 return callNode.call(callTarget, arguments);
             }
         }

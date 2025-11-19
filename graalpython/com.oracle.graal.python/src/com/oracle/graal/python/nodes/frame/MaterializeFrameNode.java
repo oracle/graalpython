@@ -205,7 +205,7 @@ public abstract class MaterializeFrameNode extends Node {
     public static PFrame materializeGeneratorFrame(Node location, MaterializedFrame generatorFrame, PFrame.Reference frameRef) {
         PFrame escapedFrame = PFactory.createPFrame(PythonLanguage.get(location), frameRef, location, false);
         escapedFrame.setLocals(generatorFrame);
-        PArguments.synchronizeArgs(generatorFrame, escapedFrame);
+        escapedFrame.setGlobals(PArguments.getGlobals(generatorFrame));
         return escapedFrame;
     }
 
@@ -241,7 +241,7 @@ public abstract class MaterializeFrameNode extends Node {
         topFrameRef.setPyFrame(escapedFrame);
 
         // on a freshly created PFrame, we do always sync the arguments
-        PArguments.synchronizeArgs(frameToMaterialize, escapedFrame);
+        escapedFrame.setGlobals(PArguments.getGlobals(frameToMaterialize));
         escapedFrame.setLastCallerFlags(getCallerFlags(forceSync));
         if (forceSync) {
             syncValuesNode.execute(escapedFrame, frameToMaterialize, location);

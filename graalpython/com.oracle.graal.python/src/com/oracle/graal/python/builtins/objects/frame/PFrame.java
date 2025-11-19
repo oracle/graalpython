@@ -44,7 +44,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes.GetCodeRootNode;
 import com.oracle.graal.python.builtins.objects.code.PCode;
-import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins.GetLocalsNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -68,12 +67,15 @@ import com.oracle.truffle.api.nodes.RootNode;
 public final class PFrame extends PythonBuiltinObject {
     private static final int UNINITIALIZED_LINE = -2;
 
-    private Object[] arguments;
     private MaterializedFrame locals;
-    // Whether the frame has dict locals passed from the caller (happens in eval/exec and class
-    // bodies)
+    /**
+     * Whether the frame has dict locals passed from the caller (happens in eval/exec and class
+     * bodies). Then locals is null and localsDict contains the dict locals. Otherwise both locals
+     * and localsDict might contain a copy of the frame locals.
+     */
     private final boolean hasCustomLocals;
     private Object localsDict;
+    private PythonObject globals;
     private final Reference virtualFrameInfo;
     /**
      * For the manual bytecode interpreter the location can be the {@link PBytecodeRootNode} itself,
@@ -211,15 +213,12 @@ public final class PFrame extends PythonBuiltinObject {
     public PFrame(PythonLanguage lang, @SuppressWarnings("unused") Object threadState, PCode code, PythonObject globals, Object localsDict) {
         super(PythonBuiltinClassType.PFrame, PythonBuiltinClassType.PFrame.getInstanceShape(lang));
         // TODO: frames: extract the information from the threadState object
-        Object[] frameArgs = PArguments.create();
-        PArguments.setGlobals(frameArgs, globals);
-        PArguments.setSpecialArgument(frameArgs, localsDict);
+        this.globals = globals;
         this.location = GetCodeRootNode.executeUncached(code);
         Reference curFrameInfo = new Reference(location != null ? location.getRootNode() : null, null);
         this.virtualFrameInfo = curFrameInfo;
         curFrameInfo.setPyFrame(this);
         this.line = this.location == null ? code.getFirstLineNo() : UNINITIALIZED_LINE;
-        this.arguments = frameArgs;
         this.hasCustomLocals = true;
         this.localsDict = localsDict;
         // This is a synthetic frame, there will be no sync, mark everything as current
@@ -342,16 +341,10 @@ public final class PFrame extends PythonBuiltinObject {
     }
 
     /**
-     * Prefer to use the
-     * {@link com.oracle.graal.python.builtins.objects.frame.FrameBuiltins.GetGlobalsNode}.<br/>
-     * <br/>
-     *
-     * Returns a dictionary with the locals, possibly creating it from the frame. Note that the
-     * dictionary may have been modified and should then be updated with the current frame locals.
-     * To that end, use the {@link GetLocalsNode} instead of calling this method directly.
+     * Get the frame globals. Might be a dictionary or a PythonModule.
      */
     public PythonObject getGlobals() {
-        return PArguments.getGlobals(arguments);
+        return globals;
     }
 
     public RootCallTarget getTarget() {
@@ -365,12 +358,8 @@ public final class PFrame extends PythonBuiltinObject {
         return callTarget;
     }
 
-    public Object[] getArguments() {
-        return arguments;
-    }
-
-    public void setArguments(Object[] arguments2) {
-        this.arguments = arguments2;
+    public void setGlobals(PythonObject globals) {
+        this.globals = globals;
     }
 
     public void setLocation(Node location) {

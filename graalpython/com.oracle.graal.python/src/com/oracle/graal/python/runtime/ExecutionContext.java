@@ -165,14 +165,6 @@ public abstract class ExecutionContext {
     public abstract static class CallContext extends Node {
 
         /**
-         * Prepare an indirect call from a Python frame to a Python function.
-         */
-        public void prepareIndirectCall(VirtualFrame frame, Object[] callArguments, RootCallTarget callTarget) {
-            PRootNode rootNode = (PRootNode) callTarget.getRootNode();
-            executePrepareCall(frame, callArguments, rootNode.getCallerFlags());
-        }
-
-        /**
          * Prepare a call from a Python frame to a Python function.
          */
         public void prepareCall(VirtualFrame frame, Object[] callArguments, RootCallTarget callTarget) {
