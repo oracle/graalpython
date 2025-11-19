@@ -12,7 +12,6 @@ from dataclasses import dataclass
 from functools import cached_property, total_ordering
 from typing import Any
 
-
 DEFAULT_ENV = {
     "CI": "true",
     "PYTHONIOENCODING": "utf-8"
@@ -26,10 +25,27 @@ JOB_EXCLUSION_TERMS = (
     "corporate-compliance",
 
     # Jobs failing in GitHub Actions:buffer overflow, out of memory, auditwheel incompatible with runner ubuntu-latest's glibc version
-    "darwin",
     "python-svm-unittest",
     "cpython-gate",
 )
+
+# TODO build link using self.runs_on
+DOWNLOADS_LINKS = {
+    "GRADLE_JAVA_HOME": {
+        "https://download.oracle.com/java/21/latest/jdk-21_linux-x64_bin.tar.gz": ["linux", "amd64"],
+        "https://download.oracle.com/java/21/latest/jdk-21_linux-aarch64_bin.tar.gz": ["linux", "aarch64"],
+        "https://download.oracle.com/java/21/latest/jdk-21_macos-aarch64_bin.tar.gz": ["darwin", "aarch64"],
+        "https://download.oracle.com/java/21/latest/jdk-21_windows-x64_bin.zip": ["windows", "amd64"],
+    }
+}
+
+# Gitlab Runners OSS
+OSS = {
+    "macos-latest": ["darwin", "aarch64"],
+    "ubuntu-latest": ["linux", "amd64"],
+    "ubuntu-24.04-arm": ["linux", "aarch64"],
+    "windows-latest": ["windows", "amd64"]
+}
 
 
 @dataclass
@@ -47,13 +63,7 @@ class Job:
     def runs_on(self) -> str:
         capabilities = self.job.get("capabilities", [])
 
-        available_oss = {
-            "macos-latest": ["darwin", "aarch64"],
-            "ubuntu-24.04-arm": ["linux", "aarch64"],
-            "windows-latest": ["windows", "amd64"]
-        }
-
-        for os, caps in available_oss.items():
+        for os, caps in OSS.items():
             if all(required in capabilities for required in caps): return os
             
         return "ubuntu-latest"
@@ -111,10 +121,31 @@ class Job:
                 python_packages.append(f"'{k[4:]}{v}'" if self.runs_on != "windows-latest" else f"{k[4:]}{v}")
         return python_packages
 
+    def get_download_steps(self, key: str) -> str:
+        download_link = self.get_download_link(key)
+        filename = download_link.split('/')[-1]
+        return (f"wget -q {download_link} && "
+            f"dirname=$(tar -tzf {filename} | head -1 | cut -f1 -d '/') && "
+            f"tar -xzf {filename} && "
+            f'echo {key}=$(realpath "$dirname") >> $GITHUB_ENV')
+    
+    def get_download_link(self, key) -> str:
+        os_pair = OSS[self.runs_on]
+        oss_links = DOWNLOADS_LINKS[key]
+
+        for k, v in oss_links.items():
+            if os_pair == v: return k
+        
+        return ""
+
     @cached_property
-    def downloads(self) -> dict[str, str] | None:
-        # TODO
-        return None
+    def downloads(self) -> list[str]:
+        downloads = []
+        for k, v in self.job.get("downloads", {}).items():
+           if k in DOWNLOADS_LINKS:
+            downloads.append(self.get_download_steps(k))
+            #print(f"[DEBUG] {k}, {downloads}")
+        return downloads
 
     @staticmethod
     def common_glob(strings: list[str]) -> str:
@@ -201,6 +232,7 @@ class Job:
             "require_artifact": [self.download_artifact.name, self.download_artifact.pattern] if self.download_artifact else None,
             "logs": self.logs.replace("../", "${{ env.PARENT_DIRECTORY }}/"),
             "env": self.env,
+            "downloads_steps": " ".join(self.downloads),
         }
 
     def __str__(self):
@@ -233,8 +265,8 @@ def get_tagged_jobs(buildspec, target, filter=None):
             continue
         if filter and not re.match(filter, job.name):
             continue
-        if job.runs_on not in ["ubuntu-latest"]:
-            continue
+        #if job.runs_on not in ["ubuntu-latest"]:
+        #    continue
         if [x for x in JOB_EXCLUSION_TERMS if x in str(job)]:
             continue
         jobs.append(job.to_dict())
