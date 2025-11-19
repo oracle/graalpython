@@ -174,11 +174,15 @@ jobs:
         if: ${{ runner.os == 'Windows' }}
         uses: microsoft/setup-msbuild@v2
       
+      - name: Process matrix downloads
+        if: ${{ matrix.downloads_steps }}
+        run: |
+          ${{ matrix.downloads_steps }}
+
       - name: Setup
         working-directory: main
         if: ${{ matrix.setup_steps }}
         run: |
-          ls -la .github/scripts
           ${{ matrix.setup_steps }}
       - name: Run on Unix
         working-directory: main
