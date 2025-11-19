@@ -61,7 +61,6 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
@@ -410,12 +409,11 @@ public final class ExceptionNodes {
             return (PTuple) noValueToNone(readObject.readFromObj(exception, CFields.PyBaseExceptionObject__args));
         }
 
-        @Specialization
-        static PTuple doInterop(AbstractTruffleException exception,
+        @Specialization(guards = "isForeignObject(exception)")
+        static PTuple doInterop(Object exception,
                         @Bind PythonLanguage language,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interop,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
-            assert IsForeignObjectNode.executeUncached(exception);
             try {
                 TruffleString message;
                 if (interop.hasExceptionMessage(exception)) {
