@@ -52,7 +52,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_doc;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointer;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
 import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SEND;
@@ -77,8 +76,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.ItemsNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.KeysNode;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.ValuesNode;
@@ -967,15 +964,12 @@ public final class PythonCextAbstractBuiltins {
 
         @Specialization(guards = "isType.execute(inliningTarget, type)", limit = "1")
         static int set(PythonAbstractNativeObject type, Object value,
-                        @Bind Node inliningTarget,
+                        @SuppressWarnings("unused") @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Cached IsTypeNode isType,
-                        @Cached TruffleString.SwitchEncodingNode switchEncoding,
-                        @Cached CoerceNativePointerToLongNode coerceNode) {
-            long cValue;
+                        @Cached AsCharPointerNode asCharPointerNode) {
+            long cValue = NULLPTR;
             if (value instanceof TruffleString stringValue) {
-                cValue = ensurePointer(new CStringWrapper(switchEncoding.execute(stringValue, TruffleString.Encoding.UTF_8), TruffleString.Encoding.UTF_8), inliningTarget, coerceNode);
-            } else {
-                cValue = NULLPTR;
+                cValue = asCharPointerNode.execute(stringValue);
             }
             writePtrField(type.getPtr(), PyTypeObject__tp_doc, cValue);
             return 1;
