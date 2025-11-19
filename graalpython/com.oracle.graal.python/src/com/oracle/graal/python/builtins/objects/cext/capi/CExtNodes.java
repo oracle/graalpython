@@ -70,6 +70,7 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyOb
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_as_buffer;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointer;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointerUncached;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readDoubleField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readPtrField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readStructArrayIntField;
@@ -348,10 +349,9 @@ public abstract class CExtNodes {
         static Double doDouble(PythonAbstractNativeObject object,
                         @Bind Node inliningTarget,
                         @Cached GetPythonObjectClassNode getClass,
-                        @Cached IsSubtypeNode isSubtype,
-                        @Cached CStructAccess.ReadDoubleNode read) {
+                        @Cached IsSubtypeNode isSubtype) {
             if (isFloatSubtype(inliningTarget, object, getClass, isSubtype)) {
-                return read.readFromObj(object, PyFloatObject__ob_fval);
+                return readDoubleField(object.getPtr(), PyFloatObject__ob_fval);
             }
             return null;
         }

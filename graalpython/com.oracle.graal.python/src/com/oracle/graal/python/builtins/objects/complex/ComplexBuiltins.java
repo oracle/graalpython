@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.complex;
 
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyComplexObject__cval__imag;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyComplexObject__cval__real;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readDoubleField;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_COMPLEX;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___COMPLEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___FORMAT__;
@@ -74,7 +75,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
 import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltinsClinicProviders.FormatNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
@@ -183,10 +183,9 @@ public final class ComplexBuiltins extends PythonBuiltins {
         @Specialization(guards = "check.execute(inliningTarget, v)", limit = "1")
         @InliningCutoff
         static ComplexValue doNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject v,
-                        @SuppressWarnings("unused") @Cached PyComplexCheckNode check,
-                        @Cached(inline = false) CStructAccess.ReadDoubleNode read) {
-            double real = read.readFromObj(v, PyComplexObject__cval__real);
-            double imag = read.readFromObj(v, PyComplexObject__cval__imag);
+                        @SuppressWarnings("unused") @Cached PyComplexCheckNode check) {
+            double real = readDoubleField(v.getPtr(), PyComplexObject__cval__real);
+            double imag = readDoubleField(v.getPtr(), PyComplexObject__cval__imag);
             return new ComplexValue(real, imag);
         }
 
@@ -1412,9 +1411,8 @@ public final class ComplexBuiltins extends PythonBuiltins {
 
         @Specialization
         @InliningCutoff
-        static double getNative(PythonAbstractNativeObject self,
-                        @Cached CStructAccess.ReadDoubleNode read) {
-            return read.readFromObj(self, PyComplexObject__cval__real);
+        static double getNative(PythonAbstractNativeObject self) {
+            return readDoubleField(self.getPtr(), PyComplexObject__cval__real);
         }
     }
 
@@ -1428,9 +1426,8 @@ public final class ComplexBuiltins extends PythonBuiltins {
 
         @Specialization
         @InliningCutoff
-        static double getNative(PythonAbstractNativeObject self,
-                        @Cached CStructAccess.ReadDoubleNode read) {
-            return read.readFromObj(self, PyComplexObject__cval__imag);
+        static double getNative(PythonAbstractNativeObject self) {
+            return readDoubleField(self.getPtr(), PyComplexObject__cval__imag);
         }
     }
 

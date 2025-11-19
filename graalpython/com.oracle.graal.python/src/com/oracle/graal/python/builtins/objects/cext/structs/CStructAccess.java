@@ -73,7 +73,6 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -140,6 +139,16 @@ public class CStructAccess {
         writeLongField(getArrayElementPtr(arrayPtr, index, field.struct), field, value);
     }
 
+    public static double readDoubleField(long structBasePtr, CFields field) {
+        assert field.type.isDouble();
+        return NativeMemory.readDouble(getFieldPtr(structBasePtr, field));
+    }
+
+    public static void writeDoubleField(long structBasePtr, CFields field, double value) {
+        assert field.type.isDouble();
+        NativeMemory.writeDouble(getFieldPtr(structBasePtr, field), value);
+    }
+
     public static long readPtrField(long structBasePtr, CFields field) {
         assert field.type.isPyObjectOrPointer();
         return NativeMemory.readLong(getFieldPtr(structBasePtr, field));
@@ -186,69 +195,6 @@ public class CStructAccess {
     }
 
     public abstract static class ReadBaseNode extends Node implements CStructAccessNode {
-    }
-
-    @ImportStatic(PGuards.class)
-    @GenerateUncached
-    @GenerateInline(false)
-    public abstract static class ReadDoubleNode extends ReadBaseNode {
-
-        abstract double execute(Object pointer, long offset);
-
-        public final double read(Object pointer, CFields field) {
-            assert accepts(field);
-            return execute(pointer, field.offset());
-        }
-
-        public final double readFromObj(PythonNativeObject self, CFields field) {
-            return read(self.getPtr(), field);
-        }
-
-        public final boolean accepts(ArgDescriptor desc) {
-            return desc.isDouble();
-        }
-
-        public final double readArrayElement(Object pointer, int element) {
-            return execute(pointer, element * Double.BYTES);
-        }
-
-        @Specialization
-        static double readLong(long pointer, long offset) {
-            assert offset >= 0;
-            return UNSAFE.getDouble(pointer + offset);
-        }
-
-        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"}, limit = "3")
-        static double readPointer(Object pointer, long offset,
-                        @CachedLibrary("pointer") InteropLibrary lib) {
-            return readLong(asPointer(pointer, lib), offset);
-        }
-
-        @Specialization(guards = {"!isLong(pointer)", "!lib.isPointer(pointer)"})
-        static double readManaged(Object pointer, long offset,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @CachedLibrary(limit = "3") InteropLibrary resultLib,
-                        @Cached PCallCapiFunction call) {
-            assert validPointer(pointer);
-            Object result = call.call(NativeCAPISymbol.FUN_READ_DOUBLE_MEMBER, pointer, offset);
-            if (result instanceof Double) {
-                return (double) result;
-            }
-            try {
-                return resultLib.asDouble(result);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere();
-            }
-        }
-
-        public static ReadDoubleNode getUncached() {
-            return CStructAccessFactory.ReadDoubleNodeGen.getUncached();
-        }
-
-        @NeverDefault
-        public static ReadDoubleNode create() {
-            return CStructAccessFactory.ReadDoubleNodeGen.create();
-        }
     }
 
     @ImportStatic(PGuards.class)

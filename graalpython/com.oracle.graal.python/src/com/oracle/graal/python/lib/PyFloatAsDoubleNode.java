@@ -43,13 +43,13 @@ package com.oracle.graal.python.lib;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyFloatObject__ob_fval;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readDoubleField;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOAT__;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromNativeSubclassNode;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
@@ -119,9 +119,8 @@ public abstract class PyFloatAsDoubleNode extends PNodeWithContext {
     @InliningCutoff
     static double doNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject object,
                     @SuppressWarnings("unused") @Exclusive @Cached GetClassNode getClassNode,
-                    @SuppressWarnings("unused") @Exclusive @Cached(inline = false) IsSubtypeNode isSubtype,
-                    @Cached(inline = false) CStructAccess.ReadDoubleNode read) {
-        return read.readFromObj(object, PyFloatObject__ob_fval);
+                    @SuppressWarnings("unused") @Exclusive @Cached(inline = false) IsSubtypeNode isSubtype) {
+        return readDoubleField(object.getPtr(), PyFloatObject__ob_fval);
     }
 
     @Fallback
