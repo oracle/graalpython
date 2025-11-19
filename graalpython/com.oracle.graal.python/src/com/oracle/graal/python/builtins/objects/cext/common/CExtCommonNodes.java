@@ -42,6 +42,10 @@ package com.oracle.graal.python.builtins.objects.cext.common;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointer;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readPtrField;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.wrapPointer;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
+import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nfi2.NativeMemory.readByteArrayElement;
 import static com.oracle.graal.python.nfi2.NativeMemory.readByteArrayElements;
 import static com.oracle.graal.python.nfi2.NativeMemory.readIntArrayElement;
@@ -73,13 +77,12 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPoin
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.capi.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefRawNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.GetIndexNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ReadUnicodeArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.TransformPExceptionToNativeCachedNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -470,17 +473,15 @@ public abstract class CExtCommonNodes {
         static void setCurrentException(Node inliningTarget, Object pythonException,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached CExtNodes.XDecRefPointerNode decRefPointerNode,
-                        @Cached(inline = false) PythonToNativeNewRefNode pythonToNativeNode,
-                        @Cached(inline = false) CStructAccess.ReadPointerNode readPointerNode,
-                        @Cached(inline = false) CStructAccess.WritePointerNode writePointerNode) {
+                        @Cached(inline = false) PythonToNativeNewRefRawNode pythonToNativeNode) {
             /*
              * Run the ToNative conversion early so that the reference poll won't interrupt between
              * the read and write.
              */
-            Object currentException = pythonToNativeNode.execute(pythonException);
-            Object nativeThreadState = PThreadState.getOrCreateNativeThreadState(getThreadStateNode.execute(inliningTarget));
-            Object oldException = readPointerNode.read(nativeThreadState, CFields.PyThreadState__current_exception);
-            writePointerNode.write(nativeThreadState, CFields.PyThreadState__current_exception, currentException);
+            long currentException = pythonToNativeNode.execute(pythonException);
+            long nativeThreadState = PThreadState.getOrCreateNativeThreadState(getThreadStateNode.execute(inliningTarget));
+            long oldException = readPtrField(nativeThreadState, CFields.PyThreadState__current_exception);
+            writePtrField(nativeThreadState, CFields.PyThreadState__current_exception, currentException);
             decRefPointerNode.execute(inliningTarget, oldException);
         }
     }
@@ -537,13 +538,11 @@ public abstract class CExtCommonNodes {
 
         @Specialization
         static Object getException(PythonThreadState threadState,
-                        @Cached(inline = false) CStructAccess.ReadPointerNode readPointerNode,
-                        @Cached(inline = false) CStructAccess.WritePointerNode writePointerNode,
                         @Cached CApiTransitions.NativeToPythonTransferNode nativeToPythonNode) {
-            Object nativeThreadState = PThreadState.getNativeThreadState(threadState);
-            if (nativeThreadState != null) {
-                Object exception = nativeToPythonNode.execute(readPointerNode.read(nativeThreadState, CFields.PyThreadState__current_exception));
-                writePointerNode.write(nativeThreadState, CFields.PyThreadState__current_exception, 0L);
+            long nativeThreadState = PThreadState.getNativeThreadState(threadState);
+            if (nativeThreadState != NULLPTR) {
+                Object exception = nativeToPythonNode.execute(wrapPointer(readPtrField(nativeThreadState, CFields.PyThreadState__current_exception)));
+                writePtrField(nativeThreadState, CFields.PyThreadState__current_exception, 0L);
                 return exception;
             }
             return PNone.NO_VALUE;

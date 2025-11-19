@@ -59,7 +59,6 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Coer
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.ReadCharPtrNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.ReadObjectNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.ReadPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.WriteIntNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.WriteLongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.WritePointerNodeGen;
@@ -195,64 +194,6 @@ public class CStructAccess {
     }
 
     public abstract static class ReadBaseNode extends Node implements CStructAccessNode {
-    }
-
-    @ImportStatic(PGuards.class)
-    @GenerateUncached
-    @GenerateInline(false)
-    public abstract static class ReadPointerNode extends ReadBaseNode {
-
-        abstract Object execute(Object pointer, long offset);
-
-        public final Object read(Object pointer, CFields field) {
-            assert accepts(field);
-            return execute(pointer, field.offset());
-        }
-
-        public static Object readUncached(Object pointer, CFields field) {
-            return getUncached().read(pointer, field);
-        }
-
-        public final Object readFromObj(PythonNativeObject self, CFields field) {
-            return read(self.getPtr(), field);
-        }
-
-        public final boolean accepts(ArgDescriptor desc) {
-            return desc.isPyObjectOrPointer();
-        }
-
-        public final Object readArrayElement(Object pointer, long element) {
-            return execute(pointer, element * POINTER_SIZE);
-        }
-
-        public final Object readStructArrayElement(Object pointer, long element, CFields field) {
-            assert accepts(field);
-            return execute(pointer, element * field.struct.size() + field.offset());
-        }
-
-        @Specialization
-        static Object readLong(long pointer, long offset) {
-            assert offset >= 0;
-            return new NativePointer(UNSAFE.getLong(pointer + offset));
-        }
-
-        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"}, limit = "3")
-        static Object readPointer(Object pointer, long offset,
-                        @CachedLibrary("pointer") InteropLibrary lib) {
-            return readLong(asPointer(pointer, lib), offset);
-        }
-
-        @Specialization(guards = {"!isLong(pointer)", "!lib.isPointer(pointer)"})
-        static Object readManaged(Object pointer, long offset,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached PCallCapiFunction call) {
-            assert validPointer(pointer);
-            return call.call(NativeCAPISymbol.FUN_READ_POINTER_MEMBER, pointer, offset);
-        }
-
-        public static ReadPointerNode getUncached() {
-            return ReadPointerNodeGen.getUncached();
-        }
     }
 
     @ImportStatic(PGuards.class)

@@ -48,7 +48,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonStructNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeRawNode;
-import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
@@ -71,7 +70,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
  * </p>
  */
 public final class PThreadState extends PythonStructNativeWrapper {
-    private final Object replacement;
+    private final long replacement;
 
     /** Same as _PY_NSMALLNEGINTS */
     public static final int PY_NSMALLNEGINTS = 5;
@@ -84,15 +83,14 @@ public final class PThreadState extends PythonStructNativeWrapper {
         super(threadState);
         long ptr = allocateCLayout();
         CApiTransitions.createReference(this, ptr, true);
-        // TODO: wrap in NativePointer for NFI
-        replacement = new NativePointer(ptr);
+        replacement = ptr;
     }
 
-    public static Object getOrCreateNativeThreadState(PythonLanguage language, PythonContext context) {
+    public static long getOrCreateNativeThreadState(PythonLanguage language, PythonContext context) {
         return getOrCreateNativeThreadState(context.getThreadState(language));
     }
 
-    public static Object getOrCreateNativeThreadState(PythonThreadState threadState) {
+    public static long getOrCreateNativeThreadState(PythonThreadState threadState) {
         PThreadState nativeWrapper = threadState.getNativeWrapper();
         if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, nativeWrapper == null)) {
             nativeWrapper = new PThreadState(threadState);
@@ -101,12 +99,12 @@ public final class PThreadState extends PythonStructNativeWrapper {
         return nativeWrapper.replacement;
     }
 
-    public static Object getNativeThreadState(PythonThreadState threadState) {
+    public static long getNativeThreadState(PythonThreadState threadState) {
         PThreadState nativeWrapper = threadState.getNativeWrapper();
         if (nativeWrapper != null) {
             return nativeWrapper.replacement;
         }
-        return null;
+        return NULLPTR;
     }
 
     public PythonThreadState getThreadState() {

@@ -45,10 +45,12 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.C
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PointerZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObjectTransfer;
+import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.nfi2.NativeMemory.readPtrArrayElement;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 
 import java.util.ArrayList;
@@ -62,7 +64,6 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTern
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -87,7 +88,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
@@ -95,14 +95,12 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextStructSeqBuiltins {
 
-    @CApiBuiltin(ret = Int, args = {PyTypeObject, Pointer, Int}, call = Ignored)
+    @CApiBuiltin(ret = Int, args = {PyTypeObject, PointerZZZ, Int}, call = Ignored)
     abstract static class GraalPyPrivate_StructSequence_InitType2 extends CApiTernaryBuiltinNode {
 
         @Specialization
         @TruffleBoundary
-        static int doGeneric(PythonAbstractClass klass, Object fields, int nInSequence,
-                        @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached CStructAccess.ReadPointerNode readNode,
+        static int doGeneric(PythonAbstractClass klass, long fields, int nInSequence,
                         @Cached FromCharPointerNode fromCharPtr) {
 
             ArrayList<TruffleString> names = new ArrayList<>();
@@ -112,13 +110,13 @@ public final class PythonCextStructSeqBuiltins {
 
             while (true) {
 
-                Object name = readNode.readArrayElement(fields, pos * 2);
-                if ((name instanceof Long && (long) name == 0) || lib.isNull(name)) {
+                long name = readPtrArrayElement(fields, pos * 2L);
+                if (name == NULLPTR) {
                     break;
                 }
-                Object doc = readNode.readArrayElement(fields, pos * 2 + 1);
+                long doc = readPtrArrayElement(fields, pos * 2L + 1);
                 names.add(fromCharPtr.execute(name));
-                docs.add(lib.isNull(doc) ? null : fromCharPtr.execute(doc));
+                docs.add(doc == NULLPTR ? null : fromCharPtr.execute(doc));
                 pos++;
             }
 
@@ -126,17 +124,17 @@ public final class PythonCextStructSeqBuiltins {
             TruffleString[] fieldDocs = docs.toArray(TruffleString[]::new);
 
             StructSequence.Descriptor d = new StructSequence.Descriptor(nInSequence, fieldNames, fieldDocs);
-            StructSequence.initType(PythonContext.get(readNode), klass, d);
+            StructSequence.initType(PythonContext.get(fromCharPtr), klass, d);
             return 0;
         }
     }
 
-    @CApiBuiltin(ret = PyTypeObjectTransfer, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Pointer, Int}, call = Ignored)
+    @CApiBuiltin(ret = PyTypeObjectTransfer, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, PointerZZZ, Int}, call = Ignored)
     abstract static class GraalPyPrivate_StructSequence_NewType extends CApiQuaternaryBuiltinNode {
 
         @Specialization
         @TruffleBoundary
-        Object doGeneric(TruffleString typeName, TruffleString typeDoc, Object fields, int nInSequence,
+        Object doGeneric(TruffleString typeName, TruffleString typeDoc, long fields, int nInSequence,
                         @Cached GraalPyPrivate_StructSequence_InitType2 initNode,
                         @Cached ReadAttributeFromModuleNode readTypeBuiltinNode,
                         @Cached DynamicObject.SetShapeFlagsNode setShapeFlagsNode,

@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.tuple;
 
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readPtrField;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readStructArrayPtrField;
+import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COMMA_SPACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EQ;
@@ -61,7 +64,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
@@ -72,7 +74,6 @@ import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -93,7 +94,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
@@ -167,14 +167,12 @@ public final class StructSequenceBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static TruffleString[] doNative(PythonAbstractNativeObject type) {
-            CStructAccess.ReadPointerNode read = CStructAccess.ReadPointerNode.getUncached();
-            Object membersPtr = read.readFromObj(type, CFields.PyTypeObject__tp_members);
+            long membersPtr = readPtrField(type.getPtr(), CFields.PyTypeObject__tp_members);
             List<TruffleString> members = new ArrayList<>();
-            InteropLibrary lib = InteropLibrary.getUncached();
-            if (!PGuards.isNullOrZero(membersPtr, lib)) {
+            if (membersPtr != NULLPTR) {
                 for (int i = 0;; i++) {
-                    Object memberNamePtr = read.readStructArrayElement(membersPtr, i, CFields.PyMemberDef__name);
-                    if (PGuards.isNullOrZero(memberNamePtr, lib)) {
+                    long memberNamePtr = readStructArrayPtrField(membersPtr, i, CFields.PyMemberDef__name);
+                    if (memberNamePtr == NULLPTR) {
                         break;
                     }
                     TruffleString name = CExtNodes.FromCharPointerNode.executeUncached(memberNamePtr);

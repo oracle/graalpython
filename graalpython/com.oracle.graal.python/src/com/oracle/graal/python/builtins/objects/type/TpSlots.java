@@ -124,7 +124,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___TRUEDIV__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___XOR__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-import static com.oracle.graal.python.util.PythonUtils.getUncachedInterop;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -169,7 +168,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.TpSlotW
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.UnaryFuncWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ReadPointerNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
@@ -235,8 +233,6 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.DenyReplace;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnadoptableNode;
@@ -453,8 +449,8 @@ public record TpSlots(TpSlot nb_bool, //
         }
 
         public boolean readFromNative(PythonAbstractNativeObject pythonClass) {
-            Object ptr = ReadPointerNode.getUncached().readFromObj(pythonClass, cField);
-            return !InteropLibrary.getUncached().isNull(ptr);
+            long ptr = readPtrField(pythonClass.getPtr(), cField);
+            return ptr != NULLPTR;
         }
     }
 
@@ -1055,19 +1051,14 @@ public record TpSlots(TpSlot nb_bool, //
          * Returns Java {@code null} if the native value is NULL, otherwise interop object
          * representing the native value.
          */
-        public Object readFromNative(PythonAbstractNativeObject pythonClass) {
-            Object field = ReadPointerNode.getUncached().readFromObj(pythonClass, nativeGroupOrField);
-            InteropLibrary ptrInterop = null;
+        public long readFromNative(PythonAbstractNativeObject pythonClass) {
+            long field = readPtrField(pythonClass.getPtr(), nativeGroupOrField);
             if (nativeField != null) {
-                ptrInterop = InteropLibrary.getUncached(field);
-                if (!ptrInterop.isNull(field)) {
-                    field = ReadPointerNode.getUncached().read(field, nativeField);
+                if (field != NULLPTR) {
+                    field = readPtrField(field, nativeField);
                 } else {
-                    return null;
+                    return NULLPTR;
                 }
-            }
-            if (getUncachedInterop(ptrInterop, field).isNull(field)) {
-                return null;
             }
             return field;
         }
@@ -1283,42 +1274,32 @@ public record TpSlots(TpSlot nb_bool, //
             if (!def.hasNativeWrapperFactory()) {
                 continue;
             }
-            Object field = def.readFromNative(pythonClass);
-            if (field == null) {
+            long fieldPtr = def.readFromNative(pythonClass);
+            if (fieldPtr == NULLPTR) {
                 continue;
             }
 
             // Is this pointer representing some TpSlot that we transferred to native?
-            InteropLibrary interop = InteropLibrary.getUncached(field);
             TpSlotWrapper existingSlotWrapper = null;
-            if (interop.isPointer(field)) {
-                try {
-                    long fieldPointer = interop.asPointer(field);
-                    Object executable = ctx.getCApiContext().getClosureExecutable(fieldPointer);
-                    if (executable instanceof TpSlotWrapper execWrapper) {
-                        existingSlotWrapper = execWrapper;
-                    } else if (executable != null) {
-                        // This can happen for legacy slots where the delegate would be a PFunction
-                        LOGGER.fine(() -> String.format("Unexpected executable for slot pointer: %s", executable));
-                    } else if (def == TpSlotMeta.TP_HASH) {
-                        // If the slot is not tp_iternext, but the value is
-                        // PyObject_HashNotImplemented, we still assign it to the slot as wrapped
-                        // native executable later on
-                        if (CApiContext.isIdenticalToSymbol(fieldPointer, NativeCAPISymbol.FUN_PYOBJECT_HASH_NOT_IMPLEMENTED)) {
-                            builder.set(def, TpSlotHashFun.HASH_NOT_IMPLEMENTED);
-                            continue;
-                        }
-                    } else if (def == TpSlotMeta.TP_ITERNEXT) {
-                        if (CApiContext.isIdenticalToSymbol(fieldPointer, NativeCAPISymbol.FUN_PY_OBJECT_NEXT_NOT_IMPLEMENTED)) {
-                            builder.set(def, TpSlotIterNext.NEXT_NOT_IMPLEMENTED);
-                            continue;
-                        }
-                    }
-                } catch (UnsupportedMessageException e) {
-                    throw new IllegalStateException(e);
-                }
-            } else if (field instanceof TpSlotWrapper execWrapper) {
+            Object closureExecutable = ctx.getCApiContext().getClosureExecutable(fieldPtr);
+            if (closureExecutable instanceof TpSlotWrapper execWrapper) {
                 existingSlotWrapper = execWrapper;
+            } else if (closureExecutable != null) {
+                // This can happen for legacy slots where the delegate would be a PFunction
+                LOGGER.fine(() -> String.format("Unexpected executable for slot pointer: %s", closureExecutable));
+            } else if (def == TpSlotMeta.TP_HASH) {
+                // If the slot is not tp_iternext, but the value is
+                // PyObject_HashNotImplemented, we still assign it to the slot as wrapped
+                // native executable later on
+                if (CApiContext.isIdenticalToSymbol(fieldPtr, NativeCAPISymbol.FUN_PYOBJECT_HASH_NOT_IMPLEMENTED)) {
+                    builder.set(def, TpSlotHashFun.HASH_NOT_IMPLEMENTED);
+                    continue;
+                }
+            } else if (def == TpSlotMeta.TP_ITERNEXT) {
+                if (CApiContext.isIdenticalToSymbol(fieldPtr, NativeCAPISymbol.FUN_PY_OBJECT_NEXT_NOT_IMPLEMENTED)) {
+                    builder.set(def, TpSlotIterNext.NEXT_NOT_IMPLEMENTED);
+                    continue;
+                }
             }
 
             if (existingSlotWrapper != null) {
@@ -1340,7 +1321,7 @@ public record TpSlots(TpSlot nb_bool, //
                         TpSlotWrapper newWrapper = existingSlotWrapper.cloneWith(newPythonSlot);
                         toNative(pythonClass.getPtr(), def, ensurePointerUncached(newWrapper));
                         // we need to continue with the new closure pointer
-                        field = def.readFromNative(pythonClass);
+                        fieldPtr = def.readFromNative(pythonClass);
                     }
                 }
                 if (def.isValidSlotValue(newSlot)) {
@@ -1356,7 +1337,7 @@ public record TpSlots(TpSlot nb_bool, //
             }
             // There is no mapping from this pointer to existing TpSlot, we create a new
             // TpSlotNative wrapping the executable
-            NfiBoundFunction executable = ensureExecutableUncached(field, def.nativeSignature);
+            NfiBoundFunction executable = ensureExecutableUncached(fieldPtr, def.nativeSignature);
             builder.set(def, TpSlotNative.createCExtSlot(executable));
         }
         return builder.build();

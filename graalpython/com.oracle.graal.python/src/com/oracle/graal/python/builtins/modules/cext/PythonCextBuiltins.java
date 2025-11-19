@@ -78,6 +78,7 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMe
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMemberDef__offset;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMemberDef__type;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readPtrField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readStructArrayIntField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readStructArrayLongField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readStructArrayPtrField;
@@ -1384,15 +1385,14 @@ public final class PythonCextBuiltins {
      * object) and then stored in a Java object array which is then attached to the primary object.
      * </p>
      */
-    @CApiBuiltin(ret = Void, args = {Pointer, Pointer, Int}, call = Ignored)
+    @CApiBuiltin(ret = Void, args = {Pointer, PointerZZZ, Int}, call = Ignored)
     abstract static class GraalPyPrivate_Object_ReplicateNativeReferences extends CApiTernaryBuiltinNode {
         private static final Level LEVEL = Level.FINER;
 
         @Specialization(guards = "isNativeAccessAllowed()")
-        static Object doGeneric(Object pointer, Object listHead, int n,
+        static Object doGeneric(Object pointer, long listHead, int n,
                         @Bind Node inliningTarget,
                         @Cached CStructAccess.ReadObjectNode readObjectNode,
-                        @Cached CStructAccess.ReadPointerNode readPointerNode,
                         @Cached CoerceNativePointerToLongNode coerceNativePointerToLongNode,
                         @Cached GcNativePtrToPythonNode gcNativePtrToPythonNode) {
             assert PythonLanguage.get(inliningTarget).getEngineOption(PythonOptions.PythonGC);
@@ -1436,10 +1436,10 @@ public final class PythonCextBuiltins {
                     nativeSequenceStorage.setReplicatedNativeReferences(referents);
                 }
                 // Collect referents (traverse native list and resolve pointers)
-                Object cur = listHead;
+                long cur = listHead;
                 for (int i = 0; i < n; i++) {
                     referents[i] = readObjectNode.read(cur, GraalPyGC_CycleNode__item);
-                    cur = readPointerNode.read(cur, GraalPyGC_CycleNode__next);
+                    cur = readPtrField(cur, GraalPyGC_CycleNode__next);
                 }
 
                 /*

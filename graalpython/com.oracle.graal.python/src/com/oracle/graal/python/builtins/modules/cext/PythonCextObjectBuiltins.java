@@ -47,7 +47,7 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.C
 import static com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper.MANAGED_REFCNT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PointerZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectConstPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectRawPointer;
@@ -61,6 +61,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
 import static com.oracle.graal.python.builtins.objects.ints.PInt.intValue;
+import static com.oracle.graal.python.nfi2.NativeMemory.readPtrArrayElement;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNHASHABLE_TYPE_P;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BYTES__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_JAVA;
@@ -181,14 +182,13 @@ public abstract class PythonCextObjectBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Void, args = {Pointer, Int}, call = Ignored)
+    @CApiBuiltin(ret = Void, args = {PointerZZZ, Int}, call = Ignored)
     abstract static class GraalPyPrivate_BulkNotifyRefCount extends CApiBinaryBuiltinNode {
 
         @Specialization
-        static Object doGeneric(Object arrayPointer, int len,
+        static Object doGeneric(long arrayPointer, int len,
                         @Bind Node inliningTarget,
                         @Cached UpdateStrongRefNode updateRefNode,
-                        @Cached CStructAccess.ReadPointerNode readPointerNode,
                         @Cached ToPythonWrapperNode toPythonWrapperNode) {
 
             /*
@@ -200,7 +200,7 @@ public abstract class PythonCextObjectBuiltins {
              */
             PythonNativeWrapper[] resolved = new PythonNativeWrapper[len];
             for (int i = 0; i < resolved.length; i++) {
-                Object elem = readPointerNode.readArrayElement(arrayPointer, i);
+                long elem = readPtrArrayElement(arrayPointer, i);
                 resolved[i] = toPythonWrapperNode.executeWrapper(elem, false);
             }
             for (int i = 0; i < resolved.length; i++) {

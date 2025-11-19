@@ -1875,13 +1875,10 @@ public abstract class CExtNodes {
         public abstract boolean execute(Node inliningTarget, PythonAbstractNativeObject object);
 
         @Specialization
-        static boolean readTpAsBuffer(PythonAbstractNativeObject object,
-                        @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached(inline = false) CStructAccess.ReadPointerNode readType,
-                        @Cached(inline = false) CStructAccess.ReadPointerNode readAsBuffer) {
-            Object type = readType.readFromObj(object, PyObject__ob_type);
-            Object result = readAsBuffer.read(type, PyTypeObject__tp_as_buffer);
-            return !PGuards.isNullOrZero(result, lib);
+        static boolean readTpAsBuffer(PythonAbstractNativeObject object) {
+            long type = readPtrField(object.getPtr(), PyObject__ob_type);
+            long result = readPtrField(type, PyTypeObject__tp_as_buffer);
+            return result != NULLPTR;
         }
     }
 

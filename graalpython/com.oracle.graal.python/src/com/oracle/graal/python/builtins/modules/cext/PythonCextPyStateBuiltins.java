@@ -48,6 +48,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadState;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadStateZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
 
@@ -118,13 +119,13 @@ public final class PythonCextPyStateBuiltins {
      * the C API, but were blocked at that time and therefore could not process the thread-local
      * action that eagerly initializes their native 'tstate_current' TLS slot.
      */
-    @CApiBuiltin(ret = PyThreadState, args = {Pointer}, acquireGil = false, call = Ignored)
+    @CApiBuiltin(ret = PyThreadStateZZZ, args = {Pointer}, acquireGil = false, call = Ignored)
     abstract static class GraalPyPrivate_ThreadState_Get extends CApiUnaryBuiltinNode {
         private static final TruffleLogger LOGGER = CApiContext.getLogger(GraalPyPrivate_ThreadState_Get.class);
 
         @Specialization
         @TruffleBoundary
-        static Object get(Object tstateCurrentPtr) {
+        static long get(Object tstateCurrentPtr) {
             PythonContext context = PythonContext.get(null);
             PythonThreadState threadState = context.getThreadState(context.getLanguage());
 
@@ -136,14 +137,14 @@ public final class PythonCextPyStateBuiltins {
              */
             if (threadState.isNativeThreadStateInitialized()) {
                 LOGGER.fine(() -> String.format("Lazy initialization attempt of native thread state for thread %s aborted. Was initialized in the meantime.", Thread.currentThread()));
-                Object nativeThreadState = PThreadState.getNativeThreadState(threadState);
-                assert nativeThreadState != null;
+                long nativeThreadState = PThreadState.getNativeThreadState(threadState);
+                assert nativeThreadState != NULLPTR;
                 return nativeThreadState;
             }
 
             LOGGER.fine(() -> "Lazy (fallback) initialization of native thread state for thread " + Thread.currentThread());
             assert PThreadState.getNativeThreadState(threadState) == null;
-            Object nativeThreadState = PThreadState.getOrCreateNativeThreadState(threadState);
+            long nativeThreadState = PThreadState.getOrCreateNativeThreadState(threadState);
             threadState.setNativeThreadLocalVarPointer(tstateCurrentPtr);
             return nativeThreadState;
         }

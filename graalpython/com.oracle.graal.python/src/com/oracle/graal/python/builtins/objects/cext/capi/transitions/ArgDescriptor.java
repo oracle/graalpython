@@ -267,6 +267,7 @@ public enum ArgDescriptor {
     PY_SSIZE_T_PTR_ZZZ(ArgBehavior.PointerZZZ, "Py_ssize_t*"),
     PY_STRUCT_SEQUENCE_DESC("PyStructSequence_Desc*"),
     PyThreadState(ArgBehavior.Pointer, "PyThreadState*"),
+    PyThreadStateZZZ(ArgBehavior.PointerZZZ, "PyThreadState*"),
     PyThreadStatePtr(ArgBehavior.Pointer, "PyThreadState**"),
     PY_THREAD_TYPE_LOCK(ArgBehavior.Int64, "PyThread_type_lock"),
     PY_THREAD_TYPE_LOCK_PTR(ArgBehavior.Pointer, "PyThread_type_lock*"),

@@ -50,6 +50,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectConstPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadState;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadStateZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -94,15 +95,15 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextCEvalBuiltins {
 
-    @CApiBuiltin(ret = PyThreadState, args = {}, acquireGil = false, call = Direct)
+    @CApiBuiltin(ret = PyThreadStateZZZ, args = {}, acquireGil = false, call = Direct)
     abstract static class PyEval_SaveThread extends CApiNullaryBuiltinNode {
         private static final TruffleLogger LOGGER = CApiContext.getLogger(PyEval_SaveThread.class);
 
         @Specialization
-        static Object save(@Cached GilNode gil,
+        static long save(@Cached GilNode gil,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context) {
-            Object threadState = PThreadState.getOrCreateNativeThreadState(context.getLanguage(inliningTarget), context);
+            long threadState = PThreadState.getOrCreateNativeThreadState(context.getLanguage(inliningTarget), context);
             LOGGER.fine("C extension releases GIL");
             gil.release(context, true);
             return threadState;

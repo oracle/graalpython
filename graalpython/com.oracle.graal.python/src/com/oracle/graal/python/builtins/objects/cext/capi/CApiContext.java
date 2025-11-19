@@ -45,6 +45,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWra
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.pollReferenceQueue;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readIntField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
+import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___FILE__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DASH;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
@@ -1099,8 +1100,8 @@ public final class CApiContext extends CExtContext {
              */
             pollReferenceQueue();
             PythonThreadState threadState = getContext().getThreadState(getContext().getLanguage());
-            Object nativeThreadState = PThreadState.getNativeThreadState(threadState);
-            if (nativeThreadState != null) {
+            long nativeThreadState = PThreadState.getNativeThreadState(threadState);
+            if (nativeThreadState != NULLPTR) {
                 PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_PY_GC_COLLECT_NO_FAIL, nativeThreadState);
                 pollReferenceQueue();
             }
