@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -76,6 +76,7 @@ import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
 import org.graalvm.polyglot.tck.LanguageProvider;
 import org.graalvm.polyglot.tck.ResultVerifier;
+import org.graalvm.polyglot.tck.ResultVerifier.SnippetRun;
 import org.graalvm.polyglot.tck.Snippet;
 import org.graalvm.polyglot.tck.TypeDescriptor;
 import org.junit.Assert;
@@ -262,8 +263,8 @@ public class PythonProvider implements LanguageProvider {
         addExpressionSnippet(context, snippets, "isinstance", "lambda x, y: isinstance(x, y)", BOOLEAN, ANY, META_OBJECT);
         addExpressionSnippet(context, snippets, "issubclass", "lambda x, y: issubclass(x, y)", BOOLEAN, META_OBJECT, META_OBJECT);
 
-        addExpressionSnippet(context, snippets, "[]", "lambda x, y: x[y]", ANY, GetItemVerifier.INSTANCE, union(array(ANY), STRING, hash(ANY, ANY)), ANY);
-        addExpressionSnippet(context, snippets, "[a:b]", "lambda x: x[:]", union(STRING, array(ANY)), union(STRING, array(ANY)));
+        addExpressionSnippet(context, snippets, "[]", "lambda x, y: x[y]", ANY, GetItemVerifier.INSTANCE, union(array(ANY), STRING, hash(ANY, ANY), META_OBJECT), ANY);
+        addExpressionSnippet(context, snippets, "[a:b]", "lambda x: x[:]", union(STRING, array(ANY)), SliceVerifier.INSTANCE, union(STRING, array(ANY), META_OBJECT));
 
         // @formatter:on
         return snippets;
@@ -493,6 +494,30 @@ public class PythonProvider implements LanguageProvider {
         private static final MulVerifier INSTANCE = new MulVerifier();
     }
 
+    private static void checkTypeSubscripting(SnippetRun snippetRun, Value self) {
+        if (snippetRun.getException() != null) {
+            // only specific Python types allow parameterization
+            String metaName = self.getMetaQualifiedName();
+            assert metaName.equals("object") || metaName.equals("type_user") : metaName;
+        } else {
+            assert snippetRun.getResult().getMetaObject().getMetaQualifiedName().equals("types.GenericAlias");
+        }
+    }
+
+    private static class SliceVerifier extends PResultVerifier {
+        @Override
+        public void accept(SnippetRun snippetRun) throws PolyglotException {
+            Value self = snippetRun.getParameters().get(0);
+            if (self.isMetaObject()) {
+                checkTypeSubscripting(snippetRun, self);
+            } else {
+                ResultVerifier.getDefaultResultVerifier().accept(snippetRun);
+            }
+        }
+
+        private static final SliceVerifier INSTANCE = new SliceVerifier();
+    }
+
     private static class GetItemVerifier extends PResultVerifier {
         private static final String[] UNHASHABLE_TYPES = new String[]{"list", "dict", "bytearray", "set"};
 
@@ -542,6 +567,8 @@ public class PythonProvider implements LanguageProvider {
                 } else {
                     assert snippetRun.getException() == null : snippetRun.getException();
                 }
+            } else if (self.isMetaObject()) {
+                checkTypeSubscripting(snippetRun, self);
             } else {
                 // argument type error, rethrow
                 throw snippetRun.getException();
