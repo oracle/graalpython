@@ -132,7 +132,7 @@ public abstract class IndirectCallData {
 
         @TruffleBoundary
         public void updateCallerFlags(int newFlags) {
-            if ((newFlags & CallerFlags.NEEDS_LOCALS) != 0) {
+            if ((newFlags & (CallerFlags.NEEDS_LOCALS | CallerFlags.NEEDS_LASTI)) != 0) {
                 newFlags |= CallerFlags.NEEDS_PFRAME;
             }
             if ((newFlags & CallerFlags.NEEDS_PFRAME) != 0) {

@@ -103,8 +103,11 @@ public final class PFrame extends PythonBuiltinObject {
 
     private PFrame.Reference backref = null;
 
-    // Whether lasti and locals are stale, see isStale
-    private boolean stale;
+    /**
+     * The last {@link CallerFlags} that were used the last time the frame was synced or passed down
+     * to a callee. See {@link #isStale(VirtualFrame, int)} for more details.
+     */
+    private int lastCallerFlags;
 
     public Object getLocalTraceFun() {
         return localTraceFun;
@@ -200,6 +203,9 @@ public final class PFrame extends PythonBuiltinObject {
         this.virtualFrameInfo = virtualFrameInfo;
         this.location = location;
         this.hasCustomLocals = hasCustomLocals;
+        // Mark everything as current for now. MaterializeFrameNode will set lastCallerFlags to a
+        // narrower value if needed
+        this.lastCallerFlags = CallerFlags.ALL_FRAME_FLAGS;
     }
 
     public PFrame(PythonLanguage lang, @SuppressWarnings("unused") Object threadState, PCode code, PythonObject globals, Object localsDict) {
@@ -216,6 +222,8 @@ public final class PFrame extends PythonBuiltinObject {
         this.arguments = frameArgs;
         this.hasCustomLocals = true;
         this.localsDict = localsDict;
+        // This is a synthetic frame, there will be no sync, mark everything as current
+        this.lastCallerFlags = CallerFlags.ALL_FRAME_FLAGS;
     }
 
     /**
@@ -223,11 +231,12 @@ public final class PFrame extends PythonBuiltinObject {
      * In most cases, you should use {@link GetFrameLocalsNode}.
      */
     public MaterializedFrame getLocals() {
-        assert !stale;
+        assert CallerFlags.needsLocals(lastCallerFlags) : "Missing frame locals sync";
         return locals;
     }
 
     public void setLocals(MaterializedFrame locals) {
+        lastCallerFlags |= CallerFlags.NEEDS_LOCALS;
         this.locals = locals;
     }
 
@@ -245,15 +254,23 @@ public final class PFrame extends PythonBuiltinObject {
      *            flags from {@link CallerFlags}.
      */
     public boolean isStale(VirtualFrame frame, int callerFlags) {
-        boolean needsLocals = CallerFlags.needsLocals(callerFlags) && !hasCustomLocals;
-        if (needsLocals && locals == null) {
+        if (hasCustomLocals) {
+            // Custom locals don't need locals sync
+            callerFlags &= ~CallerFlags.NEEDS_LOCALS;
+        }
+        if (CallerFlags.needsLocals(callerFlags) && locals == null) {
             return true;
         }
-        return (CallerFlags.needsLasti(callerFlags) || needsLocals) && (stale || (frame != null && PArguments.getCurrentFrameInfo(frame) == getRef()));
+        if (CallerFlags.needsLocals(callerFlags) || CallerFlags.needsLasti(callerFlags)) {
+            if (frame != null && PArguments.getCurrentFrameInfo(frame) == getRef()) {
+                return true;
+            }
+        }
+        return (callerFlags & lastCallerFlags) != callerFlags;
     }
 
-    public void setStale(boolean stale) {
-        this.stale = stale;
+    public void setLastCallerFlags(int lastCallerFlags) {
+        this.lastCallerFlags = lastCallerFlags;
     }
 
     /**
@@ -309,17 +326,16 @@ public final class PFrame extends PythonBuiltinObject {
 
     @TruffleBoundary
     public int getLine() {
-        assert !stale;
         if (line == UNINITIALIZED_LINE) {
             if (location == null) {
                 line = -1;
             } else if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
                 if (location instanceof BytecodeNode bytecodeNode) {
                     PBytecodeDSLRootNode rootNode = (PBytecodeDSLRootNode) bytecodeNode.getRootNode();
-                    return rootNode.bciToLine(bci, bytecodeNode);
+                    return rootNode.bciToLine(getBci(), bytecodeNode);
                 }
             } else if (location instanceof PBytecodeRootNode bytecodeRootNode) {
-                return bytecodeRootNode.bciToLine(bci);
+                return bytecodeRootNode.bciToLine(getBci());
             }
         }
         return line;
@@ -374,10 +390,12 @@ public final class PFrame extends PythonBuiltinObject {
     }
 
     public void setBci(int bci) {
+        this.lastCallerFlags |= CallerFlags.NEEDS_LASTI;
         this.bci = bci;
     }
 
     public int getLasti() {
+        assert CallerFlags.needsLasti(lastCallerFlags) : "Missing frame location sync";
         return bciToLasti(bci, location);
     }
 

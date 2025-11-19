@@ -107,6 +107,7 @@ public abstract class GetFrameLocalsNode extends Node {
         if (!freshFrame && pyFrame.isStale(frame, CallerFlags.NEEDS_LOCALS)) {
             pyFrame = readFrameNode.refreshFrame(frame, pyFrame.getRef(), CallerFlags.NEEDS_LOCALS);
         }
+        assert !pyFrame.isStale(null, CallerFlags.NEEDS_LOCALS);
         MaterializedFrame locals = pyFrame.getLocals();
         // It doesn't have custom locals, so it has to be a builtin dict or null
         PDict localsDict = (PDict) pyFrame.getLocalsDict();

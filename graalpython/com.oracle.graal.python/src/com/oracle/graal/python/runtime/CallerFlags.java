@@ -58,6 +58,8 @@ public abstract class CallerFlags {
      */
     public static final int NEEDS_LASTI = 1 << 4;
 
+    public static final int ALL_FRAME_FLAGS = NEEDS_FRAME_REFERENCE | NEEDS_PFRAME | NEEDS_LOCALS | NEEDS_LASTI;
+
     public static boolean needsExceptionState(int callerFlags) {
         return (callerFlags & NEEDS_EXCEPTION_STATE) != 0;
     }

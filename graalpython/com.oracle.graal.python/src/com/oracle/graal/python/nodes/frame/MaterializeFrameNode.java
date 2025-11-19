@@ -50,6 +50,7 @@ import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.bytecode.BytecodeFrameInfo;
 import com.oracle.graal.python.nodes.bytecode.FrameInfo;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
+import com.oracle.graal.python.runtime.CallerFlags;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -190,12 +191,9 @@ public abstract class MaterializeFrameNode extends Node {
     static PFrame alreadyEscapedFrame(@SuppressWarnings("unused") Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize,
                     @Shared("syncValuesNode") @Cached SyncFrameValuesNode syncValuesNode) {
         PFrame pyFrame = getPFrame(frameToMaterialize);
-        pyFrame.setStale(false);
+        pyFrame.setLastCallerFlags(getCallerFlags(forceSync));
         if (forceSync) {
             syncValuesNode.execute(pyFrame, frameToMaterialize, location);
-        } else {
-            // Clear stale locals
-            pyFrame.setLocals(null);
         }
         if (markAsEscaped) {
             pyFrame.getRef().markAsEscaped();
@@ -244,18 +242,19 @@ public abstract class MaterializeFrameNode extends Node {
 
         // on a freshly created PFrame, we do always sync the arguments
         PArguments.synchronizeArgs(frameToMaterialize, escapedFrame);
-        escapedFrame.setStale(false);
+        escapedFrame.setLastCallerFlags(getCallerFlags(forceSync));
         if (forceSync) {
             syncValuesNode.execute(escapedFrame, frameToMaterialize, location);
-        } else {
-            // Clear stale locals
-            escapedFrame.setLocals(null);
         }
         if (markAsEscaped) {
             topFrameRef.markAsEscaped();
         }
         processBytecodeFrame(frameToMaterialize, escapedFrame, location);
         return escapedFrame;
+    }
+
+    private static int getCallerFlags(boolean forceSync) {
+        return CallerFlags.NEEDS_FRAME_REFERENCE | CallerFlags.NEEDS_PFRAME | CallerFlags.NEEDS_LASTI | (forceSync ? CallerFlags.NEEDS_LOCALS : 0);
     }
 
     protected static boolean hasCustomLocals(Frame frame) {

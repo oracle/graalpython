@@ -228,14 +228,14 @@ public abstract class ExecutionContext {
                         assert materialize.isAdoptable();
                     }
                     if (thisInfo.getPyFrame() != null && !CallerFlags.needsLocals(callerFlags) && !CallerFlags.needsLasti(callerFlags)) {
-                        thisInfo.getPyFrame().setStale(true);
+                        thisInfo.getPyFrame().setLastCallerFlags(callerFlags);
                     } else {
                         PFrame pyFrame = materialize.executeOnStack(false, CallerFlags.needsLocals(callerFlags), frame);
                         assert thisInfo.getPyFrame() == pyFrame;
                         assert pyFrame.getRef() == thisInfo;
                     }
                 } else if (thisInfo.getPyFrame() != null) {
-                    thisInfo.getPyFrame().setStale(true);
+                    thisInfo.getPyFrame().setLastCallerFlags(callerFlags);
                 }
                 PArguments.setCallerFrameInfo(callArguments, thisInfo);
             }
@@ -712,8 +712,7 @@ public abstract class ExecutionContext {
                 if (CallerFlags.needsPFrame(callerFlags)) {
                     callData.getMaterializeFrameNode().executeOnStack(false, CallerFlags.needsLocals(callerFlags), frame);
                 } else if (info.getPyFrame() != null) {
-                    // Avoid passing stale locals
-                    info.getPyFrame().setStale(true);
+                    info.getPyFrame().setLastCallerFlags(callerFlags);
                 }
             }
             AbstractTruffleException curExc = pythonThreadState.getCaughtException();
