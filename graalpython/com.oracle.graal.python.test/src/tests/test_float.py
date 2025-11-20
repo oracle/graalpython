@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -51,6 +51,18 @@ toHex = float.hex
 
 class BasicTests(unittest.TestCase):
 
+    def test_is_integer(self):
+        assert not (3.14).is_integer()
+        assert not (-3.14).is_integer()
+        assert (3.0).is_integer()
+        assert (-3.0).is_integer()
+        assert (0.0).is_integer()
+        assert (-0.0).is_integer()
+        assert (-6.642122310788808 * 10**250).is_integer()
+        assert not (2**52 - 1 + 0.5).is_integer()
+        # for doubles this big, all representable values are integers...
+        assert (2**52 + 0.5).is_integer()
+
     def test_rounding(self):
         assert round(1.123, 0) == 1
         assert round(1.123, 1) == 1.1
@@ -85,8 +97,8 @@ class BasicTests(unittest.TestCase):
             pass
         else:
             assert False, "rounding with a float should have raised"
-            
-        class F: 
+
+        class F:
             pass
 
         setattr(F, "__round__", round)
@@ -96,8 +108,8 @@ class BasicTests(unittest.TestCase):
             pass
         else:
             assert False, "rounding with a non-float should have raised"
-            
-        class F(float): 
+
+        class F(float):
             pass
 
         setattr(F, "__round__", round)
@@ -107,7 +119,7 @@ class BasicTests(unittest.TestCase):
             pass
         else:
             assert False, "rounding with only 1 arg should have raised"
-        
+
         round(F(4.2), 1)
 
         def r(o):
@@ -391,7 +403,7 @@ class HexFloatTests(unittest.TestCase):
             '\n \t',
             '\f',
             # TODO fix in our implementation
-            #'\v', 
+            #'\v',
             '\r'
             ]
         for inp, expected in value_pairs:
@@ -735,8 +747,8 @@ class HexFloatTests(unittest.TestCase):
         class F(float):
             def _new_(cls, value):
                 return float._new_(cls, value + 1)
-        
-            @classmethod 
+
+            @classmethod
             def fromhex(cls, value1, value2):
                 return super(F, cls).fromhex(value1 + value2)
 
@@ -748,7 +760,7 @@ class MyFloat(float):
     pass
 
 class RealImagConjugateTests(unittest.TestCase):
-    
+
     def test_real_imag(self):
         def builtinTest(number):
             a = float(number)
@@ -852,12 +864,12 @@ class FormatTests(unittest.TestCase):
         # empty presentation type should format in the same way as str
         # (issue 5920)
         x = 100/7.
-        
+
         self.assertEqual(format(x, ''), str(x))
         self.assertEqual(format(x, '-'), str(x))
         self.assertEqual(format(x, '>'), str(x))
         self.assertEqual(format(x, '2'), str(x))
-        
+
         self.assertEqual(format(1.0, 'f'), '1.000000')
 
         self.assertEqual(format(-1.0, 'f'), '-1.000000')
@@ -866,7 +878,7 @@ class FormatTests(unittest.TestCase):
         self.assertEqual(format(-1.0, ' f'), '-1.000000')
         self.assertEqual(format( 1.0, '+f'), '+1.000000')
         self.assertEqual(format(-1.0, '+f'), '-1.000000')
-        
+
         # % formatting
         self.assertEqual(format(-1.0, '%'), '-100.000000%')
 
@@ -877,7 +889,7 @@ class FormatTests(unittest.TestCase):
         #  in particular int specifiers
         for format_spec in ([chr(x) for x in range(ord('a'), ord('z')+1)] +
                             [chr(x) for x in range(ord('A'), ord('Z')+1)]):
-            
+
             if not format_spec in 'eEfFgGn%rNz':
                 self.assertRaises(ValueError, format, 0.0, format_spec)
                 self.assertRaises(ValueError, format, 1.0, format_spec)
@@ -892,7 +904,7 @@ class FormatTests(unittest.TestCase):
         self.assertEqual(format(NAN, 'F'), 'NAN')
         self.assertEqual(format(INF, 'f'), 'inf')
         self.assertEqual(format(INF, 'F'), 'INF')
-    
+
     def test_format_testfile(self):
         with open(format_testfile) as testfile:
             for line in testfile:
