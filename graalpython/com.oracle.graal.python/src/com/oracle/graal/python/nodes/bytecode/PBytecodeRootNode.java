@@ -3345,7 +3345,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         Frame localFrame = getLocalFrame(virtualFrame);
         if (pyFrame.localsAccessed()) {
             enterTraceProfile(bci, TRACE_PROFILE_SYNC_LOCALS_BACK);
-            GetFrameLocalsNode.syncLocalsBackToFrame(co, this, pyFrame, localFrame);
+            GetFrameLocalsNode.syncLocalsBackToFrame(co, pyFrame, localFrame, null);
         }
     }
 

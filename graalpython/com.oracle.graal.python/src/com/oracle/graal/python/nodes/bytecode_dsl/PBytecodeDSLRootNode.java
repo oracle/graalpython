@@ -540,8 +540,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         return traceMaterializeFrameNode.executeOnStack(frame, location, true, true);
     }
 
-    private void syncLocalsBackToFrame(VirtualFrame frame, PFrame pyFrame) {
-        GetFrameLocalsNode.syncLocalsBackToFrame(co, this, pyFrame, frame);
+    private void syncLocalsBackToFrame(VirtualFrame frame, PFrame pyFrame, BytecodeNode location) {
+        GetFrameLocalsNode.syncLocalsBackToFrame(co, pyFrame, frame, location);
     }
 
     /**
@@ -583,7 +583,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             // Force locals dict sync, so that we can sync them back later
             GetFrameLocalsNode.executeUncached(pyFrame, false);
             Object result = doInvokeProfileOrTraceFunction(virtualFrame, location, threadState, profileFun, pyFrame, event.name, arg);
-            syncLocalsBackToFrame(virtualFrame, pyFrame);
+            syncLocalsBackToFrame(virtualFrame, pyFrame, location);
             Object realResult = result == PNone.NONE ? null : result;
             pyFrame.setLocalTraceFun(realResult);
         } catch (Throwable e) {
@@ -631,7 +631,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             // Force locals dict sync, so that we can sync them back later
             GetFrameLocalsNode.executeUncached(pyFrame, false);
             Object result = doInvokeProfileOrTraceFunction(virtualFrame, location, threadState, traceFn, pyFrame, event.pythonName, nonNullArg);
-            syncLocalsBackToFrame(virtualFrame, pyFrame);
+            syncLocalsBackToFrame(virtualFrame, pyFrame, location);
             // https://github.com/python/cpython/issues/104232
             if (useLocalFn) {
                 Object realResult = result == PNone.NONE ? traceFn : result;

@@ -49,10 +49,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.lib.PyDictGetItem;
-import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.bytecode.FrameInfo;
-import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLFrameInfo;
-import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.runtime.CallerFlags;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -116,7 +113,7 @@ public abstract class GetFrameLocalsNode extends Node {
             localsDict = PFactory.createDict(PythonLanguage.get(inliningTarget));
             pyFrame.setLocalsDict(localsDict);
         }
-        copyLocalsToDict.execute(locals, localsDict);
+        copyLocalsToDict.execute(locals, localsDict, pyFrame.getBytecodeNode());
         return localsDict;
     }
 
@@ -130,11 +127,11 @@ public abstract class GetFrameLocalsNode extends Node {
     @GenerateUncached
     @GenerateInline(false)       // footprint reduction 104 -> 86
     abstract static class CopyLocalsToDict extends Node {
-        abstract void execute(MaterializedFrame locals, PDict dict);
+        abstract void execute(MaterializedFrame locals, PDict dict, BytecodeNode bytecodeNode);
 
         @Specialization(guards = {"cachedFd == locals.getFrameDescriptor()", "info != null", "count < 32"}, limit = "1")
         @ExplodeLoop
-        void doCachedFd(MaterializedFrame locals, PDict dict,
+        static void doCachedFd(MaterializedFrame locals, PDict dict, BytecodeNode bytecodeNode,
                         @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Cached("locals.getFrameDescriptor()") FrameDescriptor cachedFd,
                         @Bind("getInfo(cachedFd)") FrameInfo info,
@@ -144,9 +141,7 @@ public abstract class GetFrameLocalsNode extends Node {
             int regularVarCount = info.getRegularVariableCount();
 
             if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                BytecodeDSLFrameInfo bytecodeDSLFrameInfo = (BytecodeDSLFrameInfo) info;
-                PBytecodeDSLRootNode rootNode = bytecodeDSLFrameInfo.getRootNode();
-                Object[] localsArray = rootNode.getBytecodeNode().getLocalValues(0, locals);
+                Object[] localsArray = bytecodeNode.getLocalValues(0, locals);
                 for (int i = 0; i < count; i++) {
                     copyItem(inliningTarget, localsArray[i], info, dict, setItem, delItem, i, i >= regularVarCount);
                 }
@@ -158,7 +153,7 @@ public abstract class GetFrameLocalsNode extends Node {
         }
 
         @Specialization(replaces = "doCachedFd")
-        void doGeneric(MaterializedFrame locals, PDict dict,
+        void doGeneric(MaterializedFrame locals, PDict dict, BytecodeNode bytecodeNode,
                         @Bind Node inliningTarget,
                         @Shared("setItem") @Cached HashingStorageSetItem setItem,
                         @Shared("delItem") @Cached HashingStorageDelItem delItem) {
@@ -171,9 +166,7 @@ public abstract class GetFrameLocalsNode extends Node {
             int regularVarCount = info.getRegularVariableCount();
 
             if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                BytecodeDSLFrameInfo bytecodeDSLFrameInfo = (BytecodeDSLFrameInfo) info;
-                PBytecodeDSLRootNode rootNode = bytecodeDSLFrameInfo.getRootNode();
-                Object[] localsArray = rootNode.getBytecodeNode().getLocalValues(0, locals);
+                Object[] localsArray = bytecodeNode.getLocalValues(0, locals);
                 for (int i = 0; i < count; i++) {
                     copyItem(inliningTarget, localsArray[i], info, dict, setItem, delItem, i, i >= regularVarCount);
                 }
@@ -207,19 +200,17 @@ public abstract class GetFrameLocalsNode extends Node {
     /**
      * Equivalent of CPython's {@code PyFrame_LocalsToFast}
      */
-    public static void syncLocalsBackToFrame(CodeUnit co, PRootNode root, PFrame pyFrame, Frame localFrame) {
+    public static void syncLocalsBackToFrame(CodeUnit co, PFrame pyFrame, Frame localFrame, BytecodeNode bytecodeNode) {
         if (!pyFrame.hasCustomLocals()) {
             PDict localsDict = (PDict) pyFrame.getLocalsDict();
-            copyLocalsArray(localFrame, root, localsDict, co.varnames, 0, false);
-            copyLocalsArray(localFrame, root, localsDict, co.cellvars, co.varnames.length, true);
-            copyLocalsArray(localFrame, root, localsDict, co.freevars, co.varnames.length + co.cellvars.length, true);
+            copyLocalsArray(localFrame, localsDict, bytecodeNode, co.varnames, 0, false);
+            copyLocalsArray(localFrame, localsDict, bytecodeNode, co.cellvars, co.varnames.length, true);
+            copyLocalsArray(localFrame, localsDict, bytecodeNode, co.freevars, co.varnames.length + co.cellvars.length, true);
         }
     }
 
-    private static void copyLocalsArray(Frame localFrame, PRootNode root, PDict localsDict, TruffleString[] namesArray, int offset, boolean deref) {
+    private static void copyLocalsArray(Frame localFrame, PDict localsDict, BytecodeNode bytecodeNode, TruffleString[] namesArray, int offset, boolean deref) {
         if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-            PBytecodeDSLRootNode bytecodeDSLRootNode = (PBytecodeDSLRootNode) root;
-            BytecodeNode bytecodeNode = bytecodeDSLRootNode.getBytecodeNode();
             for (int i = 0; i < namesArray.length; i++) {
                 TruffleString varname = namesArray[i];
                 Object value = getDictItemUncached(localsDict, varname);
