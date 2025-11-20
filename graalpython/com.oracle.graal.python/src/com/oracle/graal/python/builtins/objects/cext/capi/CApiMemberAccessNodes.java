@@ -313,17 +313,16 @@ public class CApiMemberAccessNodes {
 
     abstract static class WriteTypeNode extends Node {
 
-        abstract void execute(Object pointer, Object newValue);
+        abstract void execute(long pointer, Object newValue);
     }
 
     @GenerateInline(false)
     abstract static class WriteByteNode extends WriteTypeNode {
 
         @Specialization
-        static void write(Object pointer, Object newValue,
-                        @Cached AsNativePrimitiveNode asLong,
-                        @Cached CStructAccess.WriteByteNode write) {
-            write.write(pointer, (byte) asLong.toInt64(newValue, true));
+        static void write(long pointer, Object newValue,
+                        @Cached AsNativePrimitiveNode asLong) {
+            NativeMemory.writeByte(pointer, (byte) asLong.toInt64(newValue, true));
         }
     }
 
@@ -331,10 +330,9 @@ public class CApiMemberAccessNodes {
     abstract static class WriteShortNode extends WriteTypeNode {
 
         @Specialization
-        static void write(Object pointer, Object newValue,
-                        @Cached AsNativePrimitiveNode asLong,
-                        @Cached CStructAccess.WriteI16Node write) {
-            write.write(pointer, (short) asLong.toInt64(newValue, true));
+        static void write(long pointer, Object newValue,
+                        @Cached AsNativePrimitiveNode asLong) {
+            NativeMemory.writeShort(pointer, (short) asLong.toInt64(newValue, true));
         }
     }
 
@@ -342,10 +340,9 @@ public class CApiMemberAccessNodes {
     abstract static class WriteIntNode extends WriteTypeNode {
 
         @Specialization
-        static void write(Object pointer, Object newValue,
-                        @Cached AsNativePrimitiveNode asLong,
-                        @Cached CStructAccess.WriteIntNode write) {
-            write.write(pointer, (int) asLong.toInt64(newValue, true));
+        static void write(long pointer, Object newValue,
+                        @Cached AsNativePrimitiveNode asLong) {
+            NativeMemory.writeInt(pointer, (int) asLong.toInt64(newValue, true));
         }
     }
 
@@ -353,13 +350,12 @@ public class CApiMemberAccessNodes {
     abstract static class WriteLongNode extends WriteTypeNode {
 
         @Specialization
-        static void write(Object pointer, Object newValue,
+        static void write(long pointer, Object newValue,
                         @Bind Node inliningTarget,
                         @Cached AsNativePrimitiveNode asLong,
-                        @Cached CStructAccess.WriteLongNode write,
                         @Cached IsBuiltinObjectProfile exceptionProfile) {
             try {
-                write.write(pointer, asLong.toInt64(newValue, true));
+                NativeMemory.writeLong(pointer, asLong.toInt64(newValue, true));
             } catch (PException e) {
                 /*
                  * Special case: if conversion raises an OverflowError, CPython still assigns the
@@ -367,7 +363,7 @@ public class CApiMemberAccessNodes {
                  * just do the same.
                  */
                 e.expectOverflowError(inliningTarget, exceptionProfile);
-                write.write(pointer, -1);
+                NativeMemory.writeLong(pointer, -1);
                 throw e;
             }
         }
@@ -377,23 +373,22 @@ public class CApiMemberAccessNodes {
     abstract static class WriteUIntNode extends WriteTypeNode {
 
         @Specialization
-        static void write(Object pointer, Object newValue,
+        static void write(long pointer, Object newValue,
                         @Bind Node inliningTarget,
                         @Cached AsNativePrimitiveNode asLong,
-                        @Cached CStructAccess.WriteIntNode write,
                         @Cached IsBuiltinObjectProfile exceptionProfile) {
             /*
              * This emulates the arguably buggy behavior from CPython where it accepts MIN_LONG to
              * MAX_ULONG values.
              */
             try {
-                write.write(pointer, (int) asLong.toUInt64(newValue, true));
+                NativeMemory.writeInt(pointer, (int) asLong.toUInt64(newValue, true));
             } catch (PException e) {
                 /*
                  * Special case: accept signed long as well.
                  */
                 e.expectOverflowError(inliningTarget, exceptionProfile);
-                write.write(pointer, (int) asLong.toInt64(newValue, true));
+                NativeMemory.writeInt(pointer, (int) asLong.toInt64(newValue, true));
                 // swallowing the exception
             }
         }
@@ -403,13 +398,12 @@ public class CApiMemberAccessNodes {
     abstract static class WriteULongNode extends WriteTypeNode {
 
         @Specialization
-        static void write(Object pointer, Object newValue,
+        static void write(long pointer, Object newValue,
                         @Bind Node inliningTarget,
                         @Cached AsNativePrimitiveNode asLong,
-                        @Cached CStructAccess.WriteLongNode write,
                         @Cached IsBuiltinObjectProfile exceptionProfile) {
             try {
-                write.write(pointer, asLong.toUInt64(newValue, true));
+                NativeMemory.writeLong(pointer, asLong.toUInt64(newValue, true));
             } catch (PException e) {
                 /*
                  * Special case: if conversion raises an OverflowError, CPython still assigns the
@@ -417,7 +411,7 @@ public class CApiMemberAccessNodes {
                  * just do the same.
                  */
                 e.expectOverflowError(inliningTarget, exceptionProfile);
-                write.write(pointer, -1);
+                NativeMemory.writeLong(pointer, -1);
                 throw e;
             }
         }
@@ -427,13 +421,12 @@ public class CApiMemberAccessNodes {
     abstract static class WriteDoubleNode extends WriteTypeNode {
 
         @Specialization
-        static void write(Object pointer, Object newValue,
+        static void write(long pointer, Object newValue,
                         @Bind Node inliningTarget,
                         @Cached AsNativeDoubleNode asDouble,
-                        @Cached CStructAccess.WriteDoubleNode write,
                         @Cached IsBuiltinObjectProfile exceptionProfile) {
             try {
-                write.write(pointer, asDouble.executeDouble(newValue));
+                NativeMemory.writeDouble(pointer, asDouble.executeDouble(newValue));
             } catch (PException e) {
                 /*
                  * Special case: if conversion raises an OverflowError, CPython still assigns the
@@ -441,7 +434,7 @@ public class CApiMemberAccessNodes {
                  * just do the same.
                  */
                 e.expectTypeError(inliningTarget, exceptionProfile);
-                write.write(pointer, -1);
+                NativeMemory.writeDouble(pointer, -1);
                 throw e;
             }
         }
@@ -451,10 +444,9 @@ public class CApiMemberAccessNodes {
     abstract static class WriteFloatNode extends WriteTypeNode {
 
         @Specialization
-        static void write(Object pointer, Object newValue,
-                        @Cached AsNativeDoubleNode asDouble,
-                        @Cached CStructAccess.WriteFloatNode write) {
-            write.write(pointer, (float) asDouble.executeDouble(newValue));
+        static void write(long pointer, Object newValue,
+                        @Cached AsNativeDoubleNode asDouble) {
+            NativeMemory.writeFloat(pointer, (float) asDouble.executeDouble(newValue));
         }
     }
 
@@ -462,7 +454,7 @@ public class CApiMemberAccessNodes {
     abstract static class WriteObjectNode extends WriteTypeNode {
 
         @Specialization
-        static void write(Object pointer, Object newValue,
+        static void write(long pointer, Object newValue,
                         @Cached CStructAccess.WriteObjectNewRefNode write) {
             write.write(pointer, newValue);
         }
@@ -489,10 +481,9 @@ public class CApiMemberAccessNodes {
     abstract static class WriteCharNode extends WriteTypeNode {
 
         @Specialization
-        static void write(Object pointer, Object newValue,
-                        @Cached AsNativeCharNode asChar,
-                        @Cached CStructAccess.WriteByteNode write) {
-            write.write(pointer, asChar.executeByte(newValue));
+        static void write(long pointer, Object newValue,
+                        @Cached AsNativeCharNode asChar) {
+            NativeMemory.writeByte(pointer, asChar.executeByte(newValue));
         }
     }
 
