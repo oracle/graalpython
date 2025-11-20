@@ -73,27 +73,6 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_PYTRUFFLE_STRUCT_OFFSETS("GraalPyPrivate_StructOffsets", PY_SSIZE_T_PTR_ZZZ),
     FUN_PYTRUFFLE_STRUCT_SIZES("GraalPyPrivate_StructSizes", PY_SSIZE_T_PTR_ZZZ),
 
-    /* C functions for reading native members by offset */
-    // TODO(NFI2) remove these
-    FUN_READ_SHORT_MEMBER("GraalPyPrivate_ReadShortMember", Int, Pointer, Py_ssize_t),
-    FUN_READ_INT_MEMBER("GraalPyPrivate_ReadIntMember", Int, Pointer, Py_ssize_t),
-    FUN_READ_LONG_MEMBER("GraalPyPrivate_ReadLongMember", ArgDescriptor.Long, Pointer, Py_ssize_t),
-    FUN_READ_FLOAT_MEMBER("GraalPyPrivate_ReadFloatMember", ArgDescriptor.Double, Pointer, Py_ssize_t),
-    FUN_READ_DOUBLE_MEMBER("GraalPyPrivate_ReadDoubleMember", ArgDescriptor.Double, Pointer, Py_ssize_t),
-    FUN_READ_POINTER_MEMBER("GraalPyPrivate_ReadPointerMember", Pointer, Pointer, Py_ssize_t),
-    FUN_READ_CHAR_MEMBER("GraalPyPrivate_ReadCharMember", Int, Pointer, Py_ssize_t),
-
-    /* C functions for writing native members by offset */
-
-    FUN_WRITE_SHORT_MEMBER("GraalPyPrivate_WriteShortMember", Int, Pointer, Py_ssize_t, Int),
-    FUN_WRITE_INT_MEMBER("GraalPyPrivate_WriteIntMember", Int, Pointer, Py_ssize_t, Int),
-    FUN_WRITE_LONG_MEMBER("GraalPyPrivate_WriteLongMember", Int, Pointer, Py_ssize_t, ArgDescriptor.Long),
-    FUN_WRITE_FLOAT_MEMBER("GraalPyPrivate_WriteFloatMember", Int, Pointer, Py_ssize_t, ArgDescriptor.Double),
-    FUN_WRITE_DOUBLE_MEMBER("GraalPyPrivate_WriteDoubleMember", Int, Pointer, Py_ssize_t, ArgDescriptor.Double),
-    FUN_WRITE_OBJECT_MEMBER("GraalPyPrivate_WriteObjectMember", Int, Pointer, Py_ssize_t, Pointer),
-    FUN_WRITE_POINTER_MEMBER("GraalPyPrivate_WritePointerMember", Int, Pointer, Py_ssize_t, Pointer),
-    FUN_WRITE_CHAR_MEMBER("GraalPyPrivate_WriteByteMember", Int, Pointer, Py_ssize_t, Int),
-
     /* Python C API functions */
 
     FUN_PY_TYPE_READY("PyType_Ready", Int, PyTypeObject),
