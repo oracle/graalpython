@@ -1095,37 +1095,20 @@ public abstract class CExtNodes {
     @GenerateUncached
     public abstract static class XDecRefPointerNode extends PNodeWithContext {
 
-        public static void executeUncached(Object pointer) {
+        public static void executeUncached(long pointer) {
             CExtNodesFactory.XDecRefPointerNodeGen.getUncached().execute(null, pointer);
         }
 
-        // TODO(NFI2) only one caller still passes an interop pointer
-        public abstract void execute(Node inliningTarget, Object pointer);
+        public abstract void execute(Node inliningTarget, long pointer);
 
         @Specialization
-        static void doDecref(Node inliningTarget, Object pointerObj,
-                        @CachedLibrary(limit = "2") InteropLibrary lib,
+        static void doDecref(Node inliningTarget, long pointer,
                         @Cached(inline = false) CApiTransitions.ToPythonWrapperNode toPythonWrapperNode,
                         @Cached InlinedBranchProfile isWrapperProfile,
                         @Cached InlinedBranchProfile isNativeObject,
                         @Cached UpdateStrongRefNode updateRefNode,
                         @Cached(inline = false) PCallCapiFunction callDealloc) {
-            long pointer;
-            if (pointerObj instanceof Long longPointer) {
-                pointer = longPointer;
-            } else {
-                if (lib.isPointer(pointerObj)) {
-                    try {
-                        pointer = lib.asPointer(pointerObj);
-                    } catch (UnsupportedMessageException e) {
-                        throw CompilerDirectives.shouldNotReachHere();
-                    }
-                } else {
-                    // No refcounting in managed mode
-                    return;
-                }
-            }
-            if (pointer == 0) {
+            if (pointer == NULLPTR) {
                 return;
             }
             if (HandlePointerConverter.pointsToPyFloatHandle(pointer) || HandlePointerConverter.pointsToPyIntHandle(pointer)) {
