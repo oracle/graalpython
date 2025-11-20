@@ -3336,7 +3336,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @TruffleBoundary
     private static Object doInvokeTraceFunction(PythonContext.TraceEvent event, PFrame pyFrame, Object traceFn, Object nonNullArg) {
         // Force locals dict sync, so that we can sync them back later
-        GetFrameLocalsNode.executeUncached(pyFrame, false);
+        GetFrameLocalsNode.executeUncached(pyFrame, true);
         pyFrame.setLocalsAccessed(false);
         return CallTernaryMethodNode.getUncached().execute(null, traceFn, pyFrame, event.pythonName, nonNullArg);
     }

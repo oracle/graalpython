@@ -41,6 +41,7 @@
 package com.oracle.graal.python.nodes.frame;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
@@ -218,6 +219,10 @@ public abstract class GetFrameLocalsNode extends Node {
                     PCell cell = (PCell) bytecodeNode.getLocalValue(0, localFrame, offset + i);
                     cell.setRef(value);
                 } else {
+                    if (value == null) {
+                        value = PNone.NONE;
+                        // TODO warn: "assigning None to unbound local %s"
+                    }
                     bytecodeNode.setLocalValue(0, localFrame, offset + i, value);
                 }
             }
@@ -229,6 +234,10 @@ public abstract class GetFrameLocalsNode extends Node {
                     PCell cell = (PCell) localFrame.getObject(offset + i);
                     cell.setRef(value);
                 } else {
+                    if (value == null) {
+                        value = PNone.NONE;
+                        // TODO warn: "assigning None to unbound local %s"
+                    }
                     localFrame.setObject(offset + i, value);
                 }
             }

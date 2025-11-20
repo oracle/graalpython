@@ -629,7 +629,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             }
 
             // Force locals dict sync, so that we can sync them back later
-            GetFrameLocalsNode.executeUncached(pyFrame, false);
+            GetFrameLocalsNode.executeUncached(pyFrame, true);
             Object result = doInvokeProfileOrTraceFunction(virtualFrame, location, threadState, traceFn, pyFrame, event.pythonName, nonNullArg);
             syncLocalsBackToFrame(virtualFrame, pyFrame, location);
             // https://github.com/python/cpython/issues/104232
