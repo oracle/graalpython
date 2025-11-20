@@ -49,7 +49,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_SSIZE_T_PTR_ZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectPtr;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectPtrZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_hash_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
@@ -78,7 +78,6 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PromoteB
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
@@ -130,8 +129,6 @@ import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
@@ -149,15 +146,13 @@ public final class PythonCextDictBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, PY_SSIZE_T_PTR_ZZZ, PyObjectPtr, PyObjectPtr, PY_HASH_T_PTR_ZZZ}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyObject, PY_SSIZE_T_PTR_ZZZ, PyObjectPtrZZZ, PyObjectPtrZZZ, PY_HASH_T_PTR_ZZZ}, call = Direct)
     abstract static class _PyDict_Next extends CApi5BuiltinNode {
 
         @Specialization
-        static int next(PDict dict, long posPtr, Object keyPtr, Object valuePtr, long hashPtr,
+        static int next(PDict dict, long posPtr, long keyPtr, long valuePtr, long hashPtr,
                         @Bind Node inliningTarget,
-                        @CachedLibrary(limit = "2") InteropLibrary lib,
-                        @Cached CStructAccess.WritePointerNode writePointerNode,
-                        @Cached CApiTransitions.PythonToNativeNode toNativeNode,
+                        @Cached CApiTransitions.PythonToNativeRawNode toNativeNode,
                         @Cached InlinedBranchProfile needsRewriteProfile,
                         @Cached InlinedBranchProfile economicMapProfile,
                         @Cached HashingStorageLen lenNode,
@@ -234,17 +229,17 @@ public final class PythonCextDictBuiltins {
             }
             long newPos = it.getState() + 1;
             writeLong(posPtr, newPos);
-            if (!lib.isNull(keyPtr)) {
+            if (keyPtr != NULLPTR) {
                 Object key = itKey.execute(inliningTarget, storage, it);
                 assert promoteKeyNode.execute(inliningTarget, key) == null;
                 // Borrowed reference
-                writePointerNode.write(keyPtr, toNativeNode.execute(key));
+                NativeMemory.writePtr(keyPtr, toNativeNode.execute(key));
             }
-            if (!lib.isNull(valuePtr)) {
+            if (valuePtr != NULLPTR) {
                 Object value = itValue.execute(inliningTarget, storage, it);
                 assert promoteValueNode.execute(inliningTarget, value) == null;
                 // Borrowed reference
-                writePointerNode.write(valuePtr, toNativeNode.execute(value));
+                NativeMemory.writePtr(valuePtr, toNativeNode.execute(value));
             }
             if (hashPtr != NULLPTR) {
                 long hash = itKeyHash.execute(null, inliningTarget, storage, it);

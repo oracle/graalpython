@@ -74,6 +74,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor._PY_ERROR_HANDLER;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.wrapPointer;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeLongField;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
 import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP;
 import static com.oracle.graal.python.nodes.ErrorMessages.PRECISION_TOO_LARGE;
@@ -1127,14 +1128,13 @@ public final class PythonCextUnicodeBuiltins {
         @Specialization
         static Object doNative(PythonAbstractNativeObject s,
                         @Cached EncodeNativeStringNode encodeNativeStringNode,
-                        @Cached CStructAccess.WritePointerNode writePointerNode,
                         @Cached CStructAccess.AllocatePyMemNode allocateNode,
                         @Cached CStructAccess.WriteTruffleStringNode writeTruffleStringNode) {
             TruffleString utf8Str = encodeNativeStringNode.execute(UTF_8, s, T_STRICT);
             int len = utf8Str.byteLength(UTF_8);
             long mem = allocateNode.alloc(len + 1);
             writeTruffleStringNode.write(mem, utf8Str, UTF_8);
-            writePointerNode.writeToObj(s, CFields.PyCompactUnicodeObject__utf8, mem);
+            writePtrField(s.getPtr(), CFields.PyCompactUnicodeObject__utf8, mem);
             writeLongField(s.getPtr(), CFields.PyCompactUnicodeObject__utf8_length, len);
             return 0;
         }

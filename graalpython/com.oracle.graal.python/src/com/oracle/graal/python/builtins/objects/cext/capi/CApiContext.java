@@ -920,7 +920,7 @@ public final class CApiContext extends CExtContext {
             try {
                 for (int id = 0; id < PythonCextBuiltinRegistry.builtins.length; id++) {
                     CApiBuiltinExecutable builtin = PythonCextBuiltinRegistry.builtins[id];
-                    CStructAccess.WritePointerNode.writeArrayElementUncached(builtinArrayPtr, id, builtin.getNativePointer());
+                    NativeMemory.writePtrArrayElement(builtinArrayPtr, id, builtin.getNativePointer());
                 }
                 NfiDowncallSignature initSignature = Nfi.createDowncallSignature(NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER);
                 // TODO(NFI2) ENV parameter

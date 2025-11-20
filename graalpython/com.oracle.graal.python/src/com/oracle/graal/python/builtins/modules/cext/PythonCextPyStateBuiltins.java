@@ -43,7 +43,7 @@ package com.oracle.graal.python.builtins.modules.cext;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PointerZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyFrameObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
@@ -51,6 +51,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadStateZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
+import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
@@ -119,13 +120,13 @@ public final class PythonCextPyStateBuiltins {
      * the C API, but were blocked at that time and therefore could not process the thread-local
      * action that eagerly initializes their native 'tstate_current' TLS slot.
      */
-    @CApiBuiltin(ret = PyThreadStateZZZ, args = {Pointer}, acquireGil = false, call = Ignored)
+    @CApiBuiltin(ret = PyThreadStateZZZ, args = {PointerZZZ}, acquireGil = false, call = Ignored)
     abstract static class GraalPyPrivate_ThreadState_Get extends CApiUnaryBuiltinNode {
         private static final TruffleLogger LOGGER = CApiContext.getLogger(GraalPyPrivate_ThreadState_Get.class);
 
         @Specialization
         @TruffleBoundary
-        static long get(Object tstateCurrentPtr) {
+        static long get(long tstateCurrentPtr) {
             PythonContext context = PythonContext.get(null);
             PythonThreadState threadState = context.getThreadState(context.getLanguage());
 

@@ -36,6 +36,7 @@ import static com.oracle.graal.python.builtins.modules.io.IONodes.T_CLOSED;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_FLUSH;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.cat;
 import static com.oracle.graal.python.builtins.objects.thread.PThread.GRAALPYTHON_THREADS;
+import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_PYEXPAT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SHA3;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_STDERR;
@@ -122,7 +123,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.Py
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
@@ -147,6 +147,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.nfi2.NativeMemory;
 import com.oracle.graal.python.nfi2.Nfi;
 import com.oracle.graal.python.nfi2.NfiContext;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -352,7 +353,7 @@ public final class PythonContext extends Python3Core {
          * Pointer to the native thread-local variable used to store the native PyThreadState struct
          * for this thread.
          */
-        Object nativeThreadLocalVarPointer;
+        long nativeThreadLocalVarPointer;
 
         /* The global tracing function, set by sys.settrace and returned by sys.gettrace. */
         Object traceFun;
@@ -479,7 +480,7 @@ public final class PythonContext extends Python3Core {
             this.contextVarsContext = contextVarsContext;
         }
 
-        public void dispose(PythonContext context, boolean canRunGuestCode, boolean clearNativeThreadLocalVarPointer) {
+        public void dispose(boolean canRunGuestCode, boolean clearNativeThreadLocalVarPointer) {
             // This method may be called twice on the same object.
 
             /*
@@ -507,10 +508,10 @@ public final class PythonContext extends Python3Core {
              * precaution, we just skip this if we cannot run guest code, because it may invoke
              * LLVM.
              */
-            if (nativeThreadLocalVarPointer != null && canRunGuestCode && clearNativeThreadLocalVarPointer) {
-                CStructAccess.WritePointerNode.writeUncached(nativeThreadLocalVarPointer, 0, context.getNativeNull());
+            if (nativeThreadLocalVarPointer != NULLPTR && canRunGuestCode && clearNativeThreadLocalVarPointer) {
+                NativeMemory.writePtr(nativeThreadLocalVarPointer, NULLPTR);
             }
-            nativeThreadLocalVarPointer = null;
+            nativeThreadLocalVarPointer = NULLPTR;
         }
 
         public Object getTraceFun() {
@@ -590,10 +591,9 @@ public final class PythonContext extends Python3Core {
             this.asyncgenFirstIter = asyncgenFirstIter;
         }
 
-        public void setNativeThreadLocalVarPointer(Object ptr) {
+        public void setNativeThreadLocalVarPointer(long ptr) {
             // either unset or same
-            assert nativeThreadLocalVarPointer == null || nativeThreadLocalVarPointer == ptr ||
-                            InteropLibrary.getUncached().isIdentical(nativeThreadLocalVarPointer, ptr, InteropLibrary.getUncached()) : //
+            assert nativeThreadLocalVarPointer == NULLPTR || nativeThreadLocalVarPointer == ptr : //
                             String.format("ptr = %s; nativeThreadLocalVarPointer = %s", ptr, nativeThreadLocalVarPointer);
             this.nativeThreadLocalVarPointer = ptr;
         }
@@ -603,7 +603,7 @@ public final class PythonContext extends Python3Core {
         }
 
         public boolean isNativeThreadStateInitialized() {
-            return nativeThreadLocalVarPointer != null;
+            return nativeThreadLocalVarPointer != NULLPTR;
         }
     }
 
@@ -2221,7 +2221,7 @@ public final class PythonContext extends Python3Core {
     private void disposeThreadStates() {
         Thread currentThread = Thread.currentThread();
         for (Map.Entry<Thread, PythonThreadState> entry : threadStateMapping.entrySet()) {
-            entry.getValue().dispose(this, true, entry.getKey() == currentThread);
+            entry.getValue().dispose(true, entry.getKey() == currentThread);
         }
         threadStateMapping.clear();
     }
@@ -2739,7 +2739,7 @@ public final class PythonContext extends Python3Core {
         }
         ts.shutdown();
         threadStateMapping.remove(thread);
-        ts.dispose(this, canRunGuestCode, thread == Thread.currentThread());
+        ts.dispose(canRunGuestCode, thread == Thread.currentThread());
         releaseSentinelLock(ts.sentinelLock);
         getSharedMultiprocessingData().removeChildContextThread(PThread.getThreadId(thread));
     }

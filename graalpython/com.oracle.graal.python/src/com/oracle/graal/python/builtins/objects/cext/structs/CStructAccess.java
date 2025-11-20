@@ -40,43 +40,29 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.structs;
 
+import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nfi2.NativeMemory.POINTER_SIZE;
 
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
-import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativePtrToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefRawNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.ReadCharPtrNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.ReadObjectNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.WritePointerNodeGen;
 import com.oracle.graal.python.nfi2.NativeMemory;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
-
-import sun.misc.Unsafe;
 
 @SuppressWarnings("truffle-inlining")
 public class CStructAccess {
@@ -165,10 +151,6 @@ public class CStructAccess {
 
     private static long getArrayElementPtr(long arrayPtr, long index, CStructs struct) {
         return arrayPtr + index * struct.size();
-    }
-
-    private static boolean validPointer(Object pointer) {
-        return !(pointer instanceof PythonAbstractObject) && !(pointer instanceof PythonNativeWrapper);
     }
 
     @GenerateUncached
@@ -279,77 +261,12 @@ public class CStructAccess {
     @ImportStatic(PGuards.class)
     @GenerateUncached
     @GenerateInline(false)
-    public abstract static class WritePointerNode extends Node implements CStructAccessNode {
+    public abstract static class WriteObjectNewRefNode extends Node {
 
-        public static void writeUncached(Object pointer, long offset, Object value) {
-            WritePointerNodeGen.getUncached().execute(pointer, offset, value);
-        }
+        abstract void execute(long pointer, long offset, Object value);
 
-        public static void writeArrayElementUncached(long pointer, long element, long value) {
-            UNSAFE.putLong(pointer + element * POINTER_SIZE, value);
-        }
-
-        abstract void execute(Object pointer, long offset, Object value);
-
-        public final void write(Object pointer, CFields field, Object value) {
-            assert accepts(field);
-            execute(pointer, field.offset(), value);
-        }
-
-        public final void writeToObj(PythonAbstractNativeObject obj, CFields field, Object value) {
-            write(obj.getPtr(), field, value);
-        }
-
-        public final void write(Object pointer, Object value) {
-            execute(pointer, 0, value);
-        }
-
-        public final boolean accepts(ArgDescriptor desc) {
-            return desc.isPyObjectOrPointer();
-        }
-
-        public final void writeArrayElement(Object pointer, long element, Object value) {
-            execute(pointer, element * POINTER_SIZE, value);
-        }
-
-        @Specialization
-        static void writeLong(long pointer, long offset, Object value,
-                        @Bind Node inliningTarget,
-                        @Shared @Cached CoerceNativePointerToLongNode coerceToLongNode) {
-            assert offset >= 0;
-            UNSAFE.putLong(pointer + offset, coerceToLongNode.execute(inliningTarget, value));
-        }
-
-        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"}, limit = "3")
-        static void writePointer(Object pointer, long offset, Object value,
-                        @Bind Node inliningTarget,
-                        @CachedLibrary("pointer") InteropLibrary lib,
-                        @Shared @Cached CoerceNativePointerToLongNode coerceToLongNode) {
-            writeLong(asPointer(pointer, lib), offset, value, inliningTarget, coerceToLongNode);
-        }
-
-        @Specialization(guards = {"!isLong(pointer)", "!lib.isPointer(pointer)"})
-        static void writeManaged(Object pointer, long offset, Object value,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached PCallCapiFunction call) {
-            assert validPointer(pointer);
-            call.call(NativeCAPISymbol.FUN_WRITE_POINTER_MEMBER, pointer, offset, value);
-        }
-
-        public static WritePointerNode getUncached() {
-            return WritePointerNodeGen.getUncached();
-        }
-    }
-
-    @ImportStatic(PGuards.class)
-    @GenerateUncached
-    @GenerateInline(false)
-    public abstract static class WriteObjectNewRefNode extends Node implements CStructAccessNode {
-
-        abstract void execute(Object pointer, long offset, Object value);
-
-        public final void write(Object pointer, CFields field, Object value) {
-            assert accepts(field);
+        public final void write(long pointer, CFields field, Object value) {
+            assert field.type.isPyObject();
             execute(pointer, field.offset(), value);
         }
 
@@ -357,15 +274,11 @@ public class CStructAccess {
             write(self.getPtr(), field, value);
         }
 
-        public final void write(Object pointer, Object value) {
+        public final void write(long pointer, Object value) {
             execute(pointer, 0, value);
         }
 
-        public final boolean accepts(ArgDescriptor desc) {
-            return desc.isPyObject();
-        }
-
-        public final void writeArray(Object pointer, Object[] values, int length, int sourceOffset, long targetOffset) {
+        public final void writeArray(long pointer, Object[] values, int length, int sourceOffset, long targetOffset) {
             if (length > values.length) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
@@ -374,61 +287,16 @@ public class CStructAccess {
             }
         }
 
-        public final void writeArrayElement(Object pointer, long element, Object value) {
-            execute(pointer, element * POINTER_SIZE, value);
-        }
-
         @Specialization
         static void writeLong(long pointer, long offset, Object value,
-                        @Bind Node inliningTarget,
-                        @Shared @Cached NativePtrToPythonNode toPython,
-                        @Shared @Cached PythonToNativeNewRefNode toNative,
-                        @Shared @Cached CoerceNativePointerToLongNode coerceToLongNode) {
+                        @Cached NativePtrToPythonNode toPython,
+                        @Cached PythonToNativeNewRefRawNode toNative) {
             assert offset >= 0;
-            long old = UNSAFE.getLong(pointer + offset);
-            if (old != 0) {
+            long old = NativeMemory.readPtr(pointer + offset);
+            if (old != NULLPTR) {
                 toPython.execute(old, true);
             }
-            long lvalue = coerceToLongNode.execute(inliningTarget, toNative.execute(value));
-            UNSAFE.putLong(pointer + offset, lvalue);
-        }
-
-        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"})
-        static void writePointer(Object pointer, long offset, Object value,
-                        @Bind Node inliningTarget,
-                        @Shared @Cached NativePtrToPythonNode toPython,
-                        @Shared @Cached PythonToNativeNewRefNode toNative,
-                        @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Shared @Cached CoerceNativePointerToLongNode coerceToLongNode) {
-            writeLong(asPointer(pointer, lib), offset, value, inliningTarget, toPython, toNative, coerceToLongNode);
-        }
-
-        @Specialization(guards = {"!isLong(pointer)", "!lib.isPointer(pointer)"})
-        static void writeManaged(Object pointer, long offset, Object value,
-                        @Shared @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached PythonToNativeNode toNative,
-                        @Cached PCallCapiFunction call) {
-            assert validPointer(pointer);
-            call.call(NativeCAPISymbol.FUN_WRITE_OBJECT_MEMBER, pointer, offset, toNative.execute(value));
-        }
-    }
-
-    private interface CStructAccessNode {
-        boolean accepts(ArgDescriptor desc);
-
-        default boolean accepts(CFields field) {
-            return accepts(field.type);
-        }
-    }
-
-    private static final Unsafe UNSAFE = PythonUtils.initUnsafe();
-
-    static long asPointer(Object value, InteropLibrary lib) {
-        assert validPointer(value) || value instanceof PySequenceArrayWrapper;
-        try {
-            return lib.asPointer(value);
-        } catch (final UnsupportedMessageException e) {
-            throw CompilerDirectives.shouldNotReachHere(e);
+            NativeMemory.writePtr(pointer + offset, toNative.execute(value));
         }
     }
 
