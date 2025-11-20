@@ -60,7 +60,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeEncodeError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
-import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
 import java.nio.charset.Charset;
 import java.util.logging.Level;
@@ -1297,24 +1296,7 @@ public abstract class CExtCommonNodes {
      * {@code NFI} pointer.
      * </p>
      */
-    // TODO(NFI2) review first arg after RAWPOINTER migration (should be just a long)
     @TruffleBoundary
-    public static NfiBoundFunction ensureExecutableUncached(Object callable, NativeCExtSymbol descriptor) {
-        if (callable instanceof NfiBoundFunction f) {
-            // TODO(NFI2) this happens during cpyext tests
-            return f;
-        }
-        InteropLibrary lib = InteropLibrary.getUncached(callable);
-        if (!lib.isPointer(callable)) {
-            throw shouldNotReachHere();
-        }
-        try {
-            return ensureExecutableUncached(lib.asPointer(callable), descriptor);
-        } catch (UnsupportedMessageException e) {
-            throw shouldNotReachHere();
-        }
-    }
-
     public static NfiBoundFunction ensureExecutableUncached(long callable, NativeCExtSymbol descriptor) {
         PythonContext pythonContext = PythonContext.get(null);
         if (!pythonContext.isNativeAccessAllowed()) {

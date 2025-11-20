@@ -44,7 +44,6 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.C
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PointerZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyBufferProcsZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
@@ -271,14 +270,14 @@ public final class PythonCextTypeBuiltins {
     @ImportStatic(CExtContext.class)
     abstract static class NewClassMethodNode extends Node {
 
-        abstract Object execute(Node inliningTarget, long methodDefPtr, TruffleString name, Object methObj, Object flags, Object wrapper, Object type, Object doc);
+        abstract Object execute(Node inliningTarget, long methodDefPtr, TruffleString name, long methPtr, Object flags, Object wrapper, Object type, Object doc);
 
         @Specialization(guards = "isClassOrStaticMethod(flags)")
-        static Object classOrStatic(Node inliningTarget, long methodDefPtr, TruffleString name, Object methObj, int flags, int wrapper, Object type, Object doc,
+        static Object classOrStatic(Node inliningTarget, long methodDefPtr, TruffleString name, long methPtr, int flags, int wrapper, Object type, Object doc,
                         @Bind PythonLanguage language,
                         @Exclusive @Cached HiddenAttr.WriteLongNode writeHiddenAttrNode,
                         @Cached(inline = false) WriteAttributeToPythonObjectNode writeAttrNode) {
-            PythonAbstractObject func = PExternalFunctionWrapper.createWrapperFunction(name, methObj, type, flags, wrapper, language);
+            PythonAbstractObject func = PExternalFunctionWrapper.createWrapperFunction(name, methPtr, type, flags, wrapper, language);
             writeHiddenAttrNode.execute(inliningTarget, func, METHOD_DEF_PTR, methodDefPtr);
             PythonObject function;
             if ((flags & METH_CLASS) != 0) {
@@ -292,11 +291,11 @@ public final class PythonCextTypeBuiltins {
         }
 
         @Specialization(guards = "!isClassOrStaticMethod(flags)")
-        static Object doNativeCallable(Node inliningTarget, long methodDefPtr, TruffleString name, Object methObj, int flags, int wrapper, Object type, Object doc,
+        static Object doNativeCallable(Node inliningTarget, long methodDefPtr, TruffleString name, long methPtr, int flags, int wrapper, Object type, Object doc,
                         @Bind PythonLanguage language,
                         @Cached PyObjectSetAttrNode setattr,
                         @Exclusive @Cached HiddenAttr.WriteLongNode writeNode) {
-            PythonAbstractObject func = PExternalFunctionWrapper.createWrapperFunction(name, methObj, type, flags, wrapper, language);
+            PythonAbstractObject func = PExternalFunctionWrapper.createWrapperFunction(name, methPtr, type, flags, wrapper, language);
             setattr.execute(inliningTarget, func, T___NAME__, name);
             setattr.execute(inliningTarget, func, T___DOC__, doc);
             writeNode.execute(inliningTarget, func, METHOD_DEF_PTR, methodDefPtr);
@@ -304,11 +303,11 @@ public final class PythonCextTypeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PointerZZZ, PyTypeObject, PyObject, ConstCharPtrAsTruffleString, Pointer, Int, Int, ConstCharPtrAsTruffleString}, call = Ignored)
+    @CApiBuiltin(ret = Int, args = {PointerZZZ, PyTypeObject, PyObject, ConstCharPtrAsTruffleString, PointerZZZ, Int, Int, ConstCharPtrAsTruffleString}, call = Ignored)
     abstract static class GraalPyPrivate_Type_AddFunctionToType extends CApi8BuiltinNode {
 
         @Specialization
-        static int classMethod(long methodDefPtr, Object type, Object dict, TruffleString name, Object cfunc, int flags, int wrapper, Object doc,
+        static int classMethod(long methodDefPtr, Object type, Object dict, TruffleString name, long cfunc, int flags, int wrapper, Object doc,
                         @Bind Node inliningTarget,
                         @Cached NewClassMethodNode newClassMethodNode,
                         @Cached PyDictSetDefault setDefault) {

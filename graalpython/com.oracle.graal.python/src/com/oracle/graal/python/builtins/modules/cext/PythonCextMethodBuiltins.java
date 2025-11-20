@@ -43,7 +43,7 @@ package com.oracle.graal.python.builtins.modules.cext;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PointerZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyMethodDefZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
@@ -85,16 +85,16 @@ public final class PythonCextMethodBuiltins {
 
         abstract Object execute(Node inliningTarget, Object methodDefPtr, TruffleString name, Object methObj, int flags, int wrapper, Object self, Object module, Object cls, Object doc);
 
-        final Object execute(Node inliningTarget, long methodDefPtr, TruffleString name, Object methObj, int flags, int wrapper, Object self, Object module, Object doc) {
-            return execute(inliningTarget, methodDefPtr, name, methObj, flags, wrapper, self, module, PNone.NO_VALUE, doc);
+        final Object execute(Node inliningTarget, long methodDefPtr, TruffleString name, long methPtr, int flags, int wrapper, Object self, Object module, Object doc) {
+            return execute(inliningTarget, methodDefPtr, name, methPtr, flags, wrapper, self, module, PNone.NO_VALUE, doc);
         }
 
         @Specialization
-        static Object doNativeCallable(Node inliningTarget, long methodDefPtr, TruffleString name, Object methObj, int flags, int wrapper, Object self, Object module, Object cls, Object doc,
+        static Object doNativeCallable(Node inliningTarget, long methodDefPtr, TruffleString name, long methPtr, int flags, int wrapper, Object self, Object module, Object cls, Object doc,
                         @Bind PythonLanguage language,
                         @Cached HiddenAttr.WriteLongNode writeHiddenAttrNode,
                         @Cached(inline = false) WriteAttributeToPythonObjectNode writeAttrNode) {
-            Object f = ExternalFunctionNodes.PExternalFunctionWrapper.createWrapperFunction(name, methObj, PNone.NO_VALUE, flags, wrapper, language);
+            Object f = ExternalFunctionNodes.PExternalFunctionWrapper.createWrapperFunction(name, methPtr, PNone.NO_VALUE, flags, wrapper, language);
             assert f instanceof PBuiltinFunction;
             PBuiltinFunction func = (PBuiltinFunction) f;
             writeHiddenAttrNode.execute(inliningTarget, func, METHOD_DEF_PTR, methodDefPtr);
@@ -111,14 +111,14 @@ public final class PythonCextMethodBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyMethodDefZZZ, ConstCharPtrAsTruffleString, Pointer, Int, Int, PyObject, PyObject, PyTypeObject, ConstCharPtrAsTruffleString}, call = Ignored)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyMethodDefZZZ, ConstCharPtrAsTruffleString, PointerZZZ, Int, Int, PyObject, PyObject, PyTypeObject, ConstCharPtrAsTruffleString}, call = Ignored)
     abstract static class GraalPyPrivate_CMethod_NewEx extends CApi9BuiltinNode {
 
         @Specialization
-        static Object doNativeCallable(long methodDefPtr, TruffleString name, Object methObj, int flags, int wrapper, Object self, Object module, Object cls, Object doc,
+        static Object doNativeCallable(long methodDefPtr, TruffleString name, long methPtr, int flags, int wrapper, Object self, Object module, Object cls, Object doc,
                         @Bind Node inliningTarget,
                         @Cached CFunctionNewExMethodNode cFunctionNewExMethodNode) {
-            return cFunctionNewExMethodNode.execute(inliningTarget, methodDefPtr, name, methObj, flags, wrapper, self, module, cls, doc);
+            return cFunctionNewExMethodNode.execute(inliningTarget, methodDefPtr, name, methPtr, flags, wrapper, self, module, cls, doc);
         }
     }
 }

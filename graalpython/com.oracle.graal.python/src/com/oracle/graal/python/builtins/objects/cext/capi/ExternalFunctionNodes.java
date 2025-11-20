@@ -580,9 +580,11 @@ public abstract class ExternalFunctionNodes {
             return language.createCachedExternalFunWrapperCallTarget(rootNodeFunction, nodeKlass, sig, name, true, isStatic);
         }
 
-        public static PythonObject createWrapperFunction(TruffleString name, Object callable, Object enclosingType, int flags, int sig,
+        public static PythonObject createWrapperFunction(TruffleString name, long callable, Object enclosingType, int flags, int sig,
                         PythonLanguage language) {
-            return createWrapperFunction(name, callable, enclosingType, flags, PExternalFunctionWrapper.fromValue(sig), language);
+            PExternalFunctionWrapper wrapper = PExternalFunctionWrapper.fromValue(sig);
+            NfiBoundFunction boundCallable = ensureExecutableUncached(callable, wrapper);
+            return createWrapperFunction(name, boundCallable, enclosingType, flags, wrapper, language);
         }
 
         /**
@@ -601,7 +603,7 @@ public abstract class ExternalFunctionNodes {
          *         wrapper.
          */
         @TruffleBoundary
-        public static PythonObject createWrapperFunction(TruffleString name, Object callable, Object enclosingType, int flags, PExternalFunctionWrapper sig, PythonLanguage language) {
+        public static PythonObject createWrapperFunction(TruffleString name, NfiBoundFunction callable, Object enclosingType, int flags, PExternalFunctionWrapper sig, PythonLanguage language) {
             LOGGER.finer(() -> PythonUtils.formatJString("ExternalFunctions.createWrapperFunction(%s, %s)", name, callable));
             if (flags < 0) {
                 flags = 0;
@@ -609,9 +611,8 @@ public abstract class ExternalFunctionNodes {
             RootCallTarget callTarget = getOrCreateCallTarget(sig, language, name, CExtContext.isMethStatic(flags));
 
             // ensure that 'callable' is executable via InteropLibrary
-            NfiBoundFunction boundCallable = ensureExecutableUncached(callable, sig);
-            PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(boundCallable);
-            TpSlot slot = TpSlotNative.createCExtSlot(boundCallable);
+            PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(callable);
+            TpSlot slot = TpSlotNative.createCExtSlot(callable);
 
             // generate default values for positional args (if necessary)
             Object[] defaults = PBuiltinFunction.generateDefaults(sig.numDefaults);

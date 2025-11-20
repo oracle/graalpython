@@ -44,7 +44,6 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.C
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PointerZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
@@ -89,11 +88,11 @@ public final class PythonCextDescrBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PointerZZZ, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int, Int, Pointer, PyTypeObject}, call = Ignored)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PointerZZZ, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Int, Int, PointerZZZ, PyTypeObject}, call = Ignored)
     abstract static class GraalPyPrivate_Descr_NewClassMethod extends CApi7BuiltinNode {
 
         @Specialization
-        static Object doNativeCallable(long methodDefPtr, TruffleString name, Object doc, int flags, Object wrapper, Object methObj, Object type,
+        static Object doNativeCallable(long methodDefPtr, TruffleString name, Object doc, int flags, Object wrapper, long methObj, Object type,
                         @Bind Node inliningTarget,
                         @Cached NewClassMethodNode newClassMethodNode,
                         @Bind PythonLanguage language) {

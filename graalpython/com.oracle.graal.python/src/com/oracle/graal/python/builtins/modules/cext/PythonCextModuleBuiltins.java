@@ -245,11 +245,11 @@ public final class PythonCextModuleBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PointerZZZ, PyObject, ConstCharPtrAsTruffleString, Pointer, Int, Int, ConstCharPtrAsTruffleString}, call = Ignored)
+    @CApiBuiltin(ret = Int, args = {PointerZZZ, PyObject, ConstCharPtrAsTruffleString, PointerZZZ, Int, Int, ConstCharPtrAsTruffleString}, call = Ignored)
     abstract static class GraalPyPrivate_Module_AddFunctionToModule extends CApi7BuiltinNode {
 
         @Specialization
-        static Object moduleFunction(long methodDefPtr, PythonModule mod, TruffleString name, Object cfunc, int flags, int wrapper, Object doc,
+        static Object moduleFunction(long methodDefPtr, PythonModule mod, TruffleString name, long cfunc, int flags, int wrapper, Object doc,
                         @Bind Node inliningTarget,
                         @Cached ObjectBuiltins.SetattrNode setattrNode,
                         @Cached(inline = true) ReadAttributeFromPythonObjectNode readAttrNode,
