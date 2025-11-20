@@ -27,6 +27,10 @@ JOB_EXCLUSION_TERMS = (
     # Jobs failing in GitHub Actions:buffer overflow, out of memory, auditwheel incompatible with runner ubuntu-latest's glibc version
     "python-svm-unittest",
     "cpython-gate",
+
+    # Python 3.8.10 (matrix.python_version) is not available for linux aarch64
+    # cf. https://raw.githubusercontent.com/actions/python-versions/main/versions-manifest.json
+    "python-svm-build-gate-linux-aarch64"
 )
 
 # TODO build link using self.runs_on
