@@ -216,7 +216,6 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes;
-import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -284,7 +283,6 @@ import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
@@ -362,9 +360,16 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
     @Child private transient CalleeContext calleeContext = CalleeContext.create();
     @Child private transient ExceptionStateNodes.GetCaughtExceptionNode getCaughtExceptionNode;
-    @Child private transient MaterializeFrameNode traceMaterializeFrameNode = null;
     @Child private transient ChainExceptionsNode chainExceptionsNode;
-    @Child private transient BoundaryCallData tracingAndProfilingBoundaryCallData;
+
+    private static final class TracingNodes extends Node {
+        @Child MaterializeFrameNode materializeFrameNode = MaterializeFrameNode.create();
+        @Child CallNode tracingCallNode = CallNode.create();
+        @Child CallNode profilingCallNode = CallNode.create();
+    }
+
+    // Not a child of this root, adopted by the BytecodeNode
+    private transient TracingNodes tracingNodes;
 
     // These fields are effectively final, but can only be set after construction.
     @CompilationFinal protected transient BytecodeDSLCodeUnit co;
@@ -532,42 +537,25 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         getRootNodes().update(TRACE_AND_PROFILE_CONFIG);
     }
 
-    private PFrame ensurePyFrame(VirtualFrame frame, BytecodeNode location) {
-        if (traceMaterializeFrameNode == null) {
+    private TracingNodes getTracingNodes(BytecodeNode location) {
+        /*
+         * The TracingNodes node must be child of the BytecodeNode and not the PBytecodeRootNode, so
+         * in case BytecodeNode changed, we must reinsert it
+         */
+        if (tracingNodes == null || tracingNodes.getParent() != location) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            traceMaterializeFrameNode = insert(MaterializeFrameNode.create());
+            tracingNodes = location.insert(new TracingNodes());
         }
-        return traceMaterializeFrameNode.executeOnStack(frame, location, true, true);
+        return tracingNodes;
+    }
+
+    private PFrame ensurePyFrame(VirtualFrame frame, BytecodeNode location) {
+        return getTracingNodes(location).materializeFrameNode.executeOnStack(frame, location, true, false);
     }
 
     private void syncLocalsBackToFrame(VirtualFrame frame, PFrame pyFrame, BytecodeNode location) {
         if (pyFrame.localsAccessed()) {
             GetFrameLocalsNode.syncLocalsBackToFrame(co, pyFrame, frame, location);
-        }
-    }
-
-    /**
-     * When tracing/profiling is enabled, we emit a lot of extra operations. Reduce compiled code
-     * size by putting the calls behind a boundary (the uncached invoke will eventually perform an
-     * indirect call anyway).
-     */
-    @TruffleBoundary
-    private static Object doInvokeProfileOrTraceFunctionBoundary(Object fun, PFrame pyFrame, TruffleString eventName, Object arg) {
-        return CallTernaryMethodNode.getUncached().execute(null, fun, pyFrame, eventName, arg == null ? PNone.NONE : arg);
-    }
-
-    private Object doInvokeProfileOrTraceFunction(VirtualFrame frame, BytecodeNode location, PythonThreadState threadState, Object fun, PFrame pyFrame, TruffleString eventName, Object arg) {
-        if (tracingAndProfilingBoundaryCallData == null || tracingAndProfilingBoundaryCallData.getParent() != location) {
-            // The IndirectCallData node must be child of the BytecodeNode and not the
-            // PBytecodeRootNode, so in case BytecodeNode changed, we must reinsert it
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            tracingAndProfilingBoundaryCallData = location.insert(BoundaryCallData.createFor(this));
-        }
-        Object saved = BoundaryCallContext.enter(frame, threadState, tracingAndProfilingBoundaryCallData);
-        try {
-            return doInvokeProfileOrTraceFunctionBoundary(fun, pyFrame, eventName, arg);
-        } finally {
-            BoundaryCallContext.exit(frame, threadState, saved);
         }
     }
 
@@ -579,13 +567,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
         threadState.profilingStart();
         PFrame pyFrame = ensurePyFrame(virtualFrame, location);
-        EncapsulatingNodeReference encapsulating = EncapsulatingNodeReference.getCurrent();
-        Node oldEncapsulatingNode = encapsulating.set(location);
         try {
-            // Force locals dict sync, so that we can sync them back later
-            GetFrameLocalsNode.executeUncached(pyFrame, false);
             pyFrame.setLocalsAccessed(false);
-            Object result = doInvokeProfileOrTraceFunction(virtualFrame, location, threadState, profileFun, pyFrame, event.name, arg);
+            Object result = getTracingNodes(location).profilingCallNode.execute(virtualFrame, profileFun, pyFrame, event.name, arg == null ? PNone.NONE : arg);
             syncLocalsBackToFrame(virtualFrame, pyFrame, location);
             Object realResult = result == PNone.NONE ? null : result;
             pyFrame.setLocalTraceFun(realResult);
@@ -594,7 +578,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             throw e;
         } finally {
             threadState.profilingStop();
-            encapsulating.set(oldEncapsulatingNode);
         }
     }
 
@@ -619,8 +602,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
         Object nonNullArg = arg == null ? PNone.NONE : arg;
 
-        EncapsulatingNodeReference encapsulating = EncapsulatingNodeReference.getCurrent();
-        Node oldEncapsulatingNode = encapsulating.set(location);
         try {
             /**
              * The PFrame syncs to the line of the current bci. Sometimes this location is
@@ -631,10 +612,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                 pyFrame.setLineLock(line);
             }
 
-            // Force locals dict sync, so that we can sync them back later
-            GetFrameLocalsNode.executeUncached(pyFrame, true);
             pyFrame.setLocalsAccessed(false);
-            Object result = doInvokeProfileOrTraceFunction(virtualFrame, location, threadState, traceFn, pyFrame, event.pythonName, nonNullArg);
+            Object result = getTracingNodes(location).tracingCallNode.execute(virtualFrame, traceFn, pyFrame, event.pythonName, nonNullArg);
             syncLocalsBackToFrame(virtualFrame, pyFrame, location);
             // https://github.com/python/cpython/issues/104232
             if (useLocalFn) {
@@ -653,7 +632,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                 pyFrame.lineUnlock();
             }
             threadState.tracingStop();
-            encapsulating.set(oldEncapsulatingNode);
         }
     }
 

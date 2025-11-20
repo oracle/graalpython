@@ -222,9 +222,7 @@ import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNodeGen;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes;
-import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
-import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
@@ -599,7 +597,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @Child private CalleeContext calleeContext = CalleeContext.create();
     @Child private ExceptionStateNodes.GetCaughtExceptionNode getCaughtExceptionNode;
     @Child private ChainExceptionsNode chainExceptionsNode;
-    @Child private BoundaryCallData profilingAndTracingBoundaryCallData;
 
     private static final byte TRACE_PROFILE_LINE = 1;
     private static final byte TRACE_PROFILE_NEW_FRAME = 1 << 1;
@@ -610,6 +607,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final class TracingNodes extends Node {
         @Child MaterializeFrameNode traceMaterializeFrameNewNode = MaterializeFrameNode.create();
         @Child MaterializeFrameNode traceMaterializeFrameExistingNode = MaterializeFrameNode.create();
+        @Child CallNode tracingCallNode = CallNode.create();
+        @Child CallNode profilingCallNode = CallNode.create();
         @CompilationFinal(dimensions = 1) byte[] traceProfileData;
 
         public TracingNodes(int bytecodeLength) {
@@ -3267,10 +3266,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         PFrame pyFrame = PArguments.getCurrentFrameInfo(virtualFrame).getPyFrame();
         if (pyFrame == null) {
             enterTraceProfile(bci, TRACE_PROFILE_NEW_FRAME);
-            return getTracingNodes().traceMaterializeFrameNewNode.executeOnStack(virtualFrame, this, true, true);
+            return getTracingNodes().traceMaterializeFrameNewNode.executeOnStack(virtualFrame, this, true, false);
         } else {
             enterTraceProfile(bci, TRACE_PROFILE_EXISTING_FRAME);
-            return getTracingNodes().traceMaterializeFrameExistingNode.executeOnStack(virtualFrame, this, true, true);
+            return getTracingNodes().traceMaterializeFrameExistingNode.executeOnStack(virtualFrame, this, true, false);
         }
     }
 
@@ -3284,26 +3283,19 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         threadState.tracingStart(event);
         PFrame pyFrame = mutableData.setPyFrame(ensurePyFrame(virtualFrame, bci));
         Object traceFn = useLocalFn ? pyFrame.getLocalTraceFun() : threadState.getTraceFun();
+
         if (traceFn == null) {
             threadState.tracingStop();
             return;
         }
+
+        pyFrame.setLocalsAccessed(false);
         Object nonNullArg = arg == null ? PNone.NONE : arg;
         try {
             if (line != -1) {
                 pyFrame.setLineLock(line);
             }
-            if (profilingAndTracingBoundaryCallData == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                profilingAndTracingBoundaryCallData = insert(BoundaryCallData.createFor(this));
-            }
-            Object savedState = BoundaryCallContext.enter(virtualFrame, threadState, profilingAndTracingBoundaryCallData);
-            Object result;
-            try {
-                result = doInvokeTraceFunction(event, pyFrame, traceFn, nonNullArg);
-            } finally {
-                BoundaryCallContext.exit(virtualFrame, threadState, savedState);
-            }
+            Object result = getTracingNodes().tracingCallNode.execute(virtualFrame, traceFn, pyFrame, event.pythonName, nonNullArg);
             syncLocalsBackToFrame(virtualFrame, pyFrame, bci);
             // https://github.com/python/cpython/issues/104232
             if (useLocalFn) {
@@ -3331,14 +3323,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         } else {
             return frame;
         }
-    }
-
-    @TruffleBoundary
-    private static Object doInvokeTraceFunction(PythonContext.TraceEvent event, PFrame pyFrame, Object traceFn, Object nonNullArg) {
-        // Force locals dict sync, so that we can sync them back later
-        GetFrameLocalsNode.executeUncached(pyFrame, true);
-        pyFrame.setLocalsAccessed(false);
-        return CallTernaryMethodNode.getUncached().execute(null, traceFn, pyFrame, event.pythonName, nonNullArg);
     }
 
     private void syncLocalsBackToFrame(VirtualFrame virtualFrame, PFrame pyFrame, int bci) {
@@ -3384,18 +3368,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             return;
         }
 
+        pyFrame.setLocalsAccessed(false);
         try {
-            if (profilingAndTracingBoundaryCallData == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                profilingAndTracingBoundaryCallData = insert(BoundaryCallData.createFor(this));
-            }
-            Object savedState = BoundaryCallContext.enter(virtualFrame, threadState, profilingAndTracingBoundaryCallData);
-            Object result;
-            try {
-                result = doInvokeProfileFunction(arg, event, pyFrame, profileFun);
-            } finally {
-                BoundaryCallContext.exit(virtualFrame, threadState, savedState);
-            }
+            Object result = getTracingNodes().profilingCallNode.execute(virtualFrame, profileFun, pyFrame, event.name, arg == null ? PNone.NONE : arg);
             syncLocalsBackToFrame(virtualFrame, pyFrame, bci);
             Object realResult = result == PNone.NONE ? null : result;
             pyFrame.setLocalTraceFun(realResult);
@@ -3405,14 +3380,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         } finally {
             threadState.profilingStop();
         }
-    }
-
-    @TruffleBoundary
-    private static Object doInvokeProfileFunction(Object arg, PythonContext.ProfileEvent event, PFrame pyFrame, Object profileFun) {
-        // Force locals dict sync, so that we can sync them back later
-        GetFrameLocalsNode.executeUncached(pyFrame, false);
-        pyFrame.setLocalsAccessed(false);
-        return CallTernaryMethodNode.getUncached().execute(null, profileFun, pyFrame, event.name, arg == null ? PNone.NONE : arg);
     }
 
     @ExplodeLoop
