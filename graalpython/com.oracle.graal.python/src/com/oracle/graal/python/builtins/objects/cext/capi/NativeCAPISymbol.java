@@ -74,7 +74,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_PYTRUFFLE_STRUCT_SIZES("GraalPyPrivate_StructSizes", PY_SSIZE_T_PTR_ZZZ),
 
     /* C functions for reading native members by offset */
-
+    // TODO(NFI2) remove these
     FUN_READ_SHORT_MEMBER("GraalPyPrivate_ReadShortMember", Int, Pointer, Py_ssize_t),
     FUN_READ_INT_MEMBER("GraalPyPrivate_ReadIntMember", Int, Pointer, Py_ssize_t),
     FUN_READ_LONG_MEMBER("GraalPyPrivate_ReadLongMember", ArgDescriptor.Long, Pointer, Py_ssize_t),
@@ -102,7 +102,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_PY_TYPE_GENERIC_NEW("PyType_GenericNew", PyObjectTransfer, PyTypeObject, PyObject, PyObject),
     FUN_PY_TYPE_GENERIC_NEW_RAW("PyType_GenericNew", ArgDescriptor.UINTPTR_T, PyTypeObject, ArgDescriptor.UINTPTR_T, ArgDescriptor.UINTPTR_T),
     FUN_PY_TYPE_GENERIC_ALLOC("PyType_GenericAlloc", PyObjectTransfer, PyTypeObject, Py_ssize_t),
-    FUN_PY_OBJECT_GET_DICT_PTR("_PyObject_GetDictPtr", Pointer, PyObject),
+    FUN_PY_OBJECT_GET_DICT_PTR("_PyObject_GetDictPtr", PointerZZZ, PyObject),
     FUN_PY_UNICODE_GET_LENGTH("PyUnicode_GetLength", Py_ssize_t, PyObject),
     FUN_PYMEM_ALLOC("PyMem_Calloc", PointerZZZ, SIZE_T, SIZE_T),
     FUN_PY_DEALLOC("_Py_Dealloc", Void, Pointer),

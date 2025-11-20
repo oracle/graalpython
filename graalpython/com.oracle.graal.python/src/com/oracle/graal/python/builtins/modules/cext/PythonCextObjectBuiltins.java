@@ -49,7 +49,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PointerZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectConstPtr;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectConstPtrZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectRawPointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectWrapper;
@@ -317,11 +317,11 @@ public abstract class PythonCextObjectBuiltins {
     }
 
     // directly called without landing function
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyThreadState, PyObject, PyObjectConstPtr, Py_ssize_t, PyObject}, call = Direct)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyThreadState, PyObject, PyObjectConstPtrZZZ, Py_ssize_t, PyObject}, call = Direct)
     abstract static class _PyObject_MakeTpCall extends CApi5BuiltinNode {
 
         @Specialization
-        static Object doGeneric(@SuppressWarnings("unused") Object threadState, Object callable, Object argsArray, long nargs, Object kwargs,
+        static Object doGeneric(@SuppressWarnings("unused") Object threadState, Object callable, long argsArray, long nargs, Object kwargs,
                         @Cached CStructAccess.ReadObjectNode readNode,
                         @Bind Node inliningTarget,
                         @Cached CStructAccess.ReadObjectNode readKwNode,

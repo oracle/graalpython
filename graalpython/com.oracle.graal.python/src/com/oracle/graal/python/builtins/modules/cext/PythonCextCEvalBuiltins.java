@@ -47,7 +47,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyFrameObjectBorrowed;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectConstPtr;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectConstPtrZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadState;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadStateZZZ;
@@ -150,11 +150,11 @@ public final class PythonCextCEvalBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject, PyObjectConstPtr, Int, PyObjectConstPtr, Int, PyObjectConstPtr, Int, PyObject, PyObject}, call = Ignored)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject, PyObjectConstPtrZZZ, Int, PyObjectConstPtrZZZ, Int, PyObjectConstPtrZZZ, Int, PyObject, PyObject}, call = Ignored)
     abstract static class GraalPyPrivate_Eval_EvalCodeEx extends CApi11BuiltinNode {
         @Specialization
         static Object doGeneric(PCode code, PythonObject globals, Object locals,
-                        Object argumentArrayPtr, int argumentCount, Object kwsPtr, int kwsCount, Object defaultValueArrayPtr, int defaultValueCount,
+                        long argumentArrayPtr, int argumentCount, long kwsPtr, int kwsCount, long defaultValueArrayPtr, int defaultValueCount,
                         Object kwdefaultsWrapper, Object closureObj,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,

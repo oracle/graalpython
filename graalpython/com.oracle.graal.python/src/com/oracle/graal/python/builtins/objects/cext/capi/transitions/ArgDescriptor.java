@@ -292,6 +292,7 @@ public enum ArgDescriptor {
     PYMODULEDEF_PTR("struct PyModuleDef*"),
     PyObjectConst("PyObject*const"),
     PyObjectConstPtr(ArgBehavior.Pointer, "PyObject*const*"),
+    PyObjectConstPtrZZZ(ArgBehavior.PointerZZZ, "PyObject*const*"),
     PYOBJECT_CONST_PTR_LIST("PyObject*const**"),
     PyObjectPtr(ArgBehavior.Pointer, "PyObject**"),
     PyObjectPtrZZZ(ArgBehavior.PointerZZZ, "PyObject**"),

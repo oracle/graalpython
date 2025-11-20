@@ -43,6 +43,7 @@ package com.oracle.graal.python.nodes.object;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_OBJECT_GET_DICT_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_dict;
+import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -70,8 +71,6 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
@@ -135,7 +134,6 @@ public abstract class GetDictIfExistsNode extends PNodeWithContext {
                     @Bind Node inliningTarget,
                     @Cached IsTypeNode isTypeNode,
                     @Cached CStructAccess.ReadObjectNode getNativeDict,
-                    @CachedLibrary(limit = "1") InteropLibrary lib,
                     @Cached PythonToNativeNode toNative,
                     @Cached CStructAccess.ReadObjectNode readObjectNode,
                     @Cached CStructAccess.WriteObjectNewRefNode writeObjectNode,
@@ -152,8 +150,8 @@ public abstract class GetDictIfExistsNode extends PNodeWithContext {
             }
         }
 
-        Object dictPtr = callGetDictPtr.call(FUN_PY_OBJECT_GET_DICT_PTR, toNative.execute(object));
-        if (lib.isNull(dictPtr)) {
+        long dictPtr = (long) callGetDictPtr.call(FUN_PY_OBJECT_GET_DICT_PTR, toNative.execute(object));
+        if (dictPtr == NULLPTR) {
             return null;
         } else {
             Object dictObject = readObjectNode.read(dictPtr, 0);

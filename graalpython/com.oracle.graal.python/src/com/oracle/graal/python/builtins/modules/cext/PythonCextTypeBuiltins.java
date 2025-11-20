@@ -124,7 +124,6 @@ import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -253,16 +252,16 @@ public final class PythonCextTypeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {Pointer}, call = Ignored)
+    @CApiBuiltin(ret = Int, args = {PointerZZZ}, call = Ignored)
     abstract static class GraalPyPrivate_Trace_Type extends CApiUnaryBuiltinNode {
         private static final TruffleLogger LOGGER = CApiContext.getLogger(GraalPyPrivate_Trace_Type.class);
 
         @Specialization
         @TruffleBoundary
-        int trace(Object ptr) {
+        int trace(long ptr) {
             LOGGER.fine(() -> PythonUtils.formatJString("Initializing native type %s (ptr = %s)",
-                            CStructAccess.ReadCharPtrNode.getUncached().read(ptr, PyTypeObject__tp_name),
-                            CApiContext.asHex(CApiContext.asPointer(ptr, InteropLibrary.getUncached()))));
+                            CStructAccess.ReadCharPtrNode.executeUncached(ptr, PyTypeObject__tp_name),
+                            CApiContext.asHex(ptr)));
             return 0;
         }
     }

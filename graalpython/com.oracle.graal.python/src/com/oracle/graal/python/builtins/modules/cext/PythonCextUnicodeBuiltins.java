@@ -67,7 +67,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PointerZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectAsTruffleString;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectConstPtr;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectConstPtrZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.VA_LIST_PTR;
@@ -697,12 +697,12 @@ public final class PythonCextUnicodeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObjectConstPtr, Py_ssize_t}, call = Direct)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObjectConstPtrZZZ, Py_ssize_t}, call = Direct)
     @TypeSystemReference(PythonIntegerTypes.class)
     @ImportStatic(PythonCextUnicodeBuiltins.class)
     abstract static class _PyUnicode_JoinArray extends CApiTernaryBuiltinNode {
         @Specialization
-        static Object join(Object separatorObj, Object itemsObj, long seqlenlong,
+        static Object join(Object separatorObj, long itemsObj, long seqlenlong,
                         @Bind Node inliningTarget,
                         @Cached CStructAccess.ReadObjectNode readNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,

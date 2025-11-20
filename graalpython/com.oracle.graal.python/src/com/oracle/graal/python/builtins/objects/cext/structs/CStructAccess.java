@@ -52,7 +52,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativePtrToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
@@ -193,21 +192,18 @@ public class CStructAccess {
         }
     }
 
-    public abstract static class ReadBaseNode extends Node implements CStructAccessNode {
-    }
-
     @ImportStatic(PGuards.class)
     @GenerateUncached
     @GenerateInline(false)
-    public abstract static class ReadObjectNode extends ReadBaseNode {
-        abstract Object execute(Object pointer, long offset);
+    public abstract static class ReadObjectNode extends Node {
+        abstract Object execute(long pointer, long offset);
 
-        public final Object read(Object pointer, CFields field) {
-            assert accepts(field);
+        public final Object read(long pointer, CFields field) {
+            assert field.type.isPyObject();
             return execute(pointer, field.offset());
         }
 
-        public final Object read(Object pointer, long offset) {
+        public final Object read(long pointer, long offset) {
             return execute(pointer, offset);
         }
 
@@ -215,19 +211,15 @@ public class CStructAccess {
             return read(self.getPtr(), field);
         }
 
-        public final boolean accepts(ArgDescriptor desc) {
-            return desc.isPyObject();
-        }
-
-        public final Object readArrayElement(Object pointer, long element) {
+        public final Object readArrayElement(long pointer, long element) {
             return execute(pointer, element * POINTER_SIZE);
         }
 
-        public final Object[] readPyObjectArray(Object pointer, int elements) {
+        public final Object[] readPyObjectArray(long pointer, int elements) {
             return readPyObjectArray(pointer, elements, 0);
         }
 
-        public final Object[] readPyObjectArray(Object pointer, int elements, int offset) {
+        public final Object[] readPyObjectArray(long pointer, int elements, int offset) {
             Object[] result = new Object[elements];
             for (int i = 0; i < result.length; i++) {
                 result[i] = execute(pointer, (i + offset) * POINTER_SIZE);
@@ -237,25 +229,9 @@ public class CStructAccess {
 
         @Specialization
         static Object readLong(long pointer, long offset,
-                        @Shared @Cached NativePtrToPythonNode toPython) {
+                        @Cached NativePtrToPythonNode toPython) {
             assert offset >= 0;
-            return toPython.execute(UNSAFE.getLong(pointer + offset), false);
-        }
-
-        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"}, limit = "3")
-        static Object readPointer(Object pointer, long offset,
-                        @CachedLibrary("pointer") InteropLibrary lib,
-                        @Shared @Cached NativePtrToPythonNode toPython) {
-            return readLong(asPointer(pointer, lib), offset, toPython);
-        }
-
-        @Specialization(guards = {"!isLong(pointer)", "!lib.isPointer(pointer)"})
-        static Object readManaged(Object pointer, long offset,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached PCallCapiFunction call,
-                        @Cached NativeToPythonNode toPython) {
-            assert validPointer(pointer);
-            return toPython.execute(call.call(NativeCAPISymbol.FUN_READ_POINTER_MEMBER, pointer, offset));
+            return toPython.execute(NativeMemory.readPtr(pointer + offset), false);
         }
 
         public static ReadObjectNode getUncached() {
@@ -266,51 +242,22 @@ public class CStructAccess {
     @ImportStatic(PGuards.class)
     @GenerateUncached
     @GenerateInline(false)
-    public abstract static class ReadCharPtrNode extends ReadBaseNode {
-        abstract TruffleString execute(Object pointer, long offset);
+    public abstract static class ReadCharPtrNode extends Node {
+        abstract TruffleString execute(long pointer, CFields field);
 
-        public final TruffleString read(Object pointer, CFields field) {
-            assert accepts(field);
-            return execute(pointer, field.offset());
+        public static TruffleString executeUncached(long pointer, CFields field) {
+            return ReadCharPtrNodeGen.getUncached().execute(pointer, field);
         }
 
         public final TruffleString readFromObj(PythonNativeObject self, CFields field) {
-            return read(self.getPtr(), field);
-        }
-
-        public final boolean accepts(ArgDescriptor desc) {
-            return desc.isCharPtr();
-        }
-
-        public final TruffleString readArrayElement(Object pointer, long element) {
-            return execute(pointer, element * POINTER_SIZE);
+            return execute(self.getPtr(), field);
         }
 
         @Specialization
-        static TruffleString readLong(long pointer, long offset,
-                        @Shared @Cached FromCharPointerNode toPython) {
-            assert offset >= 0;
-            return toPython.execute(UNSAFE.getLong(pointer + offset));
-        }
-
-        @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"}, limit = "3")
-        static TruffleString readPointer(Object pointer, long offset,
-                        @CachedLibrary("pointer") InteropLibrary lib,
-                        @Shared @Cached FromCharPointerNode toPython) {
-            return readLong(asPointer(pointer, lib), offset, toPython);
-        }
-
-        @Specialization(guards = {"!isLong(pointer)", "!lib.isPointer(pointer)"})
-        static TruffleString readManaged(Object pointer, long offset,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached PCallCapiFunction call,
-                        @Shared @Cached FromCharPointerNode toPython) {
-            assert validPointer(pointer);
-            return toPython.execute(call.call(NativeCAPISymbol.FUN_READ_POINTER_MEMBER, pointer, offset));
-        }
-
-        public static ReadCharPtrNode getUncached() {
-            return ReadCharPtrNodeGen.getUncached();
+        static TruffleString readLong(long pointer, CFields field,
+                        @Cached FromCharPointerNode toPython) {
+            assert field.type.isCharPtr();
+            return toPython.execute(readPtrField(pointer, field));
         }
     }
 

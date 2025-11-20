@@ -472,7 +472,7 @@ public class CApiMemberAccessNodes {
     abstract static class WriteObjectExNode extends WriteTypeNode {
 
         @Specialization
-        static void write(Object pointer, Object newValue,
+        static void write(long pointer, Object newValue,
                         @Bind Node inliningTarget,
                         @Cached CStructAccess.ReadObjectNode read,
                         @Cached CStructAccess.WriteObjectNewRefNode write,
