@@ -189,10 +189,10 @@ public final class GeneratorBuiltins extends PythonBuiltins {
                 return PNone.NONE;
             } else {
                 if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                    BytecodeLocation location = self.getCurrentRootNode().getLocation();
                     MaterializedFrame generatorFrame = self.getGeneratorFrame();
                     BytecodeDSLFrameInfo info = (BytecodeDSLFrameInfo) generatorFrame.getFrameDescriptor().getInfo();
-                    PFrame frame = MaterializeFrameNode.materializeGeneratorFrame(location != null ? location.getBytecodeNode() : null, generatorFrame, PFrame.Reference.EMPTY);
+                    PFrame frame = MaterializeFrameNode.materializeGeneratorFrame(self.getBytecodeNode(), generatorFrame, PFrame.Reference.EMPTY);
+                    BytecodeLocation location = self.getCurrentLocation();
                     if (location != null) {
                         int bci = location.getBytecodeIndex();
                         frame.setBci(bci);

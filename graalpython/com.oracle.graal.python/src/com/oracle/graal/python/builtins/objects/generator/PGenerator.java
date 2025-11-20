@@ -47,6 +47,8 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleStackTraceElement;
+import com.oracle.truffle.api.bytecode.BytecodeLocation;
+import com.oracle.truffle.api.bytecode.BytecodeNode;
 import com.oracle.truffle.api.bytecode.ContinuationResult;
 import com.oracle.truffle.api.bytecode.ContinuationRootNode;
 import com.oracle.truffle.api.frame.Frame;
@@ -116,6 +118,7 @@ public class PGenerator extends PythonBuiltinObject {
     private static class BytecodeDSLState {
         private final PBytecodeDSLRootNode rootNode;
         private final Object[] arguments;
+        private BytecodeNode bytecodeNode;
         private ContinuationRootNode continuationRootNode;
         private boolean isStarted;
 
@@ -123,10 +126,12 @@ public class PGenerator extends PythonBuiltinObject {
             this.rootNode = rootNode;
             this.arguments = arguments;
             this.continuationRootNode = continuationRootNode;
+            this.bytecodeNode = rootNode.getBytecodeNode();
         }
 
         public Object handleResult(ContinuationResult result) {
             isStarted = true;
+            bytecodeNode = continuationRootNode.getLocation().getBytecodeNode();
             continuationRootNode = result.getContinuationRootNode();
             return result.getResult();
         }
@@ -312,9 +317,17 @@ public class PGenerator extends PythonBuiltinObject {
         }
     }
 
-    public ContinuationRootNode getCurrentRootNode() {
+    /**
+     * Return the BytecodeNode that should be used for accessing the frame
+     */
+    public BytecodeNode getBytecodeNode() {
         assert PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER;
-        return getBytecodeDSLState().continuationRootNode;
+        return getBytecodeDSLState().bytecodeNode;
+    }
+
+    public BytecodeLocation getCurrentLocation() {
+        assert PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER;
+        return getBytecodeDSLState().continuationRootNode.getLocation();
     }
 
     public Object getYieldFrom() {
@@ -327,7 +340,7 @@ public class PGenerator extends PythonBuiltinObject {
             if (rootNode.yieldFromGeneratorIndex == -1 || !getBytecodeDSLState().isStarted) {
                 return null;
             }
-            return rootNode.getBytecodeNode().getLocalValue(0, getGeneratorFrame(), rootNode.yieldFromGeneratorIndex);
+            return getBytecodeNode().getLocalValue(0, getGeneratorFrame(), rootNode.yieldFromGeneratorIndex);
         } else {
             return frameInfo.getYieldFrom(frame, getBci(), getBytecodeState().getCurrentRootNode().getResumeStackTop());
         }
