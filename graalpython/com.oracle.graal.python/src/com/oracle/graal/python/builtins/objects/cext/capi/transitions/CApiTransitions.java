@@ -51,6 +51,7 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAcces
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointerUncached;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readIntField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.wrapPointer;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeDoubleField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeIntField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeLongField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
@@ -120,6 +121,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
+import com.oracle.graal.python.nfi2.NativeMemory;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -139,7 +141,6 @@ import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -550,7 +551,7 @@ public abstract class CApiTransitions {
                                  * to avoid incorrect reuse of the ID which could resolve to another
                                  * object.
                                  */
-                                CStructAccess.WriteIntNode.writeUncached(stubPointer, CFields.GraalPyObject__handle_table_index, 0);
+                                writeIntField(stubPointer, CFields.GraalPyObject__handle_table_index, 0);
                                 // this can only happen if the object is a GC object
                                 assert reference.gc;
                                 /*
@@ -667,7 +668,7 @@ public abstract class CApiTransitions {
                 LOGGER.fine(() -> PythonUtils.formatJString("releasing %d NativeObjectReference instances", size));
                 long pointer = mallocPtrArray(size);
                 for (int i = 0; i < size; i++) {
-                    CStructAccess.WriteLongNode.writeLong(pointer, i * Long.BYTES, referencesToBeFreed.get(i));
+                    NativeMemory.writeLongArrayElement(pointer, i, referencesToBeFreed.get(i));
                 }
                 PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_BULK_DEALLOC, pointer, size);
                 free(pointer);
@@ -1139,7 +1140,6 @@ public abstract class CApiTransitions {
 
         @Specialization
         static long doPrimitiveNativeWrapper(Node inliningTarget, PrimitiveNativeWrapper wrapper, long initialRefCount,
-                        @Shared @Cached(inline = false) CStructAccess.WriteDoubleNode writeDoubleNode,
                         @Exclusive @Cached InlinedConditionProfile isFloatObjectProfile,
                         @Exclusive @Cached AllocateNativeObjectStubNode allocateNativeObjectStubNode) {
             boolean isFloat = isFloatObjectProfile.profile(inliningTarget, wrapper.isDouble());
@@ -1169,18 +1169,16 @@ public abstract class CApiTransitions {
             // allocate a native stub object (C type: GraalPy*Object)
             if (isFloat) {
                 long realPointer = HandlePointerConverter.pointerToStub(taggedPointer);
-                writeDoubleNode.write(realPointer, CFields.GraalPyFloatObject__ob_fval, wrapper.getDouble());
+                writeDoubleField(realPointer, CFields.GraalPyFloatObject__ob_fval, wrapper.getDouble());
             }
             return taggedPointer;
         }
 
         @Specialization(guards = "!isPrimitiveNativeWrapper(wrapper)")
         static long doOther(Node inliningTarget, PythonAbstractObjectNativeWrapper wrapper, long initialRefCount,
-                        @Shared @Cached(inline = false) CStructAccess.WriteDoubleNode writeDoubleNode,
                         @Exclusive @Cached InlinedConditionProfile isVarObjectProfile,
                         @Exclusive @Cached InlinedConditionProfile isGcProfile,
                         @Exclusive @Cached InlinedConditionProfile isFloatObjectProfile,
-                        @Exclusive @Cached InlinedConditionProfile isMemViewObjectProfile,
                         @Cached GetClassNode getClassNode,
                         @Cached(inline = false) GetTypeFlagsNode getTypeFlagsNode,
                         @Exclusive @Cached AllocateNativeObjectStubNode allocateNativeObjectStubNode) {
@@ -1223,7 +1221,7 @@ public abstract class CApiTransitions {
                 } else {
                     fval = ((PFloat) delegate).getValue();
                 }
-                writeDoubleNode.write(realPointer, CFields.GraalPyFloatObject__ob_fval, fval);
+                writeDoubleField(realPointer, CFields.GraalPyFloatObject__ob_fval, fval);
             }
 
             return taggedPointer;

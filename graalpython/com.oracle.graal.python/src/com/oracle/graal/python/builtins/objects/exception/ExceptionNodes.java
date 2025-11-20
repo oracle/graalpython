@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.exception;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readByteField;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeByteField;
 import static com.oracle.graal.python.nodes.StringLiterals.T_COLON_SPACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NO_MESSAGE;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -152,10 +153,9 @@ public final class ExceptionNodes {
         @Specialization(guards = "check.execute(inliningTarget, exception)", limit = "1")
         static void doNative(Node inliningTarget, PythonAbstractNativeObject exception, Object value,
                         @SuppressWarnings("unused") @Cached PyExceptionInstanceCheckNode check,
-                        @Cached(inline = false) CStructAccess.WriteObjectNewRefNode writeObject,
-                        @Cached(inline = false) CStructAccess.WriteByteNode writeByte) {
+                        @Cached(inline = false) CStructAccess.WriteObjectNewRefNode writeObject) {
             writeObject.writeToObject(exception, CFields.PyBaseExceptionObject__cause, noneToNativeNull(inliningTarget, value));
-            writeByte.writeToObject(exception, CFields.PyBaseExceptionObject__suppress_context, (byte) 1);
+            writeByteField(exception.getPtr(), CFields.PyBaseExceptionObject__suppress_context, (byte) 1);
         }
 
         @Specialization
@@ -274,9 +274,8 @@ public final class ExceptionNodes {
 
         @Specialization(guards = "check.execute(inliningTarget, exception)", limit = "1")
         static void doNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject exception, boolean value,
-                        @SuppressWarnings("unused") @Cached PyExceptionInstanceCheckNode check,
-                        @Cached(inline = false) CStructAccess.WriteByteNode write) {
-            write.writeToObject(exception, CFields.PyBaseExceptionObject__suppress_context, value ? (byte) 1 : (byte) 0);
+                        @SuppressWarnings("unused") @Cached PyExceptionInstanceCheckNode check) {
+            writeByteField(exception.getPtr(), CFields.PyBaseExceptionObject__suppress_context, value ? (byte) 1 : (byte) 0);
         }
 
         @Specialization

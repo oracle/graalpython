@@ -50,7 +50,6 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.BufferStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -218,14 +217,14 @@ public class MemoryViewNodes {
     @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
+    @ImportStatic(NativeMemory.class)
     abstract static class WriteBytesAtNode extends Node {
         public abstract void execute(Node inliningTarget, byte[] src, int srcOffset, int len, PMemoryView self, long ptr, int offset);
 
         @Specialization(guards = "ptr != NULLPTR")
         static void doNativeCached(Node inliningTarget, byte[] src, int srcOffset, int len, @SuppressWarnings("unused") PMemoryView self, long ptr, int offset,
-                        @Exclusive @Cached InlinedIntValueProfile lenProfile,
-                        @Cached(inline = false) CStructAccess.WriteByteNode writeNode) {
-            writeNode.writeByteArray(ptr, src, lenProfile.profile(inliningTarget, len), srcOffset, offset);
+                        @Exclusive @Cached InlinedIntValueProfile lenProfile) {
+            NativeMemory.writeByteArrayElements(ptr, offset, src, srcOffset, lenProfile.profile(inliningTarget, len));
         }
 
         @Specialization(guards = "ptr == null", limit = "3")

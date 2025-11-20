@@ -55,6 +55,7 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTy
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_subclasses;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_weaklistoffset;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeLongField;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.BASETYPE;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.BASE_EXC_SUBCLASS;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.BYTES_SUBCLASS;
@@ -506,9 +507,8 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        static void doNative(PythonNativeClass clazz, long flags,
-                        @Cached(inline = false) CStructAccess.WriteLongNode write) {
-            write.writeToObject(clazz, PyTypeObject__tp_flags, flags);
+        static void doNative(PythonNativeClass clazz, long flags) {
+            writeLongField(clazz.getPtr(), PyTypeObject__tp_flags, flags);
         }
     }
 

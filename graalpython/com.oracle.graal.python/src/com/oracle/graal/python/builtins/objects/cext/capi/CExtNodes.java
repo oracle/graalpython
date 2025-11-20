@@ -76,6 +76,7 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAcces
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readStructArrayIntField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readStructArrayPtrField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.wrapPointer;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeLongField;
 import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nfi2.NativeMemory.calloc;
 import static com.oracle.graal.python.nfi2.NativeMemory.mallocByteArray;
@@ -1108,7 +1109,6 @@ public abstract class CExtNodes {
                         @Cached InlinedBranchProfile isWrapperProfile,
                         @Cached InlinedBranchProfile isNativeObject,
                         @Cached UpdateStrongRefNode updateRefNode,
-                        @Cached(inline = false) CStructAccess.WriteLongNode writeRefcount,
                         @Cached(inline = false) PCallCapiFunction callDealloc) {
             long pointer;
             if (pointerObj instanceof Long longPointer) {
@@ -1141,7 +1141,7 @@ public abstract class CExtNodes {
                 long refcount = readLongField(pointer, PyObject__ob_refcnt);
                 if (refcount != IMMORTAL_REFCNT) {
                     refcount--;
-                    writeRefcount.write(pointer, PyObject__ob_refcnt, refcount);
+                    writeLongField(pointer, PyObject__ob_refcnt, refcount);
                     if (refcount == 0) {
                         callDealloc.call(FUN_PY_DEALLOC, pointer);
                     }

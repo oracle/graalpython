@@ -45,7 +45,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemErro
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_HASH_T_PTR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_HASH_T_PTR_ZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_SSIZE_T_PTR_ZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
@@ -54,6 +54,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_hash_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
+import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nfi2.NativeMemory.readLong;
 import static com.oracle.graal.python.nfi2.NativeMemory.writeLong;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P;
@@ -110,6 +111,7 @@ import com.oracle.graal.python.lib.PyDictSetDefault;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
+import com.oracle.graal.python.nfi2.NativeMemory;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -147,14 +149,13 @@ public final class PythonCextDictBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, PY_SSIZE_T_PTR_ZZZ, PyObjectPtr, PyObjectPtr, PY_HASH_T_PTR}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyObject, PY_SSIZE_T_PTR_ZZZ, PyObjectPtr, PyObjectPtr, PY_HASH_T_PTR_ZZZ}, call = Direct)
     abstract static class _PyDict_Next extends CApi5BuiltinNode {
 
         @Specialization
-        static int next(PDict dict, long posPtr, Object keyPtr, Object valuePtr, Object hashPtr,
+        static int next(PDict dict, long posPtr, Object keyPtr, Object valuePtr, long hashPtr,
                         @Bind Node inliningTarget,
                         @CachedLibrary(limit = "2") InteropLibrary lib,
-                        @Cached CStructAccess.WriteLongNode writeLongNode,
                         @Cached CStructAccess.WritePointerNode writePointerNode,
                         @Cached CApiTransitions.PythonToNativeNode toNativeNode,
                         @Cached InlinedBranchProfile needsRewriteProfile,
@@ -245,9 +246,9 @@ public final class PythonCextDictBuiltins {
                 // Borrowed reference
                 writePointerNode.write(valuePtr, toNativeNode.execute(value));
             }
-            if (!lib.isNull(hashPtr)) {
+            if (hashPtr != NULLPTR) {
                 long hash = itKeyHash.execute(null, inliningTarget, storage, it);
-                writeLongNode.write(hashPtr, hash);
+                NativeMemory.writeLong(hashPtr, hash);
             }
             return 1;
         }

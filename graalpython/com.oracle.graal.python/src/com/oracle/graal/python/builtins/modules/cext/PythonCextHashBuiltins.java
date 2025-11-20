@@ -43,7 +43,7 @@ package com.oracle.graal.python.builtins.modules.cext;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_VOID_PTR_ZZZ;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.INT8_T_PTR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.INT8_T_PTR_ZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_hash_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
@@ -56,7 +56,6 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuil
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nfi2.NativeMemory;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -68,13 +67,13 @@ import com.oracle.truffle.api.strings.TruffleString.HashCodeNode;
 
 public final class PythonCextHashBuiltins {
 
-    @CApiBuiltin(ret = Void, args = {INT8_T_PTR}, call = Ignored)
+    @CApiBuiltin(ret = Void, args = {INT8_T_PTR_ZZZ}, call = Ignored)
     abstract static class GraalPyPrivate_Hash_InitSecret extends CApiUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        Object get(Object secretPtr,
-                        @Cached CStructAccess.WriteByteNode writeNode) {
-            writeNode.writeByteArray(secretPtr, getContext().getHashSecret());
+        Object get(long secretPtr) {
+            byte[] hashSecret = getContext().getHashSecret();
+            NativeMemory.writeByteArrayElements(secretPtr, 0L, hashSecret, 0, hashSecret.length);
             return PNone.NO_VALUE;
         }
     }

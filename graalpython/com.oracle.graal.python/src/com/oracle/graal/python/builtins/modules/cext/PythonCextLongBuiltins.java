@@ -54,7 +54,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.SIZE_T;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_CHAR_PTR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_CHAR_PTR_ZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_LONG;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_LONG_LONG;
 import static com.oracle.graal.python.nfi2.NativeMemory.readByteArrayElements;
@@ -75,14 +75,14 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CastToNativeLongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ConvertPIntToPrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformPExceptionToNativeCachedNode;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ConvertPIntToPrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.IntNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.lib.PyLongFromDoubleNode;
 import com.oracle.graal.python.lib.PyLongFromUnicodeObject;
+import com.oracle.graal.python.nfi2.NativeMemory;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -421,7 +421,7 @@ public final class PythonCextLongBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyLongObject, UNSIGNED_CHAR_PTR, SIZE_T, Int, Int}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyLongObject, UNSIGNED_CHAR_PTR_ZZZ, SIZE_T, Int, Int}, call = Direct)
     abstract static class _PyLong_AsByteArray extends CApi5BuiltinNode {
         private static void checkSign(Node inliningTarget, boolean negative, int isSigned, PRaiseNode raiseNode) {
             if (negative) {
@@ -432,38 +432,35 @@ public final class PythonCextLongBuiltins {
         }
 
         @Specialization
-        static Object get(int value, Object bytes, long n, int littleEndian, int isSigned,
+        static Object get(int value, long bytes, long n, int littleEndian, int isSigned,
                         @Bind Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile profile,
-                        @Shared @Cached CStructAccess.WriteByteNode write,
                         @Shared @Cached PRaiseNode raiseNode) {
             checkSign(inliningTarget, value < 0, isSigned, raiseNode);
             byte[] array = IntBuiltins.ToBytesNode.fromLong(value, PythonUtils.toIntError(n), littleEndian == 0, isSigned != 0, inliningTarget, profile, raiseNode);
-            write.writeByteArray(bytes, array);
+            NativeMemory.writeByteArrayElements(bytes, 0L, array, 0, array.length);
             return 0;
         }
 
         @Specialization
-        static Object get(long value, Object bytes, long n, int littleEndian, int isSigned,
+        static Object get(long value, long bytes, long n, int littleEndian, int isSigned,
                         @Bind Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile profile,
-                        @Shared @Cached CStructAccess.WriteByteNode write,
                         @Shared @Cached PRaiseNode raiseNode) {
             checkSign(inliningTarget, value < 0, isSigned, raiseNode);
             byte[] array = IntBuiltins.ToBytesNode.fromLong(value, PythonUtils.toIntError(n), littleEndian == 0, isSigned != 0, inliningTarget, profile, raiseNode);
-            write.writeByteArray(bytes, array);
+            NativeMemory.writeByteArrayElements(bytes, 0L, array, 0, array.length);
             return 0;
         }
 
         @Specialization
-        static Object get(PInt value, Object bytes, long n, int littleEndian, int isSigned,
+        static Object get(PInt value, long bytes, long n, int littleEndian, int isSigned,
                         @Bind Node inliningTarget,
                         @Shared @Cached InlinedConditionProfile profile,
-                        @Shared @Cached CStructAccess.WriteByteNode write,
                         @Shared @Cached PRaiseNode raiseNode) {
             checkSign(inliningTarget, value.isNegative(), isSigned, raiseNode);
             byte[] array = IntBuiltins.ToBytesNode.fromBigInteger(value, PythonUtils.toIntError(n), littleEndian == 0, isSigned != 0, inliningTarget, profile, raiseNode);
-            write.writeByteArray(bytes, array);
+            NativeMemory.writeByteArrayElements(bytes, 0L, array, 0, array.length);
             return 0;
         }
     }

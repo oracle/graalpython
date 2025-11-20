@@ -82,6 +82,7 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAcces
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readStructArrayIntField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readStructArrayLongField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readStructArrayPtrField;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeLongField;
 import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nfi2.NativeMemory.readLongArrayElement;
 import static com.oracle.graal.python.nfi2.NativeMemory.readPtrArrayElement;
@@ -1502,7 +1503,6 @@ public final class PythonCextBuiltins {
         static Object doNative(Object weakCandidates,
                         @Bind Node inliningTarget,
                         @Cached CoerceNativePointerToLongNode coerceToLongNode,
-                        @Cached CStructAccess.WriteLongNode writeLongNode,
                         @Cached NativePtrToPythonWrapperNode nativePtrToPythonWrapperNode,
                         @Cached UpdateStrongRefNode updateRefNode) {
             // guaranteed by the guard
@@ -1555,8 +1555,8 @@ public final class PythonCextBuiltins {
                  * '_gc_prev' that need to be preserved, and (b) because we untrack all objects in
                  * this list anyway.
                  */
-                writeLongNode.write(gcUntagged, CFields.PyGC_Head___gc_next, 0);
-                writeLongNode.write(gcUntagged, CFields.PyGC_Head___gc_prev, 0);
+                writeLongField(gcUntagged, CFields.PyGC_Head___gc_next, 0);
+                writeLongField(gcUntagged, CFields.PyGC_Head___gc_prev, 0);
 
                 gc = next;
             }
