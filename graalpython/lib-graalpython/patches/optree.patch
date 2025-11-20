@@ -1,0 +1,13 @@
+diff --git a/include/optree/pymacros.h b/include/optree/pymacros.h
+index 7f2ac9a..ecb6faf 100644
+--- a/include/optree/pymacros.h
++++ b/include/optree/pymacros.h
+@@ -52,7 +52,7 @@ namespace py = pybind11;
+ #    define Py_IsFalse(x) Py_Is((x), Py_False)
+ #endif
+ 
+-inline constexpr Py_ALWAYS_INLINE bool Py_IsConstant(PyObject *x) noexcept {
++inline Py_ALWAYS_INLINE bool Py_IsConstant(PyObject *x) noexcept {
+     return Py_IsNone(x) || Py_IsTrue(x) || Py_IsFalse(x);
+ }
+ #define Py_IsConstant(x) Py_IsConstant(x)
