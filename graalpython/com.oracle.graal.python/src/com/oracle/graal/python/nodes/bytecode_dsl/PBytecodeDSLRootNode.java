@@ -892,7 +892,11 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
     @TruffleBoundary
     public int bciToLine(int bci, BytecodeNode bytecodeNode) {
-        return getSourceSectionForLocation(bci, bytecodeNode).getStartLine();
+        SourceSection sourceSection = getSourceSectionForLocation(bci, bytecodeNode);
+        if (sourceSection != null) {
+            return sourceSection.getStartLine();
+        }
+        return -1;
     }
 
     @TruffleBoundary
