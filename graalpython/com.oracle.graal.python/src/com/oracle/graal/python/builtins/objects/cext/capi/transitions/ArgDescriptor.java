@@ -54,7 +54,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.ToPythonWrapperNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.WrappedPointerToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
@@ -79,7 +78,6 @@ enum ArgBehavior {
     PyObjectWrapper("POINTER", NfiType.POINTER, "J", "jlong", "long", null, ToPythonWrapperNode::create, ToPythonWrapperNode.getUncached(), null, null, null),
     Pointer("POINTER", NfiType.POINTER, "J", "jlong", "long", null, null, null),
     PointerZZZ("POINTER_ZZZ", NfiType.RAW_POINTER, "J", "jlong", "long", null, null, null),
-    WrappedPointer("POINTER", NfiType.POINTER, "J", "jlong", "long", null, WrappedPointerToPythonNodeGen::create, WrappedPointerToPythonNodeGen.getUncached()),
     TruffleStringPointer("POINTER", NfiType.POINTER, "J", "jlong", "long", null, CharPtrToPythonNode::create, CharPtrToPythonNode.getUncached()),
     TruffleStringPointerZZZ("POINTER_ZZZ", NfiType.RAW_POINTER, "J", "jlong", "long", null, CharPtrToPythonNode::create, CharPtrToPythonNode.getUncached()),
     Char8("SINT8", NfiType.SINT8, "C", "jbyte", "byte", null, null, null),
@@ -281,7 +279,7 @@ public enum ArgDescriptor {
     PY_UCS4_PTR("Py_UCS4*"),
     PY_UNICODE("Py_UNICODE"),
     PyUnicodeObject(ArgBehavior.PyObject, "PyUnicodeObject*"),
-    PY_UNICODE_PTR(ArgBehavior.WrappedPointer, "Py_UNICODE*"),
+    PY_UNICODE_PTR_ZZZ(ArgBehavior.PointerZZZ, "Py_UNICODE*"),
     PyVarObject(ArgBehavior.PyObject, "PyVarObject*"),
     ConstPyVarObject(ArgBehavior.PyObject, "const PyVarObject*"),
     PYADDRPAIR_PTR("PyAddrPair*"),
@@ -510,11 +508,11 @@ public enum ArgDescriptor {
 
     public boolean isPyObjectOrPointer() {
         return behavior == ArgBehavior.PyObject || behavior == ArgBehavior.PyObjectBorrowed || behavior == ArgBehavior.Pointer || behavior == ArgBehavior.PointerZZZ ||
-                        behavior == ArgBehavior.WrappedPointer || behavior == ArgBehavior.TruffleStringPointer || behavior == ArgBehavior.TruffleStringPointerZZZ;
+                        behavior == ArgBehavior.TruffleStringPointer || behavior == ArgBehavior.TruffleStringPointerZZZ;
     }
 
     public boolean isPointer() {
-        return behavior == ArgBehavior.Pointer || behavior == ArgBehavior.WrappedPointer || behavior == ArgBehavior.TruffleStringPointer || behavior == ArgBehavior.TruffleStringPointerZZZ;
+        return behavior == ArgBehavior.Pointer || behavior == ArgBehavior.TruffleStringPointer || behavior == ArgBehavior.TruffleStringPointerZZZ;
     }
 
     public boolean isPyObject() {

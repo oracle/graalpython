@@ -62,7 +62,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_SSIZE_T_PTR_ZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_UCS4;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_UNICODE_PTR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_UNICODE_PTR_ZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PointerZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
@@ -72,7 +72,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.VA_LIST_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor._PY_ERROR_HANDLER;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.wrapPointer;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeLongField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
 import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
@@ -1140,11 +1139,11 @@ public final class PythonCextUnicodeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PY_UNICODE_PTR, args = {PyObject, PY_SSIZE_T_PTR_ZZZ}, call = Ignored)
+    @CApiBuiltin(ret = PY_UNICODE_PTR_ZZZ, args = {PyObject, PY_SSIZE_T_PTR_ZZZ}, call = Ignored)
     abstract static class GraalPyPrivate_Unicode_AsUnicodeAndSize extends CApiBinaryBuiltinNode {
 
         @Specialization
-        static Object doUnicode(PString s, long sizePtr,
+        static long doUnicode(PString s, long sizePtr,
                         @Bind Node inliningTarget,
                         @Cached InlinedConditionProfile hasSizeProfile,
                         @Cached InlinedConditionProfile hasUnicodeProfile,
@@ -1160,7 +1159,7 @@ public final class PythonCextUnicodeBuiltins {
             if (hasSizeProfile.profile(inliningTarget, sizePtr != NULLPTR)) {
                 NativeMemory.writeLong(sizePtr, wcharBytes.getSequenceStorage().length() / wcharSize);
             }
-            return wrapPointer(PySequenceArrayWrapper.ensureNativeSequence(wcharBytes));
+            return PySequenceArrayWrapper.ensureNativeSequence(wcharBytes);
         }
 
         @Fallback

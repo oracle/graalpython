@@ -191,10 +191,6 @@ public class CStructAccess {
             return read(self.getPtr(), field);
         }
 
-        public final Object readArrayElement(long pointer, long element) {
-            return execute(pointer, element * POINTER_SIZE);
-        }
-
         public final Object[] readPyObjectArray(long pointer, int elements) {
             return readPyObjectArray(pointer, elements, 0);
         }

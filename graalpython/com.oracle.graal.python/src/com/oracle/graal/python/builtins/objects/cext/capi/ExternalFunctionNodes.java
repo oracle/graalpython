@@ -186,7 +186,7 @@ public abstract class ExternalFunctionNodes {
 
     public static PKeyword[] createKwDefaults(NfiBoundFunction callable, long closure) {
         // assert InteropLibrary.getUncached().isExecutable(callable);
-        return new PKeyword[]{new PKeyword(KW_CALLABLE, callable), new PKeyword(KW_CLOSURE, wrapPointer(closure))};
+        return new PKeyword[]{new PKeyword(KW_CALLABLE, callable), new PKeyword(KW_CLOSURE, closure)};
     }
 
     /**

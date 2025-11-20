@@ -1837,7 +1837,6 @@ public abstract class CExtNodes {
      */
     @TruffleBoundary
     static PBuiltinFunction createLegacyMethod(long methodDefPtr, int element, PythonLanguage language) {
-        InteropLibrary interopLib = InteropLibrary.getUncached();
         long methodNamePtr = readStructArrayPtrField(methodDefPtr, element, PyMethodDef__ml_name);
         if (methodNamePtr == NULLPTR) {
             return null;

@@ -48,7 +48,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CAp
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PollingState.RQ_READY;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PollingState.RQ_UNINITIALIZED;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointer;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointerUncached;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readIntField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.wrapPointer;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeDoubleField;
@@ -819,7 +818,7 @@ public abstract class CApiTransitions {
 
     private static void freeNativeStorage(NativeStorageReference ref) {
         LOGGER.fine(() -> PythonUtils.formatJString("releasing %s", ref.toString()));
-        free(ensurePointerUncached(ref.ptr));
+        free(ref.ptr);
     }
 
     /**
@@ -919,7 +918,7 @@ public abstract class CApiTransitions {
             long array = mallocPtrArray(len);
             try {
                 writePtrArrayElements(array, 0, ptrArray, 0, len);
-                CExtNodes.PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_SHUTDOWN_BULK_DEALLOC, wrapPointer(array), len);
+                CExtNodes.PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_SHUTDOWN_BULK_DEALLOC, array, len);
             } finally {
                 free(array);
                 context.nativeWeakRef.clear();
@@ -2399,19 +2398,6 @@ public abstract class CApiTransitions {
 
         public static ToPythonWrapperNode getUncached() {
             return CApiTransitionsFactory.ToPythonWrapperNodeGen.getUncached();
-        }
-    }
-
-    @GenerateUncached
-    @GenerateInline(false)
-    public abstract static class WrappedPointerToPythonNode extends CExtToJavaNode {
-        @Specialization
-        static Object doIt(Object object) {
-            if (object instanceof PythonNativeWrapper) {
-                return ((PythonNativeWrapper) object).getDelegate();
-            } else {
-                return object;
-            }
         }
     }
 

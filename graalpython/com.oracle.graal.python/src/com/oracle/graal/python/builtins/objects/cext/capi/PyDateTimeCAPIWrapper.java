@@ -178,16 +178,16 @@ public abstract class PyDateTimeCAPIWrapper {
         writePtrField(mem, CFields.PyDateTime_CAPI__DeltaType, deltaType);
         writePtrField(mem, CFields.PyDateTime_CAPI__TZInfoType, tzInfoType);
         writePtrField(mem, CFields.PyDateTime_CAPI__TimeZone_UTC, timezoneUTC);
-        writePtrField(mem, CFields.PyDateTime_CAPI__Date_FromDate, ensurePointerUncached(PythonCextBuiltinRegistry.GraalPyPrivate_DateTimeCAPI_Date_FromDate));
-        writePtrField(mem, CFields.PyDateTime_CAPI__DateTime_FromDateAndTime, ensurePointerUncached(PythonCextBuiltinRegistry.GraalPyPrivate_DateTimeCAPI_DateTime_FromDateAndTime));
-        writePtrField(mem, CFields.PyDateTime_CAPI__Time_FromTime, ensurePointerUncached(PythonCextBuiltinRegistry.GraalPyPrivate_DateTimeCAPI_Time_FromTime));
-        writePtrField(mem, CFields.PyDateTime_CAPI__Delta_FromDelta, ensurePointerUncached(PythonCextBuiltinRegistry.GraalPyPrivate_DateTimeCAPI_Delta_FromDelta));
-        writePtrField(mem, CFields.PyDateTime_CAPI__TimeZone_FromTimeZone, ensurePointerUncached(PythonCextBuiltinRegistry.GraalPyPrivate_DateTimeCAPI_TimeZone_FromTimeZone));
-        writePtrField(mem, CFields.PyDateTime_CAPI__DateTime_FromTimestamp, ensurePointerUncached(PythonCextBuiltinRegistry.GraalPyPrivate_DateTimeCAPI_DateTime_FromTimestamp));
-        writePtrField(mem, CFields.PyDateTime_CAPI__Date_FromTimestamp, ensurePointerUncached(PythonCextBuiltinRegistry.GraalPyPrivate_DateTimeCAPI_Date_FromTimestamp));
+        writePtrField(mem, CFields.PyDateTime_CAPI__Date_FromDate, PythonCextBuiltinRegistry.GraalPyPrivate_DateTimeCAPI_Date_FromDate.getNativePointer());
+        writePtrField(mem, CFields.PyDateTime_CAPI__DateTime_FromDateAndTime, PythonCextBuiltinRegistry.GraalPyPrivate_DateTimeCAPI_DateTime_FromDateAndTime.getNativePointer());
+        writePtrField(mem, CFields.PyDateTime_CAPI__Time_FromTime, PythonCextBuiltinRegistry.GraalPyPrivate_DateTimeCAPI_Time_FromTime.getNativePointer());
+        writePtrField(mem, CFields.PyDateTime_CAPI__Delta_FromDelta, PythonCextBuiltinRegistry.GraalPyPrivate_DateTimeCAPI_Delta_FromDelta.getNativePointer());
+        writePtrField(mem, CFields.PyDateTime_CAPI__TimeZone_FromTimeZone, PythonCextBuiltinRegistry.GraalPyPrivate_DateTimeCAPI_TimeZone_FromTimeZone.getNativePointer());
+        writePtrField(mem, CFields.PyDateTime_CAPI__DateTime_FromTimestamp, PythonCextBuiltinRegistry.GraalPyPrivate_DateTimeCAPI_DateTime_FromTimestamp.getNativePointer());
+        writePtrField(mem, CFields.PyDateTime_CAPI__Date_FromTimestamp, PythonCextBuiltinRegistry.GraalPyPrivate_DateTimeCAPI_Date_FromTimestamp.getNativePointer());
         writePtrField(mem, CFields.PyDateTime_CAPI__DateTime_FromDateAndTimeAndFold,
-                        ensurePointerUncached(PythonCextBuiltinRegistry.GraalPyPrivate_DateTimeCAPI_DateTime_FromDateAndTimeAndFold));
-        writePtrField(mem, CFields.PyDateTime_CAPI__Time_FromTimeAndFold, ensurePointerUncached(PythonCextBuiltinRegistry.GraalPyPrivate_DateTimeCAPI_Time_FromTimeAndFold));
+                        PythonCextBuiltinRegistry.GraalPyPrivate_DateTimeCAPI_DateTime_FromDateAndTimeAndFold.getNativePointer());
+        writePtrField(mem, CFields.PyDateTime_CAPI__Time_FromTimeAndFold, PythonCextBuiltinRegistry.GraalPyPrivate_DateTimeCAPI_Time_FromTimeAndFold.getNativePointer());
 
         return mem;
     }

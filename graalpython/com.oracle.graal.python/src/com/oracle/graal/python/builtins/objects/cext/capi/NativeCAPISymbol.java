@@ -117,7 +117,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_PY_OBJECT_NEW("GraalPyPrivate_ObjectNew", PyObjectTransfer, PyTypeObject),
     FUN_GRAALPY_OBJECT_GC_DEL("GraalPyPrivate_Object_GC_Del", Void, Pointer),
     FUN_BULK_DEALLOC("GraalPyPrivate_BulkDealloc", Py_ssize_t, ArgDescriptor.UINTPTR_T, INT64_T),
-    FUN_SHUTDOWN_BULK_DEALLOC("GraalPyPrivate_BulkDeallocOnShutdown", Py_ssize_t, Pointer, INT64_T),
+    FUN_SHUTDOWN_BULK_DEALLOC("GraalPyPrivate_BulkDeallocOnShutdown", Py_ssize_t, PointerZZZ, INT64_T),
     FUN_GET_CURRENT_RSS("GraalPyPrivate_GetCurrentRSS", SIZE_T),
     FUN_ADD_SUBOFFSET("GraalPyPrivate_AddSuboffset", PointerZZZ, PointerZZZ, Py_ssize_t, Py_ssize_t),
     FUN_GRAALPY_MEMORYVIEW_FROM_OBJECT("GraalPyPrivate_MemoryViewFromObject", PyObjectTransfer, PyObject, Int),
