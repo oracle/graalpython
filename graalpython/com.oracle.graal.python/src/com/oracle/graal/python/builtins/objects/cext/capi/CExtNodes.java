@@ -1691,19 +1691,7 @@ public abstract class CExtNodes {
         }
     }
 
-    /**
-     * Decrements the ref count by one of any {@link PythonNativeWrapper} object.
-     * <p>
-     * This node avoids memory leaks for arguments given to native.<br>
-     * Problem description:<br>
-     * {@link PythonNativeWrapper} objects given to C code may go to native, i.e., a handle will be
-     * allocated. In this case, no ref count manipulation is done since the C code considers the
-     * reference to be borrowed and the Python code just doesn't do it because we have a GC. This
-     * means that the handle will stay allocated and we are leaking the wrapper object.
-     * </p>
-     */
     @GenerateInline(false)
-    @ImportStatic(CApiGuards.class)
     abstract static class ReleaseNativeWrapperNode extends Node {
 
         public abstract void execute(Object pythonObject);
@@ -1775,7 +1763,6 @@ public abstract class CExtNodes {
         @Specialization(guards = "isForeignObject(foreignObject)")
         static PythonObject doForeign(PythonContext context, Object foreignObject) {
             assert foreignObject != null : "attempting to wrap Java null";
-            assert !CApiGuards.isNativeWrapper(foreignObject) : "attempting to wrap a native wrapper";
             return new TruffleObjectNativeWrapper(context.getLanguage(), context.getLanguage().getEmptyShape(), foreignObject);
         }
 

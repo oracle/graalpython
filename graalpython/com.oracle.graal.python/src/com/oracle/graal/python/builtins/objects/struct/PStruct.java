@@ -56,10 +56,6 @@ public final class PStruct extends PythonBuiltinObject {
         return formatAlignment.bigEndian;
     }
 
-    public boolean isNative() {
-        return formatAlignment.nativeSizing;
-    }
-
     @ValueType
     public record StructInfo(byte[] format, int size, int len, FormatAlignment formatAlignment, FormatCode[] codes) {
     }

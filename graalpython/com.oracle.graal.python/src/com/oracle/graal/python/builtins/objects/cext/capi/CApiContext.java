@@ -212,6 +212,10 @@ public final class CApiContext extends CExtContext {
      */
     private final NfiBoundFunction[] nativeSymbolCache;
 
+    public static boolean isSpecialSingleton(Object delegate) {
+        return getSingletonNativeWrapperIdx(delegate) != -1;
+    }
+
     private record ClosureInfo(Object closure, Object delegate, Object executable, long pointer) {
     }
 
@@ -355,7 +359,7 @@ public final class CApiContext extends CExtContext {
         // initialize singleton native wrappers
         singletonNativePtrs = new long[CONTEXT_INSENSITIVE_SINGLETONS.length];
         for (int i = 0; i < singletonNativePtrs.length; i++) {
-            assert CApiGuards.isSpecialSingleton(CONTEXT_INSENSITIVE_SINGLETONS[i]);
+            assert isSpecialSingleton(CONTEXT_INSENSITIVE_SINGLETONS[i]);
             /*
              * Note: this does intentionally not use 'PythonObjectNativeWrapper.wrap' because the
              * wrapper must not be reachable from the Python object since the singletons are shared.

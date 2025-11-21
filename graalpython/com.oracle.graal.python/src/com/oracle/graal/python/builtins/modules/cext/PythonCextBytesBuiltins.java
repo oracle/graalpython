@@ -56,8 +56,6 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyVa
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.getFieldPtr;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
 
-import java.util.Arrays;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
@@ -72,10 +70,9 @@ import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetByteArrayNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
@@ -104,7 +101,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.nodes.Node;
@@ -186,29 +182,9 @@ public final class PythonCextBytesBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtr, Py_ssize_t}, call = Ignored)
-    @ImportStatic(CApiGuards.class)
     abstract static class GraalPyPrivate_Bytes_FromStringAndSize extends CApiBinaryBuiltinNode {
-        // n.b.: the specializations for PIBytesLike are quite common on
-        // managed, when the PySequenceArrayWrapper that we used never went
-        // native, and during the upcall to here it was simply unwrapped again
-        // with the ToJava (rather than mapped from a native pointer back into a
-        // PythonNativeObject)
 
         @Specialization
-        static Object doGeneric(PythonNativeWrapper object, long size,
-                        @Bind PythonLanguage language,
-                        @Cached NativeToPythonNode asPythonObjectNode,
-                        @Exclusive @Cached BytesNodes.ToBytesNode getByteArrayNode) {
-            byte[] ary = getByteArrayNode.execute(null, asPythonObjectNode.execute(object));
-            if (size >= 0 && size < ary.length) {
-                // cast to int is guaranteed because of 'size < ary.length'
-                return PFactory.createBytes(language, Arrays.copyOf(ary, (int) size));
-            } else {
-                return PFactory.createBytes(language, ary);
-            }
-        }
-
-        @Specialization(guards = "!isNativeWrapper(nativePointer)")
         static Object doNativePointer(Object nativePointer, long size,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
@@ -225,23 +201,9 @@ public final class PythonCextBytesBuiltins {
     }
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtr, Py_ssize_t}, call = Ignored)
-    @ImportStatic(CApiGuards.class)
     abstract static class GraalPyPrivate_ByteArray_FromStringAndSize extends CApiBinaryBuiltinNode {
-        @Specialization
-        static Object doGeneric(PythonNativeWrapper object, long size,
-                        @Bind PythonLanguage language,
-                        @Cached NativeToPythonNode asPythonObjectNode,
-                        @Exclusive @Cached BytesNodes.ToBytesNode getByteArrayNode) {
-            byte[] ary = getByteArrayNode.execute(null, asPythonObjectNode.execute(object));
-            if (size >= 0 && size < ary.length) {
-                // cast to int is guaranteed because of 'size < ary.length'
-                return PFactory.createByteArray(language, Arrays.copyOf(ary, (int) size));
-            } else {
-                return PFactory.createByteArray(language, ary);
-            }
-        }
 
-        @Specialization(guards = "!isNativeWrapper(nativePointer)")
+        @Specialization
         static Object doNativePointer(Object nativePointer, long size,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,

@@ -80,13 +80,11 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupport.GCListRemoveNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupport.PyObjectGCDelNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupport.PyObjectGCTrackNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyMemoryViewWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.MaterializePrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.AllocateNativeObjectStubNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.FirstToNativeNodeGen;
@@ -822,7 +820,7 @@ public abstract class CApiTransitions {
                 continue;
             }
 
-            assert ref instanceof PythonObject || ref instanceof PythonObjectReference || CApiGuards.isSpecialSingleton(ref);
+            assert ref instanceof PythonObject || ref instanceof PythonObjectReference || CApiContext.isSpecialSingleton(ref);
 
             nativeStubLookupRemove(handleContext, i);
             if (ref instanceof PythonObjectReference pythonObjectReference) {
@@ -1009,7 +1007,7 @@ public abstract class CApiTransitions {
     private static int nativeStubLookupPut(HandleContext context, int idx, Object value, long pointer) {
         assert idx > 0;
         assert HandlePointerConverter.pointsToPyHandleSpace(pointer);
-        assert value instanceof PythonObject || value instanceof PythonObjectReference || CApiGuards.isSpecialSingleton(value);
+        assert value instanceof PythonObject || value instanceof PythonObjectReference || CApiContext.isSpecialSingleton(value);
         assert context.nativeStubLookup[idx] == null || context.nativeStubLookup[idx] == value;
         context.nativeStubLookup[idx] = value;
         if (PythonContext.DEBUG_CAPI) {
@@ -1113,7 +1111,7 @@ public abstract class CApiTransitions {
     @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
-    @ImportStatic({CApiGuards.class, PGuards.class})
+    @ImportStatic({CApiContext.class, PGuards.class})
     public abstract static class FirstToNativeNode extends Node {
 
         public static long executeUncached(PythonAbstractObject object, long initialRefCount) {
@@ -1309,7 +1307,7 @@ public abstract class CApiTransitions {
                      * If the object is not a 'PythonObject', it is expected to be immortal and will
                      * not reach this branch. This is, e.g., the case for singletons like PNone.
                      */
-                    assert !CApiGuards.isSpecialSingleton(object);
+                    assert !CApiContext.isSpecialSingleton(object);
                     ref = PythonObjectReference.createStub(handleContext, (PythonObject) object, false, taggedPointer, idx, gc);
                 }
                 nativeStubLookupPut(handleContext, idx, ref, taggedPointer);
@@ -1593,7 +1591,7 @@ public abstract class CApiTransitions {
             pollReferenceQueue();
 
             if (!pythonObject.isNative()) {
-                assert !CApiGuards.isSpecialSingleton(pythonObject);
+                assert !CApiContext.isSpecialSingleton(pythonObject);
                 PythonContext context = PythonContext.get(inliningTarget);
                 boolean immortal = context.getTrue() == pythonObject || context.getFalse() == pythonObject;
                 firstToNativeNode.execute(inliningTarget, pythonObject, FirstToNativeNode.getInitialRefcnt(needsTransfer, immortal));
@@ -1655,7 +1653,7 @@ public abstract class CApiTransitions {
              * companions are stored in a special cache.
              */
             long pointer;
-            if (CApiGuards.isSpecialSingleton(profiled)) {
+            if (CApiContext.isSpecialSingleton(profiled)) {
                 pointer = context.getCApiContext().getSingletonNativeWrapper((PythonAbstractObject) profiled);
                 // special singletons (e.g. PNone, PEllipsis, ..) are always immortal
                 assert CApiTransitions.readNativeRefCount(pointer) == IMMORTAL_REFCNT;
@@ -1667,7 +1665,7 @@ public abstract class CApiTransitions {
              * because we need to store the pointer somewhere to preserve object/pointer identity.
              */
             PythonObject pythonObject = ensurePythonObjectNode.execute(context, profiled);
-            assert !CApiGuards.isSpecialSingleton(pythonObject);
+            assert !CApiContext.isSpecialSingleton(pythonObject);
 
             /*
              * Step 6: If the PythonObject is not already native, create the native companion. If it
@@ -1707,7 +1705,7 @@ public abstract class CApiTransitions {
                             object instanceof Long l && PInt.fitsInInt(l) ||
                             object instanceof Float ||
                             object instanceof Double d && PFloat.fitsInFloat(d) ||
-                            CApiGuards.isSpecialSingleton(object) ||
+                            CApiContext.isSpecialSingleton(object) ||
                             object instanceof PythonObject pythonObject && isImmortalPythonObject(context, pythonObject);
         }
 
@@ -1897,7 +1895,6 @@ public abstract class CApiTransitions {
     @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
-    @ImportStatic(CApiGuards.class)
     public abstract static class NativeToPythonInternalNode extends Node {
 
         public final Object execute(Node inliningTarget, long value, boolean needsTransfer) {
@@ -2022,7 +2019,6 @@ public abstract class CApiTransitions {
 
     @GenerateUncached
     @GenerateInline(false)
-    @ImportStatic(CApiGuards.class)
     public abstract static class NativeToPythonNode extends CExtToJavaNode {
 
         @TruffleBoundary
@@ -2101,7 +2097,6 @@ public abstract class CApiTransitions {
 
     @GenerateUncached
     @GenerateInline(false)
-    @ImportStatic(CApiGuards.class)
     public abstract static class NativePtrToPythonNode extends PNodeWithContext {
 
         public abstract Object execute(long object, boolean stealing);
@@ -2381,8 +2376,8 @@ public abstract class CApiTransitions {
                         throw CompilerDirectives.shouldNotReachHere("reference was collected: " + Long.toHexString(pointer));
                     }
                     Object profiled = nativeWrapperProfile.profile(inliningTarget, ref);
-                    if (profiled instanceof PythonNativeWrapper nativeWrapper) {
-                        return nativeWrapper;
+                    if (profiled instanceof PythonAbstractObject pythonAbstractObject) {
+                        return pythonAbstractObject;
                     }
                 }
                 return null;

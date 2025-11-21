@@ -71,12 +71,12 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PythonObject
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PythonObjectArrayFreeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ReleaseNativeWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsCharPointerNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ReleaseNativeWrapperNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CreateArgsTupleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.DefaultCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ExternalFunctionInvokeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.MaterializePrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ReleaseNativeSequenceStorageNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ReleaseNativeWrapperNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.MaterializePrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
@@ -1237,7 +1237,7 @@ public abstract class ExternalFunctionNodes {
         protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
             ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
             releaseNativeWrapperNode.execute(cArguments[0]);
-            ensureArrayFreeNode().execute((long)cArguments[1]);
+            ensureArrayFreeNode().execute((long) cArguments[1]);
             releaseNativeWrapperNode.execute(cArguments[3]);
         }
 
@@ -1281,7 +1281,7 @@ public abstract class ExternalFunctionNodes {
             ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
             releaseNativeWrapperNode.execute(cArguments[0]);
             releaseNativeWrapperNode.execute(cArguments[1]);
-            ensureArrayFreeNode().execute((long)cArguments[2]);
+            ensureArrayFreeNode().execute((long) cArguments[2]);
             releaseNativeWrapperNode.execute(cArguments[4]);
         }
 
@@ -2110,14 +2110,6 @@ public abstract class ExternalFunctionNodes {
     @GenerateInline(false)
     public abstract static class DefaultCheckFunctionResultNode extends CheckFunctionResultNode {
 
-        @Specialization
-        static Object doNativeWrapper(PythonThreadState state, TruffleString name, @SuppressWarnings("unused") PythonNativeWrapper result,
-                        @Bind Node inliningTarget,
-                        @Shared @Cached TransformExceptionFromNativeNode transformExceptionFromNativeNode) {
-            transformExceptionFromNativeNode.execute(inliningTarget, state, name, false, true);
-            return result;
-        }
-
         @Specialization(guards = "isNoValue(result)")
         static Object doNoValue(PythonThreadState state, TruffleString name, @SuppressWarnings("unused") PNone result,
                         @Bind Node inliningTarget,
@@ -2172,17 +2164,13 @@ public abstract class ExternalFunctionNodes {
          * specially, because we consider it as null in #doNoValue and as not null in
          * #doPythonObject
          */
-        @Specialization(guards = {"!isPythonNativeWrapper(result)", "!isPNone(result)"})
+        @Specialization(guards = {"!isPNone(result)"})
         static Object doForeign(PythonThreadState state, TruffleString name, Object result,
                         @Bind Node inliningTarget,
                         @Shared @Cached TransformExceptionFromNativeNode transformExceptionFromNativeNode,
                         @Exclusive @CachedLibrary(limit = "3") InteropLibrary lib) {
             transformExceptionFromNativeNode.execute(inliningTarget, state, name, lib.isNull(result), true);
             return result;
-        }
-
-        protected static boolean isPythonNativeWrapper(Object object) {
-            return object instanceof PythonNativeWrapper;
         }
 
         public static DefaultCheckFunctionResultNode getUncached() {

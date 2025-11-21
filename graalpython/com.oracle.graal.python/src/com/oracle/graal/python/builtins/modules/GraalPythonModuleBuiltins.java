@@ -98,6 +98,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltinsFactory.DebugNodeFactory;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextCapsuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
@@ -105,7 +106,6 @@ import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper.ToNativeStorageNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonObjectReference;
@@ -1248,8 +1248,8 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         static boolean doGeneric(int id) {
             Object ref = CApiTransitions.nativeStubLookupGet(PythonContext.get(null).nativeContext, 0, id);
-            assert ref == null || ref instanceof PythonNativeWrapper || ref instanceof PythonObjectReference;
-            return ref instanceof PythonNativeWrapper || ref != null && ((PythonObjectReference) ref).isStrongReference();
+            assert ref == null || ref instanceof PythonAbstractObject || ref instanceof PythonObjectReference;
+            return ref instanceof PythonAbstractObject || ref != null && ((PythonObjectReference) ref).isStrongReference();
         }
     }
 

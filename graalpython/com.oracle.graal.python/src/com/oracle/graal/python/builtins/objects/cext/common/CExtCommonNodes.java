@@ -70,7 +70,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesCommonBuiltins;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
@@ -252,7 +251,6 @@ public abstract class CExtCommonNodes {
     @GenerateInline
     @GenerateCached(false)
     @GenerateUncached
-    @ImportStatic(CApiGuards.class)
     public abstract static class ReadUnicodeArrayNode extends PNodeWithContext {
 
         public abstract int[] execute(Node inliningTarget, long array, int length, int elementSize);
@@ -313,7 +311,7 @@ public abstract class CExtCommonNodes {
     @GenerateInline(inlineByDefault = true)
     @GenerateCached
     @GenerateUncached
-    @ImportStatic({PGuards.class, CApiGuards.class})
+    @ImportStatic(PGuards.class)
     public abstract static class ConvertPIntToPrimitiveNode extends Node {
 
         public abstract Object execute(Node inliningTarget, Object o, int signed, int targetTypeSize, boolean exact);

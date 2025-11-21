@@ -46,13 +46,13 @@ import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonStructNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformPExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
@@ -106,6 +106,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -116,13 +117,29 @@ import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @ExportLibrary(InteropLibrary.class)
-public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
+public abstract class PyProcsWrapper implements TruffleObject {
 
     protected final CApiTiming timing;
+    private final Object delegate;
+    private long nativePointer = PythonObject.UNINITIALIZED;
 
     public PyProcsWrapper(Object delegate) {
-        super(delegate);
         this.timing = CApiTiming.create(false, delegate);
+        this.delegate = delegate;
+    }
+
+    public final Object getDelegate() {
+        return delegate;
+    }
+
+    public final long getNativePointer() {
+        return nativePointer;
+    }
+
+    public final void setNativePointer(long nativePointer) {
+        // we should set the pointer just once
+        assert this.nativePointer == PythonObject.UNINITIALIZED || this.nativePointer == nativePointer || nativePointer == PythonObject.UNINITIALIZED;
+        this.nativePointer = nativePointer;
     }
 
     @ExportMessage
@@ -140,7 +157,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
     protected boolean isPointer(
                     @Bind Node inliningTarget) {
         if (PythonLanguage.get(inliningTarget).isSingleContext()) {
-            return isNative();
+            return nativePointer != PythonObject.UNINITIALIZED;
         }
         return getClosurePointerMultiContext() != -1;
     }
@@ -149,7 +166,7 @@ public abstract class PyProcsWrapper extends PythonStructNativeWrapper {
     protected long asPointer(
                     @Bind Node inliningTarget) throws UnsupportedMessageException {
         if (PythonLanguage.get(inliningTarget).isSingleContext()) {
-            return getNativePointer();
+            return nativePointer;
         }
         long pointer = getClosurePointerMultiContext();
         if (pointer == -1) {
