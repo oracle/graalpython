@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_INIT_NATIVE_DATETIME;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.allocate;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointerUncached;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
 import static com.oracle.graal.python.nfi2.NativeMemory.free;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DATE;
@@ -55,7 +54,6 @@ import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefRawNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.SetBasicSizeNode;
@@ -129,9 +127,9 @@ public abstract class PyDateTimeCAPIWrapper {
         Object datetimeModule = AbstractImportNode.importModule(T_DATETIME);
         capiContext.timezoneType = PyObjectGetAttr.executeUncached(datetimeModule, T_TIMEZONE);
 
-        Object pointerObject = CStructAccess.wrapPointer(allocatePyDatetimeCAPI(datetimeModule));
+        long pointer = allocatePyDatetimeCAPI(datetimeModule);
 
-        PyCapsule capsule = PFactory.createCapsuleJavaName(context.getLanguage(), pointerObject, T_PYDATETIME_CAPSULE_NAME);
+        PyCapsule capsule = PFactory.createCapsuleJavaName(context.getLanguage(), pointer, T_PYDATETIME_CAPSULE_NAME);
         PyObjectSetAttr.executeUncached(datetimeModule, T_DATETIME_CAPI, capsule);
         assert PyObjectGetAttr.executeUncached(datetimeModule, T_DATETIME_CAPI) != context.getNativeNull();
         return capsule;
@@ -144,7 +142,7 @@ public abstract class PyDateTimeCAPIWrapper {
      */
     public static void destroyWrapper(PyCapsule capsule) {
         CompilerAsserts.neverPartOfCompilation();
-        free(ensurePointerUncached(capsule.getPointer()));
+        free(capsule.getPointer());
     }
 
     private static long allocatePyDatetimeCAPI(Object datetimeModule) {

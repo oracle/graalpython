@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.runtime.object;
 
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointerUncached;
 import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
@@ -1533,12 +1534,12 @@ public final class PFactory {
         return DigestObject.create(type, type.getInstanceShape(language), name, digest);
     }
 
-    public static PyCapsule createCapsuleNativeName(PythonLanguage language, Object pointer, Object name) {
+    public static PyCapsule createCapsuleNativeName(PythonLanguage language, long pointer, long name) {
         return createCapsule(language, new PyCapsule.CapsuleData(pointer, name));
     }
 
-    public static PyCapsule createCapsuleJavaName(PythonLanguage language, Object pointer, byte[] name) {
-        return createCapsule(language, new PyCapsule.CapsuleData(pointer, new CArrayWrappers.CByteArrayWrapper(name)));
+    public static PyCapsule createCapsuleJavaName(PythonLanguage language, long pointer, byte[] name) {
+        return createCapsule(language, new PyCapsule.CapsuleData(pointer, ensurePointerUncached(new CArrayWrappers.CByteArrayWrapper(name))));
     }
 
     public static PyCapsule createCapsule(PythonLanguage language, PyCapsule.CapsuleData data) {

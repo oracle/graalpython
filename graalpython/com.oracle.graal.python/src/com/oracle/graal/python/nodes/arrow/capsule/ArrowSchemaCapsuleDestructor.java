@@ -40,10 +40,13 @@
  */
 package com.oracle.graal.python.nodes.arrow.capsule;
 
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointer;
+
 import com.oracle.graal.python.builtins.modules.cext.PythonCextCapsuleBuiltins.PyCapsuleGetPointerNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.nodes.arrow.ArrowSchema;
 import com.oracle.graal.python.nodes.arrow.InvokeArrowReleaseCallbackNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -71,14 +74,16 @@ public class ArrowSchemaCapsuleDestructor implements TruffleObject {
     static class Execute {
 
         @Specialization(guards = "isPointer(args, interopLib)")
-        static Object doRelease(ArrowSchemaCapsuleDestructor self, Object[] args,
+        static Object doRelease(@SuppressWarnings("unused") ArrowSchemaCapsuleDestructor self, Object[] args,
                         @Bind Node inliningTarget,
-                        @CachedLibrary(limit = "1") InteropLibrary interopLib,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "1") InteropLibrary interopLib,
                         @Cached NativeToPythonNode nativeToPythonNode,
-                        @Cached PyCapsuleGetPointerNode pyCapsuleGetPointerNode, @Cached InvokeArrowReleaseCallbackNode.Lazy invokeReleaseCallbackNode) {
+                        @Cached PyCapsuleGetPointerNode pyCapsuleGetPointerNode,
+                        @Cached InvokeArrowReleaseCallbackNode.Lazy invokeReleaseCallbackNode,
+                        @Cached CoerceNativePointerToLongNode coerceNode) {
             Object capsule = nativeToPythonNode.execute(args[0]);
-            var capsuleName = new CArrayWrappers.CByteArrayWrapper(ArrowSchema.CAPSULE_NAME);
-            var arrowSchema = ArrowSchema.wrap((long) pyCapsuleGetPointerNode.execute(inliningTarget, capsule, capsuleName));
+            var capsuleName = ensurePointer(new CArrayWrappers.CByteArrayWrapper(ArrowSchema.CAPSULE_NAME), inliningTarget, coerceNode);
+            var arrowSchema = ArrowSchema.wrap(pyCapsuleGetPointerNode.execute(inliningTarget, capsule, capsuleName));
 
             if (!arrowSchema.isReleased()) {
                 invokeReleaseCallbackNode.get(inliningTarget).executeCached(arrowSchema.releaseCallback(), arrowSchema.memoryAddress());

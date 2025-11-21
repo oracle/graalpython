@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.tuple;
 
-import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointerUncached;
+import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nfi2.NativeMemory.readByteArrayElement;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
@@ -61,7 +61,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.Capsule)
@@ -82,13 +81,13 @@ public class CapsuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         static Object repr(PyCapsule self) {
             String name;
-            if (self.getNamePtr() == null || InteropLibrary.getUncached().isNull(self.getNamePtr())) {
+            if (self.getNamePtr() == NULLPTR) {
                 name = "NULL";
             } else {
                 StringBuilder builder = new StringBuilder("\"");
                 int i = 0;
                 byte b;
-                while ((b = readByteArrayElement(ensurePointerUncached(self.getNamePtr()), i++)) != 0) {
+                while ((b = readByteArrayElement(self.getNamePtr(), i++)) != 0) {
                     builder.append((char) b);
                 }
                 builder.append('"');

@@ -637,7 +637,7 @@ public abstract class CApiTransitions {
 
     private static void processPyCapsuleReference(PyCapsuleReference reference) {
         LOGGER.fine(() -> PythonUtils.formatJString("releasing %s", reference.toString()));
-        if (reference.data.getDestructor() != null) {
+        if (reference.data.getDestructor() != NULLPTR) {
             // Our capsule is dead, so create a temporary copy that doesn't have a reference anymore
             PyCapsule capsule = PFactory.createCapsule(PythonLanguage.get(null), reference.data);
             PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_GRAALPY_CAPSULE_CALL_DESTRUCTOR, PythonToNativeNode.executeUncached(capsule), capsule.getDestructor());

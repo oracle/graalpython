@@ -48,6 +48,7 @@ import static com.oracle.graal.python.PythonLanguage.MAGIC_NUMBER;
 import static com.oracle.graal.python.PythonLanguage.MAGIC_NUMBER_BYTES;
 import static com.oracle.graal.python.PythonLanguage.RELEASE_LEVEL;
 import static com.oracle.graal.python.PythonLanguage.RELEASE_LEVEL_FINAL;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointer;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_EXTEND;
 import static com.oracle.graal.python.nodes.BuiltinNames.J___GRAALPYTHON__;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_FORMAT;
@@ -112,6 +113,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonObjectReference;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.GetNativeWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.cext.copying.NativeLibraryLocator;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
@@ -1532,15 +1534,16 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @Specialization
         static PTuple doCreate(long arrowArrayAddr, long arrowSchemaAddr,
                         @Bind Node inliningTarget,
-                        @Cached PythonCextCapsuleBuiltins.PyCapsuleNewNode pyCapsuleNewNode) {
+                        @Cached PythonCextCapsuleBuiltins.PyCapsuleNewNode pyCapsuleNewNode,
+                        @Cached CoerceNativePointerToLongNode coerceNode) {
             var ctx = getContext(inliningTarget);
 
             long arrayDestructor = ctx.arrowSupport.getArrowArrayDestructor(inliningTarget);
-            var arrayCapsuleName = new CArrayWrappers.CByteArrayWrapper(ArrowArray.CAPSULE_NAME);
+            var arrayCapsuleName = ensurePointer(new CArrayWrappers.CByteArrayWrapper(ArrowArray.CAPSULE_NAME), inliningTarget, coerceNode);
             PyCapsule arrowArrayCapsule = pyCapsuleNewNode.execute(inliningTarget, arrowArrayAddr, arrayCapsuleName, arrayDestructor);
 
             long schemaDestructor = ctx.arrowSupport.getArrowSchemaDestructor(inliningTarget);
-            var schemaCapsuleName = new CArrayWrappers.CByteArrayWrapper(ArrowSchema.CAPSULE_NAME);
+            var schemaCapsuleName = ensurePointer(new CArrayWrappers.CByteArrayWrapper(ArrowSchema.CAPSULE_NAME), inliningTarget, coerceNode);
             PyCapsule arrowSchemaCapsule = pyCapsuleNewNode.execute(inliningTarget, arrowSchemaAddr, schemaCapsuleName, schemaDestructor);
             return PFactory.createTuple(ctx.getLanguage(inliningTarget), new Object[]{arrowSchemaCapsule, arrowArrayCapsule});
         }

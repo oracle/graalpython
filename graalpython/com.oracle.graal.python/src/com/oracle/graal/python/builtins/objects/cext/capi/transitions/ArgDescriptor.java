@@ -218,6 +218,7 @@ public enum ArgDescriptor {
     PyCFunctionObject(ArgBehavior.PyObject, "PyCFunctionObject*"),
     PyCMethodObject(ArgBehavior.PyObject, "PyCMethodObject*"),
     PY_CAPSULE_DESTRUCTOR(ArgBehavior.Pointer, "PyCapsule_Destructor"),
+    PY_CAPSULE_DESTRUCTOR_ZZZ(ArgBehavior.PointerZZZ, "PyCapsule_Destructor"),
     PyCodeObject(ArgBehavior.PyObject, "PyCodeObject*"),
     PyCodeObjectTransfer(ArgBehavior.PyObject, "PyCodeObject*", true, false),
     PyCode_WatchCallback(ArgBehavior.Pointer, "PyCode_WatchCallback"),
