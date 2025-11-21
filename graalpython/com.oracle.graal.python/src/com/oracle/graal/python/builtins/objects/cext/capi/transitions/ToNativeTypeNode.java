@@ -323,7 +323,7 @@ public abstract class ToNativeTypeNode {
          * the native pointer of the wrapper would not be equal to the corresponding native global
          * variable. E.g. 'Py_TYPE(PyBaseObjec_Type) != &PyType_Type'.
          */
-        if (!clazz.isNative()) {
+        if (clazz.isNative()) {
             throw CompilerDirectives.shouldNotReachHere();
         }
 

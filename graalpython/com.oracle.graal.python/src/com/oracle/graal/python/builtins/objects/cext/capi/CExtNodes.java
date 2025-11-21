@@ -989,11 +989,11 @@ public abstract class CExtNodes {
                 isWrapperProfile.enter(inliningTarget);
                 updateRefNode.execute(inliningTarget, pythonObject, pythonObject.decRef());
             } else {
+                assert object instanceof PythonAbstractNativeObject;
                 if (CApiTransitions.subNativeRefCount(pointer, 1) == 0) {
                     callDealloc.call(FUN_PY_DEALLOC, pointer);
                 }
             }
-            throw CompilerDirectives.shouldNotReachHere("Cannot DECREF non-object");
         }
     }
 
