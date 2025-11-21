@@ -40,65 +40,51 @@
  */
 package com.oracle.graal.python.builtins.modules.cjkcodecs;
 
-import static com.oracle.graal.python.nodes.ErrorMessages.ARGUMENT_TYPE_INVALID;
 import static com.oracle.graal.python.nodes.StringLiterals.T_IGNORE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_REPLACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.cjkcodecs.DBCSMap.MappingType;
 import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteCodec.CodecType;
-import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.CharsetMapping;
-import com.oracle.truffle.api.dsl.Bind;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "_multibytecodec")
 public final class MultibytecodecModuleBuiltins extends PythonBuiltins {
 
-    static final byte[] PyMultibyteCodec_CAPSULE_NAME = PyCapsule.capsuleName("multibytecodec.__map_*");
     /** insufficient output buffer space */
-    protected static final int MBERR_TOOSMALL = -1;
+    static final int MBERR_TOOSMALL = -1;
     /** incomplete input buffer */
-    protected static final int MBERR_TOOFEW = -2;
+    static final int MBERR_TOOFEW = -2;
     /** internal runtime error */
-    protected static final int MBERR_INTERNAL = -3;
+    static final int MBERR_INTERNAL = -3;
 
-    protected static final TruffleString ERROR_STRICT = T_STRICT;
-    protected static final TruffleString ERROR_IGNORE = T_IGNORE;
-    protected static final TruffleString ERROR_REPLACE = T_REPLACE;
+    static final TruffleString ERROR_STRICT = T_STRICT;
+    static final TruffleString ERROR_IGNORE = T_IGNORE;
+    static final TruffleString ERROR_REPLACE = T_REPLACE;
 
     static final int MBENC_FLUSH = 0x0001; /* encode all characters encodable */
     public static final int MBENC_MAX = MBENC_FLUSH;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return MultibytecodecModuleBuiltinsFactory.getFactories();
+        return new ArrayList<>();
     }
 
-    protected static void registerCodec(String name, int cidx, CodecType ct, int midx, MappingType mt,
-                    DBCSMap[] maps, MultibyteCodec[] codecs,
-                    PythonModule codec, PythonLanguage language) {
+    static void registerCodec(String name, int cidx, CodecType ct, int midx, MappingType mt,
+                    DBCSMap[] maps, MultibyteCodec[] codecs) {
         TruffleString tsName = toTruffleStringUncached(name);
         TruffleString normalizedEncoding = CharsetMapping.normalizeUncached(tsName);
         CharsetMapping.CharsetWrapper charset = CharsetMapping.getCharsetNormalized(normalizedEncoding);
@@ -107,9 +93,7 @@ public final class MultibytecodecModuleBuiltins extends PythonBuiltins {
                 codecs[cidx] = new MultibyteCodec(tsName, charset.charset(), ct);
             }
             if (midx != -1) {
-                DBCSMap h = maps[midx] = new DBCSMap(name, tsName, charset.charset(), mt);
-                codec.setAttribute(toTruffleStringUncached(h.charsetMapName),
-                                PFactory.createCapsuleJavaName(language, h, PyMultibyteCodec_CAPSULE_NAME));
+                maps[midx] = new DBCSMap(name, tsName, charset.charset(), mt);
             }
         }
     }
@@ -119,34 +103,8 @@ public final class MultibytecodecModuleBuiltins extends PythonBuiltins {
         super.initialize(core);
     }
 
-    @Builtin(name = "__create_codec", minNumOfPositionalArgs = 1, doc = "__create_codec($module, arg, /)\n--\n\n")
-    @GenerateNodeFactory
-    abstract static class CreateCodecNode extends PythonUnaryBuiltinNode {
-
-        @Specialization
-        static Object createCodec(PyCapsule arg,
-                        @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            return createCodec(inliningTarget, arg, raiseNode);
-        }
-
-        static Object createCodec(Node inliningTarget, PyCapsule arg,
-                        PRaiseNode raiseNode) {
-            if (!PyCapsule.capsuleJavaNameIs(arg, PyMultibyteCodec_CAPSULE_NAME)) {
-                throw raiseNode.raise(inliningTarget, ValueError, ARGUMENT_TYPE_INVALID);
-            }
-            MultibyteCodec codec;
-            codec = (MultibyteCodec) arg.getPointer();
-            codec.codecinit();
-            return PFactory.createMultibyteCodecObject(PythonLanguage.get(inliningTarget), codec);
-        }
-
-        @Fallback
-        static Object createCodec(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") Object arg,
-                        @Bind Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ARGUMENT_TYPE_INVALID);
-        }
-
+    static Object createCodec(Node inliningTarget, MultibyteCodec codec) {
+        codec.codecinit();
+        return PFactory.createMultibyteCodecObject(PythonLanguage.get(inliningTarget), codec);
     }
-
 }
