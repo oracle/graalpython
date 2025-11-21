@@ -225,6 +225,12 @@ public final class PythonContext extends Python3Core {
     public final HandleContext nativeContext = new HandleContext(DEBUG_CAPI);
     public final NativeBufferContext nativeBufferContext = new NativeBufferContext();
     public final ArrowSupport arrowSupport = new ArrowSupport(this);
+
+    /**
+     * List of native memory that should be free'd if this context is finalized.
+     */
+    private List<NativePointer> nativeResources;
+
     private volatile boolean finalizing;
 
     // Used for testing only.
@@ -2115,6 +2121,7 @@ public final class PythonContext extends Python3Core {
             if (nfiContext != null) {
                 nfiContext.close();
             }
+            freeContextMemory();
             // destroy thread state data, if anything is still running, it will crash now
             disposeThreadStates();
         }
@@ -2939,5 +2946,31 @@ public final class PythonContext extends Python3Core {
     @SuppressWarnings("AssertWithSideEffects")
     public static void setWasStackWalk() {
         assert (PythonContext.get(null).wasStackWalk = true);
+    }
+
+    /**
+     * Allocates native memory that will be free'd if the context is disposed.
+     *
+     * @param byteSize Number of bytes to allocate.
+     * @return An interop pointer.
+     */
+    @TruffleBoundary
+    public NativePointer allocateContextMemory(int byteSize) {
+        Unsafe unsafe = getUnsafe();
+        if (nativeResources == null) {
+            nativeResources = new LinkedList<>();
+        }
+        NativePointer nativePointer = new NativePointer(unsafe.allocateMemory(byteSize));
+        nativeResources.add(nativePointer);
+        return nativePointer;
+    }
+
+    private void freeContextMemory() {
+        if (nativeResources != null) {
+            Unsafe unsafe = getUnsafe();
+            for (NativePointer nativePointer : nativeResources) {
+                unsafe.freeMemory(nativePointer.asPointer());
+            }
+        }
     }
 }
