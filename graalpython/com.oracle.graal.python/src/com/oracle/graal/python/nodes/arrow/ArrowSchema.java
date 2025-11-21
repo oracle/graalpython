@@ -42,8 +42,9 @@ package com.oracle.graal.python.nodes.arrow;
 
 import static com.oracle.graal.python.nfi2.NativeMemory.POINTER_SIZE;
 
-import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.Encoding;
 
 import sun.misc.Unsafe;
 
@@ -74,7 +75,11 @@ public class ArrowSchema {
 
     private static final Unsafe unsafe = PythonUtils.initUnsafe();
     private static final int SIZE_OF = 72;
-    public static final byte[] CAPSULE_NAME = PyCapsule.capsuleName("arrow_schema");
+    /**
+     * This name is used for a PyCapsule which requires a {@code const char *} as name. We therefore
+     * use encoding UTF8. The TruffleString is later transformed to a native string.
+     */
+    public static final TruffleString CAPSULE_NAME = TruffleString.fromConstant("arrow_schema", Encoding.UTF_8);
     private static final byte NULL = 0;
 
     private static final long FORMAT_INDEX = 0;
