@@ -83,6 +83,20 @@ public final class NativeMemory {
         UNSAFE.setMemory(dst, count, value);
     }
 
+    /**
+     * Expects zero-terminated byte arrays.
+     */
+    public static int strcmp(long a, long b) {
+        for (long i = 0;; i++) {
+            byte ba = UNSAFE.getByte(null, a + i);
+            byte bb = UNSAFE.getByte(null, b + i);
+            int diff = (ba & 0xFF) - (bb & 0xFF);
+            if (ba == 0 || diff != 0) {
+                return diff;
+            }
+        }
+    }
+
     public static long mallocByteArray(long count) {
         assert count > 0;
         return malloc(count);

@@ -46,7 +46,7 @@ import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import java.nio.charset.StandardCharsets;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -141,7 +141,7 @@ public final class PyCapsule extends PythonBuiltinObject {
         String quote, n;
         if (data.namePtr != NULLPTR) {
             quote = "\"";
-            n = CastToJavaStringNode.getUncached().execute(FromCharPointerNodeGen.getUncached().execute(data.namePtr, false));
+            n = CastToJavaStringNode.getUncached().execute(FromCharPointerNode.executeUncached(data.namePtr));
         } else {
             quote = "";
             n = "NULL";

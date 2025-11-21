@@ -49,7 +49,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PointerZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.wrapPointer;
 import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nfi2.NativeMemory.readByteArrayElement;
 import static com.oracle.graal.python.nodes.ErrorMessages.CALLED_WITH_INCORRECT_NAME;
@@ -64,7 +63,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuil
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -171,7 +170,7 @@ public final class PythonCextCapsuleBuiltins {
     abstract static class PyCapsule_GetName extends CApiUnaryBuiltinNode {
 
         @Specialization
-        long get(PyCapsule o,
+        static long get(PyCapsule o,
                         @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             if (o.getPointer() == NULLPTR) {
@@ -181,7 +180,7 @@ public final class PythonCextCapsuleBuiltins {
         }
 
         @Fallback
-        static Object doit(@SuppressWarnings("unused") Object o,
+        static long doit(@SuppressWarnings("unused") Object o,
                         @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, ValueError, CALLED_WITH_INVALID_PY_CAPSULE_OBJECT, "PyCapsule_GetName");
         }
@@ -315,13 +314,13 @@ public final class PythonCextCapsuleBuiltins {
         @Specialization
         static long doGeneric(long namePtr, @SuppressWarnings("unused") int noBlock,
                         @Bind Node inliningTarget,
-                        @Cached CApiTransitions.CharPtrToPythonNode charPtrToPythonNode,
+                        @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.IndexOfStringNode indexOfStringNode,
                         @Cached TruffleString.SubstringNode substringNode,
                         @Cached ReadAttributeFromObjectNode getAttrNode,
                         @Cached PRaiseNode raiseNode) {
-            TruffleString name = (TruffleString) charPtrToPythonNode.execute(wrapPointer(namePtr));
+            TruffleString name = fromCharPointerNode.executeLong(namePtr, true);
             TruffleString trace = name;
             Object object = null;
             while (trace != null) {
