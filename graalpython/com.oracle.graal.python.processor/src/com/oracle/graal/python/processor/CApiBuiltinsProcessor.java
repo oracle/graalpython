@@ -214,7 +214,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
 
     private static String capiTypeToForeignPrimitiveType(VariableElement element) {
         String type = capiTypeToJavaPrimitiveType(element);
-        return type.equals("byte") ? "char" : type;
+        return type.equals("void") ? "void" : ("j" + type);
     }
 
     private static String argName(int i) {
