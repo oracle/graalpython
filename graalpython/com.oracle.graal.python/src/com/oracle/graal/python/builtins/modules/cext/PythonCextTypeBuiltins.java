@@ -126,7 +126,6 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.DynamicObject;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
@@ -143,7 +142,8 @@ public final class PythonCextTypeBuiltins {
                         @Cached PythonCextBuiltins.PromoteBorrowedValue promoteBorrowedValue,
                         @Cached CStructAccess.ReadObjectNode getNativeDict,
                         @Cached GetDictIfExistsNode getDictIfExistsNode,
-                        @CachedLibrary(limit = "3") DynamicObjectLibrary dylib,
+                        @Cached DynamicObject.GetNode getNode,
+                        @Cached DynamicObject.PutNode putNode,
                         @Cached PyDictGetItem getItem,
                         @Cached PyDictSetItem setItem) {
             TruffleString key = castToTruffleStringNode.castKnownString(inliningTarget, name);
@@ -165,7 +165,7 @@ public final class PythonCextTypeBuiltins {
                 }
                 Object value;
                 if (dict == null) {
-                    value = dylib.getOrDefault((DynamicObject) cls, key, null);
+                    value = getNode.execute((PythonManagedClass) cls, key, null);
                 } else {
                     value = getItem.execute(null, inliningTarget, dict, key);
                 }
@@ -173,7 +173,7 @@ public final class PythonCextTypeBuiltins {
                     Object promoted = promoteBorrowedValue.execute(inliningTarget, value);
                     if (promoted != null) {
                         if (dict == null) {
-                            dylib.put((DynamicObject) cls, key, promoted);
+                            putNode.execute((PythonManagedClass) cls, key, promoted);
                         } else {
                             setItem.execute(null, inliningTarget, dict, key, promoted);
                         }

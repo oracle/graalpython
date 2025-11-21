@@ -164,9 +164,8 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -225,10 +224,10 @@ public final class ObjectBuiltins extends PythonBuiltins {
 
             @Specialization
             static void doPythonObject(PythonObject self, Object newClass,
-                            @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
+                            @Cached DynamicObject.SetDynamicTypeNode setDynamicTypeNode) {
                 // Clear the dynamic type when setting the class, so further class changes do not
                 // create new shapes
-                dylib.setDynamicType(self, PNone.NO_VALUE);
+                setDynamicTypeNode.execute(self, PNone.NO_VALUE);
                 self.setPythonClass(newClass);
             }
 

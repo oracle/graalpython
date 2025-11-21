@@ -45,7 +45,6 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -53,9 +52,7 @@ import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NonIdempotent;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.DynamicObject;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Location;
 import com.oracle.truffle.api.object.Property;
 import com.oracle.truffle.api.object.Shape;
@@ -92,7 +89,7 @@ public abstract class ReadAttributeFromPythonObjectNode extends PNodeWithContext
     public abstract Object execute(DynamicObject object, TruffleString key, Object defaultValue);
 
     protected static Object getAttribute(DynamicObject object, TruffleString key, Object defaultValue) {
-        return DynamicObjectLibrary.getUncached().getOrDefault(object, key, defaultValue);
+        return DynamicObject.GetNode.getUncached().execute(object, key, defaultValue);
     }
 
     @Idempotent
@@ -131,7 +128,6 @@ public abstract class ReadAttributeFromPythonObjectNode extends PNodeWithContext
                     @Cached(value = "dynamicObject", weak = true) DynamicObject cachedObject,
                     @Cached("dynamicObject.getShape()") Shape cachedShape,
                     @Cached("getLocationOrNull(cachedShape.getProperty(cachedKey))") Location loc,
-                    @Cached("dynamicObject.getShape().getPropertyAssumption(key)") Assumption propertyAssumption,
                     @Cached(value = "getAttribute(dynamicObject, key, defaultValue)", weak = true) Object value) {
         return value;
     }
@@ -153,14 +149,13 @@ public abstract class ReadAttributeFromPythonObjectNode extends PNodeWithContext
                     @Cached(value = "dynamicObject", weak = true) DynamicObject cachedObject,
                     @Cached("dynamicObject.getShape()") Shape cachedShape,
                     @Cached("getLocationOrNull(cachedShape.getProperty(cachedKey))") Location loc,
-                    @Cached("dynamicObject.getShape().getPropertyAssumption(key)") Assumption propertyAssumption,
                     @Cached(value = "getAttribute(dynamicObject, key, defaultValue)") Object value) {
         return value;
     }
 
-    @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", replaces = {"readFinalAttr", "readFinalPrimitiveAttr"})
+    @Specialization(replaces = {"readFinalAttr", "readFinalPrimitiveAttr"})
     protected static Object readDirect(DynamicObject dynamicObject, TruffleString key, Object defaultValue,
-                    @CachedLibrary("dynamicObject") DynamicObjectLibrary dylib) {
-        return dylib.getOrDefault(dynamicObject, key, defaultValue);
+                    @Cached DynamicObject.GetNode getNode) {
+        return getNode.execute(dynamicObject, key, defaultValue);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,20 +43,19 @@ package com.oracle.graal.python.nodes.attributes;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.DynamicObject;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Writes attribute directly to the underlying {@link DynamicObject} regardless of whether the
  * object has dict, also bypasses any other additional logic in {@link WriteAttributeToObjectNode}.
- * This node does not provide any functionality on top of {@link DynamicObjectLibrary}, its purpose
+ * This node does not provide any functionality on top of {@link DynamicObject.PutNode}, its purpose
  * is to provide an abstraction in preparation for the transition from {@link DynamicObject} to
  * {@link com.oracle.graal.python.builtins.objects.common.ObjectHashMap}.
  */
@@ -80,9 +79,9 @@ public abstract class WriteAttributeToPythonObjectNode extends PNodeWithContext 
         return WriteAttributeToPythonObjectNodeGen.getUncached();
     }
 
-    @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()")
+    @Specialization
     static void write(PythonObject dynamicObject, TruffleString key, Object value,
-                    @CachedLibrary("dynamicObject") DynamicObjectLibrary dylib) {
-        dylib.put(dynamicObject, key, value);
+                    @Cached DynamicObject.PutNode putNode) {
+        putNode.execute(dynamicObject, key, value);
     }
 }

@@ -278,6 +278,8 @@ public final class ModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached IsBuiltinObjectProfile isAttrError,
                         @Cached ReadAttributeFromModuleNode readGetattr,
+                        @Cached ReadAttributeFromModuleNode readName,
+                        @Cached ReadAttributeFromModuleNode readSpec,
                         @Cached ReadAttributeFromObjectNode readInitializing,
                         @Cached InlinedConditionProfile customGetAttr,
                         @Cached CallNode callNode,
@@ -291,13 +293,13 @@ public final class ModuleBuiltins extends PythonBuiltins {
             } else {
                 TruffleString moduleName;
                 try {
-                    moduleName = castNameToStringNode.execute(inliningTarget, readGetattr.execute(self, T___NAME__));
+                    moduleName = castNameToStringNode.execute(inliningTarget, readName.execute(self, T___NAME__));
                 } catch (CannotCastException ce) {
                     // we just don't have the module name
                     moduleName = null;
                 }
                 if (moduleName != null) {
-                    Object moduleSpec = readGetattr.execute(self, T___SPEC__);
+                    Object moduleSpec = readSpec.execute(self, T___SPEC__);
                     if (moduleSpec != PNone.NO_VALUE) {
                         Object isInitializing = readInitializing.execute(moduleSpec, T__INITIALIZING);
                         if (isInitializing != PNone.NO_VALUE && castToBooleanNode.execute(frame, isInitializing)) {
