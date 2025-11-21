@@ -197,8 +197,8 @@ public abstract class ToNativeTypeNode {
         writeLongField(mem, CFields.PyVarObject__ob_size, 0L);
 
         TruffleString nameUtf8 = SwitchEncodingNode.getUncached().execute(clazz.getName(), Encoding.UTF_8);
-        // TODO(fa): This will leak the native 'char *'. It should be free'd if the whole type is free'd.
-        TruffleString nativeUncached = nameUtf8.asNativeUncached(NativeMemory::malloc, Encoding.UTF_8, false, true);
+        // TODO(fa): the allocated 'char *' will be free'd at context finalization. It should be free'd if the type is free'd.
+        TruffleString nativeUncached = nameUtf8.asNativeUncached(ctx::allocateContextMemory, Encoding.UTF_8, false, true);
         Object internalNativePointerUncached = nativeUncached.getInternalNativePointerUncached(Encoding.UTF_8);
         long namePointer = PythonUtils.coerceToLong(internalNativePointerUncached, InteropLibrary.getUncached());
 
