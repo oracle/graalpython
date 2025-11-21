@@ -77,6 +77,7 @@ public final class PFrame extends PythonBuiltinObject {
     private Object localsDict;
     private PythonObject globals;
     private final Reference virtualFrameInfo;
+    private final Thread thread;
     /**
      * For the manual bytecode interpreter the location can be the {@link PBytecodeRootNode} itself,
      * but for the Bytecode DSL interpreter, the location must be an AST node connected to the
@@ -107,7 +108,7 @@ public final class PFrame extends PythonBuiltinObject {
 
     /**
      * The last {@link CallerFlags} that were used the last time the frame was synced or passed down
-     * to a callee. See {@link #isStale(VirtualFrame, int)} for more details.
+     * to a callee. See {@link #needsRefresh(VirtualFrame, int)} for more details.
      */
     private int lastCallerFlags;
 
@@ -208,6 +209,7 @@ public final class PFrame extends PythonBuiltinObject {
         // Mark everything as current for now. MaterializeFrameNode will set lastCallerFlags to a
         // narrower value if needed
         this.lastCallerFlags = CallerFlags.ALL_FRAME_FLAGS;
+        this.thread = Thread.currentThread();
     }
 
     public PFrame(PythonLanguage lang, @SuppressWarnings("unused") Object threadState, PCode code, PythonObject globals, Object localsDict) {
@@ -223,6 +225,7 @@ public final class PFrame extends PythonBuiltinObject {
         this.localsDict = localsDict;
         // This is a synthetic frame, there will be no sync, mark everything as current
         this.lastCallerFlags = CallerFlags.ALL_FRAME_FLAGS;
+        this.thread = null;
     }
 
     /**
@@ -252,18 +255,27 @@ public final class PFrame extends PythonBuiltinObject {
      * @param callerFlags Specifies which fields should be checked for needing sync. It should be
      *            flags from {@link CallerFlags}.
      */
-    public boolean isStale(VirtualFrame frame, int callerFlags) {
-        if (hasCustomLocals) {
-            // Custom locals don't need locals sync
-            callerFlags &= ~CallerFlags.NEEDS_LOCALS;
-        }
-        if (CallerFlags.needsLocals(callerFlags) && locals == null) {
+    public boolean needsRefresh(VirtualFrame frame, int callerFlags) {
+        if (outdatedCallerFlags(callerFlags)) {
             return true;
         }
         if (CallerFlags.needsLocals(callerFlags) || CallerFlags.needsLasti(callerFlags)) {
             if (frame != null && PArguments.getCurrentFrameInfo(frame) == getRef()) {
                 return true;
             }
+            // Frames from other threads need to go through slow path
+            return thread != null && thread != Thread.currentThread();
+        }
+        return false;
+    }
+
+    public boolean outdatedCallerFlags(int callerFlags) {
+        if (hasCustomLocals) {
+            // Custom locals don't need locals sync
+            callerFlags &= ~CallerFlags.NEEDS_LOCALS;
+        }
+        if (CallerFlags.needsLocals(callerFlags) && locals == null) {
+            return true;
         }
         return (callerFlags & lastCallerFlags) != callerFlags;
     }
@@ -289,6 +301,10 @@ public final class PFrame extends PythonBuiltinObject {
 
     public PFrame.Reference getRef() {
         return virtualFrameInfo;
+    }
+
+    public Thread getThread() {
+        return thread;
     }
 
     public PFrame.Reference getBackref() {

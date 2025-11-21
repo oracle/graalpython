@@ -246,3 +246,35 @@ def test_clearing_globals():
     junk = globals().clear()
     assert "foo" not in globals().keys()
     assert "junk" in globals().keys()
+
+
+def test_frame_from_another_thread():
+    import sys, threading
+    event1 = threading.Event()
+    event2 = threading.Event()
+    event3 = threading.Event()
+    event4 = threading.Event()
+    frame = None
+    def target():
+        # Mind the line numbers
+        nonlocal frame
+        frame = sys._getframe()
+        a = 1
+        event1.set()
+        event2.wait(timeout=60)
+        b = 2
+        event3.set()
+        event4.wait(timeout=60)
+    thread = threading.Thread(target=target)
+    thread.start()
+    event1.wait(timeout=60)
+    firstlineno = target.__code__.co_firstlineno
+    assert 5 <= frame.f_lineno - firstlineno <= 6
+    assert frame.f_locals['a'] == 1
+    assert 'b' not in frame.f_locals
+    event2.set()
+    event3.wait(timeout=60)
+    assert 8 <= frame.f_lineno - firstlineno <= 9
+    assert frame.f_locals['b'] == 2
+    event4.set()
+    thread.join(timeout=60)
