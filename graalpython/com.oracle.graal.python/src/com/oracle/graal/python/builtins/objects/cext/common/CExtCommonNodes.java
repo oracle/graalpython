@@ -76,7 +76,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPoin
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefRawNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.GetIndexNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ReadUnicodeArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.TransformPExceptionToNativeCachedNodeGen;
@@ -557,11 +556,6 @@ public abstract class CExtCommonNodes {
     public abstract static class GetByteArrayNode extends Node {
 
         public abstract byte[] execute(Node inliningTarget, Object obj, long n) throws InteropException, OverflowException;
-
-        @Specialization
-        static byte[] doCArrayWrapper(CByteArrayWrapper obj, long n) {
-            return subRangeIfNeeded(obj.getByteArray(), n);
-        }
 
         @Specialization
         static byte[] doForeign(Node inliningTarget, Object obj, long n,

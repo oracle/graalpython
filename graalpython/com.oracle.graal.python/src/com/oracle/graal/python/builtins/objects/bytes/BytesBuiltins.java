@@ -36,10 +36,10 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -49,8 +49,8 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltinsClinicProviders.BytesNewNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
-import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.SequenceStorageMpSubscriptNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.SequenceStorageSqItemNode;
@@ -65,6 +65,7 @@ import com.oracle.graal.python.lib.PyBytesCheckExactNode;
 import com.oracle.graal.python.lib.PyBytesCheckNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.RichCmpOp;
+import com.oracle.graal.python.nfi2.NativeMemory;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -189,14 +190,15 @@ public class BytesBuiltins extends PythonBuiltins {
             @Specialization(guards = "needsNativeAllocationNode.execute(inliningTarget, cls)")
             static Object doNative(@SuppressWarnings("unused") Node inliningTarget, Object cls, byte[] bytes,
                             @SuppressWarnings("unused") @Shared @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
+                            @Cached AsCharPointerNode asCharPointerNode,
                             @Cached(inline = false) CApiTransitions.PythonToNativeNode toNative,
                             @Cached(inline = false) CApiTransitions.NativeToPythonTransferNode toPython,
                             @Cached(inline = false) CExtNodes.PCallCapiFunction call) {
-                CArrayWrappers.CByteArrayWrapper wrapper = new CArrayWrappers.CByteArrayWrapper(bytes);
+                long dataPointer = asCharPointerNode.execute(bytes);
                 try {
-                    return toPython.execute(call.call(FUN_BYTES_SUBTYPE_NEW, toNative.execute(cls), wrapper, bytes.length));
+                    return toPython.execute(call.call(FUN_BYTES_SUBTYPE_NEW, toNative.execute(cls), dataPointer, bytes.length));
                 } finally {
-                    wrapper.free();
+                    NativeMemory.free(dataPointer);
                 }
             }
 

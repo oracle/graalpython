@@ -48,8 +48,8 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMe
 import java.util.logging.Level;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
@@ -143,8 +143,9 @@ public record PyMethodDefHelper(TruffleString name, Object meth, int flags, Truf
     @TruffleBoundary
     long allocate() {
         assert name != null;
-        long nativeName = CArrayWrappers.stringToNativeUtf8BytesUncached(name);
-        long nativeDoc = doc != null ? CArrayWrappers.stringToNativeUtf8BytesUncached(doc) : 0L;
+        PythonContext pythonContext = PythonContext.get(null);
+        long nativeName = pythonContext.stringToNativeUtf8BytesUncached(name);
+        long nativeDoc = doc != null ? pythonContext.stringToNativeUtf8BytesUncached(doc) : 0L;
         long nativeMeth = CoerceNativePointerToLongNode.executeUncached(meth);
 
         long mem = CStructAccess.allocate(CStructs.PyMethodDef);
@@ -166,7 +167,7 @@ public record PyMethodDefHelper(TruffleString name, Object meth, int flags, Truf
         // we only read the other fields and decode strings for logging
         if (LOGGER.isLoggable(Level.FINER)) {
             assert namePointer != 0L;
-            TruffleString name = FromCharPointerNodeGen.getUncached().execute(namePointer, false);
+            TruffleString name = FromCharPointerNode.executeUncached(namePointer, false);
             TruffleString doc = null;
             if (docPointer != 0L) {
                 doc = FromCharPointerNodeGen.getUncached().execute(docPointer, false);

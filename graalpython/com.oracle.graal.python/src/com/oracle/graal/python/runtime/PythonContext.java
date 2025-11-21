@@ -209,6 +209,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.Encoding;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 import com.oracle.truffle.api.utilities.TriState;
 import com.oracle.truffle.api.utilities.TruffleWeakReference;
@@ -219,8 +220,10 @@ import sun.misc.Unsafe;
 public final class PythonContext extends Python3Core {
     public static final TruffleString T_IMPLEMENTATION = tsLiteral("implementation");
     public static final boolean DEBUG_CAPI = Boolean.getBoolean("python.DebugCAPI");
+    public static final Unsafe UNSAFE = PythonUtils.initUnsafe();
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PythonContext.class);
+    private static final long SIZEOF_INT64 = 8;
 
     public final HandleContext nativeContext = new HandleContext(DEBUG_CAPI);
     public final NativeBufferContext nativeBufferContext = new NativeBufferContext();
@@ -254,6 +257,21 @@ public final class PythonContext extends Python3Core {
                         "Ensure that native access is disallowed for this context and configure GraalPy to use Java backends where possible. " +
                         "Refer to https://www.graalvm.org/python/docs/ for more information on native and Java module backends.");
         return getSupportLibName(getPythonOS(), libName);
+    }
+
+    /**
+     * Encodes the provided TruffleString as UTF-8 bytes and copies the bytes (and an additional NUL
+     * char) to a freshly allocated off-heap {@code int8*} (using {@code Unsafe}). The memory will
+     * be released at context finalization.
+     */
+    public long stringToNativeUtf8Bytes(TruffleString string) {
+        TruffleString nativeString = string.switchEncodingUncached(Encoding.UTF_8).asNativeUncached(this::allocateContextMemory, Encoding.UTF_8, false, true);
+        Object pointerObject = nativeString.getInternalNativePointerUncached(Encoding.UTF_8);
+        return PythonUtils.coerceToLong(pointerObject, InteropLibrary.getUncached());
+    }
+
+    public long stringToNativeUtf8BytesUncached(TruffleString string) {
+        return stringToNativeUtf8Bytes(string);
     }
 
     /**

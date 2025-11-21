@@ -64,6 +64,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.Encoding;
 
 /**
  * A class to allocate and initialize C structure {@code PyDateTime_CAPI}.
@@ -96,7 +97,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 public abstract class PyDateTimeCAPIWrapper {
 
     static final TruffleString T_DATETIME_CAPI = tsLiteral("datetime_CAPI");
-    static final byte[] T_PYDATETIME_CAPSULE_NAME = PyCapsule.capsuleName("datetime.datetime_CAPI");
+    static final String J_PYDATETIME_CAPSULE_NAME = "datetime.datetime_CAPI";
 
     private static final TruffleString T_TIMEDELTA = tsLiteral("timedelta");
     public static final TruffleString T_TZINFO = tsLiteral("tzinfo");
@@ -129,7 +130,8 @@ public abstract class PyDateTimeCAPIWrapper {
 
         long pointer = allocatePyDatetimeCAPI(datetimeModule);
 
-        PyCapsule capsule = PFactory.createCapsuleJavaName(context.getLanguage(), pointer, T_PYDATETIME_CAPSULE_NAME);
+        long name = context.stringToNativeUtf8Bytes(TruffleString.fromJavaStringUncached(J_PYDATETIME_CAPSULE_NAME, Encoding.US_ASCII));
+        PyCapsule capsule = PFactory.createCapsuleNativeName(context.getLanguage(), pointer, name);
         PyObjectSetAttr.executeUncached(datetimeModule, T_DATETIME_CAPI, capsule);
         assert PyObjectGetAttr.executeUncached(datetimeModule, T_DATETIME_CAPI) != context.getNativeNull();
         return capsule;

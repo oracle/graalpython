@@ -120,9 +120,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateStrongRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
-import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
-import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureTruffleStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionFromNativeNode;
@@ -438,20 +435,6 @@ public abstract class CExtNodes {
         public abstract TruffleString execute(Object charPtr, boolean copy);
 
         @Specialization
-        static TruffleString doCStringWrapper(CStringWrapper cStringWrapper, @SuppressWarnings("unused") boolean copy) {
-            return cStringWrapper.getString();
-        }
-
-        @Specialization
-        static TruffleString doCByteArrayWrapper(CByteArrayWrapper cByteArrayWrapper, boolean copy,
-                        @Shared @Cached TruffleString.FromByteArrayNode fromBytes,
-                        @Shared("switchEncoding") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
-            CompilerAsserts.partialEvaluationConstant(copy);
-            byte[] byteArray = cByteArrayWrapper.getByteArray();
-            return switchEncodingNode.execute(fromBytes.execute(byteArray, 0, byteArray.length, Encoding.UTF_8, copy), TS_ENCODING);
-        }
-
-        @Specialization
         static TruffleString doPointer(long charPtr, @SuppressWarnings("unused") boolean copy,
                         @Shared @Cached TruffleString.FromByteArrayNode fromBytes,
                         @Shared("switchEncoding") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
@@ -465,18 +448,14 @@ public abstract class CExtNodes {
             return switchEncodingNode.execute(fromBytes.execute(result, Encoding.UTF_8, false), TS_ENCODING);
         }
 
-        @Specialization(guards = "!isCArrayWrapper(charPtr)")
-        static TruffleString doPointer(Object charPtr, boolean copy,
+        @Specialization
+        static TruffleString doInteropPointer(Object charPtr, boolean copy,
                         @Bind Node inliningTarget,
                         @Cached CoerceNativePointerToLongNode coerceNode,
                         @Shared @Cached TruffleString.FromByteArrayNode fromBytes,
                         @Shared("switchEncoding") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             long rawCharPtr = ensurePointer(charPtr, inliningTarget, coerceNode);
             return doPointer(rawCharPtr, copy, fromBytes, switchEncodingNode);
-        }
-
-        static boolean isCArrayWrapper(Object object) {
-            return object instanceof CArrayWrapper || object instanceof PySequenceArrayWrapper;
         }
     }
 

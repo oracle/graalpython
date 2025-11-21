@@ -82,7 +82,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.SetterRoot;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
-import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
@@ -361,7 +360,6 @@ public final class PythonCextTypeBuiltins {
         @Specialization
         @TruffleBoundary
         static GetSetDescriptor createGetSet(Node inliningTarget, TruffleString name, Object cls, long getter, long setter, Object doc, long closure) {
-            assert !(doc instanceof CArrayWrapper);
             // note: 'doc' may be NULL; in this case, we would store 'None'
             PBuiltinFunction get = null;
             PythonLanguage language = PythonLanguage.get(inliningTarget);

@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.cext.capi.transitions;
 
 import static com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.lookupNativeI64MemberInMRO;
 import static com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.lookupNativeMemberInMRO;
-import static com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.stringToNativeUtf8BytesUncached;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyObject__ob_refcnt;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyObject__ob_type;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_alloc;
@@ -238,7 +237,7 @@ public abstract class ToNativeTypeNode {
         Object docObj = clazz.getAttribute(SpecialAttributeNames.T___DOC__);
         long docPtr;
         try {
-            docPtr = stringToNativeUtf8BytesUncached(CastToTruffleStringNode.executeUncached(docObj));
+            docPtr = ctx.stringToNativeUtf8BytesUncached(CastToTruffleStringNode.executeUncached(docObj));
         } catch (CannotCastException e) {
             // if not directly a string, give up (we don't call descriptors here)
             docPtr = NULLPTR;

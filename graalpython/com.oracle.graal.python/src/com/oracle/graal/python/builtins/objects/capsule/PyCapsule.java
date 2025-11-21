@@ -43,8 +43,6 @@ package com.oracle.graal.python.builtins.objects.capsule;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.Capsule;
 import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 
-import java.nio.charset.StandardCharsets;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
@@ -57,10 +55,6 @@ import com.oracle.truffle.api.library.ExportMessage;
 
 @ExportLibrary(InteropLibrary.class)
 public final class PyCapsule extends PythonBuiltinObject {
-
-    public static byte[] capsuleName(String string) {
-        return string.getBytes(StandardCharsets.US_ASCII);
-    }
 
     /*
      * This class provides indirection to all the data members. Capsule destructors take the
