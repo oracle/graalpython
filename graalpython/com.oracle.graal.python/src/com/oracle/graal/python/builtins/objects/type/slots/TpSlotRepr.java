@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
@@ -66,6 +67,7 @@ import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -109,11 +111,13 @@ public final class TpSlotRepr {
                         @Cached(inline = false) PythonToNativeNode toNativeNode,
                         @Cached ExternalFunctionInvokeNode externalInvokeNode,
                         @Cached NativeToPythonInternalNode toPythonNode,
-                        @Cached(inline = false) PyObjectCheckFunctionResultNode checkResultNode) {
+                        @Cached(inline = false) PyObjectCheckFunctionResultNode checkResultNode,
+                        @Exclusive @Cached CoerceNativePointerToLongNode coerceNativePointerToLongNode) {
             PythonThreadState state = getThreadStateNode.execute(inliningTarget);
             Object result = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T___REPR__, slot.callable,
                             toNativeNode.execute(self));
-            return checkResultNode.execute(state, T___REPR__, toPythonNode.execute(inliningTarget, result, true));
+            long lresult = coerceNativePointerToLongNode.execute(inliningTarget, result);
+            return checkResultNode.execute(state, T___REPR__, toPythonNode.execute(inliningTarget, lresult, true));
         }
 
         @Specialization(replaces = "callCachedBuiltin")

@@ -80,6 +80,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -369,12 +370,14 @@ public class TpSlotBinaryOp {
                         @Cached(inline = false) PythonToNativeNode argToNativeNode,
                         @Exclusive @Cached ExternalFunctionInvokeNode externalInvokeNode,
                         @Cached NativeToPythonInternalNode toPythonNode,
-                        @Exclusive @Cached(inline = false) PyObjectCheckFunctionResultNode checkResultNode) {
+                        @Exclusive @Cached(inline = false) PyObjectCheckFunctionResultNode checkResultNode,
+                        @Exclusive @Cached CoerceNativePointerToLongNode coerceNativePointerToLongNode) {
             PythonContext ctx = PythonContext.get(inliningTarget);
             PythonThreadState state = getThreadStateNode.execute(inliningTarget, ctx);
             Object result = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, op.name, slot.callable,
                             selfToNativeNode.execute(self), argToNativeNode.execute(arg));
-            return checkResultNode.execute(state, op.name, toPythonNode.execute(inliningTarget, result, true));
+            long lresult = coerceNativePointerToLongNode.execute(inliningTarget, result);
+            return checkResultNode.execute(state, op.name, toPythonNode.execute(inliningTarget, lresult, true));
         }
 
         @SuppressWarnings("unused")

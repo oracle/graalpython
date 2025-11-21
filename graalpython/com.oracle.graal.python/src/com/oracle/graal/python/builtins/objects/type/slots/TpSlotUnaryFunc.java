@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.type.slots.PythonDispatchers.UnaryPythonSlotDispatcherNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltinBase;
@@ -123,10 +124,12 @@ public final class TpSlotUnaryFunc {
                         @Cached(inline = false) PythonToNativeNode toNativeNode,
                         @Cached ExternalFunctionInvokeNode externalInvokeNode,
                         @Cached NativeToPythonInternalNode toPythonNode,
-                        @Cached(inline = false) PyObjectCheckFunctionResultNode checkResultNode) {
+                        @Cached(inline = false) PyObjectCheckFunctionResultNode checkResultNode,
+                        @Cached CoerceNativePointerToLongNode coerceNativePointerToLongNode) {
             PythonThreadState state = getThreadStateNode.execute(inliningTarget);
             Object result = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T_UNARY_SLOT, slot.callable, toNativeNode.execute(self));
-            return checkResultNode.execute(state, T_UNARY_SLOT, toPythonNode.execute(inliningTarget, result, true, true));
+            long lresult = coerceNativePointerToLongNode.execute(inliningTarget, result);
+            return checkResultNode.execute(state, T_UNARY_SLOT, toPythonNode.execute(inliningTarget, lresult, true, true));
         }
 
         @Specialization(replaces = "callCachedBuiltin")

@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -224,14 +225,16 @@ public abstract class TpSlotDescrGet {
                         @Cached(inline = false) PythonToNativeNode valueToNativeNode,
                         @Cached ExternalFunctionInvokeNode externalInvokeNode,
                         @Cached NativeToPythonInternalNode toPythonNode,
-                        @Cached(inline = false) PyObjectCheckFunctionResultNode checkResultNode) {
+                        @Cached(inline = false) PyObjectCheckFunctionResultNode checkResultNode,
+                        @Exclusive @Cached CoerceNativePointerToLongNode coerceNativePointerToLongNode) {
             PythonContext ctx = PythonContext.get(inliningTarget);
             PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, ctx);
             Object result = externalInvokeNode.call(frame, inliningTarget, threadState, C_API_TIMING, T___GET__, slot.callable, //
                             selfToNativeNode.execute(self), //
                             objToNativeNode.execute(obj), //
                             valueToNativeNode.execute(value));
-            return checkResultNode.execute(threadState, T___GET__, toPythonNode.execute(inliningTarget, result, true));
+            long lresult = coerceNativePointerToLongNode.execute(inliningTarget, result);
+            return checkResultNode.execute(threadState, T___GET__, toPythonNode.execute(inliningTarget, lresult, true));
         }
 
         @TruffleBoundary

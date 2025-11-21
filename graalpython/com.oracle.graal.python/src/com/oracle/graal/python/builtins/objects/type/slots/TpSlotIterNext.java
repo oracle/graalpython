@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.type.slots.NodeFactoryUtils.WrapperNodeFactory;
@@ -74,6 +75,7 @@ import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -190,10 +192,12 @@ public final class TpSlotIterNext {
                         @Cached(inline = false) PythonToNativeNode toNativeNode,
                         @Cached ExternalFunctionInvokeNode externalInvokeNode,
                         @Cached NativeToPythonInternalNode toPythonNode,
-                        @Cached CExtCommonNodes.ReadAndClearNativeException readAndClearNativeException) {
+                        @Cached CExtCommonNodes.ReadAndClearNativeException readAndClearNativeException,
+                        @Exclusive @Cached CoerceNativePointerToLongNode coerceNativePointerToLongNode) {
             PythonThreadState state = getThreadStateNode.execute(inliningTarget);
             Object nativeResult = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T___NEXT__, slot.callable, toNativeNode.execute(self));
-            Object pythonResult = toPythonNode.execute(inliningTarget, nativeResult, true);
+            long lresult = coerceNativePointerToLongNode.execute(inliningTarget, nativeResult);
+            Object pythonResult = toPythonNode.execute(inliningTarget, lresult, true);
             if (pythonResult == PNone.NO_VALUE) {
                 Object currentException = readAndClearNativeException.execute(inliningTarget, state);
                 if (currentException != PNone.NO_VALUE) {

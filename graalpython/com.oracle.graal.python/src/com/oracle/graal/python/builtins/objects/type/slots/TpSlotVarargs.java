@@ -63,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -101,6 +102,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -321,7 +323,7 @@ public final class TpSlotVarargs {
                         @Cached ExternalFunctionInvokeNode externalInvokeNode) {
             PythonLanguage language = context.getLanguage(inliningTarget);
             PythonThreadState state = getThreadStateNode.execute(inliningTarget, context);
-            PTuple argsTuple = createArgsTupleNode.execute(inliningTarget, language, args, eagerTupleState);
+            PTuple argsTuple = createArgsTupleNode.execute(inliningTarget, context, args, eagerTupleState);
             Object kwargsDict = keywords.length > 0 ? PFactory.createDict(language, keywords) : NO_VALUE;
             Object nativeResult = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, name, slot.callable,
                             toNativeNode.execute(self), toNativeNode.execute(argsTuple), toNativeNode.execute(kwargsDict));
@@ -414,9 +416,11 @@ public final class TpSlotVarargs {
         static Object callNative(VirtualFrame frame, Node inliningTarget, TpSlotCExtNative slot, Object self, Object[] args, PKeyword[] keywords,
                         @Cached DefaultCheckFunctionResultNode checkResult,
                         @Cached NativeToPythonInternalNode toPythonNode,
-                        @Cached CallSlotVarargsNativeNode callNode) {
+                        @Cached CallSlotVarargsNativeNode callNode,
+                        @Exclusive @Cached CoerceNativePointerToLongNode coerceNativePointerToLongNode) {
             Object result = callNode.execute(frame, slot, self, args, keywords, T___NEW__, checkResult);
-            return toPythonNode.execute(inliningTarget, result, true, true);
+            long lresult = coerceNativePointerToLongNode.execute(inliningTarget, result);
+            return toPythonNode.execute(inliningTarget, lresult, true, true);
         }
     }
 
@@ -437,9 +441,11 @@ public final class TpSlotVarargs {
         static Object callNative(VirtualFrame frame, Node inliningTarget, TpSlotCExtNative slot, Object self, Object[] args, PKeyword[] keywords,
                         @Cached DefaultCheckFunctionResultNode checkResult,
                         @Cached NativeToPythonInternalNode toPythonNode,
-                        @Cached CallSlotVarargsNativeNode callNode) {
+                        @Cached CallSlotVarargsNativeNode callNode,
+                        @Exclusive @Cached CoerceNativePointerToLongNode coerceNativePointerToLongNode) {
             Object result = callNode.execute(frame, slot, self, args, keywords, T___CALL__, checkResult);
-            return toPythonNode.execute(inliningTarget, result, true, true);
+            long lresult = coerceNativePointerToLongNode.execute(inliningTarget, result);
+            return toPythonNode.execute(inliningTarget, lresult, true, true);
         }
     }
 }
