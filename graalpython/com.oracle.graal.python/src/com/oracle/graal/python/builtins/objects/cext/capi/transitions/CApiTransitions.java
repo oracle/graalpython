@@ -1593,8 +1593,7 @@ public abstract class CApiTransitions {
                 assert !CApiContext.isSpecialSingleton(pythonObject);
                 PythonContext context = PythonContext.get(inliningTarget);
                 boolean immortal = context.getTrue() == pythonObject || context.getFalse() == pythonObject;
-                firstToNativeNode.execute(inliningTarget, pythonObject, FirstToNativeNode.getInitialRefcnt(needsTransfer, immortal));
-                // objectNativeWrapper.toNative(needsTransfer, inliningTarget, firstToNativeNode);
+                pythonObject.setNativePointer(firstToNativeNode.execute(inliningTarget, pythonObject, FirstToNativeNode.getInitialRefcnt(needsTransfer, immortal)));
             } else if (needsTransfer) {
                 /*
                  * This creates a new reference to the object and the ownership is transferred to
@@ -1607,7 +1606,7 @@ public abstract class CApiTransitions {
                 assert refCnt > MANAGED_REFCNT;
                 updateRefNode.execute(inliningTarget, pythonObject, refCnt);
             }
-            assert !needsTransfer || isGcTrackedIfGcType(pythonObject);
+            assert pythonObject.isNative();
             assert isGcTrackedIfNecessary(pythonObject);
             return pythonObject.getNativePointer();
         }
