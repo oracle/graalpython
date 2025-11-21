@@ -41,10 +41,10 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.PythonLanguage.CONTEXT_INSENSITIVE_SINGLETONS;
-import static com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper.IMMORTAL_REFCNT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.pollReferenceQueue;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readIntField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
+import static com.oracle.graal.python.builtins.objects.object.PythonObject.IMMORTAL_REFCNT;
 import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___FILE__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DASH;
