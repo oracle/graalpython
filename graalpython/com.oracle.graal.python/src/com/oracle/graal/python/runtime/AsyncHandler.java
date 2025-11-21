@@ -64,7 +64,7 @@ import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
+import com.oracle.graal.python.nodes.frame.ReadFrameNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -279,7 +279,7 @@ public class AsyncHandler {
         static final int ASYNC_ARG_COUNT = 2;
 
         @Child private CallNode callNode = CallNode.create();
-        @Child private ReadCallerFrameNode readCallerFrameNode = ReadCallerFrameNode.create();
+        @Child private ReadFrameNode readFrameNode = ReadFrameNode.create();
         @Child private CalleeContext calleeContext = CalleeContext.create();
 
         protected CallRootNode(TruffleLanguage<?> language) {
@@ -295,7 +295,7 @@ public class AsyncHandler {
             Object[] arguments = Arrays.copyOfRange(frameArguments, PArguments.USER_ARGUMENTS_OFFSET + ASYNC_ARG_COUNT, frameArguments.length);
 
             if (frameIndex >= 0) {
-                arguments[frameIndex] = readCallerFrameNode.executeWith(frame, 0);
+                arguments[frameIndex] = readFrameNode.getCurrentPythonFrame(frame);
             }
             try {
                 return callNode.execute(frame, callable, arguments);

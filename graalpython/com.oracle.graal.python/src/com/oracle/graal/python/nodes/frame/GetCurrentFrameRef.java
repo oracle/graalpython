@@ -43,6 +43,7 @@ package com.oracle.graal.python.nodes.frame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.runtime.CallerFlags;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -85,11 +86,11 @@ public abstract class GetCurrentFrameRef extends Node {
             // pass the info on the next call
             flag[0] = ConditionProfile.create();
             if (ref == null) {
-                ref = PArguments.getCurrentFrameInfo(ReadCallerFrameNode.getCurrentFrame(this, FrameInstance.FrameAccess.READ_ONLY));
+                ref = PArguments.getCurrentFrameInfo(ReadFrameNode.getCurrentFrame(this, FrameInstance.FrameAccess.READ_ONLY, CallerFlags.NEEDS_FRAME_REFERENCE));
             }
         }
         if (flag[0].profile(ref == null)) {
-            ref = PArguments.getCurrentFrameInfo(ReadCallerFrameNode.getCurrentFrame(this, FrameInstance.FrameAccess.READ_ONLY));
+            ref = PArguments.getCurrentFrameInfo(ReadFrameNode.getCurrentFrame(this, FrameInstance.FrameAccess.READ_ONLY, CallerFlags.NEEDS_FRAME_REFERENCE));
         }
 
         return ref;
@@ -102,7 +103,7 @@ public abstract class GetCurrentFrameRef extends Node {
             PythonContext context = PythonContext.get(this);
             ref = context.peekTopFrameInfo(context.getLanguage(this));
             if (ref == null) {
-                return PArguments.getCurrentFrameInfo(ReadCallerFrameNode.getCurrentFrame(this, FrameInstance.FrameAccess.READ_ONLY));
+                return PArguments.getCurrentFrameInfo(ReadFrameNode.getCurrentFrame(this, FrameInstance.FrameAccess.READ_ONLY, CallerFlags.NEEDS_FRAME_REFERENCE));
             }
             return ref;
         }

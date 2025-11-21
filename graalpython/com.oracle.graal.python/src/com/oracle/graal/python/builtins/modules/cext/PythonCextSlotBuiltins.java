@@ -98,6 +98,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
+import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
@@ -398,8 +399,9 @@ public final class PythonCextSlotBuiltins {
     @CApiBuiltin(ret = Int, args = {PyFrameObject}, call = Ignored)
     abstract static class GraalPyPrivate_Get_PyFrameObject_f_lineno extends CApiUnaryBuiltinNode {
         @Specialization
-        static int get(PFrame frame) {
-            return frame.getLine();
+        static Object get(PFrame frame,
+                        @Cached FrameBuiltins.LinenoNode linenoNode) {
+            return linenoNode.execute(null, frame, PNone.NO_VALUE);
         }
     }
 

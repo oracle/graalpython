@@ -58,19 +58,15 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToArrayNode;
-import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins.GetGlobalsNode;
-import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.typing.PTypeVarTuple;
+import com.oracle.graal.python.lib.PyEvalGetGlobals;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
@@ -209,14 +205,10 @@ public class TypingModuleBuiltins extends PythonBuiltins {
         public abstract Object execute(VirtualFrame frame, Node inliningTarget);
 
         @Specialization
-        static Object caller(VirtualFrame frame,
-                        @Cached(inline = false) GetGlobalsNode getGlobalsNode,
+        static Object caller(VirtualFrame frame, Node inliningTarget,
                         @Cached(inline = false) PyObjectCallMethodObjArgs callMethod,
-                        @Cached(inline = false) ReadCallerFrameNode readCallerNode) {
-            Reference currentFrameInfo = PArguments.getCurrentFrameInfo(frame);
-            PFrame pFrame = readCallerNode.executeWith(currentFrameInfo, 0);
-            Object globals = getGlobalsNode.execute(frame, pFrame);
-
+                        @Cached PyEvalGetGlobals getGlobalsNode) {
+            Object globals = getGlobalsNode.execute(frame, inliningTarget);
             return callMethod.executeCached(frame, globals, T_GET, T___NAME__, PNone.NONE);
         }
 

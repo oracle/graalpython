@@ -490,14 +490,16 @@ public final class CodeBuiltins extends PythonBuiltins {
                             continue;
                         }
                         SourceSection section = rootNode.getSourceSectionForLocation(instruction.getLocation());
-                        lines.add(PFactory.createTuple(language, new int[]{
-                                        section.getStartLine(),
-                                        section.getEndLine(),
-                                        // 1-based inclusive to 0-based inclusive
-                                        section.getStartColumn() - 1,
-                                        // 1-based inclusive to 0-based exclusive (-1 + 1 = 0)
-                                        section.getEndColumn()
-                        }));
+                        if (section != null) {
+                            lines.add(PFactory.createTuple(language, new int[]{
+                                            section.getStartLine(),
+                                            section.getEndLine(),
+                                            // 1-based inclusive to 0-based inclusive
+                                            section.getStartColumn() - 1,
+                                            // 1-based inclusive to 0-based exclusive (-1 + 1 = 0)
+                                            section.getEndColumn()
+                            }));
+                        }
                     }
                 } else {
                     BytecodeCodeUnit bytecodeCo = (BytecodeCodeUnit) co;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,10 +40,18 @@
  */
 package com.oracle.graal.python.lib;
 
-import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
+import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.nodes.frame.ReadFrameNode;
+import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
@@ -53,12 +61,29 @@ import com.oracle.truffle.api.nodes.Node;
  */
 @GenerateInline
 @GenerateCached(false)
+@ImportStatic(PArguments.class)
 public abstract class PyEvalGetGlobals extends Node {
-    public abstract Object execute(VirtualFrame frame, Node inliningTarget);
+    public abstract PythonObject execute(VirtualFrame frame, Node inliningTarget);
 
-    @Specialization
-    static Object doGeneric(VirtualFrame frame,
-                    @Cached(inline = false) ReadCallerFrameNode readCallerFrameNode) {
-        return readCallerFrameNode.executeWith(frame, 0).getGlobals();
+    @Specialization(guards = {"frame != null", "globals != null"})
+    static PythonObject doFromFrame(@SuppressWarnings("unused") VirtualFrame frame, Node inliningTarget,
+                    @Bind("getGlobals(frame)") PythonObject globals,
+                    @Shared @Cached GetOrCreateDictNode getDict) {
+        if (globals instanceof PythonModule) {
+            return getDict.execute(inliningTarget, globals);
+        }
+        return globals;
+    }
+
+    @Specialization(replaces = "doFromFrame")
+    static PythonObject doGeneric(VirtualFrame frame, Node inliningTarget,
+                    @Cached(inline = false) ReadFrameNode readFrameNode,
+                    @Shared @Cached GetOrCreateDictNode getDict) {
+        PFrame pFrame = readFrameNode.getCurrentPythonFrame(frame);
+        PythonObject globals = pFrame != null ? pFrame.getGlobals() : null;
+        if (globals instanceof PythonModule) {
+            return getDict.execute(inliningTarget, globals);
+        }
+        return globals;
     }
 }

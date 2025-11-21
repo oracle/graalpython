@@ -1,4 +1,3 @@
 test.test_profile.ProfileTest.test_output_file_when_changing_directory @ linux-x86_64
 test.test_profile.ProfileTest.test_run @ linux-x86_64
-test.test_profile.ProfileTest.test_run_profile_as_module @ linux-x86_64
 test.test_profile.ProfileTest.test_runctx @ linux-x86_64

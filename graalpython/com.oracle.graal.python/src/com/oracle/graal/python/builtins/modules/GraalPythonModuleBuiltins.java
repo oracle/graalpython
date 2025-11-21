@@ -391,7 +391,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             PArguments.setSpecialArgument(arguments, mainDict);
             PArguments.setException(arguments, PException.NO_EXCEPTION);
             context.initializeMainModule(inputFilePath);
-            Object state = ExecutionContext.IndirectCalleeContext.enterIndirect(language, context, arguments, callTarget);
+            Object state = ExecutionContext.IndirectCalleeContext.enter(context.getThreadState(language), arguments);
             try {
                 callTarget.call(arguments);
             } finally {

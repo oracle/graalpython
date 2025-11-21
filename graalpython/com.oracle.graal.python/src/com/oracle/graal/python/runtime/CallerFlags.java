@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,29 +38,45 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.lib;
+package com.oracle.graal.python.runtime;
 
-import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.nodes.frame.GetFrameLocalsNode;
-import com.oracle.graal.python.nodes.frame.ReadFrameNode;
-import com.oracle.graal.python.runtime.CallerFlags;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.GenerateCached;
-import com.oracle.truffle.api.dsl.GenerateInline;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.Node;
+/** Flags representing what a caller needs to pass to calee */
+public abstract class CallerFlags {
+    /** Whether the callee needs the exception state in arguments */
+    public static final int NEEDS_EXCEPTION_STATE = 1;
+    /** Whether the callee needs the caller frame reference */
+    public static final int NEEDS_FRAME_REFERENCE = 1 << 1;
+    /**
+     * Whether the callee needs the caller PFrame. Doesn't imply that the PFrame will have locals.
+     */
+    public static final int NEEDS_PFRAME = 1 << 2;
+    /** Whether the callee needs the caller PFrame with locals. Implies NEEDS_PFRAME */
+    public static final int NEEDS_LOCALS = 1 << 3;
+    /**
+     * Whether the callee needs the current PFrame last instruction index / lineno. Implies
+     * NEEDS_PFRAME
+     */
+    public static final int NEEDS_LASTI = 1 << 4;
 
-@GenerateInline
-@GenerateCached(false)
-public abstract class PyEvalGetLocals extends Node {
-    public abstract Object execute(VirtualFrame frame, Node inliningTarget);
+    public static final int ALL_FRAME_FLAGS = NEEDS_FRAME_REFERENCE | NEEDS_PFRAME | NEEDS_LOCALS | NEEDS_LASTI;
 
-    @Specialization
-    static Object getLocals(VirtualFrame frame, Node inliningTarget,
-                    @Cached(inline = false) ReadFrameNode readFrameNode,
-                    @Cached GetFrameLocalsNode getFrameLocalsNode) {
-        PFrame callerFrame = readFrameNode.getCurrentPythonFrame(frame, CallerFlags.NEEDS_LOCALS);
-        return getFrameLocalsNode.execute(frame, inliningTarget, callerFrame, true);
+    public static boolean needsExceptionState(int callerFlags) {
+        return (callerFlags & NEEDS_EXCEPTION_STATE) != 0;
+    }
+
+    public static boolean needsFrameReference(int callerFlags) {
+        return (callerFlags & NEEDS_FRAME_REFERENCE) != 0;
+    }
+
+    public static boolean needsPFrame(int callerFlags) {
+        return (callerFlags & NEEDS_PFRAME) != 0;
+    }
+
+    public static boolean needsLocals(int callerFlags) {
+        return (callerFlags & NEEDS_LOCALS) != 0;
+    }
+
+    public static boolean needsLasti(int callerFlags) {
+        return (callerFlags & NEEDS_LASTI) != 0;
     }
 }

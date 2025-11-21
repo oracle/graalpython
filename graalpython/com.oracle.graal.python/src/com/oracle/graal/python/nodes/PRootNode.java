@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,15 +43,15 @@ package com.oracle.graal.python.nodes;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
+import com.oracle.graal.python.runtime.CallerFlags;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.PythonUtils.NodeCounterWithLimit;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.nodes.Node;
@@ -61,14 +61,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public abstract class PRootNode extends RootNode {
     private final ConditionProfile frameEscaped = ConditionProfile.create();
 
-    @CompilationFinal private transient Assumption dontNeedCallerFrame = createCallerFrameAssumption();
-
-    /**
-     * Flag indicating if some child node of this root node (or a callee) eventually needs the
-     * exception state. Hence, the caller of this root node should provide the exception state in
-     * the arguments.
-     */
-    @CompilationFinal private transient Assumption dontNeedExceptionState = createExceptionStateAssumption();
+    @CompilationFinal private transient IndirectCallData.CallerFlagsAssumptionSet callerFlagsAssumptionSet = new IndirectCallData.CallerFlagsAssumptionSet();
 
     private transient int nodeCount = -1;
 
@@ -109,22 +102,13 @@ public abstract class PRootNode extends RootNode {
         return frameEscaped;
     }
 
-    public boolean needsCallerFrame() {
-        return !dontNeedCallerFrame.isValid();
+    /** Returns {@link CallerFlags} representing what the caller needs to pass to call this root */
+    public int getCallerFlags() {
+        return callerFlagsAssumptionSet.getCallerFlags();
     }
 
-    public void setNeedsCallerFrame() {
-        CompilerAsserts.neverPartOfCompilation("this is usually called from behind a TruffleBoundary");
-        dontNeedCallerFrame.invalidate();
-    }
-
-    public boolean needsExceptionState() {
-        return !dontNeedExceptionState.isValid();
-    }
-
-    public void setNeedsExceptionState() {
-        CompilerAsserts.neverPartOfCompilation("this is usually called from behind a TruffleBoundary");
-        dontNeedExceptionState.invalidate();
+    public void updateCallerFlags(int flags) {
+        callerFlagsAssumptionSet.updateCallerFlags(flags);
     }
 
     @Override
@@ -141,8 +125,7 @@ public abstract class PRootNode extends RootNode {
     public Node copy() {
         PRootNode pRootNode = (PRootNode) super.copy();
         // create new assumptions such that splits do not share them
-        pRootNode.dontNeedCallerFrame = createCallerFrameAssumption();
-        pRootNode.dontNeedExceptionState = createExceptionStateAssumption();
+        pRootNode.callerFlagsAssumptionSet = new IndirectCallData.CallerFlagsAssumptionSet();
         return pRootNode;
     }
 
@@ -161,14 +144,6 @@ public abstract class PRootNode extends RootNode {
 
     public static boolean isPythonBuiltin(RootNode rootNode) {
         return rootNode instanceof BuiltinFunctionRootNode;
-    }
-
-    private static Assumption createCallerFrameAssumption() {
-        return Truffle.getRuntime().createAssumption("does not need caller frame");
-    }
-
-    private static Assumption createExceptionStateAssumption() {
-        return Truffle.getRuntime().createAssumption("does not need exception state");
     }
 
     public final void setCode(byte[] data) {

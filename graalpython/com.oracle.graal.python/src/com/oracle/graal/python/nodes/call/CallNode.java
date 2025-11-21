@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.CallSlotTpCallNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -185,7 +186,8 @@ public abstract class CallNode extends PNodeWithContext {
     }
 
     @Fallback
-    static Object doGeneric(VirtualFrame frame, Object callableObject, Object[] arguments, PKeyword[] keywords,
+    @SuppressWarnings("truffle-static-method")
+    Object doGeneric(VirtualFrame frame, Object callableObject, Object[] arguments, PKeyword[] keywords,
                     @Bind Node inliningTarget,
                     @Cached PRaiseNode raise,
                     @Cached GetClassNode getClassNode,
@@ -194,6 +196,22 @@ public abstract class CallNode extends PNodeWithContext {
         Object type = getClassNode.execute(inliningTarget, callableObject);
         TpSlots slots = getSlots.execute(inliningTarget, type);
         if (slots.tp_call() != null) {
+            /*
+             * Uncached fast-path for type.__call__. This is not just for performance, but has
+             * "side-channel" effects. Without it, type.__call__'s needsCallerFrame assumption tends
+             * to get invalidated, which then causes frame sync at every subsequent uncached
+             * type.__call__ call. Frame syncs create new strong references to local variables (in
+             * CPython as well) and these spurious frame syncs cause failures in weakref-using
+             * tests.
+             */
+            if (CompilerDirectives.inInterpreter() && !isAdoptable() && slots.tp_call() == TypeBuiltins.SLOTS.tp_call()) {
+                /*
+                 * This node is often called from first-uncached bytecode execution, so it has the
+                 * frame despite being uncached. Passing it avoids stack walk when calling
+                 * super.__init__
+                 */
+                return TypeBuiltins.CallNode.executeUncached(frame, callableObject, arguments, keywords);
+            }
             return callSlot.execute(frame, inliningTarget, slots.tp_call(), callableObject, arguments, keywords);
         }
         throw raise.raise(inliningTarget, TypeError, ErrorMessages.OBJ_ISNT_CALLABLE, callableObject);

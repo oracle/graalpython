@@ -121,7 +121,7 @@ public class CallDispatchers {
             if (profileIsNullFrame.profile(inliningTarget, frame == null)) {
                 PythonContext context = PythonContext.get(inliningTarget);
                 PythonThreadState threadState = context.getThreadState(context.getLanguage(inliningTarget));
-                Object state = IndirectCalleeContext.enter(threadState, arguments, callTarget);
+                Object state = IndirectCalleeContext.enter(threadState, arguments);
                 try {
                     return callNode.call(arguments);
                 } finally {
@@ -153,21 +153,21 @@ public class CallDispatchers {
         }
 
         @Specialization
-        static Object doDirect(VirtualFrame frame, Node inliningTarget, RootCallTarget callTarget, Object[] arguments,
+        static Object doIndirect(VirtualFrame frame, Node inliningTarget, RootCallTarget callTarget, Object[] arguments,
                         @Cached InlinedConditionProfile profileIsNullFrame,
                         @Cached ExecutionContext.CallContext callContext,
                         @Cached IndirectCallNode callNode) {
             if (profileIsNullFrame.profile(inliningTarget, frame == null)) {
                 PythonContext context = PythonContext.get(inliningTarget);
                 PythonThreadState threadState = context.getThreadState(context.getLanguage(inliningTarget));
-                Object state = IndirectCalleeContext.enterIndirect(threadState, arguments, callTarget);
+                Object state = IndirectCalleeContext.enter(threadState, arguments);
                 try {
                     return callNode.call(callTarget, arguments);
                 } finally {
                     IndirectCalleeContext.exit(threadState, state);
                 }
             } else {
-                callContext.prepareIndirectCall(frame, arguments);
+                callContext.prepareCall(frame, arguments, callTarget);
                 return callNode.call(callTarget, arguments);
             }
         }

@@ -40,33 +40,55 @@
  */
 package com.oracle.graal.python.nodes.frame;
 
-import java.util.Objects;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
+import java.util.Objects;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorRootNode;
+import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
+import com.oracle.graal.python.runtime.CallerFlags;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.ThreadLocalAction;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.bytecode.ContinuationRootNode;
+import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.FrameInstanceVisitor;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
-public final class ReadCallerFrameNode extends Node {
+@GenerateUncached
+@GenerateInline(false)
+public abstract class ReadFrameNode extends Node {
     public interface FrameSelector {
         boolean skip(RootNode rootNode);
     }
@@ -81,116 +103,199 @@ public final class ReadCallerFrameNode extends Node {
     }
 
     /**
-     * Skips any internal code frames including internal Python level frames of functions annotated
-     * with @builtin.
+     * Selects only Python frames. They may still include internal frames.
      */
-    public static class SkipPythonInternalFramesSelector implements FrameSelector {
-        public static final SkipPythonInternalFramesSelector INSTANCE = new SkipPythonInternalFramesSelector();
+    public static class AllPythonFramesSelector implements FrameSelector {
+        public static final AllPythonFramesSelector INSTANCE = new AllPythonFramesSelector();
 
         @Override
         public boolean skip(RootNode rootNode) {
-            return PRootNode.isPythonInternal(rootNode);
+            if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+                // TODO check for specific continuation root
+                return !(rootNode instanceof PBytecodeDSLRootNode || rootNode instanceof ContinuationRootNode);
+            } else {
+                return !(rootNode instanceof PBytecodeRootNode || rootNode instanceof PBytecodeGeneratorRootNode);
+            }
         }
     }
 
     /**
-     * Skips any internal frames including Python frames from internal modules in lib-graalpy.
+     * Selects only python frames that should be visible, i.e. excludes internal sources from
+     * lib-graalpython or importlib. Used primarily for tracebacks.
      */
-    public static class SkipInternalFramesSelector implements FrameSelector {
-        public static final SkipInternalFramesSelector INSTANCE = new SkipInternalFramesSelector();
+    public static class VisiblePythonFramesSelector extends AllPythonFramesSelector {
+        public static final VisiblePythonFramesSelector INSTANCE = new VisiblePythonFramesSelector();
 
         @Override
         public boolean skip(RootNode rootNode) {
-            return (rootNode != null && rootNode.isInternal()) || PRootNode.isPythonInternal(rootNode);
+            return super.skip(rootNode) || rootNode.isInternal() || PRootNode.isPythonInternal(rootNode);
         }
     }
 
-    /**
-     * Skips only builtins frames, not internal Python level frames.
-     */
-    public static class SkipPythonBuiltinFramesSelector implements FrameSelector {
-        public static final SkipPythonBuiltinFramesSelector INSTANCE = new SkipPythonBuiltinFramesSelector();
-
-        @Override
-        public boolean skip(RootNode rootNode) {
-            return PRootNode.isPythonBuiltin(rootNode);
-        }
-    }
-
-    @CompilationFinal private ConditionProfile cachedCallerFrameProfile;
-    @Child private MaterializeFrameNode materializeNode;
-
-    protected ReadCallerFrameNode() {
+    protected ReadFrameNode() {
     }
 
     @NeverDefault
-    public static ReadCallerFrameNode create() {
-        return new ReadCallerFrameNode();
+    public static ReadFrameNode create() {
+        return ReadFrameNodeGen.create();
     }
 
-    public PFrame executeWith(VirtualFrame frame, int level) {
-        return executeWith(PArguments.getCurrentFrameInfo(frame), SkipPythonInternalFramesSelector.INSTANCE, level);
+    /**
+     * Get the current python-level frame (skips builtin function roots, but not internal python
+     * frames)
+     */
+    public final PFrame getCurrentPythonFrame(VirtualFrame frame) {
+        return getCurrentPythonFrame(frame, 0);
     }
 
-    public PFrame executeWith(VirtualFrame frame, FrameSelector selector, int level) {
-        return executeWith(PArguments.getCurrentFrameInfo(frame), selector, level);
+    public final PFrame getCurrentPythonFrame(VirtualFrame frame, int callerFlags) {
+        return getFrameForReference(frame, frame != null ? PArguments.getCurrentFrameInfo(frame) : null, AllPythonFramesSelector.INSTANCE, 0, callerFlags);
     }
 
-    public PFrame executeWith(Frame startFrame, int level) {
-        return executeWith(PArguments.getCurrentFrameInfo(startFrame), SkipPythonInternalFramesSelector.INSTANCE, level);
+    public final PFrame refreshFrame(VirtualFrame frame, PFrame.Reference reference, int callerFlags) {
+        return getFrameForReference(frame, reference, 0, callerFlags);
     }
 
-    public PFrame executeWith(PFrame.Reference startFrameInfo, int level) {
-        return executeWith(startFrameInfo, SkipPythonInternalFramesSelector.INSTANCE, level);
-    }
-
-    public PFrame executeWith(PFrame.Reference startFrameInfo, FrameInstance.FrameAccess frameAccess, int level) {
-        return executeWith(startFrameInfo, frameAccess, SkipPythonInternalFramesSelector.INSTANCE, level);
-    }
-
-    public PFrame executeWith(PFrame.Reference startFrameInfo, FrameSelector selector, int level) {
-        return executeWith(startFrameInfo, FrameInstance.FrameAccess.READ_ONLY, selector, level);
-    }
-
-    public PFrame executeWith(PFrame.Reference startFrameInfo, FrameInstance.FrameAccess frameAccess, FrameSelector selector, int level) {
-        PFrame.Reference curFrameInfo = startFrameInfo;
-        if (cachedCallerFrameProfile == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            cachedCallerFrameProfile = ConditionProfile.create();
-            // executed the first time - don't pollute the profile
-            return walkLevels(curFrameInfo, frameAccess, selector, level, ConditionProfile.getUncached());
-        } else {
-            return walkLevels(curFrameInfo, frameAccess, selector, level, cachedCallerFrameProfile);
+    public final PFrame ensureFresh(VirtualFrame frame, PFrame pFrame, int callerFlags) {
+        if (pFrame.needsRefresh(frame, callerFlags)) {
+            return refreshFrame(frame, pFrame.getRef(), callerFlags);
         }
+        return pFrame;
     }
 
-    private PFrame getMaterializedCallerFrame(PFrame.Reference startFrameInfo, FrameInstance.FrameAccess frameAccess, FrameSelector selector, int level) {
-        StackWalkResult callerFrameResult = getCallerFrameImpl(this, startFrameInfo, frameAccess, selector, level);
+    public final PFrame getFrameForReference(Frame frame, PFrame.Reference startFrameInfo, int level, int callerFlags) {
+        return getFrameForReference(frame, startFrameInfo, AllPythonFramesSelector.INSTANCE, level, callerFlags);
+    }
+
+    public final PFrame getFrameForReference(Frame frame, PFrame.Reference startFrameInfo, FrameSelector selector, int level, int callerFlags) {
+        return execute(frame, startFrameInfo, FrameInstance.FrameAccess.READ_ONLY, selector, level, callerFlags | CallerFlags.NEEDS_PFRAME);
+    }
+
+    protected abstract PFrame execute(Frame frame, PFrame.Reference startFrameInfo, FrameInstance.FrameAccess frameAccess, FrameSelector selector, int level, int callerFlags);
+
+    @Specialization
+    PFrame read(VirtualFrame frame, PFrame.Reference startFrameInfo, FrameInstance.FrameAccess frameAccess, FrameSelector selector, int level, int callerFlags,
+                    @Bind Node inliningTarget,
+                    @Cached MaterializeFrameNode materializeFrameNode,
+                    @Cached InlinedBranchProfile stackWalkProfile1,
+                    @Cached InlinedBranchProfile stackWalkProfile2) {
+        PFrame.Reference executingFrameInfo = frame != null ? PArguments.getCurrentFrameInfo(frame) : null;
+        if (startFrameInfo == null) {
+            PythonContext context = PythonContext.get(this);
+            startFrameInfo = context.peekTopFrameInfo(context.getLanguage(this));
+            executingFrameInfo = startFrameInfo;
+        }
+        int i = 0;
+        PFrame.Reference curFrameInfo = startFrameInfo;
+        while (curFrameInfo != null) {
+            if (curFrameInfo == PFrame.Reference.EMPTY) {
+                // We reached the top of the stack
+                return null;
+            }
+            PFrame.Reference backref = getBackref(curFrameInfo);
+            if (!selector.skip(curFrameInfo.getRootNode())) {
+                if (i == level) {
+                    // We found the right reference
+                    // Maybe it's for the frame we're in?
+                    if (curFrameInfo == executingFrameInfo) {
+                        return materializeFrameNode.execute(this, false, CallerFlags.needsLocals(callerFlags), frame);
+                    }
+                    if (curFrameInfo.getPyFrame() != null && !curFrameInfo.getPyFrame().needsRefresh(null, callerFlags)) {
+                        return curFrameInfo.getPyFrame();
+                    }
+                    // We don't have the frame for the reference, fall back to the stack walk
+                    break;
+                }
+                // Nowhere to continue, break now so that the stackwalk can continue from the
+                // correct index
+                if (backref == null) {
+                    break;
+                }
+                i++;
+            }
+            if (backref == null) {
+                break;
+            }
+            curFrameInfo = backref;
+        }
+        /*
+         * The chain is broken here, we must continue using slow Truffle stack walk. Profile twice
+         * so that doing the stack walk the first time doesn't affect the compiled code.
+         */
+        if (stackWalkProfile1.wasEntered(inliningTarget)) {
+            stackWalkProfile2.enter(inliningTarget);
+        }
+        stackWalkProfile1.enter(inliningTarget);
+        /*
+         * It is necessary to continue from where we stopped with the backref walk because the
+         * original starting frame might not be on stack anymore
+         */
+        return readSlowPath(curFrameInfo, frameAccess, selector, level - i, callerFlags, materializeFrameNode);
+    }
+
+    private static PFrame.Reference getBackref(PFrame.Reference reference) {
+        if (reference.getPyFrame() != null && reference.getPyFrame().getBackref() != null) {
+            return reference.getPyFrame().getBackref();
+        }
+        return reference.getCallerInfo();
+    }
+
+    @TruffleBoundary
+    @SuppressWarnings("try")
+    private PFrame readSlowPath(PFrame.Reference startFrameInfo, FrameInstance.FrameAccess frameAccess, FrameSelector selector, int level, int callerFlags,
+                    MaterializeFrameNode materializeFrameNode) {
+        if (level == 0 && startFrameInfo != null && startFrameInfo.getPyFrame() != null && !selector.skip(startFrameInfo.getRootNode()) && startFrameInfo.getPyFrame().getThread() != null &&
+                        startFrameInfo.getPyFrame().getThread() != Thread.currentThread()) {
+            // We have the frame we're looking for, but it's on another thread
+            Thread thread = startFrameInfo.getPyFrame().getThread();
+            if (thread.isAlive()) {
+                try (var gil = GilNode.uncachedRelease()) {
+                    // Schedule a safepoint action on that thread
+                    Future<Void> future = PythonContext.get(null).getEnv().submitThreadLocal(new Thread[]{thread}, new ThreadLocalAction(true, false) {
+                        @Override
+                        protected void perform(Access access) {
+                            Node location = access.getLocation();
+                            if (location instanceof PBytecodeDSLRootNode) {
+                                // See AsyncPythonAction#execute for explanation
+                                location = PythonLanguage.get(null).unavailableSafepointLocation;
+                            }
+                            StackWalkResult result = ReadFrameNode.getFrame(location, startFrameInfo, frameAccess, selector, 0, callerFlags);
+                            processStackWalkResult(materializeFrameNode, callerFlags, result);
+                        }
+                    });
+                    TruffleSafepoint.setBlockedThreadInterruptible(this, voidFuture -> {
+                        try {
+                            voidFuture.get(10, TimeUnit.SECONDS);
+                        } catch (TimeoutException e) {
+                            throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.RuntimeError, tsLiteral("Failed to interrupt thread " + Thread.currentThread() + " within 10 seconds"));
+                        } catch (CancellationException e) {
+                            // Ignore
+                        } catch (ExecutionException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }, future);
+                }
+            }
+            assert !startFrameInfo.getPyFrame().outdatedCallerFlags(callerFlags);
+            return startFrameInfo.getPyFrame();
+        }
+        StackWalkResult callerFrameResult = getFrame(this, startFrameInfo, frameAccess, selector, level, callerFlags);
+        return processStackWalkResult(materializeFrameNode, callerFlags, callerFrameResult);
+    }
+
+    private static PFrame processStackWalkResult(MaterializeFrameNode materializeFrameNode, int callerFlags, StackWalkResult callerFrameResult) {
         if (callerFrameResult != null) {
             Node location = callerFrameResult.callNode;
             if (!(callerFrameResult.rootNode instanceof PBytecodeDSLRootNode) && location == null) {
-                // We can fixup the location like this only for other root nodes, for Bytecode DSL
-                // we need the BytecodeNode
+                /*
+                 * We can fixup the location like this only for other root nodes, for Bytecode DSL
+                 * we need the BytecodeNode
+                 */
                 location = callerFrameResult.rootNode;
             }
-            return ensureMaterializeNode().execute(location, false, true, callerFrameResult.frame);
+            return materializeFrameNode.execute(location, false, CallerFlags.needsLocals(callerFlags), callerFrameResult.frame);
         }
         return null;
-    }
-
-    private PFrame walkLevels(PFrame.Reference startFrameInfo, FrameInstance.FrameAccess frameAccess, FrameSelector selector, int level, ConditionProfile stackWalkProfile) {
-        PFrame.Reference currentFrame = startFrameInfo;
-        for (int i = 0; i <= level;) {
-            PFrame.Reference callerInfo = currentFrame.getCallerInfo();
-            if (stackWalkProfile.profile(callerInfo == null || (!selector.skip(callerInfo.getRootNode()) && callerInfo.getPyFrame() == null))) {
-                // The chain is broken here, we must continue using slow Truffle stack walk
-                return getMaterializedCallerFrame(startFrameInfo, frameAccess, selector, level);
-            } else if (!selector.skip(callerInfo.getRootNode())) {
-                i++;
-            }
-            currentFrame = callerInfo;
-        }
-        return currentFrame.getPyFrame();
     }
 
     /**
@@ -236,7 +341,7 @@ public final class ReadCallerFrameNode extends Node {
      *                 // do some stuff that might throw a PException
      *             } catch (PException e) {
      *                 // read currently top Python frame because it's required for exception reification
-     *                 Frame topPyFrame = ReadCallerFrameNode.getCurrentFrame(this
+     *                 Frame topPyFrame = ReadFrameNode.getCurrentFrame(this
      *                 // ...
      *             }
      *             return PNone.NONE;
@@ -255,8 +360,8 @@ public final class ReadCallerFrameNode extends Node {
      * @param requestingNode - the top most "location" node
      * @param frameAccess - the desired {@link FrameInstance} access kind
      */
-    public static Frame getCurrentFrame(Node requestingNode, FrameInstance.FrameAccess frameAccess) {
-        StackWalkResult result = getFrame(Objects.requireNonNull(requestingNode), null, frameAccess, AllFramesSelector.INSTANCE, 0);
+    public static Frame getCurrentFrame(Node requestingNode, FrameInstance.FrameAccess frameAccess, int callerFlags) {
+        StackWalkResult result = getFrame(Objects.requireNonNull(requestingNode), null, frameAccess, AllFramesSelector.INSTANCE, 0, callerFlags);
         if (result != null) {
             return result.frame;
         }
@@ -264,15 +369,10 @@ public final class ReadCallerFrameNode extends Node {
     }
 
     // For getting just the Truffle frame, we do not need current location
-    public static Frame getCallerFrame(PFrame.Reference startFrame, FrameInstance.FrameAccess frameAccess, FrameSelector selector, int level) {
+    public static Frame getCallerFrame(PFrame.Reference startFrame, FrameInstance.FrameAccess frameAccess, FrameSelector selector, int level, int callerFlags) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
-        StackWalkResult result = getFrame(null, Objects.requireNonNull(startFrame), frameAccess, selector, level);
+        StackWalkResult result = getFrame(null, Objects.requireNonNull(startFrame), frameAccess, selector, level, callerFlags);
         return result != null ? result.frame : null;
-    }
-
-    private static StackWalkResult getCallerFrameImpl(Node location, PFrame.Reference startFrame, FrameInstance.FrameAccess frameAccess, FrameSelector selector, int level) {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        return getFrame(location, Objects.requireNonNull(startFrame), frameAccess, selector, level);
     }
 
     /**
@@ -300,16 +400,18 @@ public final class ReadCallerFrameNode extends Node {
      * @param frameAccess - the desired {@link FrameInstance} access kind
      * @param selector - declares which frames should be skipped or counted
      * @param level - the stack depth to go to. Ignored if {@code startFrame} is {@code null}
+     * @param callerFlags - the {@link CallerFlags} specifying what we need from the frame
      */
     @TruffleBoundary
-    public static StackWalkResult getFrame(Node requestingNode, PFrame.Reference startFrame, FrameInstance.FrameAccess frameAccess, FrameSelector selector, int level) {
+    public static StackWalkResult getFrame(Node requestingNode, PFrame.Reference startFrame, FrameInstance.FrameAccess frameAccess, FrameSelector selector, int level, int callerFlags) {
         PythonContext.setWasStackWalk();
         return Truffle.getRuntime().iterateFrames(new FrameInstanceVisitor<>() {
             int i = startFrame != null ? -1 : 0;
             boolean first = true;
+            RootNode prevRootNode;
 
             public StackWalkResult visitFrame(FrameInstance frameInstance) {
-                RootNode rootNode = ReadCallerFrameNode.getRootNode(frameInstance);
+                RootNode rootNode = ReadFrameNode.getRootNode(frameInstance);
                 Node callNode = frameInstance.getCallNode();
                 if (callNode == null && first) {
                     // This should happen only for the top most frame, i.e., the frame that is being
@@ -330,35 +432,38 @@ public final class ReadCallerFrameNode extends Node {
                     // through thread state. We will eventually arrive at the Python frame that did
                     // BoundaryCallContext.enter, find the IndirectCallData via the callNode and
                     // tell it to pass the PFrame.Reference in thread state next time
+                    prevRootNode = rootNode;
                     return null;
                 }
-                IndirectCallData.setEncapsulatingNeedsToPassCallerFrame(callNode);
-                StackWalkResult result = null;
                 if (i < 0 && startFrame != null) {
                     // We are still looking for the start frame
-                    Frame roFrame = ReadCallerFrameNode.getFrame(frameInstance, FrameInstance.FrameAccess.READ_ONLY);
+                    Frame roFrame = ReadFrameNode.getFrame(frameInstance, FrameInstance.FrameAccess.READ_ONLY);
                     if (PArguments.getCurrentFrameInfo(roFrame) == startFrame) {
                         i = 0;
                     }
-                } else if (i >= 0) {
+                }
+                if (i >= 0) {
                     // We found the start frame already, or we are supposed to return the start
                     // frame (startFrame argument was null)
                     if (!selector.skip(pRootNode)) {
                         if (i == level) {
-                            Frame frame = ReadCallerFrameNode.getFrame(frameInstance, frameAccess);
+                            Frame frame = ReadFrameNode.getFrame(frameInstance, frameAccess);
                             assert PArguments.isPythonFrame(frame);
+                            IndirectCallData.setCallerFlagsOnIndirectCallData(callNode, callerFlags);
+                            if (prevRootNode instanceof PRootNode prevPRootNode && prevPRootNode.setsUpCalleeContext()) {
+                                // Update the flags in the callee
+                                prevPRootNode.updateCallerFlags(callerFlags);
+                            }
                             return new StackWalkResult(pRootNode, callNode, frame);
                         }
                         i += 1;
                     }
                 }
                 // For any Python root node we traverse we need the PFrame.Reference to be passed in
-                // call arguments next time. Builtins don't materialize PFrame, because it
-                // should not be visible to Python code anyway, but still pass the
-                // PFrame.Reference to connect the linked list of references. If we are at the frame
-                // that we need, we still need caller frame info if our frame is escaped, see
-                // CalleeContext#exitEscaped
-                pRootNode.setNeedsCallerFrame();
+                // call arguments next time.
+                IndirectCallData.setCallerFlagsOnIndirectCallData(callNode, CallerFlags.NEEDS_FRAME_REFERENCE);
+                pRootNode.updateCallerFlags(CallerFlags.NEEDS_FRAME_REFERENCE);
+                prevRootNode = pRootNode;
                 return null; // if 'null' continue iterating
             }
         });
@@ -377,13 +482,5 @@ public final class ReadCallerFrameNode extends Node {
             return (Frame) frame.getArguments()[0];
         }
         return frame;
-    }
-
-    private MaterializeFrameNode ensureMaterializeNode() {
-        if (materializeNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            materializeNode = insert(MaterializeFrameNodeGen.create());
-        }
-        return materializeNode;
     }
 }

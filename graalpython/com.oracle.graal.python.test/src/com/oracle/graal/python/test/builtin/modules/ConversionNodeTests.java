@@ -101,7 +101,7 @@ public class ConversionNodeTests {
             PArguments.setException(arguments, PException.NO_EXCEPTION);
             PArguments.setArgument(arguments, 0, arg);
             PythonThreadState threadState = pythonContext.getThreadState(language);
-            Object state = IndirectCalleeContext.enter(threadState, arguments, callTarget);
+            Object state = IndirectCalleeContext.enter(threadState, arguments);
             try {
                 return CallDispatchers.SimpleIndirectInvokeNode.executeUncached(callTarget, arguments);
             } finally {
