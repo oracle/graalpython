@@ -57,7 +57,6 @@ import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
@@ -79,7 +78,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
-import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -92,7 +90,6 @@ public final class DynamicObjectStorage extends HashingStorage {
     public static final int EXPLODE_LOOP_SIZE_LIMIT = 16;
 
     final DynamicObject store;
-    private final MroSequenceStorage mro;
 
     static final class Store extends DynamicObject {
         public Store(Shape shape) {
@@ -101,20 +98,11 @@ public final class DynamicObjectStorage extends HashingStorage {
     }
 
     public DynamicObjectStorage(PythonLanguage lang) {
-        this(new Store(lang.getEmptyShape()), null);
+        this(new Store(lang.getEmptyShape()));
     }
 
     public DynamicObjectStorage(DynamicObject store) {
-        this(store, null);
-    }
-
-    public DynamicObjectStorage(DynamicObject store, MroSequenceStorage mro) {
         this.store = store;
-        this.mro = mro;
-    }
-
-    public Shape getStoreShape() {
-        return store.getShape();
     }
 
     public DynamicObject getStore() {
@@ -289,20 +277,8 @@ public final class DynamicObjectStorage extends HashingStorage {
         }
     }
 
-    private static void invalidateAttributeInMROFinalAssumptions(MroSequenceStorage mro, TruffleString name, Node inliningTarget, InlinedBranchProfile profile) {
-        if (mro != null) {
-            profile.enter(inliningTarget);
-            mro.invalidateAttributeInMROFinalAssumptions(name);
-        }
-    }
-
-    void setStringKey(TruffleString key, Object value, DynamicObjectLibrary dylib, Node inliningTarget, InlinedBranchProfile invalidateMroProfile) {
+    void setStringKey(TruffleString key, Object value, DynamicObjectLibrary dylib) {
         dylib.put(store, key, assertNoJavaString(value));
-        invalidateAttributeInMROFinalAssumption(key, inliningTarget, invalidateMroProfile);
-    }
-
-    void invalidateAttributeInMROFinalAssumption(TruffleString key, Node inliningTarget, InlinedBranchProfile invalidateMroProfile) {
-        invalidateAttributeInMROFinalAssumptions(mro, key, inliningTarget, invalidateMroProfile);
     }
 
     boolean shouldTransitionOnPut() {
@@ -393,10 +369,9 @@ public final class DynamicObjectStorage extends HashingStorage {
     @GenerateCached(false)
     public abstract static class DynamicObjectStorageSetStringKey extends SpecializedSetStringKey {
         @Specialization
-        static void doIt(Node inliningTarget, HashingStorage self, TruffleString key, Object value,
-                        @CachedLibrary(limit = "3") DynamicObjectLibrary dylib,
-                        @Cached InlinedBranchProfile invalidateMro) {
-            ((DynamicObjectStorage) self).setStringKey(key, value, dylib, inliningTarget, invalidateMro);
+        static void doIt(HashingStorage self, TruffleString key, Object value,
+                        @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
+            ((DynamicObjectStorage) self).setStringKey(key, value, dylib);
         }
     }
 }

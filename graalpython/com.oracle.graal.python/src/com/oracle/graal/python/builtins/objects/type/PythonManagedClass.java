@@ -212,13 +212,19 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
      */
     public boolean canSkipOnAttributeUpdate(TruffleString key, @SuppressWarnings("unused") Object value, TruffleString.CodePointLengthNode codePointLengthNode,
                     TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+        // TODO subclasses
         return !methodResolutionOrder.hasAttributeInMROFinalAssumptions() &&
                         !TpSlots.canBeSpecialMethod(key, codePointLengthNode, codePointAtIndexNode);
     }
 
     @TruffleBoundary
     public void onAttributeUpdate(TruffleString key, Object value) {
-        methodResolutionOrder.invalidateAttributeInMROFinalAssumptions(key);
+        for (PythonAbstractClass subclass : GetSubclassesAsArrayNode.executeUncached(this)) {
+            if (subclass instanceof PythonManagedClass managedClass) {
+                managedClass.onAttributeUpdate(key, value);
+            }
+        }
+        methodResolutionOrder.invalidateFinalAttributeAssumption(key);
         if (TpSlots.canBeSpecialMethod(key, CodePointLengthNode.getUncached(), CodePointAtIndexNode.getUncached())) {
             if (this.tpSlots != null) {
                 // This is called during type instantiation from copyDictSlots when the tp slots are
