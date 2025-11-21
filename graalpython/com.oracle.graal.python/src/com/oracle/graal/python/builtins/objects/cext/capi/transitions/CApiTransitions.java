@@ -1042,7 +1042,7 @@ public abstract class CApiTransitions {
     public static Object nativeStubLookupRemove(HandleContext context, int idx) {
         assert idx >= HandleContext.FIRST_VALID_INDEX;
         Object result = context.nativeStubLookup[idx];
-        assert result instanceof PythonObjectReference || result instanceof PythonObject;
+        assert result instanceof PythonObjectReference || result instanceof PythonObject || CApiContext.isSpecialSingleton(result);
         context.nativeStubLookup[idx] = null;
         context.nativeStubLookupFreeStack.push(idx);
         if (PythonContext.DEBUG_CAPI && HandleContext.removeShadowTable(context.nativeStubLookupShadowTable, result) != result) {
@@ -1173,7 +1173,6 @@ public abstract class CApiTransitions {
         @TruffleBoundary
         static long doSpecialSingleton(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractObject singletonObject, long initialRefCount) {
             assert initialRefCount == IMMORTAL_REFCNT;
-            assert !PythonContext.get(null).hasCApiContext() || PythonContext.get(null).getCApiContext().getSingletonNativeWrapper(singletonObject) == 0;
 
             Object type = GetClassNode.executeUncached(singletonObject);
             assert (GetTypeFlagsNode.executeUncached(type) & TypeFlags.HAVE_GC) == 0;
@@ -1655,8 +1654,9 @@ public abstract class CApiTransitions {
             long pointer;
             if (CApiContext.isSpecialSingleton(profiled)) {
                 pointer = context.getCApiContext().getSingletonNativeWrapper((PythonAbstractObject) profiled);
+                assert HandlePointerConverter.pointsToPyHandleSpace(pointer);
                 // special singletons (e.g. PNone, PEllipsis, ..) are always immortal
-                assert CApiTransitions.readNativeRefCount(pointer) == IMMORTAL_REFCNT;
+                assert CApiTransitions.readNativeRefCount(HandlePointerConverter.pointerToStub(pointer)) == IMMORTAL_REFCNT;
                 return pointer;
             }
 

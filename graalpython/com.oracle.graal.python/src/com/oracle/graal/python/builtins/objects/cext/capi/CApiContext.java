@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.PythonLanguage.CONTEXT_INSENSITIVE_SINGLETONS;
+import static com.oracle.graal.python.builtins.objects.PythonAbstractObject.UNINITIALIZED;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.pollReferenceQueue;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readIntField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
@@ -60,6 +61,7 @@ import java.lang.invoke.MethodType;
 import java.lang.invoke.VarHandle;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -96,7 +98,6 @@ import com.oracle.graal.python.builtins.objects.cext.copying.NativeLibraryLocato
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.FreeNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -121,6 +122,7 @@ import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonContext.CApiState;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -356,22 +358,9 @@ public final class CApiContext extends CExtContext {
             CApiContext.nativeSymbolCacheSingleContextUsed = true;
         }
 
-        // initialize singleton native wrappers
+        // initialize singleton native pointers array
         singletonNativePtrs = new long[CONTEXT_INSENSITIVE_SINGLETONS.length];
-        for (int i = 0; i < singletonNativePtrs.length; i++) {
-            assert isSpecialSingleton(CONTEXT_INSENSITIVE_SINGLETONS[i]);
-            /*
-             * Note: this does intentionally not use 'PythonObjectNativeWrapper.wrap' because the
-             * wrapper must not be reachable from the Python object since the singletons are shared.
-             */
-            singletonNativePtrs[i] = FirstToNativeNode.executeUncached(CONTEXT_INSENSITIVE_SINGLETONS[i], IMMORTAL_REFCNT);
-        }
-
-        // initialize Py_True and Py_False
-        PInt aTrue = context.getTrue();
-        aTrue.setNativePointer(FirstToNativeNode.executeUncached(aTrue, IMMORTAL_REFCNT));
-        PInt aFalse = context.getFalse();
-        aFalse.setNativePointer(FirstToNativeNode.executeUncached(aFalse, IMMORTAL_REFCNT));
+        Arrays.fill(singletonNativePtrs, UNINITIALIZED);
 
         this.gcTask = new BackgroundGCTask(context);
     }
@@ -444,9 +433,25 @@ public final class CApiContext extends CExtContext {
     public long getSingletonNativeWrapper(PythonAbstractObject obj) {
         int singletonNativePtrIdx = CApiContext.getSingletonNativeWrapperIdx(obj);
         if (singletonNativePtrIdx != -1) {
-            return singletonNativePtrs[singletonNativePtrIdx];
+            long singletonNativePtr = singletonNativePtrs[singletonNativePtrIdx];
+            if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, singletonNativePtr == UNINITIALIZED)) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                initializeSingletonNativePtrs();
+                singletonNativePtr = singletonNativePtrs[singletonNativePtrIdx];
+            }
+            return singletonNativePtr;
         }
         return 0;
+    }
+
+    private void initializeSingletonNativePtrs() {
+        CompilerAsserts.neverPartOfCompilation();
+        assert getContext().getCApiState() == CApiState.INITIALIZING || getContext().getCApiState() == CApiState.INITIALIZED;
+        for (int i = 0; i < singletonNativePtrs.length; i++) {
+            assert isSpecialSingleton(CONTEXT_INSENSITIVE_SINGLETONS[i]);
+            assert singletonNativePtrs[i] == UNINITIALIZED;
+            singletonNativePtrs[i] = FirstToNativeNode.executeUncached(CONTEXT_INSENSITIVE_SINGLETONS[i], IMMORTAL_REFCNT);
+        }
     }
 
     /**
