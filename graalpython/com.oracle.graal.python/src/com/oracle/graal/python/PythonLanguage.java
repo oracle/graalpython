@@ -62,6 +62,7 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SignalModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinRegistry;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -324,6 +325,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     private final ConcurrentHashMap<Object, RootCallTarget> runtimeCachedCallTargets = new ConcurrentHashMap<>();
 
     @CompilationFinal(dimensions = 1) private final RootCallTarget[] builtinSlotsCallTargets;
+    @CompilationFinal(dimensions = 1) private RootCallTarget[] capiCallTargets;
 
     /**
      * We cannot initialize call targets in language ctor and the next suitable hook is context
@@ -1074,6 +1076,21 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         builtinSlotsCallTargets[index] = callTarget;
     }
 
+    public RootCallTarget getCapiCallTarget(int index) {
+        if (capiCallTargets == null) {
+            return null;
+        }
+        return capiCallTargets[index];
+    }
+
+    public void setCapiCallTarget(int index, RootCallTarget ct) {
+        CompilerAsserts.neverPartOfCompilation();
+        if (capiCallTargets == null) {
+            capiCallTargets = new RootCallTarget[PythonCextBuiltinRegistry.builtins.length];
+            capiCallTargets[index] = ct;
+        }
+    }
+
     /**
      * Caches call target that wraps a node that is not parametrized, i.e., has only a parameterless
      * ctor and all its instances implement the same logic. Parametrized nodes must include the
@@ -1088,6 +1105,10 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Enum<?> key) {
+        return createCachedCallTargetUnsafe(rootNodeFunction, key, true);
+    }
+
+    public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, int key) {
         return createCachedCallTargetUnsafe(rootNodeFunction, key, true);
     }
 

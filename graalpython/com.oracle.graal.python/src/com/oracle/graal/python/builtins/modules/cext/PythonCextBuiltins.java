@@ -596,7 +596,6 @@ public final class PythonCextBuiltins {
         private final ArgDescriptor ret;
         private final ArgDescriptor[] args;
         private final boolean acquireGil;
-        @CompilationFinal private RootCallTarget callTarget;
         private final CApiCallPath call;
         private final String name;
         private final int id;
@@ -612,16 +611,19 @@ public final class PythonCextBuiltins {
         }
 
         public RootCallTarget getCallTarget() {
-            if (callTarget == null) {
+            PythonLanguage lang = PythonLanguage.get(null);
+            RootCallTarget ct = lang.getCapiCallTarget(id);
+            if (ct == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 NfiType[] argTypes = new NfiType[args.length];
                 for (int i = 0; i < args.length; i++) {
                     argTypes[i] = args[i].getNFI2Type();
                 }
                 NfiUpcallSignature signature = Nfi.createUpcallSignature(ret.getNFI2Type(), argTypes);
-                callTarget = new ExecuteCApiBuiltinRootNode(this, signature).getCallTarget();
+                ct = new ExecuteCApiBuiltinRootNode(this, signature).getCallTarget();
+                lang.setCapiCallTarget(id, ct);
             }
-            return callTarget;
+            return ct;
         }
 
         public CApiCallPath call() {
