@@ -45,13 +45,14 @@ import static com.oracle.graal.python.nfi2.NativeMemory.mallocPtrArray;
 import static com.oracle.graal.python.nfi2.NativeMemory.writePtrArrayElement;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonStructNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeRawNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.nfi2.NativeMemory;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.CApiState;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
@@ -69,21 +70,14 @@ import com.oracle.truffle.api.interop.InteropLibrary;
  * return the appropriate pointer object that implements that.
  * </p>
  */
-public final class PThreadState extends PythonStructNativeWrapper {
-    private final long replacement;
-
+public abstract class PThreadState {
     /** Same as _PY_NSMALLNEGINTS */
     public static final int PY_NSMALLNEGINTS = 5;
 
     /** Same as _PY_NSMALLPOSINTS */
     public static final int PY_NSMALLPOSINTS = 257;
 
-    @TruffleBoundary
-    private PThreadState(PythonThreadState threadState) {
-        super(threadState);
-        long ptr = allocateCLayout();
-        CApiTransitions.createReference(this, ptr, true);
-        replacement = ptr;
+    private PThreadState() {
     }
 
     public static long getOrCreateNativeThreadState(PythonLanguage language, PythonContext context) {
@@ -91,24 +85,12 @@ public final class PThreadState extends PythonStructNativeWrapper {
     }
 
     public static long getOrCreateNativeThreadState(PythonThreadState threadState) {
-        PThreadState nativeWrapper = threadState.getNativeWrapper();
-        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, nativeWrapper == null)) {
-            nativeWrapper = new PThreadState(threadState);
-            threadState.setNativeWrapper(nativeWrapper);
+        long pointer = threadState.getNativeWrapper();
+        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, pointer == 0)) {
+            pointer = PThreadState.allocateCLayout();
+            threadState.setNativeWrapper(pointer);
         }
-        return nativeWrapper.replacement;
-    }
-
-    public static long getNativeThreadState(PythonThreadState threadState) {
-        PThreadState nativeWrapper = threadState.getNativeWrapper();
-        if (nativeWrapper != null) {
-            return nativeWrapper.replacement;
-        }
-        return NULLPTR;
-    }
-
-    public PythonThreadState getThreadState() {
-        return (PythonThreadState) getDelegate();
+        return pointer;
     }
 
     @TruffleBoundary
@@ -119,8 +101,8 @@ public final class PThreadState extends PythonStructNativeWrapper {
          */
         assert context.getCApiState() == CApiState.INITIALIZED;
 
-        Object nativeThreadState = PThreadState.getNativeThreadState(threadState);
-        assert nativeThreadState != null;
+        long nativeThreadState = threadState.getNativeWrapper();
+        assert nativeThreadState != NULLPTR;
 
         PDict threadStateDict = threadState.getDict();
         if (threadStateDict != null) {
@@ -172,5 +154,13 @@ public final class PThreadState extends PythonStructNativeWrapper {
         // c_recursion_remaining = Py_C_RECURSION_LIMIT (1000) (cpython/Include/cpython/pystate.h)
         CStructAccess.writeIntField(ptr, CFields.PyThreadState__c_recursion_remaining, recLimit);
         return ptr;
+    }
+
+    @TruffleBoundary
+    public static void dispose(long pointer) {
+        assert !HandlePointerConverter.pointsToPyHandleSpace(pointer);
+
+        // TODO(fa): decref PyThreadState__dict
+        NativeMemory.free(pointer);
     }
 }

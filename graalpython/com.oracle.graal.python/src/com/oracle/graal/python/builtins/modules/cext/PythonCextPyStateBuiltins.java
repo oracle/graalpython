@@ -138,13 +138,13 @@ public final class PythonCextPyStateBuiltins {
              */
             if (threadState.isNativeThreadStateInitialized()) {
                 LOGGER.fine(() -> String.format("Lazy initialization attempt of native thread state for thread %s aborted. Was initialized in the meantime.", Thread.currentThread()));
-                long nativeThreadState = PThreadState.getNativeThreadState(threadState);
+                long nativeThreadState = threadState.getNativeWrapper();
                 assert nativeThreadState != NULLPTR;
                 return nativeThreadState;
             }
 
             LOGGER.fine(() -> "Lazy (fallback) initialization of native thread state for thread " + Thread.currentThread());
-            assert PThreadState.getNativeThreadState(threadState) == null;
+            assert threadState.getNativeWrapper() == NULLPTR;
             long nativeThreadState = PThreadState.getOrCreateNativeThreadState(threadState);
             threadState.setNativeThreadLocalVarPointer(tstateCurrentPtr);
             return nativeThreadState;

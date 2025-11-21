@@ -1100,9 +1100,9 @@ public final class CApiContext extends CExtContext {
              */
             pollReferenceQueue();
             PythonThreadState threadState = getContext().getThreadState(getContext().getLanguage());
-            long nativeThreadState = PThreadState.getNativeThreadState(threadState);
-            if (nativeThreadState != NULLPTR) {
-                PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_PY_GC_COLLECT_NO_FAIL, nativeThreadState);
+            long pointer = threadState.getNativeWrapper();
+            if (pointer != NULLPTR) {
+                PThreadState.dispose(pointer);
                 pollReferenceQueue();
             }
             CApiTransitions.deallocateNativeWeakRefs(getContext());

@@ -347,7 +347,7 @@ public final class PythonContext extends Python3Core {
          * a handle is allocated. In order to avoid leaks, the handle needs to be free'd when the
          * owning thread (or the whole context) is disposed.
          */
-        PThreadState nativeWrapper;
+        long nativeWrapper;
 
         /*
          * Pointer to the native thread-local variable used to store the native PyThreadState struct
@@ -460,12 +460,12 @@ public final class PythonContext extends Python3Core {
             this.dict = dict;
         }
 
-        public PThreadState getNativeWrapper() {
+        public long getNativeWrapper() {
             return nativeWrapper;
         }
 
-        public void setNativeWrapper(PThreadState nativeWrapper) {
-            this.nativeWrapper = nativeWrapper;
+        public void setNativeWrapper(long pointer) {
+            this.nativeWrapper = pointer;
         }
 
         public PContextVarsContext getContextVarsContext(Node node) {
@@ -495,12 +495,9 @@ public final class PythonContext extends Python3Core {
                 }
             }
             dict = null;
-            if (nativeWrapper != null) {
-                if (nativeWrapper.ref == null) {
-                    // There is no PythonObjectReference, this will not be collected anywhere else
-                    CApiTransitions.releaseNativeWrapperUncached(nativeWrapper);
-                }
-                nativeWrapper = null;
+            if (nativeWrapper != NULLPTR) {
+                PThreadState.dispose(nativeWrapper);
+                nativeWrapper = NULLPTR;
             }
             /*
              * Write 'NULL' to the native thread-local variable used to store the PyThreadState

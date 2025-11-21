@@ -538,7 +538,7 @@ public abstract class CExtCommonNodes {
         @Specialization
         static Object getException(PythonThreadState threadState,
                         @Cached CApiTransitions.NativeToPythonTransferNode nativeToPythonNode) {
-            long nativeThreadState = PThreadState.getNativeThreadState(threadState);
+            long nativeThreadState = threadState.getNativeWrapper();
             if (nativeThreadState != NULLPTR) {
                 Object exception = nativeToPythonNode.execute(wrapPointer(readPtrField(nativeThreadState, CFields.PyThreadState__current_exception)));
                 writePtrField(nativeThreadState, CFields.PyThreadState__current_exception, 0L);
