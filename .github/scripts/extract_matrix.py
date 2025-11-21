@@ -30,17 +30,11 @@ JOB_EXCLUSION_TERMS = (
 
     # Python 3.8.10 (matrix.python_version) is not available for linux aarch64
     # cf. https://raw.githubusercontent.com/actions/python-versions/main/versions-manifest.json
-    "python-svm-build-gate-linux-aarch64"
+    "linux-aarch64"
 )
 
-# TODO build link using self.runs_on
 DOWNLOADS_LINKS = {
-    "GRADLE_JAVA_HOME": {
-        "https://download.oracle.com/java/21/latest/jdk-21_linux-x64_bin.tar.gz": ["linux", "amd64"],
-        "https://download.oracle.com/java/21/latest/jdk-21_linux-aarch64_bin.tar.gz": ["linux", "aarch64"],
-        "https://download.oracle.com/java/21/latest/jdk-21_macos-aarch64_bin.tar.gz": ["darwin", "aarch64"],
-        "https://download.oracle.com/java/21/latest/jdk-21_windows-x64_bin.zip": ["windows", "amd64"],
-    }
+    "GRADLE_JAVA_HOME": "https://download.oracle.com/java/{major_version}/latest/jdk-{major_version}_{os}-{arch_short}_bin{ext}"
 }
 
 # Gitlab Runners OSS
@@ -125,30 +119,38 @@ class Job:
                 python_packages.append(f"'{k[4:]}{v}'" if self.runs_on != "windows-latest" else f"{k[4:]}{v}")
         return python_packages
 
-    def get_download_steps(self, key: str) -> str:
-        download_link = self.get_download_link(key)
+    def get_download_steps(self, key: str, version: str) -> str:
+        download_link = self.get_download_link(key, version)
         filename = download_link.split('/')[-1]
         return (f"wget -q {download_link} && "
             f"dirname=$(tar -tzf {filename} | head -1 | cut -f1 -d '/') && "
             f"tar -xzf {filename} && "
             f'echo {key}=$(realpath "$dirname") >> $GITHUB_ENV')
     
-    def get_download_link(self, key) -> str:
-        os_pair = OSS[self.runs_on]
-        oss_links = DOWNLOADS_LINKS[key]
+    def get_download_link(self, key: str, version: str) -> str:
+        os, arch = OSS[self.runs_on]
+        major_version = version.split(".")[0]
+        extension = ".tar.gz" if not os == "windows" else ".zip"
+        os = os if os != "darwin" else "macos"
+        arch_short = {"amd64": "x64", "aarch64": "aarch64"}[arch]
 
-        for k, v in oss_links.items():
-            if os_pair == v: return k
-        
-        return ""
+        vars = {
+            "major_version": major_version,
+            "os":os, 
+            "arch": arch, 
+            "arch_short": arch_short,
+            "ext": extension,
+        }
+
+        return DOWNLOADS_LINKS[key].format(**vars)
 
     @cached_property
     def downloads(self) -> list[str]:
         downloads = []
-        for k, v in self.job.get("downloads", {}).items():
-           if k in DOWNLOADS_LINKS:
-            downloads.append(self.get_download_steps(k))
-            #print(f"[DEBUG] {k}, {downloads}")
+        for k, download_info in self.job.get("downloads", {}).items():
+            if k in DOWNLOADS_LINKS and download_info["version"]:
+                downloads.append(self.get_download_steps(k, download_info["version"]))
+
         return downloads
 
     @staticmethod

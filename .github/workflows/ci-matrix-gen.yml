@@ -186,6 +186,10 @@ jobs:
         if: ${{ matrix.setup_steps }}
         run: |
           ${{ matrix.setup_steps }}
+
+      - name: Check disk space
+        run: df -h
+
       - name: Run on Unix
         working-directory: main
         if: ${{ matrix.run_steps && runner.os != 'Windows' }}

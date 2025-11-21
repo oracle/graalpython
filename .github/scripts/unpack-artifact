@@ -5,13 +5,6 @@ if [ -n "$1" ]; then
    to_extract="${ARTIFACT_PATH_PREFIX}/${1}.tar"
 fi
 
-echo "pwd && ls"
-pwd && ls
-
-echo "ls .."
-ls .. 
-
-
 for i in $to_extract; do
    if [ -f "$i" ]; then
       tar -x -f "$i" -C "${ARTIFACT_PATH_PREFIX}" -v
@@ -22,5 +15,3 @@ for i in $to_extract; do
    fi
 
 done
-
-pwd && ls ..
