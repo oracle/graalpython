@@ -1608,6 +1608,7 @@ public abstract class CApiTransitions {
                 updateRefNode.execute(inliningTarget, pythonObject, refCnt);
             }
             assert !needsTransfer || isGcTrackedIfGcType(pythonObject);
+            assert isGcTrackedIfNecessary(pythonObject);
             return pythonObject.getNativePointer();
         }
 
@@ -1691,7 +1692,7 @@ public abstract class CApiTransitions {
                 }
                 pointer = pythonObject.getNativePointer();
             }
-            assert !needsTransfer || isGcTrackedIfGcType(pythonObject);
+            assert isGcTrackedIfNecessary(pythonObject);
             assert pythonObject.isNative();
             return pointer;
         }
@@ -1717,8 +1718,21 @@ public abstract class CApiTransitions {
             return pythonObject instanceof PythonBuiltinClass || context.getTrue() == pythonObject || context.getFalse() == pythonObject || pythonObject instanceof PMemoryView;
         }
 
+        /**
+         * Verify, if the object is correctly tracked by the Python GC if necessary.
+         */
         @TruffleBoundary
-        private static boolean isGcTrackedIfGcType(PythonObject object) {
+        private static boolean isGcTrackedIfNecessary(PythonObject object) {
+            // if Python GC is not enabled, we are fine
+            if (!PythonLanguage.get(null).getEngineOption(PythonOptions.PythonGC)) {
+                return true;
+            }
+            // an object won't be GC tracked if the reference is "weak" or if it is immortal
+            long refCount = object.getRefCount();
+            if (refCount == MANAGED_REFCNT || refCount == IMMORTAL_REFCNT) {
+                return true;
+            }
+
             // is_gc(type(delegate)) => tracked
             boolean isGc = (GetTypeFlagsNode.executeUncached(GetClassNode.executeUncached(object)) & TypeFlags.HAVE_GC) != 0;
             return !isGc || PyObjectGCTrackNode.isGcTracked(object.getNativePointer());
