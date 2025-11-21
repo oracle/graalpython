@@ -141,7 +141,8 @@ public abstract class CastToTruffleStringNode extends PNodeWithContext {
 
         @Specialization
         static TruffleString read(long rawPointer,
-                        @Cached TruffleString.FromNativePointerWithCompactionUTF32Node fromNative) {
+                        @Cached TruffleString.FromNativePointerWithCompactionUTF32Node fromNative,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             int state = readIntField(rawPointer, PyASCIIObject__state);
             int kind = (state >> CFields.PyASCIIObject__state_kind_shift) & 0x7;
             long data = readPtrField(rawPointer, PyUnicodeObject__data);
@@ -160,7 +161,8 @@ public abstract class CastToTruffleStringNode extends PNodeWithContext {
             }
             int bytes = PythonUtils.toIntError(length * kind);
 
-            return fromNative.execute(data, 0, bytes, compactionLevel, false);
+            TruffleString ts = fromNative.execute(data, 0, bytes, compactionLevel, true);
+            return switchEncodingNode.execute(ts, TS_ENCODING);
         }
     }
 
