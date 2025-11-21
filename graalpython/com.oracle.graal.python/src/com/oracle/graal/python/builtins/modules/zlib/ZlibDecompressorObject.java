@@ -86,12 +86,12 @@ public class ZlibDecompressorObject extends PythonBuiltinObject {
     }
 
     public Object getZst() {
-        assert isNative();
+        assert isNativeDecompressor();
         return ((NativeZlibCompObject) compObject).getZst();
     }
 
     public JavaDecompress getStream() {
-        assert !isNative();
+        assert !isNativeDecompressor();
         return ((JavaDecompress) compObject);
     }
 
@@ -127,7 +127,7 @@ public class ZlibDecompressorObject extends PythonBuiltinObject {
         compObject.setUnconsumedTail(unconsumedTail);
     }
 
-    public boolean isNative() {
+    public boolean isNativeDecompressor() {
         return compObject instanceof NativeZlibCompObject;
     }
 
