@@ -1173,7 +1173,7 @@ public abstract class CApiTransitions {
         @TruffleBoundary
         static long doSpecialSingleton(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractObject singletonObject, long initialRefCount) {
             assert initialRefCount == IMMORTAL_REFCNT;
-            assert PythonContext.get(null).getCApiContext().getSingletonNativeWrapper(singletonObject) == 0;
+            assert !PythonContext.get(null).hasCApiContext() || PythonContext.get(null).getCApiContext().getSingletonNativeWrapper(singletonObject) == 0;
 
             Object type = GetClassNode.executeUncached(singletonObject);
             assert (GetTypeFlagsNode.executeUncached(type) & TypeFlags.HAVE_GC) == 0;
