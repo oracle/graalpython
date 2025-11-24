@@ -194,6 +194,7 @@ jobs:
         working-directory: main
         if: ${{ matrix.run_steps && runner.os != 'Windows' }}
         run: |
+          env
           ${{ matrix.run_steps }}
       - name: Run on Windows
         if: ${{ matrix.run_steps && runner.os == 'Windows' }}
