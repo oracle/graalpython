@@ -158,7 +158,6 @@ import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -232,6 +231,18 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     public void setIndexedSlots(Object[] indexedSlots) {
         this.indexedSlots = indexedSlots;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public final boolean hasLanguageId() {
+        return true;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public final String getLanguageId() {
+        return PythonLanguage.ID;
     }
 
     @ExportMessage
@@ -1455,16 +1466,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         boolean isArrayElementReadable(long index) {
             return index >= 0 && index < keys.length;
         }
-    }
-
-    @ExportMessage
-    public boolean hasLanguage() {
-        return true;
-    }
-
-    @ExportMessage
-    public Class<? extends TruffleLanguage<?>> getLanguage() {
-        return PythonLanguage.class;
     }
 
     @GenerateUncached

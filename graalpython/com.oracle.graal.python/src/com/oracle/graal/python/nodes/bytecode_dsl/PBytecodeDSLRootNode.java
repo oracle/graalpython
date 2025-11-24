@@ -877,6 +877,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         return section.getSource();
     }
 
+    @Override
+    public abstract boolean isCaptureFramesForTrace(boolean compiledFrame);
+
     @TruffleBoundary
     public int bciToLine(int bci, BytecodeNode bytecodeNode) {
         SourceSection sourceSection = getSourceSectionForLocation(bci, bytecodeNode);

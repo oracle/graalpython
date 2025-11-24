@@ -837,7 +837,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     @ExportLibrary(value = InteropLibrary.class, delegateTo = "delegate")
-    static class ForeignLanguageView implements TruffleObject {
+    static final class ForeignLanguageView implements TruffleObject {
         final Object delegate;
 
         ForeignLanguageView(Object delegate) {
@@ -853,13 +853,14 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
         @ExportMessage
         @SuppressWarnings("static-method")
-        boolean hasLanguage() {
+        boolean hasLanguageId() {
             return true;
         }
 
         @ExportMessage
-        Class<? extends TruffleLanguage<?>> getLanguage() {
-            return PythonLanguage.class;
+        @SuppressWarnings("static-method")
+        String getLanguageId() {
+            return PythonLanguage.ID;
         }
     }
 
