@@ -825,7 +825,12 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
         standalone_dist = 'GRAALPY_NATIVE_STANDALONE'
 
     mx_args = ['-p', SUITE.dir, *(['--env', env_file] if env_file else [])]
-    mx_args.append("--extra-image-builder-argument=-g")
+    
+    if os.environ.get("GITHUB_CI"):
+        print("[DEBUG] Running in GitHub Ci")
+        mx_args.append("--extra-image-builder-argument=-Ob")
+    else:
+        mx_args.append("--extra-image-builder-argument=-g")
 
     pgo_profile = os.environ.get("GRAALPY_PGO_PROFILE")
     if pgo_profile is not None:

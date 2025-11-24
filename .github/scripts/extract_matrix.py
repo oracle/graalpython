@@ -14,7 +14,8 @@ from typing import Any
 
 DEFAULT_ENV = {
     "CI": "true",
-    "PYTHONIOENCODING": "utf-8"
+    "GITHUB_CI": "true",
+    "PYTHONIOENCODING": "utf-8",
 }
 
 
