@@ -2040,10 +2040,22 @@ public abstract class CApiTransitions {
         }
 
         @Specialization
-        static Object doGeneric(long value,
+        static Object doLong(long value,
                         @Bind Node inliningTarget,
-                        @Cached NativeToPythonInternalNode nativeToPythonInternalNode) {
+                        @Shared @Cached NativeToPythonInternalNode nativeToPythonInternalNode) {
             return nativeToPythonInternalNode.execute(inliningTarget, value, false);
+        }
+
+        @Specialization(limit = "1")
+        static Object doInteropPointer(Object nativePointer,
+                        @Bind Node inliningTarget,
+                        @Shared @Cached NativeToPythonInternalNode nativeToPythonInternalNode,
+                        @CachedLibrary("nativePointer") InteropLibrary lib) {
+            try {
+                return nativeToPythonInternalNode.execute(inliningTarget, lib.asPointer(nativePointer), false);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
         }
 
         @NeverDefault
@@ -2066,10 +2078,22 @@ public abstract class CApiTransitions {
         }
 
         @Specialization
-        static Object doGeneric(long pointer,
+        static Object doLong(long pointer,
                         @Bind Node inliningTarget,
-                        @Cached NativeToPythonInternalNode nativeToPythonInternalNode) {
+                        @Shared @Cached NativeToPythonInternalNode nativeToPythonInternalNode) {
             return nativeToPythonInternalNode.execute(inliningTarget, pointer, true);
+        }
+
+        @Specialization(limit = "1")
+        static Object doInteropPointer(Object nativePointer,
+                        @Bind Node inliningTarget,
+                        @Shared @Cached NativeToPythonInternalNode nativeToPythonInternalNode,
+                        @CachedLibrary("nativePointer") InteropLibrary lib) {
+            try {
+                return nativeToPythonInternalNode.execute(inliningTarget, lib.asPointer(nativePointer), true);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
         }
 
         @NeverDefault
@@ -2092,10 +2116,22 @@ public abstract class CApiTransitions {
         }
 
         @Specialization
-        static Object doGeneric(long pointer,
+        static Object doLong(long pointer,
                         @Bind Node inliningTarget,
-                        @Cached NativeToPythonInternalNode nativeToPythonInternalNode) {
+                        @Shared @Cached NativeToPythonInternalNode nativeToPythonInternalNode) {
             return nativeToPythonInternalNode.execute(inliningTarget, pointer, true, true);
+        }
+
+        @Specialization(limit = "1")
+        static Object doNativePointer(Object pointer,
+                        @Bind Node inliningTarget,
+                        @CachedLibrary("pointer") InteropLibrary lib,
+                        @Shared @Cached NativeToPythonInternalNode nativeToPythonInternalNode) {
+            try {
+                return doLong(lib.asPointer(pointer), inliningTarget, nativeToPythonInternalNode);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
         }
 
         @NeverDefault

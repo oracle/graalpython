@@ -152,10 +152,12 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
@@ -170,9 +172,9 @@ public abstract class PythonCextObjectBuiltins {
     @CApiBuiltin(ret = Void, args = {PointerZZZ, Py_ssize_t}, call = Ignored)
     abstract static class GraalPyPrivate_NotifyRefCount extends CApiBinaryBuiltinNode {
         @Specialization
-        static Object doGeneric(long pointer, long refCount,
+        static Object doLong(long pointer, long refCount,
                         @Bind Node inliningTarget,
-                        @Cached UpdateHandleTableReferenceNode updateRefNode) {
+                        @Shared @Cached UpdateHandleTableReferenceNode updateRefNode) {
             assert HandlePointerConverter.pointsToPyHandleSpace(pointer);
             assert !HandlePointerConverter.pointsToPyIntHandle(pointer);
             assert !HandlePointerConverter.pointsToPyFloatHandle(pointer);
@@ -184,16 +186,28 @@ public abstract class PythonCextObjectBuiltins {
             updateRefNode.execute(inliningTarget, handleContext, pointer, hti, refCount);
             return PNone.NO_VALUE;
         }
+
+        @Specialization(limit = "1")
+        static Object doInteropPointer(Object pointer, long refCount,
+                        @Bind Node inliningTarget,
+                        @Shared @Cached UpdateHandleTableReferenceNode updateRefNode,
+                        @CachedLibrary("pointer") InteropLibrary lib) {
+            try {
+                return doLong(lib.asPointer(pointer), refCount, inliningTarget, updateRefNode);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
     }
 
     @CApiBuiltin(ret = Void, args = {PointerZZZ, Int}, call = Ignored)
     abstract static class GraalPyPrivate_BulkNotifyRefCount extends CApiBinaryBuiltinNode {
 
         @Specialization
-        static Object doGeneric(long arrayPointer, int len,
+        static Object doLong(long arrayPointer, int len,
                         @Bind Node inliningTarget,
-                        @Cached UpdateHandleTableReferenceNode updateRefNode,
-                        @Cached NativeToPythonInternalNode nativeToPythonNode) {
+                        @Shared @Cached UpdateHandleTableReferenceNode updateRefNode,
+                        @Shared @Cached NativeToPythonInternalNode nativeToPythonNode) {
 
             /*
              * It may happen that due to several inc- and decrefs applied to a borrowed reference,
@@ -219,6 +233,19 @@ public abstract class PythonCextObjectBuiltins {
             }
             Reference.reachabilityFence(resolved);
             return PNone.NO_VALUE;
+        }
+
+        @Specialization(limit = "1")
+        static Object doInteropPointer(Object pointer, int len,
+                        @Bind Node inliningTarget,
+                        @Shared @Cached UpdateHandleTableReferenceNode updateRefNode,
+                        @Shared @Cached NativeToPythonInternalNode nativeToPythonNode,
+                        @CachedLibrary("pointer") InteropLibrary lib) {
+            try {
+                return doLong(lib.asPointer(pointer), len, inliningTarget, updateRefNode, nativeToPythonNode);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
         }
     }
 
