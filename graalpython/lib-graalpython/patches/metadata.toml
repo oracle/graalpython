@@ -388,6 +388,10 @@ dist-type = 'sdist'
 version = '1.17.1'
 url = 'https://github.com/microsoft/onnxruntime/archive/refs/tags/v1.17.1.tar.gz'
 
+[[optree.rules]]
+patch = 'optree.patch'
+license = 'Apache-2.0'
+
 [[orjson.rules]]
 version = '== 3.9.7'
 patch = 'orjson-3.9.7.patch'
@@ -658,8 +662,13 @@ patch = 'pythran-0.15.patch'
 license = 'BSD-3-Clause'
 
 [[pythran.rules]]
-version = '>= 0.16'
+version = '>= 0.16, < 0.18.1'
 patch = 'pythran-0.16.patch'
+license = 'BSD-3-Clause'
+
+[[pythran.rules]]
+version = '== 0.18.1'
+patch = 'pythran-0.18.1.patch'
 license = 'BSD-3-Clause'
 
 [[pyzmq.rules]]
