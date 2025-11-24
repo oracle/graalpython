@@ -238,7 +238,7 @@ public final class PythonCextTypeBuiltins {
                 // Reload slots from native, which also invalidates cached slot lookups
                 clazz.setTpSlots(TpSlots.fromNative(clazz, context));
             } else if (object instanceof PythonManagedClass clazz) {
-                Object field = readObjectNode.read(clazz.getClassNativeWrapper().getNativePointer(), CFields.PyTypeObject__tp_dict);
+                Object field = readObjectNode.read(clazz.getNativePointer(), CFields.PyTypeObject__tp_dict);
                 if (field instanceof PDict dict && dict != getDictIfExists.execute(clazz)) {
                     setDict.execute(inliningTarget, object, dict);
                 }

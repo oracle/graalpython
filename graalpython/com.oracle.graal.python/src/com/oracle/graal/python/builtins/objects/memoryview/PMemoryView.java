@@ -129,7 +129,6 @@ public final class PMemoryView extends PythonBuiltinObject {
         if (bufferLifecycleManager != null) {
             this.reference = BufferReference.createBufferReference(this, bufferLifecycleManager, context);
         }
-        setNativeWrapper(new PyMemoryViewWrapper(this));
     }
 
     // From CPython init_strides_from_shape

@@ -41,11 +41,12 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
+import com.oracle.truffle.api.CompilerDirectives;
 
 public abstract class CApiGuards {
 
     public static boolean isPrimitiveNativeWrapper(Object object) {
-        return object instanceof PrimitiveNativeWrapper;
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     public static boolean isNativeWrapper(Object object) {

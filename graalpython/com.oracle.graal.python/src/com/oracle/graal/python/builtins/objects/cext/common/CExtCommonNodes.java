@@ -74,7 +74,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
-import com.oracle.graal.python.builtins.objects.cext.capi.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefRawNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
@@ -87,7 +86,6 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.CallSlotLenNode;
-import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nfi2.NfiBoundFunction;
@@ -95,7 +93,6 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -342,37 +339,6 @@ public abstract class CExtCommonNodes {
             return PGuards.expectInteger(execute(this, o, signed, targetTypeSize, true));
         }
 
-        @Specialization(guards = {"targetTypeSize == 4", "signed != 0", "fitsInInt32(nativeWrapper)"})
-        @SuppressWarnings("unused")
-        static int doWrapperToInt32(PrimitiveNativeWrapper nativeWrapper, int signed, int targetTypeSize, boolean exact) {
-            return nativeWrapper.getInt();
-        }
-
-        @Specialization(guards = {"targetTypeSize == 4", "signed == 0", "fitsInUInt32(nativeWrapper)"})
-        @SuppressWarnings("unused")
-        static int doWrapperToUInt32Pos(PrimitiveNativeWrapper nativeWrapper, int signed, int targetTypeSize, boolean exact) {
-            return nativeWrapper.getInt();
-        }
-
-        @Specialization(guards = {"targetTypeSize == 8", "signed != 0", "fitsInInt64(nativeWrapper)"})
-        @SuppressWarnings("unused")
-        static long doWrapperToInt64(PrimitiveNativeWrapper nativeWrapper, int signed, int targetTypeSize, boolean exact) {
-            return nativeWrapper.getLong();
-        }
-
-        @Specialization(guards = {"targetTypeSize == 8", "signed == 0", "fitsInUInt64(nativeWrapper)"})
-        @SuppressWarnings("unused")
-        static long doWrapperToUInt64Pos(PrimitiveNativeWrapper nativeWrapper, int signed, int targetTypeSize, boolean exact) {
-            return nativeWrapper.getLong();
-        }
-
-        @Specialization
-        @SuppressWarnings("unused")
-        static Object doWrapperGeneric(PrimitiveNativeWrapper nativeWrapper, int signed, int targetTypeSize, boolean exact,
-                        @Shared @Cached(inline = false) AsNativePrimitiveNode asNativePrimitiveNode) {
-            return asNativePrimitiveNode.execute(nativeWrapper.getLong(), signed, targetTypeSize, exact);
-        }
-
         @Specialization
         static Object doInt(int value, int signed, int targetTypeSize, boolean exact,
                         @Shared @Cached(inline = false) AsNativePrimitiveNode asNativePrimitiveNode) {
@@ -385,60 +351,10 @@ public abstract class CExtCommonNodes {
             return asNativePrimitiveNode.execute(value, signed, targetTypeSize, exact);
         }
 
-        @Specialization(guards = {"!isPrimitiveNativeWrapper(obj)"}, replaces = {"doInt", "doLong"})
+        @Specialization(replaces = {"doInt", "doLong"})
         static Object doOther(Object obj, int signed, int targetTypeSize, boolean exact,
                         @Shared @Cached(inline = false) AsNativePrimitiveNode asNativePrimitiveNode) {
             return asNativePrimitiveNode.execute(obj, signed, targetTypeSize, exact);
-        }
-
-        static boolean fitsInInt32(PrimitiveNativeWrapper nativeWrapper) {
-            return nativeWrapper.isBool() || nativeWrapper.isInt();
-        }
-
-        static boolean fitsInInt64(PrimitiveNativeWrapper nativeWrapper) {
-            return nativeWrapper.isIntLike() || nativeWrapper.isBool();
-        }
-
-        static boolean fitsInUInt32(PrimitiveNativeWrapper nativeWrapper) {
-            return (nativeWrapper.isBool() || nativeWrapper.isInt()) && nativeWrapper.getInt() >= 0;
-        }
-
-        static boolean fitsInUInt64(PrimitiveNativeWrapper nativeWrapper) {
-            return (nativeWrapper.isIntLike() || nativeWrapper.isBool()) && nativeWrapper.getLong() >= 0;
-        }
-    }
-
-    /**
-     * Converts a Python object to a Java double value (which is compatible to a C double).<br/>
-     * This node is, for example, used to implement {@code PyFloat_AsDouble} or similar C API
-     * functions and does coercion and may raise a Python exception if coercion fails.<br/>
-     * Please note: In most cases, it is sufficient to use {@link PyFloatAsDoubleNode} but you might
-     * want to use this node if the argument can be an object of type {@link PrimitiveNativeWrapper}
-     * .
-     */
-    @GenerateInline(false) // footprint reduction 28 -> 10, inherits non-inlineable execute()
-    @GenerateUncached
-    @ImportStatic({SpecialMethodNames.class, CApiGuards.class})
-    public abstract static class AsNativeDoubleNode extends CExtToNativeNode {
-        public abstract double executeDouble(Object arg);
-
-        @Specialization(guards = "!isNativeWrapper(value)")
-        static double runGeneric(Object value,
-                        @Bind Node inliningTarget,
-                        @Cached PyFloatAsDoubleNode asDoubleNode) {
-            // IMPORTANT: this should implement the behavior like 'PyFloat_AsDouble'. So, if it
-            // is a float object, use the value and do *NOT* call '__float__'.
-            return asDoubleNode.execute(null, inliningTarget, value);
-        }
-
-        @Specialization(guards = "!object.isDouble()")
-        static double doLongNativeWrapper(PrimitiveNativeWrapper object) {
-            return object.getLong();
-        }
-
-        @Specialization(guards = "object.isDouble()")
-        static double doDoubleNativeWrapper(PrimitiveNativeWrapper object) {
-            return object.getDouble();
         }
     }
 

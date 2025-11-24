@@ -45,7 +45,6 @@ import static com.oracle.graal.python.util.PythonUtils.byteArraySupport;
 import java.nio.ByteOrder;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonStructNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.runtime.GilNode;
@@ -173,8 +172,7 @@ public abstract class CArrayWrappers {
     }
 
     /**
-     * Unlike a {@link PythonObjectNativeWrapper} object that wraps a Python unicode object, this
-     * wrapper let's a TruffleString look like a {@code char*}.
+     * Lets a TruffleString look like a {@code char*}.
      */
     @ExportLibrary(InteropLibrary.class)
     public static final class CStringWrapper extends CArrayWrapper {

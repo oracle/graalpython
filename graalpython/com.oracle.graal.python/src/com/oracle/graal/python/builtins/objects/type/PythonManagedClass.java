@@ -33,7 +33,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
@@ -366,10 +365,6 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
 
     public final PythonAbstractClass[] getBaseClasses() {
         return baseClasses;
-    }
-
-    public PythonClassNativeWrapper getClassNativeWrapper() {
-        return (PythonClassNativeWrapper) super.getNativeWrapper();
     }
 
     public boolean needsNativeAllocation() {

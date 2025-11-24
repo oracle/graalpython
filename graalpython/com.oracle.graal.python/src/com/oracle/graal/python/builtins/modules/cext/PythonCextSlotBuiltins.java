@@ -64,7 +64,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectPtrZZZ;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectWrapper;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PySetObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PySliceObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTupleObject;
@@ -99,7 +98,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointe
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ObSizeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyMethodDefHelper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins;
@@ -574,18 +574,18 @@ public final class PythonCextSlotBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Py_ssize_t, args = {PyObjectWrapper}, call = Ignored)
+    @CApiBuiltin(ret = Py_ssize_t, args = {PointerZZZ}, call = Ignored)
     abstract static class GraalPyPrivate_Get_PyObject_ob_refcnt extends CApiUnaryBuiltinNode {
 
         @Specialization
-        static Object get(PythonAbstractObjectNativeWrapper wrapper) {
+        static Object get(long pointer) {
             /*
              * We are allocating native object stubs for each wrapper. Therefore, reference counting
              * should only be done on the native side. However, we allow access for debugging
              * purposes.
              */
             if (PythonContext.DEBUG_CAPI) {
-                return wrapper.getRefCount();
+                return CApiTransitions.readNativeRefCount(HandlePointerConverter.pointerToStub(pointer));
             }
             throw CompilerDirectives.shouldNotReachHere();
         }

@@ -83,10 +83,10 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuil
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.FirstToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
@@ -101,6 +101,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
@@ -168,8 +169,8 @@ public final class CApiContext extends CExtContext {
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(LOGGER_CAPI_NAME);
     public static final TruffleLogger GC_LOGGER = PythonLanguage.getLogger(CApiContext.LOGGER_CAPI_NAME + ".gc");
 
-    /** Native wrappers for context-insensitive singletons like {@link PNone#NONE}. */
-    @CompilationFinal(dimensions = 1) private final PythonAbstractObjectNativeWrapper[] singletonNativePtrs;
+    /** Native pointers for context-insensitive singletons like {@link PNone#NONE}. */
+    @CompilationFinal(dimensions = 1) private final long[] singletonNativePtrs;
 
     /**
      * Pointer to the native {@code GCState GC state}. This corresponds to CPython's
@@ -352,20 +353,21 @@ public final class CApiContext extends CExtContext {
         }
 
         // initialize singleton native wrappers
-        singletonNativePtrs = new PythonAbstractObjectNativeWrapper[CONTEXT_INSENSITIVE_SINGLETONS.length];
-        // Other threads must see the nativeWrapper fully initialized once it becomes non-null
+        singletonNativePtrs = new long[CONTEXT_INSENSITIVE_SINGLETONS.length];
         for (int i = 0; i < singletonNativePtrs.length; i++) {
             assert CApiGuards.isSpecialSingleton(CONTEXT_INSENSITIVE_SINGLETONS[i]);
             /*
              * Note: this does intentionally not use 'PythonObjectNativeWrapper.wrap' because the
              * wrapper must not be reachable from the Python object since the singletons are shared.
              */
-            singletonNativePtrs[i] = new PythonObjectNativeWrapper(CONTEXT_INSENSITIVE_SINGLETONS[i]);
+            singletonNativePtrs[i] = FirstToNativeNode.executeUncached(CONTEXT_INSENSITIVE_SINGLETONS[i], IMMORTAL_REFCNT);
         }
 
         // initialize Py_True and Py_False
-        context.getTrue().setNativeWrapper(PrimitiveNativeWrapper.createBool(true));
-        context.getFalse().setNativeWrapper(PrimitiveNativeWrapper.createBool(false));
+        PInt aTrue = context.getTrue();
+        aTrue.setNativePointer(FirstToNativeNode.executeUncached(aTrue, IMMORTAL_REFCNT));
+        PInt aFalse = context.getFalse();
+        aFalse.setNativePointer(FirstToNativeNode.executeUncached(aFalse, IMMORTAL_REFCNT));
 
         this.gcTask = new BackgroundGCTask(context);
     }
@@ -435,12 +437,12 @@ public final class CApiContext extends CExtContext {
         return -1;
     }
 
-    public PythonAbstractObjectNativeWrapper getSingletonNativeWrapper(PythonAbstractObject obj) {
+    public long getSingletonNativeWrapper(PythonAbstractObject obj) {
         int singletonNativePtrIdx = CApiContext.getSingletonNativeWrapperIdx(obj);
         if (singletonNativePtrIdx != -1) {
             return singletonNativePtrs[singletonNativePtrIdx];
         }
-        return null;
+        return 0;
     }
 
     /**
@@ -453,26 +455,18 @@ public final class CApiContext extends CExtContext {
         // TODO(fa): this should not require the GIL (GR-51314)
         assert getContext().ownsGil();
         for (int i = 0; i < singletonNativePtrs.length; i++) {
-            PythonAbstractObjectNativeWrapper singletonNativeWrapper = singletonNativePtrs[i];
-            singletonNativePtrs[i] = null;
-            assert singletonNativeWrapper != null;
-            assert getSingletonNativeWrapperIdx(singletonNativeWrapper.getDelegate()) != -1;
-            assert !singletonNativeWrapper.isNative() || singletonNativeWrapper.getRefCount() == IMMORTAL_REFCNT;
-            assert singletonNativeWrapper.ref == null : "immortal objects should not have a weak ref";
+            long pointer = singletonNativePtrs[i];
+            assert pointer == PythonObject.UNINITIALIZED || CApiTransitions.readNativeRefCount(HandlePointerConverter.pointerToStub(pointer)) == IMMORTAL_REFCNT;
+            singletonNativePtrs[i] = PythonObject.NATIVE_POINTER_FREED;
             // It may be that the singleton was never used in native and there is nothing to free.
-            if (singletonNativeWrapper.isNative()) {
-                long pointer = CApiTransitions.HandlePointerConverter.pointerToStub(singletonNativeWrapper.getNativePointer());
-                int handleTableIndex = readIntField(pointer, CFields.GraalPyObject__handle_table_index);
+            if (pointer != PythonObject.UNINITIALIZED) {
+                assert HandlePointerConverter.pointsToPyHandleSpace(pointer);
+                int handleTableIndex = readIntField(HandlePointerConverter.pointerToStub(pointer), CFields.GraalPyObject__handle_table_index);
+                assert CApiTransitions.nativeStubLookupGet(handleContext, pointer, handleTableIndex) instanceof PythonAbstractObject : "immortal objects should not have a weak ref";
                 CApiTransitions.nativeStubLookupRemove(handleContext, handleTableIndex);
-                CApiTransitions.releaseNativeWrapperUncached(singletonNativeWrapper);
+                CApiTransitions.releaseNativeWrapper(pointer);
             }
         }
-    }
-
-    public PrimitiveNativeWrapper getCachedBooleanPrimitiveNativeWrapper(boolean b) {
-        PythonAbstractObjectNativeWrapper wrapper = b ? getContext().getTrue().getNativeWrapper() : getContext().getFalse().getNativeWrapper();
-        assert wrapper.getRefCount() > 0;
-        return (PrimitiveNativeWrapper) wrapper;
     }
 
     /**

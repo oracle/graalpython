@@ -524,12 +524,6 @@ public abstract class PGuards {
         return indexCheckNode.execute(inliningTarget, key) || isPSlice(key);
     }
 
-    @InliningCutoff
-    public static boolean isNativeWrapper(PythonAbstractObject object) {
-        PythonNativeWrapper wrapper = object.getNativeWrapper();
-        return wrapper != null && wrapper.isNative();
-    }
-
     public static boolean isNullOrZero(Object value, InteropLibrary lib) {
         if (value instanceof Long) {
             return ((long) value) == 0;

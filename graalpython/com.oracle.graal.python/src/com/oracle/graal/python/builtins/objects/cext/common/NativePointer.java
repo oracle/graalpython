@@ -46,6 +46,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import org.bouncycastle.math.raw.Nat;
 
 /**
  * This class can be used to bridge between JNI and LLVM. In particular, we use it to wrap native
@@ -54,6 +55,8 @@ import com.oracle.truffle.api.library.ExportMessage;
  */
 @ExportLibrary(InteropLibrary.class)
 public final class NativePointer implements TruffleObject {
+    public static final NativePointer NULL = new NativePointer();
+
     private final long ptr;
 
     public NativePointer(long ptr) {
@@ -74,7 +77,7 @@ public final class NativePointer implements TruffleObject {
      * {@link PythonContext#isNativeAccessAllowed()} is {@code false}.
      */
     public static NativePointer createNull() {
-        return new NativePointer();
+        return NativePointer.NULL;
     }
 
     @ExportMessage

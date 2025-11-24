@@ -1261,7 +1261,7 @@ public abstract class SequenceStorageNodes {
         }
 
         @InliningCutoff
-        @Specialization(guards = "!isNativeWrapper(value)")
+        @Specialization(guards = "!value.isNative()")
         protected static void doInt(@SuppressWarnings("unused") Node inliningTarget, IntSequenceStorage storage, int idx, PInt value) {
             try {
                 storage.setIntItemNormalized(idx, value.intValueExact());
@@ -1281,7 +1281,7 @@ public abstract class SequenceStorageNodes {
         }
 
         @InliningCutoff
-        @Specialization(guards = "!isNativeWrapper(value)")
+        @Specialization(guards = "!value.isNative()")
         protected static void doLong(@SuppressWarnings("unused") Node inliningTarget, LongSequenceStorage storage, int idx, PInt value) {
             try {
                 storage.setLongItemNormalized(idx, value.longValueExact());

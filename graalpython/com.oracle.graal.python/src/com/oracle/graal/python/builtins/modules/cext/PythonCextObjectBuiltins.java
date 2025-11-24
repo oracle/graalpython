@@ -44,23 +44,22 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImpleme
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
-import static com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper.MANAGED_REFCNT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PointerZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectConstPtrZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectRawPointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectWrapper;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadState;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyVarObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_hash_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.VA_LIST_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
 import static com.oracle.graal.python.builtins.objects.ints.PInt.intValue;
+import static com.oracle.graal.python.builtins.objects.object.PythonObject.IMMORTAL_REFCNT;
 import static com.oracle.graal.python.nfi2.NativeMemory.readPtrArrayElement;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNHASHABLE_TYPE_P;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BYTES__;
@@ -68,6 +67,7 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_JAVA;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.io.PrintWriter;
+import java.lang.ref.Reference;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -88,16 +88,14 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ResolvePointerNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeRawNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.ToPythonWrapperNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateStrongRefNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonObjectReference;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateHandleTableReferenceNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.cext.common.GetNextVaArgNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
@@ -107,6 +105,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins.GetAttributeNode;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins.SetattrNode;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyBytesCheckNode;
@@ -168,16 +167,21 @@ public abstract class PythonCextObjectBuiltins {
     private PythonCextObjectBuiltins() {
     }
 
-    @CApiBuiltin(ret = Void, args = {PyObjectWrapper, Py_ssize_t}, call = Ignored)
+    @CApiBuiltin(ret = Void, args = {PointerZZZ, Py_ssize_t}, call = Ignored)
     abstract static class GraalPyPrivate_NotifyRefCount extends CApiBinaryBuiltinNode {
         @Specialization
-        static Object doGeneric(PythonAbstractObjectNativeWrapper wrapper, long refCount,
+        static Object doGeneric(long pointer, long refCount,
                         @Bind Node inliningTarget,
-                        @Cached UpdateStrongRefNode updateRefNode) {
-            assert CApiTransitions.readNativeRefCount(HandlePointerConverter.pointerToStub(wrapper.getNativePointer())) == refCount;
+                        @Cached UpdateHandleTableReferenceNode updateRefNode) {
+            assert HandlePointerConverter.pointsToPyHandleSpace(pointer);
+            assert !HandlePointerConverter.pointsToPyIntHandle(pointer);
+            assert !HandlePointerConverter.pointsToPyFloatHandle(pointer);
+            assert CApiTransitions.readNativeRefCount(HandlePointerConverter.pointerToStub(pointer)) == refCount;
             // refcounting on an immortal object should be a NOP
-            assert refCount != PythonAbstractObjectNativeWrapper.IMMORTAL_REFCNT;
-            updateRefNode.execute(inliningTarget, wrapper, refCount);
+            assert refCount != PythonObject.IMMORTAL_REFCNT;
+            HandleContext handleContext = PythonContext.get(inliningTarget).nativeContext;
+            int hti = CStructAccess.readIntField(HandlePointerConverter.pointerToStub(pointer), CFields.GraalPyObject__handle_table_index);
+            updateRefNode.execute(inliningTarget, handleContext, pointer, hti, refCount);
             return PNone.NO_VALUE;
         }
     }
@@ -188,29 +192,32 @@ public abstract class PythonCextObjectBuiltins {
         @Specialization
         static Object doGeneric(long arrayPointer, int len,
                         @Bind Node inliningTarget,
-                        @Cached UpdateStrongRefNode updateRefNode,
-                        @Cached ToPythonWrapperNode toPythonWrapperNode) {
+                        @Cached UpdateHandleTableReferenceNode updateRefNode,
+                        @Cached NativeToPythonInternalNode nativeToPythonNode) {
 
             /*
              * It may happen that due to several inc- and decrefs applied to a borrowed reference,
              * that the same pointer is in the list several times. To avoid crashes, we do the
-             * processing in two phases: first, we resolve the pointers to wrappers and second, we
+             * processing in two phases: first, we resolve the pointers to objects and second, we
              * update the reference counts. In this way, we avoid that a reference is made weak when
              * processed the first time and may then be invalid if processed the second time.
              */
-            PythonNativeWrapper[] resolved = new PythonNativeWrapper[len];
+            long[] pointers = new long[len];
+            Object[] resolved = new Object[len];
             for (int i = 0; i < resolved.length; i++) {
                 long elem = readPtrArrayElement(arrayPointer, i);
-                resolved[i] = toPythonWrapperNode.executeWrapper(elem, false);
+                pointers[i] = elem;
+                resolved[i] = nativeToPythonNode.execute(inliningTarget, elem, false);
             }
+            HandleContext handleContext = PythonContext.get(inliningTarget).nativeContext;
             for (int i = 0; i < resolved.length; i++) {
-                if (resolved[i] instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
-                    long refCount = CApiTransitions.readNativeRefCount(HandlePointerConverter.pointerToStub(objectNativeWrapper.getNativePointer()));
-                    // refcounting on an immortal object should be a NOP
-                    assert refCount != PythonAbstractObjectNativeWrapper.IMMORTAL_REFCNT;
-                    updateRefNode.execute(inliningTarget, objectNativeWrapper, refCount);
-                }
+                long refCount = CApiTransitions.readNativeRefCount(pointers[i]);
+                // refcounting on an immortal object should be a NOP
+                assert refCount != PythonObject.IMMORTAL_REFCNT;
+                int hti = CStructAccess.readIntField(pointers[i], CFields.GraalPyObject__handle_table_index);
+                updateRefNode.execute(inliningTarget, handleContext, pointers[i], hti, refCount);
             }
+            Reference.reachabilityFence(resolved);
             return PNone.NO_VALUE;
         }
     }
@@ -603,53 +610,62 @@ public abstract class PythonCextObjectBuiltins {
     @CApiBuiltin(ret = Int, args = {PyObjectRawPointer}, call = Ignored)
     abstract static class GraalPyPrivate_Object_IsFreed extends CApiUnaryBuiltinNode {
         @Specialization
-        int doGeneric(Object pointer,
-                        @Cached ToPythonWrapperNode toPythonWrapperNode) {
-            return toPythonWrapperNode.executeWrapper(pointer, false) == null ? 1 : 0;
+        static int doLong(long pointer,
+                        @Bind Node inliningTarget) {
+            assert !HandlePointerConverter.pointsToPyIntHandle(pointer);
+            assert !HandlePointerConverter.pointsToPyFloatHandle(pointer);
+            int handleTableIndex = CStructAccess.readIntField(HandlePointerConverter.pointerToStub(pointer), CFields.GraalPyObject__handle_table_index);
+            Object reference = CApiTransitions.nativeStubLookupGet(PythonContext.get(inliningTarget).nativeContext, pointer, handleTableIndex);
+            Object referent;
+            if (reference instanceof PythonObjectReference pythonObjectReference) {
+                assert handleTableIndex == pythonObjectReference.getHandleTableIndex();
+                referent = pythonObjectReference.get();
+            } else {
+                referent = reference;
+            }
+            return referent == null ? 1 : 0;
+        }
+
+        @Specialization
+        static int doInteropPointer(Object pointer,
+                        @Bind Node inliningTarget,
+                        @Cached CoerceNativePointerToLongNode coerceNativePointerToLongNode) {
+            return doLong(coerceNativePointerToLongNode.execute(inliningTarget, pointer), inliningTarget);
         }
     }
 
-    @CApiBuiltin(ret = Void, args = {PyObjectWrapper}, call = Ignored)
+    @CApiBuiltin(ret = Void, args = {Pointer}, call = Ignored)
     abstract static class GraalPyPrivate_Object_Dump extends CApiUnaryBuiltinNode {
 
         @Specialization
         @TruffleBoundary
-        int doGeneric(Object ptrObject) {
-            PythonContext context = getContext();
+        static int doGeneric(Object pointerObject) {
+            long pointer = CoerceNativePointerToLongNode.executeUncached(pointerObject);
+            PythonContext context = PythonContext.get(null);
             PrintWriter stderr = new PrintWriter(context.getStandardErr());
-
-            // There are three cases we need to distinguish:
-            // 1) The pointer object is a native pointer and is NOT a handle
-            // 2) The pointer object is a native pointer and is a handle
-            // 3) The pointer object is one of our native wrappers
-
-            boolean isWrapper = CApiGuards.isNativeWrapper(ptrObject);
 
             /*
              * At this point we don't know if the pointer is invalid, so we try to resolve it to an
              * object.
              */
-            Object resolved = isWrapper ? ptrObject : ResolvePointerNode.executeUncached(ptrObject);
-            Object pythonObject;
+            Object resolved = NativeToPythonInternalNode.executeUncached(pointer, false);
+
+            // There are two cases we need to distinguish:
+            // 1) The pointer object is a native pointer and is NOT a handle
+            // 2) The pointer object is a native pointer and is a handle
             long refCnt;
-            // We need again check if 'resolved' is a wrapper in case we resolved a handle.
-            if (resolved instanceof PythonAbstractObjectNativeWrapper objectNativeWrapper) {
-                if (objectNativeWrapper.isNative()) {
-                    refCnt = objectNativeWrapper.getRefCount();
-                } else {
-                    refCnt = MANAGED_REFCNT;
-                }
+            if (HandlePointerConverter.pointsToPyIntHandle(pointer) || HandlePointerConverter.pointsToPyFloatHandle(pointer)) {
+                refCnt = IMMORTAL_REFCNT;
             } else {
-                refCnt = readLongField(PythonToNativeRawNode.executeUncached(resolved), CFields.PyObject__ob_refcnt);
+                refCnt = CApiTransitions.readNativeRefCount(HandlePointerConverter.pointsToPyHandleSpace(pointer) ? HandlePointerConverter.pointerToStub(pointer) : pointer);
             }
-            pythonObject = NativeToPythonNode.executeUncached(ptrObject);
 
             // first, write fields which are the least likely to crash
-            stderr.println("ptrObject address  : " + ptrObject);
+            stderr.println("ptrObject address  : 0x" + Long.toHexString(pointer));
             stderr.println("ptrObject refcount : " + refCnt);
             stderr.flush();
 
-            Object type = GetClassNode.executeUncached(pythonObject);
+            Object type = GetClassNode.executeUncached(resolved);
             stderr.println("object type     : " + type);
             stderr.println("object type name: " + TypeNodes.GetNameNode.executeUncached(type));
 
@@ -657,7 +673,7 @@ public abstract class PythonCextObjectBuiltins {
             stderr.println("object repr     : ");
             stderr.flush();
             try {
-                Object reprObj = PyObjectCallMethodObjArgs.executeUncached(context.getBuiltins(), BuiltinNames.T_REPR, pythonObject);
+                Object reprObj = PyObjectCallMethodObjArgs.executeUncached(context.getBuiltins(), BuiltinNames.T_REPR, resolved);
                 stderr.println(CastToJavaStringNode.getUncached().execute(reprObj));
             } catch (PException | CannotCastException e) {
                 // errors are ignored at this point

@@ -53,7 +53,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.ToPythonWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
@@ -75,7 +74,6 @@ enum ArgBehavior {
                     NativeToPythonTransferNode.getUncached()),
     PyObjectBorrowed("POINTER", NfiType.POINTER, "J", "jlong", "long", ToNativeBorrowedNode::new, NativeToPythonNode::create, NativeToPythonNode.getUncached(), null, null, null),
     PyObjectAsTruffleString("POINTER", NfiType.POINTER, "J", "jlong", "long", null, ToPythonStringNode::create, ToPythonStringNode.getUncached(), null, null, null),
-    PyObjectWrapper("POINTER", NfiType.POINTER, "J", "jlong", "long", null, ToPythonWrapperNode::create, ToPythonWrapperNode.getUncached(), null, null, null),
     Pointer("POINTER", NfiType.POINTER, "J", "jlong", "long", null, null, null),
     PointerZZZ("POINTER_ZZZ", NfiType.RAW_POINTER, "J", "jlong", "long", null, null, null),
     TruffleStringPointer("POINTER", NfiType.POINTER, "J", "jlong", "long", null, CharPtrToPythonNode::create, CharPtrToPythonNode.getUncached()),
@@ -132,7 +130,6 @@ public enum ArgDescriptor {
     VoidNoReturn(ArgBehavior.Void, "void"),
     PyObject(ArgBehavior.PyObject, "PyObject*"),
     PyObjectBorrowed(ArgBehavior.PyObjectBorrowed, "PyObject*"),
-    PyObjectWrapper(ArgBehavior.PyObjectWrapper, "PyObject*"),
     PyObjectAsTruffleString(ArgBehavior.PyObjectAsTruffleString, "PyObject*"),
     PyTypeObject(ArgBehavior.PyObject, "PyTypeObject*"),
     PyTypeObjectBorrowed(ArgBehavior.PyObjectBorrowed, "PyTypeObject*"),

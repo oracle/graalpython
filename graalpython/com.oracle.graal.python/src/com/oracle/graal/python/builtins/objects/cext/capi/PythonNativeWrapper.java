@@ -96,61 +96,6 @@ public abstract class PythonNativeWrapper implements TruffleObject {
     }
 
     /**
-     * A wrapper for a reference counted object.
-     */
-    public abstract static class PythonAbstractObjectNativeWrapper extends PythonNativeWrapper {
-        /**
-         * Reference count of an object that is only referenced by the Java heap - this is larger
-         * than 1 since native code sometimes special cases for low refcounts.
-         */
-        public static final long MANAGED_REFCNT = 10;
-
-        public static final long IMMORTAL_REFCNT = 0xFFFFFFFFL; // from include/object.h
-
-        protected PythonAbstractObjectNativeWrapper() {
-        }
-
-        protected PythonAbstractObjectNativeWrapper(Object delegate) {
-            super(delegate);
-        }
-
-        public final long getRefCount() {
-            if (isNative()) {
-                return CApiTransitions.readNativeRefCount(HandlePointerConverter.pointerToStub(getNativePointer()));
-            }
-            return MANAGED_REFCNT;
-        }
-
-        public long incRef() {
-            assert isNative();
-            long pointer = HandlePointerConverter.pointerToStub(getNativePointer());
-            long refCount = CApiTransitions.readNativeRefCount(pointer);
-            assert refCount >= PythonAbstractObjectNativeWrapper.MANAGED_REFCNT : "invalid refcnt " + refCount + " during incRef in " + Long.toHexString(getNativePointer());
-            if (refCount != IMMORTAL_REFCNT) {
-                CApiTransitions.writeNativeRefCount(pointer, refCount + 1);
-                return refCount + 1;
-            }
-            return IMMORTAL_REFCNT;
-        }
-
-        public long decRef() {
-            assert isNative();
-            long pointer = HandlePointerConverter.pointerToStub(getNativePointer());
-            long refCount = CApiTransitions.readNativeRefCount(pointer);
-            if (refCount != IMMORTAL_REFCNT) {
-                long updatedRefCount = refCount - 1;
-                CApiTransitions.writeNativeRefCount(pointer, updatedRefCount);
-                assert updatedRefCount >= PythonAbstractObjectNativeWrapper.MANAGED_REFCNT : "invalid refcnt " + updatedRefCount + " during decRef in " + Long.toHexString(getNativePointer());
-                return updatedRefCount;
-            }
-            return refCount;
-        }
-
-        @Ignore
-        public abstract void toNative(boolean newRef, Node inliningTarget, FirstToNativeNode firstToNativeNode);
-    }
-
-    /**
      * A wrapper for data objects usually reprsented as C structures without reference counting.
      */
     public abstract static class PythonStructNativeWrapper extends PythonNativeWrapper {

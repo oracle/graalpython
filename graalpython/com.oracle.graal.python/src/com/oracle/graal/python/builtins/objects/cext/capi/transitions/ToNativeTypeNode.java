@@ -38,7 +38,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cext.capi;
+package com.oracle.graal.python.builtins.objects.cext.capi.transitions;
 
 import static com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.lookupNativeI64MemberInMRO;
 import static com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.lookupNativeMemberInMRO;
@@ -55,6 +55,8 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTy
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_traverse;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_vectorcall_offset;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_weaklistoffset;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readPtrField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeIntField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeLongField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
@@ -63,7 +65,6 @@ import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefRawNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeRawNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
@@ -73,6 +74,7 @@ import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageAddAllToOther;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -87,7 +89,11 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetItemSizeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.SetTypeFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetTypeFlagsNodeGen;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.SetBasicSizeNodeGen;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.SetItemSizeNodeGen;
+import com.oracle.graal.python.nfi2.NativeMemory;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassExactProfile;
@@ -97,7 +103,13 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.api.strings.TruffleString.Encoding;
+import com.oracle.truffle.api.strings.TruffleString.SwitchEncodingNode;
 
 public abstract class ToNativeTypeNode {
 
@@ -141,10 +153,13 @@ public abstract class ToNativeTypeNode {
         return lookupNativeI64MemberInMRO(clazz, member, hiddenName);
     }
 
-    static void initializeType(PythonClassNativeWrapper obj, long mem, boolean heaptype) {
+    public static void initNative(PythonManagedClass clazz, long pointer) {
+        initializeType(clazz, pointer, false);
+    }
+
+    static void initializeType(PythonManagedClass clazz, long mem, boolean heaptype) {
         CompilerAsserts.neverPartOfCompilation();
 
-        PythonManagedClass clazz = (PythonManagedClass) obj.getDelegate();
         TpSlots slots = GetTpSlotsNode.executeUncached(clazz);
         boolean isType = IsBuiltinClassExactProfile.profileClassSlowPath(clazz, PythonBuiltinClassType.PythonClass);
 
@@ -156,7 +171,7 @@ public abstract class ToNativeTypeNode {
         PythonLanguage language = ctx.getLanguage();
 
         // make this object immortal
-        writeLongField(mem, PyObject__ob_refcnt, PythonAbstractObjectNativeWrapper.IMMORTAL_REFCNT);
+        writeLongField(mem, PyObject__ob_refcnt, PythonObject.IMMORTAL_REFCNT);
         if (isType) {
             // self-reference
             writePtrField(mem, PyObject__ob_type, mem);
@@ -175,14 +190,20 @@ public abstract class ToNativeTypeNode {
 
         Object base = GetBaseClassNode.executeUncached(clazz);
         if (base == null) {
-            base = ctx.getNativeNull();
+            base = PNone.NO_VALUE;
         } else if (base instanceof PythonBuiltinClassType builtinClass) {
             base = ctx.lookupType(builtinClass);
         }
 
         writeLongField(mem, CFields.PyVarObject__ob_size, 0L);
 
-        writePtrField(mem, CFields.PyTypeObject__tp_name, clazz.getClassNativeWrapper().getNameWrapper());
+        TruffleString nameUtf8 = SwitchEncodingNode.getUncached().execute(clazz.getName(), Encoding.UTF_8);
+        // TODO(fa): This will leak the native 'char *'. It should be free'd if the whole type is free'd.
+        TruffleString nativeUncached = nameUtf8.asNativeUncached(NativeMemory::malloc, Encoding.UTF_8, false, true);
+        Object internalNativePointerUncached = nativeUncached.getInternalNativePointerUncached(Encoding.UTF_8);
+        long namePointer = PythonUtils.coerceToLong(internalNativePointerUncached, InteropLibrary.getUncached());
+
+        writePtrField(mem, CFields.PyTypeObject__tp_name, namePointer);
         writeLongField(mem, CFields.PyTypeObject__tp_basicsize, GetBasicSizeNode.executeUncached(clazz));
         writeLongField(mem, CFields.PyTypeObject__tp_itemsize, GetItemSizeNode.executeUncached(clazz));
         // writeStructMemberLong(mem, CFields.PyTypeObject__tp_weaklistoffset,
@@ -292,5 +313,78 @@ public abstract class ToNativeTypeNode {
             Object dunderSlots = clazz.getAttribute(SpecialAttributeNames.T___SLOTS__);
             writePtrField(mem, CFields.PyHeapTypeObject__ht_slots, dunderSlots != PNone.NO_VALUE ? toNativeNewRef.execute(dunderSlots) : NULLPTR);
         }
+    }
+
+    /**
+     * Creates a wrapper that uses existing native memory as native replacement object.
+     */
+    public static void wrapStaticTypeStructForManagedClass(PythonManagedClass clazz, long pointer) {
+        /*
+         * This *MUST NOT* happen, otherwise we would allocate a fresh native type store and then
+         * the native pointer of the wrapper would not be equal to the corresponding native global
+         * variable. E.g. 'Py_TYPE(PyBaseObjec_Type) != &PyType_Type'.
+         */
+        if (!clazz.isNative()) {
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+
+        // some values are retained from the native representation
+        long basicsize = readLongField(pointer, CFields.PyTypeObject__tp_basicsize);
+        if (basicsize != 0) {
+            SetBasicSizeNodeGen.getUncached().execute(null, clazz, basicsize);
+        }
+        long itemsize = readLongField(pointer, CFields.PyTypeObject__tp_itemsize);
+        if (itemsize != 0) {
+            SetItemSizeNodeGen.getUncached().execute(null, clazz, itemsize);
+        }
+        long vectorcall_offset = readLongField(pointer, CFields.PyTypeObject__tp_vectorcall_offset);
+        if (vectorcall_offset != 0) {
+            HiddenAttr.WriteNode.executeUncached(clazz, HiddenAttr.VECTORCALL_OFFSET, vectorcall_offset);
+        }
+        long alloc_fun = readPtrField(pointer, CFields.PyTypeObject__tp_alloc);
+        if (alloc_fun != NULLPTR) {
+            HiddenAttr.WriteLongNode.executeUncached(clazz, HiddenAttr.ALLOC, alloc_fun);
+        }
+        long dealloc_fun = readPtrField(pointer, CFields.PyTypeObject__tp_dealloc);
+        if (dealloc_fun != NULLPTR) {
+            HiddenAttr.WriteLongNode.executeUncached(clazz, HiddenAttr.DEALLOC, dealloc_fun);
+        }
+        long free_fun = readPtrField(pointer, CFields.PyTypeObject__tp_free);
+        if (free_fun != NULLPTR) {
+            HiddenAttr.WriteLongNode.executeUncached(clazz, HiddenAttr.FREE, free_fun);
+        }
+        long traverse_fun = readPtrField(pointer, CFields.PyTypeObject__tp_traverse);
+        if (traverse_fun != NULLPTR) {
+            HiddenAttr.WriteLongNode.executeUncached(clazz, HiddenAttr.TRAVERSE, traverse_fun);
+        }
+        long is_gc_fun = readPtrField(pointer, CFields.PyTypeObject__tp_is_gc);
+        if (is_gc_fun != NULLPTR) {
+            HiddenAttr.WriteLongNode.executeUncached(clazz, HiddenAttr.IS_GC, is_gc_fun);
+        }
+        long clear_fun = readPtrField(pointer, CFields.PyTypeObject__tp_clear);
+        if (clear_fun != NULLPTR) {
+            HiddenAttr.WriteLongNode.executeUncached(clazz, HiddenAttr.CLEAR, clear_fun);
+        }
+        long as_buffer = readPtrField(pointer, CFields.PyTypeObject__tp_as_buffer);
+        if (as_buffer != NULLPTR) {
+            HiddenAttr.WriteLongNode.executeUncached(clazz, HiddenAttr.AS_BUFFER, as_buffer);
+        }
+
+        /*
+         * Initialize type flags: If the native type, we are wrapping, already defines 'tp_flags',
+         * we use it because those must stay consistent with slots. For example, native
+         * tp_new/tp_alloc/tp_dealloc/tp_free functions must be consistent with
+         * 'Py_TPFLAGS_HAVE_GC'.
+         */
+        long flags = readLongField(pointer, CFields.PyTypeObject__tp_flags);
+        if (flags == 0) {
+            flags = GetTypeFlagsNode.executeUncached(clazz) | TypeFlags.READY | TypeFlags.IMMUTABLETYPE;
+        }
+        SetTypeFlagsNode.executeUncached(clazz, flags);
+
+        // TODO(fa): revisit this: static classes are immortal; we don't need a
+        // PythonObjectReference
+        CApiTransitions.createReference(clazz, pointer, false);
+        assert clazz.isNative();
     }
 }

@@ -52,6 +52,7 @@ import java.util.IllegalFormatException;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.exception.BaseExceptionBuiltins.AddNoteNode;
@@ -63,7 +64,6 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -96,8 +96,8 @@ public final class ExceptionNodes {
         return obj != PNone.NO_VALUE ? obj : PNone.NONE;
     }
 
-    private static Object noneToNativeNull(Node node, Object obj) {
-        return obj != PNone.NONE ? obj : PythonContext.get(node).getNativeNull();
+    private static Object noneToNativeNull(@SuppressWarnings("unused") Node node, Object obj) {
+        return obj != PNone.NONE ? obj : NativePointer.NULL;
     }
 
     @GenerateUncached

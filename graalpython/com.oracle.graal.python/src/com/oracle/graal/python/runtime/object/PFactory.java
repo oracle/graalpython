@@ -97,6 +97,7 @@ import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TruffleObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.code.PCode;
@@ -258,6 +259,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.bytecode.ContinuationRootNode;
 import com.oracle.truffle.api.frame.MaterializedFrame;
+import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -280,6 +282,10 @@ public final class PFactory {
 
     public static PythonNativeVoidPtr createNativeVoidPtr(Object obj, long nativePtr) {
         return new PythonNativeVoidPtr(obj, nativePtr);
+    }
+
+    public static TruffleObjectNativeWrapper createPythonForeignObject(PythonLanguage language, Object clazz, TruffleObject foreignObject) {
+        return new TruffleObjectNativeWrapper(clazz, PythonBuiltinClassType.ForeignObject.getInstanceShape(language), foreignObject);
     }
 
     public static SuperObject createSuperObject(PythonLanguage language) {

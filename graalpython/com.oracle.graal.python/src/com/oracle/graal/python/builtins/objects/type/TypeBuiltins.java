@@ -983,6 +983,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                         @Cached TruffleString.SubstringNode substringNode,
                         @Shared @Cached PRaiseNode raiseNode) {
             // see function 'typeobject.c: type_module'
+            assert IsTypeNode.executeUncached(cls);
             if ((getFlags.execute(cls) & TypeFlags.HEAPTYPE) != 0) {
                 Object module = readAttrNode.execute(cls, T___MODULE__);
                 if (module == NO_VALUE) {
@@ -1067,6 +1068,7 @@ public final class TypeBuiltins extends PythonBuiltins {
             @Specialization
             static void set(PythonAbstractNativeObject type, TruffleString value,
                             @Cached(inline = false) CStructAccess.WriteObjectNewRefNode writeObject) {
+                assert IsTypeNode.executeUncached(type);
                 writeObject.writeToObject(type, PyHeapTypeObject__ht_qualname, value);
             }
         }

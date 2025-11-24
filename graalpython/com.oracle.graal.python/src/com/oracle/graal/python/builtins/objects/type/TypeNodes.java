@@ -702,6 +702,7 @@ public abstract class TypeNodes {
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.LastIndexOfCodePointNode indexOfCodePointNode,
                         @Cached TruffleString.SubstringNode substringNode) {
+            assert IsTypeNode.executeUncached(obj);
             // 'tp_name' contains the fully-qualified name, i.e., 'module.A.B...'
             TruffleString tpName = getTpNameNode.readFromObj(obj, PyTypeObject__tp_name);
             int nameLen = codePointLengthNode.execute(tpName, TS_ENCODING);
@@ -746,6 +747,7 @@ public abstract class TypeNodes {
         @Specialization
         TruffleString doNativeClass(PythonNativeClass obj,
                         @Cached(inline = false) CStructAccess.ReadCharPtrNode getTpNameNode) {
+            assert IsTypeNode.executeUncached(obj);
             return getTpNameNode.readFromObj(obj, PyTypeObject__tp_name);
         }
     }
@@ -1498,12 +1500,8 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        @InliningCutoff
         static boolean doNative(PythonAbstractNativeObject left, PythonAbstractNativeObject right) {
-            if (left == right) {
-                return true;
-            }
-            return left.getPtr() == right.getPtr();
+            return left == right || left.getPtr() == right.getPtr();
         }
 
         @Fallback

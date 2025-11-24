@@ -56,7 +56,6 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -76,6 +75,9 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
 import com.oracle.truffle.api.utilities.TriState;
 
+/**
+ * A simple wrapper around objects created through the Python C API that can be cast to PyObject*.
+ */
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(PythonBufferAcquireLibrary.class)
 public final class PythonAbstractNativeObject extends PythonAbstractObject implements PythonNativeObject, PythonNativeClass {
@@ -102,6 +104,7 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
         // GR-50245
         // Fails in
         // graalpython/com.oracle.graal.python.hpy.test/src/hpytest/test_slots_legacy.py::TestCustomLegacySlotsFeatures::test_legacy_slots_getsets[hybrid]
+        assert pointer != UNINITIALIZED;
         this.pointer = pointer;
     }
 
@@ -148,13 +151,13 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
 
     @TruffleBoundary
     public String toStringWithContext() {
-        return "PythonAbstractNativeObject(" + PythonUtils.formatPointer(pointer) + ')';
+        return toString();
     }
 
     @Override
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
-        return "PythonAbstractNativeObject(" + PythonUtils.formatPointer(pointer) + ')';
+        return String.format("PythonAbstractNativeObject(0x%x)", pointer);
     }
 
     @ExportMessage

@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ReleaseNativeWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonStructNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.nfi2.NativeMemory;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -103,7 +104,7 @@ public final class CPyObjectArrayWrapper extends PythonStructNativeWrapper {
         assert PythonContext.get(toNativeNode).isNativeAccessAllowed();
         if (!isNative()) {
             Object[] data = getObjectArray();
-            long ptr = allocateBoundary((long) wrappers.length * Long.BYTES);
+            long ptr = NativeMemory.malloc((long) wrappers.length * Long.BYTES);
             try {
                 for (int i = 0; i < data.length; i++) {
                     if (wrappers[i] == null) {

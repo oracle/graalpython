@@ -47,7 +47,6 @@ import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodesFactory.BadMemberDescrNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodesFactory.NativePtrToPythonWrapperNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodesFactory.ReadMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodesFactory.ReadOnlyMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodesFactory.WriteByteNodeGen;
@@ -62,10 +61,10 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodesF
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodesFactory.WriteShortNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodesFactory.WriteUIntNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodesFactory.WriteULongNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodesFactory.NativePtrToPythonWrapperNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativePtrToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeRawNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativeCharNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativeDoubleNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativePrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.NativePrimitiveAsPythonBooleanNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.NativePrimitiveAsPythonCharNodeGen;
@@ -80,6 +79,7 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
+import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.nfi2.NativeMemory;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -423,10 +423,10 @@ public class CApiMemberAccessNodes {
         @Specialization
         static void write(long pointer, Object newValue,
                         @Bind Node inliningTarget,
-                        @Cached AsNativeDoubleNode asDouble,
+                        @Cached PyFloatAsDoubleNode asDouble,
                         @Cached IsBuiltinObjectProfile exceptionProfile) {
             try {
-                NativeMemory.writeDouble(pointer, asDouble.executeDouble(newValue));
+                NativeMemory.writeDouble(pointer, asDouble.execute(null, inliningTarget, newValue));
             } catch (PException e) {
                 /*
                  * Special case: if conversion raises an OverflowError, CPython still assigns the
@@ -445,8 +445,9 @@ public class CApiMemberAccessNodes {
 
         @Specialization
         static void write(long pointer, Object newValue,
-                        @Cached AsNativeDoubleNode asDouble) {
-            NativeMemory.writeFloat(pointer, (float) asDouble.executeDouble(newValue));
+                        @Bind Node inliningTarget,
+                        @Cached PyFloatAsDoubleNode asDouble) {
+            NativeMemory.writeFloat(pointer, (float) asDouble.execute(null, inliningTarget, newValue));
         }
     }
 

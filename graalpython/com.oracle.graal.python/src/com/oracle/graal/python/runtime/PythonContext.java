@@ -119,7 +119,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
@@ -489,12 +488,11 @@ public final class PythonContext extends Python3Core {
              * 'CApiTransitions.pollReferenceQueue'.
              */
             if (dict != null) {
-                PythonAbstractObjectNativeWrapper dictNativeWrapper = dict.getNativeWrapper();
-                if (dictNativeWrapper != null && dictNativeWrapper.ref == null) {
-                    CApiTransitions.releaseNativeWrapperUncached(dictNativeWrapper);
+                if (dict.isNative() && dict.ref == null) {
+                    CApiTransitions.releaseNativeWrapper(dict.getNativePointer());
                 }
+                dict = null;
             }
-            dict = null;
             if (nativeWrapper != NULLPTR) {
                 PThreadState.dispose(nativeWrapper);
                 nativeWrapper = NULLPTR;

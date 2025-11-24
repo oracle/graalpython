@@ -70,10 +70,6 @@ public class PFloat extends PythonBuiltinObject {
         return Double.toString(value);
     }
 
-    public boolean isNative() {
-        return getNativeWrapper() != null && getNativeWrapper().isNative();
-    }
-
     public static PFloat create(PythonLanguage lang, double value) {
         return create(PythonBuiltinClassType.PFloat, PythonBuiltinClassType.PFloat.getInstanceShape(lang), value);
     }

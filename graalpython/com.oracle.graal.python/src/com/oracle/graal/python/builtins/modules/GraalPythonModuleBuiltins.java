@@ -107,11 +107,9 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper.ToNativeStorageNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonObjectReference;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.GetNativeWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.cext.copying.NativeLibraryLocator;
@@ -1237,18 +1235,11 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             if (object instanceof PythonAbstractNativeObject) {
                 return -1;
             }
-            Object nativeWrapper = GetNativeWrapperNode.executeUncached(object);
-            if (nativeWrapper instanceof PythonAbstractObjectNativeWrapper pn) {
-                if (pn.ref != null) {
-                    return pn.ref.getHandleTableIndex();
-                } else {
-                    assert pn.isNative();
-                    long untagged = HandlePointerConverter.pointerToStub(pn.getNativePointer());
-                    return CStructAccess.readIntField(untagged, CFields.GraalPyObject__handle_table_index);
-                }
-            } else {
-                return -1;
+            if (object instanceof PythonObject pythonObject) {
+                long untagged = HandlePointerConverter.pointerToStub(pythonObject.getNativePointer());
+                return CStructAccess.readIntField(untagged, CFields.GraalPyObject__handle_table_index);
             }
+            return -1;
         }
     }
 

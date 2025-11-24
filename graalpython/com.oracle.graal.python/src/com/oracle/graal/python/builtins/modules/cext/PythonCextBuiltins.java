@@ -77,6 +77,7 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMe
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMemberDef__name;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMemberDef__offset;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMemberDef__type;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readIntField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readPtrField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readStructArrayIntField;
@@ -129,17 +130,14 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupport.PyObjectGCDelNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonClassNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.GcNativePtrToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativePtrToPythonWrapperNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateStrongRefNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateHandleTableReferenceNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ToNativeTypeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformPExceptionToNativeCachedNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
@@ -1503,11 +1501,12 @@ public final class PythonCextBuiltins {
         static Object doNative(Object weakCandidates,
                         @Bind Node inliningTarget,
                         @Cached CoerceNativePointerToLongNode coerceToLongNode,
-                        @Cached NativePtrToPythonWrapperNode nativePtrToPythonWrapperNode,
-                        @Cached UpdateStrongRefNode updateRefNode) {
+                        @Cached UpdateHandleTableReferenceNode updateRefNode) {
             // guaranteed by the guard
             assert PythonContext.get(inliningTarget).isNativeAccessAllowed();
             assert PythonLanguage.get(inliningTarget).getEngineOption(PythonOptions.PythonGC);
+
+            HandleContext handleContext = PythonContext.get(inliningTarget).nativeContext;
 
             /*
              * The list's head is a dummy node that can not be a tagged pointer because it is not an
@@ -1529,13 +1528,12 @@ public final class PythonCextBuiltins {
                 // PyObject *op = FROM_GC(gc)
                 long op = gc + CStructs.PyGC_Head.size();
 
-                PythonNativeWrapper wrapper = nativePtrToPythonWrapperNode.execute(inliningTarget, op, true);
-                if (wrapper instanceof PythonAbstractObjectNativeWrapper abstractObjectNativeWrapper) {
-                    if (GC_LOGGER.isLoggable(Level.FINE)) {
-                        GC_LOGGER.fine(PythonUtils.formatJString("Transitioning to weak reference to break a reference cycle for %s, refcount=%d",
-                                        abstractObjectNativeWrapper.ref, abstractObjectNativeWrapper.getRefCount()));
-                    }
-                    updateRefNode.clearStrongRefButKeepInGCList(inliningTarget, abstractObjectNativeWrapper);
+                if (HandlePointerConverter.pointsToPyHandleSpace(op)) {
+                    int hti = readIntField(HandlePointerConverter.pointerToStub(op), CFields.GraalPyObject__handle_table_index);
+                    updateRefNode.clearStrongRef(inliningTarget, handleContext, op, hti);
+                } else {
+                    // TODO(fa): investigate if that case is valid and necessary
+                    throw CompilerDirectives.shouldNotReachHere();
                 }
 
                 // next = GC_NEXT(gc)
@@ -1826,9 +1824,9 @@ public final class PythonCextBuiltins {
                     // lookup the built-in type by name
                     PythonManagedClass clazz = lookupBuiltinTypeWithName(context, name);
 
-                    // create the wrapper and register the pointer
+                    // create the lookup table entry and sync (selected) native type fields to the managed type
                     LOGGER.fine(() -> "setting type store for built-in class " + name + " to " + PythonUtils.formatPointer(typeStructPtr));
-                    PythonClassNativeWrapper.wrapStaticTypeStructForManagedClass(clazz, TypeNodes.GetNameNode.executeUncached(clazz), typeStructPtr);
+                    ToNativeTypeNode.wrapStaticTypeStructForManagedClass(clazz, typeStructPtr);
 
                     builtinTypes.add(new ClassPtrPair(clazz, typeStructPtr));
                 }
@@ -1836,7 +1834,7 @@ public final class PythonCextBuiltins {
                 // second phase: initialize the native type store
                 for (ClassPtrPair pair : builtinTypes) {
                     LOGGER.fine(() -> "initializing built-in class " + TypeNodes.GetNameNode.executeUncached(pair.clazz()));
-                    PythonClassNativeWrapper.initNative(pair.clazz(), pair.ptr());
+                    ToNativeTypeNode.initNative(pair.clazz(), pair.ptr());
                 }
 
                 return PNone.NO_VALUE;

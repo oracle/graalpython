@@ -139,6 +139,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
@@ -166,7 +167,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.Ssizear
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.SsizeobjargprocWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.TpSlotWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.UnaryFuncWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonClassNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -1390,6 +1390,7 @@ public record TpSlots(TpSlot nb_bool, //
     }
 
     public static void toNative(long ptrToWrite, TpSlotMeta def, TpSlot value) {
+        assert ptrToWrite != PythonAbstractObject.UNINITIALIZED; // this should be the pointer
         long slotNativeValue = def.getNativeValue(value, NULLPTR);
         toNative(ptrToWrite, def, slotNativeValue);
     }
@@ -1401,8 +1402,9 @@ public record TpSlots(TpSlot nb_bool, //
     private static void toNative(long prtToWrite, TpSlotMeta def, long slotNativeValue) {
         CompilerAsserts.neverPartOfCompilation();
         CFields fieldToWrite = def.nativeGroupOrField;
+        long dest = prtToWrite;
         if (def.nativeField != null) {
-            prtToWrite = readPtrField(prtToWrite, def.nativeGroupOrField);
+            dest = readPtrField(prtToWrite, def.nativeGroupOrField);
             if (prtToWrite == NULLPTR) {
                 if (slotNativeValue == NULLPTR) {
                     return;
@@ -1413,7 +1415,7 @@ public record TpSlots(TpSlot nb_bool, //
             }
             fieldToWrite = def.nativeField;
         }
-        writePtrField(prtToWrite, fieldToWrite, slotNativeValue);
+        writePtrField(dest, fieldToWrite, slotNativeValue);
     }
 
     @TruffleBoundary
@@ -1543,7 +1545,6 @@ public record TpSlots(TpSlot nb_bool, //
     private static Builder updateSlots(PythonAbstractClass klass, Builder slots, Set<Entry<TpSlotMeta, TpSlotDef[]>> slotdefGroups) {
         LookupAttributeInMRONode.Dynamic lookup = LookupAttributeInMRONode.Dynamic.getUncached();
         IsSubtypeNode isSubType = IsSubtypeNode.getUncached();
-        Object nativeNull = PythonContext.get(null).getNativeNull();
         for (var slotdefGroup : slotdefGroups) {
             TpSlotMeta slot = slotdefGroup.getKey(); // ~ "ptr" in CPython algorithm
             if (slot.hasGroup() && !slots.hasGroup(slot.getGroup())) {
@@ -1674,12 +1675,8 @@ public record TpSlots(TpSlot nb_bool, //
             if (klass instanceof PythonManagedClass managedClass) {
                 // Update the slots on the native side if this is a managed class that has a
                 // native mirror allocated already
-                PythonClassNativeWrapper classNativeWrapper = managedClass.getClassNativeWrapper();
-                if (classNativeWrapper != null) {
-                    long replacement = classNativeWrapper.getReplacementIfInitialized();
-                    if (replacement != NULLPTR) {
-                        toNative(replacement, slot, newValue);
-                    }
+                if (managedClass.isNative()) {
+                    toNative(managedClass.getNativePointer(), slot, newValue);
                 }
             }
         }

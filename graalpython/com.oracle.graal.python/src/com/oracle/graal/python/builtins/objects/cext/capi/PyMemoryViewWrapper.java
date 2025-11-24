@@ -48,16 +48,12 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAcces
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeIntField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeLongField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
-import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nfi2.NativeMemory.calloc;
 import static com.oracle.graal.python.nfi2.NativeMemory.mallocLongArray;
 import static com.oracle.graal.python.nfi2.NativeMemory.writeLongArrayElement;
 import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.FirstToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefRawNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
@@ -69,18 +65,13 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.library.ExportMessage.Ignore;
-import com.oracle.truffle.api.nodes.Node;
 
 /**
  * Wrapper object for {@code PMemoryView}.
  */
-public final class PyMemoryViewWrapper extends PythonAbstractObjectNativeWrapper {
-    private long replacement;
+public abstract class PyMemoryViewWrapper {
 
-    public PyMemoryViewWrapper(PythonObject delegate) {
-        super(delegate);
-        assert delegate instanceof PMemoryView;
+    private PyMemoryViewWrapper() {
     }
 
     private static long intArrayToNativePySSizeArray(int[] intArray) {
@@ -92,7 +83,7 @@ public final class PyMemoryViewWrapper extends PythonAbstractObjectNativeWrapper
     }
 
     @TruffleBoundary
-    private static long allocate(PMemoryView object) {
+    public static long allocate(PMemoryView object) {
         CExtNodes.AsCharPointerNode asCharPointerNode = CExtNodes.AsCharPointerNode.getUncached();
 
         Object type = GetPythonObjectClassNode.executeUncached(object);
@@ -102,7 +93,7 @@ public final class PyMemoryViewWrapper extends PythonAbstractObjectNativeWrapper
         long mem = memWithHead + presize;
 
         writePtrField(mem, PyObject__ob_type, PythonToNativeNewRefRawNode.executeUncached(type));
-        writeLongField(mem, PyObject__ob_refcnt, PythonAbstractObjectNativeWrapper.IMMORTAL_REFCNT);
+        writeLongField(mem, PyObject__ob_refcnt, PythonObject.IMMORTAL_REFCNT);
         writeIntField(mem, PyMemoryViewObject__flags, object.getFlags());
         writeLongField(mem, PyMemoryViewObject__exports, object.getExports().get());
         // TODO: ignoring mbuf, hash and weakreflist for now
@@ -144,28 +135,5 @@ public final class PyMemoryViewWrapper extends PythonAbstractObjectNativeWrapper
             writePtrField(view, CFields.Py_buffer__suboffsets, intArrayToNativePySSizeArray(object.getBufferSuboffsets()));
         }
         return mem;
-    }
-
-    public long getReplacement() {
-        if (replacement == NULLPTR) {
-            long ptr = allocate((PMemoryView) getDelegate());
-            // TODO: need to convert to interop pointer for NFI for now
-            replacement = ptr;
-            // TODO: this passes "false" for allocatedFromJava, although it actually is. The
-            // problem, however, is that this struct contains nested allocations from Java. This
-            // needs to be cleaned up...
-            CApiTransitions.createReference(this, ptr, false);
-        }
-        return replacement;
-    }
-
-    @Ignore
-    @Override
-    public void toNative(boolean newRef, Node inliningTarget, FirstToNativeNode firstToNativeNode) {
-        /*
-         * This is a wrapper that is eagerly transformed to its C layout in the Python-to-native
-         * transition. Therefore, the wrapper is expected to be native already.
-         */
-        throw CompilerDirectives.shouldNotReachHere();
     }
 }

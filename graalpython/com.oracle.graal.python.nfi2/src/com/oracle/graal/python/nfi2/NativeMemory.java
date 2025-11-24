@@ -45,6 +45,7 @@ import java.nio.charset.StandardCharsets;
 
 import com.oracle.truffle.api.CompilerDirectives;
 
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import sun.misc.Unsafe;
 
 public final class NativeMemory {
@@ -57,11 +58,13 @@ public final class NativeMemory {
     private NativeMemory() {
     }
 
+    @TruffleBoundary
     public static long malloc(long size) {
         assert size > 0;
         return UNSAFE.allocateMemory(size);
     }
 
+    @TruffleBoundary
     public static long calloc(long size) {
         long ptr = malloc(size);
         memset(ptr, (byte) 0, size);

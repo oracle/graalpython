@@ -69,8 +69,6 @@ import java.util.HashSet;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
-import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
@@ -191,10 +189,11 @@ import com.oracle.truffle.api.utilities.TriState;
 @ImportStatic(SpecialMethodNames.class)
 @ExportLibrary(InteropLibrary.class)
 public abstract class PythonAbstractObject extends DynamicObject implements TruffleObject, Comparable<Object> {
+    public static final long UNINITIALIZED = -1;
+    public static final long NATIVE_POINTER_FREED = 0;
 
     private static final TruffleString T_PRIVATE_PREFIX = tsLiteral("__");
     private static final int PRIVATE_PREFIX_LENGTH = T_PRIVATE_PREFIX.codePointLengthUncached(TS_ENCODING);
-    private PythonAbstractObjectNativeWrapper nativeWrapper;
 
     protected static final Shape ABSTRACT_SHAPE = Shape.newBuilder().build();
 
@@ -206,23 +205,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     protected PythonAbstractObject() {
         super(ABSTRACT_SHAPE);
-    }
-
-    public final PythonAbstractObjectNativeWrapper getNativeWrapper() {
-        return nativeWrapper;
-    }
-
-    public final void setNativeWrapper(PythonAbstractObjectNativeWrapper nativeWrapper) {
-        assert this.nativeWrapper == null;
-
-        // we must not set the native wrapper for one of the context-insensitive singletons
-        assert !CApiGuards.isSpecialSingleton(this);
-
-        this.nativeWrapper = nativeWrapper;
-    }
-
-    public final void clearNativeWrapper() {
-        nativeWrapper = null;
     }
 
     public Object[] getIndexedSlots() {
