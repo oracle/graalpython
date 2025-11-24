@@ -334,22 +334,16 @@ public final class PythonCextBuiltins {
 
         public abstract Object execute(Object[] args);
 
-        protected final NativePointer getNativeNull() {
+        protected final PNone getNativeNull() {
             return getContext().getNativeNull();
         }
 
-        protected static NativePointer getNativeNull(Node inliningTarget) {
-            return PythonContext.get(inliningTarget).getNativeNull();
+        protected static PNone getNativeNull(@SuppressWarnings("unused") Node inliningTarget) {
+            return PNone.NO_VALUE;
         }
 
-        /**
-         * Returns the "NULL" pointer retrieved from the native backend, e.g., an LLVMPointer
-         * instance. This is not wrapped, i.e., it cannot be passed through a PyObject
-         * Python-To-Native transition (because it would be treated as a foreign Truffle object at
-         * that point).
-         */
         protected final Object getNULL() {
-            return getContext().getNativeNull();
+            return PNone.NO_VALUE;
         }
 
         @TruffleBoundary(allowInlining = true)

@@ -1237,8 +1237,8 @@ public final class PythonContext extends Python3Core {
         return REFERENCE.get(node);
     }
 
-    public NativePointer getNativeNull() {
-        return nativeNull;
+    public PNone getNativeNull() {
+        return PNone.NO_VALUE;
     }
 
     public boolean isChildContext() {
