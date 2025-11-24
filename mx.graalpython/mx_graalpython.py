@@ -815,6 +815,7 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
 
     mx_args = ['-p', SUITE.dir, *(['--env', env_file] if env_file else [])]
     
+    print(f"[DEBUG] GITHUB_CI env: {os.environ.get('GITHUB_CI')}")
     if os.environ.get("GITHUB_CI"):
         print("[DEBUG] Running in GitHub Ci")
         mx_args.append("--extra-image-builder-argument=-Ob")

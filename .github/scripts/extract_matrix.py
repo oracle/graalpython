@@ -14,8 +14,8 @@ from typing import Any
 
 DEFAULT_ENV = {
     "CI": "true",
-    "GITHUB_CI": "true",
     "PYTHONIOENCODING": "utf-8",
+    "GITHUB_CI": "true"
 }
 
 
@@ -123,10 +123,18 @@ class Job:
     def get_download_steps(self, key: str, version: str) -> str:
         download_link = self.get_download_link(key, version)
         filename = download_link.split('/')[-1]
+
+        if self.runs_on == "windows-latest":
+            return (f"""Invoke-WebRequest -Uri {download_link} -OutFile {filename}
+            $dirname = (& tar -tzf {filename} | Select-Object -First 1).Split('/')[0]
+            tar -xzf {filename}
+            Add-Content $env:GITHUB_ENV "{key}=$(Resolve-Path $dirname)""")
+
         return (f"wget -q {download_link} && "
             f"dirname=$(tar -tzf {filename} | head -1 | cut -f1 -d '/') && "
             f"tar -xzf {filename} && "
             f'echo {key}=$(realpath "$dirname") >> $GITHUB_ENV')
+    
     
     def get_download_link(self, key: str, version: str) -> str:
         os, arch = OSS[self.runs_on]
