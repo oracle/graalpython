@@ -102,8 +102,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.ModuleSpec
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.DefaultCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsCharPointerNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.EnsurePythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.MaterializePrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.PythonObjectArrayCreateNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ResolvePointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.UnicodeFromFormatNodeGen;
@@ -1729,11 +1729,10 @@ public abstract class CExtNodes {
      * Special helper nodes that materializes any primitive that would leak the wrapper if the
      * reference is owned by managed code only.
      */
-    // TODO(fa): rename to EnsurePythonObjectNode
     @GenerateInline(false)
     @GenerateUncached
     @ImportStatic(PGuards.class)
-    public abstract static class MaterializePrimitiveNode extends Node {
+    public abstract static class EnsurePythonObjectNode extends Node {
 
         public abstract PythonObject execute(PythonContext context, Object object);
 
@@ -1779,13 +1778,13 @@ public abstract class CExtNodes {
         }
 
         @NeverDefault
-        public static MaterializePrimitiveNode create() {
-            return MaterializePrimitiveNodeGen.create();
+        public static EnsurePythonObjectNode create() {
+            return EnsurePythonObjectNodeGen.create();
         }
 
         @NeverDefault
-        public static MaterializePrimitiveNode getUncached() {
-            return MaterializePrimitiveNodeGen.getUncached();
+        public static EnsurePythonObjectNode getUncached() {
+            return EnsurePythonObjectNodeGen.getUncached();
         }
     }
 

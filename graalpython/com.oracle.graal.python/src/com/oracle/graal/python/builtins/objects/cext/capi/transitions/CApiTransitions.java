@@ -81,6 +81,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupport.GCListRe
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupport.PyObjectGCDelNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupport.PyObjectGCTrackNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
@@ -1615,7 +1616,7 @@ public abstract class CApiTransitions {
         static long doGeneric(Node inliningTarget, Object obj, boolean needsTransfer,
                         @Cached InlinedExactClassProfile classProfile,
                         @Shared @Cached InlinedBranchProfile hasReplicatedNativeReferences,
-                        @Cached MaterializePrimitiveNode ensurePythonObjectNode,
+                        @Cached EnsurePythonObjectNode ensurePythonObjectNode,
                         @Shared @Cached FirstToNativeNode firstToNativeNode,
                         @Shared @Cached UpdateStrongRefNode updateRefNode) {
             CompilerAsserts.partialEvaluationConstant(needsTransfer);
