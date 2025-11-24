@@ -174,8 +174,8 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
         boolean mustRelease = gil.acquire();
         try {
             Object profiled = otherProfile.profile(inliningTarget, other);
-            if (profiled instanceof PythonAbstractNativeObject otherObj) {
-                return this.getPtr() == otherObj.getPtr();
+            if (profiled instanceof PythonAbstractNativeObject otherNativeObject) {
+                return pointer == otherNativeObject.pointer;
             }
             return otherInterop.isIdentical(profiled, this, thisLib);
         } finally {
