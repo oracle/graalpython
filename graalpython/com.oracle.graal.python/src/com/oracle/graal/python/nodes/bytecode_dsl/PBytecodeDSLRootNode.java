@@ -428,7 +428,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
     @Override
     public String toString() {
-        return "<bytecode " + co.name + " at " + Integer.toHexString(hashCode()) + ">";
+        return "<bytecode " + co.qualname + " at " + Integer.toHexString(hashCode()) + ">";
     }
 
     @Prolog(storeBytecodeIndex = false)
@@ -864,6 +864,15 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             return null;
         }
         return co.name.toJavaStringUncached();
+    }
+
+    @Override
+    public String getQualifiedName() {
+        if (co == null) {
+            // getQualifiedName can be called by validation code before the code unit has been set.
+            return null;
+        }
+        return co.qualname.toJavaStringUncached();
     }
 
     @Override

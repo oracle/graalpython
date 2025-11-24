@@ -540,7 +540,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final byte TRACE_AND_PROFILE_FUN = TRACE_FUN | PROFILE_FUN;
 
     private final Signature signature;
-    private final TruffleString name;
     private final boolean internal;
     private boolean pythonInternal;
 
@@ -704,7 +703,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         this.freevars = co.freevars;
         this.cellvars = co.cellvars;
         this.cell2arg = co.cell2arg;
-        this.name = co.name;
         this.exceptionHandlerRanges = co.exceptionHandlerRanges;
         this.co = co;
         assert co.stacksize < Math.pow(2, 12) : "stacksize cannot be larger than 12-bit range";
@@ -749,12 +747,17 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @Override
     public String getName() {
-        return name.toJavaStringUncached();
+        return co.name.toJavaStringUncached();
+    }
+
+    @Override
+    public String getQualifiedName() {
+        return co.qualname.toJavaStringUncached();
     }
 
     @Override
     public String toString() {
-        return "<bytecode " + name + " at " + Integer.toHexString(hashCode()) + ">";
+        return "<bytecode " + co.qualname + " at " + Integer.toHexString(hashCode()) + ">";
     }
 
     @Override
