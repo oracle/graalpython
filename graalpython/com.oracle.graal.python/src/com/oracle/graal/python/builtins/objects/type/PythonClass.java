@@ -282,12 +282,6 @@ public final class PythonClass extends PythonManagedClass {
         return mroShapeSubTypes != null;
     }
 
-    @Override
-    public boolean canSkipOnAttributeUpdate(TruffleString key, @SuppressWarnings("unused") Object newValue, TruffleString.CodePointLengthNode codePointLengthNode,
-                    TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
-        return super.canSkipOnAttributeUpdate(key, newValue, codePointLengthNode, codePointAtIndexNode) && mroShapeSubTypes == null;
-    }
-
     @TruffleBoundary
     @Override
     public void onAttributeUpdate(TruffleString key, Object newValue) {

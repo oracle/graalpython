@@ -213,10 +213,6 @@ public final class MroSequenceStorage extends ArrayBasedSequenceStorage {
         lookupStableAssumption.invalidate();
     }
 
-    public boolean hasAttributeInMROFinalAssumptions() {
-        return attributesInMROFinalAssumptions != null;
-    }
-
     public NativeSequenceStorage getNativeMirror() {
         return nativeMirror;
     }

@@ -444,6 +444,10 @@ public class HashingStorageNodes {
             return self;
         }
 
+        public static HashingStorageSetItem getUncached() {
+            return HashingStorageSetItemNodeGen.getUncached();
+        }
+
         @GenerateUncached
         @GenerateInline
         @GenerateCached(false)

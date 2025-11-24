@@ -207,16 +207,6 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         onAttributeUpdate(key, value);
     }
 
-    /**
-     * Fast-path check designed for PE code.
-     */
-    public boolean canSkipOnAttributeUpdate(TruffleString key, @SuppressWarnings("unused") Object value, TruffleString.CodePointLengthNode codePointLengthNode,
-                    TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
-        // TODO subclasses
-        return !methodResolutionOrder.hasAttributeInMROFinalAssumptions() &&
-                        !TpSlots.canBeSpecialMethod(key, codePointLengthNode, codePointAtIndexNode);
-    }
-
     @TruffleBoundary
     public void onAttributeUpdate(TruffleString key, Object value) {
         for (PythonAbstractClass subclass : GetSubclassesAsArrayNode.executeUncached(this)) {
