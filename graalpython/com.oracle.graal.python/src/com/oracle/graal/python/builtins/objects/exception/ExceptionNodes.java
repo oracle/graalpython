@@ -52,7 +52,6 @@ import java.util.IllegalFormatException;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.exception.BaseExceptionBuiltins.AddNoteNode;
@@ -97,7 +96,7 @@ public final class ExceptionNodes {
     }
 
     private static Object noneToNativeNull(@SuppressWarnings("unused") Node node, Object obj) {
-        return obj != PNone.NONE ? obj : NativePointer.NULL;
+        return obj != PNone.NONE ? obj : PNone.NO_VALUE;
     }
 
     @GenerateUncached
