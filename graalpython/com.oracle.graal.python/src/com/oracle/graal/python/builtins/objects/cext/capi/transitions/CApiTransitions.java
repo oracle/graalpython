@@ -1590,26 +1590,31 @@ public abstract class CApiTransitions {
             assert PythonContext.get(inliningTarget).ownsGil();
             pollReferenceQueue();
 
+            long pointer;
             if (!pythonObject.isNative()) {
                 assert !CApiContext.isSpecialSingleton(pythonObject);
                 PythonContext context = PythonContext.get(inliningTarget);
-                boolean immortal = context.getTrue() == pythonObject || context.getFalse() == pythonObject;
-                pythonObject.setNativePointer(firstToNativeNode.execute(inliningTarget, pythonObject, FirstToNativeNode.getInitialRefcnt(needsTransfer, immortal)));
-            } else if (needsTransfer) {
-                /*
-                 * This creates a new reference to the object and the ownership is transferred to
-                 * the C extension. Therefore, we need to make the reference strong such that we do
-                 * not deallocate the object if it's no longer referenced in the interpreter. The
-                 * interpreter will be notified by an upcall as soon as the object's refcount goes
-                 * down to MANAGED_RECOUNT again.
-                 */
-                long refCnt = pythonObject.incRef();
-                assert refCnt > MANAGED_REFCNT;
-                updateRefNode.execute(inliningTarget, pythonObject, refCnt);
+                boolean immortal = isImmortal(context, pythonObject);
+                pointer = firstToNativeNode.execute(inliningTarget, pythonObject, FirstToNativeNode.getInitialRefcnt(needsTransfer, immortal));
+                pythonObject.setNativePointer(pointer);
+            } else {
+                if (needsTransfer) {
+                    /*
+                     * This creates a new reference to the object and the ownership is transferred
+                     * to the C extension. Therefore, we need to make the reference strong such that
+                     * we do not deallocate the object if it's no longer referenced in the
+                     * interpreter. The interpreter will be notified by an upcall as soon as the
+                     * object's refcount goes down to MANAGED_RECOUNT again.
+                     */
+                    long refCnt = pythonObject.incRef();
+                    assert refCnt > MANAGED_REFCNT;
+                    updateRefNode.execute(inliningTarget, pythonObject, refCnt);
+                }
+                pointer = pythonObject.getNativePointer();
             }
             assert pythonObject.isNative();
             assert isGcTrackedIfNecessary(pythonObject);
-            return pythonObject.getNativePointer();
+            return pointer;
         }
 
         @Specialization(replaces = {"doNative", "doNullValues", "doPythonObject"})
