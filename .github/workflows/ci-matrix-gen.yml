@@ -106,6 +106,7 @@ jobs:
       - name: Install system packages on macOS
         if: ${{ runner.os == 'macOS' && matrix.system_packages }}
         run: |
+          echo $PATH
           brew update
           for pkg in ${{ matrix.system_packages }}; do
               brew install "$pkg" || true
@@ -231,6 +232,7 @@ jobs:
     if: ${{ success() || inputs.jobs_to_run }}
     needs: [generate-tier2, tier1]
     runs-on: ${{ matrix.os }}
+    env: ${{ matrix.env }}
     strategy:
       fail-fast: false
       matrix:
@@ -241,6 +243,7 @@ jobs:
     if: ${{ success() || inputs.jobs_to_run }}
     needs: [generate-tier3, tier2]
     runs-on: ${{ matrix.os }}
+    env: ${{ matrix.env }}
     strategy:
       fail-fast: false
       matrix:

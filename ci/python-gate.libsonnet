@@ -151,6 +151,7 @@
         darwin: {
             common: ENV_POSIX + {
                 LC_CTYPE: "en_US.UTF-8",
+                PATH: utils.path_combine(ENVIRONMENT.common.PATH, "$PYTHON3_HOME:$MUSL_TOOLCHAIN/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/homebrew/bin:/opt/homebrew/sbin"),
             },
             amd64: {},
             aarch64: {},
@@ -169,7 +170,7 @@
         LD_LIBRARY_PATH: "$LIBGMP/lib:$LLVM/lib:$LD_LIBRARY_PATH",
         FORK_COUNTS_DIRECTORY: "$BUILD_DIR/benchmarking-config/fork-counts",
         RODINIA_DATASET_ZIP: $.overlay_imports.RODINIA_DATASET_ZIP,
-        PATH: utils.path_combine(ENVIRONMENT.common.PATH, "$PYTHON3_HOME:$PATH:$MUSL_TOOLCHAIN/bin"),
+        PATH: utils.path_combine(ENVIRONMENT.common.PATH, "$PYTHON3_HOME:$MUSL_TOOLCHAIN/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin"),
     },
 
     // This is the diff to 'ENVIRONMENT' and meant to be used on OL8 images.
