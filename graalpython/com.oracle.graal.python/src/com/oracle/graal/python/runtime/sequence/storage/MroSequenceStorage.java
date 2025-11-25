@@ -67,13 +67,13 @@ public final class MroSequenceStorage extends ArrayBasedSequenceStorage {
      * These assumptions will be invalidated whenever the value of the given slot changes. All
      * assumptions will be invalidated if the mro changes.
      */
-    private Map<TruffleString, FinalAttributeAssumptionNode> attributesInMROFinalAssumptions;
+    private Map<TruffleString, FinalAttributeAssumptionPair> attributesInMROFinalAssumptions;
 
-    public static final class FinalAttributeAssumptionNode {
+    public static final class FinalAttributeAssumptionPair {
         @CompilationFinal private Assumption assumption;
         @CompilationFinal private Object value;
 
-        public FinalAttributeAssumptionNode() {
+        public FinalAttributeAssumptionPair() {
             this.assumption = Truffle.getRuntime().createAssumption("attribute in MRO final");
         }
 
@@ -182,7 +182,7 @@ public final class MroSequenceStorage extends ArrayBasedSequenceStorage {
         return lookupStableAssumption.getAssumption();
     }
 
-    public FinalAttributeAssumptionNode getFinalAttributeAssumption(TruffleString name) {
+    public FinalAttributeAssumptionPair getFinalAttributeAssumption(TruffleString name) {
         CompilerAsserts.neverPartOfCompilation();
         if (attributesInMROFinalAssumptions != null) {
             return attributesInMROFinalAssumptions.get(name);
@@ -190,28 +190,28 @@ public final class MroSequenceStorage extends ArrayBasedSequenceStorage {
         return null;
     }
 
-    public void putFinalAttributeAssumption(TruffleString name, FinalAttributeAssumptionNode node) {
+    public void putFinalAttributeAssumption(TruffleString name, FinalAttributeAssumptionPair assumptionPair) {
         CompilerAsserts.neverPartOfCompilation();
         if (attributesInMROFinalAssumptions == null) {
             attributesInMROFinalAssumptions = new HashMap<>();
         }
         assert attributesInMROFinalAssumptions.get(name) == null;
-        attributesInMROFinalAssumptions.put(name, node);
+        attributesInMROFinalAssumptions.put(name, assumptionPair);
     }
 
     public void invalidateFinalAttributeAssumption(TruffleString name) {
         CompilerAsserts.neverPartOfCompilation();
-        FinalAttributeAssumptionNode node = getFinalAttributeAssumption(name);
-        if (node != null) {
-            node.invalidate();
+        FinalAttributeAssumptionPair assumptionPair = getFinalAttributeAssumption(name);
+        if (assumptionPair != null) {
+            assumptionPair.invalidate();
         }
     }
 
     public void lookupChanged() {
         CompilerAsserts.neverPartOfCompilation();
         if (attributesInMROFinalAssumptions != null) {
-            for (FinalAttributeAssumptionNode node : attributesInMROFinalAssumptions.values()) {
-                node.invalidate();
+            for (FinalAttributeAssumptionPair assumptionPair : attributesInMROFinalAssumptions.values()) {
+                assumptionPair.invalidate();
             }
         }
         lookupStableAssumption.invalidate();

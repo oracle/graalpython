@@ -56,7 +56,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.StacktracelessCheckedException;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage.FinalAttributeAssumptionNode;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -201,7 +200,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         }
     }
 
-    FinalAttributeAssumptionNode findAttrAndAssumptionInMRO(Object klass) throws MROChangedException {
+    MroSequenceStorage.FinalAttributeAssumptionPair findAttrAndAssumptionInMRO(Object klass) throws MROChangedException {
         CompilerAsserts.neverPartOfCompilation();
         // Regarding potential side effects to MRO caused by __eq__ of the keys in the dicts that we
         // search through: CPython seems to read the MRO once and then compute the result also
@@ -209,13 +208,13 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         // may or may not be visible during subsequent lookups. We want to avoid triggering the side
         // effects twice
         MroSequenceStorage mro = GetMroStorageNode.executeUncached(klass);
-        FinalAttributeAssumptionNode assumptionNode = mro.getFinalAttributeAssumption(key);
+        MroSequenceStorage.FinalAttributeAssumptionPair assumptionNode = mro.getFinalAttributeAssumption(key);
         if (assumptionNode != null) {
             return assumptionNode;
         }
         // Put a new assumption in place in case the MRO changes during the lookup
-        FinalAttributeAssumptionNode node = new FinalAttributeAssumptionNode();
-        mro.putFinalAttributeAssumption(key, node);
+        MroSequenceStorage.FinalAttributeAssumptionPair assumptionPair = new MroSequenceStorage.FinalAttributeAssumptionPair();
+        mro.putFinalAttributeAssumption(key, assumptionPair);
         Object result = PNone.NO_VALUE;
         for (int i = 0; i < mro.length(); i++) {
             PythonAbstractClass clsObj = mro.getPythonClassItemNormalized(i);
@@ -228,13 +227,13 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
                 break;
             }
         }
-        if (node.getAssumption() == null) {
+        if (assumptionPair.getAssumption() == null) {
             // MRO changed during lookup. To avoid reexecuting the side-effects, return via
             // exception. This should abort the specialization
             throw new MROChangedException(result);
         }
-        node.setValue(result);
-        return node;
+        assumptionPair.setValue(result);
+        return assumptionPair;
     }
 
     @Specialization(guards = {"isSingleContext()", "isSameTypeNode.execute(inliningTarget, cachedKlass, klass)", "cachedAttrInMROInfo.getAssumption() != null"}, //
@@ -244,7 +243,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
                     @Bind Node inliningTarget,
                     @Cached("klass") Object cachedKlass,
                     @Cached IsSameTypeNode isSameTypeNode,
-                    @Cached("findAttrAndAssumptionInMRO(cachedKlass)") FinalAttributeAssumptionNode cachedAttrInMROInfo) {
+                    @Cached("findAttrAndAssumptionInMRO(cachedKlass)") MroSequenceStorage.FinalAttributeAssumptionPair cachedAttrInMROInfo) {
         return cachedAttrInMROInfo.getValue();
     }
 
