@@ -254,6 +254,9 @@ def libpythonvm_build_args():
     build_args = []
     build_args += bytecode_dsl_build_args()
 
+    if os.environ.get("GITHUB_CI"):
+        build_args += ["-Ob"]
+
     if graalos := ("musl" in mx_subst.path_substitutions.substitute("<multitarget_libc_selection>")):
         build_args += ['-H:+GraalOS']
     else:
@@ -326,7 +329,9 @@ def libpythonvm_build_args():
             "-H:-UnlockExperimentalVMOptions",
         ]
     else:
+        print("[DEBUG] libpythonvm_build_args debug")
         print(invert("Not using an automatically selected PGO profile"), file=sys.stderr)
+    print(f"[DEBUG] libpythonvm args: {build_args}")
     return build_args
 
 
