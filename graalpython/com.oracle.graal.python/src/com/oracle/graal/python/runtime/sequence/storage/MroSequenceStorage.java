@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,12 +40,8 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.function.Predicate;
 
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.util.PythonUtils;
@@ -55,6 +51,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.dsl.NonIdempotent;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 
@@ -70,8 +67,38 @@ public final class MroSequenceStorage extends ArrayBasedSequenceStorage {
      * These assumptions will be invalidated whenever the value of the given slot changes. All
      * assumptions will be invalidated if the mro changes.
      */
-    private final Map<TruffleString, List<Assumption>> attributesInMROFinalAssumptions;
-    private boolean hasAttributesInMROFinalAssumptions;
+    private Map<TruffleString, FinalAttributeAssumptionPair> attributesInMROFinalAssumptions;
+
+    public static final class FinalAttributeAssumptionPair {
+        @CompilationFinal private Assumption assumption;
+        @CompilationFinal private Object value;
+
+        public FinalAttributeAssumptionPair() {
+            this.assumption = Truffle.getRuntime().createAssumption("attribute in MRO final");
+        }
+
+        public void invalidate() {
+            if (assumption != null) {
+                assumption.invalidate("MRO entry not final");
+            }
+            assumption = null;
+            value = null;
+        }
+
+        @NonIdempotent
+        public Object getValue() {
+            return value;
+        }
+
+        public void setValue(Object value) {
+            this.value = value;
+        }
+
+        @NonIdempotent
+        public Assumption getAssumption() {
+            return assumption;
+        }
+    }
 
     @CompilationFinal(dimensions = 1) private final PythonAbstractClass[] values;
 
@@ -155,88 +182,39 @@ public final class MroSequenceStorage extends ArrayBasedSequenceStorage {
         return lookupStableAssumption.getAssumption();
     }
 
-    public Assumption createAttributeInMROFinalAssumption(TruffleString name) {
+    public FinalAttributeAssumptionPair getFinalAttributeAssumption(TruffleString name) {
         CompilerAsserts.neverPartOfCompilation();
-        List<Assumption> attrAssumptions = attributesInMROFinalAssumptions.getOrDefault(name, null);
-        if (attrAssumptions == null) {
-            attrAssumptions = new ArrayList<>();
-            hasAttributesInMROFinalAssumptions = true;
-            attributesInMROFinalAssumptions.put(name, attrAssumptions);
+        if (attributesInMROFinalAssumptions != null) {
+            return attributesInMROFinalAssumptions.get(name);
         }
-
-        Assumption assumption = Truffle.getRuntime().createAssumption(name.toString());
-        attrAssumptions.add(assumption);
-        return assumption;
+        return null;
     }
 
-    public void addAttributeInMROFinalAssumption(TruffleString name, Assumption assumption) {
+    public void putFinalAttributeAssumption(TruffleString name, FinalAttributeAssumptionPair assumptionPair) {
         CompilerAsserts.neverPartOfCompilation();
-        List<Assumption> attrAssumptions = attributesInMROFinalAssumptions.getOrDefault(name, null);
-        if (attrAssumptions == null) {
-            attrAssumptions = new ArrayList<>();
-            hasAttributesInMROFinalAssumptions = true;
-            attributesInMROFinalAssumptions.put(name, attrAssumptions);
+        if (attributesInMROFinalAssumptions == null) {
+            attributesInMROFinalAssumptions = new HashMap<>();
         }
-
-        attrAssumptions.add(assumption);
+        assert attributesInMROFinalAssumptions.get(name) == null;
+        attributesInMROFinalAssumptions.put(name, assumptionPair);
     }
 
-    /**
-     * Returns {@code true} if some assumption was actually invalidated.
-     */
-    @TruffleBoundary
-    public boolean invalidateAttributeInMROFinalAssumptions(TruffleString name) {
-        List<Assumption> assumptions = attributesInMROFinalAssumptions.getOrDefault(name, Collections.emptyList());
-        // the empty check is just to avoid the StringBuilder allocation
-        if (!assumptions.isEmpty()) {
-            if (invalidateAttributesInMROFinalAssumptions(assumptions, getClassName() + "." + name)) {
-                // remove list
-                attributesInMROFinalAssumptions.remove(name);
-            }
-            return true;
+    public void invalidateFinalAttributeAssumption(TruffleString name) {
+        CompilerAsserts.neverPartOfCompilation();
+        FinalAttributeAssumptionPair assumptionPair = getFinalAttributeAssumption(name);
+        if (assumptionPair != null) {
+            assumptionPair.invalidate();
         }
-        return false;
     }
 
     public void lookupChanged() {
         CompilerAsserts.neverPartOfCompilation();
-        attributesInMROFinalAssumptions.values().removeIf(REMOVE_IF_LARGE);
-        lookupStableAssumption.invalidate();
-    }
-
-    private static final Predicate<List<Assumption>> REMOVE_IF_LARGE = new Predicate<>() {
-
-        @Override
-        public boolean test(List<Assumption> assumptions) {
-            return invalidateAttributesInMROFinalAssumptions(assumptions, "");
-        }
-    };
-
-    @TruffleBoundary
-    private static boolean invalidateAttributesInMROFinalAssumptions(List<Assumption> list, String reason) {
-        int n = list.size();
-        if (n > 0) {
-            for (Assumption assumption : list) {
-                assumption.invalidate(reason);
+        if (attributesInMROFinalAssumptions != null) {
+            for (FinalAttributeAssumptionPair assumptionPair : attributesInMROFinalAssumptions.values()) {
+                assumptionPair.invalidate();
             }
         }
-
-        // clear assumptions to avoid memory leak; they are all invalidated, so we don't need
-        // them any longer
-        if (n < 16) {
-            // keep small lists; they don't hurt too much and we save allocations as well as GC
-            // pressure
-            list.clear();
-
-            // indicate to keep the list instance
-            return false;
-        }
-        // indicate that the list should completely be removed
-        return true;
-    }
-
-    public boolean hasAttributeInMROFinalAssumptions() {
-        return hasAttributesInMROFinalAssumptions;
+        lookupStableAssumption.invalidate();
     }
 
     public NativeSequenceStorage getNativeMirror() {

@@ -785,7 +785,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                         @Shared @Cached GetDictIfExistsNode getDict) {
             PDict dict = getDict.execute(self);
             if (dict == null) {
-                dict = PFactory.createDictFixedStorage(language, self, self.getMethodResolutionOrder());
+                dict = PFactory.createDictFixedStorage(language, self);
                 // The mapping is unmodifiable, so we don't have to assign it back
             }
             return PFactory.createMappingproxy(language, dict);

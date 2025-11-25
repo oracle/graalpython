@@ -232,7 +232,6 @@ public class HashingStorageNodes {
     }
 
     static EconomicMapStorage dynamicObjectStorageToEconomicMap(Node inliningTarget, DynamicObjectStorage s, DynamicObjectLibrary dylib, PyObjectHashNode hashNode, ObjectHashMap.PutNode putNode) {
-        // TODO: shouldn't we invalidate all MRO assumptions in this case?
         DynamicObject store = s.store;
         EconomicMapStorage result = EconomicMapStorage.create(dylib.getShape(store).getPropertyCount());
         ObjectHashMap resultMap = result.map;
@@ -280,10 +279,9 @@ public class HashingStorageNodes {
         }
 
         @Specialization(guards = "!self.shouldTransitionOnPut()")
-        static HashingStorage domStringKey(Node inliningTarget, DynamicObjectStorage self, TruffleString key, long keyHash, Object value,
-                        @Cached InlinedBranchProfile invalidateMroProfile,
+        static HashingStorage domStringKey(DynamicObjectStorage self, TruffleString key, long keyHash, Object value,
                         @Shared @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
-            self.setStringKey(key, value, dylib, inliningTarget, invalidateMroProfile);
+            self.setStringKey(key, value, dylib);
             return self;
         }
 
@@ -333,9 +331,8 @@ public class HashingStorageNodes {
             static HashingStorage domStringKey(Node inliningTarget, DynamicObjectStorage self, Object key, @SuppressWarnings("unused") long keyHash, Object value,
                             @SuppressWarnings("unused") boolean transition, DynamicObjectLibrary dylib,
                             @SuppressWarnings("unused") @Cached PyUnicodeCheckExactNode isBuiltinString,
-                            @Cached CastBuiltinStringToTruffleStringNode castStr,
-                            @Cached InlinedBranchProfile invalidateMroProfile) {
-                self.setStringKey(castStr.execute(inliningTarget, key), value, dylib, inliningTarget, invalidateMroProfile);
+                            @Cached CastBuiltinStringToTruffleStringNode castStr) {
+                self.setStringKey(castStr.execute(inliningTarget, key), value, dylib);
                 return self;
             }
 
@@ -405,10 +402,9 @@ public class HashingStorageNodes {
         }
 
         @Specialization(guards = "!self.shouldTransitionOnPut()")
-        static HashingStorage domStringKey(Node inliningTarget, DynamicObjectStorage self, TruffleString key, Object value,
-                        @Cached InlinedBranchProfile invalidateMroProfile,
+        static HashingStorage domStringKey(DynamicObjectStorage self, TruffleString key, Object value,
                         @Shared @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
-            self.setStringKey(key, value, dylib, inliningTarget, invalidateMroProfile);
+            self.setStringKey(key, value, dylib);
             return self;
         }
 
@@ -447,6 +443,10 @@ public class HashingStorageNodes {
             return self;
         }
 
+        public static HashingStorageSetItem getUncached() {
+            return HashingStorageSetItemNodeGen.getUncached();
+        }
+
         @GenerateUncached
         @GenerateInline
         @GenerateCached(false)
@@ -459,9 +459,8 @@ public class HashingStorageNodes {
             static HashingStorage domStringKey(Node inliningTarget, DynamicObjectStorage self, Object key, Object value,
                             @SuppressWarnings("unused") boolean transition, DynamicObjectLibrary dylib,
                             @SuppressWarnings("unused") @Cached PyUnicodeCheckExactNode isBuiltinString,
-                            @Cached CastBuiltinStringToTruffleStringNode castStr,
-                            @Cached InlinedBranchProfile invalidateMroProfile) {
-                self.setStringKey(castStr.execute(inliningTarget, key), value, dylib, inliningTarget, invalidateMroProfile);
+                            @Cached CastBuiltinStringToTruffleStringNode castStr) {
+                self.setStringKey(castStr.execute(inliningTarget, key), value, dylib);
                 return self;
             }
 
@@ -542,7 +541,6 @@ public class HashingStorageNodes {
                         @Cached PyUnicodeCheckExactNode isBuiltinString,
                         @Cached CastBuiltinStringToTruffleStringNode castStr,
                         @Exclusive @Cached PyObjectHashNode hashNode,
-                        @Exclusive @Cached InlinedBranchProfile invalidateMroProfile,
                         @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
             if (!isBuiltinString.execute(inliningTarget, keyObj)) {
                 // Just for the potential side effects
@@ -557,16 +555,10 @@ public class HashingStorageNodes {
                     return null;
                 } else {
                     dylib.put(store, key, PNone.NO_VALUE);
-                    self.invalidateAttributeInMROFinalAssumption(key, inliningTarget, invalidateMroProfile);
                     return val;
                 }
             } else {
-                if (dylib.putIfPresent(store, key, PNone.NO_VALUE)) {
-                    self.invalidateAttributeInMROFinalAssumption(key, inliningTarget, invalidateMroProfile);
-                    return true;
-                } else {
-                    return false;
-                }
+                return dylib.putIfPresent(store, key, PNone.NO_VALUE);
             }
         }
 

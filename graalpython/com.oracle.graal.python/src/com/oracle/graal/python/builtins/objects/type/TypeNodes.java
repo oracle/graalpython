@@ -189,6 +189,7 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
@@ -197,6 +198,7 @@ import com.oracle.graal.python.nodes.classes.AbstractObjectIsSubclassNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
@@ -574,7 +576,7 @@ public abstract class TypeNodes {
             return obj.getMethodResolutionOrder();
         }
 
-        @InliningCutoff
+        @TruffleBoundary
         private static void initializeMRO(PythonManagedClass obj, Node inliningTarget, InlinedConditionProfile isPythonClass, PythonLanguage language) {
             PythonAbstractClass[] mro = ComputeMroNode.doSlowPath(inliningTarget, obj, false);
             if (isPythonClass.profile(inliningTarget, obj instanceof PythonClass)) {
@@ -1621,23 +1623,22 @@ public abstract class TypeNodes {
             return computeMethodResolutionOrder(node, cls, invokeMro);
         }
 
-        // No BoundaryCallContext: TODO: unlikely, but __mro__ lookup and call can run arbitrary
-        // code
         @TruffleBoundary
         static PythonAbstractClass[] invokeMro(Node node, PythonAbstractClass cls) {
             Object type = GetClassNode.executeUncached(cls);
-            if (IsTypeNode.executeUncached(type) && type instanceof PythonClass) {
-                Object mroMeth = LookupAttributeInMRONode.Dynamic.getUncached().execute(type, T_MRO);
-                if (mroMeth instanceof PFunction) {
-                    Object mroObj = CallUnaryMethodNode.getUncached().executeObject(mroMeth, cls);
-                    if (mroObj instanceof PSequence mroSequence) {
-                        SequenceStorage mroStorage = mroSequence.getSequenceStorage();
-                        return mroCheck(node, cls, GetInternalObjectArrayNode.executeUncached(mroStorage), mroStorage);
-                    }
-                    throw PRaiseNode.raiseStatic(node, TypeError, ErrorMessages.OBJ_NOT_ITERABLE, cls);
-                }
+            if (BuiltinClassProfiles.IsBuiltinClassExactProfile.profileClassSlowPath(type, PythonBuiltinClassType.PythonClass)) {
+                // Default type.mro
+                return null;
             }
-            return null;
+            Object mroMeth = LookupSpecialMethodNode.Dynamic.executeUncached(type, T_MRO, cls);
+            if (mroMeth instanceof PBuiltinFunction f && f.getNodeClass() != null && TypeBuiltins.MroNode.class.isAssignableFrom(f.getNodeClass())) {
+                // Default type.mro
+                return null;
+            }
+            Object mroObj = CallUnaryMethodNode.getUncached().executeObject(mroMeth, cls);
+            PTuple mroTuple = TupleNodes.ConstructTupleNode.getUncached().execute(null, mroObj);
+            SequenceStorage mroStorage = mroTuple.getSequenceStorage();
+            return mroCheck(node, cls, GetInternalObjectArrayNode.executeUncached(mroStorage), mroStorage);
         }
 
         private static PythonAbstractClass[] computeMethodResolutionOrder(Node node, PythonAbstractClass cls, boolean invokeMro) {

@@ -726,10 +726,6 @@ public final class PFactory {
         return createDict(language, EconomicMapStorage.createGeneric(map));
     }
 
-    public static PDict createDictFixedStorage(PythonLanguage language, PythonObject pythonObject, MroSequenceStorage mroSequenceStorage) {
-        return createDict(language, new DynamicObjectStorage(pythonObject, mroSequenceStorage));
-    }
-
     public static PDict createDictFixedStorage(PythonLanguage language, PythonObject pythonObject) {
         return createDict(language, new DynamicObjectStorage(pythonObject));
     }

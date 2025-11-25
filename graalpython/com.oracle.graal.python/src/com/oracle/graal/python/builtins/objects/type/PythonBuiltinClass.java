@@ -99,8 +99,8 @@ public final class PythonBuiltinClass extends PythonManagedClass {
     public void onAttributeUpdate(TruffleString key, Object newValue) {
         assert !PythonContext.get(null).isCoreInitialized();
         // Ideally, startup code should not create ASTs that rely on assumptions of props of
-        // builtins. So there should be no assumptions to invalidate yet
-        assert !getMethodResolutionOrder().invalidateAttributeInMROFinalAssumptions(key);
+        // builtins
+        assert getMethodResolutionOrder().getFinalAttributeAssumption(key) == null;
         assert checkSpecialMethodUpdate(key, newValue);
         // NO_VALUE changes MRO lookup results without actually changing any Shapes in the MRO, this
         // can prevent some optimizations, so it is best to avoid any code that triggers such code
