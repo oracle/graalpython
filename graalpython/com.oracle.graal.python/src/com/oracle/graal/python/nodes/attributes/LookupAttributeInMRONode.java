@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.exception.StacktracelessCheckedException;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage.FinalAttributeAssumptionNode;
 import com.oracle.truffle.api.Assumption;
@@ -80,7 +81,17 @@ import com.oracle.truffle.api.strings.TruffleString;
 @ImportStatic(PythonOptions.class)
 public abstract class LookupAttributeInMRONode extends PNodeWithContext {
 
-    public abstract Object execute(Object klass);
+    public final Object execute(Object klass) {
+        try {
+            return executeInternal(klass);
+        } catch (MROChangedException e) {
+            // This exception can occur only during specialization
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            return e.result;
+        }
+    }
+
+    protected abstract Object executeInternal(Object klass) throws MROChangedException;
 
     @GenerateUncached
     @GenerateInline(false) // footprint reduction 36 -> 17
@@ -181,7 +192,16 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         return skipNonStaticBases && clsObj instanceof PythonClass && !((PythonClass) clsObj).isStaticBase();
     }
 
-    FinalAttributeAssumptionNode findAttrAndAssumptionInMRO(Object klass) {
+    @SuppressWarnings("serial")
+    public static class MROChangedException extends StacktracelessCheckedException {
+        final Object result;
+
+        public MROChangedException(Object result) {
+            this.result = result;
+        }
+    }
+
+    FinalAttributeAssumptionNode findAttrAndAssumptionInMRO(Object klass) throws MROChangedException {
         CompilerAsserts.neverPartOfCompilation();
         // Regarding potential side effects to MRO caused by __eq__ of the keys in the dicts that we
         // search through: CPython seems to read the MRO once and then compute the result also
@@ -193,6 +213,9 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         if (assumptionNode != null) {
             return assumptionNode;
         }
+        // Put a new assumption in place in case the MRO changes during the lookup
+        FinalAttributeAssumptionNode node = new FinalAttributeAssumptionNode();
+        mro.putFinalAttributeAssumption(key, node);
         Object result = PNone.NO_VALUE;
         for (int i = 0; i < mro.length(); i++) {
             PythonAbstractClass clsObj = mro.getPythonClassItemNormalized(i);
@@ -205,8 +228,12 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
                 break;
             }
         }
-        FinalAttributeAssumptionNode node = new FinalAttributeAssumptionNode(result);
-        mro.putFinalAttributeAssumption(key, node);
+        if (node.getAssumption() == null) {
+            // MRO changed during lookup. To avoid reexecuting the side-effects, return via
+            // exception. This should abort the specialization
+            throw new MROChangedException(result);
+        }
+        node.setValue(result);
         return node;
     }
 

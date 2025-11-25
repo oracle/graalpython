@@ -165,6 +165,9 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     }
 
     public void setMRO(PythonAbstractClass[] mro) {
+        if (methodResolutionOrder != null) {
+            methodResolutionOrder.lookupChanged();
+        }
         methodResolutionOrder = new MroSequenceStorage(name, mro);
     }
 
@@ -303,12 +306,10 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
             // for what follows see also typeobject.c#type_set_bases()
             this.base = newBaseClass;
             this.baseClasses = newBaseClasses;
-            this.methodResolutionOrder.lookupChanged();
             this.setMRO(ComputeMroNode.doSlowPath(node, this));
 
             for (PythonAbstractClass scls : subclassesArray) {
                 if (scls instanceof PythonManagedClass pmc) {
-                    pmc.methodResolutionOrder.lookupChanged();
                     pmc.setMRO(ComputeMroNode.doSlowPath(node, scls));
                 }
             }
@@ -321,14 +322,12 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
                 this.base = oldBase;
                 this.baseClasses = oldBaseClasses;
             }
-            this.methodResolutionOrder.lookupChanged();
             this.setMRO(oldMRO);
 
             for (int i = 0; i < subclassesArray.length; i++) {
                 PythonAbstractClass scls = subclassesArray[i];
                 if (oldSubClasssMROs[i] != null) {
                     PythonManagedClass pmc = (PythonManagedClass) scls;
-                    pmc.methodResolutionOrder.lookupChanged();
                     pmc.setMRO(oldSubClasssMROs[i]);
                 }
             }

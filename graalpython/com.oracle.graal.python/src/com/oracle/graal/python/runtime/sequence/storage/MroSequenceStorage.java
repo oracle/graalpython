@@ -73,8 +73,7 @@ public final class MroSequenceStorage extends ArrayBasedSequenceStorage {
         @CompilationFinal private Assumption assumption;
         @CompilationFinal private Object value;
 
-        public FinalAttributeAssumptionNode(Object value) {
-            this.value = value;
+        public FinalAttributeAssumptionNode() {
             this.assumption = Truffle.getRuntime().createAssumption("attribute in MRO final");
         }
 
@@ -86,8 +85,13 @@ public final class MroSequenceStorage extends ArrayBasedSequenceStorage {
             value = null;
         }
 
+        @NonIdempotent
         public Object getValue() {
             return value;
+        }
+
+        public void setValue(Object value) {
+            this.value = value;
         }
 
         @NonIdempotent

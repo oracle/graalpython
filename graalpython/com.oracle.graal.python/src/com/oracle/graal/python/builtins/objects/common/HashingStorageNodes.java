@@ -232,7 +232,6 @@ public class HashingStorageNodes {
     }
 
     static EconomicMapStorage dynamicObjectStorageToEconomicMap(Node inliningTarget, DynamicObjectStorage s, DynamicObjectLibrary dylib, PyObjectHashNode hashNode, ObjectHashMap.PutNode putNode) {
-        // TODO: shouldn't we invalidate all MRO assumptions in this case?
         DynamicObject store = s.store;
         EconomicMapStorage result = EconomicMapStorage.create(dylib.getShape(store).getPropertyCount());
         ObjectHashMap resultMap = result.map;
@@ -542,7 +541,6 @@ public class HashingStorageNodes {
                         @Cached PyUnicodeCheckExactNode isBuiltinString,
                         @Cached CastBuiltinStringToTruffleStringNode castStr,
                         @Exclusive @Cached PyObjectHashNode hashNode,
-                        @Exclusive @Cached InlinedBranchProfile invalidateMroProfile,
                         @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
             if (!isBuiltinString.execute(inliningTarget, keyObj)) {
                 // Just for the potential side effects
