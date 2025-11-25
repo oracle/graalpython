@@ -135,7 +135,7 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
                     @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
                     @Exclusive @Cached InlinedBranchProfile updateFlags,
-                    @Shared @Cached DynamicObject.PutNode putNode,
+                    @Cached DynamicObject.PutNode putNode,
                     @Cached DynamicObject.GetShapeFlagsNode getShapeFlagsNode,
                     @Cached DynamicObject.SetShapeFlagsNode setShapeFlagsNode) {
         if (value == PNone.NO_VALUE) {

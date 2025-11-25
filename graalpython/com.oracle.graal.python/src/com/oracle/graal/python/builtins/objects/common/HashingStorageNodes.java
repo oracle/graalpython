@@ -542,8 +542,8 @@ public class HashingStorageNodes {
                         @Cached PyUnicodeCheckExactNode isBuiltinString,
                         @Cached CastBuiltinStringToTruffleStringNode castStr,
                         @Exclusive @Cached PyObjectHashNode hashNode,
-                                   @Cached DynamicObject.GetNode getNode,
-                                   @Cached DynamicObject.PutNode putNode) {
+                        @Cached DynamicObject.GetNode getNode,
+                        @Cached DynamicObject.PutNode putNode) {
             if (!isBuiltinString.execute(inliningTarget, keyObj)) {
                 // Just for the potential side effects
                 hashNode.execute(frame, inliningTarget, keyObj);
