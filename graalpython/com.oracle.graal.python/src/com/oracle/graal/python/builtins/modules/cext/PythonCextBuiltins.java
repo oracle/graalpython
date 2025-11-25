@@ -1818,7 +1818,8 @@ public final class PythonCextBuiltins {
                     // lookup the built-in type by name
                     PythonManagedClass clazz = lookupBuiltinTypeWithName(context, name);
 
-                    // create the lookup table entry and sync (selected) native type fields to the managed type
+                    // create the lookup table entry and sync (selected) native type fields to the
+                    // managed type
                     LOGGER.fine(() -> "setting type store for built-in class " + name + " to " + PythonUtils.formatPointer(typeStructPtr));
                     ToNativeTypeNode.wrapStaticTypeStructForManagedClass(clazz, typeStructPtr);
 

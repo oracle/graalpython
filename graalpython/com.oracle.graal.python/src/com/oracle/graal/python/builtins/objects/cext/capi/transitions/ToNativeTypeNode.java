@@ -92,7 +92,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.SetTypeFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetTypeFlagsNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.SetBasicSizeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.SetItemSizeNodeGen;
-import com.oracle.graal.python.nfi2.NativeMemory;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassExactProfile;
@@ -197,7 +196,8 @@ public abstract class ToNativeTypeNode {
         writeLongField(mem, CFields.PyVarObject__ob_size, 0L);
 
         TruffleString nameUtf8 = SwitchEncodingNode.getUncached().execute(clazz.getName(), Encoding.UTF_8);
-        // TODO(fa): the allocated 'char *' will be free'd at context finalization. It should be free'd if the type is free'd.
+        // TODO(fa): the allocated 'char *' will be free'd at context finalization. It should be
+        // free'd if the type is free'd.
         TruffleString nativeUncached = nameUtf8.asNativeUncached(ctx::allocateContextMemory, Encoding.UTF_8, false, true);
         Object internalNativePointerUncached = nativeUncached.getInternalNativePointerUncached(Encoding.UTF_8);
         long namePointer = PythonUtils.coerceToLong(internalNativePointerUncached, InteropLibrary.getUncached());

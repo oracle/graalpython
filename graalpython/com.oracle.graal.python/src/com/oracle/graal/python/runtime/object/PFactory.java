@@ -257,7 +257,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.bytecode.ContinuationRootNode;
 import com.oracle.truffle.api.frame.MaterializedFrame;
-import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -282,7 +281,7 @@ public final class PFactory {
         return new PythonNativeVoidPtr(obj, nativePtr);
     }
 
-    public static TruffleObjectNativeWrapper createPythonForeignObject(PythonLanguage language, Object clazz, TruffleObject foreignObject) {
+    public static TruffleObjectNativeWrapper createPythonForeignObject(PythonLanguage language, Object clazz, Object foreignObject) {
         return new TruffleObjectNativeWrapper(clazz, PythonBuiltinClassType.ForeignObject.getInstanceShape(language), foreignObject);
     }
 

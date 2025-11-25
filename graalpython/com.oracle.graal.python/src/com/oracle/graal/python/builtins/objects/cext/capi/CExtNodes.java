@@ -1772,9 +1772,12 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = "isForeignObject(foreignObject)")
-        static PythonObject doForeign(PythonContext context, Object foreignObject) {
+        static PythonObject doForeign(PythonContext context, Object foreignObject,
+                        @Bind Node inliningTarget,
+                        @Cached GetClassNode getClassNode) {
             assert foreignObject != null : "attempting to wrap Java null";
-            return new TruffleObjectNativeWrapper(context.getLanguage(), context.getLanguage().getEmptyShape(), foreignObject);
+            Object clazz = getClassNode.execute(inliningTarget, foreignObject);
+            return PFactory.createPythonForeignObject(context.getLanguage(), clazz, foreignObject);
         }
 
         @NeverDefault
@@ -1792,6 +1795,7 @@ public abstract class CExtNodes {
      * Transforms an {@code Object[]} containing Python objects to a native {@code PyObject *arr[]}.
      * This will not create new {@code PyObject *} references (i.e. refcount is not increased).
      */
+    @GenerateInline(false)
     public abstract static class PythonObjectArrayCreateNode extends Node {
 
         public abstract long execute(Object[] data);

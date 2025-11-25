@@ -46,7 +46,6 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import org.bouncycastle.math.raw.Nat;
 
 /**
  * This class can be used to bridge between JNI and LLVM. In particular, we use it to wrap native

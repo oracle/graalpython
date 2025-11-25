@@ -1543,8 +1543,8 @@ public abstract class CApiTransitions {
 
         @Specialization
         static long doNative(Node inliningTarget, PythonAbstractNativeObject obj, boolean needsTransfer,
-                        @Shared @Cached InlinedBranchProfile hasReplicatedNativeReferences,
-                        @Shared @Cached UpdateStrongRefNode updateRefNode) {
+                        @Exclusive @Cached InlinedBranchProfile hasReplicatedNativeReferences,
+                        @Exclusive @Cached UpdateStrongRefNode updateRefNode) {
             if (needsTransfer && PythonContext.get(inliningTarget).isNativeAccessAllowed()) {
                 long newRefcnt = CApiTransitions.addNativeRefCount(obj.getPtr(), 1);
                 /*
@@ -1583,8 +1583,8 @@ public abstract class CApiTransitions {
 
         @Specialization
         static long doPythonObject(Node inliningTarget, PythonObject pythonObject, boolean needsTransfer,
-                        @Shared @Cached FirstToNativeNode firstToNativeNode,
-                        @Shared @Cached UpdateStrongRefNode updateRefNode) {
+                        @Exclusive @Cached FirstToNativeNode firstToNativeNode,
+                        @Exclusive @Cached UpdateStrongRefNode updateRefNode) {
             CompilerAsserts.partialEvaluationConstant(needsTransfer);
             assert PythonContext.get(inliningTarget).ownsGil();
             pollReferenceQueue();
@@ -1619,10 +1619,10 @@ public abstract class CApiTransitions {
         @Specialization(replaces = {"doNative", "doNullValues", "doPythonObject"})
         static long doGeneric(Node inliningTarget, Object obj, boolean needsTransfer,
                         @Cached InlinedExactClassProfile classProfile,
-                        @Shared @Cached InlinedBranchProfile hasReplicatedNativeReferences,
+                        @Exclusive @Cached InlinedBranchProfile hasReplicatedNativeReferences,
                         @Cached EnsurePythonObjectNode ensurePythonObjectNode,
-                        @Shared @Cached FirstToNativeNode firstToNativeNode,
-                        @Shared @Cached UpdateStrongRefNode updateRefNode) {
+                        @Exclusive @Cached FirstToNativeNode firstToNativeNode,
+                        @Exclusive @Cached UpdateStrongRefNode updateRefNode) {
             CompilerAsserts.partialEvaluationConstant(needsTransfer);
             assert PythonContext.get(inliningTarget).ownsGil();
             pollReferenceQueue();
