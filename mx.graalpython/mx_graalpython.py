@@ -254,7 +254,7 @@ def libpythonvm_build_args():
     build_args = bytecode_dsl_build_args()
 
     if os.environ.get("GITHUB_CI"):
-        build_args += ["-Ob"]
+        build_args += ["-Ob", "-J-XX:MaxRAMPercentage=90.0"]
 
     if graalos := ("musl" in mx_subst.path_substitutions.substitute("<multitarget_libc_selection>")):
         build_args += ['-H:+GraalOS']

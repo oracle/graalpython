@@ -110,7 +110,7 @@
     local GRAAL_JDK_LATEST          = "graal-jdk-latest",
     local TAGGED_UNITTESTS_SPLIT    = 8,
     local COVERAGE_SPLIT            = 3,
-    local RETAGGER_SPLIT            = 16,
+    local RETAGGER_SPLIT            = 8,
 
     // -----------------------------------------------------------------------------------------------------------------
     // gates
