@@ -205,6 +205,7 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassP
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
+import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.LazyInteropLibrary;
@@ -1570,18 +1571,28 @@ public abstract class TypeNodes {
             return cachedClassType;
         }
 
-        @Specialization(guards = {"isSingleContext()", "isPythonAbstractClass(object)"}, rewriteOn = NotSameTypeException.class)
-        static Object doPythonAbstractClass(Object object,
-                        @Cached(value = "object", weak = true) Object cachedObject,
-                        @CachedLibrary(limit = "2") InteropLibrary lib) throws NotSameTypeException {
-            if (lib.isIdentical(object, cachedObject, lib)) {
+        @Specialization(guards = {"isSingleContext()"}, rewriteOn = NotSameTypeException.class)
+        static Object doPythonNativeClass(PythonAbstractNativeObject object,
+                        @Cached(value = "object", weak = true) PythonAbstractNativeObject cachedObject) throws NotSameTypeException {
+            if (object.getPtr() == cachedObject.getPtr()) {
                 return cachedObject;
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw NotSameTypeException.INSTANCE;
         }
 
-        @Specialization(replaces = {"doPythonBuiltinClassType", "doPythonAbstractClass"})
+        @Specialization(guards = {"isSingleContext()"}, rewriteOn = NotSameTypeException.class)
+        static Object doPythonManagedClass(PythonManagedClass object,
+                        @Cached(value = "object", weak = true) PythonManagedClass cachedObject,
+                        @Cached IsNode isNode) throws NotSameTypeException {
+            if (object == cachedObject || isNode.execute(object, cachedObject)) {
+                return cachedObject;
+            }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw NotSameTypeException.INSTANCE;
+        }
+
+        @Specialization(replaces = {"doPythonBuiltinClassType", "doPythonNativeClass", "doPythonManagedClass"})
         static Object doDisabled(Object object) {
             return object;
         }
