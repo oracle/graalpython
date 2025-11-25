@@ -52,7 +52,7 @@ static PyObject* demo_system(PyObject *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "s", &command)) {
         return NULL;
     }
-    retval = (char*)calloc(sizeof(char), strlen(command) + strlen(ANSWER));
+    retval = (char*)calloc(sizeof(char), strlen(command) + strlen(ANSWER) + 1);
     sprintf(retval, "%s%s", command, ANSWER);
     return Py_BuildValue("s", retval);
 }
