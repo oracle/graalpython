@@ -55,7 +55,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
-import static com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ensureExecutableUncached;
+import static com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ensureExecutable;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.wrapPointer;
 import static com.oracle.graal.python.nfi2.NativeMemory.free;
 import static com.oracle.graal.python.nfi2.NativeMemory.readPtrArrayElement;
@@ -583,7 +583,7 @@ public abstract class ExternalFunctionNodes {
         public static PythonObject createWrapperFunction(TruffleString name, long callable, Object enclosingType, int flags, int sig,
                         PythonLanguage language) {
             PExternalFunctionWrapper wrapper = PExternalFunctionWrapper.fromValue(sig);
-            NfiBoundFunction boundCallable = ensureExecutableUncached(callable, wrapper);
+            NfiBoundFunction boundCallable = ensureExecutable(callable, wrapper);
             return createWrapperFunction(name, boundCallable, enclosingType, flags, wrapper, language);
         }
 

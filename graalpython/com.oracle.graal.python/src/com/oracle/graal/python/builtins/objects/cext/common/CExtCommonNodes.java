@@ -1283,28 +1283,22 @@ public abstract class CExtCommonNodes {
     private static final TruffleLogger LOGGER = CApiContext.getLogger(CExtContext.class);
 
     /**
-     * Ensures that the given pointer object is an executable interop value.
+     * Binds a native pointer with a signature to an object that can be directly
+     * {@link NfiBoundFunction#invoke(Object...) invoked}.
      *
      * <p>
      * <b>NOTE:</b> This method will fail if {@link PythonContext#isNativeAccessAllowed() native
-     * access} is not allowed and if {@code callable} is yet not
-     * {@link InteropLibrary#isExecutable(Object) executable}.
-     * </p>
-     * <p>
-     * If the {@code callable} is not {@link InteropLibrary#isExecutable(Object) executable}, the
-     * provided {@link NativeCExtSymbol signature} will be used to bind the object an executable
-     * {@code NFI} pointer.
+     * access} is not allowed
      * </p>
      */
-    @TruffleBoundary
-    public static NfiBoundFunction ensureExecutableUncached(long callable, NativeCExtSymbol descriptor) {
+    public static NfiBoundFunction ensureExecutable(long pointer, NativeCExtSymbol descriptor) {
         PythonContext pythonContext = PythonContext.get(null);
         if (!pythonContext.isNativeAccessAllowed()) {
-            LOGGER.severe(PythonUtils.formatJString("Attempting to bind %s to an NFI signature but native access is not allowed", callable));
+            LOGGER.severe(PythonUtils.formatJString("Attempting to bind %s to an NFI signature but native access is not allowed", pointer));
         }
         if (LOGGER.isLoggable(Level.FINER)) {
-            LOGGER.finer(PythonUtils.formatJString("Binding %s (signature: %s) to NFI signature %s", callable, descriptor.getName(), descriptor.getSignature()));
+            LOGGER.finer(PythonUtils.formatJString("Binding %s (signature: %s) to NFI signature %s", pointer, descriptor.getName(), descriptor.getSignature()));
         }
-        return descriptor.getSignature().bind(pythonContext.ensureNfiContext(), callable);
+        return descriptor.getSignature().bind(pythonContext.ensureNfiContext(), pointer);
     }
 }

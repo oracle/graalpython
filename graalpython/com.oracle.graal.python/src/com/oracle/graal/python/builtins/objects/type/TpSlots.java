@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.type;
 
-import static com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ensureExecutableUncached;
+import static com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ensureExecutable;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointerUncached;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readPtrField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
@@ -1337,7 +1337,7 @@ public record TpSlots(TpSlot nb_bool, //
             }
             // There is no mapping from this pointer to existing TpSlot, we create a new
             // TpSlotNative wrapping the executable
-            NfiBoundFunction executable = ensureExecutableUncached(fieldPtr, def.nativeSignature);
+            NfiBoundFunction executable = ensureExecutable(fieldPtr, def.nativeSignature);
             builder.set(def, TpSlotNative.createCExtSlot(executable));
         }
         return builder.build();

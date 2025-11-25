@@ -51,7 +51,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
-import static com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ensureExecutableUncached;
+import static com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ensureExecutable;
 import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.METH_CLASS;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_name;
 import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
@@ -368,7 +368,7 @@ public final class PythonCextTypeBuiltins {
             PythonLanguage language = PythonLanguage.get(inliningTarget);
             if (getter != NULLPTR) {
                 RootCallTarget getterCT = getterCallTarget(name, language);
-                NfiBoundFunction getterFun = ensureExecutableUncached(getter, PExternalFunctionWrapper.GETTER);
+                NfiBoundFunction getterFun = ensureExecutable(getter, PExternalFunctionWrapper.GETTER);
                 get = PFactory.createBuiltinFunction(language, name, cls, EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(getterFun, closure), 0, getterCT);
             }
 
@@ -376,7 +376,7 @@ public final class PythonCextTypeBuiltins {
             boolean hasSetter = setter != NULLPTR;
             if (hasSetter) {
                 RootCallTarget setterCT = setterCallTarget(name, language);
-                NfiBoundFunction setterFun = ensureExecutableUncached(setter, PExternalFunctionWrapper.SETTER);
+                NfiBoundFunction setterFun = ensureExecutable(setter, PExternalFunctionWrapper.SETTER);
                 set = PFactory.createBuiltinFunction(language, name, cls, EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(setterFun, closure), 0, setterCT);
             }
 

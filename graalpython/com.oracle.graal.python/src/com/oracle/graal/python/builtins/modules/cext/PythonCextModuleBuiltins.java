@@ -54,7 +54,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
-import static com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ensureExecutableUncached;
+import static com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ensureExecutable;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readPtrField;
 import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
@@ -288,7 +288,7 @@ public final class PythonCextModuleBuiltins {
                     long mdState = self.getNativeModuleState();
                     if (mSize <= 0 || mdState != NULLPTR) {
                         PythonThreadState threadState = getThreadStateNode.execute(inliningTarget);
-                        NfiBoundFunction traverseExecutable = ensureExecutableUncached(mTraverse, PExternalFunctionWrapper.TRAVERSEPROC);
+                        NfiBoundFunction traverseExecutable = ensureExecutable(mTraverse, PExternalFunctionWrapper.TRAVERSEPROC);
                         // TODO(NFI2) call directly
                         Object res = externalFunctionInvokeNode.call(null, inliningTarget, threadState, TIMING, T__M_TRAVERSE, traverseExecutable, toNativeNode.execute(self), visitFun, arg);
                         int ires = (int) checkPrimitiveFunctionResultNode.executeLong(threadState, StringLiterals.T_VISIT, res);

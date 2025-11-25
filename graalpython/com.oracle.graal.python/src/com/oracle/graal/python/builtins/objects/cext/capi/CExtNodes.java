@@ -52,7 +52,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbo
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_SUBTYPE_TRAVERSE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper.IMMORTAL_REFCNT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper.MANAGED_REFCNT;
-import static com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ensureExecutableUncached;
+import static com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ensureExecutable;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CConstants.PYLONG_BITS_IN_DIGIT;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyFloatObject__ob_fval;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMethodDef__ml_doc;
@@ -1838,7 +1838,7 @@ public abstract class CExtNodes {
         // TODO(fa) support static and class methods
         PExternalFunctionWrapper sig = PExternalFunctionWrapper.fromMethodFlags(flags);
         RootCallTarget callTarget = PExternalFunctionWrapper.getOrCreateCallTarget(sig, language, methodName, CExtContext.isMethStatic(flags));
-        NfiBoundFunction fun = ensureExecutableUncached(mlMethObj, sig);
+        NfiBoundFunction fun = ensureExecutable(mlMethObj, sig);
         PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(fun);
         PBuiltinFunction function = PFactory.createBuiltinFunction(language, methodName, null, PythonUtils.EMPTY_OBJECT_ARRAY, kwDefaults, flags, callTarget);
         HiddenAttr.WriteLongNode.executeUncached(function, METHOD_DEF_PTR, methodDefPtr);
