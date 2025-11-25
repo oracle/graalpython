@@ -81,9 +81,7 @@ import com.oracle.truffle.api.utilities.TriState;
 public final class PythonAbstractNativeObject extends PythonAbstractObject implements PythonNativeObject, PythonNativeClass {
 
     /**
-     * A reference to the native object. This usually is a pointer object (i.e. responds to
-     * {@link InteropLibrary#isPointer(Object)} with {@code true}) but can also be something the
-     * emulates native memory.
+     * A pointer to the native object ({@code PyObject *}).
      */
     public final long pointer;
     public TpSlots slots;
@@ -104,8 +102,6 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
         // GR-50245
         // Fails in
         // graalpython/com.oracle.graal.python.hpy.test/src/hpytest/test_slots_legacy.py::TestCustomLegacySlotsFeatures::test_legacy_slots_getsets[hybrid]
-        // assert !(object instanceof Number || object instanceof PythonNativeWrapper || object
-        // instanceof String || object instanceof TruffleString);
         this.pointer = pointer;
     }
 

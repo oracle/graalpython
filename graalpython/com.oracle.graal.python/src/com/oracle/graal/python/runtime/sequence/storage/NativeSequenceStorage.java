@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
+import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
+
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -73,7 +75,7 @@ public abstract class NativeSequenceStorage extends SequenceStorage implements T
 
     NativeSequenceStorage(long ptr, int length, int capacity) {
         super(length, capacity);
-        assert ptr != 0;
+        assert ptr != NULLPTR;
         this.ptr = ptr;
         if (LOGGER.isLoggable(Level.FINE)) {
             LOGGER.fine(PythonUtils.formatJString("new %s", this));
@@ -85,7 +87,7 @@ public abstract class NativeSequenceStorage extends SequenceStorage implements T
     }
 
     public final void setPtr(long ptr) {
-        assert ptr != 0;
+        assert ptr != NULLPTR;
         if (reference != null) {
             reference.setPtr(ptr);
         }

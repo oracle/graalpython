@@ -629,7 +629,7 @@ public abstract class CExtNodes {
             }
 
             @Specialization
-            static long doLong(@SuppressWarnings("unused") PythonNativeObject o) {
+            static long doLong(PythonNativeObject o) {
                 return o.getPtr();
             }
 
