@@ -148,6 +148,19 @@ The Python packages and their versions are specified as if used with `pip`:
       ...
   </configuration>
   ```
+- The **requirementsFile** element declares a path to a `pip`-compatible requirements file with third-party Python packages to be downloaded and installed by the plugin. <br/>Each line in the file is interpreted the same way as by `pip install -r`:
+
+  ```xml
+  <configuration>
+      <requirementsFile>requirements.txt</requirementsFile>
+      ...
+  </configuration>
+  ```
+
+  > **_NOTE:_**
+  > Exactly one of `packages` or `requirementsFile` must be configured.
+  > If both are present at the same time, the build will fail with a configuration error.
+
 
 - The **resourceDirectory** element can specify the relative [Java resource path](#java-resource-path).
   Remember to use `VirtualFileSystem$Builder#resourceDirectory` when configuring the `VirtualFileSystem` in Java.
