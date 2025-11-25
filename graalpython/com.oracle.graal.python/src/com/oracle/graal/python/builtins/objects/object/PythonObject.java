@@ -43,7 +43,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -94,20 +94,20 @@ public class PythonObject extends PythonAbstractObject {
 
     @TruffleBoundary
     public final Object getAttribute(TruffleString key) {
-        return DynamicObjectLibrary.getUncached().getOrDefault(this, key, PNone.NO_VALUE);
+        return DynamicObject.GetNode.getUncached().execute(this, key, PNone.NO_VALUE);
     }
 
     @TruffleBoundary
     public void setAttribute(TruffleString name, Object value) {
         CompilerAsserts.neverPartOfCompilation();
-        DynamicObjectLibrary.getUncached().put(this, name, assertNoJavaString(value));
+        DynamicObject.PutNode.getUncached().execute(this, name, assertNoJavaString(value));
     }
 
     @TruffleBoundary
     public List<TruffleString> getAttributeNames() {
         ArrayList<TruffleString> keyList = new ArrayList<>();
         for (Object o : getShape().getKeyList()) {
-            if (o instanceof TruffleString && DynamicObjectLibrary.getUncached().getOrDefault(this, o, PNone.NO_VALUE) != PNone.NO_VALUE) {
+            if (o instanceof TruffleString && DynamicObject.GetNode.getUncached().execute(this, o, PNone.NO_VALUE) != PNone.NO_VALUE) {
                 keyList.add((TruffleString) o);
             }
         }
@@ -143,5 +143,13 @@ public class PythonObject extends PythonAbstractObject {
     /* needed for some guards in exported messages of subclasses */
     public static int getCallSiteInlineCacheMaxDepth() {
         return PythonOptions.getCallSiteInlineCacheMaxDepth();
+    }
+
+    public final void addShapeFlag(int flag, DynamicObject.GetShapeFlagsNode getShapeFlagsNode, DynamicObject.SetShapeFlagsNode setShapeFlagsNode) {
+        int oldFlags = getShapeFlagsNode.execute(this);
+        int newFlags = oldFlags | flag;
+        if (newFlags != oldFlags) {
+            setShapeFlagsNode.execute(this, newFlags);
+        }
     }
 }

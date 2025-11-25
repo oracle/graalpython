@@ -68,16 +68,14 @@ import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -277,8 +275,8 @@ public final class DynamicObjectStorage extends HashingStorage {
         }
     }
 
-    void setStringKey(TruffleString key, Object value, DynamicObjectLibrary dylib) {
-        dylib.put(store, key, assertNoJavaString(value));
+    void setStringKey(TruffleString key, Object value, DynamicObject.PutNode putNode) {
+        putNode.execute(store, key, assertNoJavaString(value));
     }
 
     boolean shouldTransitionOnPut() {
@@ -298,8 +296,8 @@ public final class DynamicObjectStorage extends HashingStorage {
 
         @Specialization(guards = "!isPythonObject(receiver.getStore())")
         static HashingStorage clearPlain(DynamicObjectStorage receiver,
-                        @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
-            dylib.resetShape(receiver.getStore(), PythonLanguage.get(dylib).getEmptyShape());
+                        @Cached DynamicObject.ResetShapeNode resetShapeNode) {
+            resetShapeNode.execute(receiver.getStore(), PythonLanguage.get(resetShapeNode).getEmptyShape());
             return receiver;
         }
 
@@ -327,39 +325,12 @@ public final class DynamicObjectStorage extends HashingStorage {
     abstract static class Copy extends Node {
         abstract DynamicObjectStorage execute(Node node, DynamicObjectStorage receiver);
 
-        @NeverDefault
-        static DynamicObjectLibrary[] createAccess(int length) {
-            DynamicObjectLibrary[] result = new DynamicObjectLibrary[length];
-            for (int i = 0; i < length; i++) {
-                result[i] = DynamicObjectLibrary.getFactory().createDispatched(1);
-            }
-            return result;
-        }
-
-        @ExplodeLoop
-        @Specialization(limit = "1", guards = {"cachedLength < EXPLODE_LOOP_SIZE_LIMIT", "keys.length == cachedLength"})
+        @Specialization
         public static DynamicObjectStorage copy(DynamicObjectStorage receiver,
-                        @SuppressWarnings("unused") @Bind("receiver.store") DynamicObject store,
-                        @SuppressWarnings("unused") @CachedLibrary("store") DynamicObjectLibrary dylib,
-                        @Bind("dylib.getKeyArray(store)") Object[] keys,
-                        @Cached(value = "keys.length") int cachedLength,
-                        @Cached("createAccess(cachedLength)") DynamicObjectLibrary[] readLib,
-                        @Cached("createAccess(cachedLength)") DynamicObjectLibrary[] writeLib) {
-            DynamicObject copy = new Store(PythonLanguage.get(dylib).getEmptyShape());
-            for (int i = 0; i < cachedLength; i++) {
-                writeLib[i].put(copy, keys[i], readLib[i].getOrDefault(receiver.store, keys[i], PNone.NO_VALUE));
-            }
-            return new DynamicObjectStorage(copy);
-        }
-
-        @Specialization(replaces = "copy")
-        public static DynamicObjectStorage copyGeneric(DynamicObjectStorage receiver,
-                        @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
-            DynamicObject copy = new Store(PythonLanguage.get(dylib).getEmptyShape());
-            Object[] keys = dylib.getKeyArray(receiver.store);
-            for (Object key : keys) {
-                dylib.put(copy, key, dylib.getOrDefault(receiver.store, key, PNone.NO_VALUE));
-            }
+                        @Bind Node inliningTarget,
+                        @Cached DynamicObject.CopyPropertiesNode copyPropertiesNode) {
+            DynamicObject copy = new Store(PythonLanguage.get(inliningTarget).getEmptyShape());
+            copyPropertiesNode.execute(receiver.store, copy);
             return new DynamicObjectStorage(copy);
         }
     }
@@ -369,9 +340,10 @@ public final class DynamicObjectStorage extends HashingStorage {
     @GenerateCached(false)
     public abstract static class DynamicObjectStorageSetStringKey extends SpecializedSetStringKey {
         @Specialization
-        static void doIt(HashingStorage self, TruffleString key, Object value,
-                        @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
-            ((DynamicObjectStorage) self).setStringKey(key, value, dylib);
+        static void doIt(Node inliningTarget, HashingStorage self, TruffleString key, Object value,
+                        @Cached DynamicObject.PutNode putNode,
+                        @Cached InlinedBranchProfile invalidateMro) {
+            ((DynamicObjectStorage) self).setStringKey(key, value, putNode);
         }
     }
 }

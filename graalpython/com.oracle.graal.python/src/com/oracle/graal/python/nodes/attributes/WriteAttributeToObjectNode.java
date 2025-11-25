@@ -73,9 +73,8 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -99,9 +98,7 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
     }
 
     // Specialization for cases that have no special handling and can just delegate to
-    // WriteAttributeToDynamicObjectNode. Note that the fast-path for String keys and the inline
-    // cache in WriteAttributeToDynamicObjectNode perform better in some configurations than if we
-    // cast the key here and used DynamicObjectLibrary directly
+    // WriteAttributeToPythonObjectNode.
     @Specialization(guards = {"isAttrWritable(object)", "writeToDynamicStorageNoTypeGuard(object, getDict)"})
     static boolean writeToDynamicStorageNoType(PythonObject object, TruffleString key, Object value,
                     @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
@@ -126,7 +123,7 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
         } else {
             PDict dict = GetDictIfExistsNode.getUncached().execute(klass);
             if (dict == null) {
-                return writeToDynamicStorageManagedClass(klass, key, value, DynamicObjectLibrary.getUncached());
+                return writeToDynamicStorageManagedClass(klass, key, value, DynamicObject.PutNode.getUncached());
             } else {
                 return writeToDictManagedClass(klass, dict, key, value, null, InlinedBranchProfile.getUncached(), HashingStorageSetItem.getUncached());
             }
@@ -138,18 +135,20 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
                     @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
                     @Exclusive @Cached InlinedBranchProfile updateFlags,
-                    @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") DynamicObjectLibrary dylib) {
+                    @Cached DynamicObject.PutNode putNode,
+                    @Cached DynamicObject.GetShapeFlagsNode getShapeFlagsNode,
+                    @Cached DynamicObject.SetShapeFlagsNode setShapeFlagsNode) {
         if (value == PNone.NO_VALUE) {
             updateFlags.enter(inliningTarget);
-            dylib.setShapeFlags(klass, dylib.getShapeFlags(klass) | HAS_NO_VALUE_PROPERTIES);
+            klass.addShapeFlag(HAS_NO_VALUE_PROPERTIES, getShapeFlagsNode, setShapeFlagsNode);
         }
-        return writeToDynamicStorageManagedClass(klass, key, value, dylib);
+        return writeToDynamicStorageManagedClass(klass, key, value, putNode);
     }
 
-    private static boolean writeToDynamicStorageManagedClass(PythonManagedClass klass, TruffleString key, Object value, DynamicObjectLibrary dylib) {
+    private static boolean writeToDynamicStorageManagedClass(PythonManagedClass klass, TruffleString key, Object value, DynamicObject.PutNode putNode) {
         CompilerAsserts.partialEvaluationConstant(klass.getClass());
         try {
-            dylib.put(klass, key, value);
+            putNode.execute(klass, key, value);
             return true;
         } finally {
             klass.onAttributeUpdate(key, value);

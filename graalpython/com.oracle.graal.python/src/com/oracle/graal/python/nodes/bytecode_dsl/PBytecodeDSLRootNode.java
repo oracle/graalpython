@@ -282,11 +282,10 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.source.Source;
@@ -877,6 +876,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         return section.getSource();
     }
 
+    @Override
+    public abstract boolean isCaptureFramesForTrace(boolean compiledFrame);
+
     @TruffleBoundary
     public int bciToLine(int bci, BytecodeNode bytecodeNode) {
         SourceSection sourceSection = getSourceSectionForLocation(bci, bytecodeNode);
@@ -1358,8 +1360,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind PBytecodeDSLRootNode rootNode,
                         @Cached(value = "createFunctionRootNode(rootNode, codeUnit)", adopt = false) PBytecodeDSLRootNode functionRootNode,
                         @Cached("createCode(rootNode, codeUnit, functionRootNode)") PCode cachedCode,
-                        @Shared @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
-            return createFunction(frame, name, qualifiedName, codeUnit.getDocstring(), cachedCode, defaults, kwDefaultsObject, closure, annotations, rootNode, dylib);
+                        @Shared @Cached DynamicObject.PutNode putNode) {
+            return createFunction(frame, name, qualifiedName, codeUnit.getDocstring(), cachedCode, defaults, kwDefaultsObject, closure, annotations, rootNode, putNode);
         }
 
         @Specialization(replaces = "functionSingleContext", guards = "!codeUnit.isGeneratorOrCoroutine()")
@@ -1373,9 +1375,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         Object annotations,
                         @Bind PBytecodeDSLRootNode rootNode,
                         @Cached(value = "createFunctionRootNode(rootNode, codeUnit)", adopt = false) PBytecodeDSLRootNode functionRootNode,
-                        @Shared @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
+                        @Shared @Cached DynamicObject.PutNode putNode) {
             PCode code = createCode(rootNode, codeUnit, functionRootNode);
-            return createFunction(frame, name, qualifiedName, codeUnit.getDocstring(), code, defaults, kwDefaultsObject, closure, annotations, rootNode, dylib);
+            return createFunction(frame, name, qualifiedName, codeUnit.getDocstring(), code, defaults, kwDefaultsObject, closure, annotations, rootNode, putNode);
         }
 
         @Specialization(guards = {"isSingleContext(rootNode)", "codeUnit.isGeneratorOrCoroutine()"})
@@ -1390,8 +1392,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind PBytecodeDSLRootNode rootNode,
                         @Cached(value = "createFunctionRootNode(rootNode, codeUnit)", adopt = false) PBytecodeDSLRootNode functionRootNode,
                         @Cached("createCode(rootNode, codeUnit, functionRootNode)") PCode cachedCode,
-                        @Shared @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
-            return createFunction(frame, name, qualifiedName, codeUnit.getDocstring(), cachedCode, defaults, kwDefaultsObject, closure, annotations, rootNode, dylib);
+                        @Shared @Cached DynamicObject.PutNode putNode) {
+            return createFunction(frame, name, qualifiedName, codeUnit.getDocstring(), cachedCode, defaults, kwDefaultsObject, closure, annotations, rootNode, putNode);
         }
 
         @Specialization(replaces = "generatorOrCoroutineSingleContext", guards = "codeUnit.isGeneratorOrCoroutine()")
@@ -1405,9 +1407,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         Object annotations,
                         @Bind PBytecodeDSLRootNode rootNode,
                         @Cached(value = "createFunctionRootNode(rootNode, codeUnit)", adopt = false) PBytecodeDSLRootNode functionRootNode,
-                        @Shared @CachedLibrary(limit = "1") DynamicObjectLibrary dylib) {
+                        @Shared @Cached DynamicObject.PutNode putNode) {
             PCode code = createCode(rootNode, codeUnit, functionRootNode);
-            return createFunction(frame, name, qualifiedName, codeUnit.getDocstring(), code, defaults, kwDefaultsObject, closure, annotations, rootNode, dylib);
+            return createFunction(frame, name, qualifiedName, codeUnit.getDocstring(), code, defaults, kwDefaultsObject, closure, annotations, rootNode, putNode);
         }
 
         @Idempotent
@@ -1434,7 +1436,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         PCode code, Object[] defaults,
                         Object[] kwDefaultsObject, Object closure, Object annotations,
                         PBytecodeDSLRootNode node,
-                        DynamicObjectLibrary dylib) {
+                        DynamicObject.PutNode putNode) {
             PKeyword[] kwDefaults = new PKeyword[kwDefaultsObject.length];
             // Note: kwDefaultsObject should be a result of operation MakeKeywords, which produces
             // PKeyword[]
@@ -1442,10 +1444,10 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             PFunction function = PFactory.createFunction(PythonLanguage.get(node), name, qualifiedName, code, PArguments.getGlobals(frame), defaults, kwDefaults, (PCell[]) closure);
 
             if (annotations != null) {
-                dylib.put(function, T___ANNOTATIONS__, annotations);
+                putNode.execute(function, T___ANNOTATIONS__, annotations);
             }
             if (doc != null) {
-                dylib.put(function, T___DOC__, doc);
+                putNode.execute(function, T___DOC__, doc);
             }
 
             return function;
