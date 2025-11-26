@@ -337,6 +337,25 @@ graalPy {
         <h3 class="truffle__subtitle">Videos</h3>
         <div class="lang-video__row">
           <div class="lang-video__card video-card">
+            <a href="https://youtu.be/YqrEqXB59rA?si=3-PZGY2WUfltvCp0&t=1406" target="_blank" class="btn btn-primary--filledp">
+              <img src="{{ '/assets/img/python/intellij2025-cover.png' | relative_url }}" class="video-cover" alt="IntelliJ 2025 thumbnail">
+              <div class="play-button-container">
+                <img src="{{ '/assets/img/play_button.svg' | relative_url }}" class="play-button" alt="play button">
+              </div>
+            </a>
+          </div>
+          <div class="lang-video__card">
+            <div class="lang-video__title">
+              <h4>Tips and Tricks for GraalVM and Graal Languages<br><a target="_blank" href="https://www.jfokus.se/talks/2305">IntelliJ'25</a></h4>
+            </div>
+            <div class="lang-video__text">
+              <h5>In this session, Fabio Niephaus from the GraalVM team will show us his favorite tips and tricks for using GraalVM and Graal Languages in IntelliJ IDEA. He will show how to compile Java applications with GraalVM into native executables and how to debug and monitor them, all from within IntelliJ IDEA. He will also show how to use IntelliJ IDEA as a multi-language IDE. Language injections and support for various debugging protocols make it easy to embed and debug code written in other languages in Java applications. Whether you are curious about GraalVM and Graal Languages or just want to see some fun IntelliJ IDEA demos, this session is for you!
+              </h5>
+            </div>
+          </div>
+        </div>
+        <div class="lang-video__row">
+          <div class="lang-video__card video-card">
             <a href="https://www.youtube.com/watch?v=IdoFsS-mpVw" target="_blank" class="btn btn-primary--filledp">
               <img src="{{ '/assets/img/python/jfocus2025-cover.png' | relative_url }}" class="video-cover" alt="Jfokus 2025 thumbnail">
               <div class="play-button-container">
