@@ -48,6 +48,7 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAcces
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeIntField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeLongField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
+import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nfi2.NativeMemory.calloc;
 import static com.oracle.graal.python.nfi2.NativeMemory.mallocLongArray;
 import static com.oracle.graal.python.nfi2.NativeMemory.writeLongArrayElement;
