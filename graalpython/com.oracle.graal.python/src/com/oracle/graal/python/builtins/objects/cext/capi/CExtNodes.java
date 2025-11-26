@@ -65,7 +65,6 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMo
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyModuleDef__m_slots;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyObject__ob_type;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_as_buffer;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointer;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointerUncached;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readDoubleField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
@@ -77,7 +76,6 @@ import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nfi2.NativeMemory.calloc;
 import static com.oracle.graal.python.nfi2.NativeMemory.mallocByteArray;
 import static com.oracle.graal.python.nfi2.NativeMemory.readByteArrayElement;
-import static com.oracle.graal.python.nfi2.NativeMemory.readByteArrayElements;
 import static com.oracle.graal.python.nfi2.NativeMemory.writeByteArrayElement;
 import static com.oracle.graal.python.nfi2.NativeMemory.writeByteArrayElements;
 import static com.oracle.graal.python.nodes.HiddenAttr.METHOD_DEF_PTR;
@@ -126,6 +124,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Tran
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformPExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.GetNextVaArgNode;
+import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
@@ -424,6 +423,14 @@ public abstract class CExtNodes {
             return execute(charPtr, true);
         }
 
+        public static TruffleString executeUncached(long charPtr) {
+            return FromCharPointerNodeGen.getUncached().executeLong(charPtr, true);
+        }
+
+        public static TruffleString executeUncached(long charPtr, boolean copy) {
+            return FromCharPointerNodeGen.getUncached().executeLong(charPtr, copy);
+        }
+
         public static TruffleString executeUncached(Object charPtr) {
             return FromCharPointerNodeGen.getUncached().execute(charPtr);
         }
@@ -432,30 +439,35 @@ public abstract class CExtNodes {
             return FromCharPointerNodeGen.getUncached().execute(charPtr, copy);
         }
 
+        public abstract TruffleString executeLong(long charPtr, boolean copy);
+
         public abstract TruffleString execute(Object charPtr, boolean copy);
 
         @Specialization
-        static TruffleString doPointer(long charPtr, @SuppressWarnings("unused") boolean copy,
-                        @Shared @Cached TruffleString.FromByteArrayNode fromBytes,
-                        @Shared("switchEncoding") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
-
+        static TruffleString doPointer(long charPtr, boolean copy,
+                        @Shared @Cached TruffleString.FromNativePointerNode fromNativePointerNode,
+                        @Shared @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             int length = 0;
             while (readByteArrayElement(charPtr, length) != 0) {
                 length++;
             }
-
-            byte[] result = readByteArrayElements(charPtr, 0L, length);
-            return switchEncodingNode.execute(fromBytes.execute(result, Encoding.UTF_8, false), TS_ENCODING);
+            TruffleString nativeBacked = fromNativePointerNode.execute(new NativePointer(charPtr), 0, length, Encoding.UTF_8, copy);
+            return switchEncodingNode.execute(nativeBacked, TS_ENCODING);
         }
 
         @Specialization
         static TruffleString doInteropPointer(Object charPtr, boolean copy,
                         @Bind Node inliningTarget,
                         @Cached CoerceNativePointerToLongNode coerceNode,
-                        @Shared @Cached TruffleString.FromByteArrayNode fromBytes,
-                        @Shared("switchEncoding") @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
-            long rawCharPtr = ensurePointer(charPtr, inliningTarget, coerceNode);
-            return doPointer(rawCharPtr, copy, fromBytes, switchEncodingNode);
+                        @Shared @Cached TruffleString.FromNativePointerNode fromNativePointerNode,
+                        @Shared @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
+            long rawCharPtr = coerceNode.execute(inliningTarget, charPtr);
+            int length = 0;
+            while (readByteArrayElement(rawCharPtr, length) != 0) {
+                length++;
+            }
+            TruffleString nativeBacked = fromNativePointerNode.execute(charPtr, 0, length, Encoding.UTF_8, copy);
+            return switchEncodingNode.execute(nativeBacked, TS_ENCODING);
         }
     }
 
