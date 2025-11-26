@@ -2129,12 +2129,12 @@ public final class PythonContext extends Python3Core {
             // shut down async actions threads
             handler.shutdown();
             finalizing = true;
-            // interrupt and join or kill python threads
-            joinPythonThreads();
-            stdioFlushFailed = flushStdFiles();
             if (cApiContext != null) {
                 cApiContext.finalizeCApi();
             }
+            // interrupt and join or kill python threads
+            joinPythonThreads();
+            stdioFlushFailed = flushStdFiles();
             if (nfiContext != null) {
                 nfiContext.close();
             }
