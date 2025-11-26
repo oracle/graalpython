@@ -477,3 +477,33 @@ def test_generator_exceptions_complex():
     assert type(g.send(None)) == NameError # 14
     assert g.send(None) is None # 15
     assert g.send(None) is None # 16
+
+
+def test_generator_gi_yieldfrom_multiple():
+    # the same test as in CPython test suite, but with multiple yield from
+    def a():
+        yield
+
+    def q():
+        yield
+
+    def b():
+        yield from a()
+        yield
+        yield from q()
+        yield
+
+    gen_b = b()
+    assert gen_b.gi_yieldfrom is None
+
+    gen_b.send(None)
+    assert gen_b.gi_yieldfrom.gi_code.co_name == 'a'
+
+    gen_b.send(None)
+    assert gen_b.gi_yieldfrom is None
+
+    gen_b.send(None)
+    assert gen_b.gi_yieldfrom.gi_code.co_name == 'q'
+
+    gen_b.send(None)
+    assert gen_b.gi_yieldfrom is None

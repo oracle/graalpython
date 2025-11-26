@@ -2731,10 +2731,10 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             if (!savedYieldFromGenerator) {
                 savedYieldFromGenerator = true;
                 yieldFromGenerator = b.createLocal();
-                b.beginStoreLocal(yieldFromGenerator);
-                b.emitLoadLocal(generator);
-                b.endStoreLocal();
             }
+            b.beginStoreLocal(yieldFromGenerator);
+            b.emitLoadLocal(generator);
+            b.endStoreLocal();
 
             b.beginStoreLocal(returnValue);
             b.emitLoadConstant(PNone.NONE);
@@ -2786,6 +2786,9 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
             // Step 4: the returnValue local is assigned when branching to "end" label
             b.emitLabel(end);
+            b.beginStoreLocal(yieldFromGenerator);
+            b.emitLoadNull();
+            b.endStoreLocal();
             b.endBlock();
         }
 
