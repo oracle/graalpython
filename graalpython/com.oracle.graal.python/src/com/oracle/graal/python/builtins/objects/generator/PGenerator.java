@@ -277,6 +277,10 @@ public class PGenerator extends PythonBuiltinObject {
         return frame;
     }
 
+    public PythonObject getGlobals() {
+        return globals;
+    }
+
     public static Object getSendValue(Object[] arguments) {
         return PArguments.getArgument(arguments, 1);
     }

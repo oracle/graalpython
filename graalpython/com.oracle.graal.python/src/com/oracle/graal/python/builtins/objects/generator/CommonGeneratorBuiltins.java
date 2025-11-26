@@ -61,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.exception.PrepareExceptionNode;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext.TpIterNextBuiltin;
 import com.oracle.graal.python.lib.IteratorExhausted;
@@ -103,6 +104,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.IndirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
@@ -183,19 +185,26 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                  * generator root.
                  */
                 MaterializedFrame generatorFrame = self.getGeneratorFrame();
-                Object[] arguments = new Object[]{generatorFrame, sendValue};
+                Object[] callArguments = new Object[]{generatorFrame, sendValue};
+                Object[] generatorArguments = generatorFrame.getArguments();
+                PArguments.setCallerFrameInfo(generatorArguments, null);
+                PArguments.setException(generatorArguments, null);
                 if (frame == null) {
                     PythonContext context = PythonContext.get(inliningTarget);
                     PythonThreadState threadState = context.getThreadState(context.getLanguage(inliningTarget));
-                    Object state = IndirectCalleeContext.enter(threadState, generatorFrame.getArguments());
+                    Object state = IndirectCalleeContext.enter(threadState, generatorArguments);
+                    PFrame.Reference ref = PArguments.getCurrentFrameInfo(generatorArguments);
+                    ref.setCallerInfo(PArguments.getCallerFrameInfo(generatorArguments));
                     try {
-                        generatorResult = callNode.call(arguments);
+                        generatorResult = callNode.call(callArguments);
                     } finally {
                         IndirectCalleeContext.exit(threadState, state);
                     }
                 } else {
-                    callContext.executePrepareCall(frame, generatorFrame.getArguments(), rootNode.getCallerFlags());
-                    generatorResult = callNode.call(arguments);
+                    callContext.executePrepareCall(frame, generatorArguments, rootNode.getCallerFlags());
+                    PFrame.Reference ref = PArguments.getCurrentFrameInfo(generatorArguments);
+                    ref.setCallerInfo(PArguments.getCallerFrameInfo(generatorArguments));
+                    generatorResult = callNode.call(callArguments);
                 }
             } catch (PException e) {
                 throw handleException(self, inliningTarget, errorProfile, raiseNode, e);
@@ -250,19 +259,26 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                 // See the cached specialization for notes about the arguments handling
                 PRootNode rootNode = PGenerator.unwrapContinuationRoot((ContinuationRootNode) callTarget.getRootNode());
                 MaterializedFrame generatorFrame = self.getGeneratorFrame();
-                Object[] arguments = new Object[]{generatorFrame, sendValue};
+                Object[] callArguments = new Object[]{generatorFrame, sendValue};
+                Object[] generatorArguments = generatorFrame.getArguments();
+                PArguments.setCallerFrameInfo(generatorArguments, null);
+                PArguments.setException(generatorArguments, null);
                 if (frame == null) {
                     PythonContext context = PythonContext.get(inliningTarget);
                     PythonThreadState threadState = context.getThreadState(context.getLanguage(inliningTarget));
-                    Object state = IndirectCalleeContext.enter(threadState, generatorFrame.getArguments());
+                    Object state = IndirectCalleeContext.enter(threadState, generatorArguments);
+                    PFrame.Reference ref = PArguments.getCurrentFrameInfo(generatorArguments);
+                    ref.setCallerInfo(PArguments.getCallerFrameInfo(generatorArguments));
                     try {
-                        generatorResult = callNode.call(callTarget, arguments);
+                        generatorResult = callNode.call(callTarget, callArguments);
                     } finally {
                         IndirectCalleeContext.exit(threadState, state);
                     }
                 } else {
-                    callContext.executePrepareCall(frame, generatorFrame.getArguments(), rootNode.getCallerFlags());
-                    generatorResult = callNode.call(callTarget, arguments);
+                    callContext.executePrepareCall(frame, generatorArguments, rootNode.getCallerFlags());
+                    PFrame.Reference ref = PArguments.getCurrentFrameInfo(generatorArguments);
+                    ref.setCallerInfo(PArguments.getCallerFrameInfo(generatorArguments));
+                    generatorResult = callNode.call(callTarget, callArguments);
                 }
             } catch (PException e) {
                 throw handleException(self, inliningTarget, errorProfile, raiseNode, e);
@@ -388,9 +404,16 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                 // Instead, we throw the exception here and fake entering the generator by adding
                 // its frame to the traceback manually.
                 self.markAsFinished();
-                Node location = self.getCurrentCallTarget().getRootNode();
+                Node location;
+                RootNode rootNode = self.getCurrentCallTarget().getRootNode();
+                if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+                    location = self.getBytecodeNode();
+                } else {
+                    location = rootNode;
+                }
                 MaterializedFrame generatorFrame = self.getGeneratorFrame();
-                PFrame pFrame = MaterializeFrameNode.materializeGeneratorFrame(location, generatorFrame, PFrame.Reference.EMPTY);
+                PFrame.Reference ref = new PFrame.Reference(rootNode, PFrame.Reference.EMPTY);
+                PFrame pFrame = MaterializeFrameNode.materializeGeneratorFrame(location, generatorFrame, self.getGlobals(), ref);
                 FrameInfo info = (FrameInfo) generatorFrame.getFrameDescriptor().getInfo();
                 pFrame.setLine(info.getFirstLineNumber());
                 Object existingTracebackObj = getTracebackNode.execute(inliningTarget, instance);

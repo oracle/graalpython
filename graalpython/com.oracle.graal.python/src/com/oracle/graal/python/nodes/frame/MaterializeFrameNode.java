@@ -46,6 +46,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.bytecode.BytecodeFrameInfo;
 import com.oracle.graal.python.nodes.bytecode.FrameInfo;
@@ -182,7 +183,7 @@ public abstract class MaterializeFrameNode extends Node {
     static PFrame freshPFrameForGenerator(Node location, @SuppressWarnings("unused") boolean markAsEscaped, @SuppressWarnings("unused") boolean forceSync, Frame frameToMaterialize) {
         MaterializedFrame generatorFrame = PGenerator.getGeneratorFrame(frameToMaterialize);
         PFrame.Reference frameRef = PArguments.getCurrentFrameInfo(frameToMaterialize);
-        PFrame escapedFrame = materializeGeneratorFrame(location, generatorFrame, frameRef);
+        PFrame escapedFrame = materializeGeneratorFrame(location, generatorFrame, PArguments.getGlobals(frameToMaterialize), frameRef);
         frameRef.setPyFrame(escapedFrame);
         return doEscapeFrame(frameToMaterialize, escapedFrame, markAsEscaped, false, location, null);
     }
@@ -202,10 +203,10 @@ public abstract class MaterializeFrameNode extends Node {
         return pyFrame;
     }
 
-    public static PFrame materializeGeneratorFrame(Node location, MaterializedFrame generatorFrame, PFrame.Reference frameRef) {
+    public static PFrame materializeGeneratorFrame(Node location, MaterializedFrame generatorFrame, PythonObject globals, PFrame.Reference frameRef) {
         PFrame escapedFrame = PFactory.createPFrame(PythonLanguage.get(location), frameRef, location, false);
         escapedFrame.setLocals(generatorFrame);
-        escapedFrame.setGlobals(PArguments.getGlobals(generatorFrame));
+        escapedFrame.setGlobals(globals);
         return escapedFrame;
     }
 
@@ -223,17 +224,20 @@ public abstract class MaterializeFrameNode extends Node {
             if (bytecodeNode != null) {
                 pyFrame.setBci(bytecodeNode.getBytecodeIndex(frameToMaterialize));
                 pyFrame.setLocation(bytecodeNode);
+                pyFrame.resetLine();
             } else {
                 assert location == PythonLanguage.get(null).unavailableSafepointLocation : String.format("(%s) %s, root: %s",
                                 location != null ? location.getClass().getSimpleName() : "null",
                                 location, location != null ? location.getRootNode() : "null");
                 pyFrame.setBci(-1);
                 pyFrame.setLocation(location);
+                pyFrame.resetLine();
             }
         } else {
             BytecodeFrameInfo bytecodeFrameInfo = (BytecodeFrameInfo) info;
             pyFrame.setBci(bytecodeFrameInfo.getBci(frameToMaterialize));
             pyFrame.setLocation(bytecodeFrameInfo.getRootNode());
+            pyFrame.resetLine();
         }
     }
 

@@ -1059,7 +1059,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             if (innerRoot.needsTraceAndProfileInstrumentation()) {
                 innerRoot.getThreadState().popInstrumentationData(innerRoot);
             }
-            innerRoot.calleeContext.exit(continuationFrame, innerRoot, bytecodeNode);
             return result;
         }
 
@@ -1070,6 +1069,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             PFunction generatorFunction = PArguments.getFunctionObject(arguments);
             assert generatorFunction != null;
             PythonLanguage language = PythonLanguage.get(inliningTarget);
+            PArguments.setCurrentFrameInfo(continuationFrame, new PFrame.Reference(innerRoot, PFrame.Reference.EMPTY));
             if (innerRoot.getCodeUnit().isGenerator()) {
                 // if CO_ITERABLE_COROUTINE was explicitly set (likely by types.coroutine), we have
                 // to pass the information to the generator .gi_code.co_flags will still be wrong,
@@ -1101,7 +1101,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind BytecodeNode bytecode,
                         @Bind("$bytecodeIndex") int bci,
                         @Cached GetSendValueNode getSendValue) {
-            root.calleeContext.enter(frame);
             if (root.needsTraceAndProfileInstrumentation()) {
                 // We may not have reparsed the root with instrumentation yet.
                 root.ensureTraceAndProfileEnabled();
@@ -1129,18 +1128,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                 root.getThreadState().popInstrumentationData(root);
             }
 
-            if (!currentGeneratorException.isCleared(bytecode, frame)) {
-                Object genEx = currentGeneratorException.getObject(bytecode, frame);
-                if (genEx instanceof PException pe) {
-                    /*
-                     * The frame reference is only valid for this particular resumption of the
-                     * generator, so we need to materialize the frame to make sure the traceback
-                     * will still be valid in the next resumption.
-                     */
-                    pe.markEscaped();
-                }
-            }
-
+            // Suspended generators have no backref
+            PArguments.getCurrentFrameInfo(frame.getArguments()).setCallerInfo(PFrame.Reference.EMPTY);
             // we may need to synchronize the generator's frame locals to the PFrame if it escaped
             root.calleeContext.exit(frame, root, bytecode);
             return ContinuationResult.create(continuationRootNode, frame, value);
@@ -3296,7 +3285,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind BytecodeNode bytecode,
                         @Bind("$bytecodeIndex") int bci,
                         @Cached GetSendValueNode getSendValue) {
-            root.calleeContext.enter(frame);
             if (savedException != currentGeneratorException) {
                 // We cannot pass `null` as savedException, so savedException ==
                 // currentGeneratorException means "no saveException"

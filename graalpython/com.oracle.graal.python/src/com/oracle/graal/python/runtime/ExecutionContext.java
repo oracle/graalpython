@@ -406,6 +406,13 @@ public abstract class ExecutionContext {
             PArguments.setCurrentFrameInfo(frame, thisFrameRef);
         }
 
+        public static void enterGenerator(VirtualFrame frame, MaterializedFrame generatorFrame) {
+            assert !PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER;
+            PFrame.Reference ref = PArguments.getCurrentFrameInfo(generatorFrame);
+            ref.setCallerInfo(PArguments.getCallerFrameInfo(frame));
+            PArguments.setCurrentFrameInfo(frame, ref);
+        }
+
         public void exit(VirtualFrame frame, PRootNode node) {
             // For Bytecode DSL root node we need BytecodeNode as location
             assert !(node instanceof PBytecodeDSLRootNode);
@@ -436,7 +443,7 @@ public abstract class ExecutionContext {
                 everEscaped = true;
             }
             // This assumption acts as our branch profile here
-            Reference callerInfo = PArguments.getCallerFrameInfo(frame);
+            Reference callerInfo = info.getCallerInfo();
             if (callerInfo == null) {
                 // we didn't request the caller frame reference. now we need it.
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -466,7 +473,7 @@ public abstract class ExecutionContext {
             }
             // if this frame escaped we must ensure that also f_back does
             callerInfo.markAsEscaped();
-            info.setBackref(callerInfo);
+            info.setCallerInfo(callerInfo);
         }
 
         private MaterializeFrameNode ensureMaterializeNode() {

@@ -2,6 +2,7 @@
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
+import itertools
 import sys
 import os
 import unittest
@@ -509,42 +510,89 @@ def test_generator_gi_yieldfrom_multiple():
     assert gen_b.gi_yieldfrom is None
 
 
+def _test_generator_frame(checks):
+    def gen():
+        a = 1
+        yield
+        b = 2
+        yield
+        c = 3
+
+    g = gen()
+    f = None
+    if checks[0]:
+        f = g.gi_frame
+        assert f
+        assert f.f_back is None
+        assert f.f_globals == globals()
+        assert f.f_locals == {}
+        assert f.f_lineno == gen.__code__.co_firstlineno
+    next(g)
+    if checks[1]:
+        if not f:
+            f = g.gi_frame
+            assert f
+        assert f.f_back is None
+        assert f.f_globals == globals()
+        assert f.f_locals == {'a': 1}
+        assert f.f_lineno == gen.__code__.co_firstlineno + 2
+        assert f is g.gi_frame
+    next(g)
+    if checks[2]:
+        if not f:
+            f = g.gi_frame
+            assert f
+        assert f.f_back is None
+        assert f.f_globals == globals()
+        assert f.f_locals == {'a': 1, 'b': 2}
+        assert f.f_lineno == gen.__code__.co_firstlineno + 4
+        assert f is g.gi_frame
+    try:
+        next(g)
+        assert False
+    except StopIteration:
+        pass
+    if f:
+        assert f.f_back is sys._getframe()
+        assert f.f_globals is globals()
+        assert f.f_locals == {'a': 1, 'b': 2, 'c': 3}
+        # TODO GR-61955
+        if sys.implementation.name != "graalpy" or not __graalpython__.is_bytecode_dsl_interpreter:
+            assert f.f_lineno == gen.__code__.co_firstlineno + 5
+    assert not g.gi_frame
+
+
 def test_generator_frame():
+    # Generte a whole matrix of possibilities of where the frame gets created vs re-synced
+    for checks in itertools.product([False, True], repeat=3):
+        _test_generator_frame(checks)
+
+
+def test_generator_frame_from_getframe():
     def gen():
         a = 1
         yield sys._getframe()
         b = 2
 
     g = gen()
-    assert not g.gi_running
-    assert not g.gi_suspended
-    assert g.gi_frame
-    assert g.gi_frame.f_back is None
-    assert g.gi_frame.f_globals == globals()
-    assert g.gi_frame.f_locals  == {}
-    assert g.gi_frame.f_lineno == gen.__code__.co_firstlineno
     f = next(g)
     assert f
-    assert not g.gi_running
-    assert g.gi_suspended
-    assert f is g.gi_frame
     assert f.f_back is None
     assert f.f_globals == globals()
-    assert f.f_locals  == {'a': 1}
+    assert f.f_locals == {'a': 1}
     assert f.f_lineno == gen.__code__.co_firstlineno + 2
+    assert f is g.gi_frame
     try:
         next(g)
         assert False
     except StopIteration:
         pass
-    assert not g.gi_running
-    assert not g.gi_suspended
-    assert not g.gi_frame
-    # CPython is inconsistent here that the backref is set for a generator that finished. Let's assume it's just an implementation accident
-    # assert f.f_back is None
+    assert f.f_back is sys._getframe()
     assert f.f_globals is globals()
-    assert f.f_locals  == {'a': 1, 'b': 2}
-    assert f.f_lineno == gen.__code__.co_firstlineno + 3
+    assert f.f_locals == {'a': 1, 'b': 2}
+    # TODO GR-61955
+    if sys.implementation.name != "graalpy" or not __graalpython__.is_bytecode_dsl_interpreter:
+        assert f.f_lineno == gen.__code__.co_firstlineno + 3
 
 
 def test_generator_frame_in_running_generator():
