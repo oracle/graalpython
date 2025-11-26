@@ -157,10 +157,16 @@ public abstract class PThreadState {
     }
 
     @TruffleBoundary
-    public static void dispose(long pointer) {
-        assert !HandlePointerConverter.pointsToPyHandleSpace(pointer);
+    public static void dispose(PythonThreadState threadState) {
+        long nativeCompanion = threadState.getNativeWrapper();
+        if (nativeCompanion == NULLPTR) {
+            return;
+        }
+
+        assert !HandlePointerConverter.pointsToPyHandleSpace(nativeCompanion);
+        threadState.setNativeWrapper(NULLPTR);
 
         // TODO(fa): decref PyThreadState__dict
-        NativeMemory.free(pointer);
+        NativeMemory.free(nativeCompanion);
     }
 }

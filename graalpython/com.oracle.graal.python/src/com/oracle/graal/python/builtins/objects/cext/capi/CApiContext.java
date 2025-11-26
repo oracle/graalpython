@@ -46,7 +46,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CAp
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readIntField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
 import static com.oracle.graal.python.builtins.objects.object.PythonObject.IMMORTAL_REFCNT;
-import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___FILE__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DASH;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
@@ -1103,11 +1102,8 @@ public final class CApiContext extends CExtContext {
              */
             pollReferenceQueue();
             PythonThreadState threadState = getContext().getThreadState(getContext().getLanguage());
-            long pointer = threadState.getNativeWrapper();
-            if (pointer != NULLPTR) {
-                PThreadState.dispose(pointer);
-                pollReferenceQueue();
-            }
+            PThreadState.dispose(threadState);
+            pollReferenceQueue();
             CApiTransitions.deallocateNativeWeakRefs(getContext());
         }
     }

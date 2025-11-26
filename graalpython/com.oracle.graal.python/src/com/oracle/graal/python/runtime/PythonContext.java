@@ -517,10 +517,9 @@ public final class PythonContext extends Python3Core {
                 }
                 dict = null;
             }
-            if (nativeWrapper != NULLPTR) {
-                PThreadState.dispose(nativeWrapper);
-                nativeWrapper = NULLPTR;
-            }
+
+            PThreadState.dispose(this);
+
             /*
              * Write 'NULL' to the native thread-local variable used to store the PyThreadState
              * struct such that it cannot accidentally be reused. Since this is done as a
