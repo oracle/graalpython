@@ -507,3 +507,82 @@ def test_generator_gi_yieldfrom_multiple():
 
     gen_b.send(None)
     assert gen_b.gi_yieldfrom is None
+
+
+def test_generator_frame():
+    def gen():
+        a = 1
+        yield sys._getframe()
+        b = 2
+
+    g = gen()
+    assert not g.gi_running
+    assert not g.gi_suspended
+    assert g.gi_frame
+    assert g.gi_frame.f_back is None
+    assert g.gi_frame.f_globals == globals()
+    assert g.gi_frame.f_locals  == {}
+    assert g.gi_frame.f_lineno == gen.__code__.co_firstlineno
+    f = next(g)
+    assert f
+    assert not g.gi_running
+    assert g.gi_suspended
+    assert f is g.gi_frame
+    assert f.f_back is None
+    assert f.f_globals == globals()
+    assert f.f_locals  == {'a': 1}
+    assert f.f_lineno == gen.__code__.co_firstlineno + 2
+    try:
+        next(g)
+        assert False
+    except StopIteration:
+        pass
+    assert not g.gi_running
+    assert not g.gi_suspended
+    assert not g.gi_frame
+    # CPython is inconsistent here that the backref is set for a generator that finished. Let's assume it's just an implementation accident
+    # assert f.f_back is None
+    assert f.f_globals is globals()
+    assert f.f_locals  == {'a': 1, 'b': 2}
+    assert f.f_lineno == gen.__code__.co_firstlineno + 3
+
+
+def test_generator_frame_in_running_generator():
+    def gen():
+        self = yield
+        assert self.gi_running
+        assert not self.gi_suspended
+        assert self.gi_frame.f_lineno == gen.__code__.co_firstlineno + 4
+        assert self.gi_frame.f_globals == globals()
+        assert self.gi_frame.f_locals.get('self') is self
+        assert self.gi_frame is sys._getframe()
+
+    g = gen()
+    next(g)
+    try:
+        g.send(g)
+        assert False
+    except StopIteration:
+        pass
+
+
+def test_generator_frame_in_generator_up_stack():
+    def validate(self):
+        assert self.gi_running
+        assert not self.gi_suspended
+        assert self.gi_frame.f_lineno == gen.__code__.co_firstlineno + 2
+        assert self.gi_frame.f_globals == globals()
+        assert self.gi_frame.f_locals.get('self') is self
+        assert self.gi_frame is sys._getframe(1)
+
+    def gen():
+        self = yield
+        validate(self)
+
+    g = gen()
+    next(g)
+    try:
+        g.send(g)
+        assert False
+    except StopIteration:
+        pass
