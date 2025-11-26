@@ -36,10 +36,18 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import sys
+import unittest
 
 
 def test_sysconfig():
     import os, sysconfig
-    os.environ["PATH"] += os.pathsep + r" : \ " + os.pathsep;
+    os.environ["PATH"] += os.pathsep + r" : \ " + os.pathsep
     sysconfig.get_config_vars()
     # must not fail
+
+
+@unittest.skipIf(sys.implementation.name != 'graalpy', "GraalPy-only test")
+def test_sysconfigdata():
+    # Maturin loads this directly, make sure the import works
+    import _sysconfigdata
