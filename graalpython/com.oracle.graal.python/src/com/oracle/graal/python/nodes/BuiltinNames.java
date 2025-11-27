@@ -426,7 +426,8 @@ public abstract class BuiltinNames {
     public static final String J__SSL = "_ssl";
     public static final TruffleString T__SSL = tsLiteral(J__SSL);
 
-    public static final TruffleString T__SYSCONFIG = tsLiteral("_sysconfig");
+    public static final String J__SYSCONFIG = "_sysconfig";
+    public static final TruffleString T__SYSCONFIG = tsLiteral(J__SYSCONFIG);
 
     public static final String J_READLINE = "readline";
     public static final TruffleString T_READLINE = tsLiteral(J_READLINE);

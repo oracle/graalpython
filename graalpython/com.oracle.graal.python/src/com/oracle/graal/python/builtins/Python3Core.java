@@ -112,6 +112,7 @@ import com.oracle.graal.python.builtins.modules.StatResultBuiltins;
 import com.oracle.graal.python.builtins.modules.StringModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.StructModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.SysconfigModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ThreadModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TimeModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TokenizeModuleBuiltins;
@@ -568,6 +569,7 @@ public abstract class Python3Core {
                         new WeakRefModuleBuiltins(),
                         new ReferenceTypeBuiltins(),
                         new TracemallocModuleBuiltins(),
+                        new SysconfigModuleBuiltins(),
                         // contextvars
                         new ContextVarBuiltins(),
                         new ContextBuiltins(),
