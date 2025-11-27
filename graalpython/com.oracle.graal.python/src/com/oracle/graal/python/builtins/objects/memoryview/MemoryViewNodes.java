@@ -227,8 +227,8 @@ public class MemoryViewNodes {
             NativeMemory.writeByteArrayElements(ptr, offset, src, srcOffset, lenProfile.profile(inliningTarget, len));
         }
 
-        @Specialization(guards = "ptr == null", limit = "3")
-        static void doManagedCached(Node inliningTarget, byte[] src, int srcOffset, int len, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
+        @Specialization(guards = "ptr == NULLPTR", limit = "3")
+        static void doManagedCached(Node inliningTarget, byte[] src, int srcOffset, int len, PMemoryView self, @SuppressWarnings("unused") long ptr, int offset,
                         @CachedLibrary("self.getBuffer()") PythonBufferAccessLibrary bufferLib,
                         @Exclusive @Cached InlinedIntValueProfile lenProfile) {
             int cachedLen = lenProfile.profile(inliningTarget, len);

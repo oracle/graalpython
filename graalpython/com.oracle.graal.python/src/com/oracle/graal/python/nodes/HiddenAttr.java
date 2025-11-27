@@ -236,10 +236,10 @@ public final class HiddenAttr {
 
         @Specialization
         static long doGeneric(PythonAbstractObject self, HiddenAttr attr, long defaultValue,
-                        @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
+                        @Cached DynamicObject.GetNode getNode) {
             assert attr.hasLongValue();
             try {
-                return dylib.getLongOrDefault(self, attr.key, defaultValue);
+                return getNode.executeLong(self, attr.key, defaultValue);
             } catch (UnexpectedResultException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
@@ -273,9 +273,9 @@ public final class HiddenAttr {
 
         @Specialization
         static void doGeneric(PythonAbstractObject self, HiddenAttr attr, long value,
-                        @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
+                        @Cached DynamicObject.PutNode putNode) {
             assert attr.hasLongValue();
-            dylib.putLong(self, attr.key, value);
+            putNode.execute(self, attr.key, value);
         }
 
         @NeverDefault
