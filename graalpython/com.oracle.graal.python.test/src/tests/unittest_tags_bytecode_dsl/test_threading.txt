@@ -76,6 +76,8 @@ test.test_threading.ExceptHookTests.test_custom_excepthook_fail @ linux-x86_64
 test.test_threading.ExceptHookTests.test_excepthook @ linux-x86_64
 test.test_threading.ExceptHookTests.test_original_excepthook @ linux-x86_64
 test.test_threading.ExceptHookTests.test_system_exit @ linux-x86_64
+# Transient on Darwin (at least)
+!test.test_threading.InterruptMainTests.test_can_interrupt_tight_loops
 test.test_threading.InterruptMainTests.test_interrupt_main_noerror @ linux-x86_64
 test.test_threading.LockTests.test_acquire_contended @ linux-x86_64
 test.test_threading.LockTests.test_acquire_destroy @ linux-x86_64
@@ -123,21 +125,23 @@ test.test_threading.SemaphoreTests.test_repr @ linux-x86_64
 test.test_threading.SemaphoreTests.test_try_acquire @ linux-x86_64
 test.test_threading.SemaphoreTests.test_try_acquire_contended @ linux-x86_64
 test.test_threading.SemaphoreTests.test_with @ linux-x86_64
-!test.test_threading.ThreadJoinOnShutdown.test_4_daemon_threads
+# Can transiently fail with java.lang.AssertionError: The TruffleContext must be entered
+!test.test_threading.ThreadJoinOnShutdown.test_1_join_on_shutdown
+test.test_threading.ThreadJoinOnShutdown.test_4_daemon_threads @ linux-x86_64
 test.test_threading.ThreadJoinOnShutdown.test_thread_from_thread @ linux-x86_64
 test.test_threading.ThreadTests.test_BoundedSemaphore_limit @ linux-x86_64
 test.test_threading.ThreadTests.test_args_argument @ linux-x86_64
 test.test_threading.ThreadTests.test_boolean_target @ linux-x86_64
 test.test_threading.ThreadTests.test_daemon_param @ linux-x86_64
 test.test_threading.ThreadTests.test_enumerate_after_join @ linux-x86_64
-!test.test_threading.ThreadTests.test_finalization_shutdown
-!test.test_threading.ThreadTests.test_finalize_with_trace
+test.test_threading.ThreadTests.test_finalization_shutdown @ linux-x86_64
+test.test_threading.ThreadTests.test_finalize_with_trace @ linux-x86_64
 test.test_threading.ThreadTests.test_foreign_thread @ linux-x86_64
 test.test_threading.ThreadTests.test_getprofile @ linux-x86_64
 test.test_threading.ThreadTests.test_gettrace @ linux-x86_64
 test.test_threading.ThreadTests.test_ident_of_no_threading_threads @ linux-x86_64
-!test.test_threading.ThreadTests.test_import_from_another_thread
-!test.test_threading.ThreadTests.test_join_nondaemon_on_shutdown
+test.test_threading.ThreadTests.test_import_from_another_thread @ linux-x86_64
+test.test_threading.ThreadTests.test_join_nondaemon_on_shutdown @ linux-x86_64
 test.test_threading.ThreadTests.test_leak_without_join @ linux-x86_64
 test.test_threading.ThreadTests.test_limbo_cleanup @ linux-x86_64
 test.test_threading.ThreadTests.test_main_thread @ linux-x86_64
@@ -153,8 +157,8 @@ test.test_threading.ThreadingExceptionTests.test_daemonize_active_thread @ linux
 test.test_threading.ThreadingExceptionTests.test_joining_current_thread @ linux-x86_64
 test.test_threading.ThreadingExceptionTests.test_joining_inactive_thread @ linux-x86_64
 test.test_threading.ThreadingExceptionTests.test_multithread_modify_file_noerror @ linux-x86_64
-!test.test_threading.ThreadingExceptionTests.test_print_exception
-!test.test_threading.ThreadingExceptionTests.test_print_exception_stderr_is_none_1
-!test.test_threading.ThreadingExceptionTests.test_print_exception_stderr_is_none_2
+test.test_threading.ThreadingExceptionTests.test_print_exception @ linux-x86_64
+test.test_threading.ThreadingExceptionTests.test_print_exception_stderr_is_none_1 @ linux-x86_64
+test.test_threading.ThreadingExceptionTests.test_print_exception_stderr_is_none_2 @ linux-x86_64
 test.test_threading.ThreadingExceptionTests.test_start_thread_again @ linux-x86_64
 test.test_threading.TimerTests.test_init_immutable_default_args @ linux-x86_64
