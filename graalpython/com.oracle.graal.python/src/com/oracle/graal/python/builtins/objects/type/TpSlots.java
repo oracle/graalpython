@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -233,7 +233,9 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.nodes.DenyReplace;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.UnadoptableNode;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -2024,8 +2026,9 @@ public record TpSlots(TpSlot nb_bool, //
             return weakValueProfile.execute(inliningTarget, getSlots.execute(inliningTarget, klass));
         }
 
+        @DenyReplace
         @GenerateCached(false)
-        private static final class Uncached extends GetCachedTpSlotsNode {
+        private static final class Uncached extends GetCachedTpSlotsNode implements UnadoptableNode {
             private static final Uncached INSTANCE = new Uncached();
 
             @Override
