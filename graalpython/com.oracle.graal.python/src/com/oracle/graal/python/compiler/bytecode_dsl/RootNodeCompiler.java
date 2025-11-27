@@ -1243,11 +1243,11 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                             emitYield((statementCompiler_) -> {
                                 boolean isAsync = node.generators[node.generators.length - 1].isAsync;
                                 if (isAsync) {
-                                    statementCompiler.b.beginAsyncGenWrap();
+                                    statementCompiler_.b.beginAsyncGenWrap();
                                 }
                                 node.element.accept(statementCompiler_);
                                 if (isAsync) {
-                                    statementCompiler.b.endAsyncGenWrap();
+                                    statementCompiler_.b.endAsyncGenWrap();
                                 }
                             }, statementCompiler);
                         });
