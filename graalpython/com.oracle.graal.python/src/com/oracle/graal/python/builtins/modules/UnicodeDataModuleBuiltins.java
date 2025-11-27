@@ -81,7 +81,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.FromJavaStringNode;
 import com.oracle.truffle.api.strings.TruffleString.ToJavaStringNode;
 
-@CoreFunctions(defineModule = J_UNICODEDATA, isEager = true)
+@CoreFunctions(defineModule = J_UNICODEDATA)
 public final class UnicodeDataModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

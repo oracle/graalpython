@@ -70,7 +70,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
-@CoreFunctions(defineModule = AstModuleBuiltins.J__AST, isEager = true)
+@CoreFunctions(defineModule = AstModuleBuiltins.J__AST)
 public final class AstModuleBuiltins extends PythonBuiltins {
 
     static final String J__AST = "_ast";
