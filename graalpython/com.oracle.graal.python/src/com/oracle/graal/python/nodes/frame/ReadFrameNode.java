@@ -111,8 +111,7 @@ public abstract class ReadFrameNode extends Node {
         @Override
         public boolean skip(RootNode rootNode) {
             if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                // TODO check for specific continuation root
-                return !(rootNode instanceof PBytecodeDSLRootNode || rootNode instanceof ContinuationRootNode);
+                return PBytecodeDSLRootNode.cast(rootNode) == null;
             } else {
                 return !(rootNode instanceof PBytecodeRootNode || rootNode instanceof PBytecodeGeneratorRootNode);
             }

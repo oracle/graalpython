@@ -288,6 +288,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
@@ -394,6 +395,10 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     protected PBytecodeDSLRootNode(PythonLanguage language, FrameDescriptor.Builder frameDescriptorBuilder) {
         super(language, frameDescriptorBuilder.info(new BytecodeDSLFrameInfo()).build());
         ((BytecodeDSLFrameInfo) getFrameDescriptor().getInfo()).setRootNode(this);
+    }
+
+    public static PBytecodeDSLRootNode cast(RootNode root) {
+        return PBytecodeDSLRootNodeGen.BYTECODE.cast(root);
     }
 
     public final PythonLanguage getLanguage() {

@@ -173,7 +173,7 @@ public class AsyncHandler {
                         // the frame. Otherwise, we were woken-up in middle of Python frame code, we
                         // will have to do a stack walk if caller frame is needed, but we still need
                         // the "call" location
-                        if (location instanceof PBytecodeDSLRootNode) {
+                        if (location instanceof RootNode root && PBytecodeDSLRootNode.cast(root) != null) {
                             // PBytecodeDSLRootNode is not usable as a location. To resolve the BCI
                             // stored in the frame, we need the currently executing BytecodeNode,
                             // using PBytecodeRootNode.getBytecodeNode() is not correct. We use the

@@ -5703,12 +5703,12 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                                                                 b.emitLoadLocal(matchedExceptions);
                                                             b.endSetCurrentException();
 
-                                                            b.beginTryCatchOtherwise(() -> { });
+                                                            b.beginTryCatch();
                                                                 b.beginThrow(); // "try"
                                                                     b.emitLoadException(); // handler_i_ex (exception thrown in this handler)
                                                                 b.endThrow();
 
-                                                                b.beginBlock(); // catch and insert into exception groups group
+                                                                b.beginBlock(); // catch and insert into exception group
                                                                     b.beginStoreLocal(exceptionAcc);
                                                                         b.beginHandleExceptionsInHandler();
                                                                             b.emitLoadException();
@@ -5718,7 +5718,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                                                                         b.endHandleExceptionsInHandler();
                                                                     b.endStoreLocal();
                                                                 b.endBlock();
-                                                            b.endTryCatchOtherwise();
+                                                            b.endTryCatch();
 
                                                             b.beginSetCurrentException();
                                                                 b.emitLoadLocal(exceptionOrig);

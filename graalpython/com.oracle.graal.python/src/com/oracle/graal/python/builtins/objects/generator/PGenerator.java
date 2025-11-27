@@ -44,7 +44,6 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleStackTraceElement;
 import com.oracle.truffle.api.bytecode.BytecodeLocation;
@@ -238,10 +237,6 @@ public class PGenerator extends PythonBuiltinObject {
         return element.getFrame();
     }
 
-    public static Frame getDSLGeneratorFrame(Object[] continuationCallArguments) {
-        return (Frame) continuationCallArguments[0];
-    }
-
     public static RootNode unwrapContinuationRoot(RootNode rootNode) {
         if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER &&
                         rootNode instanceof ContinuationRootNode continuationRoot) {
@@ -251,20 +246,7 @@ public class PGenerator extends PythonBuiltinObject {
     }
 
     public static PBytecodeDSLRootNode unwrapContinuationRoot(ContinuationRootNode continuationRoot) {
-        if (CompilerDirectives.isPartialEvaluationConstant(continuationRoot)) {
-            return (PBytecodeDSLRootNode) continuationRoot.getSourceRootNode();
-        } else {
-            /*
-             * TODO We know that the continuation root node is always the same type, but we can't
-             * cast to it because it's not public. So we end up with a virtual call.
-             */
-            return unwrapContinuationRootBoundary(continuationRoot);
-        }
-    }
-
-    @TruffleBoundary
-    private static PBytecodeDSLRootNode unwrapContinuationRootBoundary(ContinuationRootNode continuationRoot) {
-        return (PBytecodeDSLRootNode) continuationRoot.getSourceRootNode();
+        return PBytecodeDSLRootNode.cast(continuationRoot);
     }
 
     public static boolean isGeneratorFrame(Frame frame) {
