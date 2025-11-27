@@ -311,7 +311,7 @@ public abstract class CApiTransitions {
             this.allocatedFromJava = allocatedFromJava;
             this.gc = gc;
             if (LOGGER.isLoggable(Level.FINE)) {
-                LOGGER.fine("new " + this);
+                LOGGER.fine(PythonUtils.formatJString("new %s", this));
             }
         }
 
