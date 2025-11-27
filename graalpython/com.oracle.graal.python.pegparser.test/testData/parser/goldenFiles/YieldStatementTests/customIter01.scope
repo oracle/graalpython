@@ -27,7 +27,7 @@ ScopeEnvironment
                         StopIteration: [Use, GlobalImplicit]
                         self: [DefParam, Local]
       Scope gen Function
-            Flags: [IsNested, HasFreeVars, IsGenerator]
+            Flags: [IsNested, HasFreeVars, IsGenerator, IsGeneratorWithYieldFrom]
             Symbols:
                   MyIter: [Use, Free]
                   ret: [DefLocal, DefNonLocal, Free]

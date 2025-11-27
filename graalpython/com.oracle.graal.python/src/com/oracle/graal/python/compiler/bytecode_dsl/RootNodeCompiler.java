@@ -238,7 +238,6 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
     // Mutable (must be reset)
     private SourceRange currentLocation;
-    boolean savedYieldFromGenerator;
     BytecodeLocal yieldFromGenerator;
     boolean inExceptStar;
 
@@ -452,7 +451,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                         null,
                         nodes);
         rootNode.setMetadata(codeUnit, ctx.errorCallback);
-        if (codeUnit.isGeneratorOrCoroutine() && savedYieldFromGenerator) {
+        if (codeUnit.isCoroutine() || codeUnit.isAsyncGenerator() || scope.isGeneratorWithYieldFrom()) {
             rootNode.yieldFromGeneratorIndex = yieldFromGenerator.getLocalIndex();
         }
 
@@ -595,7 +594,6 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         currentLocation = null;
         currentSaveExceptionLocal = null;
         prevSaveExceptionLocal = null;
-        this.savedYieldFromGenerator = false;
         this.inExceptStar = false;
     }
 
@@ -1607,6 +1605,10 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         if (scope.isCoroutine() || scope.isGenerator()) {
             generatorExceptionStateLocal = b.createLocal();
+        }
+
+        if (scope.isGeneratorWithYieldFrom() || scope.isCoroutine()) {
+            yieldFromGenerator = b.createLocal();
         }
     }
 
@@ -2728,10 +2730,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             generatorOrCoroutineProducer.run();
             b.endStoreLocal();
 
-            if (!savedYieldFromGenerator) {
-                savedYieldFromGenerator = true;
-                yieldFromGenerator = b.createLocal();
-            }
+            assert yieldFromGenerator != null;
             b.beginStoreLocal(yieldFromGenerator);
             b.emitLoadLocal(generator);
             b.endStoreLocal();

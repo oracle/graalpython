@@ -3,6 +3,6 @@ ScopeEnvironment
     Symbols:
       f: [DefLocal, Local]
     Scope f Function
-        Flags: [IsGenerator]
+        Flags: [IsGenerator, IsGeneratorWithYieldFrom]
         Symbols:
             f: [Use, GlobalImplicit]
