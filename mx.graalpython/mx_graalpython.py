@@ -991,6 +991,8 @@ def deploy_local_maven_repo(env=None):
 
 def deploy_graalpy_extensions_to_local_maven_repo(env=None):
     env = update_maven_opts({**os.environ.copy(), **(env or {})})
+    env["MVNW_REPOURL"] = mx_urlrewrites.rewriteurl("https://repo.maven.apache.org/maven2/").rstrip('/')
+    env["MVNW_VERBOSE"] = "true"
 
     gradle_java_home = os.environ.get('GRADLE_JAVA_HOME')
     if not gradle_java_home:

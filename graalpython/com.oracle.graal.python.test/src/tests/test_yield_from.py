@@ -976,7 +976,6 @@ class TestPEP380Operation(unittest.TestCase):
     #     for stack in spam(eggs(gen())):
     #         self.assertTrue('spam' in stack and 'eggs' in stack)
 
-    @unittest.skipIf(os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: bug in comment above")
     def test_custom_iterator_return(self):
         # See issue #15568
         class MyIter:

@@ -354,6 +354,7 @@ test.test_asyncio.test_pep492.CoroutineTests.test_task_print_stack @ linux-x86_6
 test.test_asyncio.test_pep492.CoroutineTests.test_types_coroutine @ linux-x86_64
 test.test_asyncio.test_pep492.LockTests.test_context_manager_async_with @ linux-x86_64
 test.test_asyncio.test_pep492.LockTests.test_context_manager_with_await @ linux-x86_64
+test.test_asyncio.test_pep492.StreamReaderTests.test_readline @ linux-x86_64
 test.test_asyncio.test_proactor_events.BaseProactorEventLoopTests.test_close @ linux-x86_64
 test.test_asyncio.test_proactor_events.BaseProactorEventLoopTests.test_close_self_pipe @ linux-x86_64
 test.test_asyncio.test_proactor_events.BaseProactorEventLoopTests.test_create_server @ linux-x86_64
@@ -481,6 +482,7 @@ test.test_asyncio.test_queues.QueuePutTests.test_put_cancelled_race @ linux-x86_
 test.test_asyncio.test_queues.QueuePutTests.test_put_with_waiting_getters @ linux-x86_64
 test.test_asyncio.test_queues.QueuePutTests.test_why_are_putters_waiting @ linux-x86_64
 test.test_asyncio.test_runners.RunTests.test_asyncio_run_cancels_hanging_tasks @ linux-x86_64
+test.test_asyncio.test_runners.RunTests.test_asyncio_run_closes_gens_after_hanging_tasks_errors @ linux-x86_64
 test.test_asyncio.test_runners.RunTests.test_asyncio_run_debug @ linux-x86_64
 test.test_asyncio.test_runners.RunTests.test_asyncio_run_from_running_loop @ linux-x86_64
 test.test_asyncio.test_runners.RunTests.test_asyncio_run_loop_factory @ linux-x86_64
@@ -820,6 +822,7 @@ test.test_asyncio.test_subprocess.SubprocessThreadedWatcherTests.test_subprocess
 test.test_asyncio.test_subprocess.SubprocessThreadedWatcherTests.test_terminate @ linux-x86_64
 test.test_asyncio.test_subprocess.SubprocessTransportTests.test_proc_exited @ linux-x86_64
 test.test_asyncio.test_subprocess.SubprocessTransportTests.test_subprocess_repr @ linux-x86_64
+test.test_asyncio.test_taskgroups.TestTaskGroup.test_cancel_children_on_child_error @ linux-x86_64
 test.test_asyncio.test_taskgroups.TestTaskGroup.test_cancellation @ linux-x86_64
 test.test_asyncio.test_taskgroups.TestTaskGroup.test_exception_refcycles_base_error @ linux-x86_64
 test.test_asyncio.test_taskgroups.TestTaskGroup.test_exception_refcycles_direct @ linux-x86_64
@@ -829,7 +832,13 @@ test.test_asyncio.test_taskgroups.TestTaskGroup.test_taskgroup_02 @ linux-x86_64
 test.test_asyncio.test_taskgroups.TestTaskGroup.test_taskgroup_03 @ linux-x86_64
 test.test_asyncio.test_taskgroups.TestTaskGroup.test_taskgroup_04 @ linux-x86_64
 test.test_asyncio.test_taskgroups.TestTaskGroup.test_taskgroup_07 @ linux-x86_64
+test.test_asyncio.test_taskgroups.TestTaskGroup.test_taskgroup_08 @ linux-x86_64
+test.test_asyncio.test_taskgroups.TestTaskGroup.test_taskgroup_09 @ linux-x86_64
+test.test_asyncio.test_taskgroups.TestTaskGroup.test_taskgroup_10 @ linux-x86_64
+test.test_asyncio.test_taskgroups.TestTaskGroup.test_taskgroup_11 @ linux-x86_64
+test.test_asyncio.test_taskgroups.TestTaskGroup.test_taskgroup_12 @ linux-x86_64
 test.test_asyncio.test_taskgroups.TestTaskGroup.test_taskgroup_13 @ linux-x86_64
+test.test_asyncio.test_taskgroups.TestTaskGroup.test_taskgroup_14 @ linux-x86_64
 test.test_asyncio.test_taskgroups.TestTaskGroup.test_taskgroup_15 @ linux-x86_64
 test.test_asyncio.test_taskgroups.TestTaskGroup.test_taskgroup_16 @ linux-x86_64
 test.test_asyncio.test_taskgroups.TestTaskGroup.test_taskgroup_17 @ linux-x86_64
@@ -937,11 +946,13 @@ test.test_asyncio.test_tasks.PyTask_PyFuture_SubclassTests.test_create_task_with
 test.test_asyncio.test_tasks.PyTask_PyFuture_SubclassTests.test_create_task_with_noncoroutine @ linux-x86_64
 test.test_asyncio.test_tasks.PyTask_PyFuture_SubclassTests.test_current_task @ linux-x86_64
 test.test_asyncio.test_tasks.PyTask_PyFuture_SubclassTests.test_current_task_with_interleaving_tasks @ linux-x86_64
+test.test_asyncio.test_tasks.PyTask_PyFuture_SubclassTests.test_ensure_future_awaitable @ linux-x86_64
 test.test_asyncio.test_tasks.PyTask_PyFuture_SubclassTests.test_ensure_future_coroutine @ linux-x86_64
 test.test_asyncio.test_tasks.PyTask_PyFuture_SubclassTests.test_ensure_future_error_msg @ linux-x86_64
 test.test_asyncio.test_tasks.PyTask_PyFuture_SubclassTests.test_ensure_future_future @ linux-x86_64
 test.test_asyncio.test_tasks.PyTask_PyFuture_SubclassTests.test_ensure_future_neither @ linux-x86_64
 test.test_asyncio.test_tasks.PyTask_PyFuture_SubclassTests.test_ensure_future_task @ linux-x86_64
+test.test_asyncio.test_tasks.PyTask_PyFuture_SubclassTests.test_ensure_future_task_awaitable @ linux-x86_64
 test.test_asyncio.test_tasks.PyTask_PyFuture_SubclassTests.test_exception_chaining_after_await @ linux-x86_64
 test.test_asyncio.test_tasks.PyTask_PyFuture_SubclassTests.test_exception_chaining_after_await_with_context_cycle @ linux-x86_64
 test.test_asyncio.test_tasks.PyTask_PyFuture_SubclassTests.test_exception_traceback @ linux-x86_64
@@ -1042,11 +1053,13 @@ test.test_asyncio.test_tasks.PyTask_PyFuture_Tests.test_create_task_with_asyncli
 test.test_asyncio.test_tasks.PyTask_PyFuture_Tests.test_create_task_with_noncoroutine @ linux-x86_64
 test.test_asyncio.test_tasks.PyTask_PyFuture_Tests.test_current_task @ linux-x86_64
 test.test_asyncio.test_tasks.PyTask_PyFuture_Tests.test_current_task_with_interleaving_tasks @ linux-x86_64
+test.test_asyncio.test_tasks.PyTask_PyFuture_Tests.test_ensure_future_awaitable @ linux-x86_64
 test.test_asyncio.test_tasks.PyTask_PyFuture_Tests.test_ensure_future_coroutine @ linux-x86_64
 test.test_asyncio.test_tasks.PyTask_PyFuture_Tests.test_ensure_future_error_msg @ linux-x86_64
 test.test_asyncio.test_tasks.PyTask_PyFuture_Tests.test_ensure_future_future @ linux-x86_64
 test.test_asyncio.test_tasks.PyTask_PyFuture_Tests.test_ensure_future_neither @ linux-x86_64
 test.test_asyncio.test_tasks.PyTask_PyFuture_Tests.test_ensure_future_task @ linux-x86_64
+test.test_asyncio.test_tasks.PyTask_PyFuture_Tests.test_ensure_future_task_awaitable @ linux-x86_64
 test.test_asyncio.test_tasks.PyTask_PyFuture_Tests.test_exception_chaining_after_await @ linux-x86_64
 test.test_asyncio.test_tasks.PyTask_PyFuture_Tests.test_exception_chaining_after_await_with_context_cycle @ linux-x86_64
 test.test_asyncio.test_tasks.PyTask_PyFuture_Tests.test_exception_traceback @ linux-x86_64

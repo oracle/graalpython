@@ -115,7 +115,7 @@ public class PGenerator extends PythonBuiltinObject {
         }
     }
 
-    private static class BytecodeDSLState {
+    public static class BytecodeDSLState {
         private final PBytecodeDSLRootNode rootNode;
         private final Object[] arguments;
         private BytecodeNode bytecodeNode;
@@ -129,7 +129,8 @@ public class PGenerator extends PythonBuiltinObject {
             this.bytecodeNode = rootNode.getBytecodeNode();
         }
 
-        public Object handleResult(ContinuationResult result) {
+        public Object handleResult(PGenerator generator, ContinuationResult result) {
+            assert result.getContinuationRootNode() == null || result.getContinuationRootNode().getFrameDescriptor() == generator.frame.getFrameDescriptor();
             isStarted = true;
             bytecodeNode = continuationRootNode.getLocation().getBytecodeNode();
             continuationRootNode = result.getContinuationRootNode();
@@ -357,7 +358,7 @@ public class PGenerator extends PythonBuiltinObject {
 
     public Object handleResult(PythonLanguage language, Object result) {
         if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-            return getBytecodeDSLState().handleResult((ContinuationResult) result);
+            return getBytecodeDSLState().handleResult(this, (ContinuationResult) result);
         } else {
             return getBytecodeState().handleResult(language, (GeneratorYieldResult) result);
         }

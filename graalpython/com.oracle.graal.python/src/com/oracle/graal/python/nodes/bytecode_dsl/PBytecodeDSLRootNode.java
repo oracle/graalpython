@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.nodes.bytecode_dsl;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.GeneratorExit;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
@@ -70,6 +69,7 @@ import com.oracle.graal.python.builtins.modules.TypingModuleBuiltins.UnpackTypeV
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.asyncio.GetAwaitableNode;
+import com.oracle.graal.python.builtins.objects.asyncio.PAsyncGenWrappedValue;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
@@ -180,6 +180,8 @@ import com.oracle.graal.python.nodes.argument.keywords.SameDictKeyException;
 import com.oracle.graal.python.nodes.attributes.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.bytecode.CopyDictWithoutKeysNode;
+import com.oracle.graal.python.nodes.bytecode.GetAIterNode;
+import com.oracle.graal.python.nodes.bytecode.GetANextNode;
 import com.oracle.graal.python.nodes.bytecode.GetSendValueNode;
 import com.oracle.graal.python.nodes.bytecode.GetTPFlagsNode;
 import com.oracle.graal.python.nodes.bytecode.GetYieldFromIterNode;
@@ -191,6 +193,7 @@ import com.oracle.graal.python.nodes.bytecode.MatchKeysNode;
 import com.oracle.graal.python.nodes.bytecode.PrintExprNode;
 import com.oracle.graal.python.nodes.bytecode.RaiseNode;
 import com.oracle.graal.python.nodes.bytecode.SetupAnnotationsNode;
+import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallQuaternaryMethodNode;
@@ -282,6 +285,7 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
@@ -338,6 +342,8 @@ import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 @OperationProxy(GetYieldFromIterNode.class)
 @OperationProxy(GetAwaitableNode.class)
 @OperationProxy(SetupAnnotationsNode.class)
+@OperationProxy(GetAIterNode.class)
+@OperationProxy(GetANextNode.class)
 @OperationProxy(value = CopyDictWithoutKeysNode.class, name = "CopyDictWithoutKeys")
 @OperationProxy(value = PyObjectIsTrueNode.class, name = "Yes")
 @OperationProxy(value = PyObjectIsNotTrueNode.class, name = "Not")
@@ -554,7 +560,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
     private void syncLocalsBackToFrame(VirtualFrame frame, PFrame pyFrame, BytecodeNode location) {
         if (pyFrame.localsAccessed()) {
-            GetFrameLocalsNode.syncLocalsBackToFrame(co, pyFrame, frame, location);
+            GetFrameLocalsNode.syncLocalsBackToFrame(co, location, pyFrame, frame);
         }
     }
 
@@ -955,7 +961,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
     @Override
     protected byte[] extractCode() {
-        return MarshalModuleBuiltins.serializeCodeUnit(this, PythonContext.get(this), co);
+        return MarshalModuleBuiltins.serializeCodeUnit(null, PythonContext.get(this), co);
     }
 
     private static Object checkUnboundCell(PCell cell, int index, PBytecodeDSLRootNode rootNode, Node inliningTarget, PRaiseNode raiseNode) {
@@ -1071,13 +1077,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             } else if (innerRoot.getCodeUnit().isCoroutine()) {
                 return PFactory.createCoroutine(language, generatorFunction, innerRoot, arguments, continuationRootNode, continuationFrame);
             } else if (innerRoot.getCodeUnit().isAsyncGenerator()) {
-                /*
-                 * TODO: Support async generators in Bytecode DSL.
-                 *
-                 * We need to produce something instead of failing here because async generators are
-                 * instantiated in frozen module code.
-                 */
-                return PNone.NONE;
+                return PFactory.createAsyncGenerator(language, generatorFunction, innerRoot, continuationRootNode, continuationFrame);
             }
             throw CompilerDirectives.shouldNotReachHere("Unknown generator/coroutine type");
         }
@@ -1346,70 +1346,38 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = TruffleString.class, name = "name")
     @ConstantOperand(type = TruffleString.class, name = "qualifiedName")
-    @ConstantOperand(type = BytecodeDSLCodeUnit.class)
+    @ConstantOperand(type = BytecodeDSLCodeUnitAndRoot.class)
     public static final class MakeFunction {
-        @Specialization(guards = {"isSingleContext(rootNode)", "!codeUnit.isGeneratorOrCoroutine()"})
+        @Specialization(guards = "isSingleContext(rootNode)")
         public static Object functionSingleContext(VirtualFrame frame,
                         TruffleString name,
                         TruffleString qualifiedName,
-                        BytecodeDSLCodeUnit codeUnit,
+                        BytecodeDSLCodeUnitAndRoot codeUnit,
                         Object[] defaults,
                         Object[] kwDefaultsObject,
                         Object closure,
                         Object annotations,
                         @Bind PBytecodeDSLRootNode rootNode,
-                        @Cached(value = "createFunctionRootNode(rootNode, codeUnit)", adopt = false) PBytecodeDSLRootNode functionRootNode,
-                        @Cached("createCode(rootNode, codeUnit, functionRootNode)") PCode cachedCode,
+                        @Cached("createCode(rootNode, codeUnit)") PCode cachedCode,
                         @Shared @Cached DynamicObject.PutNode putNode) {
-            return createFunction(frame, name, qualifiedName, codeUnit.getDocstring(), cachedCode, defaults, kwDefaultsObject, closure, annotations, rootNode, putNode);
+            return createFunction(frame, name, qualifiedName, codeUnit.getCodeUnit().getDocstring(),
+                            cachedCode, defaults, kwDefaultsObject, closure, annotations, rootNode, putNode);
         }
 
-        @Specialization(replaces = "functionSingleContext", guards = "!codeUnit.isGeneratorOrCoroutine()")
+        @Specialization(replaces = "functionSingleContext")
         public static Object functionMultiContext(VirtualFrame frame,
                         TruffleString name,
                         TruffleString qualifiedName,
-                        BytecodeDSLCodeUnit codeUnit,
+                        BytecodeDSLCodeUnitAndRoot codeUnit,
                         Object[] defaults,
                         Object[] kwDefaultsObject,
                         Object closure,
                         Object annotations,
                         @Bind PBytecodeDSLRootNode rootNode,
-                        @Cached(value = "createFunctionRootNode(rootNode, codeUnit)", adopt = false) PBytecodeDSLRootNode functionRootNode,
                         @Shared @Cached DynamicObject.PutNode putNode) {
-            PCode code = createCode(rootNode, codeUnit, functionRootNode);
-            return createFunction(frame, name, qualifiedName, codeUnit.getDocstring(), code, defaults, kwDefaultsObject, closure, annotations, rootNode, putNode);
-        }
-
-        @Specialization(guards = {"isSingleContext(rootNode)", "codeUnit.isGeneratorOrCoroutine()"})
-        public static Object generatorOrCoroutineSingleContext(VirtualFrame frame,
-                        TruffleString name,
-                        TruffleString qualifiedName,
-                        BytecodeDSLCodeUnit codeUnit,
-                        Object[] defaults,
-                        Object[] kwDefaultsObject,
-                        Object closure,
-                        Object annotations,
-                        @Bind PBytecodeDSLRootNode rootNode,
-                        @Cached(value = "createFunctionRootNode(rootNode, codeUnit)", adopt = false) PBytecodeDSLRootNode functionRootNode,
-                        @Cached("createCode(rootNode, codeUnit, functionRootNode)") PCode cachedCode,
-                        @Shared @Cached DynamicObject.PutNode putNode) {
-            return createFunction(frame, name, qualifiedName, codeUnit.getDocstring(), cachedCode, defaults, kwDefaultsObject, closure, annotations, rootNode, putNode);
-        }
-
-        @Specialization(replaces = "generatorOrCoroutineSingleContext", guards = "codeUnit.isGeneratorOrCoroutine()")
-        public static Object generatorOrCoroutineMultiContext(VirtualFrame frame,
-                        TruffleString name,
-                        TruffleString qualifiedName,
-                        BytecodeDSLCodeUnit codeUnit,
-                        Object[] defaults,
-                        Object[] kwDefaultsObject,
-                        Object closure,
-                        Object annotations,
-                        @Bind PBytecodeDSLRootNode rootNode,
-                        @Cached(value = "createFunctionRootNode(rootNode, codeUnit)", adopt = false) PBytecodeDSLRootNode functionRootNode,
-                        @Shared @Cached DynamicObject.PutNode putNode) {
-            PCode code = createCode(rootNode, codeUnit, functionRootNode);
-            return createFunction(frame, name, qualifiedName, codeUnit.getDocstring(), code, defaults, kwDefaultsObject, closure, annotations, rootNode, putNode);
+            PCode code = createCode(rootNode, codeUnit);
+            return createFunction(frame, name, qualifiedName, codeUnit.getCodeUnit().getDocstring(),
+                            code, defaults, kwDefaultsObject, closure, annotations, rootNode, putNode);
         }
 
         @Idempotent
@@ -1418,17 +1386,13 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
 
         @NeverDefault
-        protected static PBytecodeDSLRootNode createFunctionRootNode(PBytecodeDSLRootNode outerRootNode, BytecodeDSLCodeUnit codeUnit) {
-            return codeUnit.createRootNode(PythonContext.get(outerRootNode), outerRootNode.getSource());
-        }
-
-        @NeverDefault
-        protected static PCode createCode(PBytecodeDSLRootNode outerRootNode, BytecodeDSLCodeUnit codeUnit, PRootNode rootNode) {
+        protected static PCode createCode(PBytecodeDSLRootNode outerRootNode, BytecodeDSLCodeUnitAndRoot codeUnit) {
+            PBytecodeDSLRootNode rootNode = codeUnit.getRootNode(outerRootNode);
             return PFactory.createCode(
                             PythonLanguage.get(outerRootNode),
                             rootNode.getCallTarget(),
                             rootNode.getSignature(),
-                            codeUnit);
+                            codeUnit.getCodeUnit());
         }
 
         protected static PFunction createFunction(VirtualFrame frame,
@@ -3000,6 +2964,25 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
+    /**
+     * Specialized call operation for comprehension code units. These are never built-in functions
+     * and never change, so the optimizations in the {@link CallUnaryMethod} operation are neither
+     * applicable nor needed.
+     */
+    @Operation(storeBytecodeIndex = true)
+    @ImportStatic(CallDispatchers.class)
+    public static final class CallComprehension {
+        @Specialization
+        public static Object doObject(VirtualFrame frame, PFunction callable, Object arg,
+                        @Bind Node inliningTarget,
+                        @Cached("createDirectCallNodeFor(callable)") DirectCallNode callNode,
+                        @Cached CallDispatchers.FunctionDirectInvokeNode invoke) {
+            Object[] args = PArguments.create(1);
+            args[PArguments.USER_ARGUMENTS_OFFSET] = arg;
+            return invoke.execute(frame, inliningTarget, callNode, callable, args);
+        }
+    }
+
     @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = LocalAccessor.class)
     @ConstantOperand(type = LocalAccessor.class)
@@ -3094,11 +3077,11 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             Object type = getClass.execute(inliningTarget, contextManager);
             Object enter = lookupEnter.execute(frame, inliningTarget, type, T___AENTER__, contextManager);
             if (enter == PNone.NO_VALUE) {
-                throw raiseNode.raise(inliningTarget, AttributeError, new Object[]{T___AENTER__});
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.N_OBJECT_DOES_NOT_SUPPORT_THE_ASYNC_CONTEXT_MANAGER_PROTOCOL, type);
             }
             Object exit = lookupExit.execute(frame, inliningTarget, type, T___AEXIT__, contextManager);
             if (exit == PNone.NO_VALUE) {
-                throw raiseNode.raise(inliningTarget, AttributeError, new Object[]{T___AEXIT__});
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.N_OBJECT_DOES_NOT_SUPPORT_THE_ASYNC_CONTEXT_MANAGER_PROTOCOL_AEXIT, type);
             }
             Object result = callEnter.executeObject(frame, enter, contextManager);
             exitSetter.setObject(bytecode, frame, exit);
@@ -3107,6 +3090,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation(storeBytecodeIndex = true)
+    @ImportStatic(PGuards.class)
     public static final class AsyncContextManagerCallExit {
         @Specialization
         @InliningCutoff
@@ -3116,7 +3100,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             return callExit.execute(frame, exit, contextManager, PNone.NONE, PNone.NONE, PNone.NONE);
         }
 
-        @Specialization
+        @Specialization(guards = "!isNone(exception)")
         @InliningCutoff
         public static Object doExceptional(VirtualFrame frame,
                         Object exception, Object exit, Object contextManager,
@@ -3126,19 +3110,15 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Cached GetClassNode getClass,
                         @Cached ExceptionNodes.GetTracebackNode getTraceback,
                         @Cached PyObjectIsTrueNode isTrue) {
-            AbstractTruffleException savedExcState = PArguments.getException(frame);
-            try {
-                Object pythonException = exception;
-                if (exception instanceof PException) {
-                    PArguments.setException(frame, (PException) exception);
-                    pythonException = ((PException) exception).getEscapedException();
-                }
-                Object excType = getClass.execute(inliningTarget, pythonException);
-                Object excTraceback = getTraceback.execute(inliningTarget, pythonException);
-                return callExit.execute(frame, exit, contextManager, excType, pythonException, excTraceback);
-            } finally {
-                PArguments.setException(frame, savedExcState);
+            // The exception should be set as the current exception already
+            assert exception == PArguments.getException(frame) : String.format("%s != %s", exception, PArguments.getException(frame));
+            Object pythonException = exception;
+            if (exception instanceof PException) {
+                pythonException = ((PException) exception).getEscapedException();
             }
+            Object excType = getClass.execute(inliningTarget, pythonException);
+            Object excTraceback = getTraceback.execute(inliningTarget, pythonException);
+            return callExit.execute(frame, exit, contextManager, excType, pythonException, excTraceback);
         }
     }
 
@@ -3524,6 +3504,46 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         LocalAccessor returnedValue) {
             e.expectStopIteration(inliningTarget, stopIterationProfile);
             returnedValue.setObject(bytecode, frame, getValue.execute((PBaseException) e.getUnreifiedException()));
+        }
+    }
+
+    /**
+     * Wraps the value {@link PAsyncGenWrappedValue}. CPython 3.11 opcode, used here to avoid a
+     * runtime check.
+     */
+    @Operation(storeBytecodeIndex = false)
+    public static final class AsyncGenWrap {
+        @Specialization
+        static Object doIt(Object value,
+                        @Bind PythonLanguage language) {
+            return new PAsyncGenWrappedValue(language, value);
+        }
+    }
+
+    /**
+     * If given exception is {@link PythonBuiltinClassType#StopAsyncIteration} do nothing, otherwise
+     * rethrow the exception. Used to implement the termination condition of {@code async for}.
+     */
+    @Operation(storeBytecodeIndex = true)
+    @ImportStatic(PGuards.class)
+    public static final class ExpectStopAsyncIteration {
+        @Specialization
+        static void doNone(PNone none) {
+        }
+
+        @Specialization
+        static void doPException(PException exception,
+                        @Bind Node inliningTarget,
+                        @Bind BytecodeNode bytecodeNode,
+                        @Cached IsBuiltinObjectProfile isStopAsyncIteration) {
+            if (!isStopAsyncIteration.profileException(inliningTarget, exception, PythonBuiltinClassType.StopAsyncIteration)) {
+                throw exception.getExceptionForReraise(!((PBytecodeDSLRootNode) bytecodeNode.getRootNode()).internal);
+            }
+        }
+
+        @Specialization(guards = "!isPException(exception)")
+        static void doInteropException(AbstractTruffleException exception) {
+            throw exception;
         }
     }
 

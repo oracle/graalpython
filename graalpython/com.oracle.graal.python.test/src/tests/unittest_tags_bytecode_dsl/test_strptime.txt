@@ -6,6 +6,7 @@ test.test_strptime.CalculationTests.test_day_of_week_calculation @ linux-x86_64
 test.test_strptime.CalculationTests.test_gregorian_calculation @ linux-x86_64
 test.test_strptime.CalculationTests.test_julian_calculation @ linux-x86_64
 test.test_strptime.CalculationTests.test_week_0 @ linux-x86_64
+test.test_strptime.CalculationTests.test_week_of_year_and_day_of_week_calculation @ linux-x86_64
 test.test_strptime.JulianTests.test_all_julian_days @ linux-x86_64
 test.test_strptime.LocaleTime_Tests.test_am_pm @ linux-x86_64
 test.test_strptime.LocaleTime_Tests.test_date_time @ linux-x86_64
@@ -37,9 +38,11 @@ test.test_strptime.StrptimeTests.test_second @ linux-x86_64
 test.test_strptime.StrptimeTests.test_strptime_exception_context @ linux-x86_64
 test.test_strptime.StrptimeTests.test_time_locale @ linux-x86_64
 test.test_strptime.StrptimeTests.test_unconverteddata @ linux-x86_64
+test.test_strptime.StrptimeTests.test_weekday @ linux-x86_64
 test.test_strptime.StrptimeTests.test_weekday_locale @ linux-x86_64
 test.test_strptime.StrptimeTests.test_year @ linux-x86_64
 test.test_strptime.TimeRETests.test_blankpattern @ linux-x86_64
+test.test_strptime.TimeRETests.test_compile @ linux-x86_64
 test.test_strptime.TimeRETests.test_locale_data_w_regex_metacharacters @ linux-x86_64
 test.test_strptime.TimeRETests.test_matching_with_escapes @ linux-x86_64
 test.test_strptime.TimeRETests.test_pattern @ linux-x86_64
