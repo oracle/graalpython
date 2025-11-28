@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.J_UNICODEDATA;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_UNICODEDATA;
+import static com.oracle.graal.python.nodes.BuiltinNames.T___GRAALPYTHON__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
@@ -62,12 +63,15 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -117,6 +121,11 @@ public final class UnicodeDataModuleBuiltins extends PythonBuiltins {
         super.postInitialize(core);
         PythonModule self = core.lookupBuiltinModule(T_UNICODEDATA);
         self.setAttribute(toTruffleStringUncached("unidata_version"), toTruffleStringUncached(getUnicodeVersion()));
+        PyObjectCallMethodObjArgs.executeUncached(core.lookupBuiltinModule(T___GRAALPYTHON__), toTruffleStringUncached("import_current_as_named_module_with_delegate"),
+                        /* module_name= */ T_UNICODEDATA,
+                        /* delegate_name= */ toTruffleStringUncached("_cpython_unicodedata"),
+                        /* delegate_attributes= */ PFactory.createList(core.getLanguage(), new Object[]{toTruffleStringUncached("ucd_3_2_0")}),
+                        /* owner_globals= */ GetOrCreateDictNode.executeUncached(self));
     }
 
     static final int NORMALIZER_FORM_COUNT = 4;

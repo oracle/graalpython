@@ -32,7 +32,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T_MODULES;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_NT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_STDERR;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_UNICODEDATA;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_ZIPIMPORT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__SRE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__SYSCONFIG;
@@ -428,7 +427,6 @@ public abstract class Python3Core {
         List<TruffleString> coreFiles = List.of(
                         T___GRAALPYTHON__,
                         T__WEAKREF,
-                        T_UNICODEDATA,
                         T__SRE,
                         T__SYSCONFIG,
                         T_JAVA,
