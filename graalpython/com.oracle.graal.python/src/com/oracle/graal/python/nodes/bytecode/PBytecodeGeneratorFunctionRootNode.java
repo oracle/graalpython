@@ -53,7 +53,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -62,8 +61,6 @@ public class PBytecodeGeneratorFunctionRootNode extends PRootNode {
     private final TruffleString originalName;
 
     @CompilationFinal(dimensions = 1) private final RootCallTarget[] callTargets;
-
-    private final ConditionProfile isIterableCoroutine = ConditionProfile.create();
 
     @TruffleBoundary
     public PBytecodeGeneratorFunctionRootNode(PythonLanguage language, FrameDescriptor frameDescriptor, PBytecodeRootNode rootNode, TruffleString originalName) {
@@ -83,14 +80,7 @@ public class PBytecodeGeneratorFunctionRootNode extends PRootNode {
         PFunction generatorFunction = PArguments.getFunctionObject(arguments);
         assert generatorFunction != null;
         if (rootNode.getCodeUnit().isGenerator()) {
-            // if CO_ITERABLE_COROUTINE was explicitly set (likely by types.coroutine), we have to
-            // pass the information to the generator
-            // .gi_code.co_flags will still be wrong, but at least await will work correctly
-            if (isIterableCoroutine.profile((generatorFunction.getCode().getFlags() & 0x100) != 0)) {
-                return PFactory.createIterableCoroutine(language, generatorFunction, rootNode, callTargets, arguments);
-            } else {
-                return PFactory.createGenerator(language, generatorFunction, rootNode, callTargets, arguments);
-            }
+            return PFactory.createGenerator(language, generatorFunction, rootNode, callTargets, arguments);
         } else if (rootNode.getCodeUnit().isCoroutine()) {
             return PFactory.createCoroutine(language, generatorFunction, rootNode, callTargets, arguments);
         } else if (rootNode.getCodeUnit().isAsyncGenerator()) {

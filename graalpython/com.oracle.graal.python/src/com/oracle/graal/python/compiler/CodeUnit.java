@@ -148,6 +148,10 @@ public abstract class CodeUnit {
         return (flags & PCode.CO_ASYNC_GENERATOR) != 0;
     }
 
+    public boolean isIterableCoroutine() {
+        return (flags & PCode.CO_ITERABLE_COROUTINE) != 0;
+    }
+
     public boolean isGeneratorOrCoroutine() {
         return (flags & (PCode.CO_GENERATOR | PCode.CO_COROUTINE | PCode.CO_ASYNC_GENERATOR | PCode.CO_ITERABLE_COROUTINE)) != 0;
     }

@@ -61,11 +61,11 @@ public final class PAsyncGen extends PGenerator {
     }
 
     private PAsyncGen(PythonLanguage lang, PFunction function, MaterializedFrame generatorFrame, PBytecodeRootNode rootNode, RootCallTarget[] callTargets) {
-        super(lang, function, generatorFrame, PythonBuiltinClassType.PAsyncGenerator, false, new BytecodeState(rootNode, callTargets));
+        super(lang, function, generatorFrame, PythonBuiltinClassType.PAsyncGenerator, new BytecodeState(rootNode, callTargets));
     }
 
     public PAsyncGen(PythonLanguage language, PFunction function, PBytecodeDSLRootNode rootNode, ContinuationRootNode continuationRootNode, MaterializedFrame continuationFrame) {
-        super(language, function, continuationFrame, PythonBuiltinClassType.PAsyncGenerator, false,
+        super(language, function, continuationFrame, PythonBuiltinClassType.PAsyncGenerator,
                         new BytecodeDSLState(rootNode, continuationFrame.getArguments(), continuationRootNode));
     }
 
