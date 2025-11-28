@@ -75,16 +75,17 @@
     local bench_task(bench=null, benchmarks=BENCHMARKS) = super.bench_task(bench=bench, benchmarks=benchmarks),
     local bisect_bench_task     = self.bisect_bench_task,
 
-    local bytecode_dsl_env = task_spec({
+    // Manual interpreter variants (DSL disabled)
+    local manual_interpreter_env = task_spec({
         environment +: {
-            BYTECODE_DSL_INTERPRETER: "true"
+            BYTECODE_DSL_INTERPRETER: "false"
         },
     }),
-    local bytecode_dsl_gate(name) = bytecode_dsl_env + task_spec({
+    local manual_interpreter_gate(name) = manual_interpreter_env + task_spec({
         tags :: name,
     }),
-    local bytecode_dsl_bench = bytecode_dsl_env + task_spec({
-        name_suffix +:: ["bytecode-dsl"],
+    local manual_interpreter_bench = manual_interpreter_env + task_spec({
+        name_suffix +:: ["manual-interpreter"],
     }),
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -116,7 +117,7 @@
             "darwin:aarch64:jdk-latest"  : tier3                     + provide(GPY_JVM_STANDALONE),
             "windows:amd64:jdk-latest"   : tier3                     + provide(GPY_JVM_STANDALONE),
         }),
-        "python-unittest-bytecode-dsl": gpgate + platform_spec(no_jobs) + bytecode_dsl_gate("python-unittest") + platform_spec({
+        "python-unittest-manual-interpreter": gpgate + platform_spec(no_jobs) + manual_interpreter_gate("python-unittest") + platform_spec({
             "linux:amd64:jdk-latest"     : daily     + t("01:00:00"),
             "linux:aarch64:jdk-latest"   : daily     + t("01:00:00"),
             "darwin:aarch64:jdk-latest"  : daily     + t("01:00:00"),
@@ -170,7 +171,7 @@
             "darwin:aarch64:jdk-latest"  : tier3                      + require(GRAAL_JDK_LATEST),
             "windows:amd64:jdk-latest"   : tier3                      + require(GRAAL_JDK_LATEST),
         }),
-        "python-junit-bytecode-dsl": gpgate + platform_spec(no_jobs) + bytecode_dsl_gate("python-junit") + platform_spec({
+        "python-junit-manual-interpreter": gpgate + platform_spec(no_jobs) + manual_interpreter_gate("python-junit") + platform_spec({
             "linux:amd64:jdk-latest"     : tier3                      + require(GRAAL_JDK_LATEST),
         }),
         "python-junit-maven": gpgate_maven + platform_spec(no_jobs) + platform_spec({
@@ -204,12 +205,12 @@
                 ],
             }),
         }),
-        "python-pgo-profile-bytecode-dsl": gpgate_ee + bytecode_dsl_env + platform_spec(no_jobs) + platform_spec({
+        "python-pgo-profile-manual-interpreter": gpgate_ee + manual_interpreter_env + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest"     : post_merge + t("01:30:00") + task_spec({
                 run: [["mx", "python-native-pgo"]],
                 logs+: [
-                    "default-bytecode-dsl.iprof.gz",
-                    "default-bytecode-dsl.lcov",
+                    "default-manual-interpreter.iprof.gz",
+                    "default-manual-interpreter.lcov",
                 ],
             }),
         }),
@@ -219,7 +220,7 @@
             "darwin:aarch64:jdk-latest"  : tier3                     + require(GPY_NATIVE_STANDALONE),
             "windows:amd64:jdk-latest"   : tier3                     + require(GPY_NATIVE_STANDALONE) + batches(2),
         }),
-        "python-svm-unittest-bytecode-dsl": gpgate + platform_spec(no_jobs) + bytecode_dsl_gate("python-svm-unittest") + platform_spec({
+        "python-svm-unittest-manual-interpreter": gpgate + platform_spec(no_jobs) + manual_interpreter_gate("python-svm-unittest") + platform_spec({
             "linux:amd64:jdk-latest"     : tier2                     + provide(GPY_NATIVE_BYTECODE_DSL_STANDALONE),
         }),
         "python-tagged-unittest": gpgate + require(GPY_NATIVE_STANDALONE) + batches(TAGGED_UNITTESTS_SPLIT) + platform_spec(no_jobs) + platform_spec({
@@ -228,7 +229,7 @@
             "darwin:aarch64:jdk-latest"  : tier3,
             "windows:amd64:jdk-latest"   : daily     + t("02:00:00"),
         }),
-        "python-tagged-unittest-bytecode-dsl": gpgate + require(GPY_NATIVE_BYTECODE_DSL_STANDALONE) + batches(TAGGED_UNITTESTS_SPLIT) + bytecode_dsl_gate("python-tagged-unittest") + platform_spec(no_jobs) + platform_spec({
+        "python-tagged-unittest-manual-interpreter": gpgate + require(GPY_NATIVE_BYTECODE_DSL_STANDALONE) + batches(TAGGED_UNITTESTS_SPLIT) + manual_interpreter_gate("python-tagged-unittest") + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest"     : tier3,
         }),
         "python-graalvm": gpgate + platform_spec(no_jobs) + platform_spec({
@@ -288,7 +289,7 @@
     },
 
     local need_pgo = task_spec({runAfter: ["python-pgo-profile-post_merge-linux-amd64-jdk-latest"]}),
-    local need_bc_pgo = task_spec({runAfter: ["python-pgo-profile-bytecode-dsl-post_merge-linux-amd64-jdk-latest"]}),
+    local need_bc_pgo = task_spec({runAfter: ["python-pgo-profile-manual-interpreter-post_merge-linux-amd64-jdk-latest"]}),
     local forks_warmup = forks("./mx.graalpython/warmup-fork-counts.json"),
     local forks_meso = forks("meso.json"),
     local raw_results = task_spec({
@@ -316,7 +317,7 @@
         }),
         for bench in ["micro", "meso", "macro"]
     } + {
-        [bench + "-bytecode-dsl"]: bench_task(bench) + bytecode_dsl_bench + platform_spec(no_jobs) + bench_variants({
+        [bench + "-manual-interpreter"]: bench_task(bench) + manual_interpreter_bench + platform_spec(no_jobs) + bench_variants({
             "vm_name:graalvm_ee_default_bc_dsl"                                : {"linux:amd64:jdk-latest" : daily      + t("08:00:00")},
             "vm_name:graalpython_enterprise_bc_dsl"                            : {"linux:amd64:jdk-latest" : daily      + t("08:00:00")},
         }),
@@ -351,7 +352,7 @@
         }),
         for bench in ["micro_small", "meso_small"]
     } + {
-        [bench + "-bytecode-dsl"]: bench_task(bench) + bytecode_dsl_bench + platform_spec(no_jobs) + bench_variants({
+        [bench + "-manual-interpreter"]: bench_task(bench) + manual_interpreter_bench + platform_spec(no_jobs) + bench_variants({
             "vm_name:graalvm_ee_default_interpreter_bc_dsl"                    : {"linux:amd64:jdk-latest" : daily     + t("04:00:00")},
             "vm_name:graalpython_enterprise_interpreter_bc_dsl"                : {"linux:amd64:jdk-latest" : weekly    + t("04:00:00")},
         }),
@@ -384,7 +385,7 @@
         }),
         for bench in ["warmup"]
     } + {
-        [bench + "-bytecode-dsl"]: bench_task(bench) + bytecode_dsl_bench + platform_spec(no_jobs) + bench_variants({
+        [bench + "-manual-interpreter"]: bench_task(bench) + manual_interpreter_bench + platform_spec(no_jobs) + bench_variants({
             "vm_name:graalvm_ee_default_bc_dsl"                                : {"linux:amd64:jdk-latest" : on_demand     + t("05:00:00") + forks_warmup},
             "vm_name:graalpython_enterprise_bc_dsl"                            : {"linux:amd64:jdk-latest" : on_demand     + t("05:00:00") + forks_warmup},
         }),
@@ -397,7 +398,7 @@
         }),
         for bench in ["heap", "micro_small_heap"]
     } + {
-        [bench + "-bytecode-dsl"]: bench_task(bench) + bytecode_dsl_bench + platform_spec(no_jobs) + bench_variants({
+        [bench + "-manual-interpreter"]: bench_task(bench) + manual_interpreter_bench + platform_spec(no_jobs) + bench_variants({
             "vm_name:graalvm_ee_default_interpreter_bc_dsl"             : {"linux:amd64:jdk-latest" : post_merge     + t("02:00:00") + need_bc_pgo},
             "vm_name:graalpython_enterprise_interpreter_bc_dsl"         : {"linux:amd64:jdk-latest" : weekly         + t("02:00:00")},
         }),
@@ -429,7 +430,7 @@
         for bench in ["pyperformance"]
     } + {
         // Bytecode DSL benchmarks with community benchmark suites for external numbers
-        [bench + "-bytecode-dsl"]: bench_task(bench, PY_BENCHMARKS) + bytecode_dsl_bench + platform_spec(no_jobs) + raw_results + bench_variants({
+        [bench + "-manual-interpreter"]: bench_task(bench, PY_BENCHMARKS) + manual_interpreter_bench + platform_spec(no_jobs) + raw_results + bench_variants({
             "vm_name:graalvm_ee_default_bc_dsl"                                : {"linux:amd64:jdk-latest" : weekly     + t("08:00:00")},
         }),
         for bench in ["pyperformance"]
