@@ -920,6 +920,7 @@ public class ScopeEnvironment {
                 node.value.accept(this);
             }
             currentScope.flags.add(ScopeFlags.IsGenerator);
+            currentScope.flags.add(ScopeFlags.IsGeneratorWithYieldFrom);
             if (currentScope.flags.contains(ScopeFlags.IsComprehension)) {
                 throw raiseIfComprehensionBlock(node);
             }

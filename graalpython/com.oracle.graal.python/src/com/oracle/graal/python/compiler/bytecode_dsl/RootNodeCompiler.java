@@ -238,7 +238,6 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
     // Mutable (must be reset)
     private SourceRange currentLocation;
-    boolean savedYieldFromGenerator;
     BytecodeLocal yieldFromGenerator;
     boolean inExceptStar;
 
@@ -452,7 +451,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                         null,
                         nodes);
         rootNode.setMetadata(codeUnit, ctx.errorCallback);
-        if (codeUnit.isGeneratorOrCoroutine() && savedYieldFromGenerator) {
+        if (codeUnit.isCoroutine() || codeUnit.isAsyncGenerator() || scope.isGeneratorWithYieldFrom()) {
             rootNode.yieldFromGeneratorIndex = yieldFromGenerator.getLocalIndex();
         }
 
@@ -595,7 +594,6 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         currentLocation = null;
         currentSaveExceptionLocal = null;
         prevSaveExceptionLocal = null;
-        this.savedYieldFromGenerator = false;
         this.inExceptStar = false;
     }
 
@@ -707,6 +705,11 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
     String maybeMangle(String name) {
         return ctx.maybeMangle(this.privateName, scope, name);
+    }
+
+    String maybeMangleAndAddName(String name) {
+        String mangled = ctx.maybeMangle(this.privateName, scope, name);
+        return addName(mangled);
     }
 
     // --------------------- visitor ---------------------------
@@ -1284,10 +1287,9 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         return ctx.mangle(scope, name);
     }
 
-    private void emitNotImplemented(String what, Builder b) {
-        b.beginRaiseNotImplementedError();
-        emitPythonConstant(toTruffleStringUncached(what), b);
-        b.endRaiseNotImplementedError();
+    private String mangleAndAddName(String name) {
+        String mangled = ctx.mangle(scope, name);
+        return addName(mangled);
     }
 
     /**
@@ -1335,12 +1337,12 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
     }
 
     private void beginSetAttribute(String name, Builder b) {
-        String mangled = maybeMangle(name);
+        String mangled = maybeMangleAndAddName(name);
         b.beginSetAttribute(toTruffleStringUncached(mangled));
     }
 
     private void beginGetAttribute(String name, Builder b) {
-        String mangled = maybeMangle(name);
+        String mangled = maybeMangleAndAddName(name);
         b.beginGetAttribute(toTruffleStringUncached(mangled));
     }
 
@@ -1423,7 +1425,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
     private void emitNameGlobalOperation(String name, NameOperation op, Builder b, boolean isImplicitScope) {
         assert locals.get(name) == null;
-        names.putIfAbsent(name, names.size());
+        addName(name);
         TruffleString tsName = toTruffleStringUncached(name);
         switch (op) {
             case Read:
@@ -1456,9 +1458,14 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         }
     }
 
+    private String addName(String name) {
+        names.putIfAbsent(name, names.size());
+        return name;
+    }
+
     private void emitNameSlowOperation(String name, NameOperation op, Builder b) {
         assert locals.get(name) == null;
-        names.putIfAbsent(name, names.size());
+        addName(name);
         TruffleString tsName = toTruffleStringUncached(name);
         switch (op) {
             case Read:
@@ -1598,6 +1605,10 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         if (scope.isCoroutine() || scope.isGenerator()) {
             generatorExceptionStateLocal = b.createLocal();
+        }
+
+        if (scope.isGeneratorWithYieldFrom() || scope.isCoroutine()) {
+            yieldFromGenerator = b.createLocal();
         }
     }
 
@@ -2719,13 +2730,10 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             generatorOrCoroutineProducer.run();
             b.endStoreLocal();
 
-            if (!savedYieldFromGenerator) {
-                savedYieldFromGenerator = true;
-                yieldFromGenerator = b.createLocal();
-                b.beginStoreLocal(yieldFromGenerator);
-                b.emitLoadLocal(generator);
-                b.endStoreLocal();
-            }
+            assert yieldFromGenerator != null;
+            b.beginStoreLocal(yieldFromGenerator);
+            b.emitLoadLocal(generator);
+            b.endStoreLocal();
 
             b.beginStoreLocal(returnValue);
             b.emitLoadConstant(PNone.NONE);
@@ -2777,6 +2785,9 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
             // Step 4: the returnValue local is assigned when branching to "end" label
             b.emitLabel(end);
+            b.beginStoreLocal(yieldFromGenerator);
+            b.emitLoadNull();
+            b.endStoreLocal();
             b.endBlock();
         }
 
@@ -3579,7 +3590,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             @Override
             public Void visit(ExprTy.Attribute node) {
                 boolean newStatement = beginSourceSection(node, b);
-                b.beginDeleteAttribute(toTruffleStringUncached(maybeMangle(node.attr)));
+                b.beginDeleteAttribute(toTruffleStringUncached(maybeMangleAndAddName(node.attr)));
                 node.value.accept(StatementCompiler.this);
                 b.endDeleteAttribute();
 
@@ -3649,7 +3660,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 b.beginPrintExpr();
                 node.value.accept(this);
                 b.endPrintExpr();
-            } else {
+            } else if (!(node.value instanceof ExprTy.Constant)) {
                 node.value.accept(this);
             }
             endSourceSection(b, newStatement);
@@ -3910,7 +3921,6 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             TruffleString qualifiedName = codeUnit.qualname;
 
             // Register these in the Python constants list.
-            addConstant(qualifiedName);
             addConstant(codeUnit);
 
             b.beginMakeFunction(functionName, qualifiedName, new BytecodeDSLCodeUnitAndRoot(codeUnit));
@@ -4083,7 +4093,8 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 ctx.errorCallback.onError(ErrorType.Syntax, node.getSourceRange(), "from __future__ imports must occur at the beginning of the file");
             }
 
-            TruffleString tsModuleName = toTruffleStringUncached(node.module == null ? "" : node.module);
+            String moduleName = addName(node.module == null ? "" : node.module);
+            TruffleString tsModuleName = toTruffleStringUncached(moduleName);
 
             if (node.names[0].name.equals("*")) {
                 b.emitImportStar(tsModuleName, node.level);
@@ -4104,6 +4115,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 TruffleString[] importedNames = new TruffleString[node.names.length];
                 for (int i = 0; i < node.names.length; i++) {
                     AliasTy alias = node.names[i];
+                    addName(alias.name);
                     String asName = alias.asName == null ? alias.name : alias.asName;
                     beginStoreLocal(asName, b);
 
@@ -5691,12 +5703,12 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                                                                 b.emitLoadLocal(matchedExceptions);
                                                             b.endSetCurrentException();
 
-                                                            b.beginTryCatchOtherwise(() -> { });
+                                                            b.beginTryCatch();
                                                                 b.beginThrow(); // "try"
                                                                     b.emitLoadException(); // handler_i_ex (exception thrown in this handler)
                                                                 b.endThrow();
 
-                                                                b.beginBlock(); // catch and insert into exception groups group
+                                                                b.beginBlock(); // catch and insert into exception group
                                                                     b.beginStoreLocal(exceptionAcc);
                                                                         b.beginHandleExceptionsInHandler();
                                                                             b.emitLoadException();
@@ -5706,7 +5718,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                                                                         b.endHandleExceptionsInHandler();
                                                                     b.endStoreLocal();
                                                                 b.endBlock();
-                                                            b.endTryCatchOtherwise();
+                                                            b.endTryCatch();
 
                                                             b.beginSetCurrentException();
                                                                 b.emitLoadLocal(exceptionOrig);
