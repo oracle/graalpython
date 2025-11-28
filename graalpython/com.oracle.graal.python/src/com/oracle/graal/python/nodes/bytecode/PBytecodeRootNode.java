@@ -1061,6 +1061,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     public MaterializedFrame createGeneratorFrame(Object[] arguments) {
         MaterializedFrame generatorFrame = Truffle.getRuntime().createMaterializedFrame(PArguments.create(), getFrameDescriptor());
+        PArguments.setCurrentFrameInfo(generatorFrame, new PFrame.Reference(this, PFrame.Reference.EMPTY));
         copyArgsAndCells(generatorFrame, arguments);
         return generatorFrame;
     }
@@ -1087,9 +1088,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     public Object execute(VirtualFrame virtualFrame) {
         calleeContext.enter(virtualFrame);
         try {
-            if (!co.isGeneratorOrCoroutine()) {
-                copyArgsAndCells(virtualFrame, virtualFrame.getArguments());
-            }
+            copyArgsAndCells(virtualFrame, virtualFrame.getArguments());
             return executeFromBci(virtualFrame, virtualFrame, this, 0, getInitialStackTop());
         } finally {
             calleeContext.exit(virtualFrame, this);
@@ -2257,7 +2256,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         throw bytecodeEndExcHandler(virtualFrame, stackTop);
                     }
                     case OpCodesConstants.YIELD_VALUE: {
-                        return bytecodeYieldValue(virtualFrame, localFrame, initialStackTop, arguments, instrumentation, mutableData, stackTop, bci, tracingOrProfilingEnabled, beginBci);
+                        return bytecodeYieldValue(virtualFrame, localFrame, initialStackTop, arguments, instrumentation, mutableData, stackTop, bci, tracingOrProfilingEnabled, bciSlot);
                     }
                     case OpCodesConstants.RESUME_YIELD: {
                         bytecodeResumeYield(virtualFrame, useCachedNodes, arguments, mutableData, ++stackTop, bci, localNodes);
@@ -2763,30 +2762,25 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @BytecodeInterpreterSwitch
     private GeneratorYieldResult bytecodeYieldValue(VirtualFrame virtualFrame, Frame localFrame, int initialStackTop, Object[] arguments, InstrumentationSupport instrumentation,
-                    MutableLoopData mutableData, int stackTop, int bci, byte tracingOrProfilingEnabled, int beginBci) {
+                    MutableLoopData mutableData, int stackTop, int bci, byte tracingOrProfilingEnabled, int bciSlot) {
         if (CompilerDirectives.hasNextTier() && mutableData.loopCount > 0) {
             LoopNode.reportLoopCount(this, mutableData.loopCount);
         }
+        setCurrentBci(virtualFrame, bciSlot, bci);
         Object value = virtualFrame.getObject(stackTop);
         virtualFrame.clear(stackTop--);
-        PArguments.setException(PGenerator.getGeneratorFrame(arguments), mutableData.localException);
-        if (mutableData.localException instanceof PException pe) {
-            /*
-             * The frame reference is only valid for this particular resumption of the generator, so
-             * we need to materialize the frame to make sure the traceback will still be valid in
-             * the next resumption.
-             */
-            pe.markEscaped();
+        traceOrProfileYield(virtualFrame, mutableData, value, tracingOrProfilingEnabled, bci);
+        if (instrumentation != null) {
+            notifyReturn(virtualFrame, mutableData, instrumentation, bci, value);
         }
+        // Suspended generators have no backref
+        PArguments.getCurrentFrameInfo(virtualFrame.getArguments()).setCallerInfo(PFrame.Reference.EMPTY);
+        PArguments.setException(PGenerator.getGeneratorFrame(arguments), mutableData.localException);
         // See PBytecodeGeneratorRootNode#execute
         if (localFrame != virtualFrame) {
             copyStackSlotsToGeneratorFrame(virtualFrame, localFrame, stackTop);
             // Clear slots that were popped (if any)
             clearFrameSlots(localFrame, stackTop + 1, initialStackTop);
-        }
-        traceOrProfileYield(virtualFrame, mutableData, value, tracingOrProfilingEnabled, bci);
-        if (instrumentation != null) {
-            notifyReturn(virtualFrame, mutableData, instrumentation, beginBci, value);
         }
         return new GeneratorYieldResult(bci + 1, stackTop, value);
     }

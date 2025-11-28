@@ -191,7 +191,7 @@ public abstract class ReadFrameNode extends Node {
                 // We reached the top of the stack
                 return null;
             }
-            PFrame.Reference backref = getBackref(curFrameInfo);
+            PFrame.Reference backref = curFrameInfo.getCallerInfo();
             if (!selector.skip(curFrameInfo.getRootNode())) {
                 if (i == level) {
                     // We found the right reference
@@ -230,13 +230,6 @@ public abstract class ReadFrameNode extends Node {
          * original starting frame might not be on stack anymore
          */
         return readSlowPath(curFrameInfo, frameAccess, selector, level - i, callerFlags, materializeFrameNode);
-    }
-
-    private static PFrame.Reference getBackref(PFrame.Reference reference) {
-        if (reference.getPyFrame() != null && reference.getPyFrame().getBackref() != null) {
-            return reference.getPyFrame().getBackref();
-        }
-        return reference.getCallerInfo();
     }
 
     @TruffleBoundary

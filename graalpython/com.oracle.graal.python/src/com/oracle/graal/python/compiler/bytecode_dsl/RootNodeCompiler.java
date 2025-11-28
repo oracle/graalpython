@@ -1330,9 +1330,9 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         }
 
         statementCompiler.b.beginResumeYield(generatorExceptionStateLocal, savedExLocal);
-        statementCompiler.b.beginYieldFromGenerator(generatorExceptionStateLocal);
+        statementCompiler.b.beginYieldValue();
         yieldValueProducer.accept(statementCompiler);
-        statementCompiler.b.endYieldFromGenerator();
+        statementCompiler.b.endYieldValue();
         statementCompiler.b.endResumeYield();
     }
 

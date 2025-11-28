@@ -163,7 +163,7 @@ public final class PFrame extends PythonBuiltinObject {
         // by a callee frame to inform the caller that it should materialize itself when it returns.
         private boolean escaped = false;
 
-        private final Reference callerInfo;
+        private Reference callerInfo;
 
         public Reference(RootNode rootNode, Reference callerInfo) {
             this.rootNode = rootNode;
@@ -174,9 +174,8 @@ public final class PFrame extends PythonBuiltinObject {
             return rootNode;
         }
 
-        public void setBackref(PFrame.Reference backref) {
-            assert pyFrame != null : "setBackref should only be called when the PFrame escaped";
-            pyFrame.setBackref(backref);
+        public void setCallerInfo(Reference callerInfo) {
+            this.callerInfo = callerInfo;
         }
 
         public void markAsEscaped() {
@@ -307,23 +306,18 @@ public final class PFrame extends PythonBuiltinObject {
         return thread;
     }
 
-    public PFrame.Reference getBackref() {
-        return backref;
-    }
-
-    public void setBackref(PFrame.Reference backref) {
-        // GR-41914
-        // @formatter:off
-        // assert this.backref == null || this.backref == backref : "setBackref tried to set a backref different to the one that was previously attached";
-        // @formatter:on
-        this.backref = backref;
-    }
-
     public void setLine(int line) {
         if (lockLine) {
             return;
         }
         this.line = line;
+    }
+
+    public void resetLine() {
+        if (lockLine) {
+            return;
+        }
+        this.line = UNINITIALIZED_LINE;
     }
 
     public void setLineLock(int line) {

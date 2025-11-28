@@ -209,7 +209,9 @@ public class PGenerator extends PythonBuiltinObject {
 
     public void prepareResume() {
         assert PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER; // not needed for manual interpreter
-        PArguments.setException(getBytecodeDSLState().arguments, null);
+        Object[] frame = getGeneratorFrame().getArguments();
+        PArguments.setException(frame, null);
+        PArguments.setCallerFrameInfo(frame, null);
     }
 
     /**
@@ -275,6 +277,10 @@ public class PGenerator extends PythonBuiltinObject {
 
     public MaterializedFrame getGeneratorFrame() {
         return frame;
+    }
+
+    public PythonObject getGlobals() {
+        return globals;
     }
 
     public static Object getSendValue(Object[] arguments) {
