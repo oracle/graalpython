@@ -1616,11 +1616,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         stackTop = bytecodeStoreDeref(virtualFrame, localFrame, stackTop, oparg, localCelloffset);
                         break;
                     }
-                    case OpCodesConstants.DELETE_DEREF: {
-                        oparg |= Byte.toUnsignedInt(localBC[++bci]);
-                        bytecodeDeleteDeref(localFrame, beginBci, localNodes, oparg, localCelloffset, useCachedNodes);
-                        break;
-                    }
                     case OpCodesConstants.STORE_FAST: {
                         oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
                         bytecodeStoreFastAdaptive(virtualFrame, localFrame, stackTop--, bci++, localBC, oparg, hasUnboxedLocals);
@@ -1887,10 +1882,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         bytecodeLoadBuildClass(virtualFrame, useCachedNodes, ++stackTop, localNodes, beginBci);
                         break;
                     }
-                    case OpCodesConstants.LOAD_ASSERTION_ERROR: {
-                        virtualFrame.setObject(++stackTop, PythonBuiltinClassType.AssertionError);
-                        break;
-                    }
                     case OpCodesConstants.STORE_NAME: {
                         setCurrentBci(virtualFrame, bciSlot, bci);
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
@@ -1901,12 +1892,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         setCurrentBci(virtualFrame, bciSlot, bci);
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         stackTop = bytecodeStoreAttr(virtualFrame, stackTop, beginBci, oparg, localNodes, localNames, useCachedNodes);
-                        break;
-                    }
-                    case OpCodesConstants.DELETE_ATTR: {
-                        setCurrentBci(virtualFrame, bciSlot, bci);
-                        oparg |= Byte.toUnsignedInt(localBC[++bci]);
-                        stackTop = bytecodeDeleteAttr(virtualFrame, stackTop, beginBci, oparg, localNodes, localNames, useCachedNodes);
                         break;
                     }
                     case OpCodesConstants.STORE_GLOBAL: {
@@ -2324,6 +2309,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case OpCodesConstants.LOAD_FROM_DICT_OR_GLOBALS:
                     case OpCodesConstants.MAKE_TYPE_PARAM:
                     case OpCodesConstants.IMPORT_STAR:
+                    case OpCodesConstants.DELETE_DEREF:
+                    case OpCodesConstants.DELETE_ATTR:
                     case OpCodesConstants.DELETE_GLOBAL:
                     case OpCodesConstants.DELETE_NAME:
                         stackTop = infrequentBytecodes(virtualFrame, localFrame, bc, bci, stackTop, beginBci, oparg, localBC, globals, locals, localNames, localNodes, bciSlot, localCelloffset,
@@ -2335,6 +2322,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case OpCodesConstants.MAKE_TYPE_ALIAS:
                     case OpCodesConstants.MAKE_GENERIC:
                     case OpCodesConstants.DELETE_SUBSCR:
+                    case OpCodesConstants.LOAD_ASSERTION_ERROR:
                         stackTop = infrequentBytecodes(virtualFrame, localFrame, bc, bci, stackTop, beginBci, oparg, localBC, globals, locals, localNames, localNodes, bciSlot, localCelloffset,
                                         useCachedNodes);
                         break;
@@ -2441,6 +2429,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 virtualFrame.setObject(++stackTop, locals);
                 break;
             }
+            case OpCodesConstants.LOAD_ASSERTION_ERROR: {
+                virtualFrame.setObject(++stackTop, PythonBuiltinClassType.AssertionError);
+                break;
+            }
             case OpCodesConstants.LOAD_FROM_DICT_OR_DEREF: {
                 setCurrentBci(virtualFrame, bciSlot, bci);
                 oparg |= Byte.toUnsignedInt(localBC[++bci]);
@@ -2477,6 +2469,17 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 setCurrentBci(virtualFrame, bciSlot, bci);
                 oparg |= Byte.toUnsignedInt(localBC[++bci]);
                 stackTop = bytecodeImportStar(virtualFrame, stackTop, beginBci, oparg, localNames, localNodes, useCachedNodes);
+                break;
+            }
+            case OpCodesConstants.DELETE_DEREF: {
+                oparg |= Byte.toUnsignedInt(localBC[++bci]);
+                bytecodeDeleteDeref(localFrame, beginBci, localNodes, oparg, localCelloffset, useCachedNodes);
+                break;
+            }
+            case OpCodesConstants.DELETE_ATTR: {
+                setCurrentBci(virtualFrame, bciSlot, bci);
+                oparg |= Byte.toUnsignedInt(localBC[++bci]);
+                stackTop = bytecodeDeleteAttr(virtualFrame, stackTop, beginBci, oparg, localNodes, localNames, useCachedNodes);
                 break;
             }
             case OpCodesConstants.DELETE_GLOBAL: {
