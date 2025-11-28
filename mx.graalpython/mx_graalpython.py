@@ -124,7 +124,7 @@ _COLLECTING_COVERAGE = False
 CI = get_boolean_env("CI")
 WIN32 = sys.platform == "win32"
 BUILD_NATIVE_IMAGE_WITH_ASSERTIONS = get_boolean_env('BUILD_WITH_ASSERTIONS', CI)
-BYTECODE_DSL_INTERPRETER = get_boolean_env('BYTECODE_DSL_INTERPRETER', False)
+BYTECODE_DSL_INTERPRETER = get_boolean_env('BYTECODE_DSL_INTERPRETER', True)
 
 mx_gate.add_jacoco_excludes([
     "com.oracle.graal.python.pegparser.sst",
@@ -251,8 +251,7 @@ def _is_overridden_native_image_arg(prefix):
 
 
 def libpythonvm_build_args():
-    build_args = []
-    build_args += bytecode_dsl_build_args()
+    build_args = bytecode_dsl_build_args()
 
     if graalos := ("musl" in mx_subst.path_substitutions.substitute("<multitarget_libc_selection>")):
         build_args += ['-H:+GraalOS']
@@ -614,10 +613,7 @@ def punittest(ars, report: Union[Task, bool, None] = False):
     if is_collecting_coverage():
         skip_leak_tests = True
 
-    vm_args = ['-Dpolyglot.engine.WarnInterpreterOnly=false']
-
-    if BYTECODE_DSL_INTERPRETER:
-        vm_args.append("-Dpython.EnableBytecodeDSLInterpreter=true")
+    vm_args = ['-Dpolyglot.engine.WarnInterpreterOnly=false'] + bytecode_dsl_build_args()
 
     # Note: we must use filters instead of --regex so that mx correctly processes the unit test configs,
     # but it is OK to apply --regex on top of the filters
@@ -843,9 +839,7 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
         mx_args.append("--extra-image-builder-argument=-ea")
 
     if mx_gate.get_jacoco_agent_args() or (build and not DISABLE_REBUILD):
-        mx_build_args = mx_args
-        if BYTECODE_DSL_INTERPRETER:
-            mx_build_args = mx_args + ["--extra-image-builder-argument=-Dpython.EnableBytecodeDSLInterpreter=true"]
+        mx_build_args = mx_args + bytecode_dsl_build_args(prefix="--extra-image-builder-argument=")
         # This build is purposefully done without the LATEST_JAVA_HOME in the
         # environment, so we can build JVM standalones on an older Graal JDK
         run_mx(mx_build_args + ["build", "--target", standalone_dist])
@@ -1151,8 +1145,8 @@ def graalpytest(args):
             gp_args += ["--vm.ea", "--vm.esa"]
         mx.log(f"Executable seems to be GraalPy, prepending arguments: {gp_args}")
         python_args += gp_args
-    if is_graalpy and BYTECODE_DSL_INTERPRETER:
-        python_args.insert(0, "--vm.Dpython.EnableBytecodeDSLInterpreter=true")
+    if is_graalpy and not BYTECODE_DSL_INTERPRETER:
+        python_args.insert(0, "--vm.Dpython.EnableBytecodeDSLInterpreter=false")
 
     runner_args.append(f'--subprocess-args={shlex.join(python_args)}')
     if is_graalpy:
@@ -1205,8 +1199,8 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
         # index in in that case
         env["PIP_EXTRA_INDEX_URL"] = pip_index
 
-    if BYTECODE_DSL_INTERPRETER:
-        args += ['--vm.Dpython.EnableBytecodeDSLInterpreter=true']
+    if not BYTECODE_DSL_INTERPRETER:
+        args += ['--vm.Dpython.EnableBytecodeDSLInterpreter=false']
     args += [_python_test_runner(), "run", "--durations", "10", "-n", parallelism, f"--subprocess-args={shlex.join(args)}"]
 
     if runner_args:
@@ -2117,8 +2111,8 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
 ))
 
 
-def bytecode_dsl_build_args():
-    return ['-Dpython.EnableBytecodeDSLInterpreter=true'] if BYTECODE_DSL_INTERPRETER else []
+def bytecode_dsl_build_args(prefix=''):
+    return [] if BYTECODE_DSL_INTERPRETER else [prefix + '-Dpython.EnableBytecodeDSLInterpreter=false']
 
 mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     suite=SUITE,
@@ -2545,7 +2539,7 @@ class GraalpythonFrozenModuleBuildTask(GraalpythonBuildTask):
         dsl_vm_args = ["-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:8000"] if 'DEBUG_FROZEN_BCI' in os.environ else []
 
         return bool(
-            self.run_for(args, "manual bytecode", extra_vm_args=manual_vm_args) or
+            self.run_for(args, "manual bytecode", extra_vm_args=manual_vm_args + ["-Dpython.EnableBytecodeDSLInterpreter=false"]) or
             self.run_for(args, "dsl", extra_vm_args=dsl_vm_args + ["-Dpython.EnableBytecodeDSLInterpreter=true"])
         )
 

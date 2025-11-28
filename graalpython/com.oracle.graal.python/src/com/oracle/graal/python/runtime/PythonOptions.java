@@ -86,7 +86,7 @@ public final class PythonOptions {
      * Whether to use the experimental Bytecode DSL interpreter instead of the manually-written
      * bytecode interpreter.
      */
-    public static final boolean ENABLE_BYTECODE_DSL_INTERPRETER = Boolean.getBoolean("python.EnableBytecodeDSLInterpreter");
+    public static final boolean ENABLE_BYTECODE_DSL_INTERPRETER = !"false".equalsIgnoreCase(System.getProperty("python.EnableBytecodeDSLInterpreter"));
     private static final OptionType<TruffleString> TS_OPTION_TYPE = new OptionType<>("graal.python.TruffleString", PythonUtils::toTruffleStringUncached);
 
     private PythonOptions() {
@@ -94,8 +94,8 @@ public final class PythonOptions {
     }
 
     public static void checkBytecodeDSLEnv() {
-        if (!ENABLE_BYTECODE_DSL_INTERPRETER && "true".equalsIgnoreCase(System.getenv("BYTECODE_DSL_INTERPRETER"))) {
-            System.err.println("WARNING: found environment variable BYTECODE_DSL_INTERPRETER=true, but the python.EnableBytecodeDSLInterpreter Java property was not set.");
+        if (ENABLE_BYTECODE_DSL_INTERPRETER && "false".equalsIgnoreCase(System.getenv("BYTECODE_DSL_INTERPRETER"))) {
+            System.err.println("WARNING: found environment variable BYTECODE_DSL_INTERPRETER=false, but the python.EnableBytecodeDSLInterpreter Java property was not set and defaults to true.");
         }
     }
 
