@@ -184,7 +184,6 @@ public abstract class MaterializeFrameNode extends Node {
         MaterializedFrame generatorFrame = PGenerator.getGeneratorFrame(frameToMaterialize);
         PFrame.Reference frameRef = PArguments.getCurrentFrameInfo(frameToMaterialize);
         PFrame escapedFrame = materializeGeneratorFrame(location, generatorFrame, PArguments.getGlobals(frameToMaterialize), frameRef);
-        frameRef.setPyFrame(escapedFrame);
         return doEscapeFrame(frameToMaterialize, escapedFrame, markAsEscaped, false, location, null);
     }
 
@@ -207,6 +206,7 @@ public abstract class MaterializeFrameNode extends Node {
         PFrame escapedFrame = PFactory.createPFrame(PythonLanguage.get(location), frameRef, location, false);
         escapedFrame.setLocals(generatorFrame);
         escapedFrame.setGlobals(globals);
+        frameRef.setPyFrame(escapedFrame);
         return escapedFrame;
     }
 

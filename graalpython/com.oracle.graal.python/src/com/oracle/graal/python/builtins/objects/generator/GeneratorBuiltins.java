@@ -208,7 +208,6 @@ public final class GeneratorBuiltins extends PythonBuiltins {
                     BytecodeDSLFrameInfo info = (BytecodeDSLFrameInfo) generatorFrame.getFrameDescriptor().getInfo();
                     if (pyFrame == null) {
                         pyFrame = MaterializeFrameNode.materializeGeneratorFrame(self.getBytecodeNode(), generatorFrame, self.getGlobals(), currentRef);
-                        currentRef.setPyFrame(pyFrame);
                     }
                     BytecodeLocation location = self.getCurrentLocation();
                     if (location != null) {
@@ -223,7 +222,6 @@ public final class GeneratorBuiltins extends PythonBuiltins {
                     BytecodeFrameInfo info = (BytecodeFrameInfo) generatorFrame.getFrameDescriptor().getInfo();
                     if (pyFrame == null) {
                         pyFrame = MaterializeFrameNode.materializeGeneratorFrame(info.getRootNode(), generatorFrame, self.getGlobals(), currentRef);
-                        currentRef.setPyFrame(pyFrame);
                     }
                     int bci = self.getBci();
                     if (bci >= 0) {

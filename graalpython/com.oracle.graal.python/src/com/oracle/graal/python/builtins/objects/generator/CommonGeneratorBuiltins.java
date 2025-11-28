@@ -187,8 +187,6 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                 MaterializedFrame generatorFrame = self.getGeneratorFrame();
                 Object[] callArguments = new Object[]{generatorFrame, sendValue};
                 Object[] generatorArguments = generatorFrame.getArguments();
-                PArguments.setCallerFrameInfo(generatorArguments, null);
-                PArguments.setException(generatorArguments, null);
                 if (frame == null) {
                     PythonContext context = PythonContext.get(inliningTarget);
                     PythonThreadState threadState = context.getThreadState(context.getLanguage(inliningTarget));
@@ -261,8 +259,6 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                 MaterializedFrame generatorFrame = self.getGeneratorFrame();
                 Object[] callArguments = new Object[]{generatorFrame, sendValue};
                 Object[] generatorArguments = generatorFrame.getArguments();
-                PArguments.setCallerFrameInfo(generatorArguments, null);
-                PArguments.setException(generatorArguments, null);
                 if (frame == null) {
                     PythonContext context = PythonContext.get(inliningTarget);
                     PythonThreadState threadState = context.getThreadState(context.getLanguage(inliningTarget));

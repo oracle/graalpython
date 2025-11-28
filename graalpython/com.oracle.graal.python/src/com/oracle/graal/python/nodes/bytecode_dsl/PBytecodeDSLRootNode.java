@@ -1115,10 +1115,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
      */
     @Yield
     @SuppressWarnings("truffle-interpreted-performance") // blocked by GR-69979
-    @ConstantOperand(type = LocalAccessor.class)
-    public static final class YieldFromGenerator {
+    public static final class YieldValue {
         @Specialization
-        public static Object doObject(LocalAccessor currentGeneratorException, Object value,
+        public static Object doObject(Object value,
                         @Bind ContinuationRootNode continuationRootNode,
                         @Bind MaterializedFrame frame,
                         @Bind PBytecodeDSLRootNode root,
