@@ -86,6 +86,12 @@ public final class BytecodeDSLCodeUnit extends CodeUnit {
         this.selfIndex = selfIndex;
     }
 
+    public BytecodeDSLCodeUnit withFlags(int flags) {
+        return new BytecodeDSLCodeUnit(name, qualname, argCount, kwOnlyArgCount, positionalOnlyArgCount, flags,
+                        names, varnames, cellvars, freevars, cell2arg, constants,
+                        startLine, startColumn, endLine, endColumn, classcellIndex, selfIndex, serialized, nodes);
+    }
+
     @TruffleBoundary
     public PBytecodeDSLRootNode createRootNode(PythonContext context, Source source) {
         if (nodes != null) {

@@ -1053,9 +1053,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind Node inliningTarget,
                         @Bind ContinuationRootNode continuationRootNode,
                         @Bind PBytecodeDSLRootNode innerRoot,
-                        @Bind BytecodeNode bytecodeNode,
-                        @Cached InlinedConditionProfile isIterableCoroutine) {
-            Object result = createGenerator(continuationFrame, inliningTarget, continuationRootNode, innerRoot, isIterableCoroutine);
+                        @Bind BytecodeNode bytecodeNode) {
+            Object result = createGenerator(continuationFrame, inliningTarget, continuationRootNode, innerRoot);
             if (innerRoot.needsTraceAndProfileInstrumentation()) {
                 innerRoot.getThreadState().popInstrumentationData(innerRoot);
             }
@@ -1063,22 +1062,14 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
 
         private static PythonAbstractObject createGenerator(MaterializedFrame continuationFrame, Node inliningTarget,
-                        ContinuationRootNode continuationRootNode, PBytecodeDSLRootNode innerRoot,
-                        InlinedConditionProfile isIterableCoroutine) {
+                        ContinuationRootNode continuationRootNode, PBytecodeDSLRootNode innerRoot) {
             Object[] arguments = continuationFrame.getArguments();
             PFunction generatorFunction = PArguments.getFunctionObject(arguments);
             assert generatorFunction != null;
             PythonLanguage language = PythonLanguage.get(inliningTarget);
             PArguments.setCurrentFrameInfo(continuationFrame, new PFrame.Reference(innerRoot, PFrame.Reference.EMPTY));
             if (innerRoot.getCodeUnit().isGenerator()) {
-                // if CO_ITERABLE_COROUTINE was explicitly set (likely by types.coroutine), we have
-                // to pass the information to the generator .gi_code.co_flags will still be wrong,
-                // but at least await will work correctly
-                if (isIterableCoroutine.profile(inliningTarget, (generatorFunction.getCode().getFlags() & 0x100) != 0)) {
-                    return PFactory.createIterableCoroutine(language, generatorFunction, innerRoot, arguments, continuationRootNode, continuationFrame);
-                } else {
-                    return PFactory.createGenerator(language, generatorFunction, innerRoot, arguments, continuationRootNode, continuationFrame);
-                }
+                return PFactory.createGenerator(language, generatorFunction, innerRoot, arguments, continuationRootNode, continuationFrame);
             } else if (innerRoot.getCodeUnit().isCoroutine()) {
                 return PFactory.createCoroutine(language, generatorFunction, innerRoot, arguments, continuationRootNode, continuationFrame);
             } else if (innerRoot.getCodeUnit().isAsyncGenerator()) {
