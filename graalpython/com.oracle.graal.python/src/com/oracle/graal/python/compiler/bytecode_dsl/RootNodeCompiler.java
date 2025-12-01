@@ -2909,6 +2909,9 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         public Void visit(StmtTy.Assert node) {
             if (ctx.optimizationLevel <= 0) {
                 boolean newStatement = beginSourceSection(node, b);
+                if (node.test instanceof ExprTy.Tuple && ((Tuple) node.test).elements.length > 0) {
+                    ctx.errorCallback.onWarning(WarningType.Syntax, currentLocation, "assertion is always true, perchance remove parentheses?");
+                }
                 b.beginIfThen();
 
                 b.beginNot();
