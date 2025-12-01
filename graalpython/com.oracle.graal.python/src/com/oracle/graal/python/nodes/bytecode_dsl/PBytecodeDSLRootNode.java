@@ -969,17 +969,17 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         return MarshalModuleBuiltins.serializeCodeUnit(null, PythonContext.get(this), co);
     }
 
-    private static Object checkUnboundCell(PCell cell, int index, PBytecodeDSLRootNode rootNode, Node inliningTarget, PRaiseNode raiseNode) {
+    private static Object checkUnboundCell(PCell cell, int index, BytecodeNode bytecodeNode) {
         Object result = cell.getRef();
         if (result == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            CodeUnit codeUnit = rootNode.getCodeUnit();
+            CodeUnit codeUnit = ((PBytecodeDSLRootNode) bytecodeNode.getRootNode()).getCodeUnit();
             if (index < codeUnit.cellvars.length) {
                 TruffleString localName = codeUnit.cellvars[index];
-                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, localName);
+                throw PRaiseNode.raiseStatic(bytecodeNode, PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, localName);
             } else {
                 TruffleString localName = codeUnit.freevars[index - codeUnit.cellvars.length];
-                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.NameError, ErrorMessages.UNBOUNDFREEVAR, localName);
+                throw PRaiseNode.raiseStatic(bytecodeNode, PythonBuiltinClassType.NameError, ErrorMessages.UNBOUNDFREEVAR, localName);
             }
         }
         return result;
@@ -2511,10 +2511,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class LoadCell {
         @Specialization
         public static Object doLoadCell(int index, PCell cell,
-                        @Bind PBytecodeDSLRootNode rootNode,
-                        @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            return checkUnboundCell(cell, index, rootNode, inliningTarget, raiseNode);
+                        @Bind BytecodeNode bytecodeNode) {
+            return checkUnboundCell(cell, index, bytecodeNode);
         }
     }
 
@@ -2528,11 +2526,10 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class LoadFromDictOrCell {
         @Specialization
         public static Object doLoadCell(VirtualFrame frame, int index, Object locals, PCell cell,
-                        @Bind PBytecodeDSLRootNode rootNode,
+                        @Bind BytecodeNode bytecodeNode,
                         @Bind Node inliningTarget,
-                        @Cached ReadFromLocalsNode readLocalsNode,
-                        @Cached PRaiseNode raiseNode) {
-            CodeUnit co = rootNode.getCodeUnit();
+                        @Cached ReadFromLocalsNode readLocalsNode) {
+            CodeUnit co = ((PBytecodeDSLRootNode) bytecodeNode.getRootNode()).getCodeUnit();
             TruffleString name;
             if (index < co.cellvars.length) {
                 name = co.cellvars[index];
@@ -2543,7 +2540,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             if (value != PNone.NO_VALUE) {
                 return value;
             } else {
-                return checkUnboundCell(cell, index, rootNode, inliningTarget, raiseNode);
+                return checkUnboundCell(cell, index, bytecodeNode);
             }
         }
     }
@@ -2608,10 +2605,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class ClearCell {
         @Specialization
         public static void doClearCell(int index, PCell cell,
-                        @Bind PBytecodeDSLRootNode rootNode,
-                        @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            checkUnboundCell(cell, index, rootNode, inliningTarget, raiseNode);
+                        @Bind BytecodeNode bytecodeNode) {
+            checkUnboundCell(cell, index, bytecodeNode);
             cell.clearRef();
         }
     }
@@ -3605,16 +3600,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, localName);
     }
 
-    @Operation(storeBytecodeIndex = true)
-    public static final class RaiseNotImplementedError {
-        @Specialization
-        public static void doRaise(VirtualFrame frame, TruffleString name,
-                        @Bind BytecodeNode node) {
-            throw PRaiseNode.raiseStatic(node, PythonBuiltinClassType.NotImplementedError, name);
-
-        }
-    }
-
     /**
      * Creates a TypeVar, TypeVarTuple or ParamSpec object. The constant argument determines
      * (defined in {@link MakeTypeParamKind}) which and whether it will need to pop bound or
@@ -3656,8 +3641,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class MakeTypeAliasType {
         @Specialization
         public static PTypeAliasType doObject(TruffleString name, Object typeParams, Object computeValue,
-                        @Bind PBytecodeDSLRootNode rootNode) {
-            PythonLanguage language = PythonLanguage.get(rootNode);
+                        @Bind BytecodeNode bytecodeNode) {
+            PythonLanguage language = PythonLanguage.get(bytecodeNode);
             // bytecode compiler should ensure that typeParams are either PTuple or null
             return PFactory.createTypeAliasType(language, name, (PTuple) typeParams, computeValue, null, null);
         }
