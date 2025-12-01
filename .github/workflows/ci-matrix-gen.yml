@@ -57,12 +57,6 @@ jobs:
         include: ${{ fromJson(needs.generate-tier1.outputs.matrix) }}
     steps: &buildsteps
 
-      # PATH seems to be empty on Linux runner
-      - name: Set PATH on Linux
-        if: runner.os == 'Linux'
-        run: |
-          echo "PATH=/bin:/usr/bin" >> $GITHUB_ENV
-
       - name: Actions/Checkout
         uses: actions/checkout@main
         with:
