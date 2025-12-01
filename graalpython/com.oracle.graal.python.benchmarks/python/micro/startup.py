@@ -111,7 +111,6 @@ def __benchmark__(num=1000000):
         *ORIG_ARGV,
         "-I",  # isolate from environment
         "-S",  # do not import site
-        "-Wignore", # ignore all warnings
         "-B",  # do not attempt to write pyc files
         "-u",  # do not add buffering wrappers around output streams
         "-c",
