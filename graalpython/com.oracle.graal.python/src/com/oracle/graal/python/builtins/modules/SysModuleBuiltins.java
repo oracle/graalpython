@@ -167,6 +167,7 @@ import com.oracle.graal.python.builtins.modules.io.PTextIO;
 import com.oracle.graal.python.builtins.modules.io.TextIOWrapperNodesFactory.TextIOWrapperInitNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.FirstToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
@@ -983,11 +984,14 @@ public final class SysModuleBuiltins extends PythonBuiltins {
             if (object instanceof PythonObject pythonObject) {
                 return pythonObject.getRefCount();
             }
-            long pointer = PythonToNativeInternalNode.executeUncached(object, false);
+            Object promotedObject = EnsurePythonObjectNode.executeUncached(context, object, false);
+            long pointer = PythonToNativeInternalNode.executeUncached(promotedObject, false);
             if (HandlePointerConverter.pointsToPyIntHandle(pointer) || HandlePointerConverter.pointsToPyFloatHandle(pointer)) {
                 return PythonObject.IMMORTAL_REFCNT;
             }
-            return CApiTransitions.readNativeRefCount(HandlePointerConverter.pointsToPyHandleSpace(pointer) ? HandlePointerConverter.pointerToStub(pointer) : pointer);
+            long refCount = CApiTransitions.readNativeRefCount(HandlePointerConverter.pointsToPyHandleSpace(pointer) ? HandlePointerConverter.pointerToStub(pointer) : pointer);
+            java.lang.ref.Reference.reachabilityFence(promotedObject);
+            return refCount;
         }
     }
 

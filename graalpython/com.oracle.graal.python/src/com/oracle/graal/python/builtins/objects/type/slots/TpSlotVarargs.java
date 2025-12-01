@@ -47,12 +47,15 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
+import java.lang.ref.Reference;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CreateArgsTupleNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.DefaultCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.EagerTupleState;
@@ -317,19 +320,30 @@ public final class TpSlotVarargs {
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached GetThreadStateNode getThreadStateNode,
+                        @Cached EnsurePythonObjectNode ensurePythonObjectNode,
                         @Cached PythonToNativeNode toNativeNode,
                         @Cached CreateArgsTupleNode createArgsTupleNode,
                         @Cached EagerTupleState eagerTupleState,
                         @Cached ExternalFunctionInvokeNode externalInvokeNode) {
             PythonLanguage language = context.getLanguage(inliningTarget);
             PythonThreadState state = getThreadStateNode.execute(inliningTarget, context);
+            Object promotedSelf = ensurePythonObjectNode.execute(context, self, false);
             PTuple argsTuple = createArgsTupleNode.execute(inliningTarget, context, args, eagerTupleState);
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(argsTuple);
             Object kwargsDict = keywords.length > 0 ? PFactory.createDict(language, keywords) : NO_VALUE;
-            Object nativeResult = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, name, slot.callable,
-                            toNativeNode.execute(self), toNativeNode.execute(argsTuple), toNativeNode.execute(kwargsDict));
-            eagerTupleState.report(inliningTarget, argsTuple);
-            checkResultNode.execute(state, name, nativeResult);
-            return nativeResult;
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(kwargsDict);
+            try {
+                Object nativeResult = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, name, slot.callable,
+                                toNativeNode.execute(promotedSelf), toNativeNode.execute(argsTuple), toNativeNode.execute(kwargsDict));
+                eagerTupleState.report(inliningTarget, argsTuple);
+                checkResultNode.execute(state, name, nativeResult);
+                return nativeResult;
+            } finally {
+                Reference.reachabilityFence(promotedSelf);
+                Reference.reachabilityFence(argsTuple);
+                Reference.reachabilityFence(kwargsDict);
+
+            }
         }
     }
 

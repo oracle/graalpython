@@ -41,6 +41,9 @@
 package com.oracle.graal.python.nodes.object;
 
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_OBJECT_GENERIC_SET_DICT;
+import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
+
+import java.lang.ref.Reference;
 
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
@@ -52,7 +55,6 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -87,14 +89,14 @@ public abstract class SetDictNode extends PNodeWithContext {
 
     @Specialization
     void doNativeObject(PythonAbstractNativeObject object, PDict dict,
-                    @Cached(inline = false) PythonToNativeNode objectToSulong,
-                    @Cached(inline = false) PythonToNativeNode dictToSulong,
+                    @Cached(inline = false) PythonToNativeNode objectToNative,
+                    @Cached(inline = false) PythonToNativeNode dictToNative,
                     @Cached(inline = false) CExtNodes.PCallCapiFunction callGetDictNode,
                     @Cached(inline = false) CheckPrimitiveFunctionResultNode checkResult) {
         assert !IsTypeNode.executeUncached(object);
-        PythonContext context = getContext();
-        Object result = callGetDictNode.call(FUN_PY_OBJECT_GENERIC_SET_DICT, objectToSulong.execute(object), dictToSulong.execute(dict), context.getNativeNull());
-        checkResult.execute(context, FUN_PY_OBJECT_GENERIC_SET_DICT.getTsName(), result);
+        Object result = callGetDictNode.call(FUN_PY_OBJECT_GENERIC_SET_DICT, objectToNative.execute(object), dictToNative.execute(dict), NULLPTR);
+        checkResult.execute(getContext(), FUN_PY_OBJECT_GENERIC_SET_DICT.getTsName(), result);
+        Reference.reachabilityFence(dict);
     }
 
     protected static boolean isPythonClass(Object object) {

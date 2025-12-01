@@ -150,6 +150,7 @@ public enum ArgDescriptor {
     Double(ArgBehavior.Float64, "double"),
     Float(ArgBehavior.Float32, "float"),
     Long(ArgBehavior.Long, "long"),
+    PyObjectConstArray(ArgBehavior.PointerZZZ, "PyObject *const *"),
 
     _FRAME(ArgBehavior.PyObject, "struct _frame*"),
     _MOD_PTR("struct _mod*"),

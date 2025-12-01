@@ -46,10 +46,13 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELETE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DEL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SET__;
 
+import java.lang.ref.Reference;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.InitCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
@@ -193,18 +196,28 @@ public abstract class TpSlotDescrSet {
         @Specialization
         static void callNative(VirtualFrame frame, Node inliningTarget, TpSlotNative slot, Object self, Object obj, Object value,
                         @Cached GetThreadStateNode getThreadStateNode,
+                        @Cached EnsurePythonObjectNode ensurePythonObjectNode,
                         @Cached(inline = false) PythonToNativeNode selfToNativeNode,
                         @Cached(inline = false) PythonToNativeNode objToNativeNode,
                         @Cached(inline = false) PythonToNativeNode valueToNativeNode,
                         @Cached ExternalFunctionInvokeNode externalInvokeNode,
                         @Cached(inline = false) InitCheckFunctionResultNode checkResultNode) {
             PythonContext ctx = PythonContext.get(inliningTarget);
-            PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, ctx);
-            Object result = externalInvokeNode.call(frame, inliningTarget, threadState, C_API_TIMING, T___SET__, slot.callable, //
-                            selfToNativeNode.execute(self), //
-                            objToNativeNode.execute(obj), //
-                            valueToNativeNode.execute(value));
-            checkResultNode.execute(threadState, T___SET__, result);
+            PythonThreadState threadState = getThreadStateNode.execute(inliningTarget);
+            Object promotedSelf = ensurePythonObjectNode.execute(ctx, self, false);
+            Object promotedObj = ensurePythonObjectNode.execute(ctx, obj, false);
+            Object promotedValue = ensurePythonObjectNode.execute(ctx, value, false);
+            try {
+                Object result = externalInvokeNode.call(frame, inliningTarget, threadState, C_API_TIMING, T___SET__, slot.callable, //
+                                selfToNativeNode.execute(promotedSelf), //
+                                objToNativeNode.execute(promotedObj), //
+                                valueToNativeNode.execute(promotedValue));
+                checkResultNode.execute(threadState, T___SET__, result);
+            } finally {
+                Reference.reachabilityFence(promotedSelf);
+                Reference.reachabilityFence(promotedObj);
+                Reference.reachabilityFence(promotedValue);
+            }
         }
     }
 

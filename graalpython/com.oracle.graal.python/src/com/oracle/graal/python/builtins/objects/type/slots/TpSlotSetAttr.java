@@ -54,12 +54,13 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckInquiryResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeRawNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -76,6 +77,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode.Dynamic;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -260,36 +262,41 @@ public class TpSlotSetAttr {
         @Specialization
         static void callNative(VirtualFrame frame, TpSlots slots, TpSlotNative slot, Object self, Object name, Object value,
                         @Bind Node inliningTarget,
+                        @Bind PythonContext context,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached InlinedConditionProfile isSetAttrProfile,
                         @Cached AsCharPointerNode asCharPointerNode,
-                        @Cached PythonToNativeNode nameToNativeNode,
+                        @Cached EnsurePythonObjectNode ensurePythonObjectNode,
+                        @Cached PythonToNativeRawNode nameToNativeNode,
                         @Cached PythonToNativeNode selfToNativeNode,
                         @Cached PythonToNativeNode valueToNativeNode,
-                        @Cached CoerceNativePointerToLongNode pointerToLongNode,
                         @Cached ExternalFunctionInvokeNode externalInvokeNode,
                         @Cached CheckInquiryResultNode checkResultNode) {
             assert PyUnicodeCheckNode.executeUncached(name);
             boolean isSetAttr = isSetAttrProfile.profile(inliningTarget, slots.tp_setattr() == slot);
-            Object nameWrapper = null;
+            Object promotedSelf = ensurePythonObjectNode.execute(context, self, false);
+            Object promotedName = null;
             long nameArg;
             if (isSetAttr) {
                 nameArg = asCharPointerNode.execute(name);
             } else {
-                nameWrapper = nameToNativeNode.execute(name);
-                nameArg = pointerToLongNode.execute(inliningTarget, nameWrapper);
+                promotedName = ensurePythonObjectNode.execute(context, name, false);
+                nameArg = nameToNativeNode.execute(promotedName);
             }
+            Object promotedValue = ensurePythonObjectNode.execute(context, value, false);
             Object result;
-            PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, null);
+            PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, context);
             try {
-                result = externalInvokeNode.call(frame, inliningTarget, threadState, C_API_TIMING, T___SETATTR__, slot.callable, selfToNativeNode.execute(self), wrapPointer(nameArg),
-                                valueToNativeNode.execute(value));
+                result = externalInvokeNode.call(frame, inliningTarget, threadState, C_API_TIMING, T___SETATTR__, slot.callable,
+                                selfToNativeNode.execute(promotedSelf), wrapPointer(nameArg), valueToNativeNode.execute(promotedValue));
             } finally {
+                Reference.reachabilityFence(promotedSelf);
                 if (isSetAttr) {
                     free(nameArg);
                 } else {
-                    Reference.reachabilityFence(nameWrapper);
+                    Reference.reachabilityFence(promotedName);
                 }
+                Reference.reachabilityFence(promotedValue);
             }
             checkResultNode.execute(threadState, T___SETATTR__, result);
         }

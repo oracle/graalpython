@@ -42,7 +42,10 @@ package com.oracle.graal.python.builtins.objects.type.slots;
 
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
+import java.lang.ref.Reference;
+
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
@@ -57,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotCExtNati
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPythonSingle;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
@@ -120,16 +124,23 @@ public final class TpSlotUnaryFunc {
 
         @Specialization
         static Object callNative(VirtualFrame frame, Node inliningTarget, TpSlotCExtNative slot, Object self,
+                        @Bind PythonContext context,
                         @Cached GetThreadStateNode getThreadStateNode,
+                        @Cached EnsurePythonObjectNode ensurePythonObjectNode,
                         @Cached(inline = false) PythonToNativeNode toNativeNode,
                         @Cached ExternalFunctionInvokeNode externalInvokeNode,
                         @Cached NativeToPythonInternalNode toPythonNode,
                         @Cached(inline = false) PyObjectCheckFunctionResultNode checkResultNode,
                         @Cached CoerceNativePointerToLongNode coerceNativePointerToLongNode) {
-            PythonThreadState state = getThreadStateNode.execute(inliningTarget);
-            Object result = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T_UNARY_SLOT, slot.callable, toNativeNode.execute(self));
-            long lresult = coerceNativePointerToLongNode.execute(inliningTarget, result);
-            return checkResultNode.execute(state, T_UNARY_SLOT, toPythonNode.execute(inliningTarget, lresult, true, true));
+            PythonThreadState state = getThreadStateNode.execute(inliningTarget, context);
+            Object promotedSelf = ensurePythonObjectNode.execute(context, self, false);
+            try {
+                Object result = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T_UNARY_SLOT, slot.callable, toNativeNode.execute(promotedSelf));
+                long lresult = coerceNativePointerToLongNode.execute(inliningTarget, result);
+                return checkResultNode.execute(state, T_UNARY_SLOT, toPythonNode.execute(inliningTarget, lresult, true, true));
+            } finally {
+                Reference.reachabilityFence(promotedSelf);
+            }
         }
 
         @Specialization(replaces = "callCachedBuiltin")

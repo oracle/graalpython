@@ -45,6 +45,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckPrimitiveFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
@@ -86,6 +87,8 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+
+import java.lang.ref.Reference;
 
 public abstract class TpSlotHashFun {
     public static final TpSlotManaged HASH_NOT_IMPLEMENTED = new PyObjectHashNotImplemented();
@@ -169,12 +172,18 @@ public abstract class TpSlotHashFun {
         static long callNative(VirtualFrame frame, Node inliningTarget, TpSlotCExtNative slot, Object self,
                         @Exclusive @Cached GetThreadStateNode getThreadStateNode,
                         @Cached(inline = false) PythonToNativeNode toNativeNode,
+                        @Cached EnsurePythonObjectNode ensurePythonObjectNode,
                         @Exclusive @Cached ExternalFunctionInvokeNode externalInvokeNode,
                         @Exclusive @Cached(inline = false) CheckPrimitiveFunctionResultNode checkResultNode) {
             PythonContext ctx = PythonContext.get(inliningTarget);
             PythonThreadState state = getThreadStateNode.execute(inliningTarget, ctx);
-            Object result = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T___HASH__, slot.callable, toNativeNode.execute(self));
-            return checkResultNode.executeLong(state, T___HASH__, result);
+            Object promotedSelf = ensurePythonObjectNode.execute(ctx, self, false);
+            try {
+                Object result = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T___HASH__, slot.callable, toNativeNode.execute(promotedSelf));
+                return checkResultNode.executeLong(state, T___HASH__, result);
+            } finally {
+                Reference.reachabilityFence(promotedSelf);
+            }
         }
 
         @Specialization(replaces = "callCachedBuiltin")

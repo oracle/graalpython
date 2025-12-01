@@ -44,7 +44,10 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BOOL__;
 
+import java.lang.ref.Reference;
+
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckInquiryResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
@@ -160,12 +163,18 @@ public abstract class TpSlotInquiry {
         static boolean callNative(VirtualFrame frame, Node inliningTarget, TpSlotNative slot, Object self,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached(inline = false) PythonToNativeNode toNativeNode,
+                        @Cached EnsurePythonObjectNode ensurePythonObjectNode,
                         @Cached ExternalFunctionInvokeNode externalInvokeNode,
                         @Cached(inline = false) CheckInquiryResultNode checkResultNode) {
             PythonContext ctx = PythonContext.get(inliningTarget);
             PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, ctx);
-            Object result = externalInvokeNode.call(frame, inliningTarget, threadState, C_API_TIMING, T___BOOL__, slot.callable, toNativeNode.execute(self));
-            return checkResultNode.executeBool(threadState, T___BOOL__, result);
+            Object promotedSelf = ensurePythonObjectNode.execute(ctx, self, false);
+            try {
+                Object result = externalInvokeNode.call(frame, inliningTarget, threadState, C_API_TIMING, T___BOOL__, slot.callable, toNativeNode.execute(promotedSelf));
+                return checkResultNode.executeBool(threadState, T___BOOL__, result);
+            } finally {
+                Reference.reachabilityFence(promotedSelf);
+            }
         }
 
         @Specialization(replaces = "callCachedBuiltin")

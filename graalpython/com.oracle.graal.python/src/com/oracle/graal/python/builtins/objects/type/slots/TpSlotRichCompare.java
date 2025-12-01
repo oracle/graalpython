@@ -46,9 +46,12 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T_TP_RICHCOMPARE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
+import java.lang.ref.Reference;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
@@ -244,16 +247,24 @@ public abstract class TpSlotRichCompare {
                         @Exclusive @Cached GetThreadStateNode getThreadStateNode,
                         @Cached(inline = false) PythonToNativeNode toNativeNodeA,
                         @Cached(inline = false) PythonToNativeNode toNativeNodeB,
+                        @Cached EnsurePythonObjectNode ensurePythonObjectNode,
                         @Exclusive @Cached ExternalFunctionInvokeNode externalInvokeNode,
                         @Exclusive @Cached NativeToPythonInternalNode toPythonNode,
                         @Exclusive @Cached(inline = false) PyObjectCheckFunctionResultNode checkResultNode,
                         @Exclusive @Cached CoerceNativePointerToLongNode coerceNativePointerToLongNode) {
             PythonContext ctx = PythonContext.get(inliningTarget);
             PythonThreadState state = getThreadStateNode.execute(inliningTarget, ctx);
-            Object result = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T_TP_RICHCOMPARE, slot.callable, toNativeNodeA.execute(a), toNativeNodeB.execute(b),
-                            op.asNative());
-            long lresult = coerceNativePointerToLongNode.execute(inliningTarget, result);
-            return checkResultNode.execute(state, T___HASH__, toPythonNode.execute(inliningTarget, lresult, true));
+            Object promotedA = ensurePythonObjectNode.execute(ctx, a, false);
+            Object promotedB = ensurePythonObjectNode.execute(ctx, b, false);
+            try {
+                Object result = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T_TP_RICHCOMPARE, slot.callable,
+                                toNativeNodeA.execute(promotedA), toNativeNodeB.execute(promotedB), op.asNative());
+                long lresult = coerceNativePointerToLongNode.execute(inliningTarget, result);
+                return checkResultNode.execute(state, T___HASH__, toPythonNode.execute(inliningTarget, lresult, true));
+            } finally {
+                Reference.reachabilityFence(promotedA);
+                Reference.reachabilityFence(promotedB);
+            }
         }
 
         @Specialization(replaces = "callCachedBuiltin")

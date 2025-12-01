@@ -85,6 +85,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
+import java.lang.ref.Reference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -212,6 +213,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
 
@@ -292,6 +294,7 @@ public abstract class CExtNodes {
 
     public abstract static class StringSubtypeNew extends SubtypeNew {
 
+        @Child private EnsurePythonObjectNode ensurePythonObjectNode;
         @Child private PythonToNativeNode toNativeNode;
 
         @Override
@@ -300,11 +303,15 @@ public abstract class CExtNodes {
         }
 
         public final Object call(Object object, Object arg) {
-            if (toNativeNode == null) {
+            if (ensurePythonObjectNode == null || toNativeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
+                ensurePythonObjectNode = insert(EnsurePythonObjectNode.create());
                 toNativeNode = insert(PythonToNativeNodeGen.create());
             }
-            return execute(object, toNativeNode.execute(arg));
+            Object promotedArg = ensurePythonObjectNode.execute(PythonContext.get(this), arg, false);
+            Object result = execute(object, toNativeNode.execute(promotedArg));
+            Reference.reachabilityFence(promotedArg);
+            return result;
         }
 
         public static StringSubtypeNew create() {
@@ -323,6 +330,7 @@ public abstract class CExtNodes {
                         @Cached PythonToNativeNode toNative,
                         @Cached PCallCapiFunction call) {
             assert !managedSide.isNative();
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(cls);
             long nativeObject = (long) call.call(NativeCAPISymbol.FUN_PY_TYPE_GENERIC_NEW_RAW, toNative.execute(cls), 0L, 0L);
             CApiTransitions.writeNativeRefCount(nativeObject, MANAGED_REFCNT);
             CApiTransitions.createReference(managedSide, nativeObject, false);
@@ -1726,58 +1734,61 @@ public abstract class CExtNodes {
     }
 
     /**
-     * Special helper nodes that materializes any primitive that would leak the wrapper if the
-     * reference is owned by managed code only.
+     * Special helper node that promotes primitive values to {@link PythonObject} such that they can
+     * be connected with a native companion.
      */
     @GenerateInline(false)
     @GenerateUncached
-    @ImportStatic(PGuards.class)
+    @ImportStatic({PGuards.class, CApiContext.class, PythonToNativeInternalNode.class})
     public abstract static class EnsurePythonObjectNode extends Node {
 
-        public abstract PythonObject execute(PythonContext context, Object object);
-
-        @Specialization
-        static PythonObject doPythonObject(@SuppressWarnings("unused") PythonContext context, PythonObject object) {
-            return object;
+        public static PythonAbstractObject executeUncached(PythonContext context, Object object) {
+            return (PythonAbstractObject) EnsurePythonObjectNodeGen.getUncached().execute(context, object, true);
         }
 
-        @Specialization
-        static PInt doBoolean(PythonContext context, boolean b) {
-            return b ? context.getTrue() : context.getFalse();
+        public static boolean doesNotNeedPromotion(Object object) {
+            return EnsurePythonObjectNodeGen.getUncached().execute(PythonContext.get(null), object, true) == object;
         }
 
-        @Specialization
-        static PInt doInteger(PythonContext context, int i) {
-            return PFactory.createInt(context.getLanguage(), i);
+        public static Object executeUncached(PythonContext context, Object object, boolean promoteBoxable) {
+            return EnsurePythonObjectNodeGen.getUncached().execute(context, object, promoteBoxable);
         }
 
-        @Specialization
-        static PInt doLong(PythonContext context, long l) {
-            return PFactory.createInt(context.getLanguage(), l);
-        }
+        public abstract Object execute(PythonContext context, Object object, boolean promoteBoxable);
 
         @Specialization
-        static PFloat doDouble(PythonContext context, double d) {
-            return PFactory.createFloat(context.getLanguage(), d);
-        }
-
-        @Specialization
-        static PString doString(PythonContext context, TruffleString s) {
-            return PFactory.createString(context.getLanguage(), s);
-        }
-
-        @Specialization
-        static PythonBuiltinClass doPythonBuiltinClassType(PythonContext context, PythonBuiltinClassType type) {
-            return context.lookupType(type);
-        }
-
-        @Specialization(guards = "isForeignObject(foreignObject)")
-        static PythonObject doForeign(PythonContext context, Object foreignObject,
+        static Object doGeneric(PythonContext context, Object obj, boolean promoteBoxable,
                         @Bind Node inliningTarget,
+                        @Cached InlinedExactClassProfile classProfile,
                         @Cached GetClassNode getClassNode) {
-            assert foreignObject != null : "attempting to wrap Java null";
-            Object clazz = getClassNode.execute(inliningTarget, foreignObject);
-            return PFactory.createPythonForeignObject(context.getLanguage(), clazz, foreignObject);
+            CompilerAsserts.partialEvaluationConstant(promoteBoxable);
+
+            Object profiled = classProfile.profile(inliningTarget, obj);
+            if (profiled instanceof PythonObject pythonObject) {
+                return pythonObject;
+            } else if (profiled instanceof Integer i) {
+                return promoteBoxable ? PFactory.createInt(context.getLanguage(), i) : i;
+            } else if (profiled instanceof Long l) {
+                return promoteBoxable || !PInt.fitsInInt(l) ? PFactory.createInt(context.getLanguage(), l) : l;
+            } else if (profiled instanceof Float f) {
+                return promoteBoxable ? PFactory.createFloat(context.getLanguage(), f) : f;
+            } else if (profiled instanceof Double d) {
+                return promoteBoxable || !PFloat.fitsInFloat(d) ? PFactory.createFloat(context.getLanguage(), d) : d;
+            } else if (profiled instanceof Boolean b) {
+                return b ? context.getTrue() : context.getFalse();
+            } else if (profiled instanceof TruffleString s) {
+                return PFactory.createString(context.getLanguage(), s);
+            } else if (profiled instanceof PythonBuiltinClassType pbct) {
+                return context.lookupType(pbct);
+            } else if (CApiContext.isSpecialSingleton(profiled) || profiled instanceof PythonAbstractNativeObject || PythonToNativeInternalNode.mapsToNull(profiled)) {
+                return profiled;
+            } else if (PGuards.isForeignObject(profiled)) {
+                assert profiled != null : "attempting to wrap Java null";
+                Object clazz = getClassNode.execute(inliningTarget, profiled);
+                return PFactory.createPythonForeignObject(context.getLanguage(), clazz, profiled);
+            }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw CompilerDirectives.shouldNotReachHere("unexpected object for promotion: " + profiled);
         }
 
         @NeverDefault

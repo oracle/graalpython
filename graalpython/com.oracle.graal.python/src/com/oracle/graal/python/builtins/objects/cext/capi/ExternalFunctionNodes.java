@@ -50,6 +50,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PrimitiveResult32;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PrimitiveResult64;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectConstArray;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectReturn;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
@@ -69,6 +70,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PythonObjectArrayCreateNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PythonObjectArrayFreeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ReleaseNativeWrapperNode;
@@ -83,6 +85,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescrip
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
@@ -293,12 +296,24 @@ public abstract class ExternalFunctionNodes {
     @GenerateInline(false)
     public static final class ToNativeBorrowedNode extends CExtToNativeNode {
 
+        @Child private EnsurePythonObjectNode ensurePythonObjectNode = EnsurePythonObjectNode.create();
         @Child private PythonToNativeNode toNative = PythonToNativeNodeGen.create();
 
         @Override
         public Object execute(Object object) {
             assert (object instanceof Double && Double.isNaN((double) object)) || !(object instanceof Number || object instanceof TruffleString);
-            return toNative.execute(object);
+            /*
+             * In this case, it is not necessary to explicitly keep the promoted object alive
+             * because this node is only used to hand out borrowed references which means that the
+             * returned object must be owned by a container object (e.g. a list) and we already
+             * promote the elements of such container objects at the time when the container object
+             * is handed out to native. We still need to promote the object because it could be,
+             * e.g., Java primitive 'true' which will be promoted to an immortal object.
+             */
+            PythonContext ctx = PythonContext.get(this);
+            Object promoted = ensurePythonObjectNode.execute(ctx, object, false);
+            assert promoted == object || PythonToNativeInternalNode.isImmortal(ctx, promoted);
+            return toNative.execute(promoted);
         }
     }
 
@@ -333,14 +348,14 @@ public abstract class ExternalFunctionNodes {
      */
     public enum PExternalFunctionWrapper implements NativeCExtSymbol {
         DIRECT(1, PyObjectReturn, PyObject, PyObject), // TODO: remove?
-        FASTCALL(2, PyObjectReturn, PyObject, Pointer, Py_ssize_t),
-        FASTCALL_WITH_KEYWORDS(3, PyObjectTransfer, PyObject, Pointer, Py_ssize_t, PyObject),
+        FASTCALL(2, PyObjectReturn, PyObject, PyObjectConstArray, Py_ssize_t),
+        FASTCALL_WITH_KEYWORDS(3, PyObjectTransfer, PyObject, PyObjectConstArray, Py_ssize_t, PyObject),
         KEYWORDS(4, PyObjectReturn, PyObject, PyObject, PyObject), // METH_VARARGS | METH_KEYWORDS
         VARARGS(5, PyObjectReturn, PyObject, PyObject),            // METH_VARARGS
         NOARGS(6, PyObjectReturn, PyObject, PyObject),             // METH_NOARGS
         O(7, PyObjectReturn, PyObject, PyObject),                  // METH_O
         // METH_FASTCALL | METH_KEYWORDS | METH_METHOD:
-        METHOD(8, PyObjectReturn, PyObject, PyTypeObject, Pointer, Py_ssize_t, PyObject),
+        METHOD(8, PyObjectReturn, PyObject, PyTypeObject, PyObjectConstArray, Py_ssize_t, PyObject),
         ALLOC(10, PyObjectTransfer, PyTypeObject, Py_ssize_t),
         GETATTR(11, PyObjectReturn, PyObject, CharPtrAsTruffleString),
         SETATTR(12, InitResult, PyObject, CharPtrAsTruffleString, PyObject),
@@ -705,11 +720,15 @@ public abstract class ExternalFunctionNodes {
         protected Object[] prepareCArguments(VirtualFrame frame) {
             // return a copy of the args array since it will be modified
             Object[] varargs = (Object[]) PArguments.getArgument(frame, SIGNATURE.varArgsPArgumentsIndex());
-            return PythonUtils.arrayCopyOf(varargs, varargs.length);
+            Object[] result = new Object[varargs.length];
+            for (int i = 0; i < result.length; i++) {
+                result[i] = ensurePythonObject(varargs[i]);
+            }
+            return result;
         }
 
         @Override
-        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
             for (int i = 0; i < cArguments.length; i++) {
                 ensureReleaseNativeWrapperNode().execute(cArguments[i]);
             }
@@ -846,9 +865,10 @@ public abstract class ExternalFunctionNodes {
         @Child private ReadIndexedArgumentNode readSelfNode;
         @Child private ReadIndexedArgumentNode readCallableNode;
         @Child private ReleaseNativeWrapperNode releaseNativeWrapperNode;
+        @Child private EnsurePythonObjectNode ensurePythonObjectNode;
         @Child private PythonObjectArrayCreateNode pythonObjectArrayCreateNode;
         @Child private PythonObjectArrayFreeNode pythonObjectArrayFreeNode;
-        @Children private final CExtToNativeNode[] convertArgs;
+        @Children protected final CExtToNativeNode[] convertArgs;
 
         private final TruffleString name;
 
@@ -866,7 +886,7 @@ public abstract class ExternalFunctionNodes {
         }
 
         @ExplodeLoop
-        private Object[] prepareArguments(Object[] arguments) {
+        protected Object[] cArgumentsToNative(Object[] arguments) {
             Object[] nativeArgs = new Object[arguments.length];
             for (int i = 0; i < convertArgs.length; i++) {
                 if (convertArgs[i] != null) {
@@ -886,13 +906,14 @@ public abstract class ExternalFunctionNodes {
                 if (!(callable instanceof NfiBoundFunction boundFunction)) {
                     throw CompilerDirectives.shouldNotReachHere();
                 }
-                Object[] cArguments = prepareCArguments(frame);
+                Object[] preparedCArguments = prepareCArguments(frame);
+                Object[] nativeArguments = cArgumentsToNative(preparedCArguments);
                 try {
                     assert this.provider != null : "the provider cannot be null";
-                    return externalInvokeNode.execute(frame, provider, timing, name, boundFunction, prepareArguments(cArguments));
+                    return externalInvokeNode.execute(frame, provider, timing, name, boundFunction, nativeArguments);
                 } finally {
-                    postprocessCArguments(frame, cArguments);
-                    Reference.reachabilityFence(cArguments);
+                    postprocessCArguments(frame, preparedCArguments, nativeArguments);
+                    Reference.reachabilityFence(preparedCArguments);
                 }
             } finally {
                 calleeContext.exit(frame, this);
@@ -907,7 +928,7 @@ public abstract class ExternalFunctionNodes {
         protected abstract Object[] prepareCArguments(VirtualFrame frame);
 
         @SuppressWarnings("unused")
-        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
             // default: do nothing
         }
 
@@ -927,6 +948,14 @@ public abstract class ExternalFunctionNodes {
                 releaseNativeWrapperNode = insert(ReleaseNativeWrapperNodeGen.create());
             }
             return releaseNativeWrapperNode;
+        }
+
+        protected final Object ensurePythonObject(Object object) {
+            if (ensurePythonObjectNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                ensurePythonObjectNode = insert(EnsurePythonObjectNode.create());
+            }
+            return ensurePythonObjectNode.execute(PythonContext.get(this), object, false);
         }
 
         protected final PythonObjectArrayCreateNode ensureArrayCreateNode() {
@@ -1003,15 +1032,22 @@ public abstract class ExternalFunctionNodes {
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
             Object self = readSelf(frame);
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
+
             Object[] args = readVarargsNode.execute(frame);
+            PTuple argsTuple = createArgsTupleNode.execute(PythonContext.get(this), args, seenNativeArgsTupleStorage);
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(argsTuple);
+
             PKeyword[] kwargs = readKwargsNode.execute(frame);
             PythonLanguage language = getLanguage(PythonLanguage.class);
-            return new Object[]{self, createArgsTupleNode.execute(PythonContext.get(this), args, seenNativeArgsTupleStorage),
-                            kwargs.length > 0 ? PFactory.createDict(language, kwargs) : PNone.NO_VALUE};
+            Object kwargsDict = kwargs.length > 0 ? PFactory.createDict(language, kwargs) : PNone.NO_VALUE;
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(kwargsDict);
+
+            return new Object[]{self, argsTuple, kwargsDict};
         }
 
         @Override
-        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
             ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
             releaseNativeWrapperNode.execute(cArguments[0]);
             boolean freed = MethVarargsRoot.releaseArgsTuple(cArguments[1], freeNode, seenNativeArgsTupleStorage);
@@ -1045,12 +1081,15 @@ public abstract class ExternalFunctionNodes {
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
             Object self = readSelf(frame);
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
             Object[] args = readVarargsNode.execute(frame);
-            return new Object[]{self, createArgsTupleNode.execute(PythonContext.get(this), args, seenNativeArgsTupleStorage)};
+            PTuple argsTuple = createArgsTupleNode.execute(PythonContext.get(this), args, seenNativeArgsTupleStorage);
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(argsTuple);
+            return new Object[]{self, argsTuple};
         }
 
         @Override
-        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
             ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
             releaseNativeWrapperNode.execute(cArguments[0]);
             // releaseNativeWrapperNode.execute(cArguments[1]);
@@ -1123,13 +1162,21 @@ public abstract class ExternalFunctionNodes {
         protected Object[] prepareCArguments(VirtualFrame frame) {
             Object methodSelf = readSelf(frame);
             Object[] args = readVarargsNode.execute(frame);
+
             // TODO checks
             Object self = args[0];
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
+
             args = PythonUtils.arrayCopyOfRange(args, 1, args.length);
+            PTuple argsTuple = createArgsTupleNode.execute(PythonContext.get(this), args, seenNativeArgsTupleStorage);
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(argsTuple);
+
             PKeyword[] kwargs = readKwargsNode.execute(frame);
             PythonLanguage language = getLanguage(PythonLanguage.class);
-            return new Object[]{self, createArgsTupleNode.execute(PythonContext.get(this), args, seenNativeArgsTupleStorage),
-                            kwargs.length > 0 ? PFactory.createDict(language, kwargs) : PNone.NO_VALUE};
+            Object kwargsDict = kwargs.length > 0 ? PFactory.createDict(language, kwargs) : PNone.NO_VALUE;
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(kwargsDict);
+
+            return new Object[]{self, argsTuple, kwargsDict};
         }
     }
 
@@ -1142,11 +1189,13 @@ public abstract class ExternalFunctionNodes {
 
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
-            return new Object[]{readSelf(frame)};
+            Object self = readSelf(frame);
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
+            return new Object[]{self};
         }
 
         @Override
-        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
             ensureReleaseNativeWrapperNode().execute(cArguments[0]);
         }
 
@@ -1165,11 +1214,13 @@ public abstract class ExternalFunctionNodes {
 
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
-            return new Object[]{readSelf(frame), PNone.NO_VALUE};
+            Object self = readSelf(frame);
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
+            return new Object[]{self, PNone.NO_VALUE};
         }
 
         @Override
-        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
             ensureReleaseNativeWrapperNode().execute(cArguments[0]);
         }
 
@@ -1191,12 +1242,13 @@ public abstract class ExternalFunctionNodes {
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
             Object self = readSelf(frame);
-            Object arg = readArgNode.execute(frame);
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
+            Object arg = ensurePythonObject(readArgNode.execute(frame));
             return new Object[]{self, arg};
         }
 
         @Override
-        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
             ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
             releaseNativeWrapperNode.execute(cArguments[0]);
             releaseNativeWrapperNode.execute(cArguments[1]);
@@ -1222,28 +1274,45 @@ public abstract class ExternalFunctionNodes {
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
             Object self = readSelf(frame);
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
             Object[] args = readVarargsNode.execute(frame);
             PKeyword[] kwargs = readKwargsNode.execute(frame);
             Object[] fastcallArgs = new Object[args.length + kwargs.length];
             Object kwnamesTuple = PNone.NO_VALUE;
-            PythonUtils.arraycopy(args, 0, fastcallArgs, 0, args.length);
+            for (int i = 0; i < args.length; i++) {
+                fastcallArgs[i] = ensurePythonObject(args[i]);
+            }
             // Note: PyO3 doesn't like it when we put an empty tuple there if there are no args
             if (kwargs.length > 0) {
                 Object[] fastcallKwnames = new Object[kwargs.length];
                 for (int i = 0; i < kwargs.length; i++) {
                     fastcallKwnames[i] = kwargs[i].getName();
-                    fastcallArgs[args.length + i] = kwargs[i].getValue();
+                    fastcallArgs[args.length + i] = ensurePythonObject(kwargs[i].getValue());
                 }
                 kwnamesTuple = PFactory.createTuple(PythonLanguage.get(this), fastcallKwnames);
             }
-            return new Object[]{self, ensureArrayCreateNode().execute(fastcallArgs), args.length, kwnamesTuple};
+            return new Object[]{self, fastcallArgs, args.length, kwnamesTuple};
         }
 
         @Override
-        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+        protected Object[] cArgumentsToNative(Object[] arguments) {
+            Object[] objects = super.cArgumentsToNative(arguments);
+            assert arguments[1] instanceof Object[];
+            assert arguments[1] == objects[1];
+            assert arguments[2] instanceof Integer;
+            objects[1] = ensureArrayCreateNode().execute((Object[]) arguments[1]);
+            return objects;
+        }
+
+        @Override
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
             ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
             releaseNativeWrapperNode.execute(cArguments[0]);
-            ensureArrayFreeNode().execute((long) cArguments[1]);
+            assert cArguments[1] instanceof Object[];
+            assert cArguments[2] instanceof Integer;
+            assert cArguments[3] == PNone.NO_VALUE || cArguments[3] instanceof PTuple;
+            assert ((Object[]) cArguments[1]).length == (Integer) cArguments[2] + (cArguments[3] != PNone.NO_VALUE ? ((PTuple) cArguments[3]).getSequenceStorage().length() : 0);
+            ensureArrayFreeNode().execute((long) nativeArguments[1]);
             releaseNativeWrapperNode.execute(cArguments[3]);
         }
 
@@ -1269,25 +1338,42 @@ public abstract class ExternalFunctionNodes {
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
             Object self = readSelf(frame);
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
             Object cls = readClsNode.execute(frame);
             Object[] args = readVarargsNode.execute(frame);
             PKeyword[] kwargs = readKwargsNode.execute(frame);
             Object[] fastcallArgs = new Object[args.length + kwargs.length];
             Object[] fastcallKwnames = new Object[kwargs.length];
-            PythonUtils.arraycopy(args, 0, fastcallArgs, 0, args.length);
+            for (int i = 0; i < args.length; i++) {
+                fastcallArgs[i] = ensurePythonObject(args[i]);
+            }
             for (int i = 0; i < kwargs.length; i++) {
                 fastcallKwnames[i] = kwargs[i].getName();
-                fastcallArgs[args.length + i] = kwargs[i].getValue();
+                fastcallArgs[args.length + i] = ensurePythonObject(kwargs[i].getValue());
             }
-            return new Object[]{self, cls, ensureArrayCreateNode().execute(fastcallArgs), args.length, PFactory.createTuple(PythonLanguage.get(this), fastcallKwnames)};
+            return new Object[]{self, cls, fastcallArgs, args.length, PFactory.createTuple(PythonLanguage.get(this), fastcallKwnames)};
         }
 
         @Override
-        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+        protected Object[] cArgumentsToNative(Object[] arguments) {
+            Object[] objects = super.cArgumentsToNative(arguments);
+            assert arguments[2] instanceof Object[];
+            assert arguments[2] == objects[2];
+            assert arguments[3] instanceof Integer;
+            objects[2] = ensureArrayCreateNode().execute((Object[]) arguments[2]);
+            return objects;
+        }
+
+        @Override
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
             ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
             releaseNativeWrapperNode.execute(cArguments[0]);
             releaseNativeWrapperNode.execute(cArguments[1]);
-            ensureArrayFreeNode().execute((long) cArguments[2]);
+            assert cArguments[2] instanceof Object[];
+            assert cArguments[3] instanceof Integer;
+            assert cArguments[4] instanceof PTuple;
+            assert ((Object[]) cArguments[2]).length == (Integer) cArguments[3] + ((PTuple) cArguments[4]).getSequenceStorage().length();
+            ensureArrayFreeNode().execute((long) nativeArguments[2]);
             releaseNativeWrapperNode.execute(cArguments[4]);
         }
 
@@ -1309,15 +1395,33 @@ public abstract class ExternalFunctionNodes {
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
             Object self = readSelf(frame);
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
             Object[] args = readVarargsNode.execute(frame);
-            return new Object[]{self, ensureArrayCreateNode().execute(args), args.length};
+            Object[] promotedArgs = new Object[args.length];
+            for (int i = 0; i < args.length; i++) {
+                promotedArgs[i] = ensurePythonObject(args[i]);
+            }
+            return new Object[]{self, promotedArgs, promotedArgs.length};
         }
 
         @Override
-        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+        protected Object[] cArgumentsToNative(Object[] arguments) {
+            Object[] objects = super.cArgumentsToNative(arguments);
+            assert arguments[1] instanceof Object[];
+            assert arguments[1] == objects[1];
+            assert arguments[2] instanceof Integer;
+            objects[1] = ensureArrayCreateNode().execute((Object[]) arguments[1]);
+            return objects;
+        }
+
+        @Override
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
             ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
             releaseNativeWrapperNode.execute(cArguments[0]);
-            ensureArrayFreeNode().execute((long) cArguments[1]);
+            assert cArguments[1] instanceof Object[];
+            assert cArguments[2] instanceof Integer;
+            assert ((Object[]) cArguments[1]).length == (int) cArguments[2];
+            ensureArrayFreeNode().execute((long) nativeArguments[1]);
         }
 
         @Override
@@ -1343,6 +1447,7 @@ public abstract class ExternalFunctionNodes {
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
             Object self = readSelf(frame);
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
             Object arg = readArgNode.execute(frame);
             try {
                 return new Object[]{self, asSsizeTNode.executeLongCached(arg, 1, Long.BYTES)};
@@ -1352,7 +1457,7 @@ public abstract class ExternalFunctionNodes {
         }
 
         @Override
-        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
             ensureReleaseNativeWrapperNode().execute(cArguments[0]);
         }
 
@@ -1379,14 +1484,13 @@ public abstract class ExternalFunctionNodes {
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
             Object self = readSelf(frame);
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
             Object arg = readArgNode.execute(frame);
-            // TODO we should use 'CStringWrapper' for 'arg' but it does currently not support
-            // PString
             return new Object[]{self, wrapPointer(asCharPointerNode.execute(arg))};
         }
 
         @Override
-        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
             ensureReleaseNativeWrapperNode().execute(cArguments[0]);
             free(((NativePointer) cArguments[1]).asPointer());
         }
@@ -1416,18 +1520,24 @@ public abstract class ExternalFunctionNodes {
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
             Object self = readSelf(frame);
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
             Object arg1 = readArg1Node.execute(frame);
-            Object arg2 = readArg2Node.execute(frame);
-            // TODO we should use 'CStringWrapper' for 'arg1' but it does currently not support
-            // PString
-            return new Object[]{self, wrapPointer(asCharPointerNode.execute(arg1)), arg2};
+            Object arg2 = ensurePythonObject(readArg2Node.execute(frame));
+            return new Object[]{self, arg1, arg2};
         }
 
         @Override
-        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+        protected Object[] cArgumentsToNative(Object[] arguments) {
+            Object[] objects = super.cArgumentsToNative(arguments);
+            objects[1] = wrapPointer(asCharPointerNode.execute(arguments[1]));
+            return objects;
+        }
+
+        @Override
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
             ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
             releaseNativeWrapperNode.execute(cArguments[0]);
-            free(((NativePointer) cArguments[1]).asPointer());
+            free(((NativePointer) nativeArguments[1]).asPointer());
             releaseNativeWrapperNode.execute(cArguments[2]);
         }
 
@@ -1457,8 +1567,9 @@ public abstract class ExternalFunctionNodes {
         protected Object[] prepareCArguments(VirtualFrame frame) {
             try {
                 Object self = readSelf(frame);
-                Object arg1 = readArg1Node.execute(frame);
-                Object arg2 = readArg2Node.execute(frame);
+                assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
+                Object arg1 = ensurePythonObject(readArg1Node.execute(frame));
+                Object arg2 = ensurePythonObject(readArg2Node.execute(frame));
                 return new Object[]{self, arg1, asSsizeTNode.executeIntCached(arg2, 1, Integer.BYTES)};
             } catch (UnexpectedResultException e) {
                 throw CompilerDirectives.shouldNotReachHere();
@@ -1466,7 +1577,7 @@ public abstract class ExternalFunctionNodes {
         }
 
         @Override
-        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
             ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
             releaseNativeWrapperNode.execute(cArguments[0]);
             releaseNativeWrapperNode.execute(cArguments[1]);
@@ -1496,12 +1607,13 @@ public abstract class ExternalFunctionNodes {
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
             Object self = readSelf(frame);
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
             Object arg1 = readArg1Node.execute(frame);
             return new Object[]{self, getIndexNode.execute(self, arg1)};
         }
 
         @Override
-        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
             ensureReleaseNativeWrapperNode().execute(cArguments[0]);
         }
 
@@ -1530,13 +1642,14 @@ public abstract class ExternalFunctionNodes {
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
             Object self = readSelf(frame);
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
             Object arg1 = readArg1Node.execute(frame);
-            Object arg2 = readArg2Node.execute(frame);
+            Object arg2 = ensurePythonObject(readArg2Node.execute(frame));
             return new Object[]{self, getIndexNode.execute(self, arg1), arg2};
         }
 
         @Override
-        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
             ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
             releaseNativeWrapperNode.execute(cArguments[0]);
             releaseNativeWrapperNode.execute(cArguments[2]);
@@ -1565,13 +1678,14 @@ public abstract class ExternalFunctionNodes {
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
             Object self = readSelf(frame);
-            Object obj = readObj.execute(frame);
-            Object type = readType.execute(frame);
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
+            Object obj = ensurePythonObject(readObj.execute(frame));
+            Object type = ensurePythonObject(readType.execute(frame));
             return new Object[]{self, obj == PNone.NONE ? PNone.NO_VALUE : obj, type == PNone.NONE ? PNone.NO_VALUE : type};
         }
 
         @Override
-        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
             ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
             releaseNativeWrapperNode.execute(cArguments[0]);
             releaseNativeWrapperNode.execute(cArguments[1]);
@@ -1599,12 +1713,13 @@ public abstract class ExternalFunctionNodes {
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
             Object self = readSelf(frame);
-            Object obj = readObj.execute(frame);
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
+            Object obj = ensurePythonObject(readObj.execute(frame));
             return new Object[]{self, obj, PNone.NO_VALUE};
         }
 
         @Override
-        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
             ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
             releaseNativeWrapperNode.execute(cArguments[0]);
             releaseNativeWrapperNode.execute(cArguments[1]);
@@ -1631,13 +1746,14 @@ public abstract class ExternalFunctionNodes {
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
             Object self = readSelf(frame);
-            Object obj = readObj.execute(frame);
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
+            Object obj = ensurePythonObject(readObj.execute(frame));
             // TODO: check if we need Carlo Verre hack here (see typeobject.c:hackcheck)
             return new Object[]{self, obj, PNone.NO_VALUE};
         }
 
         @Override
-        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
             ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
             releaseNativeWrapperNode.execute(cArguments[0]);
             releaseNativeWrapperNode.execute(cArguments[1]);
@@ -1665,12 +1781,13 @@ public abstract class ExternalFunctionNodes {
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
             Object self = readSelf(frame);
-            Object arg1 = readArg1Node.execute(frame);
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
+            Object arg1 = ensurePythonObject(readArg1Node.execute(frame));
             return new Object[]{self, arg1, PNone.NO_VALUE};
         }
 
         @Override
-        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
             ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
             releaseNativeWrapperNode.execute(cArguments[0]);
             releaseNativeWrapperNode.execute(cArguments[1]);
@@ -1699,13 +1816,13 @@ public abstract class ExternalFunctionNodes {
 
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
-            Object arg0 = readArg0Node.execute(frame);
-            Object arg1 = readArg1Node.execute(frame);
+            Object arg0 = ensurePythonObject(readArg0Node.execute(frame));
+            Object arg1 = ensurePythonObject(readArg1Node.execute(frame));
             return new Object[]{arg1, arg0};
         }
 
         @Override
-        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
             ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
             releaseNativeWrapperNode.execute(cArguments[0]);
             releaseNativeWrapperNode.execute(cArguments[1]);
@@ -1736,9 +1853,10 @@ public abstract class ExternalFunctionNodes {
         @Override
         protected final Object[] prepareCArguments(VirtualFrame frame) {
             Object self = readSelf(frame);
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
             Object[] varargs = readVarargsNode.execute(frame);
-            Object arg0 = varargs[0];
-            Object arg1 = profile.profile(varargs.length > 1) ? varargs[1] : PNone.NONE;
+            Object arg0 = ensurePythonObject(varargs[0]);
+            Object arg1 = ensurePythonObject(profile.profile(varargs.length > 1) ? varargs[1] : PNone.NONE);
             return getArguments(self, arg0, arg1);
         }
 
@@ -1747,7 +1865,7 @@ public abstract class ExternalFunctionNodes {
         }
 
         @Override
-        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
             ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
             releaseNativeWrapperNode.execute(cArguments[0]);
             releaseNativeWrapperNode.execute(cArguments[1]);
@@ -1793,12 +1911,13 @@ public abstract class ExternalFunctionNodes {
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
             Object self = readSelf(frame);
-            Object arg = readArgNode.execute(frame);
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
+            Object arg = ensurePythonObject(readArgNode.execute(frame));
             return new Object[]{self, arg, op};
         }
 
         @Override
-        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
             ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
             releaseNativeWrapperNode.execute(cArguments[0]);
             releaseNativeWrapperNode.execute(cArguments[1]);
@@ -1825,7 +1944,7 @@ public abstract class ExternalFunctionNodes {
         }
 
         @Override
-        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
             ensureReleaseNativeWrapperNode().execute(cArguments[0]);
         }
 
@@ -1869,11 +1988,12 @@ public abstract class ExternalFunctionNodes {
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
             Object self = readSelf(frame);
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
             return new Object[]{self, readClosure(frame)};
         }
 
         @Override
-        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
             ensureReleaseNativeWrapperNode().execute(cArguments[0]);
         }
 
@@ -1898,12 +2018,13 @@ public abstract class ExternalFunctionNodes {
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
             Object self = readSelf(frame);
-            Object arg = ensureReadArgNode().execute(frame);
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
+            Object arg = ensurePythonObject(ensureReadArgNode().execute(frame));
             return new Object[]{self, arg, readClosure(frame)};
         }
 
         @Override
-        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
             ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
             releaseNativeWrapperNode.execute(cArguments[0]);
             releaseNativeWrapperNode.execute(cArguments[1]);

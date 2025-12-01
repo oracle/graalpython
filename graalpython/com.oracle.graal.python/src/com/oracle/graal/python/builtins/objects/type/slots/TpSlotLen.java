@@ -45,7 +45,10 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LEN__;
 
+import java.lang.ref.Reference;
+
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckPrimitiveFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
@@ -166,18 +169,24 @@ public abstract class TpSlotLen {
         @Specialization
         static int callNative(VirtualFrame frame, Node inliningTarget, TpSlotCExtNative slot, Object self,
                         @Exclusive @Cached GetThreadStateNode getThreadStateNode,
+                        @Cached EnsurePythonObjectNode ensurePythonObjectNode,
                         @Cached(inline = false) PythonToNativeNode toNativeNode,
                         @Exclusive @Cached ExternalFunctionInvokeNode externalInvokeNode,
                         @Exclusive @Cached PRaiseNode raiseNode,
                         @Exclusive @Cached(inline = false) CheckPrimitiveFunctionResultNode checkResultNode) {
             PythonContext ctx = PythonContext.get(inliningTarget);
             PythonThreadState state = getThreadStateNode.execute(inliningTarget, ctx);
-            Object result = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T___LEN__, slot.callable, toNativeNode.execute(self));
-            long l = checkResultNode.executeLong(state, T___LEN__, result);
-            if (!PInt.isIntRange(l)) {
-                raiseOverflow(inliningTarget, raiseNode, l);
+            Object promotedSelf = ensurePythonObjectNode.execute(ctx, self, false);
+            try {
+                Object result = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T___LEN__, slot.callable, toNativeNode.execute(promotedSelf));
+                long l = checkResultNode.executeLong(state, T___LEN__, result);
+                if (!PInt.isIntRange(l)) {
+                    raiseOverflow(inliningTarget, raiseNode, l);
+                }
+                return (int) l;
+            } finally {
+                Reference.reachabilityFence(promotedSelf);
             }
-            return (int) l;
         }
 
         @InliningCutoff

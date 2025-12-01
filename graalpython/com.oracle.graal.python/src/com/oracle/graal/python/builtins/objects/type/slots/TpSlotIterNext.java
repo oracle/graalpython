@@ -49,6 +49,7 @@ import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
@@ -68,6 +69,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -85,6 +87,8 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
+
+import java.lang.ref.Reference;
 
 public final class TpSlotIterNext {
     private TpSlotIterNext() {
@@ -190,23 +194,30 @@ public final class TpSlotIterNext {
         static Object callNative(VirtualFrame frame, Node inliningTarget, TpSlotCExtNative slot, Object self,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached(inline = false) PythonToNativeNode toNativeNode,
+                        @Cached EnsurePythonObjectNode ensurePythonObjectNode,
                         @Cached ExternalFunctionInvokeNode externalInvokeNode,
                         @Cached NativeToPythonInternalNode toPythonNode,
                         @Cached CExtCommonNodes.ReadAndClearNativeException readAndClearNativeException,
                         @Exclusive @Cached CoerceNativePointerToLongNode coerceNativePointerToLongNode) {
-            PythonThreadState state = getThreadStateNode.execute(inliningTarget);
-            Object nativeResult = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T___NEXT__, slot.callable, toNativeNode.execute(self));
-            long lresult = coerceNativePointerToLongNode.execute(inliningTarget, nativeResult);
-            Object pythonResult = toPythonNode.execute(inliningTarget, lresult, true);
-            if (pythonResult == PNone.NO_VALUE) {
-                Object currentException = readAndClearNativeException.execute(inliningTarget, state);
-                if (currentException != PNone.NO_VALUE) {
-                    throw PException.fromObjectFixUncachedLocation(currentException, inliningTarget, false);
-                } else {
-                    throw TpIterNextBuiltin.iteratorExhausted();
+            PythonContext ctx = PythonContext.get(inliningTarget);
+            PythonThreadState state = getThreadStateNode.execute(inliningTarget, ctx);
+            Object promotedSelf = ensurePythonObjectNode.execute(ctx, self, false);
+            try {
+                Object nativeResult = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T___NEXT__, slot.callable, toNativeNode.execute(promotedSelf));
+                long lresult = coerceNativePointerToLongNode.execute(inliningTarget, nativeResult);
+                Object pythonResult = toPythonNode.execute(inliningTarget, lresult, true);
+                if (pythonResult == PNone.NO_VALUE) {
+                    Object currentException = readAndClearNativeException.execute(inliningTarget, state);
+                    if (currentException != PNone.NO_VALUE) {
+                        throw PException.fromObjectFixUncachedLocation(currentException, inliningTarget, false);
+                    } else {
+                        throw TpIterNextBuiltin.iteratorExhausted();
+                    }
                 }
+                return pythonResult;
+            } finally {
+                Reference.reachabilityFence(promotedSelf);
             }
-            return pythonResult;
         }
 
         @Specialization(replaces = "callCachedBuiltin")

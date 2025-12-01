@@ -44,7 +44,10 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETITEM__;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
+import java.lang.ref.Reference;
+
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
@@ -144,6 +147,7 @@ public class TpSlotBinaryFunc {
         @Specialization
         static Object callNative(VirtualFrame frame, Node inliningTarget, TpSlotCExtNative slot, Object self, Object arg,
                         @Exclusive @Cached GetThreadStateNode getThreadStateNode,
+                        @Cached EnsurePythonObjectNode ensurePythonObjectNode,
                         @Cached(inline = false) PythonToNativeNode selfToNativeNode,
                         @Cached(inline = false) PythonToNativeNode argToNativeNode,
                         @Exclusive @Cached ExternalFunctionInvokeNode externalInvokeNode,
@@ -152,10 +156,17 @@ public class TpSlotBinaryFunc {
                         @Exclusive @Cached CoerceNativePointerToLongNode coerceNativePointerToLongNode) {
             PythonContext ctx = PythonContext.get(inliningTarget);
             PythonThreadState state = getThreadStateNode.execute(inliningTarget, ctx);
-            Object result = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T_BINARY_SLOT, slot.callable,
-                            selfToNativeNode.execute(self), argToNativeNode.execute(arg));
-            long lresult = coerceNativePointerToLongNode.execute(inliningTarget, result);
-            return checkResultNode.execute(state, T_BINARY_SLOT, toPythonNode.execute(inliningTarget, lresult, true));
+            Object promotedSelf = ensurePythonObjectNode.execute(ctx, self, false);
+            Object promotedArg = ensurePythonObjectNode.execute(ctx, arg, false);
+            try {
+                Object result = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T_BINARY_SLOT, slot.callable,
+                                selfToNativeNode.execute(promotedSelf), argToNativeNode.execute(promotedArg));
+                long lresult = coerceNativePointerToLongNode.execute(inliningTarget, result);
+                return checkResultNode.execute(state, T_BINARY_SLOT, toPythonNode.execute(inliningTarget, lresult, true));
+            } finally {
+                Reference.reachabilityFence(promotedSelf);
+                Reference.reachabilityFence(promotedArg);
+            }
         }
 
         @Specialization(replaces = "callCachedBuiltin")

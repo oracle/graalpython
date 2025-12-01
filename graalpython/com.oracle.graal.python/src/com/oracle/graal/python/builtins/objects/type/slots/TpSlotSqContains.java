@@ -43,9 +43,12 @@ package com.oracle.graal.python.builtins.objects.type.slots;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CONTAINS__;
 
+import java.lang.ref.Reference;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckInquiryResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
@@ -130,15 +133,23 @@ public final class TpSlotSqContains {
         @Specialization
         static boolean callNative(VirtualFrame frame, Node inliningTarget, TpSlotCExtNative slot, Object self, Object arg,
                         @Cached GetThreadStateNode getThreadStateNode,
+                        @Cached EnsurePythonObjectNode ensurePythonObjectNode,
                         @Cached(inline = false) PythonToNativeNode selfToNativeNode,
                         @Cached(inline = false) PythonToNativeNode argToNativeNode,
                         @Cached ExternalFunctionInvokeNode externalInvokeNode,
                         @Cached(inline = false) CheckInquiryResultNode checkResultNode) {
             PythonContext ctx = PythonContext.get(inliningTarget);
             PythonThreadState state = getThreadStateNode.execute(inliningTarget, ctx);
-            Object result = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T___CONTAINS__, slot.callable,
-                            selfToNativeNode.execute(self), argToNativeNode.execute(arg));
-            return checkResultNode.executeBool(state, T___CONTAINS__, result);
+            Object promotedSelf = ensurePythonObjectNode.execute(ctx, self, false);
+            Object promotedArg = ensurePythonObjectNode.execute(ctx, arg, false);
+            try {
+                Object result = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T___CONTAINS__, slot.callable,
+                                selfToNativeNode.execute(promotedSelf), argToNativeNode.execute(promotedArg));
+                return checkResultNode.executeBool(state, T___CONTAINS__, result);
+            } finally {
+                Reference.reachabilityFence(promotedSelf);
+                Reference.reachabilityFence(promotedArg);
+            }
         }
 
         @Specialization(replaces = "callCachedBuiltin")

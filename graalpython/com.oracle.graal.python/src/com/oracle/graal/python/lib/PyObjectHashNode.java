@@ -48,6 +48,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import com.oracle.graal.python.builtins.modules.MathModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
@@ -212,6 +213,7 @@ public abstract class PyObjectHashNode extends PNodeWithContext {
 
     @TruffleBoundary
     private static TpSlots callTypeReady(Node inliningTarget, Object object, PythonAbstractNativeObject klass) {
+        assert EnsurePythonObjectNode.doesNotNeedPromotion(klass);
         int res = (int) PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_PY_TYPE_READY, PythonToNativeNode.executeUncached(klass));
         if (res < 0) {
             throw raiseSystemError(inliningTarget, klass);

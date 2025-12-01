@@ -81,11 +81,11 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupport.GCListRe
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupport.PyObjectGCDelNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupport.PyObjectGCTrackNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyMemoryViewWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.AllocateNativeObjectStubNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.FirstToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativePtrToPythonNodeGen;
@@ -634,6 +634,7 @@ public abstract class CApiTransitions {
         if (reference.data.getDestructor() != NULLPTR) {
             // Our capsule is dead, so create a temporary copy that doesn't have a reference anymore
             PyCapsule capsule = PFactory.createCapsule(PythonLanguage.get(null), reference.data);
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(capsule);
             PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_GRAALPY_CAPSULE_CALL_DESTRUCTOR, PythonToNativeNode.executeUncached(capsule), capsule.getDestructor());
         }
     }
@@ -1532,6 +1533,7 @@ public abstract class CApiTransitions {
     @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
+    @ImportStatic(CApiContext.class)
     public abstract static class PythonToNativeInternalNode extends Node {
 
         @TruffleBoundary
@@ -1540,6 +1542,44 @@ public abstract class CApiTransitions {
         }
 
         public abstract long execute(Node inliningTarget, Object object, boolean needsTransfer);
+
+        @Specialization
+        static long doInteger(int i, @SuppressWarnings("unused") boolean needsTransfer) {
+            return HandlePointerConverter.intToPointer(i);
+        }
+
+        static boolean fitsInInt(Long l) {
+            return PInt.fitsInInt(l);
+        }
+
+        @Specialization(guards = "fitsInInt(l)")
+        static long doLong(Long l, @SuppressWarnings("unused") boolean needsTransfer) {
+            return HandlePointerConverter.intToPointer(l.intValue());
+        }
+
+        @Specialization
+        static long doFloat(Float f, @SuppressWarnings("unused") boolean needsTransfer) {
+            return HandlePointerConverter.floatToPointer(f);
+        }
+
+        static boolean fitsInFloat(Double d) {
+            return PFloat.fitsInFloat(d);
+        }
+
+        @Specialization(guards = "fitsInFloat(d)")
+        static long doDouble(Double d, @SuppressWarnings("unused") boolean needsTransfer) {
+            return HandlePointerConverter.floatToPointer(d.floatValue());
+        }
+
+        public static boolean mapsToNull(Object obj) {
+            return PNone.NO_VALUE == obj || DescriptorDeleteMarker.INSTANCE == obj;
+        }
+
+        @Specialization(guards = "mapsToNull(obj)")
+        @SuppressWarnings("unused")
+        static long doNullValues(Node inliningTarget, Object obj, boolean needsTransfer) {
+            return 0;
+        }
 
         @Specialization
         static long doNative(Node inliningTarget, PythonAbstractNativeObject obj, boolean needsTransfer,
@@ -1571,14 +1611,13 @@ public abstract class CApiTransitions {
             return obj.getPtr();
         }
 
-        static boolean mapsToNull(Object obj) {
-            return PNone.NO_VALUE == obj || DescriptorDeleteMarker.INSTANCE == obj;
-        }
-
-        @Specialization(guards = "mapsToNull(obj)")
-        @SuppressWarnings("unused")
-        static long doNullValues(Node inliningTarget, Object obj, boolean needsTransfer) {
-            return 0;
+        @Specialization(guards = "isSpecialSingleton(singleton)")
+        static long doSpecialSingletons(Node inliningTarget, PythonAbstractObject singleton, boolean needsTransfer) {
+            long pointer = PythonContext.get(inliningTarget).getCApiContext().getSingletonNativeWrapper(singleton);
+            assert HandlePointerConverter.pointsToPyHandleSpace(pointer);
+            // special singletons (e.g. PNone, PEllipsis, ..) are always immortal
+            assert CApiTransitions.readNativeRefCount(HandlePointerConverter.pointerToStub(pointer)) == IMMORTAL_REFCNT;
+            return pointer;
         }
 
         @Specialization
@@ -1620,7 +1659,6 @@ public abstract class CApiTransitions {
         static long doGeneric(Node inliningTarget, Object obj, boolean needsTransfer,
                         @Cached InlinedExactClassProfile classProfile,
                         @Exclusive @Cached InlinedBranchProfile hasReplicatedNativeReferences,
-                        @Cached EnsurePythonObjectNode ensurePythonObjectNode,
                         @Exclusive @Cached FirstToNativeNode firstToNativeNode,
                         @Exclusive @Cached UpdateStrongRefNode updateRefNode) {
             CompilerAsserts.partialEvaluationConstant(needsTransfer);
@@ -1666,10 +1704,11 @@ public abstract class CApiTransitions {
             }
 
             /*
-             * Step 5: All objects that are given to native need to be PythonObjects. This is
-             * because we need to store the pointer somewhere to preserve object/pointer identity.
+             * Step 5: At this point, all objects are expected to be PythonObject. If not, then the
+             * caller needs to promote the object. We cannot do it here because the promoted object
+             * is then not kept alive and this may lead to deallocation.
              */
-            PythonObject pythonObject = ensurePythonObjectNode.execute(context, profiled);
+            PythonObject pythonObject = (PythonObject) profiled;
             assert !CApiContext.isSpecialSingleton(pythonObject);
 
             /*
@@ -1839,8 +1878,14 @@ public abstract class CApiTransitions {
         @Specialization
         static Object doGeneric(Object obj,
                         @Bind Node inliningTarget,
+                        @Cached EnsurePythonObjectNode ensurePythonObjectNode,
                         @Cached PythonToNativeInternalNode internalNode) {
-            return internalNode.execute(inliningTarget, obj, true);
+            /*
+             * In case of a new reference, we can promote the object here (if necessary) because it
+             * will be kept alive with a strong reference from the handle table.
+             */
+            Object promoted = ensurePythonObjectNode.execute(PythonContext.get(inliningTarget), obj, false);
+            return internalNode.execute(inliningTarget, promoted, true);
         }
 
         @NeverDefault
@@ -1895,9 +1940,15 @@ public abstract class CApiTransitions {
         @Specialization
         static long doGeneric(Object obj,
                         @Bind Node inliningTarget,
+                        @Cached EnsurePythonObjectNode ensurePythonObjectNode,
                         @Cached PythonToNativeInternalNode internalNode,
                         @Cached CoerceNativePointerToLongNode coerceNode) {
-            return ensurePointer(internalNode.execute(inliningTarget, obj, true), inliningTarget, coerceNode);
+            /*
+             * In case of a new reference, we can promote the object here (if necessary) because it
+             * will be kept alive with a strong reference from the handle table.
+             */
+            Object promoted = ensurePythonObjectNode.execute(PythonContext.get(inliningTarget), obj, false);
+            return ensurePointer(internalNode.execute(inliningTarget, promoted, true), inliningTarget, coerceNode);
         }
 
         @NeverDefault

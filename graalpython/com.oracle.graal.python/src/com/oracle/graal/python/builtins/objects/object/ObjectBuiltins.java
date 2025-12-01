@@ -71,6 +71,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
@@ -353,6 +354,7 @@ public final class ObjectBuiltins extends PythonBuiltins {
                             @Cached(inline = false) CApiTransitions.PythonToNativeNode toNativeNode,
                             @Cached(inline = false) CApiTransitions.NativeToPythonTransferNode toPythonNode,
                             @Cached(inline = false) CExtNodes.PCallCapiFunction callCapiFunction) {
+                assert EnsurePythonObjectNode.doesNotNeedPromotion(cls);
                 return toPythonNode.execute(callCapiFunction.call(FUN_PY_OBJECT_NEW, toNativeNode.execute(cls)));
             }
         }

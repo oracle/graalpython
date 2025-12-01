@@ -31,9 +31,10 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -283,8 +284,8 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         for (PythonAbstractClass base : getBaseClasses()) {
             if (base != null) {
                 if (PGuards.isNativeClass(base)) {
-                    Object nativeBase = PythonToNativeNodeGen.getUncached().execute(base);
-                    PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_TRUFFLE_CHECK_TYPE_READY, nativeBase);
+                    assert EnsurePythonObjectNode.doesNotNeedPromotion(base);
+                    PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_TRUFFLE_CHECK_TYPE_READY, PythonToNativeNode.executeUncached(base));
                 }
                 GetSubclassesNode.addSubclass(base, this);
             }
