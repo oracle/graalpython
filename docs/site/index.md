@@ -349,7 +349,7 @@ graalPy {
               <h4>Tips and Tricks for GraalVM and Graal Languages</h4>
             </div>
             <div class="lang-video__text">
-              <h5>In this session, Fabio Niephaus from the GraalVM team will show his favourite tips and tricks for using GraalPy and other Graal Languages in IntelliJ IDEA. He will also show how to use IntelliJ IDEA as a multi-language IDE. Language injections and support for various debugging protocols make it easy to embed and debug code written in languages like Python in Java applications.
+              <h5>In this session, Fabio Niephaus from the GraalVM team shows his favourite tips and tricks for using GraalPy and other Graal Languages in IntelliJ IDEA. He also shows how to use IntelliJ IDEA as a multi-language IDE. Language injections and support for various debugging protocols make it easy to embed and debug code written in languages like Python in Java applications.
               </h5>
             </div>
           </div>
