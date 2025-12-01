@@ -91,7 +91,9 @@
                 MUSL_TOOLCHAIN: {name: "musl-toolchain", version: "1.0", platformspecific: true},
                 PYTHON3_HOME: {name: "python3", version: "3.12.8", platformspecific: true},
             },
-            aarch64: {},
+            aarch64: {
+                PYTHON3_HOME: {name: "python3", version: "3.12.8", platformspecific: true},
+            },
         },
         darwin: {
             common: {},
