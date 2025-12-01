@@ -1200,7 +1200,8 @@ class SysModuleTest(unittest.TestCase):
         code = textwrap.dedent('''
             import sys
             print(sys.argv)
-            print(sys.orig_argv)
+            # GraalPy change: remove options implicitly passed down by our posix module magic
+            print([arg for arg in sys.orig_argv if not arg.startswith(('--experimental-options', '--vm.', '--python.'))])
         ''')
         args = [sys.executable, '-I', '-X', 'utf8', '-c', code, 'arg']
         proc = subprocess.run(args, check=True, capture_output=True, text=True, env=env)
