@@ -283,6 +283,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
+import com.oracle.truffle.api.frame.FrameSlotTypeException;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.DirectCallNode;
@@ -291,6 +292,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
@@ -3545,59 +3547,57 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
      * This operation makes use of Truffle's boxing overloads. When an operation tries to quicken
      * this one for boxing elimination, the correct overload will be selected.
      */
-    @Operation(storeBytecodeIndex = true)
+    @Operation(storeBytecodeIndex = false)
     @ConstantOperand(type = LocalAccessor.class)
     @ConstantOperand(type = int.class)
     public static final class CheckAndLoadLocal {
-
-        @Specialization(rewriteOn = UnexpectedResultException.class)
+        @Specialization(rewriteOn = {FrameSlotTypeException.class, UnexpectedResultException.class})
         public static int doInt(VirtualFrame frame, LocalAccessor accessor, int index,
                         @Bind BytecodeNode bytecodeNode) throws UnexpectedResultException {
             return accessor.getInt(bytecodeNode, frame);
         }
 
-        @Specialization(rewriteOn = UnexpectedResultException.class)
-        public static boolean doBoolean(VirtualFrame frame, LocalAccessor accessor, int index,
-                        @Bind BytecodeNode bytecodeNode) throws UnexpectedResultException {
-            return accessor.getBoolean(bytecodeNode, frame);
-        }
-
-        @Specialization(replaces = {"doInt", "doBoolean"}, guards = "!accessor.isCleared(bytecodeNode, frame)")
+        @Specialization(replaces = "doInt", rewriteOn = FrameSlotTypeException.class)
         public static Object doObject(VirtualFrame frame, LocalAccessor accessor, int index,
                         @Bind BytecodeNode bytecodeNode) {
             return accessor.getObject(bytecodeNode, frame);
         }
 
-        @Fallback
-        public static Object doFallback(VirtualFrame frame, LocalAccessor accessor, int index,
-                        @Bind BytecodeNode bytecodeNode, @Bind Node inliningTarget) {
-            throw raiseUnbound(bytecodeNode, inliningTarget, index);
+        @StoreBytecodeIndex
+        @Specialization(replaces = "doObject")
+        public static Object doObjectOrUnbound(VirtualFrame frame, LocalAccessor accessor, int index,
+                        @Bind BytecodeNode bytecodeNode) {
+            try {
+                return accessor.getObject(bytecodeNode, frame);
+            } catch (FrameSlotTypeException e) {
+                throw raiseUnbound(bytecodeNode, index);
+            }
         }
     }
 
-    @Operation(storeBytecodeIndex = true)
+    @Operation(storeBytecodeIndex = false)
     @ConstantOperand(type = LocalAccessor.class)
     @ConstantOperand(type = int.class)
     public static final class DeleteLocal {
 
         @Specialization(guards = "!accessor.isCleared(bytecodeNode, frame)")
         public static void doObject(VirtualFrame frame, LocalAccessor accessor, int index,
-                        @Bind BytecodeNode bytecodeNode,
-                        @Bind Node inliningTarget) {
+                        @Bind BytecodeNode bytecodeNode) {
             accessor.clear(bytecodeNode, frame);
         }
 
+        @StoreBytecodeIndex
         @Fallback
         public static void doFallback(VirtualFrame frame, LocalAccessor accessor, int index,
-                        @Bind BytecodeNode bytecodeNode, @Bind Node inliningTarget) {
-            throw raiseUnbound(bytecodeNode, inliningTarget, index);
+                        @Bind BytecodeNode bytecodeNode) {
+            throw raiseUnbound(bytecodeNode, index);
         }
     }
 
     @TruffleBoundary
-    private static PException raiseUnbound(BytecodeNode bytecodeNode, Node inliningTarget, int index) {
+    private static PException raiseUnbound(BytecodeNode bytecodeNode, int index) {
         TruffleString localName = ((PBytecodeDSLRootNode) bytecodeNode.getRootNode()).getCodeUnit().varnames[index];
-        throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, localName);
+        throw PRaiseNode.raiseStatic(bytecodeNode, PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, localName);
     }
 
     @Operation(storeBytecodeIndex = true)
