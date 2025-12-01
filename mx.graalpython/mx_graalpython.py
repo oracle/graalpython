@@ -1993,6 +1993,7 @@ def python_style_checks(args):
     "Check (and fix where possible) copyrights, eclipse formatting, and spotbugs"
     warn_about_old_hardcoded_version()
     python_run_mx_filetests(args)
+    check_unused_operations()
     python_checkcopyrights(["--fix"] if "--fix" in args else [])
     if not os.environ.get("ECLIPSE_EXE"):
         find_eclipse()
@@ -2052,6 +2053,31 @@ def python_run_mx_filetests(_):
         if not test.endswith("data.py"):
             mx.log(test)
             mx.run([sys.executable, test, "-v"])
+
+
+def check_unused_operations():
+    root_node = "graalpython/com.oracle.graal.python/src/com/oracle/graal/python/nodes/bytecode_dsl/PBytecodeDSLRootNode.java"
+    in_operation = False
+    operations = []
+    with open(os.path.join(SUITE.dir, root_node)) as f:
+        while line := f.readline():
+            if not in_operation and ('@Operation\n' in line or '@Operation(' in line):
+                in_operation = True
+            elif in_operation:
+                if names := re.findall(r'public static final class (\S+)', line):
+                    in_operation = False
+                    operations += names
+    compiler = "graalpython/com.oracle.graal.python/src/com/oracle/graal/python/compiler/bytecode_dsl/RootNodeCompiler.java"
+    with open(os.path.join(SUITE.dir, compiler)) as f:
+        contents = f.read().lower()
+    result = True
+    for n in operations:
+        if not n.lower() in contents:
+            mx.log_error(f"ERROR: unused @Operation {n}")
+            result = False
+    if not result:
+        mx.abort("Found unused @Operation, see above")
+
 
 
 def _python_checkpatchfiles():
