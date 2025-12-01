@@ -1682,8 +1682,18 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @Specialization
         public static PList perform(int[] array,
                         @Bind PBytecodeDSLRootNode rootNode) {
-            SequenceStorage storage = new IntSequenceStorage(PythonUtils.arrayCopyOf(array, array.length));
-            return PFactory.createList(rootNode.getLanguage(), storage);
+            PythonLanguage language = rootNode.getLanguage();
+            if (!language.useNativePrimitiveStorage()) {
+                return PFactory.createList(language, new IntSequenceStorage(PythonUtils.arrayCopyOf(array, array.length)));
+            } else {
+                return createNativeList(array, rootNode, language);
+            }
+        }
+
+        @InliningCutoff
+        private static PList createNativeList(int[] array, PBytecodeDSLRootNode rootNode, PythonLanguage language) {
+            SequenceStorage storage = PythonContext.get(rootNode).nativeBufferContext.toNativeIntStorage(array);
+            return PFactory.createList(language, storage);
         }
     }
 

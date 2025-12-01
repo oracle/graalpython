@@ -3968,10 +3968,6 @@ public abstract class SequenceStorageNodes {
     @ImportStatic(PInt.class)
     public abstract static class InsertItemArrayBasedStorageNode extends Node {
 
-        public static SequenceStorage executeUncached(ArrayBasedSequenceStorage storage, int index, Object value) {
-            return SequenceStorageNodesFactory.InsertItemArrayBasedStorageNodeGen.getUncached().execute(null, storage, index, value);
-        }
-
         protected abstract SequenceStorage execute(Node inliningTarget, ArrayBasedSequenceStorage storage, int index, Object value);
 
         @Specialization
@@ -4039,6 +4035,40 @@ public abstract class SequenceStorageNodes {
 
     @GenerateUncached
     @GenerateInline
+    public abstract static class InsertItemNativePrimitiveBasedStorageNode extends Node {
+        protected abstract SequenceStorage execute(Node inliningTarget, NativePrimitiveSequenceStorage storage, int index, Object value);
+
+        @Specialization
+        static SequenceStorage doIntStorage(Node inliningTarget, NativeIntSequenceStorage storage, int index, int value,
+                        @Cached EnsureCapacityNode ensureCapacity) {
+            int length = storage.length();
+            var context = PythonContext.get(inliningTarget);
+            var unsafe = context.getUnsafe();
+            long itemSize = storage.getItemSize();
+            ensureCapacity.execute(inliningTarget, storage, length + 1);
+            // shifting tail to the right by one slot
+            long startAddr = storage.getValueBufferAddr() + (index * itemSize);
+            long endAddr = startAddr + itemSize;
+            long sizeInBytes = (length - index) * itemSize;
+            unsafe.copyMemory(startAddr, endAddr, sizeInBytes);
+
+            storage.setIntItemNormalized(index, value);
+            storage.incLength();
+            return storage;
+        }
+
+        @Fallback
+        static SequenceStorage doGeneralization(Node inliningTarget, NativePrimitiveSequenceStorage storage, int idx, Object value,
+                        @Cached GetInternalObjectArrayNode getInternalObjectArrayNode) {
+            Object[] values = getInternalObjectArrayNode.execute(inliningTarget, storage);
+            ObjectSequenceStorage newStorage = new ObjectSequenceStorage(values);
+            newStorage.insertItem(idx, value);
+            return newStorage;
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline
     @GenerateCached(false)
     @ImportStatic(SequenceStorageBaseNode.class)
     public abstract static class InsertItemNode extends Node {
@@ -4062,24 +4092,10 @@ public abstract class SequenceStorageNodes {
 
         }
 
-        // TODO introduce something similar to InsertItemArrayBasedStorageNode
         @Specialization
-        static SequenceStorage doNativeInt(Node inliningTarget, NativeIntSequenceStorage storage, int index, int value,
-                        @Exclusive @Cached EnsureCapacityNode ensureCapacity) {
-            int length = storage.length();
-            var context = PythonContext.get(inliningTarget);
-            var unsafe = context.getUnsafe();
-            long itemSize = storage.getItemSize();
-            ensureCapacity.execute(inliningTarget, storage, length + 1);
-            // shifting tail to the right by one slot
-            long startAddr = storage.getValueBufferAddr() + (index * itemSize);
-            long endAddr = startAddr + itemSize;
-            long sizeInBytes = (length - index) * itemSize;
-            unsafe.copyMemory(startAddr, endAddr, sizeInBytes);
-
-            storage.setIntItemNormalized(index, value);
-            storage.incLength();
-            return storage;
+        static SequenceStorage doNativeStorage(Node inliningTarget, NativeIntSequenceStorage storage, int index, Object value,
+                        @Cached InsertItemNativePrimitiveBasedStorageNode insertNativeStorageNode) {
+            return insertNativeStorageNode.execute(inliningTarget, storage, index, value);
         }
 
         @Specialization
