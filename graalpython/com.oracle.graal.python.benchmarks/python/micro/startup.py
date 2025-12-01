@@ -98,6 +98,10 @@ def __setup__(*args):
         if arg.endswith('.py'):
             ORIG_ARGV = ORIG_ARGV[:i]
             break
+    try:
+        ORIG_ARGV.remove('-snapshot-startup')
+    except ValueError:
+        pass
 
 
 def __teardown__():
