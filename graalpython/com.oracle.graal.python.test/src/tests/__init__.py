@@ -78,7 +78,7 @@ def get_setuptools(setuptools='setuptools==67.6.1'):
         else:
             py_executable = setuptools_path / 'bin' / 'python3'
         extra_args = []
-        if sys.implementation.name == "graalpy" and not system_python and __graalpython__.is_bytecode_dsl_interpreter:
+        if sys.implementation.name == "graalpy" and not system_python and not __graalpython__.is_native:
             extra_args = ['--vm.Dpython.EnableBytecodeDSLInterpreter=true']
         subprocess.run([py_executable, *extra_args, "-m", "pip", "install", "--target", str(setuptools_path), setuptools], check=True)
         print('setuptools is installed in %s' % setuptools_path)

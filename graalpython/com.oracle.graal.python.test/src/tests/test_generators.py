@@ -6,6 +6,7 @@ import itertools
 import sys
 import os
 import unittest
+from tests import util
 
 
 class ExceptionTest(unittest.TestCase):
@@ -557,7 +558,7 @@ def _test_generator_frame(checks):
         assert f.f_globals is globals()
         assert f.f_locals == {'a': 1, 'b': 2, 'c': 3}
         # TODO GR-61955
-        if sys.implementation.name != "graalpy" or not __graalpython__.is_bytecode_dsl_interpreter:
+        if not util.IS_BYTECODE_DSL:
             assert f.f_lineno == gen.__code__.co_firstlineno + 5
     assert not g.gi_frame
 
@@ -591,7 +592,7 @@ def test_generator_frame_from_getframe():
     assert f.f_globals is globals()
     assert f.f_locals == {'a': 1, 'b': 2}
     # TODO GR-61955
-    if sys.implementation.name != "graalpy" or not __graalpython__.is_bytecode_dsl_interpreter:
+    if not util.IS_BYTECODE_DSL:
         assert f.f_lineno == gen.__code__.co_firstlineno + 3
 
 

@@ -83,12 +83,14 @@ class VenvTest(unittest.TestCase):
             assert f"Hello {tmpfile}" in out, out
             assert f'Original "{sys.executable}"' in out, out
 
-    @unittest.skipIf(os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: issue with passing Bytecode DSL flag to subprocesses")
     def test_create_and_use_basic_venv(self):
         run = None
         run_output = ''
         try:
-            subprocess.check_output([sys.executable, "-m", "venv", self.env_dir, "--without-pip"], stderr=subprocess.STDOUT)
+            extra_args = []
+            if sys.implementation.name == "graalpy":
+                extra_args = [f'--vm.Dpython.EnableBytecodeDSLInterpreter={repr(__graalpython__.is_bytecode_dsl_interpreter).lower()}']
+            subprocess.check_output([sys.executable] + extra_args + ["-m", "venv", self.env_dir, "--without-pip"], stderr=subprocess.STDOUT)
             run = subprocess.getoutput(f"{self.env_dir}/{BINDIR}/python{EXESUF} -m site")
         except subprocess.CalledProcessError as err:
             if err.output:
@@ -98,12 +100,14 @@ class VenvTest(unittest.TestCase):
         if sys.platform != 'win32':
             assert self.env_dir in run, run
 
-    @unittest.skipIf(os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: issue with passing Bytecode DSL flag to subprocesses")
     def test_create_and_use_venv_with_pip(self):
         run = None
         msg = ''
         try:
-            subprocess.check_output([sys.executable, "-m", "venv", self.env_dir2], stderr=subprocess.STDOUT)
+            extra_args = []
+            if sys.implementation.name == "graalpy":
+                extra_args = [f'--vm.Dpython.EnableBytecodeDSLInterpreter={repr(__graalpython__.is_bytecode_dsl_interpreter).lower()}']
+            subprocess.check_output([sys.executable] + extra_args + ["-m", "venv", self.env_dir2], stderr=subprocess.STDOUT)
             run = subprocess.getoutput(f"{self.env_dir2}/{BINDIR}/python{EXESUF} -m pip list")
         except subprocess.CalledProcessError as err:
             if err.output:
