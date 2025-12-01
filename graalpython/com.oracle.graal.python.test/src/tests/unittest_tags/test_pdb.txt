@@ -3,6 +3,7 @@ DocTestCase.test.test_pdb.test_list_commands @ darwin-arm64,linux-aarch64,linux-
 DocTestCase.test.test_pdb.test_next_until_return_at_return_event @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 DocTestCase.test.test_pdb.test_pdb_alias_command @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 DocTestCase.test.test_pdb.test_pdb_ambiguous_statements @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+DocTestCase.test.test_pdb.test_pdb_basic_commands @ darwin-arm64,linux-x86_64,win32-AMD64
 DocTestCase.test.test_pdb.test_pdb_breakpoint_commands @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 DocTestCase.test.test_pdb.test_pdb_breakpoint_on_annotated_function_def @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 DocTestCase.test.test_pdb.test_pdb_breakpoints_preserved_across_interactive_sessions @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -22,6 +23,7 @@ DocTestCase.test.test_pdb.test_pdb_run_with_code_object @ darwin-arm64,linux-aar
 DocTestCase.test.test_pdb.test_pdb_skip_modules @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 DocTestCase.test.test_pdb.test_pdb_skip_modules_with_callback @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 DocTestCase.test.test_pdb.test_pdb_whatis_command @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+DocTestCase.test.test_pdb.test_pdb_where_command @ darwin-arm64,linux-x86_64,win32-AMD64
 test.test_pdb.ChecklineTests.test_checkline_after_reset @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_pdb.ChecklineTests.test_checkline_before_debugging @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_pdb.ChecklineTests.test_checkline_is_not_executable @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
