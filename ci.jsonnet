@@ -101,7 +101,7 @@
     local GRAAL_JDK_LATEST          = "graal-jdk-latest",
     local TAGGED_UNITTESTS_SPLIT    = 8,
     local COVERAGE_SPLIT            = 3,
-    local RETAGGER_SPLIT            = 8,
+    local RETAGGER_SPLIT            = 12,
 
     // -----------------------------------------------------------------------------------------------------------------
     // gates
@@ -242,8 +242,8 @@
             "linux:amd64:jdk-latest"     : tier1,
         }),
         "python-unittest-retagger": ut_retagger + platform_spec(no_jobs) + batches(RETAGGER_SPLIT) + platform_spec({
-            "linux:amd64:jdk-latest"     : tier3,
-            "linux:aarch64:jdk-latest"   : weekly    + t("20:00:00"),
+            "linux:amd64:jdk-latest"     : tier2        + require(GPY_NATIVE_STANDALONE),
+            "linux:aarch64:jdk-latest"   : tier3        + require(GPY_NATIVE_STANDALONE),
             "darwin:aarch64:jdk-latest"  : weekly    + t("20:00:00"),
             "windows:amd64:jdk-latest"   : weekly    + t("20:00:00"),
         }),
@@ -546,6 +546,37 @@
                 ["git", "-C", "graalvm-website", "push", "origin", "HEAD"],
                 ["git", "branch", "--force", "--no-track", "published"],
                 ["git", "push", "--force", "origin", "published"],
+            ]
+        },
+        {
+            name: "python-unittest-retagger-merge",
+            targets: ["tier3"],
+            capabilities: ["linux", "amd64"],
+            packages: {
+                mx: "7.34.1",
+                python3: "==3.12.8",
+            },
+            requireArtifacts: [
+                {
+                    name: "python-unittest-retagger*",
+                    dir: ".",
+                }
+            ],
+            publishArtifacts: [
+                {
+                    name: "retagger.diff",
+                    dir: ".",
+                    patterns: ["diff_reports"]
+                }
+            ],
+            run: [
+                ["mkdir", "-p", "../retagger-reports"],
+                ["sh", "-c", "mv retagger-report*.json ../retagger-reports"],
+                ["cd", "../retagger-reports"],
+                ["python3", "../main/.github/scripts/merge_retagger_results.py"],
+                ["cd", "../main"],
+                ["python3", "./graalpython/com.oracle.graal.python.test/src/runner.py", "merge-tags-from-report", "../retagger-reports/reports-merged.json"],
+                ["sh", "-c", "git diff >> diff_reports"],
             ]
         },
     ],

@@ -7,6 +7,9 @@ on:
         type: string
         description: Job selection (Python regex)
         required: false
+  pull_request:
+  schedule:
+    - cron: '0 0 * * 1'
 
 jobs:
   generate-tier1:
@@ -15,7 +18,7 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     env:
       TARGET: tier1
-      JOBS: ${{ inputs.jobs_to_run }}
+      JOBS: ${{ inputs.jobs_to_run || (github.event_name == 'schedule' && 'python-svm-build-gate-linux|python-unittest-retagger|python-unittest-retagger-merge') || ''}}
     steps: &generate_matrix
       - uses: actions/checkout@v4
       - name: Download sjsonnet
@@ -153,9 +156,10 @@ jobs:
         uses: actions/download-artifact@v5
         if: ${{ matrix.require_artifact }}
         with:
-          name: ${{ matrix.require_artifact[0] }}
+          pattern: ${{ matrix.require_artifact[0] }}
           merge-multiple: true
         continue-on-error: true
+      
       - name: Export artifact paths Linux
         if: ${{ matrix.require_artifact }}
         run: |
@@ -203,8 +207,8 @@ jobs:
         shell: bash
         working-directory: main
         run: |
-          tar cf ${{ matrix.provide_artifact[0] }}.tar ${{ matrix.provide_artifact[1] }}
           ls && pwd
+          tar cf ${{ matrix.provide_artifact[0] }}.tar ${{ matrix.provide_artifact[1] }}
       - name: Upload artifacts
         if: ${{ matrix.provide_artifact }}
         uses: actions/upload-artifact@v5
