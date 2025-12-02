@@ -446,6 +446,12 @@ class TestRunner:
         self.display_summary()
 
     def generate_mx_report(self, path: str):
+        # Some reports may be split when ran on github, this sets different file names
+        report_suffix = os.environ.get("MX_REPORT_SUFFIX")
+        if report_suffix:
+            tmppath, ext = os.path.splitext(path)
+            path = f"{tmppath}{report_suffix}{ext}"
+
         report_data = []
         for result in self.results:
             # Skip synthetic results for failed class setups and such
@@ -496,6 +502,7 @@ def update_tags(test_file: 'TestFile', results: list[TestResult], tag_platform: 
             tag_by_id[tag.test_id] = tag
 
     for test_id, status in status_by_id.items():
+
         if tag := tag_by_id.get(test_id):
             if status == TestStatus.SUCCESS:
                 tag_by_id[test_id] = tag.with_key(tag_platform)
@@ -1343,7 +1350,7 @@ def main_merge_tags(args):
             test_file,
             results,
             tag_platform=args.platform,
-            untag_failed=False,
+            untag_failed= os.environ.get("GITHUB_CI") is not None,
             untag_skipped=True,
             untag_missing=True,
         )
@@ -1503,7 +1510,7 @@ def main():
     # merge-tags-from-report command declaration
     merge_tags_parser = subparsers.add_parser('merge-tags-from-report', help="Merge tags from automated retagger")
     merge_tags_parser.set_defaults(main=main_merge_tags)
-    merge_tags_parser.add_argument('platform')
+    merge_tags_parser.add_argument('--platform', default=CURRENT_PLATFORM)
     merge_tags_parser.add_argument('report_path')
 
     # run the appropriate command
