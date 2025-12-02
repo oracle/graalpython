@@ -670,6 +670,11 @@ suite = {
                             "libc": ["default"],
                         },
                         "cmakeConfig": {
+                            # Possible/useful build types:
+                            # "Release": highest opt level, no debugging symbols, no assertions, -DNDEBUG, etc.
+                            # "RelWithDebInfo": medium opt level, with debugging symbols, no assertions, -DNDEBUG
+                            # "Debug": no opt level, debugging symbols, assertions, ...
+                            "CMAKE_BUILD_TYPE": "Release",
                             "CAPI_INC_DIR": "<output_root:com.oracle.graal.python>/jni_gen",
                             "PYCONFIG_INCLUDE_DIR": "<output_root:graalpy-pyconfig>/<os>-<arch>/<multitarget_libc_selection>",
                             "TRUFFLE_NFI_H_INC": "<path:com.oracle.truffle.nfi.native>/include",
@@ -701,6 +706,11 @@ suite = {
                             {"libc": ["musl"], "variant": ["swcfi"]},
                         ],
                         "cmakeConfig": {
+                            # Possible/useful build types:
+                            # "Release": highest opt level (e.g. -O3, -lto), no debugging symbols, no assertions, -DNDEBUG, etc.
+                            # "RelWithDebInfo": medium opt level (e.g. -O2, -lto), with debugging symbols, no assertions, -DNDEBUG
+                            # "Debug": no opt level, debugging symbols, assertions, ...
+                            "CMAKE_BUILD_TYPE": "Release",
                             "CAPI_INC_DIR": "<output_root:com.oracle.graal.python>/jni_gen",
                             "PYCONFIG_INCLUDE_DIR": "<output_root:graalpy-pyconfig>/<os>-<arch>/<multitarget_libc_selection>/",
                             "TRUFFLE_NFI_H_INC": "<path:com.oracle.truffle.nfi.native>/include",

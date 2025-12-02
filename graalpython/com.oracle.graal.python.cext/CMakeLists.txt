@@ -113,7 +113,6 @@ endif()
 
 # preprocessor defines for all platforms
 add_compile_definitions(
-    NDEBUG
     WITH_FREELISTS=1
 )
 
