@@ -18,6 +18,7 @@ DEFAULT_ENV = {
     "GITHUB_CI": "true"
 }
 
+PR_JOBS='^(?=.*python)(?!.*(retagger|dsl)).*$'
 
 # If any of these terms are in the job json, they do not run in public
 # infrastructure
@@ -208,6 +209,7 @@ class Job:
             pattern = self.common_glob([a["name"] for a in artifacts])
             return Artifact(pattern, os.path.normpath(artifacts[0].get("dir", ".")))
         return None
+    
 
     @staticmethod
     def flatten_command(args: list[str | list[str]]) -> list[str]:
@@ -293,6 +295,8 @@ def get_tagged_jobs(buildspec, target, filter=None):
 
 
 def main(jsonnet_bin, ci_jsonnet, target, filter=None, indent=False):
+    if not filter: filter = PR_JOBS
+
     result = subprocess.check_output([jsonnet_bin, ci_jsonnet], text=True)
     buildspec = json.loads(result)
     tagged_jobs = get_tagged_jobs(buildspec, target, filter=filter)

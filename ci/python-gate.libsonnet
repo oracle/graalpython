@@ -340,6 +340,8 @@
         task_spec({
             environment+: {
                 TAGGED_UNITTEST_PARTIAL: "%d/%d" % [i, num],
+                RETAGGER_BATCH_NO: i,
+                MX_REPORT_SUFFIX: "_batch_%d" % [i],
             },
             variations+::["batch" + i]
         }),
@@ -510,11 +512,11 @@
                 # The default timeout is very generous to allow for infrastructure flakiness,
                 # but we don't want to auto tag tests that take a long time
                 "--timeout-factor", "0.3",
-                "--mx-report", "report.json",
+                "--mx-report", "retagger-report.json",
                 "--exit-success-on-failures",
             ],
         ],
-        logs+: ["*/*/report.json"],
+        logs+: ["main/retagger-report*.json"],
     }),
 
     coverage_gate:: $.graalpy_gate + task_spec({
