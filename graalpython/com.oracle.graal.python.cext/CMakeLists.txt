@@ -55,6 +55,10 @@ set(TARGET_LIBPYTHON "python-native")
 # common variables and compile/link options (for all build targets)
 ######################################################################
 
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE)
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELWITHDEBINFO TRUE)
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_DEBUG FALSE)
+
 if (MSVC)
   SET(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "" FORCE)
   SET(CFLAGS_WARNINGS /Wall /WX
