@@ -57,7 +57,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeRawNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.PythonDispatchers.BinaryPythonSlotDispatcherNode;
@@ -247,17 +247,20 @@ public class TpSlotGetAttr {
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached InlinedConditionProfile isGetAttrProfile,
                         @Cached AsCharPointerNode asCharPointerNode,
-                        @Cached PythonToNativeRawNode nameToNativeNode,
+                        @Cached PythonToNativeNode nameToNativeNode,
                         @Cached PythonToNativeNode selfToNativeNode,
+                        @Cached CoerceNativePointerToLongNode pointerToLongNode,
                         @Cached NativeToPythonTransferNode toPythonNode,
                         @Cached ExternalFunctionInvokeNode externalInvokeNode,
                         @Cached PyObjectCheckFunctionResultNode checkResultNode) {
             boolean isGetAttr = isGetAttrProfile.profile(inliningTarget, slots.tp_getattr() == slot);
+            Object nameWrapper = null;
             long nameArg;
             if (isGetAttr) {
                 nameArg = asCharPointerNode.execute(name);
             } else {
-                nameArg = nameToNativeNode.execute(name);
+                nameWrapper = nameToNativeNode.execute(name);
+                nameArg = pointerToLongNode.execute(inliningTarget, nameWrapper);
             }
             Object result;
             PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, null);
@@ -267,7 +270,7 @@ public class TpSlotGetAttr {
                 if (isGetAttr) {
                     free(nameArg);
                 } else {
-                    Reference.reachabilityFence(nameArg);
+                    Reference.reachabilityFence(nameWrapper);
                 }
             }
             return checkResultNode.execute(threadState, T___GETATTR__, toPythonNode.execute(result));
