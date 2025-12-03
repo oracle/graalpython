@@ -42,7 +42,7 @@ import unittest
 import difflib
 import sys
 import signal
-
+from tests import util
 import builtins
 
 
@@ -161,7 +161,7 @@ def make_test_method(fun, name):
     return test_case
 
 
-@unittest.skipIf(os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: FrameSlotTypeException with reparsing")
+@unittest.skipUnless(os.environ.get('BYTECODE_DSL_INTERPRETER') == 'false', "TODO: FrameSlotTypeException with reparsing")
 class TraceTests(unittest.TestCase):
     def trace(self, frame, event, arg):
         code = frame.f_code
@@ -254,8 +254,8 @@ class TracingEventsUnitTest(unittest.TestCase):
         return offset_func.__code__.co_firstlineno - self.first_line
 
 class TraceTestsStmtWith(TracingEventsUnitTest):
-    @unittest.skipIf(not os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: Correct break in with statement manual interpreter tracing.")
-    @unittest.skipIf(os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: Breaking from within with: __exit__ sometimes won't get traced.")
+    @util.skipUnlessBytecodeDSL("Incorrect break in with statement tracing.")
+    @util.skipIfBytecodeDSL("TODO: Breaking from within with: __exit__ sometimes won't get traced.")
     def test_09_break_in_with(self):
         class C:
             def __enter__(self):
@@ -345,8 +345,8 @@ class TraceTestsStmtWith(TracingEventsUnitTest):
 
         self.assert_events(self.events, events)
 
-    @unittest.skipIf(not os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: Correct break in with statement manual interpreter tracing.")
-    @unittest.skipIf(os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: Breaking from within with: __exit__ sometimes won't get traced.")
+    @util.skipUnlessBytecodeDSL("Incorrect break in with statement tracing.")
+    @util.skipIfBytecodeDSL("TODO: Breaking from within with: __exit__ sometimes won't get traced.")
     def test_11_break_in_with_nested(self):
         class C:
             def __enter__(self):
@@ -400,7 +400,8 @@ class TraceTestsStmtWith(TracingEventsUnitTest):
 
         self.assert_events(self.events, events)
 
-    @unittest.skipIf(not os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: Correct reraise tracing for manual interpreter.")
+    @util.skipUnlessBytecodeDSL("Incorrect break in with statement tracing.")
+    @util.skipIfBytecodeDSL("TODO: Breaking from within with: __exit__ sometimes won't get traced.")
     def test_12_reraise(self):
         def func():
             try:
@@ -730,7 +731,7 @@ class MultilineCallsTraceTest(TracingEventsUnitTest):
         self.assert_events(self.events, events)
 
 class ExceptStarTraceTest(TracingEventsUnitTest):
-    @unittest.skipIf(not os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: Implement try-except* in manual interpreter.")
+    @util.skipUnlessBytecodeDSL("try-except* not implemented")
     def test_01_except_star_with_name(self):
         def func():
             try:
@@ -760,7 +761,7 @@ class ExceptStarTraceTest(TracingEventsUnitTest):
 
         self.assert_events(self.events, events)
 
-    @unittest.skipIf(not os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: Implement try-except* in manual interpreter.")
+    @util.skipUnlessBytecodeDSL("try-except* not implemented")
     def test_02_except_star_multi_with_name(self):
         def func():
             try:
@@ -797,8 +798,8 @@ class ExceptStarTraceTest(TracingEventsUnitTest):
 
         self.assert_events(self.events, events)
 
-    @unittest.skipIf(not os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: Implement try-except* in manual interpreter.")
-    @unittest.skipIf(os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: Fix return in finally.")
+    @util.skipUnlessBytecodeDSL("try-except* not implemented")
+    @util.skipIfBytecodeDSL("TODO: Fix return in finally.")
     def test_03_except_star_with_finally(self):
         def func():
             try:
@@ -831,8 +832,8 @@ class ExceptStarTraceTest(TracingEventsUnitTest):
 
         self.assert_events(self.events, events)
 
-    @unittest.skipIf(not os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: Implement try-except* in manual interpreter.")
-    @unittest.skipIf(os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: Fix return in finally.")
+    @util.skipUnlessBytecodeDSL("try-except* not implemented")
+    @util.skipIfBytecodeDSL("TODO: Fix return in finally.")
     def test_04_test_try_except_star_with_wrong_type(self):
         def func():
             try:
@@ -860,7 +861,7 @@ class ExceptStarTraceTest(TracingEventsUnitTest):
 
         self.assert_events(self.events, events)
 
-    @unittest.skipIf(not os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: Implement try-except* in manual interpreter.")
+    @util.skipUnlessBytecodeDSL("try-except* not implemented")
     def test_05_if_false_in_try_except_star(self):
         def func():
             try:
@@ -880,7 +881,7 @@ class ExceptStarTraceTest(TracingEventsUnitTest):
 
         self.assert_events(self.events, events)
 
-    @unittest.skipIf(not os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: Implement try-except* in manual interpreter.")
+    @util.skipUnlessBytecodeDSL("try-except* not implemented")
     @unittest.skipIf(sys.implementation.name == "cpython", "TODO: seems broken on CPython")
     def test_06_try_in_try_with_exception(self):
         def func():
@@ -912,7 +913,7 @@ class ExceptStarTraceTest(TracingEventsUnitTest):
 
         self.assert_events(self.events, events)
 
-    @unittest.skipIf(True, "TODO: Isn't even tagged from CPython tests.")
+    @unittest.skip("TODO: Isn't even tagged from CPython tests.")
     def test_07_tracing_exception_raised_in_with(self):
         class NullCtx:
             def __enter__(self):
@@ -949,7 +950,7 @@ class ExceptStarTraceTest(TracingEventsUnitTest):
 
         self.assert_events(self.events, events)
 
-    @unittest.skipIf(not os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: Implement try-except* in manual interpreter.")
+    @util.skipUnlessBytecodeDSL("try-except* not implemented")
     def test_08_try_except_star_no_exception(self):
         def func():
             try:
@@ -983,7 +984,7 @@ class ExceptStarTraceTest(TracingEventsUnitTest):
 
         self.assert_events(self.events, events)
 
-    @unittest.skipIf(not os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: Implement try-except* in manual interpreter.")
+    @util.skipUnlessBytecodeDSL("try-except* not implemented")
     def test_09_try_except_star_named_no_exception(self):
         def func():
             try:
@@ -1008,7 +1009,7 @@ class ExceptStarTraceTest(TracingEventsUnitTest):
 
         self.assert_events(self.events, events)
 
-    @unittest.skipIf(not os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: Implement try-except* in manual interpreter.")
+    @util.skipUnlessBytecodeDSL("try-except* not implemented")
     def test_10_try_except_star_exception_caught(self):
         def func():
             try:
@@ -1035,7 +1036,7 @@ class ExceptStarTraceTest(TracingEventsUnitTest):
 
         self.assert_events(self.events, events)
 
-    @unittest.skipIf(not os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: Implement try-except* in manual interpreter.")
+    @util.skipUnlessBytecodeDSL("try-except* not implemented")
     def test_11_try_except_star_named_exception_caught(self):
         def func():
             try:
@@ -1062,7 +1063,7 @@ class ExceptStarTraceTest(TracingEventsUnitTest):
 
         self.assert_events(self.events, events)
 
-    @unittest.skipIf(not os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: Implement try-except* in manual interpreter.")
+    @util.skipUnlessBytecodeDSL("try-except* not implemented")
     def test_12_try_except_star_exception_not_caught(self):
         def func():
             try:
@@ -1089,7 +1090,7 @@ class ExceptStarTraceTest(TracingEventsUnitTest):
 
         self.assert_events(self.events, events)
 
-    @unittest.skipIf(not os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: Implement try-except* in manual interpreter.")
+    @util.skipUnlessBytecodeDSL("try-except* not implemented")
     def test_13_try_except_star_named_exception_not_caught(self):
         def func():
             try:
@@ -1116,7 +1117,7 @@ class ExceptStarTraceTest(TracingEventsUnitTest):
 
         self.assert_events(self.events, events)
 
-    @unittest.skipIf(not os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: Implement try-except* in manual interpreter.")
+    @util.skipUnlessBytecodeDSL("try-except* not implemented")
     def test_14_try_except_star_nested(self):
         def func():
             try:
