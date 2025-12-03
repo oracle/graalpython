@@ -487,8 +487,11 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             }
 
             if (root.needsTraceAndProfileInstrumentation()) {
-                root.traceOrProfileReturn(frame, location, null);
-                root.getThreadState().popInstrumentationData(root);
+                try {
+                    root.traceOrProfileReturn(frame, location, null);
+                } finally {
+                    root.getThreadState().popInstrumentationData(root);
+                }
             }
 
             root.calleeContext.exit(frame, root, location);
@@ -1055,11 +1058,13 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind ContinuationRootNode continuationRootNode,
                         @Bind PBytecodeDSLRootNode innerRoot,
                         @Bind BytecodeNode bytecodeNode) {
-            Object result = createGenerator(continuationFrame, inliningTarget, continuationRootNode, innerRoot);
-            if (innerRoot.needsTraceAndProfileInstrumentation()) {
-                innerRoot.getThreadState().popInstrumentationData(innerRoot);
+            try {
+                return createGenerator(continuationFrame, inliningTarget, continuationRootNode, innerRoot);
+            } finally {
+                if (innerRoot.needsTraceAndProfileInstrumentation()) {
+                    innerRoot.getThreadState().popInstrumentationData(innerRoot);
+                }
             }
-            return result;
         }
 
         private static PythonAbstractObject createGenerator(MaterializedFrame continuationFrame, Node inliningTarget,
@@ -1115,8 +1120,11 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind PBytecodeDSLRootNode root,
                         @Bind BytecodeNode bytecode) {
             if (root.needsTraceAndProfileInstrumentation()) {
-                root.traceOrProfileReturn(frame, bytecode, value);
-                root.getThreadState().popInstrumentationData(root);
+                try {
+                    root.traceOrProfileReturn(frame, bytecode, value);
+                } finally {
+                    root.getThreadState().popInstrumentationData(root);
+                }
             }
 
             // Suspended generators have no backref
