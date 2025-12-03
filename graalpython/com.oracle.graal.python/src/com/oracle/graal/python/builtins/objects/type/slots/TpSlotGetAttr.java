@@ -45,6 +45,8 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTRIBUTE_
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 
+import java.lang.ref.Reference;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
@@ -263,6 +265,8 @@ public class TpSlotGetAttr {
             } finally {
                 if (isGetAttr) {
                     freeNode.free(nameArg);
+                } else {
+                    Reference.reachabilityFence(nameArg);
                 }
             }
             return checkResultNode.execute(threadState, T___GETATTR__, toPythonNode.execute(result));
