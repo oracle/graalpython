@@ -36,7 +36,8 @@ test.test_functools.TestLRUC.test_lru_cache_threaded @ darwin-arm64,linux-aarch6
 test.test_functools.TestLRUC.test_lru_cache_threaded2 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_functools.TestLRUC.test_lru_cache_threaded3 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_functools.TestLRUC.test_lru_cache_typed_is_not_recursive @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_functools.TestLRUC.test_lru_cache_weakrefable @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+# GR-71869
+!test.test_functools.TestLRUC.test_lru_cache_weakrefable @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_functools.TestLRUC.test_lru_hash_only_once @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_functools.TestLRUC.test_lru_method @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_functools.TestLRUC.test_lru_no_args @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64

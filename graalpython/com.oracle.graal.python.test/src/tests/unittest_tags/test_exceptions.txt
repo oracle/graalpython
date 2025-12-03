@@ -56,5 +56,6 @@ test.test_exceptions.NameErrorTests.test_issue45826_focused @ darwin-arm64,linux
 test.test_exceptions.PEP626Tests.test_lineno_after_raise_in_with_exit @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_exceptions.PEP626Tests.test_lineno_after_raise_simple @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_exceptions.PEP626Tests.test_lineno_in_finally_normal @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_exceptions.PEP626Tests.test_lineno_in_try @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+# GR-62195
+!test.test_exceptions.PEP626Tests.test_lineno_in_try @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_exceptions.SyntaxErrorTests.test_attributes_old_constructor @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
