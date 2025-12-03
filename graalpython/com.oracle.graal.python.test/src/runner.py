@@ -451,6 +451,8 @@ class TestRunner:
         # Some reports may be split when ran on github, this sets different file names
         report_suffix = os.environ.get("MX_REPORT_SUFFIX")
         if report_suffix:
+            if os.environ.get("GITHUB_CI"):
+                report_suffix = f"{report_suffix}_{CURRENT_PLATFORM}"
             tmppath, ext = os.path.splitext(path)
             path = f"{tmppath}{report_suffix}{ext}"
 
