@@ -7,6 +7,11 @@ on:
         type: string
         description: Job selection (Python regex)
         required: false
+  workflow_call:
+    inputs:
+      jobs_to_run:
+        required: true
+        type: string
   pull_request:
     types: [review_requested, ready_for_review]
   schedule:
