@@ -1,41 +1,41 @@
-test.test_buffer.TestBufferProtocol.test_issue_7385 @ darwin-arm64,linux-aarch64,win32-AMD64
-test.test_buffer.TestBufferProtocol.test_memoryview_array @ darwin-arm64,linux-aarch64,win32-AMD64
-test.test_buffer.TestBufferProtocol.test_memoryview_cast @ darwin-arm64,linux-aarch64
-test.test_buffer.TestBufferProtocol.test_memoryview_cast_zero_shape @ darwin-arm64,linux-aarch64,win32-AMD64
-test.test_buffer.TestBufferProtocol.test_memoryview_cast_zero_strides @ darwin-arm64,linux-aarch64,win32-AMD64
-test.test_buffer.TestBufferProtocol.test_memoryview_check_released @ darwin-arm64,linux-aarch64,win32-AMD64
-test.test_buffer.TestBufferProtocol.test_memoryview_compare_multidim_zero_shape @ darwin-arm64,linux-aarch64,win32-AMD64
-test.test_buffer.TestBufferProtocol.test_memoryview_compare_zero_shape @ darwin-arm64,linux-aarch64,win32-AMD64
-test.test_buffer.TestBufferProtocol.test_memoryview_getbuffer_undefined @ darwin-arm64,linux-aarch64,win32-AMD64
-test.test_buffer.TestBufferProtocol.test_memoryview_index @ darwin-arm64,linux-aarch64,win32-AMD64
-test.test_buffer.TestBufferProtocol.test_memoryview_redirect @ darwin-arm64,linux-aarch64,win32-AMD64
-test.test_buffer.TestBufferProtocol.test_memoryview_repr @ darwin-arm64,linux-aarch64,win32-AMD64
-test.test_buffer.TestBufferProtocol.test_memoryview_sequence @ darwin-arm64,linux-aarch64,win32-AMD64
-test.test_buffer.TestBufferProtocol.test_memoryview_serializing @ darwin-arm64,linux-aarch64,win32-AMD64
-test.test_buffer.TestBufferProtocol.test_memoryview_tolist @ darwin-arm64,linux-aarch64
-test.test_buffer.TestBufferProtocol.test_ndarray_cmp_contig @ darwin-arm64,linux-aarch64,win32-AMD64
-test.test_buffer.TestBufferProtocol.test_ndarray_fortran @ darwin-arm64,linux-aarch64,win32-AMD64
-test.test_buffer.TestBufferProtocol.test_ndarray_hash @ darwin-arm64,linux-aarch64,win32-AMD64
+test.test_buffer.TestBufferProtocol.test_issue_7385 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_buffer.TestBufferProtocol.test_memoryview_array @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_buffer.TestBufferProtocol.test_memoryview_cast @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_buffer.TestBufferProtocol.test_memoryview_cast_zero_shape @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_buffer.TestBufferProtocol.test_memoryview_cast_zero_strides @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_buffer.TestBufferProtocol.test_memoryview_check_released @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_buffer.TestBufferProtocol.test_memoryview_compare_multidim_zero_shape @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_buffer.TestBufferProtocol.test_memoryview_compare_zero_shape @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_buffer.TestBufferProtocol.test_memoryview_getbuffer_undefined @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_buffer.TestBufferProtocol.test_memoryview_index @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_buffer.TestBufferProtocol.test_memoryview_redirect @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_buffer.TestBufferProtocol.test_memoryview_repr @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_buffer.TestBufferProtocol.test_memoryview_sequence @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_buffer.TestBufferProtocol.test_memoryview_serializing @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_buffer.TestBufferProtocol.test_memoryview_tolist @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_buffer.TestBufferProtocol.test_ndarray_cmp_contig @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_buffer.TestBufferProtocol.test_ndarray_fortran @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_buffer.TestBufferProtocol.test_ndarray_hash @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 # Transient lists differ error GR-49936
 !test.test_buffer.TestBufferProtocol.test_ndarray_index_getitem_multidim
-test.test_buffer.TestBufferProtocol.test_ndarray_index_invalid @ darwin-arm64,linux-aarch64,win32-AMD64
-test.test_buffer.TestBufferProtocol.test_ndarray_index_null_strides @ darwin-arm64,linux-aarch64,win32-AMD64
-test.test_buffer.TestBufferProtocol.test_ndarray_index_scalar @ darwin-arm64,linux-aarch64,win32-AMD64
-test.test_buffer.TestBufferProtocol.test_ndarray_linked_list @ darwin-arm64,linux-aarch64,win32-AMD64
-test.test_buffer.TestBufferProtocol.test_ndarray_memoryview_from_buffer @ darwin-arm64,linux-aarch64,win32-AMD64
-test.test_buffer.TestBufferProtocol.test_ndarray_offset @ darwin-arm64,linux-aarch64,win32-AMD64
-test.test_buffer.TestBufferProtocol.test_ndarray_random_invalid @ darwin-arm64,linux-aarch64,win32-AMD64
-test.test_buffer.TestBufferProtocol.test_ndarray_re_export @ darwin-arm64,linux-aarch64,win32-AMD64
+test.test_buffer.TestBufferProtocol.test_ndarray_index_invalid @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_buffer.TestBufferProtocol.test_ndarray_index_null_strides @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_buffer.TestBufferProtocol.test_ndarray_index_scalar @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_buffer.TestBufferProtocol.test_ndarray_linked_list @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_buffer.TestBufferProtocol.test_ndarray_memoryview_from_buffer @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_buffer.TestBufferProtocol.test_ndarray_offset @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_buffer.TestBufferProtocol.test_ndarray_random_invalid @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_buffer.TestBufferProtocol.test_ndarray_re_export @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 # Transient lists differ error GR-49936
 !test.test_buffer.TestBufferProtocol.test_ndarray_slice_assign_multidim
 !test.test_buffer.TestBufferProtocol.test_ndarray_slice_multidim
 !test.test_buffer.TestBufferProtocol.test_ndarray_slice_redundant_suboffsets
-test.test_buffer.TestBufferProtocol.test_ndarray_slice_zero_shape @ darwin-arm64,linux-aarch64
-test.test_buffer.TestBufferProtocol.test_ndarray_tolist_null_strides @ darwin-arm64,linux-aarch64,win32-AMD64
-test.test_buffer.TestBufferProtocol.test_ndarray_zero_shape @ darwin-arm64,linux-aarch64,win32-AMD64
-test.test_buffer.TestBufferProtocol.test_ndarray_zero_strides @ darwin-arm64,linux-aarch64,win32-AMD64
-test.test_buffer.TestBufferProtocol.test_py_buffer_to_contiguous @ darwin-arm64,linux-aarch64,win32-AMD64
-test.test_buffer.TestPythonBufferProtocol.test_bad_buffer_method @ darwin-arm64,linux-aarch64,win32-AMD64
-test.test_buffer.TestPythonBufferProtocol.test_inheritance @ darwin-arm64,linux-aarch64,win32-AMD64
-test.test_buffer.TestPythonBufferProtocol.test_multiple_inheritance_buffer_last_raising @ darwin-arm64,linux-aarch64,win32-AMD64
-test.test_buffer.TestPythonBufferProtocol.test_override_only_release @ darwin-arm64,linux-aarch64,win32-AMD64
+test.test_buffer.TestBufferProtocol.test_ndarray_slice_zero_shape @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_buffer.TestBufferProtocol.test_ndarray_tolist_null_strides @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_buffer.TestBufferProtocol.test_ndarray_zero_shape @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_buffer.TestBufferProtocol.test_ndarray_zero_strides @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_buffer.TestBufferProtocol.test_py_buffer_to_contiguous @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_buffer.TestPythonBufferProtocol.test_bad_buffer_method @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_buffer.TestPythonBufferProtocol.test_inheritance @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_buffer.TestPythonBufferProtocol.test_multiple_inheritance_buffer_last_raising @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_buffer.TestPythonBufferProtocol.test_override_only_release @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
