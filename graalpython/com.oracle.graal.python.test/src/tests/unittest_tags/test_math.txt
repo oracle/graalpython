@@ -66,7 +66,7 @@ test.test_math.MathTests.test_mtestfile @ darwin-arm64,win32-AMD64
 test.test_math.MathTests.test_nan_constant @ darwin-arm64,win32-AMD64
 test.test_math.MathTests.test_nextafter @ darwin-arm64,win32-AMD64
 test.test_math.MathTests.test_prod @ darwin-arm64,win32-AMD64
-test.test_math.MathTests.test_sumprod_stress @ darwin-arm64,win32-AMD64
+test.test_math.MathTests.test_sumprod_stress @ darwin-arm64,linux-aarch64,win32-AMD64
 test.test_math.MathTests.test_testfile @ darwin-arm64,win32-AMD64
 test.test_math.MathTests.test_trunc @ darwin-arm64,win32-AMD64
 test.test_math.MathTests.test_ulp @ darwin-arm64,win32-AMD64
