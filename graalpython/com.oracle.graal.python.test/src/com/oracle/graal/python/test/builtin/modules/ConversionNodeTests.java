@@ -76,7 +76,7 @@ public class ConversionNodeTests {
             public Object execute(VirtualFrame frame) {
                 GilNode gilNode = GilNode.getUncached();
                 boolean wasAcquired = gilNode.acquire();
-                calleeContext.enter(frame);
+                calleeContext.enter(frame, this);
                 try {
                     return node.execute(frame, PArguments.getArgument(frame, 0));
                 } finally {

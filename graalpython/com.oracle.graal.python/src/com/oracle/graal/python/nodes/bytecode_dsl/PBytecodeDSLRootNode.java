@@ -452,7 +452,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @Specialization
         public static void doEnter(VirtualFrame frame,
                         @Bind PBytecodeDSLRootNode root) {
-            root.calleeContext.enter(frame);
+            root.calleeContext.enter(frame, root);
 
             if (root.needsTraceAndProfileInstrumentation()) {
                 root.ensureTraceAndProfileEnabled();

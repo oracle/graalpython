@@ -332,7 +332,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
                 body = insert(newBody);
             }
         }
-        calleeContext.enter(frame);
+        calleeContext.enter(frame, this);
         try {
             return body.execute(frame);
         } finally {

@@ -288,7 +288,7 @@ public class AsyncHandler {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            calleeContext.enter(frame);
+            calleeContext.enter(frame, this);
             Object[] frameArguments = frame.getArguments();
             Object callable = PArguments.getArgument(frameArguments, ASYNC_CALLABLE_INDEX);
             int frameIndex = (int) PArguments.getArgument(frameArguments, ASYNC_FRAME_INDEX_INDEX);

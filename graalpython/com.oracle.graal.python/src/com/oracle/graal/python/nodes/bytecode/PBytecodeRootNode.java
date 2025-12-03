@@ -1086,7 +1086,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @Override
     public Object execute(VirtualFrame virtualFrame) {
-        calleeContext.enter(virtualFrame);
+        calleeContext.enter(virtualFrame, this);
         try {
             copyArgsAndCells(virtualFrame, virtualFrame.getArguments());
             return executeFromBci(virtualFrame, virtualFrame, this, 0, getInitialStackTop());
