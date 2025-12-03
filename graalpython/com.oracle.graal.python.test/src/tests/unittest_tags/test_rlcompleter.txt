@@ -1,7 +1,7 @@
-test.test_rlcompleter.TestRlcompleter.test_complete @ darwin-arm64,win32-AMD64
-test.test_rlcompleter.TestRlcompleter.test_duplicate_globals @ darwin-arm64,win32-AMD64
-test.test_rlcompleter.TestRlcompleter.test_excessive_getattr @ darwin-arm64,win32-AMD64
-test.test_rlcompleter.TestRlcompleter.test_global_matches @ darwin-arm64,win32-AMD64
-test.test_rlcompleter.TestRlcompleter.test_namespace @ darwin-arm64,win32-AMD64
-test.test_rlcompleter.TestRlcompleter.test_property_method_not_called @ darwin-arm64,win32-AMD64
-test.test_rlcompleter.TestRlcompleter.test_uncreated_attr @ darwin-arm64,win32-AMD64
+test.test_rlcompleter.TestRlcompleter.test_complete @ darwin-arm64,linux-aarch64,win32-AMD64
+test.test_rlcompleter.TestRlcompleter.test_duplicate_globals @ darwin-arm64,linux-aarch64,win32-AMD64
+test.test_rlcompleter.TestRlcompleter.test_excessive_getattr @ darwin-arm64,linux-aarch64,win32-AMD64
+test.test_rlcompleter.TestRlcompleter.test_global_matches @ darwin-arm64,linux-aarch64,win32-AMD64
+test.test_rlcompleter.TestRlcompleter.test_namespace @ darwin-arm64,linux-aarch64,win32-AMD64
+test.test_rlcompleter.TestRlcompleter.test_property_method_not_called @ darwin-arm64,linux-aarch64,win32-AMD64
+test.test_rlcompleter.TestRlcompleter.test_uncreated_attr @ darwin-arm64,linux-aarch64,win32-AMD64
