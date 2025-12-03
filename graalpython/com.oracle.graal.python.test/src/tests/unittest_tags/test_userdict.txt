@@ -18,7 +18,7 @@ test.test_userdict.UserDictTest.test_pop @ darwin-arm64,linux-aarch64,win32-AMD6
 test.test_userdict.UserDictTest.test_popitem @ darwin-arm64,linux-aarch64,win32-AMD64
 test.test_userdict.UserDictTest.test_read @ darwin-arm64,linux-aarch64,win32-AMD64
 test.test_userdict.UserDictTest.test_repr @ darwin-arm64,linux-aarch64,win32-AMD64
-test.test_userdict.UserDictTest.test_repr_deep @ darwin-arm64,linux-aarch64,win32-AMD64
+test.test_userdict.UserDictTest.test_repr_deep @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_userdict.UserDictTest.test_setdefault @ darwin-arm64,linux-aarch64,win32-AMD64
 test.test_userdict.UserDictTest.test_update @ darwin-arm64,linux-aarch64,win32-AMD64
 test.test_userdict.UserDictTest.test_values @ darwin-arm64,linux-aarch64,win32-AMD64
