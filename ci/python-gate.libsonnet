@@ -343,7 +343,7 @@
             environment+: {
                 TAGGED_UNITTEST_PARTIAL: "%d/%d" % [i, num],
                 RETAGGER_BATCH_NO: i,
-                MX_REPORT_SUFFIX: "_batch_%d" % [i],
+                MX_REPORT_SUFFIX: "_batch_%d_%s-%s" % [i, self.os, self.arch],
             },
             variations+::["batch" + i]
         }),
