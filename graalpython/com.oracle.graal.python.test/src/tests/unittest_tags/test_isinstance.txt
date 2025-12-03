@@ -9,7 +9,7 @@ test.test_isinstance.TestIsInstanceIsSubclass.test_infinite_recursion_via_bases_
 test.test_isinstance.TestIsInstanceIsSubclass.test_infinitely_many_bases @ darwin-arm64,linux-aarch64,win32-AMD64
 test.test_isinstance.TestIsInstanceIsSubclass.test_isinstance_abstract @ darwin-arm64,linux-aarch64,win32-AMD64
 test.test_isinstance.TestIsInstanceIsSubclass.test_isinstance_normal @ darwin-arm64,linux-aarch64,win32-AMD64
-test.test_isinstance.TestIsInstanceIsSubclass.test_isinstance_recursion_limit @ darwin-arm64,linux-aarch64,win32-AMD64
+test.test_isinstance.TestIsInstanceIsSubclass.test_isinstance_recursion_limit @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_isinstance.TestIsInstanceIsSubclass.test_isinstance_with_or_union @ darwin-arm64,linux-aarch64,win32-AMD64
 test.test_isinstance.TestIsInstanceIsSubclass.test_issubclass_refcount_handling @ darwin-arm64,linux-aarch64,win32-AMD64
 test.test_isinstance.TestIsInstanceIsSubclass.test_subclass_abstract @ darwin-arm64,linux-aarch64,win32-AMD64
