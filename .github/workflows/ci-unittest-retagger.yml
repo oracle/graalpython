@@ -1,9 +1,8 @@
-name: Run weekly unittest retagger
-
+name: Run Weekly unittest retagger
 on:
-  workflow_dispatch:
   schedule:
     - cron: '0 0 * * 1'
+  workflow_dispatch:
 
 jobs:
   generate-tier1:
@@ -241,60 +240,3 @@ jobs:
       matrix:
         include: ${{ fromJson(needs.generate-tier3.outputs.matrix) }}
     steps: *buildsteps
-
-  merge_all_reports:
-    if: ${{ success() || inputs.jobs_to_run }}
-    needs: [tier3]
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include: ${{ fromJson(needs.generate-tier3.outputs.matrix) }}
-    steps: 
-      - *buildsteps
-      - name: Download reports
-        uses: actions/download-artifact@v5
-        with:
-          pattern: python-unittest-retagger*
-          merge-multiple: true
-        continue-on-error: true
-      - name: Merge retagger reports
-        workdir: main
-        run: |
-          mkdir -p ../retagger-reports
-          sh -c mv retagger-report*.json ../retagger-reports
-          cd ../retagger-reports
-          python3 ../main/.github/scripts/merge_retagger_results.py
-          cd ../main
-          python3 ./graalpython/com.oracle.graal.python.test/src/runner.py merge-tags-from-report ../retagger-reports/reports-merged.json
-          sh -c git diff >> reports_diff
-
-      - name: Export reports diff file
-        uses: actions/upload-artifact@v5
-        with:
-          name: retagger.diff
-          path: main/diff_reports
-          retention-days: 1
-
-        #   {
-        #     packages: {
-        #         mx: "7.34.1",
-        #         python3: "==3.12.8",
-        #     },
-        #     publishArtifacts: [
-        #         {
-        #             name: "retagger.diff",
-        #             dir: ".",
-        #             patterns: ["diff_reports"]
-        #         }
-        #     ],
-        #     run: [
-        #         ["mkdir", "-p", "../retagger-reports"],
-        #         ["sh", "-c", "mv retagger-report*.json ../retagger-reports"],
-        #         ["cd", "../retagger-reports"],
-        #         ["python3", "../main/.github/scripts/merge_retagger_results.py"],
-        #         ["cd", "../main"],
-        #         ["python3", "./graalpython/com.oracle.graal.python.test/src/runner.py", "merge-tags-from-report", "../retagger-reports/reports-merged.json"],
-        #         ["sh", "-c", "git diff >> diff_reports"],
-        #     ]
-        # },
