@@ -1496,8 +1496,11 @@ suite = {
         "GRAALPYTHON_POLYBENCH_BENCHMARKS": {
             "description": "Distribution for GraalPython polybench benchmarks",
             "layout": {
+                # Interpreter benchmarks
                 "./interpreter/": [
+                    # Batch 1
                     "file:benchmarks/interpreter/*.py",
+                    # Batch 2
                     "file:graalpython/com.oracle.graal.python.benchmarks/python/micro/arith-binop.py",
                     "file:graalpython/com.oracle.graal.python.benchmarks/python/micro/arith-modulo-sized.py",
                     "file:graalpython/com.oracle.graal.python.benchmarks/python/micro/attribute-access.py",
@@ -1512,7 +1515,29 @@ suite = {
                     "file:graalpython/com.oracle.graal.python.benchmarks/python/micro/bytecode-benchmark.py",
                     "file:graalpython/com.oracle.graal.python.benchmarks/python/micro/for-range.py",
                     "file:graalpython/com.oracle.graal.python.benchmarks/python/micro/generate-functions-sized.py",
+                    # Batch 3
+                    "file:graalpython/com.oracle.graal.python.benchmarks/python/micro/c-arith-binop.py",
+                    "file:graalpython/com.oracle.graal.python.benchmarks/python/micro/c-arith-binop2.py",
+                    "file:graalpython/com.oracle.graal.python.benchmarks/python/micro/c-call-classmethod.py",
+                    "file:graalpython/com.oracle.graal.python.benchmarks/python/micro/c-call-method-int-float.py",
+                    "file:graalpython/com.oracle.graal.python.benchmarks/python/micro/c-call-method.py",
+                    "file:graalpython/com.oracle.graal.python.benchmarks/python/micro/c-instantiate-large.py",
+                    "file:graalpython/com.oracle.graal.python.benchmarks/python/micro/c-issubtype-monorphic.py",
+                    "file:graalpython/com.oracle.graal.python.benchmarks/python/micro/c-issubtype-polymorphic-forced-to-native.py",
+                    "file:graalpython/com.oracle.graal.python.benchmarks/python/micro/c-issubtype-polymorphic.py",
+                    "file:graalpython/com.oracle.graal.python.benchmarks/python/micro/c-list-iterating-obj.py",
+                    "file:graalpython/com.oracle.graal.python.benchmarks/python/micro/c-magic-bool.py",
+                    "file:graalpython/com.oracle.graal.python.benchmarks/python/micro/c-magic-iter.py",
+                    "file:graalpython/com.oracle.graal.python.benchmarks/python/micro/c-member-access.py",
                 ],
+                # Interpreter supporting infra
+                "./interpreter/harness.py": [
+                    "file:graalpython/com.oracle.graal.python.benchmarks/python/harness.py",
+                ],
+                "./interpreter/tests/": [
+                    "file:graalpython/com.oracle.graal.python.test/src/tests/__init__.py",
+                ],
+                # Warmup benchmarks
                 "./warmup/": [
                     "file:benchmarks/warmup/*.py",
                     "dependency:GRAALPYTHON_PYFLATE_BENCHMARK_RESOURCE",
