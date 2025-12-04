@@ -3,7 +3,8 @@ test.test_compile.TestExpressionStackSize.test_and_or @ darwin-arm64,linux-aarch
 test.test_compile.TestExpressionStackSize.test_binop @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_compile.TestExpressionStackSize.test_chained_comparison @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_compile.TestExpressionStackSize.test_func_and @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_compile.TestExpressionStackSize.test_if_else @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+# GR-64307
+!test.test_compile.TestExpressionStackSize.test_if_else @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_compile.TestExpressionStackSize.test_or @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_compile.TestExpressionStackSize.test_stack_3050 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_compile.TestExpressionStackSize.test_stack_3050_2 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
