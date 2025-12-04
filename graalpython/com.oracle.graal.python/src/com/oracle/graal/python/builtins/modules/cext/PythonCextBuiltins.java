@@ -1555,7 +1555,7 @@ public final class PythonCextBuiltins {
                         GC_LOGGER.fine(PythonUtils.formatJString("Transitioning to weak reference to break a reference cycle for %s, refcount=%d",
                                         abstractObjectNativeWrapper.ref, abstractObjectNativeWrapper.getRefCount()));
                     }
-                    updateRefNode.clearStrongRef(inliningTarget, abstractObjectNativeWrapper);
+                    updateRefNode.clearStrongRefButKeepInGCList(inliningTarget, abstractObjectNativeWrapper);
                 }
 
                 // next = GC_NEXT(gc)

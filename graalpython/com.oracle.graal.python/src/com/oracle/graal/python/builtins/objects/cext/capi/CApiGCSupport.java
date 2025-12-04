@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.GC_
 
 import java.util.logging.Level;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupportFactory.GCListRemoveNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupportFactory.PyObjectGCDelNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
@@ -55,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.FreeNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -165,12 +167,24 @@ public abstract class CApiGCSupport {
             return GCListRemoveNodeGen.getUncached().execute(null, opUntagged);
         }
 
+        /**
+         * Remove the Python object denoted by the given {@code PyObject*} pointer from the GC list
+         * it is currently contained in. This will apply {@code AS_GC(op)} first.
+         */
+        public final void executeOp(Node inliningTarget, long op) {
+            if (PythonLanguage.get(inliningTarget).getEngineOption(PythonOptions.PythonGC)) {
+                execute(inliningTarget, HandlePointerConverter.pointerToStub(op));
+            }
+        }
+
         public abstract long execute(Node inliningTarget, long opUntagged);
 
         @Specialization
         static long doGeneric(long opUntagged,
                         @Cached(inline = false) CStructAccess.ReadI64Node readI64Node,
                         @Cached(inline = false) CStructAccess.WriteLongNode writeLongNode) {
+            assert PythonLanguage.get(null).getEngineOption(PythonOptions.PythonGC);
+
             // issue a log message before doing the first memory access
             if (GC_LOGGER.isLoggable(Level.FINER)) {
                 GC_LOGGER.finer(PythonUtils.formatJString("attempting to remove 0x%x from GC generation", opUntagged));
