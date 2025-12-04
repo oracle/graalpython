@@ -1206,6 +1206,19 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
     @Operation(storeBytecodeIndex = false)
     @ConstantOperand(type = int.class)
+    public static final class ClearArguments {
+        @Specialization
+        @ExplodeLoop
+        public static void perform(VirtualFrame frame, int count,
+                        @Bind BytecodeNode bytecodeNode) {
+            for (int i = 0; i < count; i++) {
+                PArguments.setArgument(frame.getArguments(), i, null);
+            }
+        }
+    }
+
+    @Operation(storeBytecodeIndex = false)
+    @ConstantOperand(type = int.class)
     public static final class LoadVariableArguments {
         @Specialization
         public static Object perform(VirtualFrame frame, int index,

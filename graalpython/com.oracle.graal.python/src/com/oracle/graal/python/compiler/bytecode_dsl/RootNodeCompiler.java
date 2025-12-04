@@ -1652,8 +1652,12 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             BytecodeLocal local = getLocal(args.kwArg.arg);
             assert local != null;
             b.beginStoreLocal(local);
-            b.emitLoadKeywordArguments(idx);
+            b.emitLoadKeywordArguments(idx++);
             b.endStoreLocal();
+        }
+
+        if (scope.isCoroutine() || scope.isGenerator()) {
+            b.emitClearArguments(idx);
         }
     }
 
