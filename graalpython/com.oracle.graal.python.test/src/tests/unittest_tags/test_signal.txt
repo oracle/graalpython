@@ -1,11 +1,11 @@
-test.test_signal.GenericTests.test_enums @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_signal.GenericTests.test_functions_module_attr @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_signal.ItimerTest.test_setitimer_tiny @ darwin-arm64,linux-aarch64,linux-x86_64
-test.test_signal.PosixTests.test_getsignal @ darwin-arm64,linux-aarch64,linux-x86_64
-test.test_signal.PosixTests.test_no_repr_is_called_on_signal_handler @ darwin-arm64,linux-aarch64,linux-x86_64
-test.test_signal.PosixTests.test_setting_signal_handler_to_none_raises_error @ darwin-arm64,linux-aarch64,linux-x86_64
-test.test_signal.PosixTests.test_valid_signals @ darwin-arm64,linux-aarch64,linux-x86_64
-test.test_signal.SiginterruptTest.test_siginterrupt_off @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_signal.GenericTests.test_enums @ $linux-x86_64,darwin-arm64,linux-aarch64,win32-AMD64
+test.test_signal.GenericTests.test_functions_module_attr @ $linux-x86_64,darwin-arm64,linux-aarch64,win32-AMD64
+test.test_signal.ItimerTest.test_setitimer_tiny @ $linux-x86_64,darwin-arm64,linux-aarch64
+test.test_signal.PosixTests.test_getsignal @ $linux-x86_64,darwin-arm64,linux-aarch64
+test.test_signal.PosixTests.test_no_repr_is_called_on_signal_handler @ $linux-x86_64,darwin-arm64,linux-aarch64
+test.test_signal.PosixTests.test_setting_signal_handler_to_none_raises_error @ $linux-x86_64,darwin-arm64,linux-aarch64
+test.test_signal.PosixTests.test_valid_signals @ $linux-x86_64,darwin-arm64,linux-aarch64
+test.test_signal.SiginterruptTest.test_siginterrupt_off @ $linux-x86_64,darwin-arm64,linux-aarch64
 # Timeout
 !test.test_signal.StressTest.test_stress_modifying_handlers
 test.test_signal.WindowsSignalTests.test_valid_signals @ win32-AMD64
