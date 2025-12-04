@@ -3146,17 +3146,20 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
             /**
              * This method unpacks the rhs (a sequence/iterable) to the elements on the lhs
-             * (specified by {@code nodes}.
+             * specified by {@code nodes}.
              */
             private void visitIterableAssign(ExprTy[] nodes) {
                 b.beginBlock();
 
-                /**
+                /*
                  * The rhs should be fully evaluated and unpacked into the expected number of
                  * elements before storing values into the lhs (e.g., if an lhs element is f().attr,
                  * but computing or unpacking rhs throws, f() is not computed). Thus, the unpacking
                  * step stores the unpacked values into intermediate variables, and then those
                  * variables are copied into the lhs elements afterward.
+                 *
+                 * On top of that, in order to pass the target BytecodeLocal variables as
+                 * LocalRangeAccessor, they must have consecutive indices.
                  */
                 BytecodeLocal[] targets = new BytecodeLocal[nodes.length];
                 for (int i = 0; i < targets.length; i++) {
@@ -3196,6 +3199,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                     target.accept(new StoreVisitor(() -> {
                         b.emitLoadLocal(targets[index]);
                     }));
+                    b.emitClearLocal(targets[index]);
                 }
 
                 b.endBlock();
