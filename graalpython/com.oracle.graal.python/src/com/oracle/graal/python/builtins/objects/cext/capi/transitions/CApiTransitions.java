@@ -2422,7 +2422,7 @@ public abstract class CApiTransitions {
         }
 
         public final void execute(Node inliningTarget, PythonAbstractObjectNativeWrapper wrapper, long refCount, boolean release) {
-            execute(inliningTarget, wrapper, refCount > MANAGED_REFCNT, false, release);
+            execute(inliningTarget, wrapper, refCount > MANAGED_REFCNT, release, false);
         }
 
         /**
@@ -2435,16 +2435,16 @@ public abstract class CApiTransitions {
             execute(inliningTarget, wrapper, false, false, true);
         }
 
-        public abstract void execute(Node inliningTarget, PythonAbstractObjectNativeWrapper wrapper, boolean setStrong, boolean keepInGcList, boolean release);
+        public abstract void execute(Node inliningTarget, PythonAbstractObjectNativeWrapper wrapper, boolean setStrong, boolean release, boolean keepInGcList);
 
         @Specialization
-        static void doGeneric(Node inliningTarget, PythonAbstractObjectNativeWrapper wrapper, boolean setStrong, boolean keepInGcList, boolean release,
+        static void doGeneric(Node inliningTarget, PythonAbstractObjectNativeWrapper wrapper, boolean setStrong, boolean release, boolean keepInGcList,
                         @Cached InlinedConditionProfile hasRefProfile,
                         @Cached PyObjectGCTrackNode gcTrackNode,
+                        @Cached GCListRemoveNode gcListRemoveNode,
                         @Cached InlinedConditionProfile isGcProfile,
                         @Cached GetClassNode getClassNode,
-                        @Cached(inline = false) GetTypeFlagsNode getTypeFlagsNode,
-                        @Cached GCListRemoveNode gcListRemoveNode) {
+                        @Cached(inline = false) GetTypeFlagsNode getTypeFlagsNode) {
             assert CompilerDirectives.isPartialEvaluationConstant(keepInGcList);
 
             PythonObjectReference ref;
@@ -2462,15 +2462,6 @@ public abstract class CApiTransitions {
                         gcTrackNode.executeOp(inliningTarget, taggedPointer);
                     }
                 } else if (!setStrong && ref.isStrongReference()) {
-                    /*
-                     * As soon as the reference is made weak, we remove it from the GC list because
-                     * there are ways to iterate a GC list (e.g. 'PyUnstable_GC_VisitObjects') and
-                     * while doing so, the objects may be accessed. Since weakly referenced objects
-                     * may die any time, this could lead to dangling pointers being used.
-                     */
-                    if (!keepInGcList && ref.gc) {
-                        gcListRemoveNode.executeOp(inliningTarget, ref.pointer);
-                    }
                     ref.setStrongReference(null);
                 }
             } else if (!setStrong) {
@@ -2480,11 +2471,7 @@ public abstract class CApiTransitions {
                 HandleContext handleContext = PythonContext.get(inliningTarget).nativeContext;
                 long untaggedPointer = HandlePointerConverter.pointerToStub(taggedPointer);
                 int idx = readIntField(untaggedPointer, CFields.GraalPyObject__handle_table_index);
-                boolean gc = false;
-                if (!(wrapper instanceof PrimitiveNativeWrapper)) {
-                    Object type = getClassNode.execute(inliningTarget, wrapper.getDelegate());
-                    gc = (getTypeFlagsNode.execute(type) & TypeFlags.HAVE_GC) != 0;
-                }
+                boolean gc = isGc(inliningTarget, wrapper, getClassNode, getTypeFlagsNode);
 
                 /*
                  * At this point, we would commonly expect that 'wrapper.getRefCount() ==
@@ -2512,8 +2499,26 @@ public abstract class CApiTransitions {
                      */
                     PythonObjectReference pythonObjectReference = PythonObjectReference.createStub(handleContext, wrapper, false, taggedPointer, idx, gc);
                     nativeStubLookupReplaceByWeak(handleContext, idx, pythonObjectReference, taggedPointer);
+
+                    /*
+                     * As soon as the reference is made weak, we remove it from the GC list because
+                     * there are ways to iterate a GC list (e.g. 'PyUnstable_GC_VisitObjects') and
+                     * while doing so, the objects may be accessed. Since weakly referenced objects
+                     * may die any time, this could lead to dangling pointers being used.
+                     */
+                    if (!keepInGcList && gc) {
+                        gcListRemoveNode.executeOp(inliningTarget, wrapper.getNativePointer());
+                    }
                 }
             }
+        }
+
+        private static boolean isGc(Node inliningTarget, PythonAbstractObjectNativeWrapper wrapper, GetClassNode getClassNode, GetTypeFlagsNode getTypeFlagsNode) {
+            if (!(wrapper instanceof PrimitiveNativeWrapper)) {
+                Object type = getClassNode.execute(inliningTarget, wrapper.getDelegate());
+                return (getTypeFlagsNode.execute(type) & TypeFlags.HAVE_GC) != 0;
+            }
+            return false;
         }
     }
 }
