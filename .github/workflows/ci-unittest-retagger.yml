@@ -1,0 +1,51 @@
+name: Run Weekly unittest retagger
+on:
+  schedule:
+    - cron: '0 0 * * 1'
+  workflow_dispatch:
+
+jobs:
+  run-retagger:
+    uses: ./.github/workflows/ci-matrix-gen.yml
+    with:
+      jobs_to_run: python-svm-build-gate-linux|python-unittest-retagger-gate
+
+  merge_all_reports:
+    runs-on: ubuntu-latest
+    needs: run-retagger
+    if: ${{ success() }}
+    steps: 
+
+      - name: Actions/Checkout
+        uses: actions/checkout@main
+        with:
+          path: main
+
+      - name: Download reports
+        uses: actions/download-artifact@v5
+        with:
+          pattern: python-unittest-retagger*
+          merge-multiple: true
+        continue-on-error: true
+
+      - name: Merge retagger reports
+        working-directory: main
+        run: |
+          mkdir -p ../retagger-reports ../diffs
+          ls && ls ..
+          mv retagger-report*.json ../retagger-reports
+
+          declare -a os_list=("linux-x86_64" "linux-aarch64" "darwin-x86_64" "windows-x86_64")
+          for os in "${os_list[@]}"; do
+            echo "Merging tags for $os"
+            python3 .github/scripts/merge_retagger_results.py --dir ../retagger-reports --outfile "../retagger-reports/reports-merged-$os.json" --pattern "*$os*" || true
+            python3 graalpython/com.oracle.graal.python.test/src/runner.py merge-tags-from-report "../retagger-reports/reports-merged-$os.json" --platform "$os" || true
+            git diff > "../diffs/reports_diff-$os" || true
+          done
+
+      - name: Export reports diff file
+        uses: actions/upload-artifact@v5
+        with:
+          name: retagger.diff
+          path: diffs/reports_diff*
+          retention-days: 15
