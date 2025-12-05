@@ -113,6 +113,7 @@ public final class PException extends AbstractTruffleException {
 
     // See the docs of MaterializeLazyTracebackNode
     private int tracebackFrameCount;
+    private boolean shouldTrace;
 
     private static Node validateLocation(Node location) {
         // For Bytecode DSL root nodes the location must lead to a BytecodeNode
@@ -573,5 +574,13 @@ public final class PException extends AbstractTruffleException {
         } finally {
             gil.release(mustRelease);
         }
+    }
+
+    public boolean getShouldTrace() {
+        return shouldTrace;
+    }
+
+    public void dontTraceOnReraise() {
+        shouldTrace = true;
     }
 }

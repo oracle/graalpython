@@ -134,7 +134,9 @@ public abstract class RaiseNode extends PNodeWithContext {
                     @Cached InlinedConditionProfile hasPException) {
         AbstractTruffleException caughtException = getCaughtExceptionNode.execute(frame);
         if (hasPException.profile(inliningTarget, caughtException instanceof PException)) {
-            throw ((PException) caughtException).getExceptionForReraise(rootNodeVisible);
+            PException exceptionToReraise = ((PException) caughtException).getExceptionForReraise(rootNodeVisible);
+            exceptionToReraise.dontTraceOnReraise();
+            throw exceptionToReraise;
         } else if (caughtException != null) {
             throw caughtException;
         } else {
