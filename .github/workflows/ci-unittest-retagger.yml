@@ -8,7 +8,7 @@ jobs:
   run-retagger:
     uses: ./.github/workflows/ci-matrix-gen.yml
     with:
-      jobs_to_run: python-svm-build-gate-linux|python-unittest-retagger-gate
+      jobs_to_run: ^python-svm-build-gate-linux$|^(?!.*(amd64|darwin)).*retagger.*$
 
   merge_all_reports:
     runs-on: ubuntu-latest
