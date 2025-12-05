@@ -1,2 +1,2 @@
-test.test_uu.UUTest.test_missingbegin @ $linux-x86_64,darwin-arm64,linux-aarch64,win32-AMD64
-test.test_uu.UUTest.test_no_directory_traversal @ $linux-x86_64,darwin-arm64,linux-aarch64,win32-AMD64
+test.test_uu.UUTest.test_missingbegin @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
+test.test_uu.UUTest.test_no_directory_traversal @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
