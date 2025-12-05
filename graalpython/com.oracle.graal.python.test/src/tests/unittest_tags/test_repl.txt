@@ -1,2 +1,2 @@
-test.test_repl.TestAsyncioREPLContextVars.test_toplevel_contextvars_sync @ $linux-x86_64,darwin-arm64,linux-aarch64,win32-AMD64
+test.test_repl.TestAsyncioREPLContextVars.test_toplevel_contextvars_sync @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
 test.test_repl.TestInteractiveInterpreter.test_close_stdin @ win32-AMD64

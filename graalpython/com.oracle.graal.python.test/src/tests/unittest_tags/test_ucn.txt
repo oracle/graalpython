@@ -1,13 +1,13 @@
-test.test_ucn.UnicodeNamesTest.test_aliases @ $linux-x86_64,darwin-arm64,linux-aarch64,win32-AMD64
-test.test_ucn.UnicodeNamesTest.test_aliases_names_in_pua_range @ $linux-x86_64,darwin-arm64,linux-aarch64,win32-AMD64
-test.test_ucn.UnicodeNamesTest.test_ascii_letters @ $linux-x86_64,darwin-arm64,linux-aarch64,win32-AMD64
-test.test_ucn.UnicodeNamesTest.test_bmp_characters @ $linux-x86_64,darwin-arm64,linux-aarch64,win32-AMD64
-test.test_ucn.UnicodeNamesTest.test_cjk_unified_ideographs @ $linux-x86_64,darwin-arm64,linux-aarch64,win32-AMD64
-test.test_ucn.UnicodeNamesTest.test_errors @ $linux-x86_64,darwin-arm64,linux-aarch64,win32-AMD64
-test.test_ucn.UnicodeNamesTest.test_general @ $linux-x86_64,darwin-arm64,linux-aarch64,win32-AMD64
-test.test_ucn.UnicodeNamesTest.test_hangul_syllables @ $linux-x86_64,darwin-arm64,linux-aarch64,win32-AMD64
-test.test_ucn.UnicodeNamesTest.test_misc_symbols @ $linux-x86_64,darwin-arm64,linux-aarch64,win32-AMD64
+test.test_ucn.UnicodeNamesTest.test_aliases @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
+test.test_ucn.UnicodeNamesTest.test_aliases_names_in_pua_range @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
+test.test_ucn.UnicodeNamesTest.test_ascii_letters @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
+test.test_ucn.UnicodeNamesTest.test_bmp_characters @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
+test.test_ucn.UnicodeNamesTest.test_cjk_unified_ideographs @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
+test.test_ucn.UnicodeNamesTest.test_errors @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
+test.test_ucn.UnicodeNamesTest.test_general @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
+test.test_ucn.UnicodeNamesTest.test_hangul_syllables @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
+test.test_ucn.UnicodeNamesTest.test_misc_symbols @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
 # Accesses http://www.pythontest.net
 !test.test_ucn.UnicodeNamesTest.test_named_sequences_full
-test.test_ucn.UnicodeNamesTest.test_named_sequences_names_in_pua_range @ $linux-x86_64,darwin-arm64,linux-aarch64,win32-AMD64
-test.test_ucn.UnicodeNamesTest.test_strict_error_handling @ $linux-x86_64,darwin-arm64,linux-aarch64,win32-AMD64
+test.test_ucn.UnicodeNamesTest.test_named_sequences_names_in_pua_range @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
+test.test_ucn.UnicodeNamesTest.test_strict_error_handling @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
