@@ -871,7 +871,7 @@ public abstract class ExternalFunctionNodes {
 
         @Override
         public final Object execute(VirtualFrame frame) {
-            calleeContext.enter(frame);
+            calleeContext.enter(frame, this);
             try {
                 Object callable = ensureReadCallableNode().execute(frame);
                 Object[] cArguments = prepareCArguments(frame);

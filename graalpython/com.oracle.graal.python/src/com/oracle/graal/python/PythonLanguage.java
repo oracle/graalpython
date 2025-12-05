@@ -395,6 +395,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @CompilationFinal(dimensions = 1) private volatile Object[] engineOptionsStorage;
     @CompilationFinal private volatile OptionValues engineOptions;
+    @CompilationFinal private boolean useNativePrimitiveStorage;
 
     /** For fast access to the PythonThreadState object by the owning thread. */
     private final ContextThreadLocal<PythonThreadState> threadState = locals.createContextThreadLocal(PythonContext.PythonThreadState::new);
@@ -476,6 +477,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         } else {
             assert areOptionsCompatible(options, PythonOptions.createEngineOptions(env)) : "invalid engine options";
         }
+        this.useNativePrimitiveStorage = getEngineOption(PythonOptions.UseNativePrimitiveStorageStrategy);
 
         return context;
     }
@@ -488,6 +490,10 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         } else {
             return PythonOptions.getOptionUnrolling(this.engineOptionsStorage, PythonOptions.getEngineOptionKeys(), key);
         }
+    }
+
+    public boolean useNativePrimitiveStorage() {
+        return useNativePrimitiveStorage;
     }
 
     @Override
@@ -1101,6 +1107,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             shapeBuilder.shapeFlags(PythonObject.HAS_SLOTS_BUT_NO_DICT_FLAG);
         }
         shape = shapeBuilder.build();
+        VarHandle.storeStoreFence();
         builtinTypeInstanceShapes[ordinal] = shape;
         return shape;
     }

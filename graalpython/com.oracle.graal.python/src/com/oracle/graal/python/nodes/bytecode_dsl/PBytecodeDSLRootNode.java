@@ -452,7 +452,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @Specialization
         public static void doEnter(VirtualFrame frame,
                         @Bind PBytecodeDSLRootNode root) {
-            root.calleeContext.enter(frame);
+            root.calleeContext.enter(frame, root);
 
             if (root.needsTraceAndProfileInstrumentation()) {
                 root.ensureTraceAndProfileEnabled();
@@ -487,8 +487,11 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             }
 
             if (root.needsTraceAndProfileInstrumentation()) {
-                root.traceOrProfileReturn(frame, location, null);
-                root.getThreadState().popInstrumentationData(root);
+                try {
+                    root.traceOrProfileReturn(frame, location, null);
+                } finally {
+                    root.getThreadState().popInstrumentationData(root);
+                }
             }
 
             root.calleeContext.exit(frame, root, location);
@@ -1055,11 +1058,13 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind ContinuationRootNode continuationRootNode,
                         @Bind PBytecodeDSLRootNode innerRoot,
                         @Bind BytecodeNode bytecodeNode) {
-            Object result = createGenerator(continuationFrame, inliningTarget, continuationRootNode, innerRoot);
-            if (innerRoot.needsTraceAndProfileInstrumentation()) {
-                innerRoot.getThreadState().popInstrumentationData(innerRoot);
+            try {
+                return createGenerator(continuationFrame, inliningTarget, continuationRootNode, innerRoot);
+            } finally {
+                if (innerRoot.needsTraceAndProfileInstrumentation()) {
+                    innerRoot.getThreadState().popInstrumentationData(innerRoot);
+                }
             }
-            return result;
         }
 
         private static PythonAbstractObject createGenerator(MaterializedFrame continuationFrame, Node inliningTarget,
@@ -1115,8 +1120,11 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind PBytecodeDSLRootNode root,
                         @Bind BytecodeNode bytecode) {
             if (root.needsTraceAndProfileInstrumentation()) {
-                root.traceOrProfileReturn(frame, bytecode, value);
-                root.getThreadState().popInstrumentationData(root);
+                try {
+                    root.traceOrProfileReturn(frame, bytecode, value);
+                } finally {
+                    root.getThreadState().popInstrumentationData(root);
+                }
             }
 
             // Suspended generators have no backref
@@ -1682,8 +1690,18 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @Specialization
         public static PList perform(int[] array,
                         @Bind PBytecodeDSLRootNode rootNode) {
-            SequenceStorage storage = new IntSequenceStorage(PythonUtils.arrayCopyOf(array, array.length));
-            return PFactory.createList(rootNode.getLanguage(), storage);
+            PythonLanguage language = rootNode.getLanguage();
+            if (!language.useNativePrimitiveStorage()) {
+                return PFactory.createList(language, new IntSequenceStorage(PythonUtils.arrayCopyOf(array, array.length)));
+            } else {
+                return createNativeList(array, rootNode, language);
+            }
+        }
+
+        @InliningCutoff
+        private static PList createNativeList(int[] array, PBytecodeDSLRootNode rootNode, PythonLanguage language) {
+            SequenceStorage storage = PythonContext.get(rootNode).nativeBufferContext.toNativeIntStorage(array);
+            return PFactory.createList(language, storage);
         }
     }
 

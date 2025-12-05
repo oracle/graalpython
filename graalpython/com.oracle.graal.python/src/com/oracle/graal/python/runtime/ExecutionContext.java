@@ -365,8 +365,8 @@ public abstract class ExecutionContext {
     }
 
     /**
-     * Execution of a Python function should be wrapped with {@link #enter(VirtualFrame)} and
-     * {@link #exit(VirtualFrame, PRootNode)}.
+     * Execution of a Python function should be wrapped with {@link #enter(VirtualFrame, PRootNode)}
+     * and {@link #exit(VirtualFrame, PRootNode)}.
      * <p>
      * When entering the function we create the
      * {@link com.oracle.graal.python.builtins.objects.frame.PFrame.Reference} that represents the
@@ -397,12 +397,12 @@ public abstract class ExecutionContext {
         /**
          * Wrap the execution of a Python callee called from a Python frame.
          */
-        public void enter(VirtualFrame frame) {
+        public void enter(VirtualFrame frame, PRootNode rootNode) {
             // TODO: assert PythonLanguage.getContext().ownsGil() :
             // PythonContext.dumpStackOnAssertionHelper("callee w/o GIL");
             // tfel: Create our frame reference here and store it so that
             // there's no reference to it from the caller side.
-            PFrame.Reference thisFrameRef = new PFrame.Reference(getRootNode(), PArguments.getCallerFrameInfo(frame));
+            PFrame.Reference thisFrameRef = new PFrame.Reference(rootNode, PArguments.getCallerFrameInfo(frame));
             PArguments.setCurrentFrameInfo(frame, thisFrameRef);
         }
 
