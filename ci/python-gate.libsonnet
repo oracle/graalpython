@@ -160,9 +160,9 @@
         },
         windows: {
             common: {
-                PATH: "$MAVEN_HOME\\bin;$PATH",
                 # Gradle: this feature doesn't work on all Windows CI machines
                 GRADLE_OPTS: "-Dorg.gradle.vfs.watch=false",
+                PATH: "$MAVEN_HOME\\bin;$PATH;C:\\hostedtoolcache\\windows\\Python\\3.12.3\\x64\\Scripts;C:\\hostedtoolcache\\windows\\Python\\3.12.3\\x64;C:\\Program Files\\PowerShell\\7;C:\\windows\\system32;C:\\windows;C:\\windows\\System32\\Wbem;C:\\windows\\System32\\WindowsPowerShell\\v1.0\\;C:\\windows\\System32\\OpenSSH\\;C:\\Program Files\\dotnet\\;C:\\Program Files\\Microsoft SQL Server\\150\\Tools\\Binn\\;C:\\Program Files\\Git\\cmd;C:\\Program Files\\Git\\usr\\bin;C:\\hostedtoolcache\\windows\\Ruby\\3.2.3\\x64\\bin;C:\\hostedtoolcache\\windows\\Go\\1.22.2\\x64\\bin;C:\\hostedtoolcache\\windows\\Node\\20.11.1\\x64\\;C:\\npm\\prefix;C:\\Program Files\\Amazon\\AWSCLIV2\\;C:\\Program Files\\Amazon\\SessionManagerPlugin\\bin\\;C:\\Program Files\\LLVM\\bin;C:\\Program Files\\CMake\\bin;C:\\Program Files\\OpenSSL\\bin;C:\\msys64\\usr\\bin;C:\\hostedtoolcache\\windows\\php\\8.2.15\\x64;C:\\Program Files\\Azure DevOps CLI\\bin;C:\\hostedtoolcache\\windows\\R\\4.3.3\\x64\\bin;C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\Enterprise\\Common7\\IDE\\Extensions\\Microsoft\\NuGet;",
             },
             amd64: {},
             aarch64: {},
