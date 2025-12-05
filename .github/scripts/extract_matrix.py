@@ -18,8 +18,6 @@ DEFAULT_ENV = {
     "GITHUB_CI": "true"
 }
 
-PR_JOBS='^(?=.*python)(?!.*(retagger|dsl)).*$'
-
 # If any of these terms are in the job json, they do not run in public
 # infrastructure
 JOB_EXCLUSION_TERMS = (
@@ -295,8 +293,6 @@ def get_tagged_jobs(buildspec, target, filter=None):
 
 
 def main(jsonnet_bin, ci_jsonnet, target, filter=None, indent=False):
-    if not filter: filter = PR_JOBS
-
     result = subprocess.check_output([jsonnet_bin, ci_jsonnet], text=True)
     buildspec = json.loads(result)
     tagged_jobs = get_tagged_jobs(buildspec, target, filter=filter)

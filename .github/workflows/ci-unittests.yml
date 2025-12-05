@@ -1,0 +1,11 @@
+name: Run CI unittests
+on:
+  pull_request:
+    types: [review_requested, ready_for_review]
+  workflow_dispatch:
+
+jobs:
+  run-retagger:
+    uses: ./.github/workflows/ci-matrix-gen.yml
+    with:
+      jobs_to_run: ^(?=.*python)(?!.*(retagger|dsl)).*$
