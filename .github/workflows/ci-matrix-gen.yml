@@ -12,8 +12,6 @@ on:
       jobs_to_run:
         required: true
         type: string
-  pull_request:
-    types: [review_requested, ready_for_review]
   schedule:
     - cron: '0 0 * * 1'
 
@@ -24,7 +22,7 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     env:
       TARGET: tier1
-      JOBS: ${{ inputs.jobs_to_run || (github.event_name == 'schedule' && 'python-svm-build-gate-linux|python-unittest-retagger|python-unittest-retagger-merge') || ''}}
+      JOBS: ${{ inputs.jobs_to_run }}
     steps: &generate_matrix
       - uses: actions/checkout@v4
       - name: Download sjsonnet
