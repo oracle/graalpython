@@ -126,7 +126,7 @@ jobs:
 
       # Setup mx, buildtools and labsjdk
       - name: Get mx, buildtools, and labsjdk
-        if: ${{ runner.os != 'Windows' && matrix.mx_version }}
+        if: ${{ matrix.mx_version }}
         shell: bash
         run: |
           git clone https://github.com/graalvm/mx
@@ -190,8 +190,59 @@ jobs:
         run: |
           ${{ matrix.setup_steps }}
 
-      - name: Check disk space
-        run: df -h
+      - name: Check disk space and memory usage
+        if: ${{ runner.os == 'macOS' }}
+        run: |
+          echo "before purge"
+          df -h
+          pagesize=$(sysctl -n hw.pagesize)
+          vm_stat
+          vm_stat | awk -v ps=$pagesize '
+            /Pages free/      {free=$3}
+            /Pages active/    {active=$3}
+            /Pages inactive/  {inactive=$3}
+            /Pages speculative/ {speculative=$3}
+            /Pages wired/     {wired=$4}
+            END {
+              used=(active+inactive+wired+speculative)*ps/1024/1024;
+              free=free*ps/1024/1024;
+              printf "Used: %.2f MB\nFree: %.2f MB\n", used, free
+            }'
+          ps aux | sort -nrk 4 | head
+          sudo purge
+          echo "after purge"
+          pagesize=$(sysctl -n hw.pagesize)
+          vm_stat
+          vm_stat | awk -v ps=$pagesize '
+            /Pages free/      {free=$3}
+            /Pages active/    {active=$3}
+            /Pages inactive/  {inactive=$3}
+            /Pages speculative/ {speculative=$3}
+            /Pages wired/     {wired=$4}
+            END {
+              used=(active+inactive+wired+speculative)*ps/1024/1024;
+              free=free*ps/1024/1024;
+              printf "Used: %.2f MB\nFree: %.2f MB\n", used, free
+            }'
+
+
+      - name: Free resources on macOS
+        run: |
+          echo "Disabling Spotlight indexing..."
+          sudo mdutil -a -i off
+          sudo mdutil -a -d
+          sudo launchctl bootout system /System/Library/LaunchDaemons/com.apple.metadata.mds.plist
+          sudo pkill -f "mds|mds_stores|mdworker_shared|Spotlight|corespotlightd"
+
+          echo "Forcing disk cache to be purged..."
+          sudo purge
+
+          echo "Top processes sorted by memory usage:"
+          ps -emo pid,pmem,pcpu,comm | head 2>/dev/null
+          echo ""
+          memory_pressure
+          echo ""
+        if: ${{ runner.os == 'macOS' }}
 
       - name: Run on Unix
         working-directory: main
@@ -200,6 +251,7 @@ jobs:
           env
           ${{ matrix.run_steps }}
       - name: Run on Windows
+        working-directory: main
         if: ${{ matrix.run_steps && runner.os == 'Windows' }}
         shell: cmd
         run: |

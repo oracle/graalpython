@@ -150,6 +150,7 @@ local common_json = import "../common.json";
       packages+: {
         python3: "==3.8.10",
         "pip:ninja_syntax": common_json.pip.ninja_syntax,
+        "pip:psutil": "==7.1.3",
         mx: common_json.mx_version,
       },
       python_version: "3", # To use the correct virtualenv
