@@ -1,6 +1,6 @@
-test.test_stat.TestFilemodePyStat.test_devices @ $linux-x86_64,darwin-arm64,linux-aarch64
-test.test_stat.TestFilemodePyStat.test_directory @ $linux-x86_64,darwin-arm64,linux-aarch64
+test.test_stat.TestFilemodePyStat.test_devices @ $linux-aarch64,$linux-x86_64,darwin-arm64
+test.test_stat.TestFilemodePyStat.test_directory @ $linux-aarch64,$linux-x86_64,darwin-arm64
 test.test_stat.TestFilemodePyStat.test_file_attribute_constants @ win32-AMD64
-test.test_stat.TestFilemodePyStat.test_link @ $linux-x86_64,darwin-arm64,linux-aarch64
-test.test_stat.TestFilemodePyStat.test_mode @ $linux-x86_64,darwin-arm64,linux-aarch64
-test.test_stat.TestFilemodePyStat.test_module_attributes @ $linux-x86_64,darwin-arm64,linux-aarch64,win32-AMD64
+test.test_stat.TestFilemodePyStat.test_link @ $linux-aarch64,$linux-x86_64,darwin-arm64
+test.test_stat.TestFilemodePyStat.test_mode @ $linux-aarch64,$linux-x86_64,darwin-arm64
+test.test_stat.TestFilemodePyStat.test_module_attributes @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
