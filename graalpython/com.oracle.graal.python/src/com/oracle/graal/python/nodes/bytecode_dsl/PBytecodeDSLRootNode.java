@@ -362,6 +362,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                     addInstrumentation(TraceLineAtLoopHeader.class).//
                     addInstrumentation(TraceOrProfileReturn.class).//
                     addInstrumentation(TraceException.class).//
+                    addInstrumentation(TraceLineWithArgument.class).//
                     build();
 
     @Child private transient CalleeContext calleeContext = CalleeContext.create();
@@ -685,31 +686,37 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         InstrumentationData instrumentationData = threadState.getInstrumentationData(this);
         int pastLine = instrumentationData.getPastLine();
 
-        /**
-         * A loop should always be traced once, even if it is not entered. We also need to trace the
-         * loop header on each iteration. To accomplish this, we emit a TraceLine at the top of each
-         * loop (before loop initialization) and a TraceLineAtLoopHeader before the loop condition
-         * evaluates. To avoid tracing twice on the first iteration, we need to check our line
-         * against pastLine.
-         */
-        if (line != pastLine) {
-            Object traceFun = threadState.getTraceFun();
-            if (traceFun != null) {
-                invokeTraceFunction(frame, location, traceFun, threadState, TraceEvent.LINE, null, line);
+        instrumentationData.setPastLine(line);
+
+        PFrame pyFrame = ensurePyFrame(frame, location);
+        if (pyFrame.getTraceLine()) {
+            /**
+             * A loop should always be traced once, even if it is not entered. We also need to trace
+             * the loop header on each iteration. To accomplish this, we emit a TraceLine at the top
+             * of each loop (before loop initialization) and a TraceLineAtLoopHeader before the loop
+             * condition evaluates. To avoid tracing twice on the first iteration, we need to check
+             * our line against pastLine.
+             */
+            if (line != pastLine) {
+                Object traceFun = threadState.getTraceFun();
+                if (traceFun != null) {
+                    invokeTraceFunction(frame, location, traceFun, threadState, TraceEvent.LINE, null, line);
+                }
             }
+            /**
+             * If the loop is all on one line, we need to trace on each iteration (even though the
+             * line hasn't changed). Clear pastLine so the line comparison above succeeds.
+             */
+            instrumentationData.clearPastLine();
         }
-        /**
-         * If the loop is all on one line, we need to trace on each iteration (even though the line
-         * hasn't changed). Clear pastLine so the line comparison above succeeds.
-         */
-        instrumentationData.clearPastLine();
     }
 
     private void traceOrProfileReturn(VirtualFrame frame, BytecodeNode location, Object value) {
         PythonThreadState threadState = getThreadState();
         Object traceFun = threadState.getTraceFun();
         if (traceFun != null) {
-            invokeTraceFunction(frame, location, traceFun, threadState, TraceEvent.RETURN, value, threadState.getInstrumentationData(this).getPastLine());
+            int pastLine = threadState.getInstrumentationData(this).getPastLine();
+            invokeTraceFunction(frame, location, traceFun, threadState, TraceEvent.RETURN, value, pastLine);
         }
         Object profileFun = threadState.getProfileFun();
         if (profileFun != null) {
@@ -723,7 +730,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
         PythonThreadState threadState = getThreadState();
         // We should only trace the exception if tracing is enabled.
-        if (threadState.getTraceFun() != null) {
+        if (threadState.getTraceFun() != null && !pe.getShouldTrace()) {
             PFrame pyFrame = ensurePyFrame(frame, bytecode);
             // We use the local function for tracing exceptions.
             if (pyFrame.getLocalTraceFun() != null) {
@@ -793,6 +800,20 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind BytecodeNode location,
                         @Bind PBytecodeDSLRootNode root) {
             root.traceOrProfileReturn(frame, location, value);
+            return value;
+        }
+    }
+
+    @Instrumentation(storeBytecodeIndex = true)
+    @ConstantOperand(type = int.class, specifyAtEnd = true)
+    public static final class TraceLineWithArgument {
+        @Specialization
+        public static Object perform(VirtualFrame frame, Object value, int line,
+                        @Bind BytecodeNode location,
+                        @Bind PBytecodeDSLRootNode root) {
+            if (line != -1) {
+                root.traceLine(frame, location, line);
+            }
             return value;
         }
     }
@@ -2435,7 +2456,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @Specialization
         public static void doPException(PException ex,
                         @Bind PBytecodeDSLRootNode root) {
-            throw ex.getExceptionForReraise(!root.isInternal());
+            PException pe = ex.getExceptionForReraise(!root.isInternal());
+            pe.dontTraceOnReraise();
+            throw pe;
         }
 
         @Specialization
