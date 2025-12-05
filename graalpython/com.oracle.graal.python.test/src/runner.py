@@ -1298,7 +1298,7 @@ def read_tags(test_file: TestFile, allow_exclusions=False) -> list[Tag]:
 
                 tag = Tag(
                     TestId(test_path, test),
-                    frozenset(keys if keys else frozenset()),
+                    frozenset(keys),
                     excluded_keys=frozenset(excluded_keys),
                     is_exclusion=is_exclusion,
                     comment=comment,
