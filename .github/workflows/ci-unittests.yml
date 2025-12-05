@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  run-retagger:
+  run-tests:
     uses: ./.github/workflows/ci-matrix-gen.yml
     with:
       jobs_to_run: ^(?=.*python)(?!.*(retagger|dsl)).*$
