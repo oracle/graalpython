@@ -263,8 +263,7 @@ def github_ci_build_args():
     parallelism = os_cpu if os_cpu >= 4 and build_mem >= min_bound*1024 else 1
     
     return ["-Ob",
-            # f"-J-Xms{build_mem}m",
-            f"-J-Xms7g",
+            f"-J-Xms{build_mem}m",
             f"--parallelism={parallelism}"
         ]
 
