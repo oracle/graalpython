@@ -8,12 +8,15 @@ jobs:
   run-retagger:
     uses: ./.github/workflows/ci-matrix-gen.yml
     with:
-      jobs_to_run: python-svm-build-gate-windows|^(?!.*(darwin|aarch64|linux)).*retagger.*$
+      jobs_to_run: python-svm-build-gate-linux|python-unittest-retagger-gate-batch1 
+      #python-svm-build-gate-windows|^(?!.*(darwin|aarch64|linux)).*retagger.*$
 
   merge_all_reports:
     runs-on: ubuntu-latest
     needs: run-retagger
     if: ${{ success() }}
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps: 
 
       - name: Actions/Checkout
@@ -27,6 +30,16 @@ jobs:
           pattern: python-unittest-retagger*
           merge-multiple: true
         continue-on-error: true
+
+      - name: Init Github branch
+        run: |
+          echo "Set new repo origin url"
+          git remote set-url origin https://$GH_TOKEN@github.com/${{ github.repository }}.git
+          git remote -v
+          git config --global user.name "Retagger Workflow" 
+          git config --global user.email "Retagger_Workflow@oracle.com"
+          git fetch origin
+          git checkout -b weekly_retagger_${{ github.run_id }} origin/master
 
       - name: Merge retagger reports
         env:
@@ -42,12 +55,11 @@ jobs:
             echo "Merging tags for $os"
             python3 .github/scripts/merge_retagger_results.py --dir ../retagger-reports --outfile "../retagger-reports/reports-merged-$os.json" --pattern "*$os*" || true
             python3 graalpython/com.oracle.graal.python.test/src/runner.py merge-tags-from-report "../retagger-reports/reports-merged-$os.json" --platform "$os" || true
-            git diff > "../diffs/reports_diff-$os" || true
+            git add -A
+            git commit -m "Apply retags for $os"
           done
-
-      - name: Export reports diff file
-        uses: actions/upload-artifact@v5
-        with:
-          name: retagger.diff
-          path: diffs/reports_diff*
-          retention-days: 15
+        
+      - name: Push updates
+        run: |
+          git push --set-upstream origin weekly_retagger_${{ github.run_id }}
+          gh pr create -B master -d --title "[WORKFLOW] Weekly Retagger: Update tags" --body "Applied weekly retags on $os_list"
