@@ -1232,7 +1232,6 @@ class Tag:
         # disable test/platform only for github, not completely for internal ci
         if GITHUB_CI:
             exclusions = frozenset(list(self.excluded_keys) + list(keys))
-            print(f"[DEBUG] Without key called with {keys}, new exclusions {exclusions}")
             return Tag(self.test_id, self.keys, exclusions, is_exclusion=self.is_exclusion)
 
         keys = self.keys - keys
@@ -1386,7 +1385,6 @@ def main_merge_tags(args):
     for result in all_results:
         by_file[result.test_id.test_file].append(result)
     for test_file, results in by_file.items():
-        print(f"[DEBUG] updating {test_file}")
         test_file = configure_test_file(test_file)
         update_tags(
             test_file,
