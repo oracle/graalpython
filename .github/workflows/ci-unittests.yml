@@ -6,6 +6,7 @@ on:
 
 jobs:
   run-tests:
+    if: github.event.pull_request.draft == false
     uses: ./.github/workflows/ci-matrix-gen.yml
     with:
       jobs_to_run: ^(?=.*python)(?!.*(retagger|dsl|windows|darwin)).*$
