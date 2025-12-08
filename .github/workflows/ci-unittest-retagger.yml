@@ -8,7 +8,7 @@ jobs:
   run-retagger:
     uses: ./.github/workflows/ci-matrix-gen.yml
     with:
-      jobs_to_run: python-svm-build-gate-linux|^(?!.*(darwin|aarch64|windows)).*retagger.*$
+      jobs_to_run: python-svm-build-gate-windows|^(?!.*(darwin|aarch64|linux)).*retagger.*$
 
   merge_all_reports:
     runs-on: ubuntu-latest
@@ -35,7 +35,7 @@ jobs:
           ls && ls ..
           mv retagger-report*.json ../retagger-reports
 
-          declare -a os_list=("linux-x86_64" "linux-aarch64" "darwin-x86_64" "windows-x86_64")
+          declare -a os_list=("linux-x86_64" "linux-aarch64" "darwin-x86_64" "win32-AMD64")
           for os in "${os_list[@]}"; do
             echo "Merging tags for $os"
             python3 .github/scripts/merge_retagger_results.py --dir ../retagger-reports --outfile "../retagger-reports/reports-merged-$os.json" --pattern "*$os*" || true
