@@ -50,7 +50,6 @@ public class AsyncTests {
     @Test
     public void nativeCoroutine() {
         assumeFalse(IS_WINDOWS);
-        assumeFalse("TODO: not implemented PGenerator.getYieldFrom(PGenerator.java:204)", Boolean.getBoolean("python.EnableBytecodeDSLInterpreter"));
         String source = "import asyncio\n" +
                         "async def foo():\n" +
                         "  return 42\n" +
@@ -63,7 +62,6 @@ public class AsyncTests {
     @Test
     public void asyncWith() {
         assumeFalse(IS_WINDOWS);
-        assumeFalse("TODO: not implemented PGenerator.getYieldFrom(PGenerator.java:204)", Boolean.getBoolean("python.EnableBytecodeDSLInterpreter"));
         String source = "import asyncio\n" +
                         "class AsyncContextManager:\n" +
                         "  async def __aenter__(self):\n" +
@@ -89,7 +87,6 @@ public class AsyncTests {
     @Test
     public void asyncWithExceptional() {
         assumeFalse(IS_WINDOWS);
-        assumeFalse("TODO: not implemented PGenerator.getYieldFrom(PGenerator.java:204)", Boolean.getBoolean("python.EnableBytecodeDSLInterpreter"));
         String source = "import asyncio\n" +
                         "class AsyncContextManager:\n" +
                         "  async def __aenter__(self):\n" +
