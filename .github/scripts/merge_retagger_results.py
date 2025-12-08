@@ -53,7 +53,6 @@ def merge_reports(reports: list[str], outfile: str):
 def main(outfile: str, source_dir: str, pattern: str):
     path = f"{source_dir}/{pattern}"
     files = glob.glob(path)
-    if len(files) == 0: raise FileNotFoundError("No report file found")
 
     files = [file for file in files if file.endswith(".json")]
     merge_reports(files, outfile)
