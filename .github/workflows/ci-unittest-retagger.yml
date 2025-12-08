@@ -29,6 +29,8 @@ jobs:
         continue-on-error: true
 
       - name: Merge retagger reports
+        env:
+          GITHUB_CI: true
         working-directory: main
         run: |
           mkdir -p ../retagger-reports ../diffs
