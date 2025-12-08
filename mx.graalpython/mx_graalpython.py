@@ -347,7 +347,6 @@ def libpythonvm_build_args():
             "-H:-UnlockExperimentalVMOptions",
         ]
     else:
-        print("[DEBUG] libpythonvm_build_args debug")
         print(invert("Not using an automatically selected PGO profile"), file=sys.stderr)
     print(f"[DEBUG] libpythonvm args: {build_args}")
     return build_args
@@ -891,12 +890,9 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
 def graalpy_standalone(standalone_type, enterprise=False, dev=False, build=True):
     assert standalone_type in ['native', 'jvm']
     if standalone_type == 'native' and mx_gate.get_jacoco_agent_args():
-        print("[DEBUG] GRAALPY STANDALONE IS RUNNING ON JVM")
         return graalpy_standalone('jvm', enterprise=enterprise, dev=dev, build=build)
 
-    print("[DEBUG] GRAALPY STANDALONE IS RUNNING NATIVELY")
     home = graalpy_standalone_home(standalone_type, enterprise=enterprise, dev=dev, build=build)
-    print(f"[DEBUG] GRAALPY STANDALONE HOME: {home}")
     launcher = os.path.join(home, 'bin', _graalpy_launcher())
     return make_coverage_launcher_if_needed(launcher)
 
