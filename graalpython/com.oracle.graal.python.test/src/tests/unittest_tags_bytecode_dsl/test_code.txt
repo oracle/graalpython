@@ -4,3 +4,5 @@ test.test_code.CodeTest.test_constructor @ linux-x86_64
 test.test_code.CodeTest.test_qualname @ linux-x86_64
 test.test_code.CodeTest.test_replace @ linux-x86_64
 test.test_code.CodeTest.test_shrinking_localsplus @ linux-x86_64
+test.test_code.CodeTest.test_empty_linetable @ linux-x86_64
+test.test_code.CodeLocationTest.test_lines @ linux-x86_64

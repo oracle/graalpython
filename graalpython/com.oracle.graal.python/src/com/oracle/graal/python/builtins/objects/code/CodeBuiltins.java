@@ -448,12 +448,16 @@ public final class CodeBuiltins extends PythonBuiltins {
             int startInstructionIndex = 0;
             int instructionIndex = 0;
             boolean wasLastInstructionInstrumentation = false;
+            int lastTripleLine = -1;
             for (Instruction instruction : bytecodeNode.getInstructions()) {
                 if (instruction.getBytecodeIndex() == triple[1] /* end bci */) {
-                    if (!wasLastInstructionInstrumentation) {
-                        result.add(PFactory.createTuple(language, new int[]{startInstructionIndex, instructionIndex, triple[2]}));
+                    if (lastTripleLine != triple[2]) {
+                        if (!wasLastInstructionInstrumentation) {
+                            result.add(PFactory.createTuple(language, new int[]{startInstructionIndex, instructionIndex, triple[2]}));
+                            lastTripleLine = triple[2];
+                        }
+                        startInstructionIndex = instructionIndex;
                     }
-                    startInstructionIndex = instructionIndex;
                     triple = triples.get(++tripleIndex);
                     assert triple[0] == instruction.getBytecodeIndex() : "bytecode ranges should be consecutive";
                 }
