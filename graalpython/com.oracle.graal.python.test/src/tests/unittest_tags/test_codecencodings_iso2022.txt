@@ -1,8 +1,8 @@
-test.test_codecencodings_iso2022.Test_ISO2022_JP.test_chunkcoding @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
-test.test_codecencodings_iso2022.Test_ISO2022_JP.test_streamwriter_reset_no_pending @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
-test.test_codecencodings_iso2022.Test_ISO2022_JP.test_xmlcharrefreplace @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
-test.test_codecencodings_iso2022.Test_ISO2022_JP2.test_chunkcoding @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
-test.test_codecencodings_iso2022.Test_ISO2022_JP2.test_streamwriter_reset_no_pending @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
-test.test_codecencodings_iso2022.Test_ISO2022_JP2.test_xmlcharrefreplace @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
-test.test_codecencodings_iso2022.Test_ISO2022_KR.test_streamwriter_reset_no_pending @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
-test.test_codecencodings_iso2022.Test_ISO2022_KR.test_xmlcharrefreplace @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
+test.test_codecencodings_iso2022.Test_ISO2022_JP.test_chunkcoding @ $linux-aarch64,$linux-x86_64,$win32-AMD64,darwin-arm64
+test.test_codecencodings_iso2022.Test_ISO2022_JP.test_streamwriter_reset_no_pending @ $linux-aarch64,$linux-x86_64,$win32-AMD64,darwin-arm64
+test.test_codecencodings_iso2022.Test_ISO2022_JP.test_xmlcharrefreplace @ $linux-aarch64,$linux-x86_64,$win32-AMD64,darwin-arm64
+test.test_codecencodings_iso2022.Test_ISO2022_JP2.test_chunkcoding @ $linux-aarch64,$linux-x86_64,$win32-AMD64,darwin-arm64
+test.test_codecencodings_iso2022.Test_ISO2022_JP2.test_streamwriter_reset_no_pending @ $linux-aarch64,$linux-x86_64,$win32-AMD64,darwin-arm64
+test.test_codecencodings_iso2022.Test_ISO2022_JP2.test_xmlcharrefreplace @ $linux-aarch64,$linux-x86_64,$win32-AMD64,darwin-arm64
+test.test_codecencodings_iso2022.Test_ISO2022_KR.test_streamwriter_reset_no_pending @ $linux-aarch64,$linux-x86_64,$win32-AMD64,darwin-arm64
+test.test_codecencodings_iso2022.Test_ISO2022_KR.test_xmlcharrefreplace @ $linux-aarch64,$linux-x86_64,$win32-AMD64,darwin-arm64

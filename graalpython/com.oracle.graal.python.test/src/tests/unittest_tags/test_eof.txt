@@ -1,4 +1,4 @@
-test.test_eof.EOFTestCase.test_EOFS @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
-test.test_eof.EOFTestCase.test_EOFS_with_file @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
-test.test_eof.EOFTestCase.test_EOF_single_quote @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
-test.test_eof.EOFTestCase.test_eof_with_line_continuation @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
+test.test_eof.EOFTestCase.test_EOFS @ $linux-aarch64,$linux-x86_64,$win32-AMD64,darwin-arm64
+test.test_eof.EOFTestCase.test_EOFS_with_file @ $linux-aarch64,$linux-x86_64,$win32-AMD64,darwin-arm64
+test.test_eof.EOFTestCase.test_EOF_single_quote @ $linux-aarch64,$linux-x86_64,$win32-AMD64,darwin-arm64
+test.test_eof.EOFTestCase.test_eof_with_line_continuation @ $linux-aarch64,$linux-x86_64,$win32-AMD64,darwin-arm64

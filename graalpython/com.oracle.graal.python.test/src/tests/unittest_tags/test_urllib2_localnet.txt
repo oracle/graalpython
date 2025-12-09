@@ -1,6 +1,6 @@
 test.test_urllib2_localnet.BasicAuthTests.test_basic_auth_httperror @ $linux-aarch64,$linux-x86_64,darwin-arm64
 test.test_urllib2_localnet.BasicAuthTests.test_basic_auth_success @ $linux-aarch64,$linux-x86_64,darwin-arm64
-test.test_urllib2_localnet.ProxyAuthTests.test_proxy_qop_auth_int_works_or_throws_urlerror @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
+test.test_urllib2_localnet.ProxyAuthTests.test_proxy_qop_auth_int_works_or_throws_urlerror @ $linux-aarch64,$linux-x86_64,$win32-AMD64,darwin-arm64
 test.test_urllib2_localnet.ProxyAuthTests.test_proxy_qop_auth_works @ $linux-aarch64,$linux-x86_64,darwin-arm64
 test.test_urllib2_localnet.ProxyAuthTests.test_proxy_with_bad_password_raises_httperror @ $linux-aarch64,$linux-x86_64,darwin-arm64
 test.test_urllib2_localnet.ProxyAuthTests.test_proxy_with_no_password_raises_httperror @ $linux-aarch64,$linux-x86_64,darwin-arm64

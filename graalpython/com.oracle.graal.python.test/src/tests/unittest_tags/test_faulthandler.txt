@@ -1,7 +1,7 @@
 test.test_faulthandler.FaultHandlerTests.test_cancel_later_without_dump_traceback_later @ $linux-aarch64,$linux-x86_64,darwin-arm64
 test.test_faulthandler.FaultHandlerTests.test_disable @ $linux-aarch64,$linux-x86_64,darwin-arm64
-test.test_faulthandler.FaultHandlerTests.test_disabled_by_default @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
-test.test_faulthandler.FaultHandlerTests.test_is_enabled @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
+test.test_faulthandler.FaultHandlerTests.test_disabled_by_default @ $linux-aarch64,$linux-x86_64,$win32-AMD64,darwin-arm64
+test.test_faulthandler.FaultHandlerTests.test_is_enabled @ $linux-aarch64,$linux-x86_64,$win32-AMD64,darwin-arm64
 # Disabled since signaling isn't stable during parallel tests
 !test.test_faulthandler.FaultHandlerTests.test_sigbus
 !test.test_faulthandler.FaultHandlerTests.test_sigill

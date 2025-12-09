@@ -1,1 +1,1 @@
-DocTestCase.test.test_setcomps.__test__.doctests @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
+DocTestCase.test.test_setcomps.__test__.doctests @ $linux-aarch64,$linux-x86_64,$win32-AMD64,darwin-arm64

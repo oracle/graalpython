@@ -1,4 +1,4 @@
-test.test_gc.GCTests.test_bug21435 @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
-test.test_gc.GCTests.test_trash_weakref_clear @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
-test.test_gc.GCTests.test_trashcan @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
-test.test_gc.PythonFinalizationTests.test_ast_fini @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
+test.test_gc.GCTests.test_bug21435 @ $linux-aarch64,$linux-x86_64,$win32-AMD64,darwin-arm64
+test.test_gc.GCTests.test_trash_weakref_clear @ $linux-aarch64,$linux-x86_64,$win32-AMD64,darwin-arm64
+test.test_gc.GCTests.test_trashcan @ $linux-aarch64,$linux-x86_64,$win32-AMD64,darwin-arm64
+test.test_gc.PythonFinalizationTests.test_ast_fini @ $linux-aarch64,$linux-x86_64,$win32-AMD64,darwin-arm64
