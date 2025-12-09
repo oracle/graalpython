@@ -2131,8 +2131,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
             @Specialization(guards = "isDouble(start) || isInt(start)")
             static Object sumDoubleIterator(Node inliningTarget, PDoubleSequenceIterator iterator, Object start,
-                            @Cached @Exclusive InlinedConditionProfile startIsDouble,
-                            @Shared @Cached InlinedLoopConditionProfile loopProfilePrimitive) {
+                            @Exclusive @Cached InlinedConditionProfile startIsDouble,
+                            @Exclusive @Cached InlinedLoopConditionProfile loopProfilePrimitive) {
                 /*
                  * Need to make sure we keep start type if the iterator was empty
                  */
@@ -2152,7 +2152,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                             @Exclusive @Cached InlinedLoopConditionProfile loopProfilePrimitive,
                             @Exclusive @Cached InlinedLoopConditionProfile loopProfileGeneric,
                             @Cached PyIterNextNode nextNode,
-                            @Shared @Cached PyNumberAddNode addNode,
+                            @Exclusive @Cached PyNumberAddNode addNode,
                             @Exclusive @Cached InlinedConditionProfile resultFitsInInt,
                             @Exclusive @Cached InlinedBranchProfile seenObject,
                             @Exclusive @Cached InlinedBranchProfile seenInt,

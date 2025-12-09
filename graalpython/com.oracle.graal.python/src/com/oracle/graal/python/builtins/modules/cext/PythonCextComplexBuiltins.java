@@ -65,6 +65,7 @@ import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -74,7 +75,6 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextComplexBuiltins {
@@ -100,10 +100,6 @@ public final class PythonCextComplexBuiltins {
         }
     }
 
-    static boolean isComplexSubtype(Node inliningTarget, Object obj, GetClassNode getClassNode, IsSubtypeNode isSubtypeNode) {
-        return isSubtypeNode.execute(getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PComplex);
-    }
-
     @CApiBuiltin(ret = ArgDescriptor.Double, args = {PyObject}, call = Ignored)
     @ImportStatic(PythonCextComplexBuiltins.class)
     abstract static class GraalPyPrivate_Complex_RealAsDouble extends CApiUnaryBuiltinNode {
@@ -118,14 +114,12 @@ public final class PythonCextComplexBuiltins {
         @Specialization(guards = "!isPComplex(obj)")
         static Object asDouble(Object obj,
                         @Bind Node inliningTarget,
-                        @Cached InlinedConditionProfile isComplexSubtypeProfile,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached CallNode callNode,
-                        @Cached GetClassNode getClassNode,
-                        @Cached IsSubtypeNode isSubtypeNode,
+                        @Cached BuiltinClassProfiles.IsBuiltinObjectProfile isBuiltinObjectProfile,
                         @Cached PRaiseNode raiseNode) {
             TruffleString name;
-            if (isComplexSubtypeProfile.profile(inliningTarget, isComplexSubtype(inliningTarget, obj, getClassNode, isSubtypeNode))) {
+            if (isBuiltinObjectProfile.profileObject(inliningTarget, obj, PythonBuiltinClassType.PComplex)) {
                 name = T_REAL;
             } else {
                 name = T___FLOAT__;
@@ -149,23 +143,18 @@ public final class PythonCextComplexBuiltins {
             return d.getImag();
         }
 
-        @Specialization(guards = {"!isPComplex(obj)", "isComplexSubtype(inliningTarget, obj, getClassNode, isSubtypeNode)"})
+        @Specialization(guards = "!isPComplex(obj)")
         static Object asDouble(Object obj,
                         @Bind Node inliningTarget,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached CallNode callNode,
-                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode) {
-            return callNode.executeWithoutFrame(getAttr.execute(null, inliningTarget, obj, T_IMAG));
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = {"!isPComplex(obj)", "!isComplexSubtype(inliningTarget, obj, getClassNode, isSubtypeNode)"})
-        static Object asDouble(Object obj,
-                        @SuppressWarnings("unused") @Bind Node inliningTarget,
-                        @Shared @Cached GetClassNode getClassNode,
-                        @Shared @Cached IsSubtypeNode isSubtypeNode) {
-            return 0.0;
+                        @Cached GetClassNode getClassNode,
+                        @Cached IsSubtypeNode isSubtypeNode) {
+            if (isSubtypeNode.execute(getClassNode.execute(inliningTarget, obj), PythonBuiltinClassType.PComplex)) {
+                return callNode.executeWithoutFrame(getAttr.execute(null, inliningTarget, obj, T_IMAG));
+            } else {
+                return 0.0;
+            }
         }
     }
 

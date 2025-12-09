@@ -1144,11 +1144,11 @@ public final class MathModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached LoopConditionProfile profile,
                         @Cached IsZeroNode isZeroNode,
-                        @Shared @Cached PyNumberIndexNode indexNode,
+                        @Exclusive @Cached PyNumberIndexNode indexNode,
                         @Cached Gcd2Node gcdNode,
                         @Cached IntBuiltins.FloorDivNode floorDivNode,
                         @Cached IntBuiltins.MulNode mulNode,
-                        @Shared @Cached BuiltinFunctions.AbsNode absNode) {
+                        @Exclusive @Cached BuiltinFunctions.AbsNode absNode) {
             Object a = indexNode.execute(frame, inliningTarget, args[0]);
             profile.profileCounted(args.length);
             for (int i = 1; profile.inject(i < args.length); i++) {
@@ -1167,8 +1167,8 @@ public final class MathModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = {"args.length == 1", "keywords.length == 0"})
         public static Object gcdOne(VirtualFrame frame, @SuppressWarnings("unused") Object self, Object[] args, @SuppressWarnings("unused") PKeyword[] keywords,
                         @Bind Node inliningTarget,
-                        @Shared @Cached PyNumberIndexNode indexNode,
-                        @Shared @Cached BuiltinFunctions.AbsNode absNode) {
+                        @Exclusive @Cached PyNumberIndexNode indexNode,
+                        @Exclusive @Cached BuiltinFunctions.AbsNode absNode) {
             return indexNode.execute(frame, inliningTarget, absNode.execute(frame, args[0]));
         }
 

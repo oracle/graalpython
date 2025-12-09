@@ -66,7 +66,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -315,64 +314,49 @@ public final class SSLSocketBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "der", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "false")
     @GenerateNodeFactory
     abstract static class GetPeerCertNode extends PythonBinaryClinicBuiltinNode {
-        @Specialization(guards = "der")
-        static Object getPeerCertDER(PSSLSocket self, @SuppressWarnings("unused") boolean der,
-                        @Bind Node inliningTarget,
-                        @Bind PythonLanguage language,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            if (!self.isHandshakeComplete()) {
-                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.HANDSHAKE_NOT_DONE_YET);
-            }
-            Certificate certificate = getCertificate(self.getEngine());
-            if (certificate != null) {
-                try {
-                    return PFactory.createBytes(language, getEncoded(certificate));
-                } catch (CertificateEncodingException e) {
-                    // Fallthrough
-                }
-            }
-            // msimacek: In CPython, this is able to return unverified certificates. I don't see a
-            // way to do it in the Java API
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = "!der")
-        static PDict getPeerCertDict(PSSLSocket self, @SuppressWarnings("unused") boolean der,
-                        @Bind Node inliningTarget,
-                        @Bind PythonLanguage language,
-                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            if (!self.isHandshakeComplete()) {
-                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.HANDSHAKE_NOT_DONE_YET);
-            }
-            Certificate certificate = getCertificate(self.getEngine());
-            if (certificate instanceof X509Certificate) {
-                try {
-                    return CertUtils.decodeCertificate(inliningTarget, constructAndRaiseNode, (X509Certificate) certificate, language);
-                } catch (CertificateParsingException e) {
-                    return PFactory.createDict(language);
-                }
-            }
-            return PFactory.createDict(language);
-        }
-
+        @Specialization
         @TruffleBoundary
-        private static Certificate getCertificate(SSLEngine engine) {
+        static Object getPeerCertDER(PSSLSocket self, boolean der,
+                        @Bind Node inliningTarget,
+                        @Bind PythonLanguage language,
+                        @Cached PConstructAndRaiseNode.Lazy raiseNode) {
+            if (!self.isHandshakeComplete()) {
+                throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.HANDSHAKE_NOT_DONE_YET);
+            }
+            Certificate certificate;
             try {
-                Certificate[] certificates = engine.getSession().getPeerCertificates();
+                Certificate[] certificates = self.getEngine().getSession().getPeerCertificates();
                 if (certificates.length != 0) {
-                    return certificates[0];
+                    certificate = certificates[0];
                 } else {
-                    return null;
+                    certificate = null;
                 }
-            } catch (SSLPeerUnverifiedException e) {
-                return null;
+            } catch (SSLPeerUnverifiedException e1) {
+                certificate = null;
             }
-        }
-
-        @TruffleBoundary
-        private static byte[] getEncoded(Certificate certificate) throws CertificateEncodingException {
-            return certificate.getEncoded();
+            if (der) {
+                if (certificate != null) {
+                    try {
+                        return PFactory.createBytes(language, certificate.getEncoded());
+                    } catch (CertificateEncodingException e) {
+                        // Fallthrough
+                    }
+                }
+                /*
+                 * msimacek: In CPython, this is able to return unverified certificates. I don't see
+                 * a way to do it in the Java API
+                 */
+                return PNone.NONE;
+            } else {
+                if (certificate instanceof X509Certificate) {
+                    try {
+                        return CertUtils.decodeCertificate(inliningTarget, raiseNode, (X509Certificate) certificate, language);
+                    } catch (CertificateParsingException e) {
+                        return PFactory.createDict(language);
+                    }
+                }
+                return PFactory.createDict(language);
+            }
         }
 
         @Override

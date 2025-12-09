@@ -95,7 +95,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -288,9 +288,9 @@ public final class DictReprBuiltin extends PythonBuiltins {
                         @CachedLibrary(limit = "2") InteropLibrary interopLib,
                         @Cached DictNodes.GetDictStorageNode getStorageNode,
                         @Cached("create(3)") ForEachDictRepr consumerNode,
-                        @Shared @Cached HashingStorageForEach forEachNode,
-                        @Shared @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
-                        @Shared @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+                        @Exclusive @Cached HashingStorageForEach forEachNode,
+                        @Exclusive @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Exclusive @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             PythonContext ctxt = PythonContext.get(forEachNode);
             Object reprIdentity = dict;
             if (!PGuards.isAnyPythonObject(dict)) {
@@ -324,11 +324,11 @@ public final class DictReprBuiltin extends PythonBuiltins {
         public static TruffleString repr(PDictKeysView view,
                         @Bind Node inliningTarget,
                         @Cached("create(3)") ForEachKeyRepr consumerNode,
-                        @Shared @Cached GetClassNode getClassNode,
-                        @Shared @Cached TypeNodes.GetNameNode getNameNode,
-                        @Shared @Cached HashingStorageForEach forEachNode,
-                        @Shared @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
-                        @Shared @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+                        @Exclusive @Cached GetClassNode getClassNode,
+                        @Exclusive @Cached TypeNodes.GetNameNode getNameNode,
+                        @Exclusive @Cached HashingStorageForEach forEachNode,
+                        @Exclusive @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Exclusive @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             TruffleString typeName = getNameNode.execute(inliningTarget, getClassNode.execute(inliningTarget, view));
             return viewRepr(inliningTarget, view, typeName, forEachNode, consumerNode, appendStringNode, toStringNode);
         }
@@ -337,11 +337,11 @@ public final class DictReprBuiltin extends PythonBuiltins {
         public static TruffleString repr(PDictValuesView view,
                         @Bind Node inliningTarget,
                         @Cached("create(3)") ForEachValueRepr consumerNode,
-                        @Shared @Cached GetClassNode getClassNode,
-                        @Shared @Cached TypeNodes.GetNameNode getNameNode,
-                        @Shared @Cached HashingStorageForEach forEachNode,
-                        @Shared @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
-                        @Shared @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+                        @Exclusive @Cached GetClassNode getClassNode,
+                        @Exclusive @Cached TypeNodes.GetNameNode getNameNode,
+                        @Exclusive @Cached HashingStorageForEach forEachNode,
+                        @Exclusive @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Exclusive @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             TruffleString typeName = getNameNode.execute(inliningTarget, getClassNode.execute(inliningTarget, view));
             return viewRepr(inliningTarget, view, typeName, forEachNode, consumerNode, appendStringNode, toStringNode);
         }
@@ -350,11 +350,11 @@ public final class DictReprBuiltin extends PythonBuiltins {
         public static TruffleString repr(PDictItemsView view,
                         @Bind Node inliningTarget,
                         @Cached("create(3)") ForEachItemRepr consumerNode,
-                        @Shared @Cached GetClassNode getClassNode,
-                        @Shared @Cached TypeNodes.GetNameNode getNameNode,
-                        @Shared @Cached HashingStorageForEach forEachNode,
-                        @Shared @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
-                        @Shared @Cached TruffleStringBuilder.ToStringNode toStringNode) {
+                        @Exclusive @Cached GetClassNode getClassNode,
+                        @Exclusive @Cached TypeNodes.GetNameNode getNameNode,
+                        @Exclusive @Cached HashingStorageForEach forEachNode,
+                        @Exclusive @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
+                        @Exclusive @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             TruffleString typeName = getNameNode.execute(inliningTarget, getClassNode.execute(inliningTarget, view));
             return viewRepr(inliningTarget, view, typeName, forEachNode, consumerNode, appendStringNode, toStringNode);
         }
