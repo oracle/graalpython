@@ -367,9 +367,12 @@ _PyObject_IS_GC(PyObject *obj)
 static inline size_t
 _PyType_PreHeaderSize(PyTypeObject *tp)
 {
-    // GraalPy change: we put only one pointer for dict, we don't store it inlined [GR-61996]
+    /* Note: the pre-header size must have a 16-byte alignment. This is
+       necessary for higher optimization levels which assume the alignment
+       (inferred from the struct size) and emit instructions that require
+       this alignment. */
     return _PyType_IS_GC(tp) * sizeof(PyGC_Head) +
-        _PyType_HasFeature(tp, Py_TPFLAGS_PREHEADER) * /* 2 * */ sizeof(PyObject *);
+        _PyType_HasFeature(tp, Py_TPFLAGS_PREHEADER) * 2 * sizeof(PyObject *);
 }
 
 void _PyObject_GC_Link(PyObject *op);

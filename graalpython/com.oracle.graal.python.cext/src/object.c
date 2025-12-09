@@ -2882,18 +2882,9 @@ void _Py_SetRefcnt(PyObject* obj, Py_ssize_t cnt) {
         return;
     }
     PyObject *dest;
-    if (points_to_py_handle_space(obj))
-    {
+    if (points_to_py_handle_space(obj)) {
         dest = pointer_to_stub(obj);
-#ifndef NDEBUG
-        if (GraalPyPrivate_Debug_CAPI())
-        {
-            set_PyObject_ob_refcnt(obj, cnt);
-        }
-#endif
-    }
-    else
-    {
+    } else {
         dest = obj;
     }
     dest->ob_refcnt = cnt;

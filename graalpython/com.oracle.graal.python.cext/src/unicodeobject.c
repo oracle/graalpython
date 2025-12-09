@@ -12823,7 +12823,9 @@ _PyUnicodeWriter_WriteASCIIString(_PyUnicodeWriter *writer,
     if (len == -1)
         len = strlen(ascii);
 
+#if 0 // GraalPy change
     assert(ucs1lib_find_max_char((const Py_UCS1*)ascii, (const Py_UCS1*)ascii + len) < 128);
+#endif // GraalPy change
 
     if (writer->buffer == NULL && !writer->overallocate) {
         PyObject *str;

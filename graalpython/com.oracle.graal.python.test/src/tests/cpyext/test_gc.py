@@ -192,6 +192,7 @@ ID_OBJ11 = 9
 ID_OBJ12 = 10
 ID_OBJ13 = 11
 ID_OBJ14 = 12
+ID_OBJ15 = 13
 
 # don't rely on deterministic Java GC behavior by default on GraalPy
 RELY_ON_GC = os.environ.get("RELY_ON_GC", not GRAALPY)
@@ -204,13 +205,15 @@ if GRAALPY and RELY_ON_GC:
 
 if GRAALPY:
     get_handle_table_id = __graalpython__.get_handle_table_id
+    storage_to_native = __graalpython__.storage_to_native
     def assert_is_strong(x): assert __graalpython__.is_strong_handle_table_ref(x)
     def assert_is_weak(x): assert not __graalpython__.is_strong_handle_table_ref(x)
 else:
     # just that the test is compatible with CPython
-    def get_handle_table_id(object): return -1
-    def assert_is_strong(x): pass
-    def assert_is_weak(x): pass
+    def get_handle_table_id(_): return -1
+    def storage_to_native(_): pass
+    def assert_is_strong(_): pass
+    def assert_is_weak(_): pass
 
 class TestGCRefCycles(unittest.TestCase):
     def _trigger_gc(self):
@@ -357,6 +360,7 @@ class TestGCRefCycles(unittest.TestCase):
         obj10 = TestCycle0(ID_OBJ10)
         obj11 = TestCycle0(ID_OBJ11)
         obj14 = TestCycle0(ID_OBJ14)
+        obj15 = TestCycle0(ID_OBJ15)
 
         # Legend
         # '=>'
@@ -462,6 +466,19 @@ class TestGCRefCycles(unittest.TestCase):
         htid_l4 = get_handle_table_id(l4)
         del l4
 
+        # establish cycle:   l5 => obj15 =ht=> l5
+        # update_refs:       11     1
+        # subtract_refs:     10     0
+        # move_unreachable:  10     11
+        # update_refs:       11     11
+        # subtract_refs:     10     10
+        # commit_weak_cand:  l5 => obj15 =ht-> l5
+        l5 = [obj15]
+        storage_to_native(l5)
+        obj15.set_obj(l5)
+        htid_l5 = get_handle_table_id(l5)
+        del obj15
+
         # everything should still be alive
         assert_is_alive(ID_OBJ2)
         assert_is_alive(ID_OBJ3)
@@ -474,16 +491,19 @@ class TestGCRefCycles(unittest.TestCase):
         assert_is_alive(ID_OBJ10)
         assert_is_alive(ID_OBJ11)
         assert_is_alive(ID_OBJ14)
+        assert_is_alive(ID_OBJ15)
         assert_is_strong(htid_l)
         assert_is_strong(htid_l1)
         assert_is_strong(htid_l2)
         assert_is_strong(htid_l3)
         assert_is_strong(htid_l4)
+        assert_is_strong(htid_l5)
         assert_is_strong(htid_d0)
 
         del obj2, l, obj3
         del obj4, obj5
         del obj6, d0, obj7
+        del l5
 
         ####################################### GC #######################################
         self._trigger_gc()
@@ -511,6 +531,7 @@ class TestGCRefCycles(unittest.TestCase):
         assert_is_strong(htid_l1)
         assert_is_strong(htid_l4)
         assert_is_strong(htid_d0)
+        assert_is_freed(ID_OBJ15)
 
         rescued_obj4 = l1[0]
         del l1

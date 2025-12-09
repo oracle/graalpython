@@ -45,6 +45,8 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.J___SETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETATTR__;
 
+import java.lang.ref.Reference;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -281,6 +283,8 @@ public class TpSlotSetAttr {
             } finally {
                 if (isSetAttr) {
                     freeNode.free(nameArg);
+                } else {
+                    Reference.reachabilityFence(nameArg);
                 }
             }
             checkResultNode.execute(threadState, T___SETATTR__, result);
