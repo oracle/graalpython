@@ -53,7 +53,7 @@ suite = {
             },
             {
                 "name": "tools",
-                "version": "89c1619a2e20ffbf943cf399b24e3d91590cff66",
+                "version": "e61a4623b7fc839ee10df84050c120d59056b871",
                 "subdir": True,
                 "urls": [
                     {"url": "https://github.com/oracle/graal", "kind": "git"},
