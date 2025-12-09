@@ -1,7 +1,7 @@
-test.test_codecencodings_tw.Test_Big5.test_chunkcoding @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
-test.test_codecencodings_tw.Test_Big5.test_errorhandle @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
-test.test_codecencodings_tw.Test_Big5.test_incrementaldecoder @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
-test.test_codecencodings_tw.Test_Big5.test_incrementalencoder @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
-test.test_codecencodings_tw.Test_Big5.test_streamwriter @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
-test.test_codecencodings_tw.Test_Big5.test_streamwriter_reset_no_pending @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
-test.test_codecencodings_tw.Test_Big5.test_xmlcharrefreplace @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
+test.test_codecencodings_tw.Test_Big5.test_chunkcoding @ $linux-aarch64,$linux-x86_64,$win32-AMD64,darwin-arm64
+test.test_codecencodings_tw.Test_Big5.test_errorhandle @ $linux-aarch64,$linux-x86_64,$win32-AMD64,darwin-arm64
+test.test_codecencodings_tw.Test_Big5.test_incrementaldecoder @ $linux-aarch64,$linux-x86_64,$win32-AMD64,darwin-arm64
+test.test_codecencodings_tw.Test_Big5.test_incrementalencoder @ $linux-aarch64,$linux-x86_64,$win32-AMD64,darwin-arm64
+test.test_codecencodings_tw.Test_Big5.test_streamwriter @ $linux-aarch64,$linux-x86_64,$win32-AMD64,darwin-arm64
+test.test_codecencodings_tw.Test_Big5.test_streamwriter_reset_no_pending @ $linux-aarch64,$linux-x86_64,$win32-AMD64,darwin-arm64
+test.test_codecencodings_tw.Test_Big5.test_xmlcharrefreplace @ $linux-aarch64,$linux-x86_64,$win32-AMD64,darwin-arm64

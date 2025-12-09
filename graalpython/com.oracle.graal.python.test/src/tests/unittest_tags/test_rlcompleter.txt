@@ -1,7 +1,7 @@
-test.test_rlcompleter.TestRlcompleter.test_complete @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
-test.test_rlcompleter.TestRlcompleter.test_duplicate_globals @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
-test.test_rlcompleter.TestRlcompleter.test_excessive_getattr @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
-test.test_rlcompleter.TestRlcompleter.test_global_matches @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
-test.test_rlcompleter.TestRlcompleter.test_namespace @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
-test.test_rlcompleter.TestRlcompleter.test_property_method_not_called @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
-test.test_rlcompleter.TestRlcompleter.test_uncreated_attr @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
+test.test_rlcompleter.TestRlcompleter.test_complete @ $linux-aarch64,$linux-x86_64,$win32-AMD64,darwin-arm64
+test.test_rlcompleter.TestRlcompleter.test_duplicate_globals @ $linux-aarch64,$linux-x86_64,$win32-AMD64,darwin-arm64
+test.test_rlcompleter.TestRlcompleter.test_excessive_getattr @ $linux-aarch64,$linux-x86_64,$win32-AMD64,darwin-arm64
+test.test_rlcompleter.TestRlcompleter.test_global_matches @ $linux-aarch64,$linux-x86_64,$win32-AMD64,darwin-arm64
+test.test_rlcompleter.TestRlcompleter.test_namespace @ $linux-aarch64,$linux-x86_64,$win32-AMD64,darwin-arm64
+test.test_rlcompleter.TestRlcompleter.test_property_method_not_called @ $linux-aarch64,$linux-x86_64,$win32-AMD64,darwin-arm64
+test.test_rlcompleter.TestRlcompleter.test_uncreated_attr @ $linux-aarch64,$linux-x86_64,$win32-AMD64,darwin-arm64
