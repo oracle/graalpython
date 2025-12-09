@@ -93,17 +93,17 @@ cat <<EOF>> $OUTFILE
         {
             "concrete": "${MUSL_TOOLCHAIN}/lib/libc++.so.1.0",
             "verif": true,
-            "virt": "/proc/lib/libc++.so.1.0"
+            "virt": "/lib/libc++.so.1.0"
         },
         {
             "concrete": "${MUSL_TOOLCHAIN}/lib/libc++abi.so.1.0",
             "verif": true,
-            "virt": "/proc/lib/libc++abi.so.1.0"
+            "virt": "/lib/libc++abi.so.1.0"
         },
         {
             "concrete": "${MUSL_TOOLCHAIN}/lib/libunwind.so.1.0",
             "verif": true,
-            "virt": "/proc/lib/libunwind.so.1.0"
+            "virt": "/lib/libunwind.so.1.0"
         }
     ]
 }
