@@ -1,7 +1,7 @@
 name: Run CI unittests
 on:
   pull_request:
-    types: [review_requested, ready_for_review, synchronize]
+    types: [opened, ready_for_review, synchronize, ]
   workflow_dispatch:
 
 jobs:
