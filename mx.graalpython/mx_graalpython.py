@@ -37,6 +37,7 @@ import shutil
 import subprocess
 import sys
 import time
+import psutil
 from functools import wraps
 from pathlib import Path
 from textwrap import dedent
@@ -122,6 +123,7 @@ DISABLE_REBUILD = get_boolean_env('GRAALPYTHON_MX_DISABLE_REBUILD')
 _COLLECTING_COVERAGE = False
 
 CI = get_boolean_env("CI")
+GITHUB_CI = get_boolean_env("GITHUB_CI")
 WIN32 = sys.platform == "win32"
 BUILD_NATIVE_IMAGE_WITH_ASSERTIONS = get_boolean_env('BUILD_WITH_ASSERTIONS', CI)
 BYTECODE_DSL_INTERPRETER = get_boolean_env('BYTECODE_DSL_INTERPRETER', False)
@@ -250,6 +252,21 @@ def _is_overridden_native_image_arg(prefix):
     return any(arg.startswith(prefix) for arg in extras)
 
 
+def github_ci_build_args():
+    total_mem = psutil.virtual_memory().total / (1024 ** 3)
+    min_bound = 8
+    max_mem = 14*1024
+    min_mem = int(1024 * (total_mem if total_mem < min_bound else total_mem * .9))
+    os_cpu = os.cpu_count() or int(os.environ.get("NUMBER_OF_PROCESSORS", 1)) or 1
+       
+    build_mem = min(min_mem, max_mem)
+    parallelism = os_cpu if os_cpu >= 4 and build_mem >= min_bound*1024 else 1
+    
+    return ["-Ob",
+            f"-J-Xms{build_mem}m",
+            f"--parallelism={parallelism}"
+        ]
+
 def libpythonvm_build_args():
     build_args = []
     build_args += bytecode_dsl_build_args()
@@ -329,7 +346,6 @@ def libpythonvm_build_args():
             "-H:-UnlockExperimentalVMOptions",
         ]
     else:
-        print("[DEBUG] libpythonvm_build_args debug")
         print(invert("Not using an automatically selected PGO profile"), file=sys.stderr)
     print(f"[DEBUG] libpythonvm args: {build_args}")
     return build_args
@@ -832,7 +848,7 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
     mx_args = ['-p', SUITE.dir, *(['--env', env_file] if env_file else [])]
     
     print(f"[DEBUG] GITHUB_CI env: {os.environ.get('GITHUB_CI')}")
-    if os.environ.get("GITHUB_CI"):
+    if GITHUB_CI:
         print("[DEBUG] Running in GitHub Ci")
         mx_args.append("--extra-image-builder-argument=-Ob")
     else:
@@ -873,12 +889,9 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
 def graalpy_standalone(standalone_type, enterprise=False, dev=False, build=True):
     assert standalone_type in ['native', 'jvm']
     if standalone_type == 'native' and mx_gate.get_jacoco_agent_args():
-        print("[DEBUG] GRAALPY STANDALONE IS RUNNING ON JVM")
         return graalpy_standalone('jvm', enterprise=enterprise, dev=dev, build=build)
 
-    print("[DEBUG] GRAALPY STANDALONE IS RUNNING NATIVELY")
     home = graalpy_standalone_home(standalone_type, enterprise=enterprise, dev=dev, build=build)
-    print(f"[DEBUG] GRAALPY STANDALONE HOME: {home}")
     launcher = os.path.join(home, 'bin', _graalpy_launcher())
     return make_coverage_launcher_if_needed(launcher)
 

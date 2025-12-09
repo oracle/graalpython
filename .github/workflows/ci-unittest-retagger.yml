@@ -1,0 +1,67 @@
+name: Run Weekly unittest retagger
+on:
+  schedule:
+    - cron: '0 0 * * 1'
+  workflow_dispatch:
+
+jobs:
+  run-retagger:
+    uses: ./.github/workflows/ci-matrix-gen.yml
+    with:
+      jobs_to_run: python-svm-build-gate-linux-amd64|python-unittest-retagger
+
+  merge_all_reports:
+    runs-on: ubuntu-latest
+    needs: run-retagger
+    if: ${{ success() }}
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps: 
+
+      - name: Actions/Checkout
+        uses: actions/checkout@main
+        with:
+          path: main
+
+      - name: Download reports
+        uses: actions/download-artifact@v5
+        with:
+          pattern: python-unittest-retagger*
+          merge-multiple: true
+        continue-on-error: true
+
+      - name: Init Github branch
+        working-directory: main
+        run: |
+          echo "Set new repo origin url"
+          git remote set-url origin https://$GH_TOKEN@github.com/${{ github.repository }}.git
+          git remote -v
+          git config --global user.name "Retagger Workflow" 
+          git config --global user.email "Retagger_Workflow@oracle.com"
+          git fetch origin
+          git checkout -b weekly_retagger_${{ github.run_id }} origin/master
+
+      - name: Merge retagger reports
+        env:
+          GITHUB_CI: true
+        working-directory: main
+        run: |
+          mkdir -p ../retagger-reports ../diffs
+          ls && ls ..
+          mv retagger-report*.json ../retagger-reports
+
+          declare -a os_list=("linux-x86_64" "linux-aarch64" "win32-AMD64")
+          for os in "${os_list[@]}"; do
+            echo "Merging tags for $os"
+            python3 .github/scripts/merge_retagger_results.py --dir ../retagger-reports --outfile "../retagger-reports/reports-merged-$os.json" --pattern "*$os*" || true
+            python3 graalpython/com.oracle.graal.python.test/src/runner.py merge-tags-from-report "../retagger-reports/reports-merged-$os.json" --platform "$os" || true
+            git add -A
+            git commit -m "Apply retags for $os" || true
+          done
+        
+      - name: Push updates to a new PR
+        working-directory: main
+        run: |
+          git push --set-upstream origin weekly_retagger_${{ github.run_id }}
+          gh label create "weekly-retagger" --color "BDDFDF" -d "[DO NOT ADD] Automatically set to weekly retagger PR" || echo "Label 'weekly-retagger' already exists"
+          gh pr create -B master --title "[WORKFLOW] Weekly Retagger: Update tags" --body "Applied weekly retags on $os_list" -l "weekly-retagger"
