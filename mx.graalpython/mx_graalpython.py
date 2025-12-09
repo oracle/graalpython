@@ -275,7 +275,7 @@ def libpythonvm_build_args():
     build_args += bytecode_dsl_build_args()
 
     if os.environ.get("GITHUB_CI"):
-        build_args += ["-Ob", "-J-XX:MaxRAMPercentage=90.0"]
+        build_args += github_ci_build_args()
 
     if graalos := ("musl" in mx_subst.path_substitutions.substitute("<multitarget_libc_selection>")):
         build_args += ['-H:+GraalOS']
@@ -849,7 +849,6 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
 
     mx_args = ['-p', SUITE.dir, *(['--env', env_file] if env_file else [])]
     
-    print(f"[DEBUG] GITHUB_CI env: {os.environ.get('GITHUB_CI')}")
     if GITHUB_CI:
         mx_args.append("--extra-image-builder-argument=-Ob")
     else:
