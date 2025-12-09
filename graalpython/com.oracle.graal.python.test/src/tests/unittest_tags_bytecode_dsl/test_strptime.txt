@@ -38,6 +38,7 @@ test.test_strptime.StrptimeTests.test_second @ linux-x86_64
 test.test_strptime.StrptimeTests.test_strptime_exception_context @ linux-x86_64
 test.test_strptime.StrptimeTests.test_time_locale @ linux-x86_64
 test.test_strptime.StrptimeTests.test_unconverteddata @ linux-x86_64
+test.test_strptime.StrptimeTests.test_weekday @ linux-x86_64
 test.test_strptime.StrptimeTests.test_weekday_locale @ linux-x86_64
 test.test_strptime.StrptimeTests.test_year @ linux-x86_64
 test.test_strptime.TimeRETests.test_blankpattern @ linux-x86_64

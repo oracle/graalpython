@@ -125,7 +125,9 @@ test.test_threading.SemaphoreTests.test_repr @ linux-x86_64
 test.test_threading.SemaphoreTests.test_try_acquire @ linux-x86_64
 test.test_threading.SemaphoreTests.test_try_acquire_contended @ linux-x86_64
 test.test_threading.SemaphoreTests.test_with @ linux-x86_64
-!test.test_threading.ThreadJoinOnShutdown.test_4_daemon_threads
+# Can transiently fail with java.lang.AssertionError: The TruffleContext must be entered
+!test.test_threading.ThreadJoinOnShutdown.test_1_join_on_shutdown
+test.test_threading.ThreadJoinOnShutdown.test_4_daemon_threads @ linux-x86_64
 test.test_threading.ThreadJoinOnShutdown.test_thread_from_thread @ linux-x86_64
 test.test_threading.ThreadTests.test_BoundedSemaphore_limit @ linux-x86_64
 test.test_threading.ThreadTests.test_args_argument @ linux-x86_64
@@ -155,8 +157,8 @@ test.test_threading.ThreadingExceptionTests.test_daemonize_active_thread @ linux
 test.test_threading.ThreadingExceptionTests.test_joining_current_thread @ linux-x86_64
 test.test_threading.ThreadingExceptionTests.test_joining_inactive_thread @ linux-x86_64
 test.test_threading.ThreadingExceptionTests.test_multithread_modify_file_noerror @ linux-x86_64
-!test.test_threading.ThreadingExceptionTests.test_print_exception
-!test.test_threading.ThreadingExceptionTests.test_print_exception_stderr_is_none_1
-!test.test_threading.ThreadingExceptionTests.test_print_exception_stderr_is_none_2
+test.test_threading.ThreadingExceptionTests.test_print_exception @ linux-x86_64
+test.test_threading.ThreadingExceptionTests.test_print_exception_stderr_is_none_1 @ linux-x86_64
+test.test_threading.ThreadingExceptionTests.test_print_exception_stderr_is_none_2 @ linux-x86_64
 test.test_threading.ThreadingExceptionTests.test_start_thread_again @ linux-x86_64
 test.test_threading.TimerTests.test_init_immutable_default_args @ linux-x86_64
