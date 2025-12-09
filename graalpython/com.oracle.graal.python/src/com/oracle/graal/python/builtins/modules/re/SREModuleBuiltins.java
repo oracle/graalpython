@@ -43,8 +43,8 @@ package com.oracle.graal.python.builtins.modules.re;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__SRE;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_CHAR_IN_GROUP_NAME;
-import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ESCAPE;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ESCAPE_END_OF_STRING;
+import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ESCAPE_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_GROUP_REFERENCE;
 import static com.oracle.graal.python.nodes.ErrorMessages.MISSING_GROUP_NAME;
 import static com.oracle.graal.python.nodes.ErrorMessages.MISSING_LEFT_ANGLE_BRACKET;
@@ -1779,22 +1779,31 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                             // check if character is in [A-Za-z]
                             int lowercased = firstCodepoint | 0x20;
                             if ('a' <= lowercased && lowercased <= 'z') {
-                                throw raiseRegexErrorNode.execute(frame, BAD_ESCAPE, replacement, toCodepointIndex(nextCPPos, binary));
+                                // nextCPPos points at a character next to firstCodepoint
+                                int startAt = toCodepointIndex(nextCPPos, binary) - 2;
+                                throw raiseRegexErrorNode.executeFormatted(frame, BAD_ESCAPE_S, replacement, startAt, toEscapeSequence(firstCodepoint));
                             } else {
                                 yield -1;
                             }
                         }
                     };
                     if (escape >= 0) {
+                        // valid escape sequence
                         builder.codepoint(escape);
                         lastLiteralPos = nextCPPos;
                     }
                     lastPos = nextCPPos;
                 }
             }
+
+            builder.literal(lastLiteralPos, length);
             return builder.build();
         }
 
+        @TruffleBoundary
+        static String toEscapeSequence(int codepoint) {
+            return "\\" + (char) codepoint;
+        }
     }
 
     public static void bailoutUnsupportedRegex(TRegexCache cache) {

@@ -1161,6 +1161,31 @@ class PatternTest(unittest.TestCase):
         result = pattern.sub('-', string)
         self.assertIs(result, string)
 
+        # any supported escape sequences are unescaped in a string
+        pattern = re.compile('.')
+        self.assertEqual(pattern.sub(r'\a', '#'), '\a')
+        self.assertEqual(pattern.sub(r'\b', '#'), '\b')
+        self.assertEqual(pattern.sub(r'\f', '#'), '\f')
+        self.assertEqual(pattern.sub(r'\n', '#'), '\n')
+        self.assertEqual(pattern.sub(r'\r', '#'), '\r')
+        self.assertEqual(pattern.sub(r'\t', '#'), '\t')
+        self.assertEqual(pattern.sub(r'\v', '#'), '\v')
+        self.assertEqual(pattern.sub(r'\\', '#'), '\\')
+
+        # any not supported escape sequences with a letter lead to raising exception
+        pattern = re.compile('.')
+        with self.assertRaisesRegex(re.error, r'bad escape \\c at position 0'):
+            pattern.sub(r'\c', '#')
+        with self.assertRaisesRegex(re.error, r'bad escape \\N at position 0'):
+            pattern.sub(r'\N', '#')
+        with self.assertRaisesRegex(re.error, r'bad escape \\z at position 2'):
+            pattern.sub(r'  \z', '#')
+
+        # any not supported escape sequences with a non-letter are kept as is unchanged
+        pattern = re.compile('.')
+        self.assertEqual(pattern.sub(r'\&', '#'), r'\&')
+        self.assertEqual(pattern.sub(r'\-', '#'), r'\-')
+
         # backreferences are replaced with the substring matched by the corresponding group in the pattern
         pattern = re.compile('(x)(.)')
         result = pattern.sub(r'[\2]', 'axbcxd')
@@ -1255,6 +1280,31 @@ class PatternTest(unittest.TestCase):
         result = pattern.subn('-', string)
         self.assertIs(result[0], string)
         self.assertEqual(result[1], 0)
+
+        # any supported escape sequences are unescaped in a string
+        pattern = re.compile('.')
+        self.assertEqual(pattern.subn(r'\a', '#'), ('\a', 1))
+        self.assertEqual(pattern.subn(r'\b', '#'), ('\b', 1))
+        self.assertEqual(pattern.subn(r'\f', '#'), ('\f', 1))
+        self.assertEqual(pattern.subn(r'\n', '#'), ('\n', 1))
+        self.assertEqual(pattern.subn(r'\r', '#'), ('\r', 1))
+        self.assertEqual(pattern.subn(r'\t', '#'), ('\t', 1))
+        self.assertEqual(pattern.subn(r'\v', '#'), ('\v', 1))
+        self.assertEqual(pattern.subn(r'\\', '#'), ('\\', 1))
+
+        # any not supported escape sequences with a letter lead to raising exception
+        pattern = re.compile('.')
+        with self.assertRaisesRegex(re.error, r'bad escape \\c at position 0'):
+            pattern.subn(r'\c', '#')
+        with self.assertRaisesRegex(re.error, r'bad escape \\N at position 0'):
+            pattern.subn(r'\N', '#')
+        with self.assertRaisesRegex(re.error, r'bad escape \\z at position 2'):
+            pattern.subn(r'  \z', '#')
+
+        # any not supported escape sequences with a non-letter are kept as is unchanged
+        pattern = re.compile('.')
+        self.assertEqual(pattern.subn(r'\&', '#'), (r'\&', 1))
+        self.assertEqual(pattern.subn(r'\-', '#'), (r'\-', 1))
 
         # backreferences are replaced with the substring matched by the corresponding group in the pattern
         pattern = re.compile('(x)(.)')

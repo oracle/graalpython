@@ -1627,7 +1627,7 @@ public abstract class ErrorMessages {
     public static final TruffleString NOT_A_DECIMAL = tsLiteral("not a decimal");
 
     // re module errors
-    public static final TruffleString BAD_ESCAPE = tsLiteral("bad escape");
+    public static final TruffleString BAD_ESCAPE_S = tsLiteral("bad escape %s");
     public static final TruffleString BAD_ESCAPE_END_OF_STRING = tsLiteral("bad escape (end of string)");
     public static final TruffleString BAD_CHAR_IN_GROUP_NAME = tsLiteral("bad character in group name %s");
     public static final TruffleString INVALID_GROUP_REFERENCE = tsLiteral("invalid group reference %s");
