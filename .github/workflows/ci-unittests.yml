@@ -1,0 +1,12 @@
+name: Run CI unittests
+on:
+  pull_request:
+    types: [review_requested, ready_for_review, synchronize]
+  workflow_dispatch:
+
+jobs:
+  run-tests:
+    if: github.event.pull_request.draft == false
+    uses: ./.github/workflows/ci-matrix-gen.yml
+    with:
+      jobs_to_run: ^(?=.*python)(?!.*(retagger|dsl|windows|darwin)).*$

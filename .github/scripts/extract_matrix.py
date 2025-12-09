@@ -18,8 +18,6 @@ DEFAULT_ENV = {
     "GITHUB_CI": "true"
 }
 
-PR_JOBS='^(?=.*python)(?!.*(retagger|dsl)).*$'
-
 # If any of these terms are in the job json, they do not run in public
 # infrastructure
 JOB_EXCLUSION_TERMS = (
@@ -36,7 +34,7 @@ JOB_EXCLUSION_TERMS = (
 
     # WIP
     "darwin",
-    "windows"
+    #"windows"
 )
 
 DOWNLOADS_LINKS = {
@@ -130,10 +128,12 @@ class Job:
         filename = download_link.split('/')[-1]
 
         if self.runs_on == "windows-latest":
-            return (f"""Invoke-WebRequest -Uri {download_link} -OutFile {filename}
+            return (f"""
+            Invoke-WebRequest -Uri {download_link} -OutFile {filename}
             $dirname = (& tar -tzf {filename} | Select-Object -First 1).Split('/')[0]
             tar -xzf {filename}
-            Add-Content $env:GITHUB_ENV "{key}=$(Resolve-Path $dirname)""")
+            Add-Content $env:GITHUB_ENV "{key}=$(Resolve-Path $dirname)"
+            """)
 
         return (f"wget -q {download_link} && "
             f"dirname=$(tar -tzf {filename} | head -1 | cut -f1 -d '/') && "
@@ -295,7 +295,6 @@ def get_tagged_jobs(buildspec, target, filter=None):
 
 
 def main(jsonnet_bin, ci_jsonnet, target, filter=None, indent=False):
-    if not filter: filter = PR_JOBS
 
     result = subprocess.check_output([jsonnet_bin, ci_jsonnet], text=True)
     buildspec = json.loads(result)
