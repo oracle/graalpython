@@ -1151,7 +1151,7 @@ public final class FloatBuiltins extends PythonBuiltins {
     abstract static class IsIntegerNode extends AbstractNumericUnaryBuiltin {
         @Override
         protected Object op(double value) {
-            return Double.isFinite(value) && (long) value == value;
+            return Double.isFinite(value) && Math.floor(value) == value;
         }
     }
 

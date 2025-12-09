@@ -762,14 +762,6 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
             }
         }
 
-        if (relaunchArgs != null) {
-            Iterator<String> it = origArgs.iterator();
-            while (it.hasNext()) {
-                if (relaunchArgs.contains(it.next())) {
-                    it.remove();
-                }
-            }
-        }
         origArgs.add(0, toAbsolutePath(executable));
         contextBuilder.option("python.OrigArgv", String.join(STRING_LIST_DELIMITER, origArgs));
 

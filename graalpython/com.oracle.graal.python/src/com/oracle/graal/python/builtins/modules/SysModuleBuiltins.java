@@ -175,7 +175,6 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.exception.GetEscapedExceptionNode;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -218,11 +217,10 @@ import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttributeHandler;
-import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
+import com.oracle.graal.python.nodes.frame.ReadFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
@@ -230,6 +228,7 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
+import com.oracle.graal.python.runtime.CallerFlags;
 import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
@@ -259,7 +258,6 @@ import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "sys", isEager = true)
@@ -852,37 +850,27 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    // ATTENTION: this is intentionally a PythonBuiltinNode and not PythonUnaryBuiltinNode,
-    // because we need a guarantee that this builtin will get its own stack frame in order to
-    // be able to count how many frames down the call stack we need to walk
-    @Builtin(name = "_getframe", parameterNames = "depth", minNumOfPositionalArgs = 0, needsFrame = true, alwaysNeedsCallerFrame = true)
+    @Builtin(name = "_getframe", parameterNames = "depth", minNumOfPositionalArgs = 0, needsFrame = true, callerFlags = CallerFlags.NEEDS_PFRAME)
     @ArgumentClinic(name = "depth", defaultValue = "0", conversion = ClinicConversion.Int)
     @GenerateNodeFactory
-    public abstract static class GetFrameNode extends PythonClinicBuiltinNode {
+    public abstract static class GetFrameNode extends PythonUnaryClinicBuiltinNode {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return GetFrameNodeClinicProviderGen.INSTANCE;
         }
 
         @Specialization
-        static PFrame counted(VirtualFrame frame, int num,
+        static PFrame counted(VirtualFrame frame, int depth,
                         @Bind Node inliningTarget,
-                        @Cached ReadCallerFrameNode readCallerNode,
-                        @Cached InlinedConditionProfile callStackDepthProfile,
+                        @Cached ReadFrameNode readFrameNode,
                         @Cached PRaiseNode raiseNode) {
-            PFrame requested = escapeFrame(frame, num, readCallerNode);
-            if (callStackDepthProfile.profile(inliningTarget, requested == null)) {
+            PFrame requested = readFrameNode.getFrameForReference(frame, PArguments.getCurrentFrameInfo(frame), ReadFrameNode.AllPythonFramesSelector.INSTANCE, depth, 0);
+            if (requested == null) {
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.CALL_STACK_NOT_DEEP_ENOUGH);
             }
+            requested.getRef().markAsEscaped();
             return requested;
         }
-
-        private static PFrame escapeFrame(VirtualFrame frame, int num, ReadCallerFrameNode readCallerNode) {
-            Reference currentFrameInfo = PArguments.getCurrentFrameInfo(frame);
-            currentFrameInfo.markAsEscaped();
-            return readCallerNode.executeWith(currentFrameInfo, num);
-        }
-
     }
 
     @Builtin(name = "_current_frames")
@@ -893,14 +881,14 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached AuditNode auditNode,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode,
-                        @Cached ReadCallerFrameNode readCallerFrameNode,
+                        @Cached ReadFrameNode readFrameNode,
                         @Cached HashingStorageSetItem setHashingStorageItem,
                         @Bind PythonLanguage language) {
             auditNode.audit(inliningTarget, "sys._current_frames");
             if (!getLanguage().singleThreadedAssumption.isValid()) {
                 warnNode.warn(frame, RuntimeWarning, ErrorMessages.WARN_CURRENT_FRAMES_MULTITHREADED);
             }
-            PFrame currentFrame = readCallerFrameNode.executeWith(frame, 0);
+            PFrame currentFrame = readFrameNode.getCurrentPythonFrame(frame);
             PDict result = PFactory.createDict(language);
             result.setDictStorage(setHashingStorageItem.execute(frame, inliningTarget, result.getDictStorage(), PThread.getThreadId(Thread.currentThread()), currentFrame));
             return result;

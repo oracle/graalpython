@@ -45,15 +45,15 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.exception.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
-import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
+import com.oracle.graal.python.nodes.frame.ReadFrameNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
+import com.oracle.graal.python.runtime.IndirectCallData.IndirectCallDataBase;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -65,7 +65,6 @@ import com.oracle.truffle.api.HostCompilerDirectives;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.bytecode.BytecodeNode;
-import com.oracle.truffle.api.bytecode.ContinuationRootNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -76,12 +75,14 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.DenyReplace;
 import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.nodes.UnadoptableNode;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedCountingConditionProfile;
 
@@ -123,13 +124,13 @@ import com.oracle.truffle.api.profiles.InlinedCountingConditionProfile;
  * Examples of some transitions (see {@code test_indirect_call.py} for runnable examples):
  * <ul>
  * <li>Python function calls Python function: the {@link PRootNode} of the callee tells us if we
- * need to pass the frame/exception state as arguments ({@link PRootNode#needsCallerFrame()}. We
- * don't pass them initially. First time we actually need them, we do Truffle stack walk
+ * need to pass the frame/exception state as arguments ({@link PRootNode#getCallerFlags()}. We don't
+ * pass them initially. First time we actually need them, we do Truffle stack walk
  * ({@code TruffleRuntime#iterateFrames}), during which we set the
- * {@link PRootNode#needsCallerFrame()} flag for all the root nodes that we had to traverse - so
- * next time, we should not need to do the stack walk, we should just receive
- * {@link PFrame.Reference} from the caller and just traverse the linked-list of
- * {@link PFrame.Reference}s to the {@link PFrame.Reference} we need.</li>
+ * {@link PRootNode#getCallerFlags()} flags for all the root nodes that we had to traverse - so next
+ * time, we should not need to do the stack walk, we should just receive {@link PFrame.Reference}
+ * from the caller and just traverse the linked-list of {@link PFrame.Reference}s to the
+ * {@link PFrame.Reference} we need.</li>
  * <li>Python function calls into {@code @TruffleBoundary} annotated code: We need to store the
  * exception state and PFrame reference into the thread state. In order to avoid doing this every
  * time, flags in {@link IndirectCallData.BoundaryCallData} tells us if we should pass them, and
@@ -152,7 +153,7 @@ public abstract class ExecutionContext {
      * Helper methods to prepare for a call from code that has access to the current Python
      * {@link VirtualFrame} to a Python callable. The frame contains exception state and current
      * PFrame reference, which may need to be passed down to the callee (see
-     * {@link PRootNode#needsExceptionState()} and {@link PRootNode#needsCallerFrame()}).
+     * {@link PRootNode#getCallerFlags()}).
      * <p>
      * Code that does not have access to the current Python {@link VirtualFrame}, e.g.,
      * {@code TruffleBoundary} code, should be wrapped in {@link IndirectCallContext}, which
@@ -163,58 +164,27 @@ public abstract class ExecutionContext {
     @GenerateUncached
     public abstract static class CallContext extends Node {
 
-        /*
-         * Bytecode DSL note: When resuming a generator/coroutine, the call target is a
-         * ContinuationRoot with a different calling convention from regular PRootNodes. The first
-         * argument is a materialized frame, which will be used for the execution itself. We will,
-         * e.g., lookup the exception state in that frame's arguments.
-         *
-         * So for Bytecode DSL generators, we update the arguments array of that materialized frame
-         * instead of the arguments array that will be used for the actual Truffle call to the
-         * ContinuationRoot, which is not accessible to us in the generator root.
-         */
-
-        /**
-         * Prepare an indirect call from a Python frame to a Python function.
-         */
-        public void prepareIndirectCall(VirtualFrame frame, Object[] callArguments) {
-            executePrepareCall(frame, getActualCallArguments(callArguments), true, true);
-        }
-
-        private static Object[] getActualCallArguments(Object[] callArguments) {
-            // See Bytecode DSL note at the top
-            if (callArguments.length == 2 && callArguments[0] instanceof MaterializedFrame materialized) {
-                return materialized.getArguments();
-            }
-            return callArguments;
-        }
-
         /**
          * Prepare a call from a Python frame to a Python function.
          */
         public void prepareCall(VirtualFrame frame, Object[] callArguments, RootCallTarget callTarget) {
-            RootNode rootNode = callTarget.getRootNode();
-
-            PRootNode calleeRootNode;
-            Object[] actualCallArguments;
-            boolean needsExceptionState;
-            if (rootNode instanceof ContinuationRootNode continuationRoot) {
-                // See Bytecode DSL note at the top
-                calleeRootNode = (PRootNode) continuationRoot.getSourceRootNode();
-                assert callArguments.length == 2;
-                actualCallArguments = ((MaterializedFrame) callArguments[0]).getArguments();
-                needsExceptionState = calleeRootNode.needsExceptionState();
-            } else {
-                // n.b.: The class cast should always be correct, since this context
-                // must only be used when calling from Python to Python
-                calleeRootNode = (PRootNode) rootNode;
-                actualCallArguments = callArguments;
-                needsExceptionState = calleeRootNode.needsExceptionState();
-            }
-            executePrepareCall(frame, actualCallArguments, calleeRootNode.needsCallerFrame(), needsExceptionState);
+            // n.b.: The class cast should always be correct, since this context
+            // must only be used when calling from Python to Python
+            PRootNode calleeRootNode = (PRootNode) callTarget.getRootNode();
+            executePrepareCall(frame, callArguments, calleeRootNode.getCallerFlags());
         }
 
-        protected abstract void executePrepareCall(VirtualFrame frame, Object[] callArguments, boolean needsCallerFrame, boolean needsExceptionState);
+        public abstract void executePrepareCall(VirtualFrame frame, Object[] callArguments, int callerFlags);
+
+        @Specialization
+        protected static void prepareCall(VirtualFrame frame, Object[] callArguments, int callerFlags,
+                        @Bind Node inliningTarget,
+                        @Cached PassCallerFrameNode passCallerFrame,
+                        @Cached PassExceptionStateNode passExceptionState) {
+            assert PArguments.isPythonFrame(frame) || inliningTarget.getRootNode() instanceof TopLevelExceptionHandler : "calling from non-Python or non-top-level frame";
+            passCallerFrame.execute(frame, inliningTarget, callArguments, callerFlags);
+            passExceptionState.execute(frame, inliningTarget, callArguments, CallerFlags.needsExceptionState(callerFlags));
+        }
 
         /**
          * Equivalent to PyPy's ExecutionContext.enter `frame.f_backref = self.topframeref` we here
@@ -223,45 +193,68 @@ public abstract class ExecutionContext {
          * the stack up once.
          */
         @GenerateCached(false)
-        @GenerateUncached
         @GenerateInline
-        @ImportStatic(PArguments.class)
+        @ImportStatic({PArguments.class, CallerFlags.class})
         protected abstract static class PassCallerFrameNode extends Node {
-            protected abstract void execute(VirtualFrame frame, Node inliningTarget, Object[] callArguments, boolean needsCallerFrame);
+            protected abstract void execute(VirtualFrame frame, Node inliningTarget, Object[] callArguments, int callerFlags);
 
-            @Specialization(guards = "!needsCallerFrame")
-            protected static void dontPassCallerFrame(Object[] callArguments, boolean needsCallerFrame) {
+            @Specialization(guards = "!needsFrameReference(callerFlags)")
+            protected static void dontPassCallerFrame(Object[] callArguments, int callerFlags) {
             }
 
-            @Specialization(guards = {"needsCallerFrame", "isPythonFrame(frame)"})
-            protected static void passCallerFrame(VirtualFrame frame, Node inliningTarget, Object[] callArguments, boolean needsCallerFrame,
+            @Specialization(guards = {"needsFrameReference(callerFlags)", "isPythonFrame(frame)"})
+            protected static void passCallerFrame(VirtualFrame frame, Object[] callArguments, int callerFlags,
                             @Cached(inline = false) MaterializeFrameNode materialize) {
                 PFrame.Reference thisInfo = PArguments.getCurrentFrameInfo(frame);
-                // We are handing the PFrame of the current frame to the caller, i.e., it does
-                // not 'escape' since it is still on the stack. Also, force synchronization of
-                // values
-                if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                    // For the manual interpreter it is OK to executeOnStack with uncached
-                    // `materialize` Node, but once we have uncached Bytecode DSL interpreter, it
-                    // will have to use EncapsulatingNodeReference or some other way (e.g., in
-                    // frame) to pass down the BytecodeNode. This can be also sign of missing
-                    // BoundaryCallContext.enter/exit around TruffleBoundary
-                    assert materialize.isAdoptable();
+                if (CallerFlags.needsPFrame(callerFlags)) {
+                    // We are handing the PFrame of the current frame to the caller, i.e., it does
+                    // not 'escape' since it is still on the stack. Also, force synchronization of
+                    // values if requested
+                    if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+                        // For the manual interpreter it is OK to executeOnStack with uncached
+                        // `materialize` Node, but once we have uncached Bytecode DSL interpreter,
+                        // it
+                        // will have to use EncapsulatingNodeReference or some other way (e.g., in
+                        // frame) to pass down the BytecodeNode. This can be also sign of missing
+                        // BoundaryCallContext.enter/exit around TruffleBoundary
+                        assert materialize.isAdoptable();
+                    }
+                    if (thisInfo.getPyFrame() != null && !CallerFlags.needsLocals(callerFlags) && !CallerFlags.needsLasti(callerFlags)) {
+                        thisInfo.getPyFrame().setLastCallerFlags(callerFlags);
+                    } else {
+                        PFrame pyFrame = materialize.executeOnStack(false, CallerFlags.needsLocals(callerFlags), frame);
+                        assert thisInfo.getPyFrame() == pyFrame;
+                        assert pyFrame.getRef() == thisInfo;
+                    }
+                } else if (thisInfo.getPyFrame() != null) {
+                    thisInfo.getPyFrame().setLastCallerFlags(callerFlags);
                 }
-                PFrame pyFrame = materialize.executeOnStack(false, true, frame);
-                assert thisInfo.getPyFrame() == pyFrame;
-                assert pyFrame.getRef() == thisInfo;
                 PArguments.setCallerFrameInfo(callArguments, thisInfo);
             }
 
-            @Specialization(guards = {"needsCallerFrame", "!isPythonFrame(frame)"})
-            protected static void passEmptyCallerFrame(VirtualFrame frame, Object[] callArguments, boolean needsCallerFrame) {
+            @Specialization(guards = {"needsFrameReference(callerFlags)", "!isPythonFrame(frame)"})
+            protected static void passEmptyCallerFrame(VirtualFrame frame, Object[] callArguments, int callerFlags) {
                 PArguments.setCallerFrameInfo(callArguments, PFrame.Reference.EMPTY);
+            }
+
+            @DenyReplace
+            @GenerateCached(false)
+            private static final class Uncached extends PassCallerFrameNode implements UnadoptableNode {
+                private static final Uncached INSTANCE = new Uncached();
+
+                @Override
+                protected void execute(VirtualFrame frame, Node inliningTarget, Object[] callArguments, int callerFlags) {
+                    // Always pass the reference when uncached
+                    passCallerFrame(frame, callArguments, callerFlags, MaterializeFrameNode.getUncached());
+                }
+            }
+
+            public static PassCallerFrameNode getUncached() {
+                return Uncached.INSTANCE;
             }
         }
 
         @GenerateCached(false)
-        @GenerateUncached
         @GenerateInline
         @ImportStatic(PArguments.class)
         protected abstract static class PassExceptionStateNode extends Node {
@@ -345,22 +338,35 @@ public abstract class ExecutionContext {
                 // inside Python led us here
                 PArguments.setException(callArguments, PException.NO_EXCEPTION);
             }
-        }
 
-        @Specialization
-        protected static void prepareCall(VirtualFrame frame, Object[] callArguments, boolean needsCallerFrame, boolean needsExceptionState,
-                        @Bind Node inliningTarget,
-                        @Cached PassCallerFrameNode passCallerFrame,
-                        @Cached PassExceptionStateNode passExceptionState) {
-            assert PArguments.isPythonFrame(frame) || inliningTarget.getRootNode() instanceof TopLevelExceptionHandler : "calling from non-Python or non-top-level frame";
-            passCallerFrame.execute(frame, inliningTarget, callArguments, needsCallerFrame);
-            passExceptionState.execute(frame, inliningTarget, callArguments, needsExceptionState);
+            @DenyReplace
+            @GenerateCached(false)
+            private static final class Uncached extends PassExceptionStateNode implements UnadoptableNode {
+                private static final Uncached INSTANCE = new Uncached();
+
+                @Override
+                protected void execute(VirtualFrame frame, Node inliningTarget, Object[] callArguments, boolean needsExceptionState) {
+                    if (PArguments.isPythonFrame(frame)) {
+                        AbstractTruffleException exception = PArguments.getException(frame);
+                        // Always pass the exception when we have it
+                        if (exception != null) {
+                            PArguments.setException(callArguments, exception);
+                        } else if (needsExceptionState) {
+                            passExceptionStateFromStackWalk(frame, null, callArguments, true);
+                        }
+                    }
+                }
+            }
+
+            public static PassExceptionStateNode getUncached() {
+                return Uncached.INSTANCE;
+            }
         }
     }
 
     /**
-     * Execution of a Python function should be wrapped with {@link #enter(VirtualFrame)} and
-     * {@link #exit(VirtualFrame, PRootNode)}.
+     * Execution of a Python function should be wrapped with {@link #enter(VirtualFrame, PRootNode)}
+     * and {@link #exit(VirtualFrame, PRootNode)}.
      * <p>
      * When entering the function we create the
      * {@link com.oracle.graal.python.builtins.objects.frame.PFrame.Reference} that represents the
@@ -391,13 +397,20 @@ public abstract class ExecutionContext {
         /**
          * Wrap the execution of a Python callee called from a Python frame.
          */
-        public void enter(VirtualFrame frame) {
+        public void enter(VirtualFrame frame, PRootNode rootNode) {
             // TODO: assert PythonLanguage.getContext().ownsGil() :
             // PythonContext.dumpStackOnAssertionHelper("callee w/o GIL");
             // tfel: Create our frame reference here and store it so that
             // there's no reference to it from the caller side.
-            PFrame.Reference thisFrameRef = new PFrame.Reference(getRootNode(), PArguments.getCallerFrameInfo(frame));
+            PFrame.Reference thisFrameRef = new PFrame.Reference(rootNode, PArguments.getCallerFrameInfo(frame));
             PArguments.setCurrentFrameInfo(frame, thisFrameRef);
+        }
+
+        public static void enterGenerator(VirtualFrame frame, MaterializedFrame generatorFrame) {
+            assert !PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER;
+            PFrame.Reference ref = PArguments.getCurrentFrameInfo(generatorFrame);
+            ref.setCallerInfo(PArguments.getCallerFrameInfo(frame));
+            PArguments.setCurrentFrameInfo(frame, ref);
         }
 
         public void exit(VirtualFrame frame, PRootNode node) {
@@ -428,25 +441,24 @@ public abstract class ExecutionContext {
             if (!everEscaped) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 everEscaped = true;
-                reportPolymorphicSpecialize();
             }
             // This assumption acts as our branch profile here
-            Reference callerInfo = PArguments.getCallerFrameInfo(frame);
+            Reference callerInfo = info.getCallerInfo();
             if (callerInfo == null) {
                 // we didn't request the caller frame reference. now we need it.
-                CompilerDirectives.transferToInterpreter();
+                CompilerDirectives.transferToInterpreterAndInvalidate();
 
-                // n.b. We need to use 'ReadCallerFrameNode.getCallerFrame' instead of
+                // n.b. We need to use 'ReadFrameNode.getCallerFrame' instead of
                 // 'Truffle.getRuntime().getCallerFrame()' because we still need to skip
                 // non-Python frames, even if we do not skip frames of builtin functions.
-                com.oracle.truffle.api.frame.Frame callerFrame = ReadCallerFrameNode.getCallerFrame(info, FrameInstance.FrameAccess.READ_ONLY, ReadCallerFrameNode.AllFramesSelector.INSTANCE, 0);
+                Frame callerFrame = ReadFrameNode.getCallerFrame(info, FrameInstance.FrameAccess.READ_ONLY, ReadFrameNode.AllFramesSelector.INSTANCE, 1,
+                                CallerFlags.NEEDS_FRAME_REFERENCE);
                 if (callerFrame != null) {
                     callerInfo = PArguments.getCurrentFrameInfo(callerFrame);
                 } else {
                     callerInfo = Reference.EMPTY;
                 }
-                // ReadCallerFrameNode.getCallerFrame must have the assumption invalidated
-                assert node.needsCallerFrame() : "stack walk did not invalidate caller frame assumption";
+                // ReadFrameNode.getCallerFrame must have the assumption invalidated
             }
             // Else: we may have been called via uncached call where we always pass frame reference.
             // We assume uncached execution will eventually flip to cached execution, and then we'll
@@ -461,7 +473,7 @@ public abstract class ExecutionContext {
             }
             // if this frame escaped we must ensure that also f_back does
             callerInfo.markAsEscaped();
-            info.setBackref(callerInfo);
+            info.setCallerInfo(callerInfo);
         }
 
         private MaterializeFrameNode ensureMaterializeNode() {
@@ -543,9 +555,7 @@ public abstract class ExecutionContext {
 
         private static Object enterWithPythonFrame(VirtualFrame frame, BoundaryCallData boundaryCallData, PythonThreadState pythonThreadState) {
             assert frame != null;
-            boolean needsCallerFrame = boundaryCallData.calleeNeedsCallerFrame();
-            boolean needsExceptionState = boundaryCallData.calleeNeedsExceptionState();
-            return IndirectCallContext.enterWithPythonFrame(frame, boundaryCallData, pythonThreadState, needsCallerFrame, needsExceptionState, EMPTY_SAVED_STATE);
+            return IndirectCallContext.enterWithPythonFrame(frame, boundaryCallData, boundaryCallData, pythonThreadState, boundaryCallData.getCallerFlags(), EMPTY_SAVED_STATE);
         }
 
         public static void exit(VirtualFrame frame, PythonLanguage language, PythonContext context, Object savedState) {
@@ -628,9 +638,7 @@ public abstract class ExecutionContext {
 
         private static Object enterWithPythonFrame(VirtualFrame frame, InteropCallData callData, PythonThreadState pythonThreadState) {
             assert frame != null;
-            boolean needsCallerFrame = callData.calleeNeedsCallerFrame();
-            boolean needsExceptionState = callData.calleeNeedsExceptionState();
-            return IndirectCallContext.enterWithPythonFrame(frame, null, pythonThreadState, needsCallerFrame, needsExceptionState, null);
+            return IndirectCallContext.enterWithPythonFrame(frame, callData, null, pythonThreadState, callData.getCallerFlags(), null);
         }
 
         public static void exit(VirtualFrame frame, PythonLanguage language, PythonContext context, Object savedState) {
@@ -669,11 +677,11 @@ public abstract class ExecutionContext {
 
     // Common code shared by BoundaryCallContext and InteropCallContext
     public abstract static class IndirectCallContext {
-        private static Object enterWithPythonFrame(VirtualFrame frame, Node encapsulatingNodeToPush, PythonThreadState pythonThreadState,
-                        boolean needsCallerFrame, boolean needsExceptionState, Object defaultReturn) {
+        private static Object enterWithPythonFrame(VirtualFrame frame, IndirectCallDataBase callData, Node encapsulatingNodeToPush,
+                        PythonThreadState pythonThreadState, int callerFlags, Object defaultReturn) {
             CompilerAsserts.partialEvaluationConstant(encapsulatingNodeToPush == null);
             CompilerAsserts.partialEvaluationConstant(defaultReturn);
-            if (!needsCallerFrame && !needsExceptionState) {
+            if (callerFlags == 0) {
                 AbstractTruffleException curExc = pythonThreadState.getCaughtException();
                 AbstractTruffleException exceptionState = PArguments.getException(frame);
                 if (exceptionState != curExc) {
@@ -688,23 +696,27 @@ public abstract class ExecutionContext {
                 }
             }
 
-            return enterSlowPath(frame, encapsulatingNodeToPush, pythonThreadState, needsCallerFrame, needsExceptionState, defaultReturn);
+            return enterSlowPath(frame, callData, encapsulatingNodeToPush, pythonThreadState, callerFlags, defaultReturn);
         }
 
-        private static Object enterSlowPath(VirtualFrame frame, Node encapsulatingNodeToPush, PythonThreadState pythonThreadState,
-                        boolean needsCallerFrame,
-                        boolean needsExceptionState, Object defaultReturn) {
+        private static Object enterSlowPath(VirtualFrame frame, IndirectCallDataBase callData, Node encapsulatingNodeToPush,
+                        PythonThreadState pythonThreadState, int callerFlags, Object defaultReturn) {
             PFrame.Reference info = null;
-            if (needsCallerFrame) {
+            if (CallerFlags.needsFrameReference(callerFlags)) {
                 PFrame.Reference prev = pythonThreadState.popTopFrameInfo();
                 assert prev == null : "trying to call from Python to a foreign function, but we didn't clear the topframeref. " +
                                 "This indicates that a call into Python code happened without a proper enter through IndirectCalleeContext";
                 info = PArguments.getCurrentFrameInfo(frame);
                 pythonThreadState.setTopFrameInfo(info);
+                if (CallerFlags.needsPFrame(callerFlags)) {
+                    callData.getMaterializeFrameNode().executeOnStack(false, CallerFlags.needsLocals(callerFlags), frame);
+                } else if (info.getPyFrame() != null) {
+                    info.getPyFrame().setLastCallerFlags(callerFlags);
+                }
             }
             AbstractTruffleException curExc = pythonThreadState.getCaughtException();
             AbstractTruffleException exceptionState = PArguments.getException(frame);
-            if (needsExceptionState) {
+            if (CallerFlags.needsExceptionState(callerFlags)) {
                 pythonThreadState.setCaughtException(exceptionState);
             } else if (exceptionState != curExc) {
                 // the thread state has exception info inconsistent with the current frame's. we
@@ -747,55 +759,21 @@ public abstract class ExecutionContext {
      * <p>
      * The helper methods in this class will save and restore the exception state and frame
      * reference to/from the thread state, and pass down the exception state to the callee if it
-     * asks for it using {@link PRootNode#needsExceptionState()}.
+     * asks for it using {@link PRootNode#getCallerFlags()}.
      */
     public abstract static class IndirectCalleeContext {
-        /**
-         * Prepare an indirect call from code that doesn't have access to the current Python
-         * {@link VirtualFrame}, or doesn't have a frame, e.g., foreign code, to a Python function.
-         * <p>
-         * Unlike {@link #enter(PythonLanguage, PythonContext, Object[], RootCallTarget)}, this
-         * method does not assume that the call target argument is a constant and cannot read
-         * {@link PRootNode#needsExceptionState()}.
-         */
-        public static Object enterIndirect(PythonLanguage language, PythonContext context, Object[] pArguments, RootCallTarget callTarget) {
-            return enter(context.getThreadState(language), unwrapArgumentsArray(callTarget, pArguments), true);
-        }
 
         /**
-         * @see #enterIndirect(PythonLanguage, PythonContext, Object[], RootCallTarget)
+         * @see #enter(PythonThreadState, Object[])
          */
-        public static Object enterIndirect(PythonThreadState threadState, Object[] pArguments, RootCallTarget callTarget) {
-            return enter(threadState, unwrapArgumentsArray(callTarget, pArguments), true);
-        }
-
-        /**
-         * @see #enter(PythonThreadState, Object[], RootCallTarget)
-         */
-        public static Object enter(PythonLanguage language, PythonContext context, Object[] pArguments, RootCallTarget callTarget) {
-            return enter(context.getThreadState(language), unwrapArgumentsArray(callTarget, pArguments), needsExceptionState(callTarget));
+        public static Object enter(PythonLanguage language, PythonContext context, Object[] pArguments) {
+            return enter(context.getThreadState(language), pArguments);
         }
 
         /**
          * Prepare a call from a foreign frame to a Python function.
          */
-        public static Object enter(PythonThreadState threadState, Object[] pArguments, RootCallTarget callTarget) {
-            return enter(threadState, unwrapArgumentsArray(callTarget, pArguments), needsExceptionState(callTarget));
-        }
-
-        private static Object[] unwrapArgumentsArray(RootCallTarget callTarget, Object[] arguments) {
-            if (PGenerator.isDSLGeneratorTarget(callTarget)) {
-                return PGenerator.getDSLGeneratorFrame(arguments).getArguments();
-            }
-            return arguments;
-        }
-
-        private static boolean needsExceptionState(RootCallTarget callTarget) {
-            PRootNode calleeRootNode = (PRootNode) PGenerator.unwrapContinuationRoot(callTarget.getRootNode());
-            return calleeRootNode.needsExceptionState();
-        }
-
-        private static Object enter(PythonThreadState threadState, Object[] pArguments, boolean needsExceptionState) {
+        public static Object enter(PythonThreadState threadState, Object[] pArguments) {
             // We decided on if and how to materialize PFrame.Reference/PFrame itself at the point
             // of transition from code with access to virtual frame to the code without access to it
             // (e.g., TruffleBoundary code) in IndirectCallContext
@@ -805,7 +783,7 @@ public abstract class ExecutionContext {
             // If someone set the exception in the arguments explicitly, we do not override it. This
             // is used in top level code, async handlers, etc., where we want to avoid pointless
             // stack-walking
-            if (needsExceptionState && PArguments.getException(pArguments) == null) {
+            if (PArguments.getException(pArguments) == null) {
                 AbstractTruffleException curExc = threadState.getCaughtException();
                 if (curExc != null) {
                     threadState.setCaughtException(null);

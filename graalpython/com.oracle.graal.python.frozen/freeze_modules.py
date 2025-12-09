@@ -125,7 +125,6 @@ def add_graalpython_core():
         "_weakref",
         "java",
         "pip_hook",
-        "unicodedata",
         "_nt",
     ]:
         modname = f"graalpy.{os.path.basename(name)}"

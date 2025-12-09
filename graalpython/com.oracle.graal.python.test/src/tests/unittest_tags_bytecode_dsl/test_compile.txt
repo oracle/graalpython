@@ -51,8 +51,6 @@ test.test_compile.TestSpecifics.test_stack_overflow @ linux-x86_64
 test.test_compile.TestSpecifics.test_subscripts @ linux-x86_64
 test.test_compile.TestSpecifics.test_syntax_error @ linux-x86_64
 test.test_compile.TestSpecifics.test_unary_minus @ linux-x86_64
-test.test_compile.TestStackSizeStability.test_async_for @ linux-x86_64
-test.test_compile.TestStackSizeStability.test_async_for_else @ linux-x86_64
 test.test_compile.TestStackSizeStability.test_if @ linux-x86_64
 test.test_compile.TestStackSizeStability.test_if_else @ linux-x86_64
 test.test_compile.TestStackSizeStability.test_while_else @ linux-x86_64

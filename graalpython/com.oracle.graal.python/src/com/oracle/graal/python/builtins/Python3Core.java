@@ -32,7 +32,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T_MODULES;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_NT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_STDERR;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_UNICODEDATA;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_ZIPIMPORT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__SRE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__SYSCONFIG;
@@ -112,6 +111,7 @@ import com.oracle.graal.python.builtins.modules.StatResultBuiltins;
 import com.oracle.graal.python.builtins.modules.StringModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.StructModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.SysconfigModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ThreadModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TimeModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.TokenizeModuleBuiltins;
@@ -428,7 +428,6 @@ public abstract class Python3Core {
         List<TruffleString> coreFiles = List.of(
                         T___GRAALPYTHON__,
                         T__WEAKREF,
-                        T_UNICODEDATA,
                         T__SRE,
                         T__SYSCONFIG,
                         T_JAVA,
@@ -568,6 +567,7 @@ public abstract class Python3Core {
                         new WeakRefModuleBuiltins(),
                         new ReferenceTypeBuiltins(),
                         new TracemallocModuleBuiltins(),
+                        new SysconfigModuleBuiltins(),
                         // contextvars
                         new ContextVarBuiltins(),
                         new ContextBuiltins(),

@@ -337,6 +337,25 @@ graalPy {
         <h3 class="truffle__subtitle">Videos</h3>
         <div class="lang-video__row">
           <div class="lang-video__card video-card">
+            <a href="https://youtu.be/YqrEqXB59rA?si=3-PZGY2WUfltvCp0&t=1406" target="_blank" class="btn btn-primary--filledp">
+              <img src="{{ '/assets/img/python/intellij2025-cover.png' | relative_url }}" class="video-cover" alt="IntelliJ 2025 thumbnail">
+              <div class="play-button-container">
+                <img src="{{ '/assets/img/play_button.svg' | relative_url }}" class="play-button" alt="play button">
+              </div>
+            </a>
+          </div>
+          <div class="lang-video__card">
+            <div class="lang-video__title">
+              <h4>Tips and Tricks for GraalVM and Graal Languages</h4>
+            </div>
+            <div class="lang-video__text">
+              <h5>In this session, Fabio Niephaus from the GraalVM team shows his favourite tips and tricks for using GraalPy and other Graal Languages in IntelliJ IDEA. He also shows how to use IntelliJ IDEA as a multi-language IDE. Language injections and support for various debugging protocols make it easy to embed and debug code written in languages like Python in Java applications.
+              </h5>
+            </div>
+          </div>
+        </div>
+        <div class="lang-video__row">
+          <div class="lang-video__card video-card">
             <a href="https://www.youtube.com/watch?v=IdoFsS-mpVw" target="_blank" class="btn btn-primary--filledp">
               <img src="{{ '/assets/img/python/jfocus2025-cover.png' | relative_url }}" class="video-cover" alt="Jfokus 2025 thumbnail">
               <div class="play-button-container">

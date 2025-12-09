@@ -43,6 +43,7 @@ package com.oracle.graal.python.nodes.object;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.Map;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.common.ObjectHashMap;
@@ -63,6 +64,7 @@ import com.oracle.graal.python.util.ArrayBuilder;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -75,6 +77,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
@@ -170,20 +173,29 @@ public abstract class GetRegisteredClassNode extends PNodeWithContext {
                     Object[] bases,
                     Node inliningTarget,
                     PutNode putNode) throws UnsupportedMessageException {
-        InteropLibrary interopLibrary = InteropLibrary.getUncached();
+        InteropLibrary interopLibrary = InteropLibrary.getUncached(metaObject);
         var context = PythonContext.get(inliningTarget);
         String languageName;
         try {
-            languageName = context.getEnv().getLanguageInfo(interopLibrary.getLanguage(metaObject)).getName();
+            Env env = context.getEnv();
+            String languageId = interopLibrary.getLanguageId(metaObject);
+            languageName = getLanguageName(env.getPublicLanguages(), languageId);
+            if (languageName == null) {
+                languageName = getLanguageName(env.getInternalLanguages(), languageId);
+            }
+            if (languageName == null) {
+                languageName = languageId;
+            }
         } catch (UnsupportedMessageException e) {
             // some objects might not expose a language. Use "Foreign" as default
             languageName = "Foreign";
         }
-        languageName = languageName.equals("Host") ? "Java" : languageName;
+        languageName = languageName.equals("host") ? "Java" : languageName;
+        Object metaObjMetaQualifiedName = interopLibrary.getMetaQualifiedName(metaObject);
         var className = PythonUtils.toTruffleStringUncached(String.format(
                         "%s_%s_generated",
                         languageName,
-                        interopLibrary.getMetaQualifiedName(metaObject)));
+                        metaObjMetaQualifiedName));
 
         // use length + 1 to make space for the foreign class
         var basesWithForeign = Arrays.copyOf(bases, bases.length + 1, PythonAbstractClass[].class);
@@ -196,7 +208,7 @@ public abstract class GetRegisteredClassNode extends PNodeWithContext {
             // Catch the error to additionally print the collected classes and specify the error
             // occurred during class creation
             throw PRaiseNode.raiseWithCauseStatic(inliningTarget, PythonBuiltinClassType.TypeError, e, ErrorMessages.INTEROP_CLASS_CREATION_NOT_POSSIBLE,
-                            interopLibrary.getMetaQualifiedName(metaObject),
+                            metaObjMetaQualifiedName,
                             Arrays.toString(basesWithForeign));
         }
         var module = context.lookupBuiltinModule(BuiltinNames.T_POLYGLOT);
@@ -205,6 +217,14 @@ public abstract class GetRegisteredClassNode extends PNodeWithContext {
         pythonClass.setAttribute(SpecialAttributeNames.T___MODULE__, module.getAttribute(SpecialAttributeNames.T___NAME__));
         putNode.put(null, inliningTarget, context.interopGeneratedClassCache, metaObject, InteropLibrary.getUncached().identityHashCode(metaObject), pythonClass);
         return pythonClass;
+    }
+
+    private static String getLanguageName(Map<String, LanguageInfo> languages, String languageId) {
+        LanguageInfo languageInfo = languages.get(languageId);
+        if (languageInfo != null) {
+            return languageInfo.getName();
+        }
+        return null;
     }
 
     @TruffleBoundary

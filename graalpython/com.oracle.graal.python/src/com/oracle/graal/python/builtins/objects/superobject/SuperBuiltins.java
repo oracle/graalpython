@@ -91,7 +91,7 @@ import com.oracle.graal.python.nodes.bytecode.FrameInfo;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
+import com.oracle.graal.python.nodes.frame.ReadFrameNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -99,6 +99,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
+import com.oracle.graal.python.runtime.CallerFlags;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -220,7 +221,7 @@ public final class SuperBuiltins extends PythonBuiltins {
     }
 
     @Slot(value = SlotKind.tp_init, isComplex = true)
-    @SlotSignature(minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, alwaysNeedsCallerFrame = true)
+    @SlotSignature(minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, callerFlags = CallerFlags.NEEDS_LOCALS)
     @GenerateNodeFactory
     public abstract static class SuperInitNode extends PythonVarargsBuiltinNode {
         @Child private IsSubtypeNode isSubtypeNode;
@@ -291,9 +292,9 @@ public final class SuperBuiltins extends PythonBuiltins {
         PNone init(VirtualFrame frame, SuperObject self, @SuppressWarnings("unused") PNone clsArg, @SuppressWarnings("unused") PNone objArg,
                         @Bind Node inliningTarget,
                         @Shared @Cached PRaiseNode raiseNode,
-                        @Cached ReadCallerFrameNode readCaller,
+                        @Cached ReadFrameNode readCaller,
                         @Shared @Cached CellBuiltins.GetRefNode getRefNode) {
-            PFrame target = readCaller.executeWith(frame, ReadCallerFrameNode.SkipPythonBuiltinFramesSelector.INSTANCE, 0);
+            PFrame target = readCaller.getCurrentPythonFrame(frame, CallerFlags.NEEDS_LOCALS);
             if (target == null) {
                 throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.NO_CURRENT_FRAME, "super()");
             }

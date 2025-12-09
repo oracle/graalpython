@@ -79,6 +79,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.CallerFlags;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -100,7 +101,7 @@ public final class TypeVarTupleBuiltins extends PythonBuiltins {
     }
 
     @Slot(value = SlotKind.tp_new, isComplex = true)
-    @SlotSignature(name = J_TYPE_VAR_TUPLE, minNumOfPositionalArgs = 2, parameterNames = {"$cls", "name"}, needsFrame = true, alwaysNeedsCallerFrame = true)
+    @SlotSignature(name = J_TYPE_VAR_TUPLE, minNumOfPositionalArgs = 2, parameterNames = {"$cls", "name"}, needsFrame = true, callerFlags = CallerFlags.NEEDS_PFRAME)
     @ArgumentClinic(name = "name", conversion = ClinicConversion.TString)
     @GenerateNodeFactory
     abstract static class TypeVarTupleNode extends PythonClinicBuiltinNode {

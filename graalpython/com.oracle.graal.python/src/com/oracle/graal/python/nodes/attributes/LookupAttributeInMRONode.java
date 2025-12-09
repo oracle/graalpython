@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.exception.StacktracelessCheckedException;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -70,7 +71,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
@@ -80,7 +80,17 @@ import com.oracle.truffle.api.strings.TruffleString;
 @ImportStatic(PythonOptions.class)
 public abstract class LookupAttributeInMRONode extends PNodeWithContext {
 
-    public abstract Object execute(Object klass);
+    public final Object execute(Object klass) {
+        try {
+            return executeInternal(klass);
+        } catch (MROChangedException e) {
+            // This exception can occur only during specialization
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            return e.result;
+        }
+    }
+
+    protected abstract Object executeInternal(Object klass) throws MROChangedException;
 
     @GenerateUncached
     @GenerateInline(false) // footprint reduction 36 -> 17
@@ -177,51 +187,37 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         return cachedValue;
     }
 
-    // PythonClass specializations:
-
-    static final class AttributeAssumptionPair {
-        private final Assumption assumption;
-        private final Object value;
-        private final boolean invalidate;
-        private boolean invalidateNextCall;
-
-        AttributeAssumptionPair(Assumption assumption, Object value, boolean invalidate) {
-            this.assumption = assumption;
-            this.value = value;
-            this.invalidate = invalidate;
-        }
-
-        public Assumption assumption() {
-            return assumption;
-        }
-    }
-
-    @SuppressWarnings("serial")
-    static final class InvalidateLookupException extends ControlFlowException {
-        private static final InvalidateLookupException INSTANCE = new InvalidateLookupException();
-    }
-
     private static boolean skipNonStaticBase(Object clsObj, boolean skipNonStaticBases) {
         return skipNonStaticBases && clsObj instanceof PythonClass && !((PythonClass) clsObj).isStaticBase();
     }
 
-    AttributeAssumptionPair findAttrAndAssumptionInMRO(Object klass) {
+    @SuppressWarnings("serial")
+    public static class MROChangedException extends StacktracelessCheckedException {
+        final Object result;
+
+        public MROChangedException(Object result) {
+            this.result = result;
+        }
+    }
+
+    MroSequenceStorage.FinalAttributeAssumptionPair findAttrAndAssumptionInMRO(Object klass) throws MROChangedException {
         CompilerAsserts.neverPartOfCompilation();
         // Regarding potential side effects to MRO caused by __eq__ of the keys in the dicts that we
         // search through: CPython seems to read the MRO once and then compute the result also
         // ignoring the side effects. Moreover, CPython has lookup cache, so the side effects
         // may or may not be visible during subsequent lookups. We want to avoid triggering the side
-        // effects twice, so we succeed this lookup no matter what, however, we will invalidate on
-        // the next lookup if there were some MRO side effects.
+        // effects twice
         MroSequenceStorage mro = GetMroStorageNode.executeUncached(klass);
-        Assumption attrAssumption = mro.createAttributeInMROFinalAssumption(key);
+        MroSequenceStorage.FinalAttributeAssumptionPair assumptionNode = mro.getFinalAttributeAssumption(key);
+        if (assumptionNode != null) {
+            return assumptionNode;
+        }
+        // Put a new assumption in place in case the MRO changes during the lookup
+        MroSequenceStorage.FinalAttributeAssumptionPair assumptionPair = new MroSequenceStorage.FinalAttributeAssumptionPair();
+        mro.putFinalAttributeAssumption(key, assumptionPair);
         Object result = PNone.NO_VALUE;
         for (int i = 0; i < mro.length(); i++) {
             PythonAbstractClass clsObj = mro.getPythonClassItemNormalized(i);
-            if (i > 0) {
-                assert clsObj != klass : "MRO chain is incorrect: '" + klass + "' was found at position " + i;
-                GetMroStorageNode.executeUncached(clsObj).addAttributeInMROFinalAssumption(key, attrAssumption);
-            }
             if (skipNonStaticBase(clsObj, skipNonStaticBases)) {
                 continue;
             }
@@ -231,32 +227,24 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
                 break;
             }
         }
-        if (!attrAssumption.isValid()) {
-            return new AttributeAssumptionPair(Assumption.ALWAYS_VALID, result, true);
-        } else {
-            return new AttributeAssumptionPair(attrAssumption, result, false);
+        if (assumptionPair.getAssumption() == null) {
+            // MRO changed during lookup. To avoid reexecuting the side-effects, return via
+            // exception. This should abort the specialization
+            throw new MROChangedException(result);
         }
+        assumptionPair.setValue(result);
+        return assumptionPair;
     }
 
-    @Specialization(guards = {"isSingleContext()", "isSameTypeNode.execute(inliningTarget, cachedKlass, klass)", "cachedAttrInMROInfo != null"}, //
+    @Specialization(guards = {"isSingleContext()", "isSameTypeNode.execute(inliningTarget, cachedKlass, klass)", "cachedAttrInMROInfo.getAssumption() != null"}, //
                     limit = "getAttributeAccessInlineCacheMaxDepth()", //
-                    assumptions = "cachedAttrInMROInfo.assumption()", //
-                    rewriteOn = InvalidateLookupException.class)
+                    assumptions = "cachedAttrInMROInfo.getAssumption()")
     static Object lookupConstantMROCached(Object klass,
                     @Bind Node inliningTarget,
                     @Cached("klass") Object cachedKlass,
                     @Cached IsSameTypeNode isSameTypeNode,
-                    @Cached("findAttrAndAssumptionInMRO(cachedKlass)") AttributeAssumptionPair cachedAttrInMROInfo) {
-        if (cachedAttrInMROInfo.invalidate) {
-            // next time we will invalidate, but this time we must return the result to avoid
-            // triggering side effects in __eq__ multiple times
-            if (cachedAttrInMROInfo.invalidateNextCall) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw InvalidateLookupException.INSTANCE;
-            }
-            cachedAttrInMROInfo.invalidateNextCall = true;
-        }
-        return cachedAttrInMROInfo.value;
+                    @Cached("findAttrAndAssumptionInMRO(cachedKlass)") MroSequenceStorage.FinalAttributeAssumptionPair cachedAttrInMROInfo) {
+        return cachedAttrInMROInfo.getValue();
     }
 
     // The slow-path specializations are extracted in a separate node to have a single cutoff from

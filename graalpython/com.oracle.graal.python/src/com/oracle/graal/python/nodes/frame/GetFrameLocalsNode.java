@@ -41,6 +41,7 @@
 package com.oracle.graal.python.nodes.frame;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
@@ -49,10 +50,8 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.lib.PyDictGetItem;
-import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.bytecode.FrameInfo;
-import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLFrameInfo;
-import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
+import com.oracle.graal.python.runtime.CallerFlags;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -69,6 +68,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.MaterializedFrame;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
@@ -83,20 +83,29 @@ import com.oracle.truffle.api.strings.TruffleString;
 @GenerateInline(inlineByDefault = true)
 @GenerateCached
 public abstract class GetFrameLocalsNode extends Node {
-    public abstract Object execute(Node inliningTarget, PFrame pyFrame);
+    /**
+     * @param freshFrame whether the frame was just materialized with locals sync and we know for
+     *            sure it won't need sync. If unsure, pass false
+     */
+    public abstract Object execute(Frame frame, Node inliningTarget, PFrame pyFrame, boolean freshFrame);
 
-    public final Object executeCached(PFrame pyFrame) {
-        return execute(this, pyFrame);
+    public final Object executeCached(VirtualFrame frame, PFrame pyFrame, boolean freshFrame) {
+        return execute(frame, this, pyFrame, freshFrame);
     }
 
-    public static Object executeUncached(PFrame pyFrame) {
-        return GetFrameLocalsNodeGen.getUncached().execute(null, pyFrame);
+    public static Object executeUncached(PFrame pyFrame, boolean freshFrame) {
+        return GetFrameLocalsNodeGen.getUncached().execute(null, null, pyFrame, freshFrame);
     }
 
     @Specialization(guards = "!pyFrame.hasCustomLocals()")
-    static Object doLoop(Node inliningTarget, PFrame pyFrame,
+    static Object doLoop(VirtualFrame frame, Node inliningTarget, PFrame pyFrame, boolean freshFrame,
                     @Cached InlinedBranchProfile create,
-                    @Cached(inline = false) CopyLocalsToDict copyLocalsToDict) {
+                    @Cached(inline = false) CopyLocalsToDict copyLocalsToDict,
+                    @Cached ReadFrameNode readFrameNode) {
+        if (!freshFrame && pyFrame.needsRefresh(frame, CallerFlags.NEEDS_LOCALS)) {
+            pyFrame = readFrameNode.refreshFrame(frame, pyFrame.getRef(), CallerFlags.NEEDS_LOCALS);
+        }
+        assert !pyFrame.outdatedCallerFlags(CallerFlags.NEEDS_LOCALS);
         MaterializedFrame locals = pyFrame.getLocals();
         // It doesn't have custom locals, so it has to be a builtin dict or null
         PDict localsDict = (PDict) pyFrame.getLocalsDict();
@@ -105,12 +114,12 @@ public abstract class GetFrameLocalsNode extends Node {
             localsDict = PFactory.createDict(PythonLanguage.get(inliningTarget));
             pyFrame.setLocalsDict(localsDict);
         }
-        copyLocalsToDict.execute(locals, localsDict);
+        copyLocalsToDict.execute(locals, localsDict, pyFrame.getBytecodeNode());
         return localsDict;
     }
 
     @Specialization(guards = "pyFrame.hasCustomLocals()")
-    static Object doCustomLocals(PFrame pyFrame) {
+    static Object doCustomLocals(PFrame pyFrame, @SuppressWarnings("unused") boolean freshFrame) {
         Object localsDict = pyFrame.getLocalsDict();
         assert localsDict != null;
         return localsDict;
@@ -119,11 +128,11 @@ public abstract class GetFrameLocalsNode extends Node {
     @GenerateUncached
     @GenerateInline(false)       // footprint reduction 104 -> 86
     abstract static class CopyLocalsToDict extends Node {
-        abstract void execute(MaterializedFrame locals, PDict dict);
+        abstract void execute(MaterializedFrame locals, PDict dict, BytecodeNode bytecodeNode);
 
-        @Specialization(guards = {"cachedFd == locals.getFrameDescriptor()", "count < 32"}, limit = "1")
+        @Specialization(guards = {"cachedFd == locals.getFrameDescriptor()", "info != null", "count < 32"}, limit = "1")
         @ExplodeLoop
-        void doCachedFd(MaterializedFrame locals, PDict dict,
+        static void doCachedFd(MaterializedFrame locals, PDict dict, BytecodeNode bytecodeNode,
                         @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Cached("locals.getFrameDescriptor()") FrameDescriptor cachedFd,
                         @Bind("getInfo(cachedFd)") FrameInfo info,
@@ -133,9 +142,7 @@ public abstract class GetFrameLocalsNode extends Node {
             int regularVarCount = info.getRegularVariableCount();
 
             if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                BytecodeDSLFrameInfo bytecodeDSLFrameInfo = (BytecodeDSLFrameInfo) info;
-                PBytecodeDSLRootNode rootNode = bytecodeDSLFrameInfo.getRootNode();
-                Object[] localsArray = rootNode.getBytecodeNode().getLocalValues(0, locals);
+                Object[] localsArray = bytecodeNode.getLocalValues(0, locals);
                 for (int i = 0; i < count; i++) {
                     copyItem(inliningTarget, localsArray[i], info, dict, setItem, delItem, i, i >= regularVarCount);
                 }
@@ -147,18 +154,20 @@ public abstract class GetFrameLocalsNode extends Node {
         }
 
         @Specialization(replaces = "doCachedFd")
-        void doGeneric(MaterializedFrame locals, PDict dict,
+        void doGeneric(MaterializedFrame locals, PDict dict, BytecodeNode bytecodeNode,
                         @Bind Node inliningTarget,
                         @Shared("setItem") @Cached HashingStorageSetItem setItem,
                         @Shared("delItem") @Cached HashingStorageDelItem delItem) {
             FrameInfo info = getInfo(locals.getFrameDescriptor());
+            if (info == null) {
+                // A builtin frame. Ideally we would avoid materializing it in the first place
+                return;
+            }
             int count = info.getVariableCount();
             int regularVarCount = info.getRegularVariableCount();
 
             if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                BytecodeDSLFrameInfo bytecodeDSLFrameInfo = (BytecodeDSLFrameInfo) info;
-                PBytecodeDSLRootNode rootNode = bytecodeDSLFrameInfo.getRootNode();
-                Object[] localsArray = rootNode.getBytecodeNode().getLocalValues(0, locals);
+                Object[] localsArray = bytecodeNode.getLocalValues(0, locals);
                 for (int i = 0; i < count; i++) {
                     copyItem(inliningTarget, localsArray[i], info, dict, setItem, delItem, i, i >= regularVarCount);
                 }
@@ -192,39 +201,57 @@ public abstract class GetFrameLocalsNode extends Node {
     /**
      * Equivalent of CPython's {@code PyFrame_LocalsToFast}
      */
-    public static void syncLocalsBackToFrame(CodeUnit co, PRootNode root, PFrame pyFrame, Frame localFrame) {
+    public static void syncLocalsBackToFrame(CodeUnit co, PFrame pyFrame, Frame localFrame) {
         if (!pyFrame.hasCustomLocals()) {
             PDict localsDict = (PDict) pyFrame.getLocalsDict();
-            copyLocalsArray(localFrame, root, localsDict, co.varnames, 0, false);
-            copyLocalsArray(localFrame, root, localsDict, co.cellvars, co.varnames.length, true);
-            copyLocalsArray(localFrame, root, localsDict, co.freevars, co.varnames.length + co.cellvars.length, true);
+            copyLocalsArray(localFrame, localsDict, co.varnames, 0, false);
+            copyLocalsArray(localFrame, localsDict, co.cellvars, co.varnames.length, true);
+            copyLocalsArray(localFrame, localsDict, co.freevars, co.varnames.length + co.cellvars.length, true);
         }
     }
 
-    private static void copyLocalsArray(Frame localFrame, PRootNode root, PDict localsDict, TruffleString[] namesArray, int offset, boolean deref) {
-        if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-            PBytecodeDSLRootNode bytecodeDSLRootNode = (PBytecodeDSLRootNode) root;
-            BytecodeNode bytecodeNode = bytecodeDSLRootNode.getBytecodeNode();
-            for (int i = 0; i < namesArray.length; i++) {
-                TruffleString varname = namesArray[i];
-                Object value = getDictItemUncached(localsDict, varname);
-                if (deref) {
-                    PCell cell = (PCell) bytecodeNode.getLocalValue(0, localFrame, offset + i);
-                    cell.setRef(value);
-                } else {
-                    bytecodeNode.setLocalValue(0, localFrame, offset + i, value);
+    /**
+     * Equivalent of CPython's {@code PyFrame_LocalsToFast}
+     */
+    public static void syncLocalsBackToFrame(CodeUnit co, BytecodeNode bytecodeNode, PFrame pyFrame, Frame localFrame) {
+        if (!pyFrame.hasCustomLocals()) {
+            PDict localsDict = (PDict) pyFrame.getLocalsDict();
+            copyLocalsArray(localFrame, bytecodeNode, localsDict, co.varnames, 0, false);
+            copyLocalsArray(localFrame, bytecodeNode, localsDict, co.cellvars, co.varnames.length, true);
+            copyLocalsArray(localFrame, bytecodeNode, localsDict, co.freevars, co.varnames.length + co.cellvars.length, true);
+        }
+    }
+
+    private static void copyLocalsArray(Frame localFrame, BytecodeNode bytecodeNode, PDict localsDict, TruffleString[] namesArray, int offset, boolean deref) {
+        for (int i = 0; i < namesArray.length; i++) {
+            TruffleString varname = namesArray[i];
+            Object value = getDictItemUncached(localsDict, varname);
+            if (deref) {
+                PCell cell = (PCell) bytecodeNode.getLocalValue(0, localFrame, offset + i);
+                cell.setRef(value);
+            } else {
+                if (value == null) {
+                    value = PNone.NONE;
+                    // TODO warn: "assigning None to unbound local %s"
                 }
+                bytecodeNode.setLocalValue(0, localFrame, offset + i, value);
             }
-        } else {
-            for (int i = 0; i < namesArray.length; i++) {
-                TruffleString varname = namesArray[i];
-                Object value = getDictItemUncached(localsDict, varname);
-                if (deref) {
-                    PCell cell = (PCell) localFrame.getObject(offset + i);
-                    cell.setRef(value);
-                } else {
-                    localFrame.setObject(offset + i, value);
+        }
+    }
+
+    private static void copyLocalsArray(Frame localFrame, PDict localsDict, TruffleString[] namesArray, int offset, boolean deref) {
+        for (int i = 0; i < namesArray.length; i++) {
+            TruffleString varname = namesArray[i];
+            Object value = getDictItemUncached(localsDict, varname);
+            if (deref) {
+                PCell cell = (PCell) localFrame.getObject(offset + i);
+                cell.setRef(value);
+            } else {
+                if (value == null) {
+                    value = PNone.NONE;
+                    // TODO warn: "assigning None to unbound local %s"
                 }
+                localFrame.setObject(offset + i, value);
             }
         }
     }

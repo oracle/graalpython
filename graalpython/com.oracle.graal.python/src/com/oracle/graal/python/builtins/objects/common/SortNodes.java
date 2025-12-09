@@ -125,7 +125,7 @@ public abstract class SortNodes {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            calleeContext.enter(frame);
+            calleeContext.enter(frame, this);
             try {
                 Object[] arguments = frame.getArguments();
                 Object a = arguments[PArguments.USER_ARGUMENTS_OFFSET];
@@ -321,7 +321,7 @@ public abstract class SortNodes {
             final RootCallTarget callTarget = getComparatorCallTarget(language);
             if (frame == null) {
                 PythonThreadState threadState = PythonContext.get(this).getThreadState(language);
-                Object state = IndirectCalleeContext.enter(threadState, arguments, callTarget);
+                Object state = IndirectCalleeContext.enter(threadState, arguments);
                 try {
                     callSortWithoutKey(array, len, callTarget, arguments);
                 } finally {
@@ -422,7 +422,7 @@ public abstract class SortNodes {
                 final RootCallTarget callTarget = getComparatorCallTarget(language);
                 if (frame == null) {
                     PythonThreadState threadState = PythonContext.get(this).getThreadState(language);
-                    Object state = IndirectCalleeContext.enter(threadState, arguments, callTarget);
+                    Object state = IndirectCalleeContext.enter(threadState, arguments);
                     try {
                         callSortWithKey(pairArray, len, callTarget, arguments);
                     } finally {

@@ -209,7 +209,11 @@ def ccompile(name, code):
 
     rootdir = os.path.dirname(__file__)
     while os.path.basename(rootdir) != 'graalpython':
+        prevdir = rootdir
         rootdir = os.path.dirname(rootdir)
+        if rootdir == prevdir:
+            # Reached the root of the file system
+            raise RuntimeError("'graalpython' directory not found in path!")
 
     sys.path.append(os.path.join(
         rootdir,

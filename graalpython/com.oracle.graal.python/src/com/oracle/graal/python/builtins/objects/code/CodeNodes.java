@@ -141,7 +141,7 @@ public abstract class CodeNodes {
                                 parameterNames,
                                 kwOnlyNames);
             } else {
-                ct = deserializeForBytecodeInterpreter(context, codedata, cellvars, freevars);
+                ct = deserializeForBytecodeInterpreter(context, codedata, cellvars, freevars, flags);
                 signature = ((PRootNode) ct.getRootNode()).getSignature();
             }
             if (filename != null) {
@@ -150,17 +150,20 @@ public abstract class CodeNodes {
             return PFactory.createCode(language, ct, signature, nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars, filename, name, qualname, firstlineno, linetable);
         }
 
-        private static RootCallTarget deserializeForBytecodeInterpreter(PythonContext context, byte[] data, TruffleString[] cellvars, TruffleString[] freevars) {
+        private static RootCallTarget deserializeForBytecodeInterpreter(PythonContext context, byte[] data, TruffleString[] cellvars, TruffleString[] freevars, int flags) {
             CodeUnit codeUnit = MarshalModuleBuiltins.deserializeCodeUnit(null, context, data);
             RootNode rootNode;
 
             if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
                 BytecodeDSLCodeUnit code = (BytecodeDSLCodeUnit) codeUnit;
+                if (code.flags != flags) {
+                    code = code.withFlags(flags);
+                }
                 rootNode = code.createRootNode(context, PythonUtils.createFakeSource());
             } else {
                 BytecodeCodeUnit code = (BytecodeCodeUnit) codeUnit;
-                if (cellvars != null && !Arrays.equals(code.cellvars, cellvars) || freevars != null && !Arrays.equals(code.freevars, freevars)) {
-                    code = new BytecodeCodeUnit(code.name, code.qualname, code.argCount, code.kwOnlyArgCount, code.positionalOnlyArgCount, code.flags, code.names,
+                if (cellvars != null && !Arrays.equals(code.cellvars, cellvars) || freevars != null && !Arrays.equals(code.freevars, freevars) || flags != code.flags) {
+                    code = new BytecodeCodeUnit(code.name, code.qualname, code.argCount, code.kwOnlyArgCount, code.positionalOnlyArgCount, flags, code.names,
                                     code.varnames, cellvars != null ? cellvars : code.cellvars, freevars != null ? freevars : code.freevars, code.cell2arg,
                                     code.constants, code.startLine,
                                     code.startColumn, code.endLine, code.endColumn, code.code, code.srcOffsetTable,

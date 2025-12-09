@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,7 +42,8 @@ package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.nodes.frame.GetFrameLocalsNode;
-import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
+import com.oracle.graal.python.nodes.frame.ReadFrameNode;
+import com.oracle.graal.python.runtime.CallerFlags;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -57,9 +58,9 @@ public abstract class PyEvalGetLocals extends Node {
 
     @Specialization
     static Object getLocals(VirtualFrame frame, Node inliningTarget,
-                    @Cached(inline = false) ReadCallerFrameNode readCallerFrameNode,
+                    @Cached(inline = false) ReadFrameNode readFrameNode,
                     @Cached GetFrameLocalsNode getFrameLocalsNode) {
-        PFrame callerFrame = readCallerFrameNode.executeWith(frame, 0);
-        return getFrameLocalsNode.execute(inliningTarget, callerFrame);
+        PFrame callerFrame = readFrameNode.getCurrentPythonFrame(frame, CallerFlags.NEEDS_LOCALS);
+        return getFrameLocalsNode.execute(frame, inliningTarget, callerFrame, true);
     }
 }

@@ -222,9 +222,7 @@ import com.oracle.graal.python.nodes.object.IsNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNodeGen;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes;
-import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
-import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
@@ -540,7 +538,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final byte TRACE_AND_PROFILE_FUN = TRACE_FUN | PROFILE_FUN;
 
     private final Signature signature;
-    private final TruffleString name;
     private final boolean internal;
     private boolean pythonInternal;
 
@@ -599,7 +596,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     @Child private CalleeContext calleeContext = CalleeContext.create();
     @Child private ExceptionStateNodes.GetCaughtExceptionNode getCaughtExceptionNode;
     @Child private ChainExceptionsNode chainExceptionsNode;
-    @Child private BoundaryCallData profilingAndTracingBoundaryCallData;
 
     private static final byte TRACE_PROFILE_LINE = 1;
     private static final byte TRACE_PROFILE_NEW_FRAME = 1 << 1;
@@ -610,6 +606,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     private static final class TracingNodes extends Node {
         @Child MaterializeFrameNode traceMaterializeFrameNewNode = MaterializeFrameNode.create();
         @Child MaterializeFrameNode traceMaterializeFrameExistingNode = MaterializeFrameNode.create();
+        @Child CallNode tracingCallNode = CallNode.create();
+        @Child CallNode profilingCallNode = CallNode.create();
         @CompilationFinal(dimensions = 1) byte[] traceProfileData;
 
         public TracingNodes(int bytecodeLength) {
@@ -704,7 +702,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         this.freevars = co.freevars;
         this.cellvars = co.cellvars;
         this.cell2arg = co.cell2arg;
-        this.name = co.name;
         this.exceptionHandlerRanges = co.exceptionHandlerRanges;
         this.co = co;
         assert co.stacksize < Math.pow(2, 12) : "stacksize cannot be larger than 12-bit range";
@@ -749,12 +746,17 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @Override
     public String getName() {
-        return name.toJavaStringUncached();
+        return co.name.toJavaStringUncached();
+    }
+
+    @Override
+    public String getQualifiedName() {
+        return co.qualname.toJavaStringUncached();
     }
 
     @Override
     public String toString() {
-        return "<bytecode " + name + " at " + Integer.toHexString(hashCode()) + ">";
+        return "<bytecode " + co.qualname + " at " + Integer.toHexString(hashCode()) + ">";
     }
 
     @Override
@@ -1059,6 +1061,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     public MaterializedFrame createGeneratorFrame(Object[] arguments) {
         MaterializedFrame generatorFrame = Truffle.getRuntime().createMaterializedFrame(PArguments.create(), getFrameDescriptor());
+        PArguments.setCurrentFrameInfo(generatorFrame, new PFrame.Reference(this, PFrame.Reference.EMPTY));
         copyArgsAndCells(generatorFrame, arguments);
         return generatorFrame;
     }
@@ -1083,11 +1086,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @Override
     public Object execute(VirtualFrame virtualFrame) {
-        calleeContext.enter(virtualFrame);
+        calleeContext.enter(virtualFrame, this);
         try {
-            if (!co.isGeneratorOrCoroutine()) {
-                copyArgsAndCells(virtualFrame, virtualFrame.getArguments());
-            }
+            copyArgsAndCells(virtualFrame, virtualFrame.getArguments());
             return executeFromBci(virtualFrame, virtualFrame, this, 0, getInitialStackTop());
         } finally {
             calleeContext.exit(virtualFrame, this);
@@ -1614,11 +1615,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         stackTop = bytecodeStoreDeref(virtualFrame, localFrame, stackTop, oparg, localCelloffset);
                         break;
                     }
-                    case OpCodesConstants.DELETE_DEREF: {
-                        oparg |= Byte.toUnsignedInt(localBC[++bci]);
-                        bytecodeDeleteDeref(localFrame, beginBci, localNodes, oparg, localCelloffset, useCachedNodes);
-                        break;
-                    }
                     case OpCodesConstants.STORE_FAST: {
                         oparg |= Byte.toUnsignedInt(localBC[bci + 1]);
                         bytecodeStoreFastAdaptive(virtualFrame, localFrame, stackTop--, bci++, localBC, oparg, hasUnboxedLocals);
@@ -1885,10 +1881,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         bytecodeLoadBuildClass(virtualFrame, useCachedNodes, ++stackTop, localNodes, beginBci);
                         break;
                     }
-                    case OpCodesConstants.LOAD_ASSERTION_ERROR: {
-                        virtualFrame.setObject(++stackTop, PythonBuiltinClassType.AssertionError);
-                        break;
-                    }
                     case OpCodesConstants.STORE_NAME: {
                         setCurrentBci(virtualFrame, bciSlot, bci);
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
@@ -1899,12 +1891,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         setCurrentBci(virtualFrame, bciSlot, bci);
                         oparg |= Byte.toUnsignedInt(localBC[++bci]);
                         stackTop = bytecodeStoreAttr(virtualFrame, stackTop, beginBci, oparg, localNodes, localNames, useCachedNodes);
-                        break;
-                    }
-                    case OpCodesConstants.DELETE_ATTR: {
-                        setCurrentBci(virtualFrame, bciSlot, bci);
-                        oparg |= Byte.toUnsignedInt(localBC[++bci]);
-                        stackTop = bytecodeDeleteAttr(virtualFrame, stackTop, beginBci, oparg, localNodes, localNames, useCachedNodes);
                         break;
                     }
                     case OpCodesConstants.STORE_GLOBAL: {
@@ -2059,42 +2045,44 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         bci -= oparg;
                         notifyStatement(virtualFrame, instrumentation, mutableData, bci, beginBci);
                         if (CompilerDirectives.hasNextTier()) {
-                            mutableData.loopCount++;
-                        }
-                        if (CompilerDirectives.inInterpreter()) {
-                            if (!useCachedNodes) {
-                                return new InterpreterContinuation(bci, stackTop);
+                            int counter = ++mutableData.loopCount;
+                            if (CompilerDirectives.inInterpreter()) {
+                                if (!useCachedNodes) {
+                                    return new InterpreterContinuation(bci, stackTop);
+                                }
                             }
-                            if (BytecodeOSRNode.pollOSRBackEdge(osrNode, 1)) {
-                                /*
-                                 * Beware of race conditions when adding more things to the
-                                 * interpreterState argument. It gets stored already at this point,
-                                 * but the compilation runs in parallel. The compiled code may get
-                                 * entered from a different invocation of this root, using the
-                                 * interpreterState that was saved here. Don't put any data specific
-                                 * to particular invocation in there (like python-level arguments or
-                                 * variables) or it will get mixed up. To retain such state, put it
-                                 * into the frame instead.
-                                 */
-                                Object osrResult;
-                                try {
-                                    osrResult = BytecodeOSRNode.tryOSR(osrNode, bci, new OSRInterpreterState(stackTop), null, virtualFrame);
-                                } catch (AbstractTruffleException e) {
+                            if (CompilerDirectives.injectBranchProbability(OSRInterpreterState.REPORT_LOOP_PROBABILITY, counter >= OSRInterpreterState.REPORT_LOOP_STRIDE)) {
+                                LoopNode.reportLoopCount(this, counter);
+                                if (CompilerDirectives.inInterpreter() && BytecodeOSRNode.pollOSRBackEdge(osrNode, counter)) {
                                     /*
-                                     * If the OSR execution throws a python exception, it means it
-                                     * has already been processed by the bytecode exception handler
-                                     * therein. We wrap it in order to make sure it doesn't get
-                                     * processed again, which would overwrite the traceback entry
-                                     * with the location of this jump instruction.
+                                     * Beware of race conditions when adding more things to the
+                                     * interpreterState argument. It gets stored already at this
+                                     * point, but the compilation runs in parallel. The compiled
+                                     * code may get entered from a different invocation of this
+                                     * root, using the interpreterState that was saved here. Don't
+                                     * put any data specific to particular invocation in there (like
+                                     * python-level arguments or variables) or it will get mixed up.
+                                     * To retain such state, put it into the frame instead.
                                      */
-                                    throw new OSRException(e);
-                                }
-                                if (osrResult != null) {
-                                    if (CompilerDirectives.hasNextTier() && mutableData.loopCount > 0) {
-                                        LoopNode.reportLoopCount(this, mutableData.loopCount);
+                                    Object osrResult;
+                                    try {
+                                        osrResult = BytecodeOSRNode.tryOSR(osrNode, bci, new OSRInterpreterState(stackTop), null, virtualFrame);
+                                    } catch (AbstractTruffleException e) {
+                                        /*
+                                         * If the OSR execution throws a python exception, it means
+                                         * it has already been processed by the bytecode exception
+                                         * handler therein. We wrap it in order to make sure it
+                                         * doesn't get processed again, which would overwrite the
+                                         * traceback entry with the location of this jump
+                                         * instruction.
+                                         */
+                                        throw new OSRException(e);
                                     }
-                                    return osrResult;
+                                    if (osrResult != null) {
+                                        return osrResult;
+                                    }
                                 }
+                                mutableData.loopCount = 0;
                             }
                         }
                         PythonContext.triggerAsyncActions(this);
@@ -2268,7 +2256,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                         throw bytecodeEndExcHandler(virtualFrame, stackTop);
                     }
                     case OpCodesConstants.YIELD_VALUE: {
-                        return bytecodeYieldValue(virtualFrame, localFrame, initialStackTop, arguments, instrumentation, mutableData, stackTop, bci, tracingOrProfilingEnabled, beginBci);
+                        return bytecodeYieldValue(virtualFrame, localFrame, initialStackTop, arguments, instrumentation, mutableData, stackTop, bci, tracingOrProfilingEnabled, bciSlot);
                     }
                     case OpCodesConstants.RESUME_YIELD: {
                         bytecodeResumeYield(virtualFrame, useCachedNodes, arguments, mutableData, ++stackTop, bci, localNodes);
@@ -2320,6 +2308,8 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case OpCodesConstants.LOAD_FROM_DICT_OR_GLOBALS:
                     case OpCodesConstants.MAKE_TYPE_PARAM:
                     case OpCodesConstants.IMPORT_STAR:
+                    case OpCodesConstants.DELETE_DEREF:
+                    case OpCodesConstants.DELETE_ATTR:
                     case OpCodesConstants.DELETE_GLOBAL:
                     case OpCodesConstants.DELETE_NAME:
                         stackTop = infrequentBytecodes(virtualFrame, localFrame, bc, bci, stackTop, beginBci, oparg, localBC, globals, locals, localNames, localNodes, bciSlot, localCelloffset,
@@ -2331,6 +2321,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                     case OpCodesConstants.MAKE_TYPE_ALIAS:
                     case OpCodesConstants.MAKE_GENERIC:
                     case OpCodesConstants.DELETE_SUBSCR:
+                    case OpCodesConstants.LOAD_ASSERTION_ERROR:
                         stackTop = infrequentBytecodes(virtualFrame, localFrame, bc, bci, stackTop, beginBci, oparg, localBC, globals, locals, localNames, localNodes, bciSlot, localCelloffset,
                                         useCachedNodes);
                         break;
@@ -2437,6 +2428,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 virtualFrame.setObject(++stackTop, locals);
                 break;
             }
+            case OpCodesConstants.LOAD_ASSERTION_ERROR: {
+                virtualFrame.setObject(++stackTop, PythonBuiltinClassType.AssertionError);
+                break;
+            }
             case OpCodesConstants.LOAD_FROM_DICT_OR_DEREF: {
                 setCurrentBci(virtualFrame, bciSlot, bci);
                 oparg |= Byte.toUnsignedInt(localBC[++bci]);
@@ -2473,6 +2468,17 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 setCurrentBci(virtualFrame, bciSlot, bci);
                 oparg |= Byte.toUnsignedInt(localBC[++bci]);
                 stackTop = bytecodeImportStar(virtualFrame, stackTop, beginBci, oparg, localNames, localNodes, useCachedNodes);
+                break;
+            }
+            case OpCodesConstants.DELETE_DEREF: {
+                oparg |= Byte.toUnsignedInt(localBC[++bci]);
+                bytecodeDeleteDeref(localFrame, beginBci, localNodes, oparg, localCelloffset, useCachedNodes);
+                break;
+            }
+            case OpCodesConstants.DELETE_ATTR: {
+                setCurrentBci(virtualFrame, bciSlot, bci);
+                oparg |= Byte.toUnsignedInt(localBC[++bci]);
+                stackTop = bytecodeDeleteAttr(virtualFrame, stackTop, beginBci, oparg, localNodes, localNames, useCachedNodes);
                 break;
             }
             case OpCodesConstants.DELETE_GLOBAL: {
@@ -2756,30 +2762,25 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @BytecodeInterpreterSwitch
     private GeneratorYieldResult bytecodeYieldValue(VirtualFrame virtualFrame, Frame localFrame, int initialStackTop, Object[] arguments, InstrumentationSupport instrumentation,
-                    MutableLoopData mutableData, int stackTop, int bci, byte tracingOrProfilingEnabled, int beginBci) {
+                    MutableLoopData mutableData, int stackTop, int bci, byte tracingOrProfilingEnabled, int bciSlot) {
         if (CompilerDirectives.hasNextTier() && mutableData.loopCount > 0) {
             LoopNode.reportLoopCount(this, mutableData.loopCount);
         }
+        setCurrentBci(virtualFrame, bciSlot, bci);
         Object value = virtualFrame.getObject(stackTop);
         virtualFrame.clear(stackTop--);
-        PArguments.setException(PGenerator.getGeneratorFrame(arguments), mutableData.localException);
-        if (mutableData.localException instanceof PException pe) {
-            /*
-             * The frame reference is only valid for this particular resumption of the generator, so
-             * we need to materialize the frame to make sure the traceback will still be valid in
-             * the next resumption.
-             */
-            pe.markEscaped();
+        traceOrProfileYield(virtualFrame, mutableData, value, tracingOrProfilingEnabled, bci);
+        if (instrumentation != null) {
+            notifyReturn(virtualFrame, mutableData, instrumentation, bci, value);
         }
+        // Suspended generators have no backref
+        PArguments.getCurrentFrameInfo(virtualFrame.getArguments()).setCallerInfo(PFrame.Reference.EMPTY);
+        PArguments.setException(PGenerator.getGeneratorFrame(arguments), mutableData.localException);
         // See PBytecodeGeneratorRootNode#execute
         if (localFrame != virtualFrame) {
             copyStackSlotsToGeneratorFrame(virtualFrame, localFrame, stackTop);
             // Clear slots that were popped (if any)
             clearFrameSlots(localFrame, stackTop + 1, initialStackTop);
-        }
-        traceOrProfileYield(virtualFrame, mutableData, value, tracingOrProfilingEnabled, bci);
-        if (instrumentation != null) {
-            notifyReturn(virtualFrame, mutableData, instrumentation, beginBci, value);
         }
         return new GeneratorYieldResult(bci + 1, stackTop, value);
     }
@@ -2932,7 +2933,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
 
     @BytecodeInterpreterSwitch
     private byte checkTracingAndProfilingEnabled(Assumption noTraceOrProfile, MutableLoopData mutableData) {
-        if (!noTraceOrProfile.isValid() && frameIsVisibleToPython()) {
+        if (!noTraceOrProfile.isValid()) {
             PythonContext.PythonThreadState ts = mutableData.getThreadState(this);
             Object profileFun = ts.getProfileFun();
             if (ts.getTraceFun() != null) {
@@ -3267,10 +3268,10 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         PFrame pyFrame = PArguments.getCurrentFrameInfo(virtualFrame).getPyFrame();
         if (pyFrame == null) {
             enterTraceProfile(bci, TRACE_PROFILE_NEW_FRAME);
-            return getTracingNodes().traceMaterializeFrameNewNode.executeOnStack(virtualFrame, this, true, true);
+            return getTracingNodes().traceMaterializeFrameNewNode.executeOnStack(virtualFrame, this, true, false);
         } else {
             enterTraceProfile(bci, TRACE_PROFILE_EXISTING_FRAME);
-            return getTracingNodes().traceMaterializeFrameExistingNode.executeOnStack(virtualFrame, this, true, true);
+            return getTracingNodes().traceMaterializeFrameExistingNode.executeOnStack(virtualFrame, this, true, false);
         }
     }
 
@@ -3284,26 +3285,19 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         threadState.tracingStart(event);
         PFrame pyFrame = mutableData.setPyFrame(ensurePyFrame(virtualFrame, bci));
         Object traceFn = useLocalFn ? pyFrame.getLocalTraceFun() : threadState.getTraceFun();
+
         if (traceFn == null) {
             threadState.tracingStop();
             return;
         }
+
+        pyFrame.setLocalsAccessed(false);
         Object nonNullArg = arg == null ? PNone.NONE : arg;
         try {
             if (line != -1) {
                 pyFrame.setLineLock(line);
             }
-            if (profilingAndTracingBoundaryCallData == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                profilingAndTracingBoundaryCallData = insert(BoundaryCallData.createFor(this));
-            }
-            Object savedState = BoundaryCallContext.enter(virtualFrame, threadState, profilingAndTracingBoundaryCallData);
-            Object result;
-            try {
-                result = doInvokeTraceFunction(event, pyFrame, traceFn, nonNullArg);
-            } finally {
-                BoundaryCallContext.exit(virtualFrame, threadState, savedState);
-            }
+            Object result = getTracingNodes().tracingCallNode.execute(virtualFrame, traceFn, pyFrame, event.pythonName, nonNullArg);
             syncLocalsBackToFrame(virtualFrame, pyFrame, bci);
             // https://github.com/python/cpython/issues/104232
             if (useLocalFn) {
@@ -3333,19 +3327,11 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
-    @TruffleBoundary
-    private static Object doInvokeTraceFunction(PythonContext.TraceEvent event, PFrame pyFrame, Object traceFn, Object nonNullArg) {
-        // Force locals dict sync, so that we can sync them back later
-        GetFrameLocalsNode.executeUncached(pyFrame);
-        pyFrame.setLocalsAccessed(false);
-        return CallTernaryMethodNode.getUncached().execute(null, traceFn, pyFrame, event.pythonName, nonNullArg);
-    }
-
     private void syncLocalsBackToFrame(VirtualFrame virtualFrame, PFrame pyFrame, int bci) {
         Frame localFrame = getLocalFrame(virtualFrame);
         if (pyFrame.localsAccessed()) {
             enterTraceProfile(bci, TRACE_PROFILE_SYNC_LOCALS_BACK);
-            GetFrameLocalsNode.syncLocalsBackToFrame(co, this, pyFrame, localFrame);
+            GetFrameLocalsNode.syncLocalsBackToFrame(co, pyFrame, localFrame);
         }
     }
 
@@ -3384,18 +3370,9 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             return;
         }
 
+        pyFrame.setLocalsAccessed(false);
         try {
-            if (profilingAndTracingBoundaryCallData == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                profilingAndTracingBoundaryCallData = insert(BoundaryCallData.createFor(this));
-            }
-            Object savedState = BoundaryCallContext.enter(virtualFrame, threadState, profilingAndTracingBoundaryCallData);
-            Object result;
-            try {
-                result = doInvokeProfileFunction(arg, event, pyFrame, profileFun);
-            } finally {
-                BoundaryCallContext.exit(virtualFrame, threadState, savedState);
-            }
+            Object result = getTracingNodes().profilingCallNode.execute(virtualFrame, profileFun, pyFrame, event.name, arg == null ? PNone.NONE : arg);
             syncLocalsBackToFrame(virtualFrame, pyFrame, bci);
             Object realResult = result == PNone.NONE ? null : result;
             pyFrame.setLocalTraceFun(realResult);
@@ -3405,14 +3382,6 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         } finally {
             threadState.profilingStop();
         }
-    }
-
-    @TruffleBoundary
-    private static Object doInvokeProfileFunction(Object arg, PythonContext.ProfileEvent event, PFrame pyFrame, Object profileFun) {
-        // Force locals dict sync, so that we can sync them back later
-        GetFrameLocalsNode.executeUncached(pyFrame);
-        pyFrame.setLocalsAccessed(false);
-        return CallTernaryMethodNode.getUncached().execute(null, profileFun, pyFrame, event.name, arg == null ? PNone.NONE : arg);
     }
 
     @ExplodeLoop
@@ -6249,7 +6218,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
          *
          * TODO We should revisit this when the AST interpreter is removed.
          */
-        return MarshalModuleBuiltins.serializeCodeUnit(this, PythonContext.get(this), co);
+        return MarshalModuleBuiltins.serializeCodeUnit(null, PythonContext.get(this), co);
     }
 
     @Override

@@ -1,0 +1,42 @@
+diff --git a/pythran/pythonic/python/core.hpp b/pythran/pythonic/python/core.hpp
+index 86d2f63..050fe21 100644
+--- a/pythran/pythonic/python/core.hpp
++++ b/pythran/pythonic/python/core.hpp
+@@ -50,7 +50,7 @@ PYTHONIC_NS_BEGIN
+ namespace python
+ {
+ 
+-#ifdef Py_LIMITED_API
++#if defined(Py_LIMITED_API) || defined(GRAALVM_PYTHON)
+ 
+   struct ByteHolder {
+     PyObject *holder;
+diff --git a/pythran/pythonic/types/str.hpp b/pythran/pythonic/types/str.hpp
+index a7dd51a..09fdd59 100644
+--- a/pythran/pythonic/types/str.hpp
++++ b/pythran/pythonic/types/str.hpp
+@@ -732,7 +732,7 @@ namespace std
+   }())
+ #else
+ #ifndef PyString_Check
+-#define PyString_Check(x) (PyUnicode_Check(x) && PyUnicode_IS_COMPACT_ASCII(x))
++#define PyString_Check(x) PyUnicode_Check(x)
+ #endif
+ #endif
+ 
+diff --git a/pythran/tables.py b/pythran/tables.py
+index a9f5712..5a0dff2 100644
+--- a/pythran/tables.py
++++ b/pythran/tables.py
+@@ -4633,7 +4633,10 @@ def save_arguments(module_name, elements):
+             # some function are actually forward function, detect those
+             # and accept to use our description instead.
+             if looks_like_a_forward_function(spec):
+-                assert signature.args.args, "{} require an explicit description".format(elem)
++                # GraalPy change: we have signatures for more builtins than
++                # CPython and this trips up on type constructors like `dict` or
++                # `BaseException`.
++                # assert signature.args.args, "{} require an explicit description".format(elem)
+                 continue
+ 
+             args = [ast.Name(arg, ast.Param(), None, None)

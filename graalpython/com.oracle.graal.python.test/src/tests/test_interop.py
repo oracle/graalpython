@@ -482,7 +482,7 @@ class InteropTests(unittest.TestCase):
         assert isinstance(l, ArrayList)
         self.assertEqual(getattr(ArrayList, 'class'), l.getClass())
 
-        with self.assertRaisesRegex(TypeError, "__call__\(\) got an unexpected keyword argument 'kwarg'"):
+        with self.assertRaisesRegex(TypeError, r"__call__\(\) got an unexpected keyword argument 'kwarg'"):
             ArrayList(kwarg=42)
 
     def test_java_exceptions(self):
@@ -959,8 +959,6 @@ class InteropTests(unittest.TestCase):
         assert [e for e in reversed(al)] == [3,2,1]
         assert [e for e in al] == [1,2,3]
 
-    # AssertionError: "descriptor requires a 'dict' object but received a 'ForeignDict'" does not match "object.__new__(ForeignDict) is not safe, use ForeignDict.__new__()"
-    @unittest.skipIf(os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: bug in comment above")
     def test_java_map(self):
         from java.util import HashMap
         h = HashMap()

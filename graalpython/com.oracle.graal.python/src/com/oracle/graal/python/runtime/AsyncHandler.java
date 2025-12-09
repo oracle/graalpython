@@ -64,7 +64,7 @@ import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
+import com.oracle.graal.python.nodes.frame.ReadFrameNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -173,7 +173,7 @@ public class AsyncHandler {
                         // the frame. Otherwise, we were woken-up in middle of Python frame code, we
                         // will have to do a stack walk if caller frame is needed, but we still need
                         // the "call" location
-                        if (location instanceof PBytecodeDSLRootNode) {
+                        if (location instanceof RootNode root && PBytecodeDSLRootNode.cast(root) != null) {
                             // PBytecodeDSLRootNode is not usable as a location. To resolve the BCI
                             // stored in the frame, we need the currently executing BytecodeNode,
                             // using PBytecodeRootNode.getBytecodeNode() is not correct. We use the
@@ -279,7 +279,7 @@ public class AsyncHandler {
         static final int ASYNC_ARG_COUNT = 2;
 
         @Child private CallNode callNode = CallNode.create();
-        @Child private ReadCallerFrameNode readCallerFrameNode = ReadCallerFrameNode.create();
+        @Child private ReadFrameNode readFrameNode = ReadFrameNode.create();
         @Child private CalleeContext calleeContext = CalleeContext.create();
 
         protected CallRootNode(TruffleLanguage<?> language) {
@@ -288,14 +288,14 @@ public class AsyncHandler {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            calleeContext.enter(frame);
+            calleeContext.enter(frame, this);
             Object[] frameArguments = frame.getArguments();
             Object callable = PArguments.getArgument(frameArguments, ASYNC_CALLABLE_INDEX);
             int frameIndex = (int) PArguments.getArgument(frameArguments, ASYNC_FRAME_INDEX_INDEX);
             Object[] arguments = Arrays.copyOfRange(frameArguments, PArguments.USER_ARGUMENTS_OFFSET + ASYNC_ARG_COUNT, frameArguments.length);
 
             if (frameIndex >= 0) {
-                arguments[frameIndex] = readCallerFrameNode.executeWith(frame, 0);
+                arguments[frameIndex] = readFrameNode.getCurrentPythonFrame(frame);
             }
             try {
                 return callNode.execute(frame, callable, arguments);

@@ -62,7 +62,7 @@ def import_current_as_named_module(module, name, owner_globals=None):
 
 
 @builtin
-def lazy_attributes_from_delegate(module, delegate_name, attributes, owner_module, on_import_error):
+def lazy_attributes_from_delegate(module, delegate_name, attributes, owner_module):
     """
     used to lazily load attributes defined in another module via the __getattr__ mechanism.
     This will only cache the attributes in the caller module.
@@ -76,14 +76,7 @@ def lazy_attributes_from_delegate(module, delegate_name, attributes, owner_modul
 
     def __getattr__(attr):
         if attr in attributes:
-            try:
-                delegate_module = __import__(delegate_name)
-            except ImportError:
-                if on_import_error and (attr in on_import_error):
-                    return on_import_error[attr]
-                else:
-                    raise
-
+            delegate_module = __import__(delegate_name)
             new_globals = dict(**delegate_module.__dict__)
             new_globals = { key: new_globals[key] for key in attributes }
             new_globals.update(**owner_module.__dict__)
@@ -99,46 +92,9 @@ def lazy_attributes_from_delegate(module, delegate_name, attributes, owner_modul
 
 
 @builtin
-def auto_wrap_methods(module, delegate_name, delegate_attributes, owner_globals):
-    func_type = type(import_current_as_named_module)
-
-    new_globals = dict(**owner_globals)
-
-    for attr in owner_globals:
-        if attr.startswith("__"):
-            continue
-        elif not isinstance(owner_globals[attr], func_type):
-            continue
-        elif attr not in delegate_attributes:
-            raise AttributeError("attribute '{}' not allowed in module '{}', permitted values are: '{}'".format(
-                attr, __name__, delegate_attributes
-            ))
-
-        if attr in delegate_attributes:
-            def make_wrapper(attribute, method):
-                @__graalpython__.builtin
-                def wrapper(module, *args, **kwargs):
-                    try:
-                        return method(*args, **kwargs)
-                    except NotImplementedError:
-                        delegate_module = __import__(delegate_name)
-                        return getattr(delegate_module, attribute)(*args, **kwargs)
-                return wrapper
-
-            new_globals[attr] = make_wrapper(attr, owner_globals[attr])
-
-    return new_globals
-
-
-@builtin
-def import_current_as_named_module_with_delegate(module, module_name, delegate_name, delegate_attributes=None,
-                                                 owner_globals=None, wrap_methods=True, on_import_error=None):
+def import_current_as_named_module_with_delegate(module, module_name, delegate_name, delegate_attributes, owner_globals=None):
     owner_module = import_current_as_named_module(module_name, owner_globals=owner_globals)
-    if wrap_methods and owner_globals:
-        wrapped_globals = auto_wrap_methods(delegate_name, delegate_attributes, owner_globals)
-        owner_module.__dict__.update(**wrapped_globals)
-    if delegate_attributes:
-        lazy_attributes_from_delegate(delegate_name, delegate_attributes, owner_module, on_import_error)
+    lazy_attributes_from_delegate(delegate_name, delegate_attributes, owner_module)
 
 
 @builtin

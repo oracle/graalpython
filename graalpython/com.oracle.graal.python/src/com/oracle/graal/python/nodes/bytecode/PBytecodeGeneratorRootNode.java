@@ -145,8 +145,8 @@ public final class PBytecodeGeneratorRootNode extends PRootNode implements Bytec
 
     @Override
     public Object execute(VirtualFrame frame) {
-        calleeContext.enter(frame);
         MaterializedFrame generatorFrame = PGenerator.getGeneratorFrame(frame);
+        ExecutionContext.CalleeContext.enterGenerator(frame, generatorFrame);
         /*
          * Using the materialized frame as stack would be bad for compiled performance, so we copy
          * the stack slots back to the virtual frame and use that as the stack. The values are

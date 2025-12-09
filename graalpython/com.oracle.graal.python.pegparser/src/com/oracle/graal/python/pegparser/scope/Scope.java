@@ -119,7 +119,8 @@ public class Scope {
         NeedsClassClosure,
         NeedsClassDict,
         IsVisitingIterTarget,
-        CanSeeClassScope
+        CanSeeClassScope,
+        IsGeneratorWithYieldFrom,
     }
 
     EnumSet<ScopeFlags> flags = EnumSet.noneOf(ScopeFlags.class);
@@ -241,6 +242,10 @@ public class Scope {
 
     public boolean isGenerator() {
         return flags.contains(ScopeFlags.IsGenerator);
+    }
+
+    public boolean isGeneratorWithYieldFrom() {
+        return flags.contains(ScopeFlags.IsGeneratorWithYieldFrom);
     }
 
     public boolean isCoroutine() {

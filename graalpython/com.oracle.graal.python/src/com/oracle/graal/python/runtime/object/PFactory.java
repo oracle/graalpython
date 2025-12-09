@@ -726,10 +726,6 @@ public final class PFactory {
         return createDict(language, EconomicMapStorage.createGeneric(map));
     }
 
-    public static PDict createDictFixedStorage(PythonLanguage language, PythonObject pythonObject, MroSequenceStorage mroSequenceStorage) {
-        return createDict(language, new DynamicObjectStorage(pythonObject, mroSequenceStorage));
-    }
-
     public static PDict createDictFixedStorage(PythonLanguage language, PythonObject pythonObject) {
         return createDict(language, new DynamicObjectStorage(pythonObject));
     }
@@ -807,16 +803,6 @@ public final class PFactory {
         return PGenerator.create(language, function, rootNode, arguments, PythonBuiltinClassType.PGenerator, continuationRootNode, continuationFrame);
     }
 
-    public static PGenerator createIterableCoroutine(PythonLanguage language, PFunction function, PBytecodeRootNode rootNode, RootCallTarget[] callTargets,
-                    Object[] arguments) {
-        return PGenerator.create(language, function, rootNode, callTargets, arguments, PythonBuiltinClassType.PGenerator, true);
-    }
-
-    public static PGenerator createIterableCoroutine(PythonLanguage language, PFunction function, PBytecodeDSLRootNode rootNode,
-                    Object[] arguments, ContinuationRootNode continuationRootNode, MaterializedFrame continuationFrame) {
-        return PGenerator.create(language, function, rootNode, arguments, PythonBuiltinClassType.PGenerator, true, continuationRootNode, continuationFrame);
-    }
-
     public static PGenerator createCoroutine(PythonLanguage language, PFunction function, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
         return PGenerator.create(language, function, rootNode, callTargets, arguments, PythonBuiltinClassType.PCoroutine);
     }
@@ -832,6 +818,11 @@ public final class PFactory {
 
     public static PAsyncGen createAsyncGenerator(PythonLanguage language, PFunction function, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
         return PAsyncGen.create(language, function, rootNode, callTargets, arguments);
+    }
+
+    public static PAsyncGen createAsyncGenerator(PythonLanguage language, PFunction function, PBytecodeDSLRootNode rootNode, ContinuationRootNode continuationRootNode,
+                    MaterializedFrame continuationFrame) {
+        return new PAsyncGen(language, function, rootNode, continuationRootNode, continuationFrame);
     }
 
     public static PANextAwaitable createANextAwaitable(PythonLanguage language, Object wrapped, Object defaultValue) {
@@ -866,8 +857,8 @@ public final class PFactory {
      * Frames, traces and exceptions
      */
 
-    public static PFrame createPFrame(PythonLanguage language, PFrame.Reference frameInfo, Node location, MaterializedFrame locals) {
-        return new PFrame(language, frameInfo, location, locals);
+    public static PFrame createPFrame(PythonLanguage language, PFrame.Reference frameInfo, Node location, boolean hasCustomLocals) {
+        return new PFrame(language, frameInfo, location, hasCustomLocals);
     }
 
     public static PFrame createPFrame(PythonLanguage language, Object threadState, PCode code, PythonObject globals, Object localsDict) {

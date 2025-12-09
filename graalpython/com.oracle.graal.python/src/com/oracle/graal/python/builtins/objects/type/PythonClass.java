@@ -50,7 +50,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.source.SourceSection;
@@ -217,8 +217,8 @@ public final class PythonClass extends PythonManagedClass {
         }
     }
 
-    public void makeStaticBase(DynamicObjectLibrary dylib) {
-        dylib.setShapeFlags(this, dylib.getShapeFlags(this) | IS_STATIC_BASE);
+    public void makeStaticBase(DynamicObject.GetShapeFlagsNode getShapeFlagsNode, DynamicObject.SetShapeFlagsNode setShapeFlagsNode) {
+        addShapeFlag(IS_STATIC_BASE, getShapeFlagsNode, setShapeFlagsNode);
     }
 
     public boolean isStaticBase() {
@@ -280,12 +280,6 @@ public final class PythonClass extends PythonManagedClass {
 
     public boolean hasMroShapeSubTypes() {
         return mroShapeSubTypes != null;
-    }
-
-    @Override
-    public boolean canSkipOnAttributeUpdate(TruffleString key, @SuppressWarnings("unused") Object newValue, TruffleString.CodePointLengthNode codePointLengthNode,
-                    TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
-        return super.canSkipOnAttributeUpdate(key, newValue, codePointLengthNode, codePointAtIndexNode) && mroShapeSubTypes == null;
     }
 
     @TruffleBoundary

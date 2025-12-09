@@ -44,7 +44,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -284,14 +283,14 @@ public final class PythonMapScope implements TruffleObject {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    boolean hasLanguage() {
+    boolean hasLanguageId() {
         return true;
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    Class<? extends TruffleLanguage<?>> getLanguage() {
-        return PythonLanguage.class;
+    String getLanguageId() {
+        return PythonLanguage.ID;
     }
 
     @ExportMessage

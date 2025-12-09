@@ -48,7 +48,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
-@CoreFunctions(defineModule = J__STRUCT, isEager = true)
+@CoreFunctions(defineModule = J__STRUCT)
 public class StructModuleBuiltins extends PythonBuiltins {
     private static final int DEFAULT_CACHE_SIZE = 100;
     private static final TruffleString T_ERROR = tsInternedLiteral("error");

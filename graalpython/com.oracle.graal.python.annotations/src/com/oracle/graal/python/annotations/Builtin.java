@@ -77,10 +77,10 @@ public @interface Builtin {
     boolean needsFrame() default false;
 
     /**
-     * By default the caller frame bit is set on-demand, but for some builtins it might be useful to
-     * always force passing the caller frame.
+     * By default the callerFlags bits are set on-demand, but for some builtins it might be useful
+     * to pre-set them.
      */
-    boolean alwaysNeedsCallerFrame() default false;
+    int callerFlags() default 0;
 
     /**
      * Module functions should be bound to their module, meaning they would take the module itself

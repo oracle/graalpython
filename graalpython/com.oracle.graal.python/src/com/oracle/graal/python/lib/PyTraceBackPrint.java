@@ -345,7 +345,7 @@ public abstract class PyTraceBackPrint {
         PythonLanguage language = PythonLanguage.get(inliningTarget);
         while (tb != null) {
             final PCode code = getCode(language, getTbFrameNode, tb);
-            if (lastFile == null ||
+            if (lastFile == null || code.getFilename() == null ||
                             !tstrEqNode.execute(code.getFilename(), lastFile, TS_ENCODING) ||
                             lastLine == -1 || tb.getLineno() != lastLine ||
                             lastName == null || !tstrEqNode.execute(code.getName(), lastName, TS_ENCODING)) {

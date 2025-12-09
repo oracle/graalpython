@@ -55,9 +55,9 @@ import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
- * A context-independent representation of code for bytecode interpreter. Contains the actual
- * bytecode and all the related data, like constants or exception handler ranges. It doesn't contain
- * the filename to make it easier to keep in native images.
+ * A context and language/engine-independent representation of code for bytecode interpreter.
+ * Contains the actual bytecode and all the related data, like constants or exception handler
+ * ranges. It doesn't contain the filename to make it easier to keep in native images.
  */
 public abstract class CodeUnit {
     public final TruffleString name;
@@ -146,6 +146,10 @@ public abstract class CodeUnit {
 
     public boolean isAsyncGenerator() {
         return (flags & PCode.CO_ASYNC_GENERATOR) != 0;
+    }
+
+    public boolean isIterableCoroutine() {
+        return (flags & PCode.CO_ITERABLE_COROUTINE) != 0;
     }
 
     public boolean isGeneratorOrCoroutine() {

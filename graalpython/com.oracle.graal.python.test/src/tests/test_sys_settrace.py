@@ -226,3 +226,944 @@ class TraceTests(unittest.TestCase):
             self.assertEqual(name, 'helper')
 
     test_08_frame_f_trace_deletable = make_test_method(f_trace_delete, 'test_08_frame_f_trace_deletable')
+
+class TracingEventsUnitTest(unittest.TestCase):
+    def trace(self, frame, event, arg):
+        code = frame.f_code
+        name = code.co_name
+        self.events.append((frame.f_lineno - self.first_line, name, event))
+        return self.trace
+
+    def assert_events(self, expected_events, actual_events):
+        if expected_events != actual_events:
+            self.fail('\n'+'\n'.join(difflib.ndiff([str(x) for x in actual_events], [str(x) for x in expected_events])))
+
+    def trace_function(self, func):
+        self.first_line = func.__code__.co_firstlineno
+        self.events = []
+        sys.settrace(self.trace)
+        func()
+        sys.settrace(None)
+
+    def trace_function_with_offset(self, func, offset_func):
+        self.first_line = func.__code__.co_firstlineno
+        self.events = []
+        sys.settrace(self.trace)
+        func()
+        sys.settrace(None)
+        return offset_func.__code__.co_firstlineno - self.first_line
+
+class TraceTestsStmtWith(TracingEventsUnitTest):
+    @unittest.skipIf(not os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: Correct break in with statement manual interpreter tracing.")
+    @unittest.skipIf(os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: Breaking from within with: __exit__ sometimes won't get traced.")
+    def test_09_break_in_with(self):
+        class C:
+            def __enter__(self):
+                return self
+            def __exit__(*args):
+                pass
+
+        def func_break():
+            for i in (1,2):
+                with C():
+                    break
+            pass
+
+        self.first_line = func_break.__code__.co_firstlineno
+        self.events = []
+        sys.settrace(self.trace)
+        func_break()
+        sys.settrace(None)
+
+        events = [
+            (0, 'func_break', 'call'),
+            (1, 'func_break', 'line'),
+            (2, 'func_break', 'line'),
+            (-5, '__enter__', 'call'),
+            (-4, '__enter__', 'line'),
+            (-4, '__enter__', 'return'),
+            (3, 'func_break', 'line'),
+            (2, 'func_break', 'line'),
+            (-3, '__exit__', 'call'),
+            (-2, '__exit__', 'line'),
+            (-2, '__exit__', 'return'),
+            (4, 'func_break', 'line'),
+            (4, 'func_break', 'return'),
+        ]
+
+        self.assert_events(self.events, events)
+
+    def test_10_if_false_in_with_multiple_nested(self):
+        class C:
+            def __enter__(self):
+                return self
+            def __exit__(*args):
+                pass
+
+        def func():
+            with C():
+                with C():
+                    with C():
+                        if False:
+                            pass
+
+        self.first_line = func.__code__.co_firstlineno
+        self.events = []
+        sys.settrace(self.trace)
+        func()
+        sys.settrace(None)
+
+        events = [
+            (0, 'func', 'call'),
+            (1, 'func', 'line'),
+            (-5, '__enter__', 'call'),
+            (-4, '__enter__', 'line'),
+            (-4, '__enter__', 'return'),
+            (2, 'func', 'line'),
+            (-5, '__enter__', 'call'),
+            (-4, '__enter__', 'line'),
+            (-4, '__enter__', 'return'),
+            (3, 'func', 'line'),
+            (-5, '__enter__', 'call'),
+            (-4, '__enter__', 'line'),
+            (-4, '__enter__', 'return'),
+            (4, 'func', 'line'),
+            (3, 'func', 'line'),
+            (-3, '__exit__', 'call'),
+            (-2, '__exit__', 'line'),
+            (-2, '__exit__', 'return'),
+            (2, 'func', 'line'),
+            (-3, '__exit__', 'call'),
+            (-2, '__exit__', 'line'),
+            (-2, '__exit__', 'return'),
+            (1, 'func', 'line'),
+            (-3, '__exit__', 'call'),
+            (-2, '__exit__', 'line'),
+            (-2, '__exit__', 'return'),
+            (1, 'func', 'return'),
+        ]
+
+        self.assert_events(self.events, events)
+
+    @unittest.skipIf(not os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: Correct break in with statement manual interpreter tracing.")
+    @unittest.skipIf(os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: Breaking from within with: __exit__ sometimes won't get traced.")
+    def test_11_break_in_with_nested(self):
+        class C:
+            def __enter__(self):
+                return self
+            def __exit__(*args):
+                pass
+
+        def func():
+            with C():
+                for i in (1, 2):
+                    with C():
+                        with C():
+                            break
+
+        self.first_line = func.__code__.co_firstlineno
+        self.events = []
+        sys.settrace(self.trace)
+        func()
+        sys.settrace(None)
+
+        events = [
+            (0, 'func', 'call'),
+            (1, 'func', 'line'),
+            (-5, '__enter__', 'call'),
+            (-4, '__enter__', 'line'),
+            (-4, '__enter__', 'return'),
+            (2, 'func', 'line'),
+            (3, 'func', 'line'),
+            (-5, '__enter__', 'call'),
+            (-4, '__enter__', 'line'),
+            (-4, '__enter__', 'return'),
+            (4, 'func', 'line'),
+            (-5, '__enter__', 'call'),
+            (-4, '__enter__', 'line'),
+            (-4, '__enter__', 'return'),
+            (5, 'func', 'line'),
+            (4, 'func', 'line'),
+            (-3, '__exit__', 'call'),
+            (-2, '__exit__', 'line'),
+            (-2, '__exit__', 'return'),
+            (3, 'func', 'line'),
+            (-3, '__exit__', 'call'),
+            (-2, '__exit__', 'line'),
+            (-2, '__exit__', 'return'),
+            (1, 'func', 'line'),
+            (-3, '__exit__', 'call'),
+            (-2, '__exit__', 'line'),
+            (-2, '__exit__', 'return'),
+            (1, 'func', 'return'),
+        ]
+
+        self.assert_events(self.events, events)
+
+    @unittest.skipIf(not os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: Correct reraise tracing for manual interpreter.")
+    def test_12_reraise(self):
+        def func():
+            try:
+                try:
+                    raise ValueError(13)
+                except ValueError:
+                    raise
+            except Exception:
+                pass
+
+        self.first_line = func.__code__.co_firstlineno
+        self.events = []
+        sys.settrace(self.trace)
+        func()
+        sys.settrace(None)
+
+        events = [
+            (0, 'func', 'call'),
+            (1, 'func', 'line'),
+            (2, 'func', 'line'),
+            (3, 'func', 'line'),
+            (3, 'func', 'exception'),
+            (4, 'func', 'line'),
+            (5, 'func', 'line'),
+            (6, 'func', 'line'),
+            (7, 'func', 'line'),
+            (7, 'func', 'return'),
+        ]
+
+        self.assert_events(self.events, events)
+
+    def test_13_multiline_binop(self):
+        v1 = 1
+        v2 = 2
+        v3 = 3
+        v4 = 4
+        v5 = 5
+        v6 = 6
+
+        def func():
+            return (
+                v1
+                +
+                v2
+                +
+                v3
+                +
+                v4
+                +
+                v5
+                +
+                v6
+            )
+
+        self.first_line = func.__code__.co_firstlineno
+        self.events = []
+        sys.settrace(self.trace)
+        func()
+        sys.settrace(None)
+
+        events = [
+            (0, 'func', 'call'),
+            (2, 'func', 'line'),
+            (4, 'func', 'line'),
+            (2, 'func', 'line'),
+            (6, 'func', 'line'),
+            (2, 'func', 'line'),
+            (8, 'func', 'line'),
+            (2, 'func', 'line'),
+            (10, 'func', 'line'),
+            (2, 'func', 'line'),
+            (12, 'func', 'line'),
+            (2, 'func', 'line'),
+            (1, 'func', 'line'),
+            (1, 'func', 'return'),
+        ]
+
+        self.assert_events(self.events, events)
+
+    def test_14_multiline_boolop(self):
+        b1 = False
+        b2 = False
+        b3 = False
+        b4 = False
+        b5 = False
+        b6 = True
+
+        def func():
+            return (
+                    b1
+                    or
+                    b2
+                    or
+                    b3
+                    or
+                    b4
+                    or
+                    b5
+                    or
+                    b6
+            )
+
+        self.first_line = func.__code__.co_firstlineno
+        self.events = []
+        sys.settrace(self.trace)
+        func()
+        sys.settrace(None)
+
+        events = [
+            (0, 'func', 'call'),
+            (2, 'func', 'line'),
+            (4, 'func', 'line'),
+            (2, 'func', 'line'),
+            (6, 'func', 'line'),
+            (2, 'func', 'line'),
+            (8, 'func', 'line'),
+            (2, 'func', 'line'),
+            (10, 'func', 'line'),
+            (2, 'func', 'line'),
+            (12, 'func', 'line'),
+            (1, 'func', 'line'),
+            (1, 'func', 'return'),
+        ]
+
+        self.assert_events(self.events, events)
+
+    def test_15_multiline_boolop_short(self):
+        b1 = False
+        b2 = False
+        b3 = False
+        b4 = True
+        b5 = False
+        b6 = True
+
+        def func():
+            return (
+                    b1
+                    or
+                    b2
+                    or
+                    b3
+                    or
+                    b4
+                    or
+                    b5
+                    or
+                    b6
+            )
+
+        self.first_line = func.__code__.co_firstlineno
+        self.events = []
+        sys.settrace(self.trace)
+        func()
+        sys.settrace(None)
+
+        events = [
+            (0, 'func', 'call'),
+            (2, 'func', 'line'),
+            (4, 'func', 'line'),
+            (2, 'func', 'line'),
+            (6, 'func', 'line'),
+            (2, 'func', 'line'),
+            (8, 'func', 'line'),
+            (2, 'func', 'line'),
+            (1, 'func', 'line'),
+            (1, 'func', 'return'),
+        ]
+
+        self.assert_events(self.events, events)
+
+class MultilineCallsTraceTest(TracingEventsUnitTest):
+    class A:
+        def m_basic(self, a1, a2, a3):
+            return a1 + a2 + a3
+
+        def m_varargs(self, a1, a2, *args):
+            return a1 + a2 + len(args)
+
+    a = A()
+
+    def test_01_multiline_call_method_basic(self):
+        def func():
+            return self.a.m_basic(
+                1,
+                2,
+                3,
+            )
+
+        method_first_line = self.trace_function_with_offset(func, self.a.m_basic)
+
+        events = [
+            (0, 'func', 'call'),
+            (1, 'func', 'line'),
+            (2, 'func', 'line'),
+            (3, 'func', 'line'),
+            (4, 'func', 'line'),
+            (1, 'func', 'line'),
+            (method_first_line, 'm_basic', 'call'),
+            (method_first_line + 1, 'm_basic', 'line'),
+            (method_first_line + 1, 'm_basic', 'return'),
+            (1, 'func', 'return'),
+        ]
+
+        self.assert_events(self.events, events)
+
+    def test_02_multiline_call_method_vargs(self):
+        def func():
+            return self.a.m_varargs(
+                1,
+                2,
+                3,
+                4,
+                5,
+            )
+
+        method_first_line = self.trace_function_with_offset(func, self.a.m_varargs)
+
+        events = [
+            (0, 'func', 'call'),
+            (1, 'func', 'line'),
+            (2, 'func', 'line'),
+            (3, 'func', 'line'),
+            (4, 'func', 'line'),
+            (5, 'func', 'line'),
+            (6, 'func', 'line'),
+            (1, 'func', 'line'),
+            (method_first_line, 'm_varargs', 'call'),
+            (method_first_line + 1, 'm_varargs', 'line'),
+            (method_first_line + 1, 'm_varargs', 'return'),
+            (1, 'func', 'return'),
+        ]
+
+        self.assert_events(self.events, events)
+
+    def test_03_multiline_call_function_basic(self):
+        def f_basic(a1, a2, a3):
+            return a1 + a2 + a3
+
+        def func():
+            return f_basic(
+                1,
+                2,
+                3,
+            )
+
+        func_first_line = self.trace_function_with_offset(func, f_basic)
+
+        events = [
+            (0, 'func', 'call'),
+            (1, 'func', 'line'),
+            (2, 'func', 'line'),
+            (3, 'func', 'line'),
+            (4, 'func', 'line'),
+            (1, 'func', 'line'),
+            (func_first_line, 'f_basic', 'call'),
+            (func_first_line + 1, 'f_basic', 'line'),
+            (func_first_line + 1, 'f_basic', 'return'),
+            (1, 'func', 'return'),
+        ]
+
+        self.assert_events(self.events, events)
+
+    def test_04_multiline_call_function_vargs(self):
+        def f_varargs(a1, a2, *args):
+            return a1 + a2 + len(args)
+
+        def func():
+            return f_varargs(
+                1,
+                2,
+                3,
+                4,
+                5
+            )
+
+        func_first_line = self.trace_function_with_offset(func, f_varargs)
+
+        events = [
+            (0, 'func', 'call'),
+            (1, 'func', 'line'),
+            (2, 'func', 'line'),
+            (3, 'func', 'line'),
+            (4, 'func', 'line'),
+            (5, 'func', 'line'),
+            (6, 'func', 'line'),
+            (1, 'func', 'line'),
+            (func_first_line, 'f_varargs', 'call'),
+            (func_first_line + 1, 'f_varargs', 'line'),
+            (func_first_line + 1, 'f_varargs', 'return'),
+            (1, 'func', 'return'),
+        ]
+
+        self.assert_events(self.events, events)
+
+    def test_05_multiline_call_function_fallback_to_vargs(self):
+        def f_varargs_fallback(a1, a2, a3, a4, a5, a6):
+            return a1 + a2 + a3 + a4 + a5 + a6
+
+        def func():
+            return f_varargs_fallback(
+                1,
+                2,
+                3,
+                4,
+                5,
+                6
+            )
+
+        func_first_line = self.trace_function_with_offset(func, f_varargs_fallback)
+
+        events = [
+            (0, 'func', 'call'),
+            (1, 'func', 'line'),
+            (2, 'func', 'line'),
+            (3, 'func', 'line'),
+            (4, 'func', 'line'),
+            (5, 'func', 'line'),
+            (6, 'func', 'line'),
+            (7, 'func', 'line'),
+            (1, 'func', 'line'),
+            (func_first_line, 'f_varargs_fallback', 'call'),
+            (func_first_line + 1, 'f_varargs_fallback', 'line'),
+            (func_first_line + 1, 'f_varargs_fallback', 'return'),
+            (1, 'func', 'return'),
+        ]
+
+        self.assert_events(self.events, events)
+
+class ExceptStarTraceTest(TracingEventsUnitTest):
+    @unittest.skipIf(not os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: Implement try-except* in manual interpreter.")
+    def test_01_except_star_with_name(self):
+        def func():
+            try:
+                try:
+                    raise ExceptionGroup("eg", [ValueError(1)])
+                except* ValueError as ve:
+                    raise
+                    x = "Something"
+                    y = "Something"
+            except ExceptionGroup:
+                pass
+
+        self.trace_function(func)
+
+        events = [
+            (0, 'func', 'call'),
+            (1, 'func', 'line'),
+            (2, 'func', 'line'),
+            (3, 'func', 'line'),
+            (3, 'func', 'exception'),
+            (4, 'func', 'line'),
+            (5, 'func', 'line'),
+            (8, 'func', 'line'),
+            (9, 'func', 'line'),
+            (9, 'func', 'return')
+        ]
+
+        self.assert_events(self.events, events)
+
+    @unittest.skipIf(not os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: Implement try-except* in manual interpreter.")
+    def test_02_except_star_multi_with_name(self):
+        def func():
+            try:
+                try:
+                    raise ExceptionGroup("eg", [ValueError(1), TypeError(2)])
+                except* ValueError as ve:
+                    pass
+                except* TypeError as te:
+                    raise
+                    x = "Something"
+                    y = "Something"
+                except* IndexError as ie:
+                    pass
+            except ExceptionGroup:
+                pass
+
+        self.trace_function(func)
+
+        events = [
+            (0, 'func', 'call'),
+            (1, 'func', 'line'),
+            (2, 'func', 'line'),
+            (3, 'func', 'line'),
+            (3, 'func', 'exception'),
+            (4, 'func', 'line'),
+            (5, 'func', 'line'),
+            (6, 'func', 'line'),
+            (7, 'func', 'line'),
+            (10, 'func', 'line'),
+            (12, 'func', 'line'),
+            (13, 'func', 'line'),
+            (13, 'func', 'return')
+        ]
+
+        self.assert_events(self.events, events)
+
+    @unittest.skipIf(not os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: Implement try-except* in manual interpreter.")
+    @unittest.skipIf(os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: Fix return in finally.")
+    def test_03_except_star_with_finally(self):
+        def func():
+            try:
+                try:
+                    try:
+                        raise ExceptionGroup("eg", [ValueError(1), TypeError(2)])
+                    finally:
+                        y = "Something"
+                except* ValueError:
+                    b = 23
+            except ExceptionGroup:
+                pass
+
+        self.trace_function(func)
+
+        events = [
+            (0, 'func', 'call'),
+            (1, 'func', 'line'),
+            (2, 'func', 'line'),
+            (3, 'func', 'line'),
+            (4, 'func', 'line'),
+            (4, 'func', 'exception'),
+            (6, 'func', 'line'),
+            (7, 'func', 'line'),
+            (8, 'func', 'line'),
+            (9, 'func', 'line'),
+            (10, 'func', 'line'),
+            (10, 'func', 'return')
+        ]
+
+        self.assert_events(self.events, events)
+
+    @unittest.skipIf(not os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: Implement try-except* in manual interpreter.")
+    @unittest.skipIf(os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: Fix return in finally.")
+    def test_04_test_try_except_star_with_wrong_type(self):
+        def func():
+            try:
+                try:
+                    raise ExceptionGroup("eg", [ValueError(1)])
+                except IndexError:
+                    4
+                finally:
+                    return 6
+            except ExceptionGroup:
+                pass
+
+        self.trace_function(func)
+
+        events = [
+            (0, 'func', 'call'),
+            (1, 'func', 'line'),
+            (2, 'func', 'line'),
+            (3, 'func', 'line'),
+            (3, 'func', 'exception'),
+            (4, 'func', 'line'),
+            (7, 'func', 'line'),
+            (7, 'func', 'return')
+        ]
+
+        self.assert_events(self.events, events)
+
+    @unittest.skipIf(not os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: Implement try-except* in manual interpreter.")
+    def test_05_if_false_in_try_except_star(self):
+        def func():
+            try:
+                if False:
+                    pass
+            except* ValueError:
+                X
+
+        self.trace_function(func)
+
+        events = [
+            (0, 'func', 'call'),
+            (1, 'func', 'line'),
+            (2, 'func', 'line'),
+            (2, 'func', 'return')
+        ]
+
+        self.assert_events(self.events, events)
+
+    @unittest.skipIf(not os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: Implement try-except* in manual interpreter.")
+    @unittest.skipIf(sys.implementation.name == "cpython", "TODO: seems broken on CPython")
+    def test_06_try_in_try_with_exception(self):
+        def func():
+            try:
+                try:
+                    try:
+                        raise ExceptionGroup("eg", [TypeError(1)])
+                    except* ValueError as ex:
+                        5
+                except* TypeError:
+                    7
+            except ExceptionGroup:
+                pass
+
+        self.trace_function(func)
+
+        events = [
+            (0, 'func', 'call'),
+            (1, 'func', 'line'),
+            (2, 'func', 'line'),
+            (3, 'func', 'line'),
+            (4, 'func', 'line'),
+            (4, 'func', 'exception'),
+            (5, 'func', 'line'),
+            (7, 'func', 'line'),
+            (8, 'func', 'line'),
+            (8, 'func', 'return')
+        ]
+
+        self.assert_events(self.events, events)
+
+    @unittest.skipIf(True, "TODO: Isn't even tagged from CPython tests.")
+    def test_07_tracing_exception_raised_in_with(self):
+        class NullCtx:
+            def __enter__(self):
+                return self
+            def __exit__(self, *excinfo):
+                pass
+
+        def func():
+            try:
+                with NullCtx():
+                    raise ExceptionGroup("eg", [TypeError(1)])
+            except* TypeError:
+                pass
+
+        self.trace_function(func)
+
+        events = [
+            (0, 'func', 'call'),
+            (1, 'func', 'line'),
+            (2, 'func', 'line'),
+            (-5, '__enter__', 'call'),
+            (-4, '__enter__', 'line'),
+            (-4, '__enter__', 'return'),
+            (3, 'func', 'line'),
+            (3, 'func', 'exception'),
+            (2, 'func', 'line'),
+            (-3, '__exit__', 'call'),
+            (-2, '__exit__', 'line'),
+            (-2, '__exit__', 'return'),
+            (4, 'func', 'line'),
+            (5, 'func', 'line'),
+            (5, 'func', 'return')
+        ]
+
+        self.assert_events(self.events, events)
+
+    @unittest.skipIf(not os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: Implement try-except* in manual interpreter.")
+    def test_08_try_except_star_no_exception(self):
+        def func():
+            try:
+                2
+            except* Exception:
+                4
+            else:
+                6
+                if False:
+                    8
+                else:
+                    10
+                if func.__name__ == 'Fred':
+                    12
+            finally:
+                14
+
+        self.trace_function(func)
+
+        events = [
+            (0, 'func', 'call'),
+            (1, 'func', 'line'),
+            (2, 'func', 'line'),
+            (6, 'func', 'line'),
+            (7, 'func', 'line'),
+            (10, 'func', 'line'),
+            (11, 'func', 'line'),
+            (14, 'func', 'line'),
+            (14, 'func', 'return')
+        ]
+
+        self.assert_events(self.events, events)
+
+    @unittest.skipIf(not os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: Implement try-except* in manual interpreter.")
+    def test_09_try_except_star_named_no_exception(self):
+        def func():
+            try:
+                2
+            except* Exception as e:
+                4
+            else:
+                6
+            finally:
+                8
+
+        self.trace_function(func)
+
+        events = [
+            (0, 'func', 'call'),
+            (1, 'func', 'line'),
+            (2, 'func', 'line'),
+            (6, 'func', 'line'),
+            (8, 'func', 'line'),
+            (8, 'func', 'return')
+        ]
+
+        self.assert_events(self.events, events)
+
+    @unittest.skipIf(not os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: Implement try-except* in manual interpreter.")
+    def test_10_try_except_star_exception_caught(self):
+        def func():
+            try:
+                raise ValueError(2)
+            except* ValueError:
+                4
+            else:
+                6
+            finally:
+                8
+
+        self.trace_function(func)
+
+        events = [
+            (0, 'func', 'call'),
+            (1, 'func', 'line'),
+            (2, 'func', 'line'),
+            (2, 'func', 'exception'),
+            (3, 'func', 'line'),
+            (4, 'func', 'line'),
+            (8, 'func', 'line'),
+            (8, 'func', 'return')
+        ]
+
+        self.assert_events(self.events, events)
+
+    @unittest.skipIf(not os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: Implement try-except* in manual interpreter.")
+    def test_11_try_except_star_named_exception_caught(self):
+        def func():
+            try:
+                raise ValueError(2)
+            except* ValueError as e:
+                4
+            else:
+                6
+            finally:
+                8
+
+        self.trace_function(func)
+
+        events = [
+            (0, 'func', 'call'),
+            (1, 'func', 'line'),
+            (2, 'func', 'line'),
+            (2, 'func', 'exception'),
+            (3, 'func', 'line'),
+            (4, 'func', 'line'),
+            (8, 'func', 'line'),
+            (8, 'func', 'return')
+        ]
+
+        self.assert_events(self.events, events)
+
+    @unittest.skipIf(not os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: Implement try-except* in manual interpreter.")
+    def test_12_try_except_star_exception_not_caught(self):
+        def func():
+            try:
+                try:
+                    raise ValueError(3)
+                except* TypeError:
+                    5
+            except ValueError:
+                7
+
+        self.trace_function(func)
+
+        events = [
+            (0, 'func', 'call'),
+            (1, 'func', 'line'),
+            (2, 'func', 'line'),
+            (3, 'func', 'line'),
+            (3, 'func', 'exception'),
+            (4, 'func', 'line'),
+            (6, 'func', 'line'),
+            (7, 'func', 'line'),
+            (7, 'func', 'return')
+        ]
+
+        self.assert_events(self.events, events)
+
+    @unittest.skipIf(not os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: Implement try-except* in manual interpreter.")
+    def test_13_try_except_star_named_exception_not_caught(self):
+        def func():
+            try:
+                try:
+                    raise ValueError(3)
+                except* TypeError as e:
+                    5
+            except ValueError:
+                7
+
+        self.trace_function(func)
+
+        events = [
+            (0, 'func', 'call'),
+            (1, 'func', 'line'),
+            (2, 'func', 'line'),
+            (3, 'func', 'line'),
+            (3, 'func', 'exception'),
+            (4, 'func', 'line'),
+            (6, 'func', 'line'),
+            (7, 'func', 'line'),
+            (7, 'func', 'return')
+        ]
+
+        self.assert_events(self.events, events)
+
+    @unittest.skipIf(not os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: Implement try-except* in manual interpreter.")
+    def test_14_try_except_star_nested(self):
+        def func():
+            try:
+                try:
+                    raise ExceptionGroup(
+                        'eg',
+                        [ValueError(5), TypeError('bad type')])
+                except* TypeError as e:
+                    7
+                except* OSError:
+                    9
+                except* ValueError:
+                    raise
+            except* ValueError:
+                try:
+                    raise TypeError(14)
+                except* OSError:
+                    16
+                except* TypeError as e:
+                    18
+            return 0
+
+        self.trace_function(func)
+
+        events = [
+            (0, 'func', 'call'),
+            (1, 'func', 'line'),
+            (2, 'func', 'line'),
+            (3, 'func', 'line'),
+            (4, 'func', 'line'),
+            (5, 'func', 'line'),
+            (3, 'func', 'line'),
+            (3, 'func', 'exception'),
+            (6, 'func', 'line'),
+            (7, 'func', 'line'),
+            (8, 'func', 'line'),
+            (10, 'func', 'line'),
+            (11, 'func', 'line'),
+            (12, 'func', 'line'),
+            (13, 'func', 'line'),
+            (14, 'func', 'line'),
+            (14, 'func', 'exception'),
+            (15, 'func', 'line'),
+            (17, 'func', 'line'),
+            (18, 'func', 'line'),
+            (19, 'func', 'line'),
+            (19, 'func', 'return')
+        ]
+
+        self.assert_events(self.events, events)

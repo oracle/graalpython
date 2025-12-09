@@ -57,16 +57,15 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
-import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
-import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -74,9 +73,8 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -95,14 +93,12 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
         return (self.getShape().getFlags() & PythonObject.HAS_SLOTS_BUT_NO_DICT_FLAG) == 0;
     }
 
-    static boolean writeToDynamicStorageNoTypeGuard(Object obj, GetDictIfExistsNode getDict) {
+    static boolean writeToDynamicStorageNoTypeGuard(PythonObject obj, GetDictIfExistsNode getDict) {
         return getDict.execute(obj) == null && !PythonManagedClass.isInstance(obj);
     }
 
     // Specialization for cases that have no special handling and can just delegate to
-    // WriteAttributeToDynamicObjectNode. Note that the fast-path for String keys and the inline
-    // cache in WriteAttributeToDynamicObjectNode perform better in some configurations than if we
-    // cast the key here and used DynamicObjectLibrary directly
+    // WriteAttributeToPythonObjectNode.
     @Specialization(guards = {"isAttrWritable(object)", "writeToDynamicStorageNoTypeGuard(object, getDict)"})
     static boolean writeToDynamicStorageNoType(PythonObject object, TruffleString key, Object value,
                     @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
@@ -112,19 +108,25 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
         return true;
     }
 
-    // Specializations for no dict & PythonManagedClass -> requires calling onAttributeUpdate
-    @Specialization(guards = {"isAttrWritable(klass)", "getDict.execute(klass) == null"})
-    boolean writeToDynamicStorageBuiltinType(PythonBuiltinClass klass, TruffleString key, Object value,
-                    @Bind Node inliningTarget,
-                    @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
-                    @Shared("callAttrUpdate") @Cached InlinedBranchProfile callAttrUpdate,
-                    @Shared("dylib") @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") DynamicObjectLibrary dylib,
-                    @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                    @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
-        if (PythonContext.get(this).isInitialized()) {
+    @Specialization(guards = "isPythonBuiltinClass(klassOrType) || isPythonBuiltinClassType(klassOrType)")
+    @TruffleBoundary
+    boolean writeToDynamicStorageBuiltinType(Object klassOrType, TruffleString key, Object value) {
+        PythonContext context = PythonContext.get(this);
+        PythonBuiltinClass klass;
+        if (klassOrType instanceof PythonBuiltinClass pbc) {
+            klass = pbc;
+        } else {
+            klass = context.lookupType((PythonBuiltinClassType) klassOrType);
+        }
+        if (context.isInitialized() || value == PNone.NO_VALUE) {
             throw PRaiseNode.raiseStatic(this, TypeError, ErrorMessages.CANT_SET_ATTRIBUTE_R_OF_IMMUTABLE_TYPE_N, key, klass);
         } else {
-            return writeToDynamicStorageManagedClass(klass, key, value, inliningTarget, callAttrUpdate, dylib, codePointLengthNode, codePointAtIndexNode);
+            PDict dict = GetDictIfExistsNode.getUncached().execute(klass);
+            if (dict == null) {
+                return writeToDynamicStorageManagedClass(klass, key, value, DynamicObject.PutNode.getUncached());
+            } else {
+                return writeToDictManagedClass(klass, dict, key, value, null, InlinedBranchProfile.getUncached(), HashingStorageSetItem.getUncached());
+            }
         }
     }
 
@@ -132,29 +134,24 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
     static boolean writeToDynamicStoragePythonClass(PythonClass klass, TruffleString key, Object value,
                     @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
-                    @Exclusive @Cached InlinedBranchProfile callAttrUpdate,
                     @Exclusive @Cached InlinedBranchProfile updateFlags,
-                    @Shared("dylib") @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") DynamicObjectLibrary dylib,
-                    @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                    @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+                    @Cached DynamicObject.PutNode putNode,
+                    @Cached DynamicObject.GetShapeFlagsNode getShapeFlagsNode,
+                    @Cached DynamicObject.SetShapeFlagsNode setShapeFlagsNode) {
         if (value == PNone.NO_VALUE) {
             updateFlags.enter(inliningTarget);
-            dylib.setShapeFlags(klass, dylib.getShapeFlags(klass) | HAS_NO_VALUE_PROPERTIES);
+            klass.addShapeFlag(HAS_NO_VALUE_PROPERTIES, getShapeFlagsNode, setShapeFlagsNode);
         }
-        return writeToDynamicStorageManagedClass(klass, key, value, inliningTarget, callAttrUpdate, dylib, codePointLengthNode, codePointAtIndexNode);
+        return writeToDynamicStorageManagedClass(klass, key, value, putNode);
     }
 
-    private static boolean writeToDynamicStorageManagedClass(PythonManagedClass klass, TruffleString key, Object value, Node inliningTarget,
-                    InlinedBranchProfile callAttrUpdate, DynamicObjectLibrary dylib, TruffleString.CodePointLengthNode codePointLengthNode, TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+    private static boolean writeToDynamicStorageManagedClass(PythonManagedClass klass, TruffleString key, Object value, DynamicObject.PutNode putNode) {
         CompilerAsserts.partialEvaluationConstant(klass.getClass());
         try {
-            dylib.put(klass, key, value);
+            putNode.execute(klass, key, value);
             return true;
         } finally {
-            if (!klass.canSkipOnAttributeUpdate(key, value, codePointLengthNode, codePointAtIndexNode)) {
-                callAttrUpdate.enter(inliningTarget);
-                klass.onAttributeUpdate(key, value);
-            }
+            klass.onAttributeUpdate(key, value);
         }
     }
 
@@ -169,35 +166,14 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
         return writeToDict(dict, key, value, inliningTarget, updateStorage, setHashingStorageItem);
     }
 
-    // write to the dict & PythonManagedClass -> requires calling onAttributeUpdate
-    @Specialization(guards = {"dict != null", "!isNoValue(value)"})
-    boolean writeToDictBuiltinType(PythonBuiltinClass klass, TruffleString key, Object value,
-                    @Bind Node inliningTarget,
-                    @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
-                    @Bind("getDict.execute(klass)") PDict dict,
-                    @Shared("callAttrUpdate") @Cached InlinedBranchProfile callAttrUpdate,
-                    @Shared("updateStorage") @Cached InlinedBranchProfile updateStorage,
-                    @Shared("setHashingStorageItem") @Cached HashingStorageSetItem setHashingStorageItem,
-                    @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                    @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
-        if (PythonContext.get(this).isInitialized()) {
-            throw PRaiseNode.raiseStatic(this, TypeError, ErrorMessages.CANT_SET_ATTRIBUTE_R_OF_IMMUTABLE_TYPE_N, PyObjectReprAsTruffleStringNode.executeUncached(key), klass);
-        } else {
-            return writeToDictManagedClass(klass, dict, key, value, inliningTarget, callAttrUpdate, updateStorage, setHashingStorageItem, codePointLengthNode, codePointAtIndexNode);
-        }
-    }
-
     @Specialization(guards = {"dict != null", "!isNoValue(value)"})
     static boolean writeToDictClass(PythonClass klass, TruffleString key, Object value,
                     @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
                     @Bind("getDict.execute(klass)") PDict dict,
-                    @Shared("callAttrUpdate") @Cached InlinedBranchProfile callAttrUpdate,
                     @Shared("updateStorage") @Cached InlinedBranchProfile updateStorage,
-                    @Shared("setHashingStorageItem") @Cached HashingStorageSetItem setHashingStorageItem,
-                    @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                    @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
-        return writeToDictManagedClass(klass, dict, key, value, inliningTarget, callAttrUpdate, updateStorage, setHashingStorageItem, codePointLengthNode, codePointAtIndexNode);
+                    @Shared("setHashingStorageItem") @Cached HashingStorageSetItem setHashingStorageItem) {
+        return writeToDictManagedClass(klass, dict, key, value, inliningTarget, updateStorage, setHashingStorageItem);
     }
 
     // @Exclusive for truffle-interpreted-performance
@@ -206,42 +182,24 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
                     @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
                     @Bind("getDict.execute(obj)") PDict dict,
-                    @Exclusive @Cached InlinedBranchProfile callAttrUpdate,
-                    @Cached HashingStorageNodes.HashingStorageDelItem hashingStorageDelItem,
-                    @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                    @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+                    @Cached HashingStorageNodes.HashingStorageDelItem hashingStorageDelItem) {
         try {
             HashingStorage dictStorage = dict.getDictStorage();
             return hashingStorageDelItem.execute(inliningTarget, dictStorage, key, dict);
         } finally {
             if (obj instanceof PythonManagedClass klass) {
-                if (!klass.canSkipOnAttributeUpdate(key, value, codePointLengthNode, codePointAtIndexNode)) {
-                    callAttrUpdate.enter(inliningTarget);
-                    klass.onAttributeUpdate(key, value);
-                }
+                klass.onAttributeUpdate(key, value);
             }
         }
     }
 
-    @Specialization(guards = {"dict != null", "isNoValue(value)"})
-    static boolean deleteFromPythonBuiltinClass(PythonBuiltinClass klass, TruffleString key, Object value,
-                    @Bind Node inliningTarget,
-                    @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
-                    @Bind("getDict.execute(klass)") PDict dict) {
-        throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CANT_SET_ATTRIBUTE_R_OF_IMMUTABLE_TYPE_N, key, klass);
-    }
-
     private static boolean writeToDictManagedClass(PythonManagedClass klass, PDict dict, TruffleString key, Object value, Node inliningTarget,
-                    InlinedBranchProfile callAttrUpdate, InlinedBranchProfile updateStorage, HashingStorageSetItem setHashingStorageItem, TruffleString.CodePointLengthNode codePointLengthNode,
-                    TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+                    InlinedBranchProfile updateStorage, HashingStorageSetItem setHashingStorageItem) {
         CompilerAsserts.partialEvaluationConstant(klass.getClass());
         try {
             return writeToDict(dict, key, value, inliningTarget, updateStorage, setHashingStorageItem);
         } finally {
-            if (!klass.canSkipOnAttributeUpdate(key, value, codePointLengthNode, codePointAtIndexNode)) {
-                callAttrUpdate.enter(inliningTarget);
-                klass.onAttributeUpdate(key, value);
-            }
+            klass.onAttributeUpdate(key, value);
         }
     }
 
@@ -259,12 +217,6 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
             dict.setDictStorage(hashingStorage);
         }
         return true;
-    }
-
-    @Specialization
-    static boolean doPBCT(PythonBuiltinClassType object, TruffleString key, Object value,
-                    @Cached WriteAttributeToObjectNode recursive) {
-        return recursive.execute(PythonContext.get(recursive).lookupType(object), key, value);
     }
 
     private static void checkNativeImmutable(Node inliningTarget, PythonAbstractNativeObject object, TruffleString key,
@@ -285,11 +237,8 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
                     @Cached CStructAccess.ReadObjectNode getNativeDict,
                     @Exclusive @Cached HashingStorageSetItem setHashingStorageItem,
                     @Exclusive @Cached InlinedBranchProfile updateStorage,
-                    @Exclusive @Cached InlinedBranchProfile canBeSpecialSlot,
                     @Cached IsTypeNode isTypeNode,
-                    @Exclusive @Cached PRaiseNode raiseNode,
-                    @Shared("cpLen") @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                    @Shared("cpAtIndex") @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+                    @Exclusive @Cached PRaiseNode raiseNode) {
         boolean isType = isTypeProfile.profile(inliningTarget, isTypeNode.execute(inliningTarget, object));
         try {
             Object dict;
@@ -315,13 +264,12 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
             }
             throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
         } finally {
-            if (isType && TpSlots.canBeSpecialMethod(key, codePointLengthNode, codePointAtIndexNode)) {
-                canBeSpecialSlot.enter(inliningTarget);
+            if (isType) {
                 // In theory, we should do this only in type's default tp_setattr(o) slots,
                 // one could probably bypass that by using different metaclass and
                 // overriding tp_setattr and delegate to object's tp_setattr that does not
                 // have this hook
-                TpSlots.updateSlot(object, key);
+                PythonManagedClass.onAttributeUpdateNative(object, key, value);
             }
         }
     }

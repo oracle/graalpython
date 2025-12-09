@@ -49,7 +49,6 @@ expected_nosite_startup_modules = [
     '_frozen_importlib_external',
     '__graalpython__',
     '_weakref',
-    'unicodedata',
     '_sre',
     '_sysconfig',
     'java',

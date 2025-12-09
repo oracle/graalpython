@@ -462,7 +462,8 @@ public final class CodeBuiltins extends PythonBuiltins {
             }
 
             result.add(PFactory.createTuple(language, new int[]{startInstructionIndex, instructionIndex, triple[2]}));
-            assert tripleIndex == triples.size() : "every bytecode range should have been converted to an instruction range";
+            assert tripleIndex == triples.size() : String.format("every bytecode range should have been converted to " +
+                            "an instruction range, %d != %d, function: %s", tripleIndex, triples.size(), bytecodeNode.getRootNode());
 
             return result;
         }
@@ -490,14 +491,16 @@ public final class CodeBuiltins extends PythonBuiltins {
                             continue;
                         }
                         SourceSection section = rootNode.getSourceSectionForLocation(instruction.getLocation());
-                        lines.add(PFactory.createTuple(language, new int[]{
-                                        section.getStartLine(),
-                                        section.getEndLine(),
-                                        // 1-based inclusive to 0-based inclusive
-                                        section.getStartColumn() - 1,
-                                        // 1-based inclusive to 0-based exclusive (-1 + 1 = 0)
-                                        section.getEndColumn()
-                        }));
+                        if (section != null) {
+                            lines.add(PFactory.createTuple(language, new int[]{
+                                            section.getStartLine(),
+                                            section.getEndLine(),
+                                            // 1-based inclusive to 0-based inclusive
+                                            section.getStartColumn() - 1,
+                                            // 1-based inclusive to 0-based exclusive (-1 + 1 = 0)
+                                            section.getEndColumn()
+                            }));
+                        }
                     }
                 } else {
                     BytecodeCodeUnit bytecodeCo = (BytecodeCodeUnit) co;

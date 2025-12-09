@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -57,7 +57,8 @@ import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.DynamicObject.GetNode;
 import com.oracle.truffle.api.object.Property;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -102,7 +103,7 @@ public final class MroShape {
                     // effecting __eq__ and/or __hash__
                     return null;
                 }
-                if ((DynamicObjectLibrary.getUncached().getShapeFlags(managedClass) & HAS_NO_VALUE_PROPERTIES) != 0) {
+                if ((DynamicObject.GetShapeFlagsNode.getUncached().execute(managedClass) & HAS_NO_VALUE_PROPERTIES) != 0) {
                     return null;
                 }
                 assert hasNoNoValueProperties(managedClass);
@@ -168,9 +169,8 @@ public final class MroShape {
     }
 
     private static boolean hasNoNoValueProperties(PythonManagedClass klass) {
-        DynamicObjectLibrary lib = DynamicObjectLibrary.getFactory().getUncached(klass);
         for (Object key : klass.getShape().getKeyList()) {
-            if (key instanceof TruffleString && lib.getOrDefault(klass, key, null) == PNone.NO_VALUE) {
+            if (key instanceof TruffleString && GetNode.getUncached().execute(klass, key, null) == PNone.NO_VALUE) {
                 // The MROShape machinery makes the assumption that shapes are enough to determine
                 // MRO lookup results, in the presence of properties with NO_VALUE shape is not
                 // enough, such shapes should be marked with the HAS_NO_VALUE_PROPERTIES flag
@@ -219,7 +219,7 @@ public final class MroShape {
                         klsShapeProps.add(property.getKey());
                     }
                 }
-                klsShapeProps.removeIf(x -> DynamicObjectLibrary.getUncached().getOrDefault(kls, x, null) == PNone.NO_VALUE);
+                klsShapeProps.removeIf(x -> DynamicObject.GetNode.getUncached().execute(kls, x, null) == PNone.NO_VALUE);
                 Set<Object> currMroShapeProps = new HashSet<>();
                 for (Property property : currMroShape.shape.getPropertyList()) {
                     if (!property.isHidden()) {

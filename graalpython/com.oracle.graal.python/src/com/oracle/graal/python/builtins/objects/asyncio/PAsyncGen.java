@@ -45,7 +45,9 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeRootNode;
+import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.bytecode.ContinuationRootNode;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 
 public final class PAsyncGen extends PGenerator {
@@ -55,11 +57,16 @@ public final class PAsyncGen extends PGenerator {
 
     public static PAsyncGen create(PythonLanguage lang, PFunction function, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
         MaterializedFrame generatorFrame = rootNode.createGeneratorFrame(arguments);
-        return new PAsyncGen(lang, function, generatorFrame, rootNode, callTargets, arguments);
+        return new PAsyncGen(lang, function, generatorFrame, rootNode, callTargets);
     }
 
-    private PAsyncGen(PythonLanguage lang, PFunction function, MaterializedFrame generatorFrame, PBytecodeRootNode rootNode, RootCallTarget[] callTargets, Object[] arguments) {
-        super(lang, function, generatorFrame, PythonBuiltinClassType.PAsyncGenerator, false, new BytecodeState(rootNode, callTargets));
+    private PAsyncGen(PythonLanguage lang, PFunction function, MaterializedFrame generatorFrame, PBytecodeRootNode rootNode, RootCallTarget[] callTargets) {
+        super(lang, function, generatorFrame, PythonBuiltinClassType.PAsyncGenerator, new BytecodeState(rootNode, callTargets));
+    }
+
+    public PAsyncGen(PythonLanguage language, PFunction function, PBytecodeDSLRootNode rootNode, ContinuationRootNode continuationRootNode, MaterializedFrame continuationFrame) {
+        super(language, function, continuationFrame, PythonBuiltinClassType.PAsyncGenerator,
+                        new BytecodeDSLState(rootNode, continuationFrame.getArguments(), continuationRootNode));
     }
 
     public boolean isClosed() {

@@ -73,17 +73,18 @@ public final class PythonCextFrameBuiltins {
     @CApiBuiltin(ret = Int, args = {PyFrameObject}, call = Direct)
     abstract static class PyFrame_GetLineNumber extends CApiUnaryBuiltinNode {
         @Specialization
-        static int get(PFrame frame) {
-            // do not sync location here since we have no VirtualFrame
-            return frame.getLine();
+        static Object get(PFrame frame,
+                        @Cached FrameBuiltins.LinenoNode linenoNode) {
+            return linenoNode.execute(null, frame, PNone.NO_VALUE);
         }
     }
 
     @CApiBuiltin(ret = Int, args = {PyFrameObject}, call = Direct)
     abstract static class PyFrame_GetLasti extends CApiUnaryBuiltinNode {
         @Specialization
-        static int get(PFrame frame) {
-            return frame.getLasti();
+        static Object get(PFrame frame,
+                        @Cached FrameBuiltins.GetLastiNode getLastiNode) {
+            return getLastiNode.execute(null, frame);
         }
     }
 
@@ -93,7 +94,7 @@ public final class PythonCextFrameBuiltins {
         static Object get(PFrame frame,
                         @Bind Node inliningTarget,
                         @Cached GetFrameLocalsNode getFrameLocalsNode) {
-            return getFrameLocalsNode.execute(inliningTarget, frame);
+            return getFrameLocalsNode.execute(null, inliningTarget, frame, false);
         }
     }
 

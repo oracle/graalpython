@@ -45,10 +45,10 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Builtin;
+import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
@@ -65,7 +65,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
-@CoreFunctions(defineModule = "winreg", isEager = true, os = PythonOS.PLATFORM_WIN32)
+@CoreFunctions(defineModule = "winreg", os = PythonOS.PLATFORM_WIN32)
 public final class WinregModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

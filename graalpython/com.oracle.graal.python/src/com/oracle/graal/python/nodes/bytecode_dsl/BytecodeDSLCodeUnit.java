@@ -78,6 +78,7 @@ public final class BytecodeDSLCodeUnit extends CodeUnit {
                     int classcellIndex, int selfIndex, byte[] serialized, BytecodeRootNodes<PBytecodeDSLRootNode> nodes) {
         super(name, qualname, argCount, kwOnlyArgCount, positionalOnlyArgCount, flags, names, varnames, cellvars, freevars, cell2arg, constants, startLine, startColumn, endLine, endColumn);
         // Only one of these fields should be set. The other gets computed dynamically.
+        assert nodes == null || nodes.count() == 1;
         assert serialized == null ^ nodes == null;
         this.serialized = serialized;
         this.nodes = nodes;
@@ -85,8 +86,20 @@ public final class BytecodeDSLCodeUnit extends CodeUnit {
         this.selfIndex = selfIndex;
     }
 
+    public BytecodeDSLCodeUnit withFlags(int flags) {
+        return new BytecodeDSLCodeUnit(name, qualname, argCount, kwOnlyArgCount, positionalOnlyArgCount, flags,
+                        names, varnames, cellvars, freevars, cell2arg, constants,
+                        startLine, startColumn, endLine, endColumn, classcellIndex, selfIndex, serialized, nodes);
+    }
+
     @TruffleBoundary
     public PBytecodeDSLRootNode createRootNode(PythonContext context, Source source) {
+        if (nodes != null) {
+            return nodes.getNode(0);
+        }
+        // We must not cache deserialized root, because the code unit may be shared by multiple
+        // engines. The caller is responsible for ensuring the caching of the resulting root node if
+        // necessary
         byte[] toDeserialize = getSerialized(context);
         BytecodeRootNodes<PBytecodeDSLRootNode> deserialized = MarshalModuleBuiltins.deserializeBytecodeNodes(context, source, toDeserialize);
         assert deserialized.count() == 1;
@@ -139,13 +152,8 @@ public final class BytecodeDSLCodeUnit extends CodeUnit {
             }
             sb.append("bytecode not available\n");
         } else {
-            for (int i = 0; i < nodes.count(); i++) {
-                if (i != 0) {
-                    sb.append('\n');
-                }
-                sb.append(nodes.getNode(i).dump());
-                sb.append('\n'); // dump does not print newline at the end
-            }
+            sb.append(nodes.getNode(0).dump());
+            sb.append('\n'); // dump does not print newline at the end
         }
     }
 }

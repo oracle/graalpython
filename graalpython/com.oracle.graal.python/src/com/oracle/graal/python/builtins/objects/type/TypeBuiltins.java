@@ -172,6 +172,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -464,7 +465,7 @@ public final class TypeBuiltins extends PythonBuiltins {
     public abstract static class CallNode extends PythonVarargsBuiltinNode {
 
         @Specialization
-        Object call(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords,
+        static Object call(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords,
                         @Bind Node inliningTarget,
                         @Cached IsSameTypeNode isSameTypeNode,
                         @Cached GetClassNode getClassNode,
@@ -479,10 +480,16 @@ public final class TypeBuiltins extends PythonBuiltins {
             }
             return createInstanceNode.execute(frame, inliningTarget, self, arguments, keywords);
         }
+
+        public static Object executeUncached(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) {
+            return call(frame, self, arguments, keywords,
+                            null, IsSameTypeNode.getUncached(), GetClassNode.getUncached(), PRaiseNode.getUncached(), TypeBuiltinsFactory.CreateInstanceNodeGen.getUncached());
+        }
     }
 
     @GenerateInline
     @GenerateCached(false)
+    @GenerateUncached
     protected abstract static class CreateInstanceNode extends PNodeWithContext {
 
         abstract Object execute(VirtualFrame frame, Node inliningTarget, Object self, Object[] args, PKeyword[] keywords);
@@ -778,7 +785,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                         @Shared @Cached GetDictIfExistsNode getDict) {
             PDict dict = getDict.execute(self);
             if (dict == null) {
-                dict = PFactory.createDictFixedStorage(language, self, self.getMethodResolutionOrder());
+                dict = PFactory.createDictFixedStorage(language, self);
                 // The mapping is unmodifiable, so we don't have to assign it back
             }
             return PFactory.createMappingproxy(language, dict);

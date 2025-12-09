@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringUtils.SimpleTruffleStringFormatNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -54,9 +55,11 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.bytecode.BytecodeFrameInfo;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLFrameInfo;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
+import com.oracle.graal.python.nodes.frame.ReadFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.CallerFlags;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.bytecode.BytecodeLocation;
@@ -184,32 +187,55 @@ public final class GeneratorBuiltins extends PythonBuiltins {
     public abstract static class GetFrameNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        static Object getFrame(PGenerator self) {
+        static Object getFrame(VirtualFrame frame, PGenerator self,
+                        @Cached ReadFrameNode readFrameNode) {
             if (self.isFinished()) {
                 return PNone.NONE;
             } else {
-                if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                    BytecodeLocation location = self.getCurrentRootNode().getLocation();
-                    MaterializedFrame generatorFrame = self.getGeneratorFrame();
-                    BytecodeDSLFrameInfo info = (BytecodeDSLFrameInfo) generatorFrame.getFrameDescriptor().getInfo();
-                    PFrame frame = MaterializeFrameNode.materializeGeneratorFrame(location != null ? location.getBytecodeNode() : null, generatorFrame, PFrame.Reference.EMPTY);
-                    if (location != null) {
-                        int bci = location.getBytecodeIndex();
-                        frame.setBci(bci);
-                        frame.setLine(info.getRootNode().bciToLine(bci, location.getBytecodeNode()));
-                    } else {
-                        frame.setBci(0);
-                    }
-                    return frame;
-                } else {
-                    MaterializedFrame generatorFrame = self.getGeneratorFrame();
-                    BytecodeFrameInfo info = (BytecodeFrameInfo) generatorFrame.getFrameDescriptor().getInfo();
-                    PFrame frame = MaterializeFrameNode.materializeGeneratorFrame(info.getRootNode(), generatorFrame, PFrame.Reference.EMPTY);
-                    int bci = self.getBci();
-                    frame.setBci(bci);
-                    frame.setLine(info.getRootNode().bciToLine(bci));
-                    return frame;
+                MaterializedFrame generatorFrame = self.getGeneratorFrame();
+                PFrame.Reference currentRef = PArguments.getCurrentFrameInfo(generatorFrame.getArguments());
+                if (self.isRunning()) {
+                    PFrame pyFrame = readFrameNode.getFrameForReference(frame, currentRef, 0, CallerFlags.NEEDS_PFRAME);
+                    pyFrame.getRef().markAsEscaped();
+                    return pyFrame;
                 }
+                PFrame pyFrame = currentRef.getPyFrame();
+                if (currentRef.isEscaped() && currentRef.getPyFrame() != null) {
+                    // If it's escaped, we synced at every exit
+                    return pyFrame;
+                }
+                if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+                    BytecodeDSLFrameInfo info = (BytecodeDSLFrameInfo) generatorFrame.getFrameDescriptor().getInfo();
+                    if (pyFrame == null) {
+                        pyFrame = MaterializeFrameNode.materializeGeneratorFrame(self.getBytecodeNode(), generatorFrame, self.getGlobals(), currentRef);
+                    }
+                    BytecodeLocation location = self.getCurrentLocation();
+                    if (location != null) {
+                        pyFrame.setBci(location.getBytecodeIndex());
+                        pyFrame.setLocation(location.getBytecodeNode());
+                        pyFrame.resetLine();
+                    } else {
+                        pyFrame.setBci(0);
+                        pyFrame.setLine(info.getRootNode().getFirstLineno());
+                    }
+                } else {
+                    BytecodeFrameInfo info = (BytecodeFrameInfo) generatorFrame.getFrameDescriptor().getInfo();
+                    if (pyFrame == null) {
+                        pyFrame = MaterializeFrameNode.materializeGeneratorFrame(info.getRootNode(), generatorFrame, self.getGlobals(), currentRef);
+                    }
+                    int bci = self.getBci();
+                    if (bci >= 0) {
+                        pyFrame.setBci(bci);
+                        pyFrame.resetLine();
+                    } else {
+                        pyFrame.setBci(0);
+                        pyFrame.setLine(info.getRootNode().getFirstLineno());
+                    }
+                }
+                pyFrame.setLastCallerFlags(CallerFlags.ALL_FRAME_FLAGS);
+                assert currentRef.getPyFrame() == pyFrame;
+                currentRef.markAsEscaped();
+                return pyFrame;
             }
         }
     }

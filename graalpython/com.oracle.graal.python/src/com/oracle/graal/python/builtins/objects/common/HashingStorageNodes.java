@@ -96,7 +96,6 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
@@ -231,15 +230,16 @@ public class HashingStorageNodes {
         public abstract void execute(Node inliningTarget, HashingStorage self, TruffleString key, Object value);
     }
 
-    static EconomicMapStorage dynamicObjectStorageToEconomicMap(Node inliningTarget, DynamicObjectStorage s, DynamicObjectLibrary dylib, PyObjectHashNode hashNode, ObjectHashMap.PutNode putNode) {
-        // TODO: shouldn't we invalidate all MRO assumptions in this case?
+    static EconomicMapStorage dynamicObjectStorageToEconomicMap(Node inliningTarget, DynamicObjectStorage s,
+                    DynamicObject.GetKeyArrayNode getKeyArrayNode, DynamicObject.GetNode getNode,
+                    PyObjectHashNode hashNode, ObjectHashMap.PutNode putNode) {
         DynamicObject store = s.store;
-        EconomicMapStorage result = EconomicMapStorage.create(dylib.getShape(store).getPropertyCount());
+        Object[] keys = getKeyArrayNode.execute(store);
+        EconomicMapStorage result = EconomicMapStorage.create(keys.length);
         ObjectHashMap resultMap = result.map;
-        Object[] keys = dylib.getKeyArray(store);
         for (Object k : keys) {
             if (k instanceof TruffleString) {
-                Object v = dylib.getOrDefault(store, k, PNone.NO_VALUE);
+                Object v = getNode.execute(store, k, PNone.NO_VALUE);
                 if (v != PNone.NO_VALUE) {
                     putNode.put(null, inliningTarget, resultMap, k, hashNode.execute(null, inliningTarget, k), v);
                 }
@@ -280,10 +280,9 @@ public class HashingStorageNodes {
         }
 
         @Specialization(guards = "!self.shouldTransitionOnPut()")
-        static HashingStorage domStringKey(Node inliningTarget, DynamicObjectStorage self, TruffleString key, long keyHash, Object value,
-                        @Cached InlinedBranchProfile invalidateMroProfile,
-                        @Shared @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
-            self.setStringKey(key, value, dylib, inliningTarget, invalidateMroProfile);
+        static HashingStorage domStringKey(DynamicObjectStorage self, TruffleString key, long keyHash, Object value,
+                        @Cached DynamicObject.PutNode putNode) {
+            self.setStringKey(key, value, putNode);
             return self;
         }
 
@@ -292,7 +291,6 @@ public class HashingStorageNodes {
         static HashingStorage dom(Frame frame, Node inliningTarget, DynamicObjectStorage self, Object key, long keyHash, Object value,
                         @Cached InlinedConditionProfile shouldTransitionProfile,
                         @Exclusive @Cached PyUnicodeCheckExactNode isBuiltinString,
-                        @Shared @CachedLibrary(limit = "3") DynamicObjectLibrary dylib,
                         @Cached DOMStorageSetItemWithHash domNode) {
             boolean transition = true;
             if (shouldTransitionProfile.profile(inliningTarget, !self.shouldTransitionOnPut())) {
@@ -300,7 +298,7 @@ public class HashingStorageNodes {
                     transition = false;
                 }
             }
-            return domNode.execute(frame, inliningTarget, self, key, keyHash, value, transition, dylib);
+            return domNode.execute(frame, inliningTarget, self, key, keyHash, value, transition);
         }
 
         @Specialization
@@ -327,25 +325,25 @@ public class HashingStorageNodes {
         @ImportStatic(PGuards.class)
         abstract static class DOMStorageSetItemWithHash extends Node {
             public abstract HashingStorage execute(Frame frame, Node inliningTarget, DynamicObjectStorage self, Object key, long keyHash, Object value,
-                            boolean transition, DynamicObjectLibrary dylib);
+                            boolean transition);
 
             @Specialization(guards = {"!transition", "isBuiltinString.execute(inliningTarget, key)"}, limit = "1")
-            static HashingStorage domStringKey(Node inliningTarget, DynamicObjectStorage self, Object key, @SuppressWarnings("unused") long keyHash, Object value,
-                            @SuppressWarnings("unused") boolean transition, DynamicObjectLibrary dylib,
+            static HashingStorage domStringKey(Node inliningTarget, DynamicObjectStorage self, Object key, long keyHash, Object value, boolean transition,
                             @SuppressWarnings("unused") @Cached PyUnicodeCheckExactNode isBuiltinString,
                             @Cached CastBuiltinStringToTruffleStringNode castStr,
-                            @Cached InlinedBranchProfile invalidateMroProfile) {
-                self.setStringKey(castStr.execute(inliningTarget, key), value, dylib, inliningTarget, invalidateMroProfile);
+                            @Cached DynamicObject.PutNode putNode) {
+                self.setStringKey(castStr.execute(inliningTarget, key), value, putNode);
                 return self;
             }
 
             @Fallback
-            static HashingStorage domTransition(Frame frame, Node inliningTarget, DynamicObjectStorage self, Object key, @SuppressWarnings("unused") long keyHash, Object value,
-                            @SuppressWarnings("unused") boolean transition, DynamicObjectLibrary dylib,
+            static HashingStorage domTransition(Frame frame, Node inliningTarget, DynamicObjectStorage self, Object key, long keyHash, Object value, boolean transition,
                             @Cached PyObjectHashNode hashNode,
                             @Cached ObjectHashMap.PutNode putUnsafeNode,
-                            @Cached PutNode putNode) {
-                EconomicMapStorage result = dynamicObjectStorageToEconomicMap(inliningTarget, self, dylib, hashNode, putUnsafeNode);
+                            @Cached PutNode putNode,
+                            @Cached DynamicObject.GetKeyArrayNode getKeyArrayNode,
+                            @Cached DynamicObject.GetNode getNode) {
+                EconomicMapStorage result = dynamicObjectStorageToEconomicMap(inliningTarget, self, getKeyArrayNode, getNode, hashNode, putUnsafeNode);
                 putNode.execute(frame, inliningTarget, result.map, key, keyHash, value);
                 return result;
             }
@@ -405,10 +403,9 @@ public class HashingStorageNodes {
         }
 
         @Specialization(guards = "!self.shouldTransitionOnPut()")
-        static HashingStorage domStringKey(Node inliningTarget, DynamicObjectStorage self, TruffleString key, Object value,
-                        @Cached InlinedBranchProfile invalidateMroProfile,
-                        @Shared @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
-            self.setStringKey(key, value, dylib, inliningTarget, invalidateMroProfile);
+        static HashingStorage domStringKey(DynamicObjectStorage self, TruffleString key, Object value,
+                        @Cached DynamicObject.PutNode putNode) {
+            self.setStringKey(key, value, putNode);
             return self;
         }
 
@@ -417,7 +414,6 @@ public class HashingStorageNodes {
         static HashingStorage dom(Frame frame, Node inliningTarget, DynamicObjectStorage self, Object key, Object value,
                         @Cached InlinedConditionProfile shouldTransitionProfile,
                         @Exclusive @Cached PyUnicodeCheckExactNode isBuiltinString,
-                        @Shared @CachedLibrary(limit = "3") DynamicObjectLibrary dylib,
                         @Cached DOMStorageSetItem domNode) {
             boolean transition = true;
             if (shouldTransitionProfile.profile(inliningTarget, !self.shouldTransitionOnPut())) {
@@ -425,7 +421,7 @@ public class HashingStorageNodes {
                     transition = false;
                 }
             }
-            return domNode.execute(frame, inliningTarget, self, key, value, transition, dylib);
+            return domNode.execute(frame, inliningTarget, self, key, value, transition);
         }
 
         @Specialization
@@ -447,31 +443,35 @@ public class HashingStorageNodes {
             return self;
         }
 
+        public static HashingStorageSetItem getUncached() {
+            return HashingStorageSetItemNodeGen.getUncached();
+        }
+
         @GenerateUncached
         @GenerateInline
         @GenerateCached(false)
         @ImportStatic(PGuards.class)
         abstract static class DOMStorageSetItem extends Node {
             public abstract HashingStorage execute(Frame frame, Node inliningTarget, DynamicObjectStorage self, Object key, Object value,
-                            boolean transition, DynamicObjectLibrary dylib);
+                            boolean transition);
 
             @Specialization(guards = {"!transition", "isBuiltinString.execute(inliningTarget, key)"}, limit = "1")
-            static HashingStorage domStringKey(Node inliningTarget, DynamicObjectStorage self, Object key, Object value,
-                            @SuppressWarnings("unused") boolean transition, DynamicObjectLibrary dylib,
+            static HashingStorage domStringKey(Node inliningTarget, DynamicObjectStorage self, Object key, Object value, boolean transition,
                             @SuppressWarnings("unused") @Cached PyUnicodeCheckExactNode isBuiltinString,
-                            @Cached CastBuiltinStringToTruffleStringNode castStr,
-                            @Cached InlinedBranchProfile invalidateMroProfile) {
-                self.setStringKey(castStr.execute(inliningTarget, key), value, dylib, inliningTarget, invalidateMroProfile);
+                            @Cached DynamicObject.PutNode putNode,
+                            @Cached CastBuiltinStringToTruffleStringNode castStr) {
+                self.setStringKey(castStr.execute(inliningTarget, key), value, putNode);
                 return self;
             }
 
             @Fallback
-            static HashingStorage domTransition(Frame frame, Node inliningTarget, DynamicObjectStorage self, Object key, Object value,
-                            @SuppressWarnings("unused") boolean transition, DynamicObjectLibrary dylib,
+            static HashingStorage domTransition(Frame frame, Node inliningTarget, DynamicObjectStorage self, Object key, Object value, boolean transition,
                             @Cached PyObjectHashNode hashNode,
                             @Cached ObjectHashMap.PutNode putUnsafeNode,
-                            @Cached PutNode putNode) {
-                EconomicMapStorage result = dynamicObjectStorageToEconomicMap(inliningTarget, self, dylib, hashNode, putUnsafeNode);
+                            @Cached PutNode putNode,
+                            @Cached DynamicObject.GetKeyArrayNode getKeyArrayNode,
+                            @Cached DynamicObject.GetNode getNode) {
+                EconomicMapStorage result = dynamicObjectStorageToEconomicMap(inliningTarget, self, getKeyArrayNode, getNode, hashNode, putUnsafeNode);
                 putNode.execute(frame, inliningTarget, result.map, key, hashNode.execute(frame, inliningTarget, key), value);
                 return result;
             }
@@ -542,8 +542,8 @@ public class HashingStorageNodes {
                         @Cached PyUnicodeCheckExactNode isBuiltinString,
                         @Cached CastBuiltinStringToTruffleStringNode castStr,
                         @Exclusive @Cached PyObjectHashNode hashNode,
-                        @Exclusive @Cached InlinedBranchProfile invalidateMroProfile,
-                        @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
+                        @Cached DynamicObject.GetNode getNode,
+                        @Cached DynamicObject.PutNode putNode) {
             if (!isBuiltinString.execute(inliningTarget, keyObj)) {
                 // Just for the potential side effects
                 hashNode.execute(frame, inliningTarget, keyObj);
@@ -552,21 +552,15 @@ public class HashingStorageNodes {
             TruffleString key = castStr.execute(inliningTarget, keyObj);
             DynamicObject store = self.store;
             if (needsValue) {
-                Object val = dylib.getOrDefault(store, key, PNone.NO_VALUE);
+                Object val = getNode.execute(store, key, PNone.NO_VALUE);
                 if (val == PNone.NO_VALUE) {
                     return null;
                 } else {
-                    dylib.put(store, key, PNone.NO_VALUE);
-                    self.invalidateAttributeInMROFinalAssumption(key, inliningTarget, invalidateMroProfile);
+                    putNode.execute(store, key, PNone.NO_VALUE);
                     return val;
                 }
             } else {
-                if (dylib.putIfPresent(store, key, PNone.NO_VALUE)) {
-                    self.invalidateAttributeInMROFinalAssumption(key, inliningTarget, invalidateMroProfile);
-                    return true;
-                } else {
-                    return false;
-                }
+                return putNode.executeIfPresent(store, key, PNone.NO_VALUE);
             }
         }
 
@@ -804,8 +798,8 @@ public class HashingStorageNodes {
 
         @Specialization
         static HashingStorageIterator dom(DynamicObjectStorage self,
-                        @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
-            return new HashingStorageIterator(dylib.getKeyArray(self.store), false);
+                        @Cached DynamicObject.GetKeyArrayNode getKeyArrayNode) {
+            return new HashingStorageIterator(getKeyArrayNode.execute(self.store), false);
         }
 
         @Specialization
@@ -854,8 +848,8 @@ public class HashingStorageNodes {
 
         @Specialization
         static HashingStorageIterator dom(DynamicObjectStorage self,
-                        @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
-            HashingStorageIterator it = new HashingStorageIterator(dylib.getKeyArray(self.store), true);
+                        @Cached DynamicObject.GetKeyArrayNode getKeyArrayNode) {
+            HashingStorageIterator it = new HashingStorageIterator(getKeyArrayNode.execute(self.store), true);
             it.index = it.domKeys.length;
             return it;
         }
@@ -936,11 +930,11 @@ public class HashingStorageNodes {
 
         @Specialization(guards = "!it.isReverse")
         static boolean dom(DynamicObjectStorage self, HashingStorageIterator it,
-                        @Shared @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
+                        @Shared @Cached DynamicObject.GetNode getNode) {
             it.index++;
             while (it.index < it.domKeys.length) {
                 if (it.domKeys[it.index] instanceof TruffleString) {
-                    Object val = dylib.getOrDefault(self.store, it.domKeys[it.index], PNone.NO_VALUE);
+                    Object val = getNode.execute(self.store, it.domKeys[it.index], PNone.NO_VALUE);
                     if (val != PNone.NO_VALUE) {
                         it.currentValue = val;
                         return true;
@@ -954,11 +948,11 @@ public class HashingStorageNodes {
 
         @Specialization(guards = "it.isReverse")
         static boolean domReverse(DynamicObjectStorage self, HashingStorageIterator it,
-                        @Shared @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
+                        @Shared @Cached DynamicObject.GetNode getNode) {
             it.index--;
             while (it.index >= 0) {
                 if (it.domKeys[it.index] instanceof TruffleString) {
-                    Object val = dylib.getOrDefault(self.store, it.domKeys[it.index], PNone.NO_VALUE);
+                    Object val = getNode.execute(self.store, it.domKeys[it.index], PNone.NO_VALUE);
                     if (val != PNone.NO_VALUE) {
                         it.currentValue = val;
                         return true;

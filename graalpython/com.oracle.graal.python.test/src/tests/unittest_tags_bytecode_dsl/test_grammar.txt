@@ -2,7 +2,10 @@ test.test_grammar.GrammarTests.test_additive_ops @ linux-x86_64
 test.test_grammar.GrammarTests.test_annotations_inheritance @ linux-x86_64
 test.test_grammar.GrammarTests.test_assert @ linux-x86_64
 test.test_grammar.GrammarTests.test_assert_failures @ linux-x86_64
+test.test_grammar.GrammarTests.test_assert_syntax_warnings @ linux-x86_64
+test.test_grammar.GrammarTests.test_assert_warning_promotes_to_syntax_error @ linux-x86_64
 test.test_grammar.GrammarTests.test_async_await @ linux-x86_64
+test.test_grammar.GrammarTests.test_async_for @ linux-x86_64
 test.test_grammar.GrammarTests.test_async_with @ linux-x86_64
 test.test_grammar.GrammarTests.test_atoms @ linux-x86_64
 test.test_grammar.GrammarTests.test_binary_mask_ops @ linux-x86_64

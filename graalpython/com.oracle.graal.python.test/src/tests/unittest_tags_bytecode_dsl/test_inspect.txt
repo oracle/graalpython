@@ -64,6 +64,10 @@ test.test_inspect.test_inspect.TestClassesAndFunctions.test_pep_695_generic_meth
 test.test_inspect.test_inspect.TestClassesAndFunctions.test_pep_695_generics_with_future_annotations_nested_in_function @ linux-x86_64
 test.test_inspect.test_inspect.TestDecorators.test_replacing_decorator @ linux-x86_64
 test.test_inspect.test_inspect.TestFormatAnnotation.test_typing_replacement @ linux-x86_64
+test.test_inspect.test_inspect.TestGetAsyncGenState.test_easy_debugging @ linux-x86_64
+test.test_inspect.test_inspect.TestGetAsyncGenState.test_getasyncgenlocals @ linux-x86_64
+test.test_inspect.test_inspect.TestGetAsyncGenState.test_getasyncgenlocals_empty @ linux-x86_64
+test.test_inspect.test_inspect.TestGetAsyncGenState.test_getasyncgenlocals_error @ linux-x86_64
 test.test_inspect.test_inspect.TestGetClosureVars.test_builtins_as_dict @ linux-x86_64
 test.test_inspect.test_inspect.TestGetClosureVars.test_builtins_as_module @ linux-x86_64
 test.test_inspect.test_inspect.TestGetClosureVars.test_builtins_fallback @ linux-x86_64
@@ -171,6 +175,7 @@ test.test_inspect.test_inspect.TestParameterObject.test_signature_parameter_obje
 test.test_inspect.test_inspect.TestParameterObject.test_signature_parameter_positional_only @ linux-x86_64
 test.test_inspect.test_inspect.TestParameterObject.test_signature_parameter_replace @ linux-x86_64
 test.test_inspect.test_inspect.TestPredicates.test__all__ @ linux-x86_64
+test.test_inspect.test_inspect.TestPredicates.test_excluding_predicates @ linux-x86_64
 test.test_inspect.test_inspect.TestPredicates.test_get_slot_members @ linux-x86_64
 test.test_inspect.test_inspect.TestPredicates.test_isabstract @ linux-x86_64
 test.test_inspect.test_inspect.TestPredicates.test_isabstract_during_init_subclass @ linux-x86_64

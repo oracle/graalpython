@@ -139,8 +139,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetI
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
-import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -176,6 +174,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameType
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.SetTypeFlagsNodeGen;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun;
+import com.oracle.graal.python.lib.PyEvalGetGlobals;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
@@ -190,6 +189,7 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
@@ -197,8 +197,8 @@ import com.oracle.graal.python.nodes.classes.AbstractObjectGetBasesNode;
 import com.oracle.graal.python.nodes.classes.AbstractObjectIsSubclassNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListNode;
-import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
@@ -576,7 +576,7 @@ public abstract class TypeNodes {
             return obj.getMethodResolutionOrder();
         }
 
-        @InliningCutoff
+        @TruffleBoundary
         private static void initializeMRO(PythonManagedClass obj, Node inliningTarget, InlinedConditionProfile isPythonClass, PythonLanguage language) {
             PythonAbstractClass[] mro = ComputeMroNode.doSlowPath(inliningTarget, obj, false);
             if (isPythonClass.profile(inliningTarget, obj instanceof PythonClass)) {
@@ -1623,23 +1623,22 @@ public abstract class TypeNodes {
             return computeMethodResolutionOrder(node, cls, invokeMro);
         }
 
-        // No BoundaryCallContext: TODO: unlikely, but __mro__ lookup and call can run arbitrary
-        // code
         @TruffleBoundary
         static PythonAbstractClass[] invokeMro(Node node, PythonAbstractClass cls) {
             Object type = GetClassNode.executeUncached(cls);
-            if (IsTypeNode.executeUncached(type) && type instanceof PythonClass) {
-                Object mroMeth = LookupAttributeInMRONode.Dynamic.getUncached().execute(type, T_MRO);
-                if (mroMeth instanceof PFunction) {
-                    Object mroObj = CallUnaryMethodNode.getUncached().executeObject(mroMeth, cls);
-                    if (mroObj instanceof PSequence mroSequence) {
-                        SequenceStorage mroStorage = mroSequence.getSequenceStorage();
-                        return mroCheck(node, cls, GetInternalObjectArrayNode.executeUncached(mroStorage), mroStorage);
-                    }
-                    throw PRaiseNode.raiseStatic(node, TypeError, ErrorMessages.OBJ_NOT_ITERABLE, cls);
-                }
+            if (BuiltinClassProfiles.IsBuiltinClassExactProfile.profileClassSlowPath(type, PythonBuiltinClassType.PythonClass)) {
+                // Default type.mro
+                return null;
             }
-            return null;
+            Object mroMeth = LookupSpecialMethodNode.Dynamic.executeUncached(type, T_MRO, cls);
+            if (mroMeth instanceof PBuiltinFunction f && f.getNodeClass() != null && TypeBuiltins.MroNode.class.isAssignableFrom(f.getNodeClass())) {
+                // Default type.mro
+                return null;
+            }
+            Object mroObj = CallUnaryMethodNode.getUncached().executeObject(mroMeth, cls);
+            PTuple mroTuple = TupleNodes.ConstructTupleNode.getUncached().execute(null, mroObj);
+            SequenceStorage mroStorage = mroTuple.getSequenceStorage();
+            return mroCheck(node, cls, GetInternalObjectArrayNode.executeUncached(mroStorage), mroStorage);
         }
 
         private static PythonAbstractClass[] computeMethodResolutionOrder(Node node, PythonAbstractClass cls, boolean invokeMro) {
@@ -1930,7 +1929,6 @@ public abstract class TypeNodes {
         public abstract PythonClass execute(VirtualFrame frame, PDict namespaceOrig, TruffleString name, PTuple bases, Object metaclass, PKeyword[] kwds);
 
         @Child private ReadAttributeFromObjectNode readAttrNode;
-        @Child private ReadCallerFrameNode readCallerFrameNode;
         @Child private CastToTruffleStringNode castToStringNode;
 
         private ReadAttributeFromObjectNode ensureReadAttrNode() {
@@ -1939,14 +1937,6 @@ public abstract class TypeNodes {
                 readAttrNode = insert(ReadAttributeFromObjectNode.create());
             }
             return readAttrNode;
-        }
-
-        private ReadCallerFrameNode getReadCallerFrameNode() {
-            if (readCallerFrameNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                readCallerFrameNode = insert(ReadCallerFrameNode.create());
-            }
-            return readCallerFrameNode;
         }
 
         private CastToTruffleStringNode ensureCastToStringNode() {
@@ -1978,7 +1968,8 @@ public abstract class TypeNodes {
                         @Cached PRaiseNode raise,
                         @Cached ExceptionNodes.FormatNoteNode formatNoteNode,
                         @Cached AllocateTypeWithMetaclassNode typeMetaclass,
-                        @Cached GetOrCreateDictNode getOrCreateDictNode) {
+                        @Cached GetOrCreateDictNode getOrCreateDictNode,
+                        @Cached PyEvalGetGlobals getGlobals) {
             PDict namespace = PFactory.createDict(language);
             namespace.setDictStorage(initNode.execute(frame, namespaceOrig, PKeyword.EMPTY_KEYWORDS));
             PythonClass newType = typeMetaclass.execute(frame, name, bases, namespace, metaclass);
@@ -1986,13 +1977,7 @@ public abstract class TypeNodes {
             // set '__module__' attribute
             Object moduleAttr = ensureReadAttrNode().execute(newType, SpecialAttributeNames.T___MODULE__);
             if (moduleAttr == PNone.NO_VALUE) {
-                PythonObject globals;
-                if (getRootNode() instanceof BuiltinFunctionRootNode) {
-                    PFrame callerFrame = getReadCallerFrameNode().executeWith(frame, 0);
-                    globals = callerFrame != null ? callerFrame.getGlobals() : null;
-                } else {
-                    globals = PArguments.getGlobals(frame);
-                }
+                PythonObject globals = getGlobals.execute(frame, inliningTarget);
                 if (globals != null) {
                     TruffleString moduleName = getModuleNameFromGlobals(inliningTarget, globals, getItemGlobals);
                     if (moduleName != null) {

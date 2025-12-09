@@ -1,5 +1,6 @@
 {
   "interpreter/sieve.py": {
+    "policy": "outlier-elimination-individual-builds",
     "builds": {
       "count": 3,
       "lower-percentile": 0,
@@ -12,6 +13,7 @@
     }
   },
   "interpreter/fibonacci.py": {
+    "policy": "outlier-elimination-individual-builds",
     "builds": {
       "count": 5,
       "lower-percentile": 0,
@@ -24,6 +26,7 @@
     }
   },
   "interpreter/deltablue.py": {
+    "policy": "outlier-elimination-individual-builds",
     "builds": {
       "count": 5,
       "lower-percentile": 0,
@@ -36,6 +39,7 @@
     }
   },
   "interpreter/richards.py": {
+    "policy": "outlier-elimination-individual-builds",
     "builds": {
       "count": 5,
       "lower-percentile": 0,
@@ -48,6 +52,7 @@
     }
   },
   "interpreter/arith-binop.py": {
+    "policy": "outlier-elimination-individual-builds",
     "builds": {
       "count": 2,
       "lower-percentile": 0,
@@ -60,6 +65,7 @@
     }
   },
   "interpreter/arith-modulo-sized.py": {
+    "policy": "outlier-elimination-individual-builds",
     "builds": {
       "count": 2,
       "lower-percentile": 0,
@@ -72,6 +78,7 @@
     }
   },
   "interpreter/attribute-access.py": {
+    "policy": "outlier-elimination-individual-builds",
     "builds": {
       "count": 5,
       "lower-percentile": 0.2,
@@ -84,6 +91,7 @@
     }
   },
   "interpreter/attribute-access-polymorphic.py": {
+    "policy": "outlier-elimination-individual-builds",
     "builds": {
       "count": 3,
       "lower-percentile": 0,
@@ -96,6 +104,7 @@
     }
   },
   "interpreter/attribute-access-super.py": {
+    "policy": "outlier-elimination-individual-builds",
     "builds": {
       "count": 3,
       "lower-percentile": 0.33,
@@ -108,6 +117,7 @@
     }
   },
   "interpreter/attribute-bool.py": {
+    "policy": "outlier-elimination-individual-builds",
     "builds": {
       "count": 4,
       "lower-percentile": 0.25,
@@ -120,6 +130,7 @@
     }
   },
   "interpreter/boolean-logic-sized.py": {
+    "policy": "outlier-elimination-individual-builds",
     "builds": {
       "count": 5,
       "lower-percentile": 0,
@@ -132,6 +143,7 @@
     }
   },
   "interpreter/builtin-len.py": {
+    "policy": "outlier-elimination-individual-builds",
     "builds": {
       "count": 5,
       "lower-percentile": 0,
@@ -144,6 +156,7 @@
     }
   },
   "interpreter/builtin-len-tuple-sized.py": {
+    "policy": "outlier-elimination-individual-builds",
     "builds": {
       "count": 4,
       "lower-percentile": 0,
@@ -156,6 +169,7 @@
     }
   },
   "interpreter/call-classmethod-sized.py": {
+    "policy": "outlier-elimination-individual-builds",
     "builds": {
       "count": 4,
       "lower-percentile": 0.25,
@@ -168,6 +182,7 @@
     }
   },
   "interpreter/call-method-polymorphic.py": {
+    "policy": "outlier-elimination-individual-builds",
     "builds": {
       "count": 5,
       "lower-percentile": 0.2,
@@ -180,6 +195,7 @@
     }
   },
   "interpreter/bytecode-benchmark.py": {
+    "policy": "outlier-elimination-individual-builds",
     "builds": {
       "count": 4,
       "lower-percentile": 0.25,
@@ -192,6 +208,7 @@
     }
   },
   "interpreter/for-range.py": {
+    "policy": "outlier-elimination-individual-builds",
     "builds": {
       "count": 4,
       "lower-percentile": 0,
@@ -204,6 +221,7 @@
     }
   },
   "interpreter/generate-functions-sized.py": {
+    "policy": "outlier-elimination-individual-builds",
     "builds": {
       "count": 3,
       "lower-percentile": 0.33,
@@ -216,11 +234,77 @@
     }
   },
   "interpreter/pyinit.py": {
+    "policy": "outlier-elimination-individual-builds",
     "builds": {
       "count": 0
     },
     "run-forks": {
       "count": 0
     }
+  },
+  "interpreter/c-arith-binop.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "3x3",
+    "focus": "0.0-0.3"
+  },
+  "interpreter/c-arith-binop2.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "3x4",
+    "focus": "0.0-0.3"
+  },
+  "interpreter/c-call-classmethod.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "4x3",
+    "focus": "0.2-0.5"
+  },
+  "interpreter/c-call-method-int-float.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "3x3",
+    "focus": "0.3-0.65"
+  },
+  "interpreter/c-call-method.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "4x3",
+    "focus": "0.0-0.3"
+  },
+  "interpreter/c-instantiate-large.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "3x3",
+    "focus": "0.0-0.3"
+  },
+  "interpreter/c-issubtype-monorphic.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "5x3",
+    "focus": "0.3-0.65"
+  },
+  "interpreter/c-issubtype-polymorphic-forced-to-native.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "3x5",
+    "focus": "0.2-0.5"
+  },
+  "interpreter/c-issubtype-polymorphic.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "5x3",
+    "focus": "0.0-1.0"
+  },
+  "interpreter/c-list-iterating-obj.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "4x3",
+    "focus": "0.3-0.65"
+  },
+  "interpreter/c-magic-bool.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "3x4",
+    "focus": "0.0-0.3"
+  },
+  "interpreter/c-magic-iter.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "3x5",
+    "focus": "0.2-0.5"
+  },
+  "interpreter/c-member-access.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "3x3",
+    "focus": "0.0-0.3"
   }
 }
