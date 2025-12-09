@@ -137,7 +137,10 @@ public final class ExceptionUtils {
 
                 if (bytecodeNode != null) {
                     int bci = bytecodeNode.getBytecodeIndex(frame);
-                    return bytecodeNode.getBytecodeLocation(bci).getSourceLocation().getStartLine();
+                    SourceSection sourceLocation = bytecodeNode.getBytecodeLocation(bci).getSourceLocation();
+                    if (sourceLocation != null) {
+                        return sourceLocation.getStartLine();
+                    }
                 }
             } else {
                 return ((BytecodeFrameInfo) frameInfo).getLine(frame);

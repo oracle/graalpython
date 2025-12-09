@@ -40,9 +40,12 @@
  */
 package com.oracle.graal.python.test.integration.runtime;
 
+import static com.oracle.graal.python.test.integration.PythonTests.eval;
+
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 
+import org.graalvm.polyglot.Value;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
@@ -68,7 +71,9 @@ public class ProfileTests {
 
     @Test
     public void profileException() {
-        Assume.assumeFalse("TODO: wrong stacktrace", Boolean.getBoolean("python.EnableBytecodeDSLInterpreter"));
+        Value isBytecodeDLS = eval("__graalpython__.is_bytecode_dsl_interpreter");
+        // GR-71916
+        Assume.assumeFalse("TODO: wrong stacktrace", isBytecodeDLS.asBoolean());
         String source = "import sys\n" +
                         "def f(frame, event, arg): print(frame, event, arg)\n" +
                         "sys.setprofile(f)\n" +
