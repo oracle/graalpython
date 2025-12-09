@@ -253,6 +253,9 @@ def _is_overridden_native_image_arg(prefix):
 
 
 def github_ci_build_args():
+    # Determine memory and parallelism for GitHub CI builds
+    # Use 90% of available memory up to 14GB, but at least 8GB
+    # Set cores to number of CPUs if at least 4 cores and enough memory, otherwise 1
     total_mem = psutil.virtual_memory().total / (1024 ** 3)
     min_bound = 8
     max_mem = 14*1024
@@ -347,7 +350,6 @@ def libpythonvm_build_args():
         ]
     else:
         print(invert("Not using an automatically selected PGO profile"), file=sys.stderr)
-    print(f"[DEBUG] libpythonvm args: {build_args}")
     return build_args
 
 
@@ -849,7 +851,6 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
     
     print(f"[DEBUG] GITHUB_CI env: {os.environ.get('GITHUB_CI')}")
     if GITHUB_CI:
-        print("[DEBUG] Running in GitHub Ci")
         mx_args.append("--extra-image-builder-argument=-Ob")
     else:
         mx_args.append("--extra-image-builder-argument=-g")
@@ -1259,8 +1260,6 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
         args += paths
     else:
         args.append(os.path.relpath(_python_unittest_root()))
-
-    print(f"[DEBUG] args: {args}")
 
     mx.logv(shlex.join([python_binary] + args))
     if lock:

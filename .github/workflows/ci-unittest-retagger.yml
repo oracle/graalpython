@@ -33,7 +33,6 @@ jobs:
       - name: Init Github branch
         working-directory: main
         run: |
-          echo "Set new repo origin url"
           git remote set-url origin https://$GH_TOKEN@github.com/${{ github.repository }}.git
           git remote -v
           git config --global user.name "Retagger Workflow" 
@@ -47,7 +46,6 @@ jobs:
         working-directory: main
         run: |
           mkdir -p ../retagger-reports ../diffs
-          ls && ls ..
           mv retagger-report*.json ../retagger-reports
 
           declare -a os_list=("linux-x86_64" "linux-aarch64" "win32-AMD64")
