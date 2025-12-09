@@ -64,6 +64,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -78,6 +79,7 @@ public abstract class ImportStarNode extends AbstractImportNode {
     @Specialization
     void doImport(VirtualFrame frame, TruffleString moduleName, int level,
                     @Bind Node inliningTarget,
+                    @CachedLibrary(limit = "1") InteropLibrary interopLib,
                     @Cached ImportName importNameNode,
                     @Cached PyObjectSetItem setItemNode,
                     @Cached PyObjectSetAttr setAttrNode,
@@ -98,9 +100,8 @@ public abstract class ImportStarNode extends AbstractImportNode {
             locals = PArguments.getGlobals(frame);
         }
 
-        if (javaImport.profile(inliningTarget, emulateJython() && getContext().getEnv().isHostObject(importedModule))) {
+        if (javaImport.profile(inliningTarget, emulateJython() && interopLib.isHostObject(importedModule))) {
             try {
-                InteropLibrary interopLib = InteropLibrary.getFactory().getUncached();
                 Object hostAttrs = interopLib.getMembers(importedModule, true);
                 int len = (int) interopLib.getArraySize(hostAttrs);
                 for (int i = 0; i < len; i++) {

@@ -920,20 +920,19 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
                 throw raiseNode.raise(inliningTarget, SystemError, ErrorMessages.CANT_EXTEND_JAVA_CLASS_NOT_JVM);
             }
 
-            Env env = PythonContext.get(inliningTarget).getEnv();
-            if (!isType(value, env, lib)) {
+            if (!isType(value, lib)) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANT_EXTEND_JAVA_CLASS_NOT_TYPE, value);
             }
 
             try {
-                return env.createHostAdapter(new Object[]{value});
+                return PythonContext.get(inliningTarget).getEnv().createHostAdapter(new Object[]{value});
             } catch (Exception ex) {
                 throw raiseNode.raise(inliningTarget, TypeError, PythonUtils.getMessage(ex), ex);
             }
         }
 
-        protected static boolean isType(Object obj, Env env, InteropLibrary lib) {
-            return env.isHostObject(obj) && (env.isHostSymbol(obj) || lib.isMetaObject(obj));
+        protected static boolean isType(Object obj, InteropLibrary lib) {
+            return lib.isHostObject(obj) && lib.isMetaObject(obj);
         }
 
     }

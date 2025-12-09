@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_ARRAY;
@@ -67,7 +68,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -78,6 +78,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.HeapIsolationException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -175,16 +176,22 @@ public final class JArrayModuleBuiltins extends PythonBuiltins {
             return PythonContext.get(inliningTarget).getEnv().asGuestValue(array);
         }
 
-        @Specialization(guards = "!isString(classObj)")
+        @Specialization(guards = "!isString(classObj)", limit = "1")
         static Object fromClass(int length, Object classObj,
                         @Bind Node inliningTarget,
+                        @CachedLibrary("classObj") InteropLibrary lib,
                         @Cached PRaiseNode raiseNode) {
-            TruffleLanguage.Env env = PythonContext.get(inliningTarget).getEnv();
-            if (env.isHostObject(classObj)) {
-                Object clazz = env.asHostObject(classObj);
-                if (clazz instanceof Class) {
-                    Object array = Array.newInstance((Class<?>) clazz, length);
-                    return env.asGuestValue(array);
+            if (lib.isHostObject(classObj)) {
+                try {
+                    Object clazz = lib.asHostObject(classObj);
+                    if (clazz instanceof Class) {
+                        Object array = Array.newInstance((Class<?>) clazz, length);
+                        return PythonContext.get(inliningTarget).getEnv().asGuestValue(array);
+                    }
+                } catch (HeapIsolationException e) {
+                    throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.CANNOT_ACCESS_JAVA_CLASS_FROM_DIFFERENT_HEAP);
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
                 }
             }
             throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.SECOND_ARG_MUST_BE_STR_OR_JAVA_CLS, classObj);

@@ -69,7 +69,6 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -170,7 +169,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object doIt(Node inliningTarget, Object object, Object memberObj,
-                        @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") InteropLibrary read,
+                        @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") InteropLibrary lib,
                         @Cached(inline = false) CastToJavaStringNode castToString,
                         @Cached(inline = false) GilNode gil,
                         @Cached(inline = false) PForeignToPTypeNode toPythonNode,
@@ -184,15 +183,15 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                     throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, memberObj);
                 }
 
-                if (read.isMemberReadable(object, member)) {
-                    return toPythonNode.executeConvert(read.readMember(object, member));
+                if (lib.isMemberReadable(object, member)) {
+                    return toPythonNode.executeConvert(lib.readMember(object, member));
                 } else if (PythonLanguage.get(inliningTarget).getEngineOption(PythonOptions.EmulateJython)) {
                     // no profile, above condition should fold to false when EmulateJython is off
-                    if (PythonContext.get(inliningTarget).getEnv().isHostObject(object)) {
+                    if (lib.isHostObject(object)) {
                         String getter = asJavaPrefixedMethod("get", member);
-                        if (read.isMemberInvocable(object, getter)) {
+                        if (lib.isMemberInvocable(object, getter)) {
                             try {
-                                return toPythonNode.executeConvert(read.invokeMember(object, getter));
+                                return toPythonNode.executeConvert(lib.invokeMember(object, getter));
                             } catch (UnsupportedTypeException ignored) {
                                 // fall through to AttributeError
                             }
@@ -233,7 +232,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                     if (PythonLanguage.get(inliningTarget).getEngineOption(PythonOptions.EmulateJython)) {
                         // no profile, above condition folds to false when EmulateJython is off
                         try {
-                            if (PythonContext.get(inliningTarget).getEnv().isHostObject(object)) {
+                            if (lib.isHostObject(object)) {
                                 String setter = asJavaPrefixedMethod("set", member);
                                 if (lib.isMemberInvocable(object, setter)) {
                                     lib.invokeMember(object, setter, value);
@@ -382,7 +381,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
         @Override
         protected TruffleString defaultConversion(VirtualFrame frame, InteropLibrary lib, Object object) {
             try {
-                if (getContext().getEnv().isHostObject(object)) {
+                if (lib.isHostObject(object)) {
                     boolean isMetaObject = lib.isMetaObject(object);
                     Object metaObject = null;
                     if (isMetaObject) {

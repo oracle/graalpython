@@ -222,7 +222,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -238,7 +237,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ControlFlowException;
@@ -1515,7 +1513,6 @@ public abstract class TypeNodes {
         @Specialization(guards = {"isForeignObject(left)", "isForeignObject(right)"})
         @InliningCutoff
         static boolean doOther(Object left, Object right,
-                        @Bind PythonContext context,
                         @CachedLibrary(limit = "2") InteropLibrary lib) {
             if (lib.isMetaObject(left) && lib.isMetaObject(right)) {
                 if (left == right) {
@@ -1524,28 +1521,22 @@ public abstract class TypeNodes {
                 // *sigh*... Host classes have split personality with a "static" and a "class"
                 // side, and that affects identity comparisons. And they report their "class" sides
                 // as bases, but importing from Java gives you the "static" side.
-                Env env = context.getEnv();
-                if (env.isHostObject(left) && env.isHostObject(right)) {
-                    // the activation of isMemberReadable and later readMember serves as branch
-                    // profile
-                    boolean leftIsStatic = lib.isMemberReadable(left, "class");
-                    boolean rightIsStatic = lib.isMemberReadable(right, "class");
+                if (lib.isHostObject(left) && lib.isHostObject(right)) {
+                    boolean leftIsStatic = lib.isScope(left);
+                    boolean rightIsStatic = lib.isScope(right);
                     if (leftIsStatic != rightIsStatic) {
                         try {
                             if (leftIsStatic) {
-                                left = lib.readMember(left, "class");
+                                right = lib.getStaticScope(right);
                             } else {
-                                assert rightIsStatic;
-                                right = lib.readMember(right, "class");
+                                left = lib.getStaticScope(left);
                             }
-                        } catch (UnsupportedMessageException | UnknownIdentifierException e) {
+                        } catch (UnsupportedMessageException e) {
                             throw CompilerDirectives.shouldNotReachHere(e);
                         }
                     }
                 }
-                if (lib.isIdentical(left, right, lib)) {
-                    return true;
-                }
+                return lib.isIdentical(left, right, lib);
             }
             return false;
         }
