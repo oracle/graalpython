@@ -497,8 +497,6 @@ def update_tags(test_file: 'TestFile', results: list[TestResult], tag_platform: 
                 untag_failed=False, untag_skipped=False, untag_missing=False):
     current = read_tags(test_file, allow_exclusions=True)
     exclusions, current = partition_list(current, lambda t: t.is_exclusion)
-    print(f"exclusions tests: {exclusions}")
-    print(f"current tests: {current}")
     status_by_id = {r.test_id.normalized(): r.status for r in results}
     tag_by_id = {}
     for tag in current:
@@ -508,7 +506,6 @@ def update_tags(test_file: 'TestFile', results: list[TestResult], tag_platform: 
             tag_by_id[tag.test_id] = tag
 
     for test_id, status in status_by_id.items():
-
         if tag := tag_by_id.get(test_id):
             if status == TestStatus.SUCCESS:
                 tag_by_id[test_id] = tag.with_key(tag_platform)
@@ -1292,7 +1289,6 @@ def read_tags(test_file: TestFile, allow_exclusions=False) -> list[Tag]:
                 excluded_keys = []
                 for key in keys:
                     if key.startswith('$'):
-                        print(f"[DEBUG] Found github excluded test {test} on platform {key}")
                         excluded_keys.append(key.removeprefix('$'))
 
                 tag = Tag(
@@ -1302,7 +1298,6 @@ def read_tags(test_file: TestFile, allow_exclusions=False) -> list[Tag]:
                     is_exclusion=is_exclusion,
                     comment=comment,
                 )
-               
                 if not is_exclusion or allow_exclusions:
                     tags.append(tag)
                 comment = None
