@@ -247,9 +247,9 @@ test.test_configparser.MultilineValuesTestCase.test_case_sensitivity @ $linux-aa
 test.test_configparser.MultilineValuesTestCase.test_case_sensitivity_mapping_access @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
 test.test_configparser.MultilineValuesTestCase.test_clear @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
 test.test_configparser.MultilineValuesTestCase.test_default_case_sensitivity @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
-test.test_configparser.MultilineValuesTestCase.test_dominating_multiline_values @ $linux-aarch64,$linux-x86_64,darwin-arm64
 # Transient failure due to tmpfile creation speed in CI
 !test.test_configparser.MultilineValuesTestCase.test_dominating_multiline_values @ win32-AMD64
+test.test_configparser.MultilineValuesTestCase.test_dominating_multiline_values @ $linux-aarch64,$linux-x86_64,darwin-arm64
 test.test_configparser.MultilineValuesTestCase.test_get_after_duplicate_option_error @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
 test.test_configparser.MultilineValuesTestCase.test_invalid_multiline_value @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
 test.test_configparser.MultilineValuesTestCase.test_parse_errors @ $linux-aarch64,$linux-x86_64,darwin-arm64,win32-AMD64
