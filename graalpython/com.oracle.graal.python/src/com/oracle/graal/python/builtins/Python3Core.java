@@ -776,7 +776,7 @@ public abstract class Python3Core {
                         new StructBuiltins(),
                         new StructUnpackIteratorBuiltins(),
 
-                        // datetime
+                        // _datetime
                         new DateBuiltins(),
                         new TimeDeltaBuiltins(),
                         new DateTimeBuiltins(),

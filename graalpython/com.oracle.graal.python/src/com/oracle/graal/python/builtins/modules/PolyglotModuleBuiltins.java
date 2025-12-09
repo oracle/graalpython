@@ -1135,7 +1135,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class KeysNode extends InteropBuiltinBaseNode {
         @Specialization
-        Object remove(Object receiver,
+        Object keys(Object receiver,
                         @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             try {

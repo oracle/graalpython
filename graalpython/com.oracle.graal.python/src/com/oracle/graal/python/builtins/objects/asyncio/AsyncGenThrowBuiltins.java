@@ -119,7 +119,7 @@ public final class AsyncGenThrowBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseReuse,
                         @Cached PRaiseNode raiseAlreadyRunning,
-                        @Cached PRaiseNode raiseStopAsyncIteraion,
+                        @Cached PRaiseNode raiseStopAsyncIteration,
                         @Cached PRaiseNode raiseNonNodeToNewCoro,
                         @Cached CommonGeneratorBuiltins.ThrowNode throwNode,
                         @Cached IsBuiltinObjectExactProfile isAGWrappedValue,
@@ -152,7 +152,7 @@ public final class AsyncGenThrowBuiltins extends PythonBuiltins {
 
                 if (gen.isClosed()) {
                     self.setState(AwaitableState.CLOSED);
-                    throw raiseStopAsyncIteraion.raise(inliningTarget, PythonBuiltinClassType.StopAsyncIteration);
+                    throw raiseStopAsyncIteration.raise(inliningTarget, PythonBuiltinClassType.StopAsyncIteration);
                 }
 
                 if (sent != PNone.NONE) {
