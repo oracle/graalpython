@@ -38,8 +38,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.modules;
+package com.oracle.graal.python.builtins.modules.re;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__SRE;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_CHAR_IN_GROUP_NAME;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ESCAPE;
@@ -60,6 +61,21 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.TRegexUtil;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.PyTupleGetItem;
+import com.oracle.graal.python.lib.PyTupleSizeNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
+import com.oracle.graal.python.nodes.statement.AbstractImportNode;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.object.Shape;
 import org.graalvm.collections.EconomicMap;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -81,27 +97,17 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
-import com.oracle.graal.python.lib.PyCallableCheckNode;
-import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
-import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectAsciiNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
-import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromModuleNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonSenaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -134,13 +140,11 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ExceptionType;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -162,6 +166,12 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         addBuiltinConstant("_METHOD_SEARCH", PythonMethod.Search);
         addBuiltinConstant("_METHOD_MATCH", PythonMethod.Match);
         addBuiltinConstant("_METHOD_FULLMATCH", PythonMethod.FullMatch);
+
+        addBuiltinConstant("CODESIZE", 4);
+        addBuiltinConstant("MAGIC", 20221023);
+        addBuiltinConstant("MAXREPEAT", 4294967295L);
+        addBuiltinConstant("MAXGROUPS", 2147483647);
+
         super.initialize(core);
     }
 
@@ -184,6 +194,150 @@ public final class SREModuleBuiltins extends PythonBuiltins {
 
         public String getTRegexOption() {
             return "PythonMethod=" + name.toJavaStringUncached();
+        }
+    }
+
+    @Builtin(name = "getcodesize", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @GenerateNodeFactory
+    abstract static class GetCodeSizeNode extends PythonBuiltinNode {
+        private static final TruffleString TS_GETCODESIZE_NOT_YET_IMPLEMENTED = tsLiteral("_sre.getcodesize is not yet implemented");
+
+        @Specialization
+        static Object getCodeSize(Object self, Object[] args, PKeyword[] keywords,
+                                  @Bind Node inliningTarget,
+                                  @Cached PRaiseNode raiseNode) {
+            throw raiseNode.raise(inliningTarget, NotImplementedError, TS_GETCODESIZE_NOT_YET_IMPLEMENTED);
+        }
+    }
+
+    @Builtin(name = "unicode_iscased", minNumOfPositionalArgs = 2, parameterNames = {"$module", "codepoint"}, doc = "unicode_iscased($module, character, /)\n--\n\n")
+    @GenerateNodeFactory
+    @ArgumentClinic(name = "codepoint", conversion = ArgumentClinic.ClinicConversion.Int)
+    abstract static class UnicodeIsCasedNode extends PythonClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SREModuleBuiltinsClinicProviders.UnicodeIsCasedNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        @TruffleBoundary
+        static boolean isCased(Object module, int codepoint) {
+            if (Character.isLetter(codepoint)) {
+                return false;
+            }
+
+            return Character.toLowerCase(codepoint) != Character.toUpperCase(codepoint);
+        }
+    }
+
+    @Builtin(name = "unicode_tolower", minNumOfPositionalArgs = 2, parameterNames = {"$module", "codepoint"}, doc = "unicode_tolower($module, character, /)\n--\n\n")
+    @GenerateNodeFactory
+    @ArgumentClinic(name = "codepoint", conversion = ArgumentClinic.ClinicConversion.Int)
+    abstract static class UnicodeToLowerNode extends PythonClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SREModuleBuiltinsClinicProviders.UnicodeToLowerNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        @TruffleBoundary
+        static int toLower(Object module, int codepoint) {
+            return Character.toLowerCase(codepoint);
+        }
+    }
+
+    @Builtin(name = "ascii_iscased", minNumOfPositionalArgs = 2, parameterNames = {"$module", "codepoint"}, doc = "unicode_iscased($module, character, /)\n--\n\n")
+    @GenerateNodeFactory
+    @ArgumentClinic(name = "codepoint", conversion = ArgumentClinic.ClinicConversion.Int)
+    abstract static class AsciiIsCasedNode extends PythonClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SREModuleBuiltinsClinicProviders.AsciiIsCasedNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        @TruffleBoundary
+        static boolean isCased(Object module, int codepoint) {
+            return codepoint < 128 && Character.isLetter(codepoint);
+        }
+    }
+
+    @Builtin(name = "ascii_tolower", minNumOfPositionalArgs = 2, parameterNames = {"$module", "codepoint"}, doc = "unicode_tolower($module, character, /)\n--\n\n")
+    @GenerateNodeFactory
+    @ArgumentClinic(name = "codepoint", conversion = ArgumentClinic.ClinicConversion.Int)
+    abstract static class AsciiToLowerNode extends PythonClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SREModuleBuiltinsClinicProviders.AsciiToLowerNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        @TruffleBoundary
+        static int toLower(Object module, int codepoint) {
+            if (codepoint >= 128) {
+                return codepoint;
+            }
+
+            return Character.toLowerCase(codepoint);
+        }
+    }
+
+    @Builtin(name = "template", minNumOfPositionalArgs = 2, parameterNames = {"pattern", "template"})
+    @GenerateNodeFactory
+    abstract static class TemplateNode extends PythonBuiltinNode {
+        private static final TruffleString INVALID_TEMPLATE = tsLiteral("invalid template");
+
+        @Specialization
+        PTemplate template(VirtualFrame frame, PPattern pattern, PList template,
+                           @Bind Node inliningTarget,
+                           @Cached @Shared PRaiseNode raiseNode,
+                           @Cached SequenceStorageNodes.GetItemScalarNode getItem,
+                           @Cached PyNumberAsSizeNode asSizeNode,
+                           @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            // template is a list containing interleaved literal strings (str or bytes)
+            // and group indices (int), as returned by _parser.parse_template:
+            // [str 1, int 1, str 2, int 2, ..., str N-1, int N-1, str N].
+
+            SequenceStorage storage = template.getSequenceStorage();
+            int length = storage.length();
+
+            if ((length & 1) == 0 || length < 1) {
+                throw raiseNode.raise(inliningTarget, TypeError, INVALID_TEMPLATE);
+            }
+
+            Object[] literals = new Object[length / 2 + 1]; // there is an extra trailing literal
+            int[] indices = new int[length / 2];
+            for (int i = 0; i < length; i++) {
+                Object item = getItem.execute(inliningTarget, storage, i);
+
+                if ((i & 1) == 1) {
+                    // group index
+                    int index = asSizeNode.executeExact(frame, inliningTarget, item);
+                    if (index < 0) {
+                        throw raiseNode.raise(inliningTarget, TypeError, INVALID_TEMPLATE);
+                    }
+
+                    indices[i / 2] = index;
+                } else {
+                    // string (or bytes) literal
+                    literals[i / 2] = item;
+                }
+            }
+
+            Object cls = PythonBuiltinClassType.SRETemplate;
+            Shape shape = getInstanceShape.execute(cls);
+            return new PTemplate(cls, shape, literals, indices);
+        }
+
+        @Fallback
+        PTemplate template(Object pattern, Object template,
+                           @Bind Node inliningTarget,
+                           @Cached @Shared PRaiseNode raiseNode) {
+            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "template()", 2, "list", template);
         }
     }
 
@@ -211,13 +365,13 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         private static final TruffleString T_VALUE_ERROR_ASCII_UNICODE_INCOMPATIBLE = tsLiteral("ASCII and UNICODE flags are incompatible");
         private static final TruffleString T_VALUE_ERROR_ASCII_LOCALE_INCOMPATIBLE = tsLiteral("ASCII and LOCALE flags are incompatible");
 
-        private static final int FLAG_IGNORECASE = 2;
-        private static final int FLAG_LOCALE = 4;
-        private static final int FLAG_MULTILINE = 8;
-        private static final int FLAG_DOTALL = 16;
-        private static final int FLAG_UNICODE = 32;
-        private static final int FLAG_VERBOSE = 64;
-        private static final int FLAG_ASCII = 256;
+        public static final int FLAG_IGNORECASE = 2;
+        public static final int FLAG_LOCALE = 4;
+        public static final int FLAG_MULTILINE = 8;
+        public static final int FLAG_DOTALL = 16;
+        public static final int FLAG_UNICODE = 32;
+        public static final int FLAG_VERBOSE = 64;
+        public static final int FLAG_ASCII = 256;
 
         @TruffleBoundary
         public TRegexCache(Node node, Object pattern, int flags) {
@@ -252,6 +406,14 @@ public final class SREModuleBuiltins extends PythonBuiltins {
 
         public boolean isBinary() {
             return binary;
+        }
+
+        public Object getPattern() {
+            return pattern;
+        }
+
+        public String getFlags() {
+            return flags;
         }
 
         @Idempotent
@@ -447,7 +609,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                         } else {
                             SourceSection sourceSection = lib.getSourceLocation(e);
                             int position = sourceSection.getCharIndex();
-                            throw RaiseRegexErrorNode.executeWithPatternAndPositionUncached(reason, originalPattern, position, node);
+                            return RaiseRegexErrorNode.executeWithPatternAndPositionUncached(reason, originalPattern, position, node);
                         }
                     }
                 }
@@ -485,46 +647,16 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "tregex_init_cache", minNumOfPositionalArgs = 3)
-    @GenerateNodeFactory
-    abstract static class TRegexInitCache extends PythonTernaryBuiltinNode {
-
-        @Specialization
-        Object call(VirtualFrame frame, PythonObject patternObject, Object pattern, Object flags,
-                        @Bind Node inliningTarget,
-                        @Cached PyLongAsIntNode flagsToIntNode,
-                        @Cached HiddenAttr.WriteNode writeCacheNode) {
-            int flagsStr = flagsToIntNode.execute(frame, inliningTarget, flags);
-            TRegexCache tRegexCache = new TRegexCache(inliningTarget, pattern, flagsStr);
-            writeCacheNode.execute(inliningTarget, patternObject, HiddenAttr.TREGEX_CACHE, tRegexCache);
-            return PNone.NONE;
-        }
-    }
-
-    @Builtin(name = "tregex_compile", minNumOfPositionalArgs = 3)
-    @GenerateNodeFactory
-    @ImportStatic(PythonMethod.class)
-    abstract static class TRegexCompile extends PythonTernaryBuiltinNode {
-
-        @Specialization
-        Object doCompile(VirtualFrame frame, PythonObject pattern, PythonMethod method, boolean mustAdvance,
-                        @Bind Node inliningTarget,
-                        @Cached HiddenAttr.ReadNode readCacheNode,
-                        @Cached TRegexCompileInner innerNode) {
-            return innerNode.execute(frame, getTRegexCache(inliningTarget, pattern, readCacheNode), method, mustAdvance);
-        }
-
-        static TRegexCache getTRegexCache(Node inliningTarget, PythonObject pattern, HiddenAttr.ReadNode readCacheNode) {
-            return (TRegexCache) readCacheNode.execute(inliningTarget, pattern, HiddenAttr.TREGEX_CACHE, null);
-        }
-    }
-
     @GenerateCached
     @ImportStatic(PythonMethod.class)
     @SuppressWarnings("truffle-inlining")
-    abstract static class TRegexCompileInner extends PNodeWithContext {
+    public abstract static class TRegexCompileInner extends PNodeWithContext {
 
-        private static final TruffleString T__GETLOCALE = tsLiteral("_getlocale");
+        private static final TruffleString T_GETLOCALE = tsLiteral("getlocale");
+        private static final TruffleString T_LOCALE = tsLiteral("locale");
+        private static final TruffleString T_C = tsLiteral("C");
+        private static final TruffleString T_EN_US = tsLiteral("en_US");
+        private static final TruffleString T_DOT = tsLiteral(".");
 
         // limit of 6 specializations = 3 Python methods * 2 values of mustAdvance
         protected static final int SPECIALIZATION_LIMIT = 2 * PythonMethod.PYTHON_METHOD_COUNT;
@@ -560,13 +692,13 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = {"method == cachedMethod", "mustAdvance == cachedMustAdvance", "tRegexCache.isLocaleSensitive()"}, limit = "SPECIALIZATION_LIMIT", replaces = "cached")
         @SuppressWarnings("truffle-static-method")
         Object localeSensitive(VirtualFrame frame, TRegexCache tRegexCache, PythonMethod method, boolean mustAdvance,
-                        @Bind Node inliningTarget,
                         @Cached("method") @SuppressWarnings("unused") PythonMethod cachedMethod,
                         @Cached("mustAdvance") @SuppressWarnings("unused") boolean cachedMustAdvance,
                         @Cached("lookupGetLocaleFunction()") Object getLocale,
-                        @Cached CallNode callGetLocale,
-                        @Cached CastToTruffleStringNode castToTruffleStringNode) {
-            TruffleString locale = castToTruffleStringNode.execute(inliningTarget, callGetLocale.execute(frame, getLocale));
+                        @Cached CallNode callGetLocale) {
+            Object localeSettings = callGetLocale.execute(frame, getLocale);
+            TruffleString locale = getLocaleFromSettings(localeSettings);
+
             final Object tRegex = tRegexCache.getLocaleSensitiveRegexp(method, mustAdvance, locale);
             if (tRegex != null) {
                 return tRegex;
@@ -578,13 +710,46 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @NeverDefault
         protected Object lookupGetLocaleFunction() {
-            PythonModule module = getContext().lookupBuiltinModule(T__SRE);
-            return PyObjectLookupAttr.executeUncached(module, T__GETLOCALE);
+            PythonModule locale = AbstractImportNode.importModule(T_LOCALE);
+            return PyObjectLookupAttr.executeUncached(locale, T_GETLOCALE);
+        }
+
+        @TruffleBoundary
+        @NeverDefault
+        private TruffleString getLocaleFromSettings(Object localeSettings) {
+            // locale settings is a tuple (<language code>, <encoding>)
+
+            if (!(localeSettings instanceof PTuple tuple)) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+
+            if (PyTupleSizeNode.executeUncached(tuple) != 2) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+
+            Object languageObject = PyTupleGetItem.executeUncached(tuple, 0);
+            Object encodingObject = PyTupleGetItem.executeUncached(tuple, 1);
+
+            if (languageObject == PNone.NONE || encodingObject == PNone.NONE) {
+                return T_C;
+            }
+
+            final TruffleString language;
+            if (languageObject instanceof PNone) {
+                language = T_EN_US;
+            } else {
+                language = CastToTruffleStringNode.executeUncached(languageObject);
+            }
+
+            // return locale in form "<lang>.<encoding>", e.g. "en.UTF-8"
+            TruffleString encoding = CastToTruffleStringNode.executeUncached(encodingObject);
+            TruffleString languageWithDot = TruffleString.ConcatNode.getUncached().execute(language, T_DOT, TS_ENCODING, true);
+            return TruffleString.ConcatNode.getUncached().execute(languageWithDot, encoding, TS_ENCODING, true);
         }
     }
 
     @GenerateInline(false)       // footprint reduction 36 -> 17
-    abstract static class RECheckInputTypeNode extends Node {
+    public abstract static class RECheckInputTypeNode extends Node {
 
         private static final TruffleString T_UNSUPPORTED_INPUT_TYPE = tsLiteral("expected string or bytes-like object");
         private static final TruffleString T_UNEXPECTED_BYTES = tsLiteral("cannot use a string pattern on a bytes-like object");
@@ -616,165 +781,14 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @GenerateInline
-    @GenerateCached(false)
-    abstract static class CreateMatchFromTRegexResultNode extends PNodeWithContext {
-
-        private static final TruffleString T_MATCH_CONSTRUCTOR = tsLiteral("Match");
-        private static final TruffleString T__PATTERN__INDEXGROUP = tsLiteral("_Pattern__indexgroup");
-
-        public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object pattern, int pos, int endPos, Object regexResult, Object input);
-
-        @Specialization
-        static Object createMatch(VirtualFrame frame, Node inliningTarget, Object pattern, int pos, int endPos, Object regexResult, Object input,
-                        @Cached GetMatchConstructorNode getConstructor,
-                        @Cached InlinedConditionProfile matchProfile,
-                        @CachedLibrary(limit = "1") InteropLibrary libResult,
-                        @Cached PyObjectLookupAttr lookupIndexGroupNode,
-                        @Cached(inline = false) CallNode constructResultNode) {
-            try {
-                if (matchProfile.profile(inliningTarget, (boolean) libResult.readMember(regexResult, "isMatch"))) {
-                    Object indexGroup = lookupIndexGroupNode.execute(frame, inliningTarget, pattern, T__PATTERN__INDEXGROUP);
-                    return constructResultNode.execute(frame, getConstructor.execute(inliningTarget), pattern, pos, endPos, regexResult, input, indexGroup);
-                } else {
-                    return PNone.NONE;
-                }
-            } catch (UnsupportedMessageException | UnknownIdentifierException e) {
-                throw CompilerDirectives.shouldNotReachHere();
-            }
-        }
-
-        @GenerateInline
-        @GenerateCached(false)
-        abstract static class GetMatchConstructorNode extends PNodeWithContext {
-            public abstract Object execute(Node inliningTarget);
-
-            @Specialization(guards = "isSingleContext()")
-            static Object doSingleContext(
-                            @Cached("lookupMatchConstructor()") Object constructor) {
-                return constructor;
-            }
-
-            @Specialization(replaces = "doSingleContext")
-            static Object doRead(
-                            @Bind PythonContext context,
-                            @Cached ReadAttributeFromModuleNode read) {
-                PythonModule module = context.lookupBuiltinModule(T__SRE);
-                return read.execute(module, T_MATCH_CONSTRUCTOR);
-            }
-
-            @TruffleBoundary
-            @NeverDefault
-            protected static Object lookupMatchConstructor() {
-                PythonModule module = PythonContext.get(null).lookupBuiltinModule(T__SRE);
-                return PyObjectLookupAttr.executeUncached(module, T_MATCH_CONSTRUCTOR);
-            }
-        }
-    }
-
-    @Builtin(name = "tregex_search", minNumOfPositionalArgs = 6)
-    @GenerateNodeFactory
+    @GenerateCached
     @ImportStatic(PythonMethod.class)
-    abstract static class TRegexSearch extends PythonSenaryBuiltinNode {
-
-        @Child private HiddenAttr.ReadNode readCacheNode = HiddenAttr.ReadNode.create();
-
-        @Specialization(guards = {"isSingleContext()", "pattern == cachedPattern", "method == cachedMethod", "mustAdvance == cachedMustAdvance", "!tRegexCache.isLocaleSensitive()"}, limit = "1")
-        @SuppressWarnings({"truffle-static-method", "unused"})
-        protected Object doCached(VirtualFrame frame, PythonObject pattern, Object input, Object posArg, Object endPosArg, PythonMethod method, boolean mustAdvance,
-                        @Bind Node inliningTarget,
-                        @Cached(value = "pattern", weak = true) PythonObject cachedPattern,
-                        @Cached("method") PythonMethod cachedMethod,
-                        @Cached("mustAdvance") boolean cachedMustAdvance,
-                        @Cached @Shared TRegexCompile tRegexCompileNode,
-                        @Cached(value = "getTRegexCache(pattern)", weak = true) TRegexCache tRegexCache,
-                        @Cached(value = "tRegexCompileNode.execute(frame, pattern, method, mustAdvance)") Object compiledRegex,
-                        @Cached @Shared RECheckInputTypeNode reCheckInputTypeNode,
-                        @Cached @Shared PyNumberIndexNode indexNode,
-                        @Cached @Shared PyNumberAsSizeNode asSizeNode,
-                        @Cached @Shared PyObjectSizeNode lengthNode,
-                        @CachedLibrary(limit = "1") @Shared InteropLibrary libCompiledRegex,
-                        @Cached @Shared TRegexCallExec tRegexCallExec,
-                        @Cached @Shared CreateMatchFromTRegexResultNode createMatchFromTRegexResultNode) {
-            int pos = asSizeNode.executeExact(frame, inliningTarget, indexNode.execute(frame, inliningTarget, posArg));
-            int endPos = asSizeNode.executeExact(frame, inliningTarget, indexNode.execute(frame, inliningTarget, endPosArg));
-            int length = lengthNode.execute(frame, inliningTarget, input);
-            if (pos < 0) {
-                pos = 0;
-            } else if (pos > length) {
-                pos = length;
-            }
-            if (endPos < 0) {
-                endPos = 0;
-            } else if (endPos > length) {
-                endPos = length;
-            }
-            reCheckInputTypeNode.execute(frame, input, tRegexCache.isBinary());
-            if (libCompiledRegex.isNull(compiledRegex)) {
-                bailoutUnsupportedRegex(tRegexCache);
-            }
-            Object regexResult = tRegexCallExec.execute(frame, compiledRegex, input, pos, endPos);
-            return createMatchFromTRegexResultNode.execute(frame, inliningTarget, pattern, pos, endPos, regexResult, input);
-        }
-
-        @Specialization(guards = {"tRegexCompileNode.execute(frame, pattern, method, mustAdvance) == compiledRegex", "method == cachedMethod",
-                        "mustAdvance == cachedMustAdvance", "!tRegexCache.isLocaleSensitive()"}, limit = "1", replaces = "doCached")
-        @SuppressWarnings("truffle-static-method")
-        protected Object doCachedRegex(VirtualFrame frame, PythonObject pattern, Object input, Object posArg, Object endPosArg, PythonMethod method, boolean mustAdvance,
-                        @Bind Node inliningTarget,
-                        @Cached("method") PythonMethod cachedMethod,
-                        @Cached("mustAdvance") @SuppressWarnings("unused") boolean cachedMustAdvance,
-                        @Cached @Shared TRegexCompile tRegexCompileNode,
-                        @Cached(value = "getTRegexCache(pattern)", weak = true) TRegexCache tRegexCache,
-                        @Cached(value = "tRegexCompileNode.execute(frame, pattern, method, mustAdvance)") Object compiledRegex,
-                        @Cached @Shared RECheckInputTypeNode reCheckInputTypeNode,
-                        @Cached @Shared PyNumberIndexNode indexNode,
-                        @Cached @Shared PyNumberAsSizeNode asSizeNode,
-                        @Cached @Shared PyObjectSizeNode lengthNode,
-                        @CachedLibrary(limit = "1") @Shared InteropLibrary libCompiledRegex,
-                        @Cached @Shared TRegexCallExec tRegexCallExec,
-                        @Cached @Shared CreateMatchFromTRegexResultNode createMatchFromTRegexResultNode) {
-            return doCached(frame, pattern, input, posArg, endPosArg, method, mustAdvance, inliningTarget, pattern, cachedMethod, mustAdvance, tRegexCompileNode, tRegexCache,
-                            compiledRegex, reCheckInputTypeNode, indexNode, asSizeNode, lengthNode, libCompiledRegex,
-                            tRegexCallExec, createMatchFromTRegexResultNode);
-        }
-
-        @Specialization(guards = "method == cachedMethod", limit = "PYTHON_METHOD_COUNT", replaces = {"doCached", "doCachedRegex"})
-        @SuppressWarnings("truffle-static-method")
-        @ReportPolymorphism.Megamorphic
-        protected Object doDynamic(VirtualFrame frame, PythonObject pattern, Object input, Object posArg, Object endPosArg, PythonMethod method, boolean mustAdvance,
-                        @Bind Node inliningTarget,
-                        @Cached("method") PythonMethod cachedMethod,
-                        @Cached @Shared TRegexCompile tRegexCompileNode,
-                        @Cached @Shared PyNumberIndexNode indexNode,
-                        @Cached @Shared PyNumberAsSizeNode asSizeNode,
-                        @Cached @Shared RECheckInputTypeNode reCheckInputTypeNode,
-                        @Cached @Shared PyObjectSizeNode lengthNode,
-                        @CachedLibrary(limit = "1") @Shared InteropLibrary libCompiledRegex,
-                        @Cached @Shared TRegexCallExec tRegexCallExec,
-                        @Cached @Shared CreateMatchFromTRegexResultNode createMatchFromTRegexResultNode) {
-            TRegexCache tRegexCache = getTRegexCache(pattern);
-            Object compiledRegex = tRegexCompileNode.execute(frame, pattern, method, mustAdvance);
-            return doCached(frame, pattern, input, posArg, endPosArg, method, mustAdvance, inliningTarget, pattern, cachedMethod, mustAdvance, tRegexCompileNode, tRegexCache,
-                            compiledRegex, reCheckInputTypeNode, indexNode, asSizeNode, lengthNode, libCompiledRegex,
-                            tRegexCallExec, createMatchFromTRegexResultNode);
-        }
-
-        protected TRegexCache getTRegexCache(PythonObject pattern) {
-            return (TRegexCache) readCacheNode.executeCached(pattern, HiddenAttr.TREGEX_CACHE, null);
-        }
-    }
-
-    private static void bailoutUnsupportedRegex(TRegexCache tRegexCache) {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw CompilerDirectives.shouldNotReachHere("unsupported regular expression: /" + tRegexCache.pattern + "/" + tRegexCache.flags);
-    }
-
-    @Builtin(name = "tregex_call_exec", minNumOfPositionalArgs = 4)
-    @GenerateNodeFactory
-    abstract static class TRegexCallExec extends PythonQuaternaryBuiltinNode {
+    @SuppressWarnings("truffle-inlining")
+    public abstract static class TRegexCallExec extends Node {
 
         @Child private BufferToTruffleStringNode bufferToTruffleStringNode;
+
+        public abstract Object execute(VirtualFrame frame, Object callable, Object inputStringOrBytes, int fromIndex, int toIndex);
 
         // limit of 2 specializations to allow inlining of both a must_advance=False and a
         // must_advance=True version in re builtins like sub, split, findall
@@ -841,7 +855,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
 
             @NeverDefault
             public static BufferToTruffleStringNode create() {
-                return SREModuleBuiltinsFactory.TRegexCallExecFactory.BufferToTruffleStringNodeGen.create();
+                return SREModuleBuiltinsFactory.TRegexCallExecNodeGen.BufferToTruffleStringNodeGen.create();
             }
         }
 
@@ -882,38 +896,8 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "tregex_re_split", minNumOfPositionalArgs = 3, parameterNames = {"pattern", "input", "maxsplit"})
-    @GenerateNodeFactory
-    @ArgumentClinic(name = "maxsplit", conversion = ArgumentClinic.ClinicConversion.Index)
-    abstract static class TRegexRESplit extends PythonTernaryClinicBuiltinNode {
-
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return SREModuleBuiltinsClinicProviders.TRegexRESplitClinicProviderGen.INSTANCE;
-        }
-
-        @Specialization
-        static Object doCached(VirtualFrame frame, PythonObject pattern, Object input, int maxsplit,
-                        @Bind Node inliningTarget,
-                        @Cached HiddenAttr.ReadNode readCacheNode,
-                        @Cached TRegexCompileInner tRegexCompile,
-                        @Cached RECheckInputTypeNode checkInputTypeNode,
-                        @Cached TRegexUtil.InteropReadMemberNode readGroupCountNode,
-                        @Cached(inline = true) TRegexRESplitInnerNode1 innerNode) {
-            TRegexCache tRegexCache = TRegexCompile.getTRegexCache(inliningTarget, pattern, readCacheNode);
-            Object compiledRegex = tRegexCompile.execute(frame, tRegexCache, PythonMethod.Search, false);
-            Object compiledRegexMustAdvance = tRegexCompile.execute(frame, tRegexCache, PythonMethod.Search, true);
-            if (compiledRegex == PNone.NONE || compiledRegexMustAdvance == PNone.NONE) {
-                bailoutUnsupportedRegex(tRegexCache);
-            }
-            checkInputTypeNode.execute(frame, input, tRegexCache.binary);
-            int groupCount = TRegexUtil.TRegexCompiledRegexAccessor.groupCount(compiledRegex, inliningTarget, readGroupCountNode);
-            return innerNode.execute(inliningTarget, frame, compiledRegex, compiledRegexMustAdvance, input, maxsplit, tRegexCache.binary, groupCount);
-        }
-    }
-
     /**
-     * There are multiple nested inner nodes used in {@link TRegexRESplit}. The number at the end of
+     * There are multiple nested inner nodes used in {@link PatternBuiltins.SplitNode}. The number at the end of
      * each inner node indicates the nesting level.
      * <p>
      * First level: separate specializations for strings ({@link TruffleString}, {@link PString})
@@ -1053,39 +1037,8 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "tregex_re_findall", minNumOfPositionalArgs = 4, parameterNames = {"pattern", "input", "pos", "endpos"})
-    @GenerateNodeFactory
-    @ArgumentClinic(name = "pos", conversion = ArgumentClinic.ClinicConversion.Index)
-    @ArgumentClinic(name = "endpos", conversion = ArgumentClinic.ClinicConversion.Index)
-    abstract static class TRegexREFindAll extends PythonQuaternaryClinicBuiltinNode {
-
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return SREModuleBuiltinsClinicProviders.TRegexREFindAllClinicProviderGen.INSTANCE;
-        }
-
-        @Specialization
-        static Object doCached(VirtualFrame frame, PythonObject pattern, Object input, int pos, int endpos,
-                        @Bind Node inliningTarget,
-                        @Cached HiddenAttr.ReadNode readCacheNode,
-                        @Cached TRegexCompileInner tRegexCompile,
-                        @Cached RECheckInputTypeNode checkInputTypeNode,
-                        @Cached TRegexUtil.InteropReadMemberNode readGroupCountNode,
-                        @Cached(inline = true) TRegexREFindAllInnerNode1 innerNode) {
-            TRegexCache tRegexCache = TRegexCompile.getTRegexCache(inliningTarget, pattern, readCacheNode);
-            Object compiledRegex = tRegexCompile.execute(frame, tRegexCache, PythonMethod.Search, false);
-            Object compiledRegexMustAdvance = tRegexCompile.execute(frame, tRegexCache, PythonMethod.Search, true);
-            if (compiledRegex == PNone.NONE || compiledRegexMustAdvance == PNone.NONE) {
-                bailoutUnsupportedRegex(tRegexCache);
-            }
-            checkInputTypeNode.execute(frame, input, tRegexCache.binary);
-            int groupCount = TRegexUtil.TRegexCompiledRegexAccessor.groupCount(compiledRegex, inliningTarget, readGroupCountNode);
-            return innerNode.execute(inliningTarget, frame, compiledRegex, compiledRegexMustAdvance, input, pos, endpos, tRegexCache.binary, groupCount);
-        }
-    }
-
     /**
-     * There are multiple nested inner nodes used in {@link TRegexREFindAll}. The number at the end
+     * There are multiple nested inner nodes used in {@link PatternBuiltins.FindAllNode}. The number at the end
      * of each inner node indicates the nesting level.
      * <p>
      * First level: separate specializations for strings ({@link TruffleString}, {@link PString})
@@ -1231,70 +1184,8 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "tregex_re_subn", minNumOfPositionalArgs = 4, parameterNames = {"pattern", "replacement", "input", "count"})
-    @GenerateNodeFactory
-    @ArgumentClinic(name = "count", conversion = ArgumentClinic.ClinicConversion.Index)
-    abstract static class TRegexRESubn extends PythonQuaternaryClinicBuiltinNode {
-
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return SREModuleBuiltinsClinicProviders.TRegexRESubnClinicProviderGen.INSTANCE;
-        }
-
-        @Specialization
-        static Object doCached(VirtualFrame frame, PythonObject pattern, Object replacement, Object input, int count,
-                        @Bind Node inliningTarget,
-                        @Cached HiddenAttr.ReadNode readCacheNode,
-                        @Cached TRegexCompileInner tRegexCompile,
-                        @Cached RECheckInputTypeNode checkInputTypeNode,
-                        @Cached PyCallableCheckNode callableCheckNode,
-                        @Cached(inline = true) TRegexRESubnInnerNode1 innerNode1) {
-            return doSubn(frame, pattern, replacement, input, count, true, inliningTarget, readCacheNode, tRegexCompile, checkInputTypeNode, callableCheckNode, innerNode1);
-        }
-
-        private static Object doSubn(VirtualFrame frame, PythonObject pattern, Object replacement, Object input, int count, boolean returnTuple,
-                        Node inliningTarget,
-                        HiddenAttr.ReadNode readCacheNode,
-                        TRegexCompileInner tRegexCompile,
-                        RECheckInputTypeNode checkInputTypeNode,
-                        PyCallableCheckNode callableCheckNode,
-                        TRegexRESubnInnerNode1 innerNode1) {
-            TRegexCache tRegexCache = TRegexCompile.getTRegexCache(inliningTarget, pattern, readCacheNode);
-            Object compiledRegex = tRegexCompile.execute(frame, tRegexCache, PythonMethod.Search, false);
-            Object compiledRegexMustAdvance = tRegexCompile.execute(frame, tRegexCache, PythonMethod.Search, true);
-            if (compiledRegex == PNone.NONE || compiledRegexMustAdvance == PNone.NONE) {
-                bailoutUnsupportedRegex(tRegexCache);
-            }
-            checkInputTypeNode.execute(frame, input, tRegexCache.binary);
-            return innerNode1.execute(inliningTarget, frame, pattern, compiledRegex, compiledRegexMustAdvance, replacement, input, count, tRegexCache.binary,
-                            callableCheckNode.execute(inliningTarget, replacement), returnTuple);
-        }
-    }
-
-    @Builtin(name = "tregex_re_sub", minNumOfPositionalArgs = 4, parameterNames = {"pattern", "replacement", "input", "count"})
-    @GenerateNodeFactory
-    @ArgumentClinic(name = "count", conversion = ArgumentClinic.ClinicConversion.Index)
-    abstract static class TRegexRESub extends PythonQuaternaryClinicBuiltinNode {
-
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return SREModuleBuiltinsClinicProviders.TRegexRESubClinicProviderGen.INSTANCE;
-        }
-
-        @Specialization
-        static Object doCached(VirtualFrame frame, PythonObject pattern, Object replacement, Object input, int count,
-                        @Bind Node inliningTarget,
-                        @Cached HiddenAttr.ReadNode readCacheNode,
-                        @Cached TRegexCompileInner tRegexCompile,
-                        @Cached RECheckInputTypeNode checkInputTypeNode,
-                        @Cached PyCallableCheckNode callableCheckNode,
-                        @Cached(inline = true) TRegexRESubnInnerNode1 innerNode1) {
-            return TRegexRESubn.doSubn(frame, pattern, replacement, input, count, false, inliningTarget, readCacheNode, tRegexCompile, checkInputTypeNode, callableCheckNode, innerNode1);
-        }
-    }
-
     /**
-     * There are multiple nested inner nodes used in {@link TRegexRESubn}. The number at the end of
+     * There are multiple nested inner nodes used in {@link PatternBuiltins.SubNode}. The number at the end of
      * each inner node indicates the nesting level.
      * <p>
      * First level: separate specializations for strings ({@link TruffleString}, {@link PString})
@@ -1372,7 +1263,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                         @Cached CallNode callNode,
                         @Cached @Cached.Exclusive CastToTruffleStringNode cast,
                         @Cached @Cached.Exclusive TRegexCallExec.BufferToTruffleStringNode bufferToTruffleStringNode,
-                        @Cached CreateMatchFromTRegexResultNode createMatchFromTRegexResultNode) {
+                        @Cached MatchNodes.NewNode newMatchNode) {
             int n = 0;
             int pos = 0;
             boolean mustAdvance = false;
@@ -1390,7 +1281,10 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                 int start = TRegexUtil.TRegexResultAccessor.captureGroupStart(searchResult, 0, inliningTarget, readStartNode);
                 int end = TRegexUtil.TRegexResultAccessor.captureGroupEnd(searchResult, 0, inliningTarget, readEndNode);
                 appendSubstringNode.execute(result, input, toByteIndex(pos, binary), toByteIndex(start - pos, binary));
-                Object callResult = callNode.execute(frame, replacement, createMatchFromTRegexResultNode.execute(frame, inliningTarget, pattern, pos, stringLength, searchResult, originalInput));
+
+                final Object match = newMatchNode.execute(frame, inliningTarget, (PPattern) pattern, searchResult, originalInput, pos, end);
+                Object callResult = callNode.execute(frame, replacement, match);
+
                 if (callResult != PNone.NONE) {
                     if (binary) {
                         appendStringNode.execute(result, bufferToTruffleStringNode.execute(frame, callResult));
@@ -1730,6 +1624,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                         @Cached CallNode callNode) {
             PythonModule module = context.lookupBuiltinModule(T__SRE);
             Object errorType = readAttribute.execute(module, T_ERROR);
+            assert !(errorType instanceof PNone);
             Object exception = callNode.execute(frame, errorType, message, pattern, position);
             throw PRaiseNode.raiseExceptionObjectStatic(inliningTarget, exception);
         }
@@ -1900,6 +1795,11 @@ public final class SREModuleBuiltins extends PythonBuiltins {
             return builder.build();
         }
 
+    }
+
+    public static void bailoutUnsupportedRegex(TRegexCache cache) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        throw CompilerDirectives.shouldNotReachHere("unsupported regular expression: /" + cache.pattern + "/" + cache.flags);
     }
 
     private static int toByteIndex(int index, boolean binary) {

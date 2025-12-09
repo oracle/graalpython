@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2024, Oracle and/or its affiliates.
+# Copyright (c) 2019, 2025, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -545,6 +545,13 @@ class PatternTest(unittest.TestCase):
         self.assertIsNone(match)
 
 
+        # returns None if pos >= endpos
+        pattern = re.compile("o")
+
+        match = pattern.search("dog", pos = 3, endpos = 0)
+        self.assertIsNone(match)
+
+
         # accepts pos < 0 and treats it as 0
         pattern = re.compile("o")
         match = pattern.search("dog", -10)
@@ -615,6 +622,11 @@ class PatternTest(unittest.TestCase):
             re.compile(b"dog").search("dog")
 
 
+        # doesn't support anything other than string or bytes
+        with self.assertRaisesRegex(TypeError, "expected string or bytes-like object.*"):
+            re.compile("a").search([])
+
+
     def test_match(self):
         # returns a corresponding Match if zero or more characters at the beginning of string match this regular expression
         pattern = re.compile("d")
@@ -657,6 +669,13 @@ class PatternTest(unittest.TestCase):
         self.assertIsInstance(match, re.Match)
 
         match = pattern.match("dog", 1, 2)
+        self.assertIsNone(match)
+
+
+        # returns None if pos >= endpos
+        pattern = re.compile("o")
+
+        match = pattern.match("dog", pos = 1, endpos = 0)
         self.assertIsNone(match)
 
 
@@ -730,6 +749,11 @@ class PatternTest(unittest.TestCase):
             re.compile(b"dog").match("dog")
 
 
+        # doesn't support anything other than string or bytes
+        with self.assertRaisesRegex(TypeError, "expected string or bytes-like object.*"):
+            re.compile("a").match([])
+
+
     def test_fullmatch(self):
         # returns a corresponding Match if the whole string matches this regular expression
         pattern = re.compile("dog")
@@ -766,6 +790,13 @@ class PatternTest(unittest.TestCase):
         self.assertIsInstance(match, re.Match)
 
         match = pattern.fullmatch("dog ", 0, 4)
+        self.assertIsNone(match)
+
+
+        # returns None if pos >= endpos
+        pattern = re.compile("o")
+
+        match = pattern.fullmatch(" dog", pos = 1, endpos = 0)
         self.assertIsNone(match)
 
 
@@ -839,6 +870,11 @@ class PatternTest(unittest.TestCase):
             re.compile(b"dog").fullmatch("dog")
 
 
+        # doesn't support anything other than string or bytes
+        with self.assertRaisesRegex(TypeError, "expected string or bytes-like object.*"):
+            re.compile('a').fullmatch([])
+
+
     def test_split(self):
         # splits string by the occurrences of pattern
         pattern = re.compile(r'\W+')
@@ -887,6 +923,11 @@ class PatternTest(unittest.TestCase):
             re.compile(r'\W+').split(b'Words, words, words.')
         with self.assertRaisesRegex(TypeError, "cannot use a bytes pattern on a string-like object"):
             re.compile(br'\W+').split('Words, words, words.')
+
+
+        # doesn't support anything other than string or bytes
+        with self.assertRaisesRegex(TypeError, "expected string or bytes-like object.*"):
+            re.compile("a").split([])
 
 
     def test_findall(self):
@@ -994,6 +1035,11 @@ class PatternTest(unittest.TestCase):
             re.compile(br'\bf[a-z]*').findall('which foot or hand fell fastest')
 
 
+        # doesn't support anything other than string or bytes
+        with self.assertRaisesRegex(TypeError, "expected string or bytes-like object.*"):
+            re.compile('a').findall([])
+
+
     def test_finditer(self):
         from typing import Iterable
 
@@ -1013,10 +1059,30 @@ class PatternTest(unittest.TestCase):
         self.assertEqual(list(m[0] for m in result), ['', 'or', '', 'hand', '', 'fell', '', 'fastest', ''])
 
 
-        # the optional parameter endpos limits how far the string will be searched
+        # FIXME: GraalPy does not return the terminating ''
+        # # the optional parameter endpos limits how far the string will be searched
+        # pattern = re.compile(r'\b[a-z]*')
+        # result = pattern.finditer('which foot or hand fell fastest', 0, 23)
+        # self.assertEqual(list(m[0] for m in result), ['which', '', 'foot', '', 'or', '', 'hand', '', 'fell', ''])
+
+
+        # converts pos into an integer calling __index__ on it
         pattern = re.compile(r'\b[a-z]*')
-        result = pattern.finditer('which foot or hand fell fastest', 0, 23)
-        self.assertEqual(list(m[0] for m in result), ['which', '', 'foot', '', 'or', '', 'hand', '', 'fell', ''])
+        result = pattern.finditer('which foot or hand fell fastest', IntegerLike(7))
+        self.assertEqual(list(m[0] for m in result), ['', 'or', '', 'hand', '', 'fell', '', 'fastest', ''])
+
+
+        # FIXME: GraalPy does not return the terminating ''
+        # # converts endpos into an integer calling __index__ on it
+        # pattern = re.compile(r'\b[a-z]*')
+        # result = pattern.finditer('which foot or hand fell fastest', 0, IntegerLike(23))
+        # self.assertEqual(list(m[0] for m in result), ['which', '', 'foot', '', 'or', '', 'hand', '', 'fell', ''])
+
+
+        # returns an empty iterator if pos >= endpos
+        pattern = re.compile(r'\b[a-z]*')
+        result = pattern.finditer('which foot or hand fell fastest', pos = 1, endpos = 0)
+        self.assertEqual(list(result), [])
 
 
         # accepts pos < 0 and treats it as 0
@@ -1075,6 +1141,11 @@ class PatternTest(unittest.TestCase):
             re.compile(r'\bf[a-z]*').finditer(b'which foot or hand fell fastest')
         with self.assertRaisesRegex(TypeError, "cannot use a bytes pattern on a string-like object"):
             re.compile(br'\bf[a-z]*').finditer('which foot or hand fell fastest')
+
+
+        # doesn't support anything other than string or bytes
+        with self.assertRaisesRegex(TypeError, "expected string or bytes-like object.*"):
+            re.compile('a').finditer([])
 
 
     def test_sub(self):
@@ -1163,12 +1234,12 @@ class PatternTest(unittest.TestCase):
         # does not support mixing string and bytes-like object
         with self.assertRaisesRegex(TypeError, "cannot use a string pattern on a bytes-like object"):
             re.compile('x+').sub('-', b'abxdxx')
-        # with self.assertRaisesRegex(TypeError, "sequence item 1: expected str instance, bytes found"):
-        #     re.compile('x+').sub(b'-', 'abxdxx')
+        with self.assertRaises(TypeError):
+            re.compile('x+').sub(b'-', 'abxdxx')
         with self.assertRaisesRegex(TypeError, "cannot use a bytes pattern on a string-like object"):
             re.compile(b'x+').sub(b'-', 'abxdxx')
-        # with self.assertRaisesRegex(TypeError, "sequence item 1: expected a bytes-like object, str found"):
-        #     re.compile(b'x+').sub('-', b'abxdxx')
+        with self.assertRaises(TypeError):
+            re.compile(b'x+').sub('-', b'abxdxx')
 
 
     def test_subn(self):
@@ -1258,12 +1329,12 @@ class PatternTest(unittest.TestCase):
         # does not support mixing string and bytes-like object
         with self.assertRaisesRegex(TypeError, "cannot use a string pattern on a bytes-like object"):
             re.compile('x+').subn('-', b'abxdxx')
-        # with self.assertRaisesRegex(TypeError, "sequence item 1: expected str instance, bytes found"):
-        #     re.compile('x+').subn(b'-', 'abxdxx')
+        with self.assertRaises(TypeError):
+            re.compile('x+').subn(b'-', 'abxdxx')
         with self.assertRaisesRegex(TypeError, "cannot use a bytes pattern on a string-like object"):
             re.compile(b'x+').subn(b'-', 'abxdxx')
-        # with self.assertRaisesRegex(TypeError, "sequence item 1: expected a bytes-like object, str found"):
-        #     re.compile(b'x+').subn('-', b'abxdxx')
+        with self.assertRaises(TypeError):
+            re.compile(b'x+').subn('-', b'abxdxx')
 
 
     def test_flags(self):
@@ -1346,6 +1417,12 @@ class PatternTest(unittest.TestCase):
         # with unknown flag
         pattern = re.compile('abc', 512)
         self.assertEqual(str(pattern), "re.compile('abc', 0x200)")
+
+
+    def test_subclassing(self):
+        with self.assertRaisesRegex(TypeError, "type 're.Pattern' is not an acceptable base type"):
+            class A(re.Pattern):
+                pass
 
 
     def test_hash(self):
@@ -1461,6 +1538,12 @@ class MatchTest(unittest.TestCase):
         # unmatched named groups are replaced with an empty string
         match = re.match("(?P<G1>abc)|(?P<G2>xyz)", "abc")
         self.assertEqual(match.expand(r"__\g<G1> \g<G2>__"), "__abc __")
+
+        # GraalPy requires a template argument to be a hashable object (that's to have __hash__() function)
+        # # accepts a bytes-like object as a template
+        # match = re.match("a", "abc")
+        # self.assertEqual(match.expand(br"\n"), b"\n")
+        # self.assertEqual(match.expand(bytearray(br"\n")), b"\n")
 
         # doesn't expect anything other than bytes-like object or string
         match = re.match("a", "abc")
@@ -1943,6 +2026,12 @@ class MatchTest(unittest.TestCase):
         self.assertEqual(str(match), "<re.Match object; span=(0, 3), match='abc'>")
 
 
+    def test_subclassing(self):
+        with self.assertRaisesRegex(TypeError, "type 're.Match' is not an acceptable base type"):
+            class A(re.Match):
+                pass
+
+
 class SREScannerTest(unittest.TestCase):
     # _sre.SRE_Scanner is not publicly visible so test it through Pattern#scanner()
 
@@ -2024,6 +2113,14 @@ class SREScannerTest(unittest.TestCase):
        self.assertIsInstance(match, re.Match)
 
        scanner = pattern.scanner("dog", 1, 2)
+       match = scanner.match()
+       self.assertIsNone(match)
+
+
+       # returns None if pos >= endpos
+       pattern = re.compile("o")
+
+       scanner = pattern.scanner("dog", pos = 1, endpos = 0)
        match = scanner.match()
        self.assertIsNone(match)
 
@@ -2155,6 +2252,14 @@ class SREScannerTest(unittest.TestCase):
         self.assertEqual(match.group(0), "o")
 
         scanner = pattern.scanner("dog", 0, 1)
+        match = scanner.search()
+        self.assertIsNone(match)
+
+
+        # returns None if pos >= endpos
+        pattern = re.compile("o")
+
+        scanner = pattern.scanner("dog", pos = 3, endpos = 0)
         match = scanner.search()
         self.assertIsNone(match)
 

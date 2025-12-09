@@ -129,6 +129,8 @@ import com.oracle.graal.python.builtins.modules.pickle.PicklerBuiltins;
 import com.oracle.graal.python.builtins.modules.pickle.PicklerMemoProxyBuiltins;
 import com.oracle.graal.python.builtins.modules.pickle.UnpicklerBuiltins;
 import com.oracle.graal.python.builtins.modules.pickle.UnpicklerMemoProxyBuiltins;
+import com.oracle.graal.python.builtins.modules.re.MatchBuiltins;
+import com.oracle.graal.python.builtins.modules.re.PatternBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZlibDecompressorBuiltins;
 import com.oracle.graal.python.builtins.objects.NoneBuiltins;
 import com.oracle.graal.python.builtins.objects.NotImplementedBuiltins;
@@ -1216,6 +1218,28 @@ public enum PythonBuiltinClassType implements TruffleObject {
                     "timezone",
                     PTzInfo,
                     newBuilder().moduleName("datetime").publishInModule("_datetime").slots(TimeZoneBuiltins.SLOTS).doc("Fixed offset from UTC implementation of tzinfo.")),
+
+    // re
+    PPattern(
+                    "Pattern",
+                    PythonObject,
+                    newBuilder().moduleName("re").publishInModule("_sre").slots(PatternBuiltins.SLOTS).doc("Compiled regular expression object.")),
+
+    PMatch(
+                    "Match",
+                    PythonObject,
+                    newBuilder().moduleName("re").publishInModule("_sre").slots(MatchBuiltins.SLOTS).doc(
+                                    "The result of re.match() and re.search().\nMatch objects always have a boolean value of True.")),
+
+    SRETemplate(
+                    "SRE_Template",
+                    PythonObject,
+                    newBuilder().publishInModule("_sre")),
+
+    SREScanner(
+                    "SRE_Scanner",
+                    PythonObject,
+                    newBuilder().publishInModule("_sre")),
 
     // csv
     CSVDialect("Dialect", PythonObject, newBuilder().publishInModule("_csv").basetype().slots(CSVDialectBuiltins.SLOTS)),

@@ -589,6 +589,38 @@ public abstract class BytesNodes {
         }
     }
 
+    /**
+     * Like {@code PyBytes_FromObject}, but returns a Java byte array. The array is guaranteed to be
+     * a new copy. Note that {@code PyBytes_FromObject} returns the argument unchanged when it's
+     * already bytes. We obviously cannot do that here, it must be done by the caller if the need
+     * this behavior.
+     */
+    @GenerateUncached
+    @GenerateInline(false)
+    @GenerateCached
+    public abstract static class BytesRangeFromObject extends Node {
+        public abstract byte[] execute(VirtualFrame frame, Object object, int from, int to);
+
+        @Specialization
+        static byte[] doGeneric(VirtualFrame frame, Object object, int from, int to,
+                        @Bind Node inliningTarget,
+                        @Cached("createFor($node)") InteropCallData callData,
+                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
+                        @Cached PRaiseNode raiseNode) {
+            if (bufferAcquireLib.hasBuffer(object)) {
+                Object buffer = bufferAcquireLib.acquire(object, BufferFlags.PyBUF_ND, frame, callData);
+                try {
+                    return bufferLib.getCopyOfRange(buffer, from, to);
+                } finally {
+                    bufferLib.release(buffer, frame, callData);
+                }
+            }
+
+            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.CANNOT_CONVERT_P_OBJ_TO_S, object, "bytes");
+        }
+    }
+
     @GenerateInline
     @GenerateCached(false)
     @ImportStatic(PGuards.class)

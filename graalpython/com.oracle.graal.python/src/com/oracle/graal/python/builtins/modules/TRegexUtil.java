@@ -85,6 +85,7 @@ public final class TRegexUtil {
             public static final String IS_MATCH = "isMatch";
             public static final String GET_START = "getStart";
             public static final String GET_END = "getEnd";
+            public static final String LAST_GROUP = "lastGroup";
         }
     }
 
@@ -235,6 +236,10 @@ public final class TRegexUtil {
 
         public static int captureGroupEnd(Object result, int groupNumber, Node node, InvokeGetGroupBoundariesMethodNode getEnd) {
             return getEnd.execute(node, result, Props.RegexResult.GET_END, groupNumber);
+        }
+
+        public static int lastGroup(Object result, Node node, InteropReadMemberNode getLastGroup) {
+            return (int) getLastGroup.execute(node, result, Props.RegexResult.LAST_GROUP);
         }
     }
 }
