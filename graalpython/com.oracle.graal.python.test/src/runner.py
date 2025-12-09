@@ -1247,7 +1247,6 @@ class Tag:
         s += self.test_id.test_name
         if self.keys:
             s += f' @ {",".join(sorted(self.get_keys_as_str()))}'
-            print(f"s is {s}")
         if self.comment:
             s = f'{self.comment}{s}'
         return s
