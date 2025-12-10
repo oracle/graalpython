@@ -2,7 +2,7 @@
 
 ## Choosing the GraalPy Runtime
 
-GraalPy provides a Python 3.11 compliant runtime. 
+GraalPy provides a Python 3.12 compliant runtime.
 A primary goal is to support PyTorch, SciPy, and their constituent libraries, as well as to work with other data science and machine learning libraries from the rich Python ecosystem.
 GraalPy is distributed as an ahead-of-time compiled native executable, compact in size.
 
@@ -97,7 +97,7 @@ pyenv shell graalpy-25.0.1
 
 Alternatively, you can download a compressed GraalPy installation file from [GitHub releases](https://github.com/oracle/graalpython/releases).
 
-1. Find the download that matches the pattern _graalpy-XX.Y.Z-macos-amd64.tar.gz_ or _graalpy-XX.Y.Z-macos-aarch64.tar.gz_ (depending on your platform) and download. 
+1. Find the download that matches the pattern _graalpy-XX.Y.Z-macos-amd64.tar.gz_ or _graalpy-XX.Y.Z-macos-aarch64.tar.gz_ (depending on your platform) and download.
 2. Remove the quarantine attribute.
     ```bash
     sudo xattr -r -d com.apple.quarantine /path/to/graalpy
@@ -110,12 +110,12 @@ Alternatively, you can download a compressed GraalPy installation file from [Git
 
 ### Windows
 
-1. Find and download a compressed GraalPy installation file from [GitHub releases](https://github.com/oracle/graalpython/releases) that matches the pattern _graalpy-XX.Y.Z-windows-amd64.tar.gz_.  
+1. Find and download a compressed GraalPy installation file from [GitHub releases](https://github.com/oracle/graalpython/releases) that matches the pattern _graalpy-XX.Y.Z-windows-amd64.tar.gz_.
 2. Uncompress the file and update your `PATH` variable to include to the _graalpy-XX.Y.Z-windows-amd64/bin_ directory.
 
 #### Windows Limitations
 
-The Windows distribution of GraalPy has more limitations than its Linux or macOS counterpart, so not all features and packages may be available. 
+The Windows distribution of GraalPy has more limitations than its Linux or macOS counterpart, so not all features and packages may be available.
 
 It has the following known issues:
 - JLine treats Windows as a dumb terminal, with no autocomplete and limited editing capabilities in the REPL
@@ -131,7 +131,7 @@ It has the following known issues:
 ## Installing Packages
 
 The best way of using GraalPy is from a [venv](https://docs.python.org/3/library/venv.html) virtual environment.
-This generates wrapper scripts and makes the implementation usable from a shell as the standard Python interpreter. 
+This generates wrapper scripts and makes the implementation usable from a shell as the standard Python interpreter.
 
 1. Create a virtual environment with GraalPy by running the following command:
     ```bash
