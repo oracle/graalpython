@@ -10,7 +10,15 @@ on:
         required: false
 
 jobs:
+
+  build-standalone-artifacts:
+    uses: ./.github/workflows/ci-matrix-gen.yml
+    with:
+      jobs_to_run: ^(?=.*python-svm-build).*$
+
   run-retagger:
+    if: success()
+    needs: build-standalone-artifacts
     uses: ./.github/workflows/ci-matrix-gen.yml
     with:
       jobs_to_run: ${{ github.event.inputs.jobs_to_run || 'python-unittest-retagger' }}

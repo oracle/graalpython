@@ -5,8 +5,16 @@ on:
   workflow_dispatch:
 
 jobs:
-  run-tests:
+
+  build-standalone-artifacts:
     if: github.event.pull_request.draft == false
     uses: ./.github/workflows/ci-matrix-gen.yml
     with:
-      jobs_to_run: ^(?=.*python)(?!.*(retagger|dsl)).*$
+      jobs_to_run: ^(?=.*python-svm-build).*$
+
+  run-tests:
+    if: github.event.pull_request.draft == false && success()
+    needs: build-standalone-artifacts
+    uses: ./.github/workflows/ci-matrix-gen.yml
+    with:
+      jobs_to_run: ^(?=.*python)(?!.*(retagger|dsl|build)).*$
