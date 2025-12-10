@@ -12,6 +12,7 @@ on:
       jobs_to_run:
         required: true
         type: string
+
   schedule:
     - cron: '0 0 * * 1'
 

@@ -276,7 +276,7 @@ class Job:
 def get_tagged_jobs(buildspec, target, filter=None):
     jobs = [Job({"name": target}).to_dict()]
     for job in sorted([Job(build) for build in buildspec.get("builds", [])]):
-        if not any(t for t in job.targets if t in [target]):
+        if not any(t for t in job.targets if t in [target, "weekly"]):
             continue
         if filter and not re.match(filter, job.name):
             continue
