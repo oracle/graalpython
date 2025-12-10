@@ -3,12 +3,17 @@ on:
   schedule:
     - cron: '0 0 * * 1'
   workflow_dispatch:
+    inputs:
+      jobs_to_run:
+        type: string
+        description: Job selection (Python regex)
+        required: false
 
 jobs:
   run-retagger:
     uses: ./.github/workflows/ci-matrix-gen.yml
     with:
-      jobs_to_run: python-svm-build-gate-linux-amd64|python-unittest-retagger
+      jobs_to_run: ${{ github.event.inputs.jobs_to_run || 'python-unittest-retagger' }}
 
   merge_all_reports:
     runs-on: ubuntu-latest
