@@ -17,4 +17,4 @@ jobs:
     needs: build-standalone-artifacts
     uses: ./.github/workflows/ci-matrix-gen.yml
     with:
-      jobs_to_run: ^(?=.*python)(?!.*(retagger|dsl|build)).*$
+      jobs_to_run: ^(?=.*python)(?!.*(retagger|dsl|build|bench)).*$
