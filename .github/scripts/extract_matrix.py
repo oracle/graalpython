@@ -280,8 +280,6 @@ def get_tagged_jobs(buildspec, target, filter=None):
             continue
         if filter and not re.match(filter, job.name):
             continue
-        #if job.runs_on not in ["ubuntu-latest"]:
-        #    continue
         if [x for x in JOB_EXCLUSION_TERMS if x in str(job)]:
             continue
         jobs.append(job.to_dict())

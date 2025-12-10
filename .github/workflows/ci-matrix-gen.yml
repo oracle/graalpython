@@ -79,7 +79,6 @@ jobs:
           "PARENT_DIRECTORY=$PWD" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
 
-      # Set up Python and packages
       - uses: actions/setup-python@v6
         if: ${{ matrix.python_version }}
         with:
@@ -126,7 +125,6 @@ jobs:
             }
           }
 
-      # Setup mx, buildtools and labsjdk
       - name: Get mx, buildtools, and labsjdk
         if: ${{ matrix.mx_version }}
         shell: bash
