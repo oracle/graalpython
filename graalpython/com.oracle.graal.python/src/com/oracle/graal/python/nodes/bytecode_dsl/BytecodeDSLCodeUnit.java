@@ -126,7 +126,8 @@ public final class BytecodeDSLCodeUnit extends CodeUnit {
     @TruffleBoundary
     private byte[] computeSerialized(PythonContext context) {
         try {
-            BytecodeSerializer serializer = new PBytecodeDSLSerializer(context);
+            assert PythonContext.get(null) == context;
+            BytecodeSerializer serializer = new PBytecodeDSLSerializer();
             ByteArrayOutputStream bytes = new ByteArrayOutputStream();
             nodes.serialize(new DataOutputStream(bytes), serializer);
             return bytes.toByteArray();
