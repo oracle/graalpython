@@ -277,11 +277,6 @@
     "forks": "5x3",
     "focus": "0.3-0.65"
   },
-  "interpreter/c-issubtype-polymorphic-forced-to-native.py": {
-    "policy": "outlier-elimination-all-builds",
-    "forks": "3x5",
-    "focus": "0.2-0.5"
-  },
   "interpreter/c-issubtype-polymorphic.py": {
     "policy": "outlier-elimination-all-builds",
     "forks": "5x3",

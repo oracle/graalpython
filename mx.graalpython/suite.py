@@ -1533,7 +1533,6 @@ suite = {
                     "file:graalpython/com.oracle.graal.python.benchmarks/python/micro/c-call-method.py",
                     "file:graalpython/com.oracle.graal.python.benchmarks/python/micro/c-instantiate-large.py",
                     "file:graalpython/com.oracle.graal.python.benchmarks/python/micro/c-issubtype-monorphic.py",
-                    "file:graalpython/com.oracle.graal.python.benchmarks/python/micro/c-issubtype-polymorphic-forced-to-native.py",
                     "file:graalpython/com.oracle.graal.python.benchmarks/python/micro/c-issubtype-polymorphic.py",
                     "file:graalpython/com.oracle.graal.python.benchmarks/python/micro/c-list-iterating-obj.py",
                     "file:graalpython/com.oracle.graal.python.benchmarks/python/micro/c-magic-bool.py",
