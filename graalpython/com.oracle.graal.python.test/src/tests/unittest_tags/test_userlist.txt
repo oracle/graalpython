@@ -33,7 +33,7 @@ test.test_userlist.UserListTest.test_radd_specials @ darwin-arm64,linux-aarch64,
 test.test_userlist.UserListTest.test_remove @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_userlist.UserListTest.test_repeat @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_userlist.UserListTest.test_repr @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_userlist.UserListTest.test_repr_deep @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_userlist.UserListTest.test_repr_deep @ darwin-arm64,$linux-aarch64,$linux-x86_64,$win32-AMD64
 test.test_userlist.UserListTest.test_reverse @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_userlist.UserListTest.test_reversed @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_userlist.UserListTest.test_set_subscript @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
