@@ -212,6 +212,7 @@
                 llvm: "==8.0.0",
                 maven: ">=3.3.9",
                 curl: '==7.50.1',
+                "pip:psutil": "==7.1.3",
             },
             amd64: {},
             aarch64: {},
@@ -220,6 +221,7 @@
             common: {
                 coreutils: "",
                 maven: ">=3.3.9",
+                "pip:psutil": "==7.1.3",
             },
             amd64: {},
             aarch64: {},
@@ -227,6 +229,7 @@
         windows: {
             common: {
                 maven: ">=3.3.9",
+                "pip:psutil": "==7.1.3",
             },
             amd64: {},
             aarch64: {},
