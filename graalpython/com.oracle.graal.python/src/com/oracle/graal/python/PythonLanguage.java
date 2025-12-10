@@ -1087,8 +1087,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         CompilerAsserts.neverPartOfCompilation();
         if (capiCallTargets == null) {
             capiCallTargets = new RootCallTarget[PythonCextBuiltinRegistry.builtins.length];
-            capiCallTargets[index] = ct;
         }
+        capiCallTargets[index] = ct;
     }
 
     /**
