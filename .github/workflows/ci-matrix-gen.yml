@@ -142,7 +142,7 @@ jobs:
         if: ${{ runner.os != 'Windows' && matrix.mx_version }}
         run: |
           echo "$(pwd)/mx/" >> "$GITHUB_PATH"
-          echo "$(pwd)/.github/scripts/" >> "$GITHUB_PATH"
+          echo "$(pwd)/main/.github/scripts/" >> "$GITHUB_PATH"
           echo "JAVA_HOME=$HOME/.mx/jdks/labsjdk-ce-latest" >> "$GITHUB_ENV"
           echo "JVMCI_VERSION_CHECK=ignore" >> "$GITHUB_ENV"
       - name: Setup JAVA_HOME on MacOS
@@ -153,7 +153,7 @@ jobs:
         if: ${{ runner.os == 'Windows' && matrix.mx_version }}
         run: |
           "$PWD/mx" | Out-File -FilePath "$env:GITHUB_PATH" -Append
-          "$PWD/.github/scripts" | Out-File -FilePath "$env:GITHUB_PATH" -Append
+          "$PWD/main/.github/scripts" | Out-File -FilePath "$env:GITHUB_PATH" -Append
           "JAVA_HOME=$HOME/.mx/jdks/labsjdk-ce-latest" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           "JVMCI_VERSION_CHECK=ignore" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           "$M2" | Out-File -FilePath "$env:GITHUB_PATH" -Append
