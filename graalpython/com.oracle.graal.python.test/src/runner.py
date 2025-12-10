@@ -1242,7 +1242,7 @@ class Tag:
         
     def get_keys_as_str(self) -> list[str]:
         keys = []
-        for key in self.keys:
+        for key in sorted(self.keys):
             keys.append(key if key not in self.excluded_keys else f"${key}")
         return keys
     
@@ -1252,7 +1252,7 @@ class Tag:
             s += '!'
         s += self.test_id.test_name
         if self.keys:
-            s += f' @ {",".join(sorted(self.get_keys_as_str()))}'
+            s += f' @ {",".join(self.get_keys_as_str())}'
         if self.comment:
             s = f'{self.comment}{s}'
         return s
