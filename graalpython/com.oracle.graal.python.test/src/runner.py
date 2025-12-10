@@ -1237,6 +1237,7 @@ class Tag:
     def get_keys_as_str(self) -> list[str]:
         keys = []
         for key in sorted(self.keys):
+            if "$" in key: print(f"[WARNING]: Invalid key with $ found in tag keys: {key}, {self.keys}, {self.excluded_keys}")
             keys.append(key if key not in self.excluded_keys else f"${key}")
         return keys
     
