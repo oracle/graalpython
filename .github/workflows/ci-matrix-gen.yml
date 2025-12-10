@@ -78,6 +78,7 @@ jobs:
         run: |
           "PARENT_DIRECTORY=$PWD" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
+
       # Set up Python and packages
       - uses: actions/setup-python@v6
         if: ${{ matrix.python_version }}
@@ -121,6 +122,7 @@ jobs:
                 choco install $pkg -y
             } catch {
                 Write-Host "Failed to install $pkg, skipping."
+                Write-Host "Error: $($_.Exception.Message)" -ForegroundColor Yellow
             }
           }
 
@@ -155,6 +157,7 @@ jobs:
           "$PWD/.github/scripts" | Out-File -FilePath "$env:GITHUB_PATH" -Append
           "JAVA_HOME=$HOME/.mx/jdks/labsjdk-ce-latest" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           "JVMCI_VERSION_CHECK=ignore" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "$M2" | Out-File -FilePath "$env:GITHUB_PATH" -Append
 
       - name: Download artifacts
         uses: actions/download-artifact@v5
