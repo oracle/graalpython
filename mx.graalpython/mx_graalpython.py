@@ -1005,19 +1005,32 @@ def deploy_graalpy_extensions_to_local_maven_repo(env=None):
 
     local_repo_path = os.path.join(SUITE.get_mx_output_dir(), 'public-maven-repo')
     version = GRAAL_VERSION
+    common_args = [
+        '-DskipJavainterfacegen',
+        '-DskipTests',
+        f'-Drevision={version}',
+        f'-Dlocal.repo.url=' + pathlib.Path(local_repo_path).as_uri(),
+        f"-Dgradle.java.home={gradle_java_home}"
+    ]
     mx.run([os.path.join(graalpy_extensions_path, mx.cmd_suffix('mvnw')),
-            '-Pmxurlrewrite', '-DskipJavainterfacegen', '-DskipTests', '-DdeployAtEnd=true',
-            f'-Drevision={version}',
-            f'-Dlocal.repo.url=' + pathlib.Path(local_repo_path).as_uri(),
-            f'-DaltDeploymentRepository=local::default::file:{local_repo_path}',
-            f"-Dgradle.java.home={gradle_java_home}",
+            *common_args, '-Pmxurlrewrite',
+            '-N', 'exec:java@patch-gradle-props'],
+            env=env, cwd=graalpy_extensions_path)
+    mx.run([os.path.join(graalpy_extensions_path, mx.cmd_suffix('mvnw')),
+            *common_args, '-DdeployAtEnd=true',
+            f'-DaltDeploymentRepository=local::default::file:{pathlib.Path(local_repo_path).as_uri()}',
             'deploy'], env=env, cwd=graalpy_extensions_path)
 
     return local_repo_path, version, env
 
 
-def deploy_local_maven_repo_wrapper(*_):
+def deploy_graalpy_extensions_to_local_maven_repo_wrapper(*args):
+    deploy_graalpy_extensions_to_local_maven_repo()
+
+def deploy_local_maven_repo_wrapper(*args):
     p, _, _ = deploy_local_maven_repo()
+    if '--with-extensions' in args:
+        deploy_graalpy_extensions_to_local_maven_repo()
     print(f"local Maven repo path: {p}")
 
 
@@ -2579,7 +2592,7 @@ def run_leak_launcher(input_args):
 
     args = ["--lang", "python",
             "--forbidden-class", "com.oracle.graal.python.builtins.objects.object.PythonObject",
-            "--python.ForceImportSite", "--python.TRegexUsesSREFallback=false"]
+            "--python.ForceImportSite"]
     args += input_args
     args = [
         "--keep-dump",
@@ -2801,7 +2814,8 @@ mx.update_commands(SUITE, {
     'host-inlining-log-extract': [host_inlining_log_extract_method, ''],
     'tox-example': [tox_example, ''],
     'graalpy-jmh': [graalpy_jmh, ''],
-    'deploy-local-maven-repo': [deploy_local_maven_repo_wrapper, ''],
+    'deploy-local-maven-repo': [deploy_local_maven_repo_wrapper, '[--with-extensions]'],
+    'deploy-extensions-to-local-maven-repo': [deploy_graalpy_extensions_to_local_maven_repo_wrapper, ''],
     'downstream-test': [run_downstream_test, ''],
     'python-native-pgo': [graalpy_native_pgo_build_and_test, 'Build PGO-instrumented native image, run tests, then build PGO-optimized native image'],
 })
