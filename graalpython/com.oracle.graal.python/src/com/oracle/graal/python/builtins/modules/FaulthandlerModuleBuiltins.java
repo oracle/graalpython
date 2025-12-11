@@ -45,13 +45,13 @@ import static com.oracle.graal.python.builtins.modules.io.IONodes.T_FLUSH;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_STDERR;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
+import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.lang.ref.Reference;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
@@ -82,6 +82,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
+import com.oracle.graal.python.util.ByteArrayBuilder;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.ThreadLocalAction;
 import com.oracle.truffle.api.TruffleSafepoint;
@@ -120,8 +121,16 @@ public final class FaulthandlerModuleBuiltins extends PythonBuiltins {
     }
 
     @TruffleBoundary
-    private static void dumpTraceback(int fd) {
-        ExceptionUtils.printPythonLikeStackTraceNoMessage(newRawFdPrintWriter(fd), new RuntimeException());
+    private static void dumpTraceback(PythonLanguage language, PrintWriter writer) {
+        writer.println();
+        writer.println(Thread.currentThread());
+        if (PythonOptions.isPExceptionWithJavaStacktrace(language)) {
+            for (StackTraceElement el : Thread.currentThread().getStackTrace()) {
+                writer.println(el);
+            }
+        }
+        ExceptionUtils.printPythonLikeStackTraceNoMessage(writer, new RuntimeException());
+        writer.flush();
     }
 
     @Builtin(name = "dump_traceback", minNumOfPositionalArgs = 0, parameterNames = {"file", "all_threads"})
@@ -151,44 +160,15 @@ public final class FaulthandlerModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         static void dump(PythonLanguage language, PythonContext context, int fd, Object fileObj, boolean allThreads) {
-            PrintWriter err = newRawFdPrintWriter(fd);
             if (allThreads) {
-                if (PythonOptions.isPExceptionWithJavaStacktrace(language)) {
-                    Thread[] ths = context.getThreads();
-                    for (Map.Entry<Thread, StackTraceElement[]> e : Thread.getAllStackTraces().entrySet()) {
-                        boolean found = false;
-                        for (Thread pyTh : ths) {
-                            if (pyTh == e.getKey()) {
-                                found = true;
-                                break;
-                            }
-                        }
-                        if (!found) {
-                            continue;
-                        }
-                        err.println();
-                        err.println(e.getKey());
-                        for (StackTraceElement el : e.getValue()) {
-                            err.println(el.toString());
-                        }
-                    }
-                }
-
                 context.getEnv().submitThreadLocal(context.getThreads(), new ThreadLocalAction(true, false) {
                     @Override
                     protected void perform(ThreadLocalAction.Access access) {
-                        dumpTraceback(fd);
+                        dumpTraceback(language, newRawFdPrintWriter(fd));
                     }
                 });
             } else {
-                if (PythonOptions.isPExceptionWithJavaStacktrace(language)) {
-                    err.println();
-                    err.println(Thread.currentThread());
-                    for (StackTraceElement el : Thread.currentThread().getStackTrace()) {
-                        err.println(el);
-                    }
-                }
-                dumpTraceback(fd);
+                dumpTraceback(language, newRawFdPrintWriter(fd));
             }
             // Keep the file object alive to make sure the fd doesn't get closed
             Reference.reachabilityFence(fileObj);
@@ -309,31 +289,40 @@ public final class FaulthandlerModuleBuiltins extends PythonBuiltins {
 
     private static class RawFdOutputStream extends OutputStream {
         private final int fd;
+        private final ByteArrayBuilder bb;
 
         private RawFdOutputStream(int fd) {
             this.fd = fd;
+            this.bb = new ByteArrayBuilder();
         }
 
         @Override
         public void write(byte[] bytes, int off, int len) {
             if (off != 0 || len != bytes.length) {
-                bytes = Arrays.copyOfRange(bytes, off, off + len);
-            }
-            try {
-                PosixSupportLibrary.getUncached().write(PythonContext.get(null).getPosixSupport(), fd, PosixSupportLibrary.Buffer.wrap(bytes));
-            } catch (PosixSupportLibrary.PosixException e) {
-                // Ignore
+                bb.add(Arrays.copyOfRange(bytes, off, off + len), len);
+            } else {
+                bb.add(bytes, len);
             }
         }
 
         @Override
         public void write(int b) {
-            write(new byte[]{(byte) b}, 0, 0);
+            bb.add((byte) b);
+        }
+
+        @Override
+        public void flush() throws IOException {
+            super.flush();
+            try {
+                PosixSupportLibrary.getUncached().write(PythonContext.get(null).getPosixSupport(), fd, PosixSupportLibrary.Buffer.wrap(bb.toArray()));
+            } catch (PosixSupportLibrary.PosixException e) {
+                // Ignore
+            }
         }
     }
 
     private static PrintWriter newRawFdPrintWriter(int fd) {
-        return new PrintWriter(new RawFdOutputStream(fd), true, StandardCharsets.US_ASCII);
+        return new PrintWriter(new RawFdOutputStream(fd), false, StandardCharsets.US_ASCII);
     }
 
     private static void sleepInterruptibly(Node inliningTarget, long timeoutNs) {

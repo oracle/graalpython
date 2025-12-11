@@ -589,3 +589,72 @@ def test_top_level_exception_handler():
         """).strip()
     assert expected in err.strip(), f"Expected tracback in stderr:\n{expected}\nGot stderr:\n{err.strip()}"
 
+
+def test_faulthandler_many_threads():
+    # We had a bug where the faulthandler.dump_traceback method would
+    # interleave output of threads, because it would print line-by-line on each
+    # thread in parallel. Test that this doesn't happen by creating 100 threads
+    # in parallel and calling dump_traceback and ensuring that we have each
+    # thread's traceback starting with a newline, thread id, and stacktrace,
+    # and no interleaving.
+    try:
+        import faulthandler
+    except Exception:
+        return
+    import threading
+    import tempfile
+    import re
+
+    nthreads = 100
+    evt = threading.Event()
+    barrier = threading.Barrier(nthreads + 1)
+    threads = []
+
+    for i in range(nthreads):
+        loc = {}
+        src = f"def thread_func_{i}(evt, barrier):\n    barrier.wait()\n    evt.wait(5)\n"
+        exec(src, {}, loc)
+        target = loc[f"thread_func_{i}"]
+        t = threading.Thread(target=target, args=(evt, barrier), name=f"thread-{i}")
+        t.daemon = True
+        t.start()
+        threads.append(t)
+
+    try:
+        barrier.wait(timeout=10.0)
+    except Exception as e:
+        evt.set()
+        for t in threads:
+            t.join(timeout=2)
+        assert False, f"Barrier wait failed: {e!r}"
+
+    try:
+        f = tempfile.TemporaryFile()
+        faulthandler.dump_traceback(file=f, all_threads=True)
+        f.flush()
+        f.seek(0)
+        out = f.read().decode('utf-8', 'replace')
+    finally:
+        try:
+            f.close()
+        except Exception:
+            pass
+        evt.set()
+        for t in threads:
+            t.join(timeout=3)
+
+    header_re = re.compile(r'Thread.+')
+    headers = list(header_re.finditer(out))
+    blocks = []
+    for idx, m in enumerate(headers):
+        start = m.end()
+        end = headers[idx + 1].start() if idx + 1 < len(headers) else len(out)
+        blocks.append((m.group(), out[start:end]))
+
+    func_name_re = re.compile(r'in (thread_func_(\d+))\b')
+    ids_per_block = []
+    for header, content in blocks:
+        ids = set(m.group(2) for m in func_name_re.finditer(content))
+        if ids:
+            ids_per_block.append(ids)
+            assert len(ids) == 1, f"Interleaved output detected in block {header!r} with multiple thread func ids: {ids}"
