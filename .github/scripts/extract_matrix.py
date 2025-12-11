@@ -43,6 +43,11 @@ OSS = {
     "windows-latest": ["windows", "amd64"]
 }
 
+# Override unavailable Python versions for some OS/Arch combinations
+PYTHON_VERSIONS = {
+    "ubuntu-24.04-arm": "3.12.8",
+}
+
 
 @dataclass
 class Artifact:
@@ -95,6 +100,9 @@ class Job:
             del self.env["MX_PYTHON"]
         if "MX_PYTHON_VERSION" in self.env:
             del self.env["MX_PYTHON_VERSION"]
+            
+        if self.runs_on in PYTHON_VERSIONS:
+            python_version = PYTHON_VERSIONS[self.runs_on]
         return python_version
 
     @cached_property
