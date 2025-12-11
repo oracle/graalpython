@@ -46,6 +46,23 @@ from tests.standalone import util
 is_enabled = 'ENABLE_STANDALONE_UNITTESTS' in os.environ and os.environ['ENABLE_STANDALONE_UNITTESTS'] == "true"
 constraints_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'constraints.txt')
 
+class TemporaryTestDirectory():
+    def __init__(self):
+        if 'STANDALONE_UNITTESTS_NO_CLEAN' in os.environ:
+            self.ctx = None
+            self.name = tempfile.mkdtemp()
+            print(f"Running test in {self.name}")
+        else:
+            self.ctx = tempfile.TemporaryDirectory()
+            self.name = self.ctx.name
+
+    def __enter__(self):
+        return self.name
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.ctx:
+            self.ctx.__exit__(exc_type, exc_val, exc_tb)
+
 def create_test_env():
     env = os.environ.copy()
     env["MVN_GRAALPY_VERSION"] = util.get_graalvm_version()
@@ -59,7 +76,7 @@ def test_native_executable_one_file():
         return
 
     env = create_test_env()
-    with tempfile.TemporaryDirectory() as tmpdir:
+    with TemporaryTestDirectory() as tmpdir:
 
         source_file = os.path.join(tmpdir, "hello.py")
         with open(source_file, 'w') as f:
@@ -88,7 +105,7 @@ def test_native_executable_venv_and_one_file():
         return
 
     env = create_test_env()
-    with tempfile.TemporaryDirectory() as target_dir:
+    with TemporaryTestDirectory() as target_dir:
         source_file = os.path.join(target_dir, "hello.py")
         with open(source_file, 'w') as f:
             f.write("from termcolor import colored, cprint\n")
@@ -130,7 +147,7 @@ def test_native_executable_module():
         return
 
     env = create_test_env()
-    with tempfile.TemporaryDirectory() as tmp_dir:
+    with TemporaryTestDirectory() as tmp_dir:
 
         module_dir = os.path.join(tmp_dir, "hello_app")
         os.makedirs(module_dir, exist_ok=True)
