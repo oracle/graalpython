@@ -648,7 +648,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
     /**
      * Emits a "line" tracing if either no tracing was emitted before, or if line number was
      * updated.
-     * 
+     *
      * @param b Builder for line tracing.
      */
     void endTraceLineChecked(SSTNode node, Builder b) {
@@ -1881,6 +1881,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         @Override
         public Void visit(ExprTy.BoolOp node) {
             boolean newStatement = beginSourceSection(node, b);
+            b.beginBlock();
             emitTraceLineChecked(node, b);
 
             if (node.op == BoolOpTy.And) {
@@ -2054,6 +2055,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         @Override
         public Void visit(ExprTy.Call node) {
             boolean newStatement = beginSourceSection(node, b);
+            b.beginBlock();
             emitTraceLineChecked(node, b);
             checkCaller(ctx.errorCallback, node.func);
             emitCall(node.func, node.args, node.keywords);
@@ -2846,7 +2848,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
              *     returnValue = e.value
              *     goto end
              *
-             * end: # Step 4: resultValue local is assigned
+             * end: # Step 4: returnValue local is assigned
              * @formatter:on
              */
             BytecodeLocal generator = b.createLocal();
@@ -4386,6 +4388,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
              */
             MatchCaseTy c = cases[index];
             boolean newStatement = beginSourceSection(c, b);
+            b.beginBlock();
             emitTraceLineChecked(cases[index], b);
 
             if (index != cases.length - 1) {
@@ -4490,6 +4493,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
          */
         private void visitPattern(PatternTy pattern, PatternContext pc) {
             boolean newStatement = beginSourceSection(pattern, b);
+            b.beginBlock();
             emitTraceLineChecked(pattern, b);
             if (pattern instanceof PatternTy.MatchAs matchAs) {
                 doVisitPattern(matchAs, pc);

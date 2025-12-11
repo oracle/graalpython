@@ -500,6 +500,8 @@ public final class CodeBuiltins extends PythonBuiltins {
                                             // 1-based inclusive to 0-based exclusive (-1 + 1 = 0)
                                             section.getEndColumn()
                             }));
+                        } else {
+                            lines.add(PFactory.createTuple(language, new Object[]{PNone.NONE, PNone.NONE, PNone.NONE, PNone.NONE}));
                         }
                     }
                 } else {
