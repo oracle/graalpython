@@ -45,6 +45,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from tests import util
 from dataclasses import dataclass
 from textwrap import dedent
 
@@ -191,7 +192,7 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
         '''))
 
 
-    @unittest.skipIf(os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: <interactive> vs <module> in traceback")
+    @util.skipIfBytecodeDSL("TODO: <interactive> vs <module> in traceback")
     def test_exceptions():
         validate_repl(dedent("""\
             >>> 1 / 0

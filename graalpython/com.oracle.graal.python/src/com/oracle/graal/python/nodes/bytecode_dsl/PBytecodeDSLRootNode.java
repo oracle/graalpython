@@ -3607,11 +3607,10 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @Specialization(replaces = "doObject")
         public static Object doObjectOrUnbound(VirtualFrame frame, LocalAccessor accessor, int index,
                         @Bind BytecodeNode bytecodeNode) {
-            try {
-                return accessor.getObject(bytecodeNode, frame);
-            } catch (FrameSlotTypeException e) {
+            if (accessor.isCleared(bytecodeNode, frame)) {
                 throw raiseUnbound(bytecodeNode, index);
             }
+            return accessor.getObject(bytecodeNode, frame);
         }
     }
 
