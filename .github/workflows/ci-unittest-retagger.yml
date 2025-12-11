@@ -73,6 +73,6 @@ jobs:
       - name: Push updates to a new PR
         working-directory: main
         run: |
-          git push --set-upstream origin weekly_retagger_${{ github.run_id }}
+          [ "$(git diff origin/master...HEAD | wc -l)" -eq 0 ] && echo 'Nothing to push' || git push --set-upstream origin weekly_retagger_${{ github.run_id }}
           gh label create "weekly-retagger" --color "BDDFDF" -d "[DO NOT ADD] Automatically set to weekly retagger PR" || echo "Label 'weekly-retagger' already exists"
           gh pr create -B master --title "[WORKFLOW] Weekly Retagger: Update tags" --body "Applied weekly retags on $os_list" -l "weekly-retagger" || echo "Nothing to push"
