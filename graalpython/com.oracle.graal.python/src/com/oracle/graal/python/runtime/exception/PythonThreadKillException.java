@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,6 +46,8 @@ import com.oracle.truffle.api.nodes.Node;
 /**
  * This exception kills a Python thread.
  * <p>
+ * Never throw directly, use {@code PythonContext#killThread()}.
+ * <p>
  * All the polyglot threads started from Python using
  * {@link com.oracle.truffle.api.TruffleLanguage.Env#newTruffleThreadBuilder(Runnable)} must poll
  * Truffle Safepoint. When a thread should be killed, we submit a Thread Local Action that throws
@@ -67,7 +69,7 @@ public final class PythonThreadKillException extends RuntimeException {
     private static final long serialVersionUID = 5323687983726237118L;
     public static final PythonThreadKillException INSTANCE = new PythonThreadKillException();
 
-    public PythonThreadKillException() {
+    private PythonThreadKillException() {
         /*
          * We use the super constructor that initializes the cause to null. Without that, the cause
          * would be this exception itself. This helps escape analysis: it avoids the circle of an

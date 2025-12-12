@@ -145,6 +145,10 @@ public final class TopLevelExceptionHandler extends RootNode {
                 } catch (PythonExitException e) {
                     throw e;
                 } catch (PythonThreadKillException e) {
+                    // Before raising PythonThreadKillException, we always give up GIL, and it
+                    // should just propagate all the way here. In GilNode#acquire we do not
+                    // re-acquire GIL when we catch this exception.
+                    wasAcquired = false;
                     throw new PythonInterruptedException();
                 } catch (AbstractTruffleException e) {
                     assert !PArguments.isPythonFrame(frame);
@@ -153,7 +157,14 @@ public final class TopLevelExceptionHandler extends RootNode {
                     }
                     throw handlePythonException(e);
                 } catch (ThreadDeath e) {
-                    // do not handle, result of TruffleContext.closeCancelled()
+                    // Do not handle, result of TruffleContext.closeCancelled()
+                    // In GilNode#acquire we do not re-acquire GIL in case of ThreadDeath, so we may
+                    // or may not hold the GIL, so we release it only conditionally
+                    PythonContext ctx = PythonContext.get(null);
+                    if (ctx.ownsGil()) {
+                        ctx.releaseGil();
+                    }
+                    wasAcquired = false;
                     throw e;
                 } catch (Throwable e) {
                     handleJavaException(e);
