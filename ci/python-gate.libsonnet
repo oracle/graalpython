@@ -158,6 +158,8 @@
         windows: {
             common: {
                 PATH: "$MAVEN_HOME\\bin;$PATH",
+                # Gradle: this feature doesn't work on all Windows CI machines
+                GRADLE_OPTS: "-Dorg.gradle.vfs.watch=false",
             },
             amd64: {},
             aarch64: {},
