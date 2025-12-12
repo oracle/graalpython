@@ -50,6 +50,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
@@ -130,9 +131,10 @@ public final class ForeignSequenceStorage extends SequenceStorage {
         @Specialization
         static Object read(Node inliningTarget, ForeignSequenceStorage storage, int index,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interop,
-                        @Cached(inline = false) GilNode gil,
+                        @Cached(inline = false) GilNode.Interop gil,
                         @Cached PRaiseNode raiseNode) {
-            gil.release(true);
+            PythonContext context = PythonContext.get(inliningTarget);
+            gil.release(context, true);
             try {
                 return interop.readArrayElement(storage.foreignArray, index);
             } catch (UnsupportedMessageException ex) {
@@ -140,7 +142,7 @@ public final class ForeignSequenceStorage extends SequenceStorage {
             } catch (InvalidArrayIndexException ex) {
                 throw raiseNode.raise(inliningTarget, IndexError, ErrorMessages.INVALID_INDEX_S, index);
             } finally {
-                gil.acquire();
+                gil.acquire(context, inliningTarget);
             }
         }
     }
@@ -171,9 +173,10 @@ public final class ForeignSequenceStorage extends SequenceStorage {
         @Specialization
         static void write(Node inliningTarget, ForeignSequenceStorage storage, int index, Object value,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interop,
-                        @Cached(inline = false) GilNode gil,
+                        @Cached(inline = false) GilNode.Interop gil,
                         @Cached PRaiseNode raiseNode) {
-            gil.release(true);
+            PythonContext context = PythonContext.get(inliningTarget);
+            gil.release(context, true);
             try {
                 interop.writeArrayElement(storage.foreignArray, index, value);
             } catch (InvalidArrayIndexException e) {
@@ -183,7 +186,7 @@ public final class ForeignSequenceStorage extends SequenceStorage {
             } catch (UnsupportedTypeException e) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.TYPE_P_NOT_SUPPORTED_BY_FOREIGN_OBJ, value);
             } finally {
-                gil.acquire();
+                gil.acquire(context, inliningTarget);
             }
         }
     }
@@ -198,15 +201,16 @@ public final class ForeignSequenceStorage extends SequenceStorage {
         @Specialization
         static void remove(Node inliningTarget, ForeignSequenceStorage storage, int index,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interop,
-                        @Cached(inline = false) GilNode gil,
+                        @Cached(inline = false) GilNode.Interop gil,
                         @Cached PRaiseNode raiseNode) {
-            gil.release(true);
+            PythonContext context = PythonContext.get(inliningTarget);
+            gil.release(context, true);
             try {
                 interop.removeArrayElement(storage.foreignArray, index);
             } catch (InvalidArrayIndexException | UnsupportedMessageException e) {
                 throw raiseNode.raise(inliningTarget, IndexError, ErrorMessages.ITEM_S_OF_S_OBJ_IS_NOT_REMOVABLE, index, storage.foreignArray);
             } finally {
-                gil.acquire();
+                gil.acquire(context, inliningTarget);
             }
         }
     }

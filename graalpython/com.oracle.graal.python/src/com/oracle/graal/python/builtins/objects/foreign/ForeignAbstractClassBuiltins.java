@@ -40,6 +40,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
@@ -79,15 +80,17 @@ public final class ForeignAbstractClassBuiltins extends PythonBuiltins {
     abstract static class InstancecheckNode extends PythonBinaryBuiltinNode {
         @Specialization(limit = "3")
         static Object check(Object self, Object instance,
+                        @Bind Node inliningTarget,
                         @CachedLibrary("self") InteropLibrary lib,
-                        @Cached GilNode gil) {
-            gil.release(true);
+                        @Cached GilNode.Interop gil) {
+            PythonContext context = PythonContext.get(inliningTarget);
+            gil.release(context, true);
             try {
                 return lib.isMetaInstance(self, instance);
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere();
             } finally {
-                gil.acquire();
+                gil.acquire(context, inliningTarget);
             }
         }
     }
