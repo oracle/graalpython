@@ -91,6 +91,7 @@ public final class CodecsRegistry {
     // Equivalent of PyCodec_LookupError
     @GenerateInline
     @GenerateCached(false)
+    @GenerateUncached
     public abstract static class PyCodecLookupErrorNode extends Node {
 
         public abstract Object execute(Frame frame, Node inliningTarget, TruffleString name);

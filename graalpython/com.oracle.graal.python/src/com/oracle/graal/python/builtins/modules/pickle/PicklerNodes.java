@@ -326,12 +326,12 @@ public final class PicklerNodes {
             return isIteratorObjectNode.executeCached(iter);
         }
 
-        protected Object encode(Object value, TruffleString encoding, TruffleString errors) {
+        protected Object encode(VirtualFrame frame, Object value, TruffleString encoding, TruffleString errors) {
             if (codecsEncodeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 codecsEncodeNode = insert(CodecsModuleBuiltinsFactory.CodecsEncodeNodeFactory.create());
             }
-            return codecsEncodeNode.execute(value, encoding, errors);
+            return codecsEncodeNode.execute(frame, value, encoding, errors);
         }
 
         private CodecsModuleBuiltins.CodecsDecodeNode ensureCodecsDecodeNode() {

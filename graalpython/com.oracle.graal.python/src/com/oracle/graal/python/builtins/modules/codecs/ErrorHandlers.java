@@ -103,6 +103,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -826,7 +827,7 @@ public final class ErrorHandlers {
         }
     }
 
-    static final class ErrorHandlerCache {
+    public static final class ErrorHandlerCache {
         ErrorHandler errorHandlerEnum = ErrorHandler.UNKNOWN;
         Object errorHandlerObject;
         PBaseException exceptionObject;
@@ -902,10 +903,11 @@ public final class ErrorHandlers {
     }
 
     @ValueType
-    static final class EncodingErrorHandlerResult {
-        Object replacement;
-        int newPos;
-        boolean isUnicode;  // whether `replacement` satisfies PyUnicode_Check or PyBytes_Check
+    public static final class EncodingErrorHandlerResult {
+        public final Object replacement;
+        public int newPos;
+        // whether `replacement` satisfies PyUnicode_Check or PyBytes_Check
+        public final boolean isUnicode;
 
         EncodingErrorHandlerResult(Object replacement, int newPos, boolean isUnicode) {
             this.replacement = replacement;
@@ -916,6 +918,7 @@ public final class ErrorHandlers {
 
     @GenerateInline
     @GenerateCached(false)
+    @GenerateUncached
     abstract static class ParseEncodingErrorHandlerResultNode extends Node {
         abstract EncodingErrorHandlerResult execute(Node inliningTarget, Object result);
 
@@ -953,9 +956,11 @@ public final class ErrorHandlers {
     // Contains logic from unicode_encode_call_errorhandler
     @GenerateInline
     @GenerateCached(false)
-    abstract static class CallEncodingErrorHandlerNode extends Node {
+    @GenerateUncached
+    public abstract static class CallEncodingErrorHandlerNode extends Node {
 
-        abstract EncodingErrorHandlerResult execute(VirtualFrame frame, Node inliningTarget, ErrorHandlerCache cache, TruffleString errors, TruffleString encoding, TruffleString srcObj, int startPos,
+        public abstract EncodingErrorHandlerResult execute(VirtualFrame frame, Node inliningTarget, ErrorHandlerCache cache, TruffleString errors, TruffleString encoding, TruffleString srcObj,
+                        int startPos,
                         int endPos, TruffleString reason);
 
         @Specialization

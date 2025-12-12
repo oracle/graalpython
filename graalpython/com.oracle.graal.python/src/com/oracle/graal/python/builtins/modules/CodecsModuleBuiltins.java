@@ -42,8 +42,6 @@ package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeWarning;
-import static com.oracle.graal.python.builtins.modules.codecs.ErrorHandlers.appendXmlCharRefReplacement;
-import static com.oracle.graal.python.builtins.modules.codecs.ErrorHandlers.getXmlCharRefReplacementLength;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.HEXDIGITS;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.digitValue;
 import static com.oracle.graal.python.builtins.objects.exception.UnicodeErrorBuiltins.IDX_OBJECT;
@@ -74,14 +72,12 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_SURROGATEESCAPE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_SURROGATEPASS;
 import static com.oracle.graal.python.nodes.StringLiterals.T_UTF8;
 import static com.oracle.graal.python.nodes.StringLiterals.T_UTF_UNDERSCORE_8;
-import static com.oracle.graal.python.nodes.StringLiterals.T_XMLCHARREFREPLACE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.LookupError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeDecodeError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.UnicodeEncodeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
@@ -109,6 +105,7 @@ import com.oracle.graal.python.builtins.modules.codecs.CharmapNodes.PyUnicodeEnc
 import com.oracle.graal.python.builtins.modules.codecs.CodecsRegistry;
 import com.oracle.graal.python.builtins.modules.codecs.CodecsRegistry.PyCodecLookupErrorNode;
 import com.oracle.graal.python.builtins.modules.codecs.CodecsRegistry.PyCodecRegisterErrorNode;
+import com.oracle.graal.python.builtins.modules.codecs.ErrorHandlers;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
@@ -208,147 +205,6 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return CodecsModuleBuiltinsFactory.getFactories();
-    }
-
-    @GenerateInline
-    @GenerateUncached
-    @GenerateCached(false)
-    public abstract static class HandleEncodingErrorNode extends Node {
-        public abstract void execute(Node inliningTarget, TruffleEncoder encoder, TruffleString errorAction, Object inputObject);
-
-        @Specialization
-        static void handle(Node inliningTarget, TruffleEncoder encoder, TruffleString errorAction, Object inputObject,
-                        @Cached InlinedConditionProfile strictProfile,
-                        @Cached InlinedConditionProfile backslashreplaceProfile,
-                        @Cached InlinedConditionProfile surrogatepassProfile,
-                        @Cached InlinedConditionProfile surrogateescapeProfile,
-                        @Cached InlinedConditionProfile xmlcharrefreplaceProfile,
-                        @Cached PRaiseNode raiseNode,
-                        @Cached TruffleString.EqualNode equalNode,
-                        // TODO: (blocked by GR-46101) make this CallNode.Lazy
-                        @Cached(inline = false) CallNode lazyCallNode) {
-            boolean fixed;
-            try {
-                // Ignore and replace are handled by Java Charset
-                if (strictProfile.profile(inliningTarget, equalNode.execute(T_STRICT, errorAction, TS_ENCODING))) {
-                    fixed = false;
-                } else if (backslashreplaceProfile.profile(inliningTarget, equalNode.execute(T_BACKSLASHREPLACE, errorAction, TS_ENCODING))) {
-                    fixed = backslashreplace(encoder);
-                } else if (surrogatepassProfile.profile(inliningTarget, equalNode.execute(T_SURROGATEPASS, errorAction, TS_ENCODING))) {
-                    fixed = surrogatepass(encoder, equalNode);
-                } else if (surrogateescapeProfile.profile(inliningTarget, equalNode.execute(T_SURROGATEESCAPE, errorAction, TS_ENCODING))) {
-                    fixed = surrogateescape(encoder);
-                } else if (xmlcharrefreplaceProfile.profile(inliningTarget, equalNode.execute(T_XMLCHARREFREPLACE, errorAction, TS_ENCODING))) {
-                    fixed = xmlcharrefreplace(encoder);
-                } else {
-                    throw raiseNode.raise(inliningTarget, LookupError, ErrorMessages.UNKNOWN_ERROR_HANDLER, errorAction);
-                }
-            } catch (OutOfMemoryError e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw PRaiseNode.raiseStatic(inliningTarget, MemoryError);
-            }
-            if (!fixed) {
-                int start = encoder.getInputPosition();
-                int end = start + encoder.getErrorLength();
-                Object exception = lazyCallNode.executeWithoutFrame(UnicodeEncodeError, encoder.getEncodingName(), inputObject, start, end, encoder.getErrorReason());
-                if (exception instanceof PBaseException) {
-                    throw raiseNode.raiseExceptionObject(inliningTarget, exception);
-                } else {
-                    // Shouldn't happen unless the user manually replaces the method, which is
-                    // really
-                    // unexpected and shouldn't be permitted at all, but currently it is
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.SHOULD_HAVE_RETURNED_EXCEPTION, UnicodeEncodeError, exception);
-                }
-            }
-        }
-
-        @TruffleBoundary
-        private static boolean backslashreplace(TruffleEncoder encoder) {
-            String p = new String(encoder.getInputChars(encoder.getErrorLength()));
-            StringBuilder sb = new StringBuilder();
-            byte[] buf = new byte[10];
-            for (int i = 0; i < p.length();) {
-                int ch = p.codePointAt(i);
-                int len;
-                if (ch < 0x100) {
-                    len = BytesUtils.byteEscape(ch, 0, buf);
-                } else {
-                    len = BytesUtils.unicodeNonAsciiEscape(ch, 0, buf);
-                }
-                for (int j = 0; j < len; j++) {
-                    sb.append((char) buf[j]);
-                }
-                i += Character.charCount(ch);
-            }
-            encoder.replace(p.length(), sb.toString());
-            return true;
-        }
-
-        private static boolean surrogatepass(TruffleEncoder encoder, TruffleString.EqualNode equalNode) {
-            // UTF-8 only for now. The name should be normalized already
-            if (equalNode.execute(encoder.getEncodingName(), T_UTF_UNDERSCORE_8, TS_ENCODING)) {
-                return surrogatepassUtf8Boundary(encoder);
-            }
-            return false;
-        }
-
-        @TruffleBoundary
-        private static boolean surrogatepassUtf8Boundary(TruffleEncoder encoder) {
-            // TODO GR-37228: use TruffleString, remove boundary and inline into surrogatepass
-            String p = new String(encoder.getInputChars(encoder.getErrorLength()));
-            byte[] replacement = new byte[p.length() * 3];
-            int outp = 0;
-            for (int i = 0; i < p.length();) {
-                int ch = p.codePointAt(i);
-                if (!(0xD800 <= ch && ch <= 0xDFFF)) {
-                    // Not a surrogate
-                    return false;
-                }
-                replacement[outp++] = (byte) (0xe0 | (ch >> 12));
-                replacement[outp++] = (byte) (0x80 | ((ch >> 6) & 0x3f));
-                replacement[outp++] = (byte) (0x80 | (ch & 0x3f));
-                i += Character.charCount(ch);
-            }
-            encoder.replace(encoder.getErrorLength(), replacement, 0, outp);
-            return true;
-        }
-
-        @TruffleBoundary
-        private static boolean surrogateescape(TruffleEncoder encoder) {
-            String p = new String(encoder.getInputChars(encoder.getErrorLength()));
-            byte[] replacement = new byte[p.length()];
-            int outp = 0;
-            for (int i = 0; i < p.length();) {
-                int ch = p.codePointAt(i);
-                if (!(0xDC80 <= ch && ch <= 0xDCFF)) {
-                    // Not a surrogate
-                    return false;
-                }
-                replacement[outp++] = (byte) (ch - 0xdc00);
-                i += Character.charCount(ch);
-            }
-            encoder.replace(encoder.getErrorLength(), replacement, 0, outp);
-            return true;
-        }
-
-        @TruffleBoundary
-        private static boolean xmlcharrefreplace(TruffleEncoder encoder) {
-            String p = new String(encoder.getInputChars(encoder.getErrorLength()));
-            int size = 0;
-            for (int i = 0; i < encoder.getErrorLength(); ++i) {
-                size += getXmlCharRefReplacementLength(p.codePointAt(i));
-            }
-
-            byte[] replacement = new byte[size];
-            int consumed = 0;
-            // generate replacement
-            for (int i = 0; i < p.length(); ++i) {
-                consumed = appendXmlCharRefReplacement(replacement, consumed, p.codePointAt(i));
-            }
-            encoder.replace(encoder.getErrorLength(), replacement, 0, consumed);
-            return true;
-        }
     }
 
     @GenerateUncached
@@ -601,17 +457,22 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
     @GenerateUncached
     @GenerateInline(false) // footprint reduction 48 -> 30
     public abstract static class CodecsEncodeToJavaBytesNode extends Node {
-        public abstract byte[] execute(Object self, TruffleString encoding, TruffleString errors);
+        public abstract byte[] execute(Frame frame, Object self, TruffleString encoding, TruffleString errors);
 
         @Specialization
-        byte[] encode(Object self, TruffleString encoding, TruffleString errors,
+        byte[] encode(VirtualFrame frame, Object self, TruffleString encoding, TruffleString errors,
                         @Bind Node inliningTarget,
-                        @Cached CastToJavaStringNode castStr,
+                        @Cached CastToTruffleStringNode castTruffleStr,
+                        @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                         @Cached TruffleString.EqualNode equalNode,
-                        @Cached HandleEncodingErrorNode errorHandler,
+                        @Cached ErrorHandlers.CallEncodingErrorHandlerNode errorHandler,
+                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
+                        @Cached CastToJavaStringNode castToJavaStringNode,
                         @Cached PRaiseNode raiseNode,
                         @Cached NormalizeEncodingNameNode normalizeEncodingNameNode) {
-            String input = castStr.execute(self);
+            TruffleString input = castTruffleStr.castKnownString(inliningTarget, self);
+            String inputStr = toJavaStringNode.execute(input);
             CodingErrorAction errorAction = convertCodingErrorAction(errors, equalNode);
             TruffleString normalizedEncoding = normalizeEncodingNameNode.execute(inliningTarget, encoding);
             Charset charset = CharsetMapping.getCharsetNormalized(normalizedEncoding);
@@ -619,10 +480,24 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                 throw raiseNode.raise(inliningTarget, LookupError, ErrorMessages.UNKNOWN_ENCODING, encoding);
             }
             TruffleEncoder encoder;
+            ErrorHandlers.ErrorHandlerCache errorHandlerCache = new ErrorHandlers.ErrorHandlerCache();
             try {
-                encoder = new TruffleEncoder(normalizedEncoding, charset, input, errorAction);
+                encoder = new TruffleEncoder(charset, inputStr, errorAction);
                 while (!encoder.encodingStep()) {
-                    errorHandler.execute(inliningTarget, encoder, errors, self);
+                    int pos = encoder.getInputPosition();
+                    ErrorHandlers.EncodingErrorHandlerResult errorResult = errorHandler.execute(frame, inliningTarget, errorHandlerCache, errors, encoding, input,
+                                    pos, pos + encoder.getErrorLength(), encoder.getErrorReason());
+                    if (errorResult.isUnicode) {
+                        String replacementStr = castToJavaStringNode.execute(errorResult.replacement);
+                        encoder.replace(errorResult.newPos - pos, replacementStr, charset);
+                    } else {
+                        Object buffer = acquireLib.acquireReadonly(errorResult.replacement);
+                        try {
+                            encoder.replace(errorResult.newPos - pos, bufferLib.getInternalOrCopiedByteArray(buffer), 0, bufferLib.getBufferLength(buffer));
+                        } finally {
+                            bufferLib.release(buffer);
+                        }
+                    }
                 }
             } catch (OutOfMemoryError e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -638,7 +513,6 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.TString, defaultValue = "T_STRICT", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class CodecsEncodeNode extends PythonTernaryClinicBuiltinNode {
-        public abstract Object execute(Object str, Object encoding, Object errors);
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -646,14 +520,14 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isString(self)"})
-        static Object encode(Object self, TruffleString encoding, TruffleString errors,
+        static Object encode(VirtualFrame frame, Object self, TruffleString encoding, TruffleString errors,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached CastToTruffleStringNode castStr,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached CodecsEncodeToJavaBytesNode encode) {
             TruffleString input = castStr.execute(inliningTarget, self);
-            PBytes bytes = PFactory.createBytes(language, encode.execute(self, encoding, errors));
+            PBytes bytes = PFactory.createBytes(language, encode.execute(frame, self, encoding, errors));
             return PFactory.createTuple(language, new Object[]{bytes, codePointLengthNode.execute(input, TS_ENCODING)});
         }
 
@@ -1653,15 +1527,15 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
     }
 
     static class TruffleEncoder {
-        private final TruffleString encodingName;
         private final CharsetEncoder encoder;
-        private CharBuffer inputBuffer;
+        private final String inputString;
+        private final CharBuffer inputBuffer;
         private ByteBuffer outputBuffer;
         private CoderResult coderResult;
 
         @TruffleBoundary
-        public TruffleEncoder(TruffleString encodingName, Charset charset, String input, CodingErrorAction errorAction) {
-            this.encodingName = encodingName;
+        public TruffleEncoder(Charset charset, String input, CodingErrorAction errorAction) {
+            this.inputString = input;
             this.inputBuffer = CharBuffer.wrap(input);
             this.encoder = charset.newEncoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction);
             this.outputBuffer = ByteBuffer.allocate((int) (input.length() * encoder.averageBytesPerChar()));
@@ -1714,12 +1588,12 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         public int getInputPosition() {
-            return inputBuffer.position();
+            return inputString.codePointCount(0, inputBuffer.position());
         }
 
         @TruffleBoundary
         public int getErrorLength() {
-            return coderResult.length();
+            return inputString.codePointCount(inputBuffer.position(), inputBuffer.position() + coderResult.length());
         }
 
         @TruffleBoundary
@@ -1730,40 +1604,18 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        public int getInputRemaining() {
-            return inputBuffer.remaining();
-        }
-
-        @TruffleBoundary
-        public char[] getInputChars(int num) {
-            char[] chars = new char[num];
-            int pos = inputBuffer.position();
-            inputBuffer.get(chars);
-            inputBuffer.position(pos);
-            return chars;
-        }
-
-        @TruffleBoundary
         public void replace(int skipInput, byte[] replacement, int offset, int length) {
             while (outputBuffer.remaining() < replacement.length) {
                 grow();
             }
             outputBuffer.put(replacement, offset, length);
-            inputBuffer.position(inputBuffer.position() + skipInput);
+            inputBuffer.position(inputString.offsetByCodePoints(inputBuffer.position(), skipInput));
         }
 
         @TruffleBoundary
-        public void replace(int skipInput, String replacement) {
-            inputBuffer.position(inputBuffer.position() + skipInput);
-            CharBuffer newBuffer = CharBuffer.allocate(inputBuffer.remaining() + replacement.length());
-            newBuffer.put(replacement);
-            newBuffer.put(inputBuffer);
-            newBuffer.flip();
-            inputBuffer = newBuffer;
-        }
-
-        public TruffleString getEncodingName() {
-            return encodingName;
+        public void replace(int skipInput, String replacement, Charset charset) {
+            byte[] replacementBytes = replacement.getBytes(charset);
+            replace(skipInput, replacementBytes, 0, replacementBytes.length);
         }
     }
 
