@@ -1335,7 +1335,8 @@ def graalpython_gate_runner(_, tasks):
                 jdk = mx.get_jdk()
                 prev = jdk.java_args_pfx
                 try:
-                    jdk.java_args_pfx = (mx._opts.java_args or []) + ['-Dpython.WithoutPlatformAccess=true']
+                    java_args = shlex.split(mx._opts.java_args) if mx._opts.java_args else []
+                    jdk.java_args_pfx = java_args + ['-Dpython.WithoutPlatformAccess=true']
                     punittest(['--verbose', '--no-leak-tests', '--regex', 'com.oracle.graal.python.test.advanced.ExclusionsTest'])
                 finally:
                     jdk.java_args_pfx = prev
