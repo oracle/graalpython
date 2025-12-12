@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -62,16 +62,6 @@ public abstract class GilNode extends Node {
         }
 
         @Override
-        public void release(boolean wasAcquired) {
-            release(PythonContext.get(this), wasAcquired);
-        }
-
-        @Override
-        public boolean acquire(Node location) {
-            return acquire(PythonContext.get(this), location);
-        }
-
-        @Override
         public void release(PythonContext context, boolean wasAcquired) {
             // n.b.: we cannot make any optimizations here based on the singleThreadedAssumption of
             // the language. You would think that you could use that assumption to get rid even of
@@ -124,18 +114,6 @@ public abstract class GilNode extends Node {
         @Override
         public boolean isAdoptable() {
             return false;
-        }
-
-        @Override
-        @TruffleBoundary
-        public final boolean acquire(Node location) {
-            return acquire(PythonContext.get(this), location);
-        }
-
-        @Override
-        @TruffleBoundary
-        public final void release(boolean wasAcquired) {
-            release(PythonContext.get(this), wasAcquired);
         }
 
         @Override
@@ -206,30 +184,32 @@ public abstract class GilNode extends Node {
 
         @Override
         public final void close() {
-            if (PythonContext.get(this).ownsGil()) {
+            PythonContext context = PythonContext.get(this);
+            if (context.ownsGil()) {
                 // we are forgiving in this usage for cases where the gil is released and we're
                 // exiting with an exception
-                release(this == INSTANCE_WITH_RELEASE);
+                release(context, this == INSTANCE_WITH_RELEASE);
             }
         }
     }
 
     @TruffleBoundary
     private final void yieldGil() {
-        release(true);
+        PythonContext context = PythonContext.get(this);
+        release(context, true);
         Thread.yield();
-        acquire();
+        acquire(context, this);
     }
 
     /**
-     * @see #acquire(Node)
+     * @see #acquire(PythonContext, Node)
      */
     public final boolean acquire() {
-        return acquire(this);
+        return acquire(PythonContext.get(this), this);
     }
 
     /**
-     * @see #acquire(Node)
+     * @see #acquire(PythonContext, Node)
      */
     public final boolean acquire(PythonContext context) {
         return acquire(context, this);
@@ -242,22 +222,19 @@ public abstract class GilNode extends Node {
      *
      * The {@code location} parameter is used to support the safepoint mechanism.
      */
-    public abstract boolean acquire(Node location);
+    public abstract boolean acquire(PythonContext context, Node location);
 
     /**
-     * @see #acquire(Node)
+     * @see #release(PythonContext, boolean)
      */
-    public abstract boolean acquire(PythonContext context, Node location);
+    public final void release(boolean wasAcquired) {
+        release(PythonContext.get(this), wasAcquired);
+    }
 
     /**
      * Release the GIL if {@code wasAcquired} is {@code true}.
      *
      * @param wasAcquired - the return value of the preceding {@link #acquire} call.
-     */
-    public abstract void release(boolean wasAcquired);
-
-    /**
-     * @see #release(boolean)
      */
     public abstract void release(PythonContext context, boolean wasAcquired);
 
