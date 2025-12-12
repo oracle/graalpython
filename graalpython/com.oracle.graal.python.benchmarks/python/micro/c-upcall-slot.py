@@ -40,13 +40,17 @@
 code = """
 #include "Python.h"
 
-PyObject* simple_upcall(PyObject* mod, PyObject* arg) {
+PyObject* simple_upcall(PyObject* mod, PyObject* args) {
     PyObject *self = PyTuple_GetItem(args, 0);
     long upper = PyLong_AsLong(PyTuple_GetItem(args, 1));
-    lenfunc f = PyLong_Type.tp_as_sequence->sq_length;
+    if (!PyList_Check(self)) {
+        PyErr_Format(PyExc_TypeError, "expected list, not '%.200s'", Py_TYPE(self)->tp_name);
+        return NULL;
+    }
+    lenfunc f = PyList_Type.tp_as_sequence->sq_length;
     for (long i = 0; i < upper; i++) {
         Py_ssize_t len = f(self);
-        if (res < 0) {
+        if (len < 0) {
             return NULL;
         }
     }
