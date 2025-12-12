@@ -109,6 +109,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonClassInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
@@ -325,7 +326,7 @@ public abstract class CExtNodes {
             assert EnsurePythonObjectNode.doesNotNeedPromotion(cls);
             long nativeObject = (long) call.call(NativeCAPISymbol.FUN_PY_TYPE_GENERIC_NEW_RAW, toNative.executeLong(cls), 0L, 0L);
             CApiTransitions.writeNativeRefCount(nativeObject, MANAGED_REFCNT);
-            CApiTransitions.createReference(managedSide, nativeObject, false);
+            CApiTransitions.createReference(managedSide, nativeObject);
             assert managedSide.isNative();
             return managedSide;
         }
@@ -465,10 +466,11 @@ public abstract class CExtNodes {
 
         @Specialization
         static Object getNativeClass(Node inliningTarget, PythonAbstractNativeObject object,
-                        @Cached(inline = false) CStructAccess.ReadObjectNode callGetObTypeNode,
+                        @Cached NativeToPythonClassInternalNode nativeToPythonClassInternalNode,
                         @Cached ProfileClassNode classProfile) {
-            // do not convert wrap 'object.object' since that is really the native pointer object
-            return classProfile.profile(inliningTarget, callGetObTypeNode.readFromObj(object, PyObject__ob_type));
+            long obType = readPtrField(object.pointer, PyObject__ob_type);
+            Object type = nativeToPythonClassInternalNode.execute(inliningTarget, obType);
+            return classProfile.profile(inliningTarget, type);
         }
     }
 

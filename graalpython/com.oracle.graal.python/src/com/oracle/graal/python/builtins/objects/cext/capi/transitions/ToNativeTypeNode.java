@@ -153,11 +153,11 @@ public abstract class ToNativeTypeNode {
         return lookupNativeI64MemberInMRO(clazz, member, hiddenName);
     }
 
-    public static void initNative(PythonManagedClass clazz, long pointer) {
-        initializeType(clazz, pointer, false);
+    public static void initNative(PythonManagedClass clazz, long pointer, int typeLookupTableIdx) {
+        initializeType(clazz, pointer, false, typeLookupTableIdx);
     }
 
-    static void initializeType(PythonManagedClass clazz, long mem, boolean heaptype) {
+    static void initializeType(PythonManagedClass clazz, long mem, boolean heaptype, int typeLookupTableIdx) {
         CompilerAsserts.neverPartOfCompilation();
 
         TpSlots slots = GetTpSlotsNode.executeUncached(clazz);
@@ -300,7 +300,13 @@ public abstract class ToNativeTypeNode {
         writePtrField(mem, CFields.PyTypeObject__tp_subclasses, toNativeNewRef.executeLong(subclasses));
         writePtrField(mem, CFields.PyTypeObject__tp_weaklist, NULLPTR);
         writePtrField(mem, CFields.PyTypeObject__tp_del, lookup(clazz, PyTypeObject__tp_del, HiddenAttr.DEL));
-        writeIntField(mem, CFields.PyTypeObject__tp_version_tag, 0);
+
+        /*
+         * We store the type lookup table index in field 'tp_version_tag' because we don't use that
+         * field as CPython does and it's an internal field.
+         */
+        writeIntField(mem, CFields.PyTypeObject__tp_version_tag, typeLookupTableIdx);
+
         writePtrField(mem, CFields.PyTypeObject__tp_finalize, NULLPTR);
         writePtrField(mem, CFields.PyTypeObject__tp_vectorcall, NULLPTR);
 
@@ -322,7 +328,7 @@ public abstract class ToNativeTypeNode {
     /**
      * Creates a wrapper that uses existing native memory as native replacement object.
      */
-    public static void wrapStaticTypeStructForManagedClass(PythonManagedClass clazz, long pointer) {
+    public static int wrapStaticTypeStructForManagedClass(PythonManagedClass clazz, long pointer) {
         /*
          * This *MUST NOT* happen, otherwise we would allocate a fresh native type store and then
          * the native pointer of the wrapper would not be equal to the corresponding native global
@@ -388,7 +394,8 @@ public abstract class ToNativeTypeNode {
 
         // TODO(fa): revisit this: static classes are immortal; we don't need a
         // PythonObjectReference
-        CApiTransitions.createReference(clazz, pointer, false);
+        int nativeTypeId = CApiTransitions.createPythonManagedClassReference(clazz, pointer, false);
         assert clazz.isNative();
+        return nativeTypeId;
     }
 }

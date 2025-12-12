@@ -135,6 +135,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.GcNativePtrToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateHandleTableReferenceNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ToNativeTypeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformPExceptionToNativeCachedNode;
@@ -202,6 +203,7 @@ import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CallTarget;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -1102,6 +1104,17 @@ public final class PythonCextBuiltins {
         }
     }
 
+    @CApiBuiltin(ret = Void, args = {PyTypeObject}, call = Ignored)
+    public static void GraalPyPrivate_NotifyTypeReady(long pointer) {
+        CompilerAsserts.neverPartOfCompilation();
+        Object object = NativeToPythonInternalNode.executeUncached(pointer, false);
+        if (object instanceof PythonNativeClass nativeClass) {
+            int nativeTypeId = CApiTransitions.createPythonNativeClassReference(nativeClass);
+            assert pointer == nativeClass.getPtr();
+            CStructAccess.writeIntField(pointer, CFields.PyTypeObject__tp_version_tag, nativeTypeId);
+        }
+    }
+
     @CApiBuiltin(ret = PyFrameObjectTransfer, args = {PyThreadState, PyCodeObject, PyObject, PyObject}, call = Direct)
     abstract static class PyFrame_New extends CApiQuaternaryBuiltinNode {
         @Specialization
@@ -1761,7 +1774,7 @@ public final class PythonCextBuiltins {
     @CApiBuiltin(ret = Void, args = {Pointer}, call = Ignored)
     abstract static class GraalPyPrivate_InitBuiltinTypesAndStructs extends CApiUnaryBuiltinNode {
 
-        record ClassPtrPair(PythonManagedClass clazz, long ptr) {
+        record ClassPtrPair(PythonManagedClass clazz, long ptr, int typeLookupTableIdx) {
         }
 
         @TruffleBoundary
@@ -1786,15 +1799,15 @@ public final class PythonCextBuiltins {
                     // create the lookup table entry and sync (selected) native type fields to the
                     // managed type
                     LOGGER.fine(() -> "setting type store for built-in class " + name + " to " + PythonUtils.formatPointer(typeStructPtr));
-                    ToNativeTypeNode.wrapStaticTypeStructForManagedClass(clazz, typeStructPtr);
+                    int typeLookupTableIdx = ToNativeTypeNode.wrapStaticTypeStructForManagedClass(clazz, typeStructPtr);
 
-                    builtinTypes.add(new ClassPtrPair(clazz, typeStructPtr));
+                    builtinTypes.add(new ClassPtrPair(clazz, typeStructPtr, typeLookupTableIdx));
                 }
 
                 // second phase: initialize the native type store
                 for (ClassPtrPair pair : builtinTypes) {
                     LOGGER.fine(() -> "initializing built-in class " + TypeNodes.GetNameNode.executeUncached(pair.clazz()));
-                    ToNativeTypeNode.initNative(pair.clazz(), pair.ptr());
+                    ToNativeTypeNode.initNative(pair.clazz, pair.ptr, pair.typeLookupTableIdx);
                 }
 
                 return PNone.NO_VALUE;

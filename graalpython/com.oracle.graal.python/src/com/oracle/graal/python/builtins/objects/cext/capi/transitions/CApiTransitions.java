@@ -78,6 +78,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupport.GCListRemoveNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupport.PyObjectGCDelNode;
@@ -91,6 +92,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyMemoryViewWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.AllocateNativeObjectStubNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.FirstToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativePtrToPythonNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonClassNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonInternalNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonReturnNodeGen;
@@ -111,6 +113,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
@@ -204,12 +207,15 @@ public abstract class CApiTransitions {
             nativeStubLookup = new Object[DEFAULT_CAPACITY];
             nativeStubLookupFreeStack = new HandleStack(DEFAULT_CAPACITY);
             nativeStubLookupFreeStack.pushRange(FIRST_VALID_INDEX, DEFAULT_CAPACITY);
+            nativeTypeLookup = new IdReference<?>[DEFAULT_CAPACITY];
         }
 
         public final ArrayList<Long> referencesToBeFreed = new ArrayList<>();
         public final HashMap<Long, IdReference<?>> nativeLookup = new HashMap<>();
         public final ConcurrentHashMap<Long, Long> nativeWeakRef = new ConcurrentHashMap<>();
         public final WeakHashMap<Object, WeakReference<Object>> managedNativeLookup = new WeakHashMap<>();
+
+        public IdReference<?>[] nativeTypeLookup;
 
         private final HashMap<Long, Object> nativeStubLookupShadowTable;
         public Object[] nativeStubLookup;
@@ -962,18 +968,64 @@ public abstract class CApiTransitions {
     }
 
     @TruffleBoundary
-    public static IdReference<?> nativeLookupPut(HandleContext context, long pointer, NativeObjectReference value) {
-        return context.nativeLookup.put(pointer, value);
+    public static void nativeLookupPut(HandleContext context, long pointer, NativeObjectReference value) {
+        assert !HandlePointerConverter.pointsToPyHandleSpace(pointer);
+        assert !context.nativeLookup.containsKey(pointer) || context.nativeLookup.get(pointer).get() == null;
+        context.nativeLookup.put(pointer, value);
     }
 
     @TruffleBoundary
-    public static IdReference<?> nativeLookupPut(HandleContext context, long pointer, PythonObjectReference value) {
-        return context.nativeLookup.put(pointer, value);
+    public static void nativeLookupPut(HandleContext context, long pointer, PythonObjectReference value) {
+        assert !HandlePointerConverter.pointsToPyHandleSpace(pointer);
+        assert !context.nativeLookup.containsKey(pointer) || context.nativeLookup.get(pointer).get() == null;
+        context.nativeLookup.put(pointer, value);
     }
 
     @TruffleBoundary
     public static IdReference<?> nativeLookupRemove(HandleContext context, long pointer) {
         return context.nativeLookup.remove(pointer);
+    }
+
+    public static IdReference<?> nativeTypeLookupGet(HandleContext context, long pointer, int idx) {
+        assert idx != 0;
+        assert !HandlePointerConverter.pointsToPyHandleSpace(pointer);
+        IdReference<?> result = context.nativeTypeLookup[idx];
+        assert result == nativeLookupGet(context, pointer);
+        return result;
+    }
+
+    @TruffleBoundary
+    private static int nativeTypeLookupPut(HandleContext context, IdReference<?> value, long pointer) throws OverflowException {
+        assert !HandlePointerConverter.pointsToPyHandleSpace(pointer);
+        for (int i = 0; i < context.nativeTypeLookup.length; i++) {
+            if (context.nativeTypeLookup[i] == null) {
+                context.nativeTypeLookup[i] = value;
+                return i;
+            }
+        }
+        // table is full; resize it
+        int oldSize = context.nativeTypeLookup.length;
+        /*
+         * Creating types is an expensive operation and types are usually created once and stay
+         * alive for a long time (if not immortal). We therefore always grow linearly.
+         */
+        int newSize = PythonUtils.addExact(oldSize, 64);
+        assert newSize != oldSize;
+        if (LOGGER.isLoggable(Level.FINE)) {
+            LOGGER.fine(String.format("Resizing native type lookup table: %d -> %d", oldSize, newSize));
+        }
+        context.nativeTypeLookup = Arrays.copyOf(context.nativeTypeLookup, newSize);
+        assert context.nativeTypeLookup[oldSize] == null;
+        context.nativeTypeLookup[oldSize] = value;
+        return oldSize;
+    }
+
+    @TruffleBoundary
+    private static void nativeTypeLookupUpdate(HandleContext context, int typeLookupIdx, IdReference<?> value) {
+        assert 0 < typeLookupIdx && typeLookupIdx < context.nativeTypeLookup.length;
+        assert context.nativeTypeLookup[typeLookupIdx] != null;
+        assert context.nativeTypeLookup[typeLookupIdx].get() == null;
+        context.nativeTypeLookup[typeLookupIdx] = value;
     }
 
     public static Object nativeStubLookupGet(HandleContext context, long pointer, int idx) {
@@ -1167,8 +1219,8 @@ public abstract class CApiTransitions {
             boolean isBuiltinClass = clazz instanceof PythonBuiltinClass;
 
             long ptr = NativeMemory.malloc(size);
-            CApiTransitions.createPythonClassReference(clazz, ptr, true);
-            ToNativeTypeNode.initializeType(clazz, ptr, heaptype);
+            int typeReference = CApiTransitions.createPythonManagedClassReference(clazz, ptr, true);
+            ToNativeTypeNode.initializeType(clazz, ptr, heaptype, typeReference);
             assert !isBuiltinClass || clazz.getRefCount() == IMMORTAL_REFCNT;
             return ptr;
         }
@@ -1179,10 +1231,7 @@ public abstract class CApiTransitions {
             assert !mv.isNative();
             assert initialRefCount == IMMORTAL_REFCNT;
             long ptr = PyMemoryViewWrapper.allocate(mv);
-            // TODO: this passes "false" for allocatedFromJava, although it actually is. The
-            // problem, however, is that this struct contains nested allocations from Java. This
-            // needs to be cleaned up...
-            CApiTransitions.createReference(mv, ptr, false);
+            CApiTransitions.createReference(mv, ptr);
             return ptr;
         }
 
@@ -1356,18 +1405,13 @@ public abstract class CApiTransitions {
         }
     }
 
-    public static void createPythonClassReference(PythonManagedClass obj, long ptr, boolean allocatedFromJava) {
-        CompilerAsserts.neverPartOfCompilation();
-        createReference(obj, ptr, allocatedFromJava);
-    }
-
     /**
      * Creates a {@link PythonObjectReference} to {@code delegate} and connects that to the given
      * native {@code pointer} such that the {@code pointer} can be resolved to the {@code delegate}.
      */
     @TruffleBoundary
     @SuppressWarnings("try")
-    public static void createReference(PythonObject obj, long ptr, boolean allocatedFromJava) {
+    public static void createReference(PythonObject obj, long ptr) {
         try (GilNode.UncachedAcquire ignored = GilNode.uncachedAcquire()) {
             /*
              * The first test if '!obj.isNative()' in the caller is done on a fast-path but not
@@ -1378,8 +1422,56 @@ public abstract class CApiTransitions {
                 obj.setNativePointer(ptr);
                 pollReferenceQueue();
                 HandleContext context = getContext();
-                nativeLookupPut(context, ptr, PythonObjectReference.createReplacement(context, obj, ptr, allocatedFromJava));
+                nativeLookupPut(context, ptr, PythonObjectReference.createReplacement(context, obj, ptr, false));
             }
+        }
+    }
+
+    /**
+     * Creates a {@link PythonObjectReference} to the given managed class and connects that to the
+     * given native {@code pointer} such that the {@code pointer} can be resolved to the
+     * {@code delegate}. This should be used for types because it will set up a fast path for
+     * resolving the type's pointer. This fast path can be used if it is known that the pointer is a
+     * {@code PyTypeObject *}.
+     */
+    public static int createPythonManagedClassReference(PythonManagedClass clazz, long ptr, boolean allocatedFromJava) {
+        CompilerAsserts.neverPartOfCompilation();
+        assert PythonContext.get(null).ownsGil();
+        assert !clazz.isNative();
+
+        logVoid(clazz, ptr);
+        clazz.setNativePointer(ptr);
+        HandleContext context = getContext();
+        PythonObjectReference pythonObjectReference = PythonObjectReference.createReplacement(context, clazz, ptr, allocatedFromJava);
+        nativeLookupPut(context, ptr, pythonObjectReference);
+        try {
+            return nativeTypeLookupPut(context, pythonObjectReference, ptr);
+        } catch (OverflowException e) {
+            // ignore; it's an optimization
+            return 0;
+        }
+    }
+
+    /**
+     * Creates a {@link PythonObjectReference} to the given managed class and connects that to the
+     * given native {@code pointer} such that the {@code pointer} can be resolved to the
+     * {@code delegate}. This should be used for types because it will set up a fast path for
+     * resolving the type's pointer. This fast path can be used if it is known that the pointer is a
+     * {@code PyTypeObject *}.
+     */
+    public static int createPythonNativeClassReference(PythonNativeClass clazz) {
+        CompilerAsserts.neverPartOfCompilation();
+        assert PythonContext.get(null).ownsGil();
+
+        logVoid("Creating fast type lookup for native class ", clazz);
+        HandleContext context = getContext();
+
+        try {
+            PythonAbstractNativeObject nativeObject = (PythonAbstractNativeObject) clazz;
+            return nativeTypeLookupPut(context, nativeObject.ref, clazz.getPtr());
+        } catch (OverflowException e) {
+            // ignore; it's an optimization
+            return 0;
         }
     }
 
@@ -2262,6 +2354,95 @@ public abstract class CApiTransitions {
         }
     }
 
+    /**
+     * Resolves a native pointer of type {@code PyTypeObject *} to a {@link PythonAbstractClass}
+     * object or {@link PNone#NO_VALUE}. This node is semantically equivalent to
+     * {@link NativeToPythonInternalNode} but uses a fast index-based lookup. This node cannot
+     * transfer ownership of the reference (i.e. won't manipulate the refcount).
+     */
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class NativeToPythonClassInternalNode extends Node {
+
+        public abstract Object execute(Node inliningTarget, long value);
+
+        @Specialization
+        static Object doGeneric(Node inliningTarget, long pointer,
+                        @Cached InlinedConditionProfile isZeroProfile,
+                        @Cached InlinedBranchProfile createNativeProfile) {
+            if (isZeroProfile.profile(inliningTarget, pointer == 0)) {
+                return PNone.NO_VALUE;
+            }
+
+            PythonContext pythonContext = PythonContext.get(inliningTarget);
+            HandleContext nativeContext = pythonContext.nativeContext;
+
+            assert pythonContext.ownsGil();
+            IdReference<?> lookup;
+
+            int typeLookupTableIdx = readIntField(pointer, CFields.PyTypeObject__tp_version_tag);
+            if (typeLookupTableIdx != 0) {
+                // fast index-based lookup
+                lookup = nativeTypeLookupGet(nativeContext, pointer, typeLookupTableIdx);
+            } else {
+                // generic HashMap-based lookup
+                lookup = nativeLookupGet(nativeContext, pointer);
+            }
+
+            Object clazz;
+            if (lookup == null || (clazz = lookup.get()) == null) {
+                createNativeProfile.enter(inliningTarget);
+                // this may only happen for native types otherwise we are using a dangling pointer
+                assert lookup == null || lookup instanceof NativeObjectReference;
+                if (LOGGER.isLoggable(Level.FINE)) {
+                    LOGGER.fine(PythonUtils.formatJString("re-creating collected PythonNativeClass reference 0x%x", pointer));
+                }
+                return recreatePythonNativeClass(nativeContext, pointer);
+            }
+            assert clazz instanceof PythonAbstractClass;
+            return clazz;
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline(false)
+    public abstract static class NativeToPythonClassNode extends CExtToJavaNode {
+
+        @TruffleBoundary
+        public static Object executeUncached(Object obj) {
+            return NativeToPythonClassNodeGen.getUncached().execute(obj);
+        }
+
+        @Specialization
+        static Object doLong(long value,
+                        @Bind Node inliningTarget,
+                        @Shared @Cached NativeToPythonClassInternalNode nativeToPythonInternalNode) {
+            return nativeToPythonInternalNode.execute(inliningTarget, value);
+        }
+
+        @Specialization(limit = "1")
+        static Object doInteropPointer(Object nativePointer,
+                        @Bind Node inliningTarget,
+                        @Shared @Cached NativeToPythonClassInternalNode nativeToPythonInternalNode,
+                        @CachedLibrary("nativePointer") InteropLibrary lib) {
+            try {
+                return nativeToPythonInternalNode.execute(inliningTarget, lib.asPointer(nativePointer));
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
+
+        @NeverDefault
+        public static NativeToPythonClassNode create() {
+            return NativeToPythonClassNodeGen.create();
+        }
+
+        public static NativeToPythonClassNode getUncached() {
+            return NativeToPythonClassNodeGen.getUncached();
+        }
+    }
+
     private static final Unsafe UNSAFE = PythonUtils.initUnsafe();
     private static final int TP_REFCNT_OFFSET = 0;
 
@@ -2327,7 +2508,6 @@ public abstract class CApiTransitions {
     }
 
     private static PythonAbstractNativeObject createAbstractNativeObject(HandleContext handleContext, boolean transfer, long pointer) {
-
         pollReferenceQueue();
         PythonAbstractNativeObject result = new PythonAbstractNativeObject(pointer);
         long refCntDelta = MANAGED_REFCNT - (transfer ? 1 : 0);
@@ -2339,9 +2519,40 @@ public abstract class CApiTransitions {
         long refCount = addNativeRefCount(pointer, refCntDelta, true);
         if (refCount > 0) {
             NativeObjectReference ref = new NativeObjectReference(handleContext, result, pointer);
-            nativeLookupPut(getContext(), pointer, ref);
+            nativeLookupPut(handleContext, pointer, ref);
         } else if (LOGGER.isLoggable(Level.FINE)) {
             LOGGER.fine(PythonUtils.formatJString("createAbstractNativeObject: creating PythonAbstractNativeObject for a dying object (refcount 0): 0x%x", pointer));
+        }
+
+        return result;
+    }
+
+    /**
+     * Re-creates a {@link PythonNativeClass} that died because there were no more references from
+     * the managed side. This method is similar to {@link #createAbstractNativeObject} but assumes
+     * that the pointer is of type {@link CStructs#PyTypeObject} and will also set up the fast type
+     * lookup. It attempts to reuse the slot in the native type lookup table by reading the existing
+     * index from the native {@code PyTypeObject}.
+     */
+    @TruffleBoundary
+    private static PythonNativeClass recreatePythonNativeClass(HandleContext handleContext, long pointer) {
+        pollReferenceQueue();
+        PythonAbstractNativeObject result = new PythonAbstractNativeObject(pointer);
+        /*
+         * Some APIs might be called from tp_dealloc/tp_del/tp_finalize where the refcount is 0. In
+         * that case we don't want to create a new reference, since that would resurrect the object
+         * and we would end up deallocating it twice.
+         */
+        long refCount = addNativeRefCount(pointer, MANAGED_REFCNT, true);
+        if (refCount > 0) {
+            NativeObjectReference ref = new NativeObjectReference(handleContext, result, pointer);
+            nativeLookupPut(handleContext, pointer, ref);
+            int typeLookupIdx = readIntField(pointer, CFields.PyTypeObject__tp_version_tag);
+            if (typeLookupIdx != 0) {
+                nativeTypeLookupUpdate(handleContext, typeLookupIdx, ref);
+            }
+        } else if (LOGGER.isLoggable(Level.FINE)) {
+            LOGGER.fine(PythonUtils.formatJString("createPythonNativeClass: creating PythonNativeClass for a dying object (refcount 0): 0x%x", pointer));
         }
 
         return result;

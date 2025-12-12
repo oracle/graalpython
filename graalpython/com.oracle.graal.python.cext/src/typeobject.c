@@ -7582,6 +7582,10 @@ type_ready(PyTypeObject *type, int rerunbuiltin)
 #endif
 #endif // GraalPy change
 
+    /* GraalPy change: We use 'tp_version_tag' to store an index for a fast lookup table. To avoid accidentally
+       incorrect associations, we clear the field in the very beginning. */
+    type->tp_version_tag = 0;
+
     /* GraalPy change: IMPORTANT: This is a Truffle-specific statement. Since the refcnt for the type is currently 0 and
        we will create several references to this object that will be collected during the execution of
        this method, we need to keep it alive. */
@@ -7649,6 +7653,9 @@ type_ready(PyTypeObject *type, int rerunbuiltin)
     stop_readying(type);
 
     assert(_PyType_CheckConsistency(type));
+
+    // GraalPy change
+    GraalPyPrivate_NotifyTypeReady(type);
 
     // GraalPy change: for reason, see first call to Py_INCREF in this function
 	Py_DECREF(type);

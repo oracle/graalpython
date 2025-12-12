@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesF
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CheckPrimitiveFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.InitCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonClassNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonReturnNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
@@ -78,6 +79,14 @@ enum ArgBehavior {
                     NativeToPythonTransferNode.getUncached()),
     PyObjectBorrowed(NfiType.RAW_POINTER, ToNativeBorrowedNode::new, NativeToPythonNode::create, NativeToPythonNode.getUncached(), null, null, null),
     PyObjectAsTruffleString(NfiType.RAW_POINTER, null, ToPythonStringNode::create, ToPythonStringNode.getUncached(), null, null, null),
+    PyTypeObject(
+                    NfiType.RAW_POINTER,
+                    PythonToNativeNode::create,
+                    NativeToPythonClassNode::create,
+                    NativeToPythonClassNode.getUncached(),
+                    PythonToNativeNewRefNode::create,
+                    NativeToPythonTransferNode::create,
+                    NativeToPythonTransferNode.getUncached()),
     PointerYYY(NfiType.POINTER),
     Pointer(NfiType.RAW_POINTER),
     TruffleStringPointer(NfiType.RAW_POINTER, null, CharPtrToPythonNode::create, CharPtrToPythonNode.getUncached()),
@@ -131,7 +140,7 @@ public enum ArgDescriptor {
     PyObjectBorrowed(ArgBehavior.PyObjectBorrowed, "PyObject*"),
     PyObjectAsTruffleString(ArgBehavior.PyObjectAsTruffleString, "PyObject*"),
     PyTypeObjectYYY(ArgBehavior.PyObjectYYY, "PyTypeObject*"),
-    PyTypeObject(ArgBehavior.PyObject, "PyTypeObject*"),
+    PyTypeObject(ArgBehavior.PyTypeObject, "PyTypeObject*"),
     PyTypeObjectBorrowed(ArgBehavior.PyObjectBorrowed, "PyTypeObject*"),
     PyTypeObjectTransfer(ArgBehavior.PyObject, "PyTypeObject*", true, false),
     PyListObject(ArgBehavior.PyObject, "PyListObject*"),
@@ -476,17 +485,24 @@ public enum ArgDescriptor {
     }
 
     public boolean isPyObjectOrPointer() {
-        return behavior == ArgBehavior.PyObject || behavior == ArgBehavior.PyObjectYYY || behavior == ArgBehavior.PyObjectBorrowed || behavior == ArgBehavior.PointerYYY ||
-                        behavior == ArgBehavior.Pointer ||
-                        behavior == ArgBehavior.TruffleStringPointer;
+        return switch (behavior) {
+            case PyObject, PyObjectYYY, PyTypeObject, PyObjectBorrowed, PointerYYY, Pointer, TruffleStringPointer -> true;
+            default -> false;
+        };
     }
 
     public boolean isPointer() {
-        return behavior == ArgBehavior.PointerYYY || behavior == ArgBehavior.Pointer || behavior == ArgBehavior.TruffleStringPointer;
+        return switch (behavior) {
+            case PointerYYY, Pointer, TruffleStringPointer -> true;
+            default -> false;
+        };
     }
 
     public boolean isPyObject() {
-        return behavior == ArgBehavior.PyObject || behavior == ArgBehavior.PyObjectYYY || behavior == ArgBehavior.PyObjectBorrowed;
+        return switch (behavior) {
+            case PyObject, PyObjectYYY, PyObjectBorrowed, PyTypeObject -> true;
+            default -> false;
+        };
     }
 
     public boolean isValidReturnType() {
