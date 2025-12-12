@@ -81,6 +81,7 @@ public abstract class PyNumberPowerNode extends BinaryOpNode {
                     @Cached GetCachedTpSlotsNode getWSlots,
                     @Cached CallTernaryOpNode callTernaryOpNode,
                     @Cached PRaiseNode raiseNode) {
+        assert z != PNone.NO_VALUE;
         Object classV = getVClass.execute(inliningTarget, v);
         Object classW = getWClass.execute(inliningTarget, w);
         TpSlot slotV = getVSlots.execute(inliningTarget, classV).nb_power();
