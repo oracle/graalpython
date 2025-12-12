@@ -158,6 +158,8 @@
         windows: {
             common: {
                 PATH: "$MAVEN_HOME\\bin;$PATH",
+                # Gradle: this feature doesn't work on all Windows CI machines
+                GRADLE_OPTS: "-Dorg.gradle.vfs.watch=false",
             },
             amd64: {},
             aarch64: {},
@@ -419,7 +421,7 @@
         environment+: $.environment(self.os, self.arch),
         packages+: $.packages(self.os, self.arch),
         run+: [
-            ["mx"] + self.mx_parameters + self.dy + self.primary_suite + [
+            ["mx", "--J", "@-Dtck.inlineVerifierInstrument=false"] + self.mx_parameters + self.dy + self.primary_suite + [
                 "--strict-compliance", "--primary", "gate", "--tags", self.tags, "-B=--force-deprecation-as-warning",
             ] + self.all_suites + self.gate_parameters,
         ],

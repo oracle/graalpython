@@ -52,7 +52,6 @@ import com.oracle.graal.python.pegparser.scope.Scope;
 import com.oracle.graal.python.pegparser.scope.ScopeEnvironment;
 import com.oracle.graal.python.pegparser.sst.ModTy;
 import com.oracle.graal.python.pegparser.sst.StmtTy;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.source.Source;
 
 public class BytecodeDSLCompiler {
@@ -60,7 +59,7 @@ public class BytecodeDSLCompiler {
     public static final record BytecodeDSLCompilerResult(PBytecodeDSLRootNode rootNode, BytecodeDSLCodeUnit codeUnit) {
     }
 
-    public static BytecodeDSLCompilerResult compile(PythonLanguage language, PythonContext context, ModTy mod, Source source, int optimize, ParserCallbacksImpl parserCallbacks,
+    public static BytecodeDSLCompilerResult compile(PythonLanguage language, ModTy mod, Source source, int optimize, ParserCallbacksImpl parserCallbacks,
                     EnumSet<FutureFeature> futureFeatures) {
         /**
          * Parse __future__ annotations before the analysis step. The analysis does extra validation
@@ -68,7 +67,7 @@ public class BytecodeDSLCompiler {
          */
         int futureLineNumber = parseFuture(mod, futureFeatures, parserCallbacks);
         ScopeEnvironment scopeEnvironment = ScopeEnvironment.analyze(mod, parserCallbacks, futureFeatures);
-        BytecodeDSLCompilerContext ctx = new BytecodeDSLCompilerContext(language, context, mod, source, optimize, futureFeatures, futureLineNumber, parserCallbacks, scopeEnvironment);
+        BytecodeDSLCompilerContext ctx = new BytecodeDSLCompilerContext(language, mod, source, optimize, futureFeatures, futureLineNumber, parserCallbacks, scopeEnvironment);
         RootNodeCompiler compiler = new RootNodeCompiler(ctx, null, mod, futureFeatures);
         return compiler.compile();
     }
@@ -88,7 +87,6 @@ public class BytecodeDSLCompiler {
     public static class BytecodeDSLCompilerContext {
 
         public final PythonLanguage language;
-        public final PythonContext pythonContext;
         public final ModTy mod;
         public final Source source;
         public final int optimizationLevel;
@@ -97,10 +95,9 @@ public class BytecodeDSLCompiler {
         public final ParserCallbacksImpl errorCallback;
         public final ScopeEnvironment scopeEnvironment;
 
-        public BytecodeDSLCompilerContext(PythonLanguage language, PythonContext context, ModTy mod, Source source, int optimizationLevel,
+        public BytecodeDSLCompilerContext(PythonLanguage language, ModTy mod, Source source, int optimizationLevel,
                         EnumSet<FutureFeature> futureFeatures, int futureLineNumber, ParserCallbacksImpl errorCallback, ScopeEnvironment scopeEnvironment) {
             this.language = language;
-            this.pythonContext = context;
             this.mod = mod;
             this.source = source;
             this.optimizationLevel = optimizationLevel;

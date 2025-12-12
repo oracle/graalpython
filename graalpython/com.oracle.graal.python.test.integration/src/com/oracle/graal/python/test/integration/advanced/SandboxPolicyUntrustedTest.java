@@ -69,7 +69,8 @@ public class SandboxPolicyUntrustedTest {
                         .option("sandbox.MaxHeapMemory", "800MB") //
                         .option("sandbox.MaxCPUTime", "10s") //
                         .option("sandbox.MaxASTDepth", "100") //
-                        .option("sandbox.MaxStackFrames", "10") //
+                        // encodings import during ctx init takes 19 frames and that's the deepest
+                        .option("sandbox.MaxStackFrames", "25") //
                         .option("sandbox.MaxThreads", "1") //
                         .option("sandbox.MaxOutputStreamSize", "1MB") //
                         .option("sandbox.MaxErrorStreamSize", "1MB") //

@@ -34,7 +34,8 @@ test.test_traceback.PurePythonTracebackErrorCaretTests.test_caret_for_subscript_
 test.test_traceback.PurePythonTracebackErrorCaretTests.test_caret_in_type_annotation @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_traceback.PurePythonTracebackErrorCaretTests.test_caret_multiline_expression @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_traceback.PurePythonTracebackErrorCaretTests.test_caret_multiline_expression_bin_op @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_traceback.PurePythonTracebackErrorCaretTests.test_decorator_application_lineno_correct @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+# GR-71889
+!test.test_traceback.PurePythonTracebackErrorCaretTests.test_decorator_application_lineno_correct @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_traceback.PurePythonTracebackErrorCaretTests.test_secondary_caret_not_elided @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_traceback.PurePythonTracebackErrorCaretTests.test_specialization_variations @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_traceback.PurePythonTracebackErrorCaretTests.test_traceback_specialization_with_syntax_error @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64

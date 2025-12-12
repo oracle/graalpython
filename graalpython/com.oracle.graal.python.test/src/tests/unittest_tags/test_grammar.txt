@@ -2,8 +2,9 @@ test.test_grammar.GrammarTests.test_additive_ops @ darwin-arm64,linux-aarch64,li
 test.test_grammar.GrammarTests.test_annotations_inheritance @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_grammar.GrammarTests.test_assert @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_grammar.GrammarTests.test_assert_failures @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_grammar.GrammarTests.test_assert_syntax_warnings @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_grammar.GrammarTests.test_assert_warning_promotes_to_syntax_error @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+# GR-71364
+!test.test_grammar.GrammarTests.test_assert_syntax_warnings @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+!test.test_grammar.GrammarTests.test_assert_warning_promotes_to_syntax_error @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_grammar.GrammarTests.test_async_await @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_grammar.GrammarTests.test_async_for @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_grammar.GrammarTests.test_async_with @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64

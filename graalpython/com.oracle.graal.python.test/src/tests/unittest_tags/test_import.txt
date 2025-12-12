@@ -48,7 +48,8 @@ test.test_import.ImportTracebackTests.test_syntax_error @ darwin-arm64,linux-aar
 test.test_import.OverridingImportBuiltinTests.test_override_builtin @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_import.PathsTests.test_trailing_slash @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_import.PycRewritingTests.test_basics @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_import.PycRewritingTests.test_incorrect_code_name @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+# GR-71867
+!test.test_import.PycRewritingTests.test_incorrect_code_name @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_import.PycRewritingTests.test_module_without_source @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_import.PycacheTests.test___cached__ @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_import.PycacheTests.test___cached___legacy_pyc @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64

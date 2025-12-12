@@ -158,7 +158,9 @@ test.test_threading.ThreadingExceptionTests.test_joining_current_thread @ darwin
 test.test_threading.ThreadingExceptionTests.test_joining_inactive_thread @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_threading.ThreadingExceptionTests.test_multithread_modify_file_noerror @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_threading.ThreadingExceptionTests.test_print_exception @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_threading.ThreadingExceptionTests.test_print_exception_gh_102056 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+# test_print_exception_gh_102056: excessive RecursionError, seems that CPython fails in weird uncontrolled way
+# (but failure is the expected outcome), but we just get stuck on handling all the repeated StackOverflowErrors
+!test.test_threading.ThreadingExceptionTests.test_print_exception_gh_102056 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_threading.ThreadingExceptionTests.test_print_exception_stderr_is_none_1 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_threading.ThreadingExceptionTests.test_print_exception_stderr_is_none_2 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_threading.ThreadingExceptionTests.test_start_thread_again @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64

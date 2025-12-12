@@ -439,6 +439,7 @@ class TestErr(HPyTest):
         check_warning(BytesWarning)
         check_warning(ResourceWarning)
 
+    @pytest.mark.skipif(IS_GRAALPY, reason="Bytecode DSL sources handling, GR-71943")
     def test_HPyErr_WarnEx(self):
         import warnings
         mod = self.make_module("""

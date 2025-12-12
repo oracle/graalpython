@@ -447,22 +447,28 @@ public final class CodeBuiltins extends PythonBuiltins {
 
             int startInstructionIndex = 0;
             int instructionIndex = 0;
+            boolean wasInstrumentation = false;
             for (Instruction instruction : bytecodeNode.getInstructions()) {
                 if (instruction.getBytecodeIndex() == triple[1] /* end bci */) {
-                    result.add(PFactory.createTuple(language, new int[]{startInstructionIndex, instructionIndex, triple[2]}));
+                    if (!wasInstrumentation) {
+                        result.add(PFactory.createTuple(language, new int[]{startInstructionIndex, instructionIndex, triple[2]}));
+                    }
                     startInstructionIndex = instructionIndex;
                     triple = triples.get(++tripleIndex);
                     assert triple[0] == instruction.getBytecodeIndex() : "bytecode ranges should be consecutive";
                 }
 
-                if (!instruction.isInstrumentation()) {
+                if (instruction.isInstrumentation()) {
+                    wasInstrumentation = true;
+                } else {
                     // Emulate CPython's fixed 2-word instructions.
+                    wasInstrumentation = false;
                     instructionIndex += 2;
                 }
             }
 
             result.add(PFactory.createTuple(language, new int[]{startInstructionIndex, instructionIndex, triple[2]}));
-            assert tripleIndex == triples.size() : String.format("every bytecode range should have been converted to " +
+            assert tripleIndex == triples.size() - 1 : String.format("every bytecode range should have been converted to " +
                             "an instruction range, %d != %d, function: %s", tripleIndex, triples.size(), bytecodeNode.getRootNode());
 
             return result;
