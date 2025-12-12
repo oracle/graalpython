@@ -1,0 +1,17 @@
+#!/bin/bash
+
+to_extract="$ARTIFACT_PATHS"
+if [ -n "$1" ]; then
+   to_extract="${ARTIFACT_PATH_PREFIX}/${1}.tar"
+fi
+
+for i in $to_extract; do
+   if [ -f "$i" ]; then
+      tar -x -f "$i" -C "${ARTIFACT_PATH_PREFIX}" -v
+      echo "Unpacked $i in $(pwd)/${ARTIFACT_PATH_PREFIX}"
+   else
+      echo "file not found in ${ARTIFACT_PATH_PREFIX}"
+      ls "${ARTIFACT_PATH_PREFIX}"
+   fi
+
+done

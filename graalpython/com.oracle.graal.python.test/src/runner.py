@@ -84,6 +84,8 @@ CURRENT_PLATFORM_KEYS = frozenset({CURRENT_PLATFORM})
 RUNNER_ENV = {}
 DISABLE_JIT_ENV = {'GRAAL_PYTHON_VM_ARGS': '--experimental-options --engine.Compilation=false'}
 
+GITHUB_CI = os.environ.get("GITHUB_CI", None)
+
 # We leave the JIT enabled for the tests themselves, but disable it for subprocesses
 # noinspection PyUnresolvedReferences
 if IS_GRAALPY and __graalpython__.is_native and 'GRAAL_PYTHON_VM_ARGS' not in os.environ:
@@ -446,6 +448,14 @@ class TestRunner:
         self.display_summary()
 
     def generate_mx_report(self, path: str):
+        # Some reports may be split when ran on github, this sets different file names
+        report_suffix = os.environ.get("MX_REPORT_SUFFIX")
+        if report_suffix:
+            if os.environ.get("GITHUB_CI"):
+                report_suffix = f"{report_suffix}_{CURRENT_PLATFORM}"
+            tmppath, ext = os.path.splitext(path)
+            path = f"{tmppath}{report_suffix}{ext}"
+
         report_data = []
         for result in self.results:
             # Skip synthetic results for failed class setups and such
@@ -1122,7 +1132,7 @@ def collect_module(test_file: TestFile, specifiers: list[TestSpecifier], use_tag
         loader = TopLevelFunctionLoader() if config.run_top_level_functions else unittest.TestLoader()
         tagged_ids = None
         if use_tags and config.tags_dir:
-            tagged_ids = [tag.test_id for tag in read_tags(test_file) if platform_keys_match(tag.keys)]
+            tagged_ids = [tag.test_id for tag in read_tags(test_file) if platform_keys_match(tag.keys) and not tag.is_platform_excluded(CURRENT_PLATFORM)]
             if not tagged_ids:
                 return None
         test_module = test_path_to_module(test_file)
@@ -1194,38 +1204,56 @@ def collect(all_specifiers: list[TestSpecifier], *, use_tags=False, ignore=None,
             to_run.append(collected)
     return to_run
 
-
 @dataclass(frozen=True)
 class Tag:
     test_id: TestId
     keys: frozenset[str]
+    excluded_keys: frozenset[str]
     is_exclusion: bool
     comment: str | None = False
 
     @classmethod
     def for_key(cls, test_id, key) -> 'Tag':
-        return Tag(test_id, frozenset({key}), is_exclusion=False)
+        return Tag(test_id, frozenset({key}), excluded_keys=frozenset(), is_exclusion=False)
 
     def with_key(self, key: str) -> 'Tag':
-        return Tag(self.test_id, self.keys | {key}, is_exclusion=self.is_exclusion)
+        if GITHUB_CI:
+            return Tag(self.test_id, self.keys, self.excluded_keys - {key}, is_exclusion=self.is_exclusion)
+            
+        return Tag(self.test_id, self.keys | {key}, self.excluded_keys, is_exclusion=self.is_exclusion)
 
     def without_key(self, key: str) -> 'Tag | None':
         return self.without_keys({key})
 
     def without_keys(self, keys: set[str]) -> 'Tag | None':
+        # disable test/platform only for github, not completely for internal ci
+        if GITHUB_CI:
+            exclusions = frozenset(list(self.excluded_keys) + list(keys))
+            return Tag(self.test_id, self.keys, exclusions, is_exclusion=self.is_exclusion)
+
         keys = self.keys - keys
         if keys:
             if keys == self.keys:
                 return self
-            return Tag(self.test_id, keys, is_exclusion=self.is_exclusion)
+            return Tag(self.test_id, keys, self.excluded_keys, is_exclusion=self.is_exclusion)
 
+    def is_platform_excluded(self, key: str) -> bool:
+        return key in self.excluded_keys
+        
+    def get_keys_as_str(self) -> list[str]:
+        keys = []
+        for key in sorted(self.keys):
+            if "$" in key: print(f"[WARNING]: Invalid key with $ found in tag keys: {key}, {self.keys}, {self.excluded_keys}")
+            keys.append(key if key not in self.excluded_keys else f"${key}")
+        return keys
+    
     def __str__(self):
         s = ''
         if self.is_exclusion:
             s += '!'
         s += self.test_id.test_name
         if self.keys:
-            s += f' @ {",".join(sorted(self.keys))}'
+            s += f' @ {",".join(self.get_keys_as_str())}'
         if self.comment:
             s = f'{self.comment}{s}'
         return s
@@ -1256,9 +1284,17 @@ def read_tags(test_file: TestFile, allow_exclusions=False) -> list[Tag]:
 
                 if not keys and not is_exclusion:
                     log(f'WARNING: invalid tag {test}: missing platform keys')
+
+                keys = keys.split(',') if keys else []
+                excluded_keys = []
+                for key in keys:
+                    if key.startswith('$'):
+                        excluded_keys.append(key.removeprefix('$'))
+
                 tag = Tag(
                     TestId(test_path, test),
-                    frozenset(keys.split(',') if keys else frozenset()),
+                    frozenset(keys),
+                    excluded_keys=frozenset(excluded_keys),
                     is_exclusion=is_exclusion,
                     comment=comment,
                 )
@@ -1349,7 +1385,7 @@ def main_merge_tags(args):
             test_file,
             results,
             tag_platform=args.platform,
-            untag_failed=False,
+            untag_failed=os.environ.get("GITHUB_CI") is not None,
             untag_skipped=True,
             untag_missing=True,
         )
@@ -1509,7 +1545,7 @@ def main():
     # merge-tags-from-report command declaration
     merge_tags_parser = subparsers.add_parser('merge-tags-from-report', help="Merge tags from automated retagger")
     merge_tags_parser.set_defaults(main=main_merge_tags)
-    merge_tags_parser.add_argument('platform')
+    merge_tags_parser.add_argument('--platform', default=CURRENT_PLATFORM)
     merge_tags_parser.add_argument('report_path')
 
     # run the appropriate command
