@@ -2471,6 +2471,17 @@ public final class PythonContext extends Python3Core {
     }
 
     /**
+     * Should not be called directly.
+     *
+     * @see GilNode
+     */
+    void releaseGilAroundForeignCall() {
+        if (getLanguage().getForeignCriticalSection().get() == 0) {
+            releaseGil();
+        }
+    }
+
+    /**
      * This is like {@code Env#getPublicTruffleFile(String)} but also allows access to files in the
      * language home directory matching one of the given file extensions. This is mostly useful to
      * access files of the {@code stdlib}, {@code core} or similar.

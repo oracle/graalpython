@@ -38,7 +38,9 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -46,6 +48,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 
 /*
  * NOTE: We are not using IndirectCallContext here in this file
@@ -68,16 +71,18 @@ public final class ForeignIterableBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "3")
         static Object doGeneric(Object object,
+                        @Bind Node inliningTarget,
                         @CachedLibrary("object") InteropLibrary lib,
                         @Cached PForeignToPTypeNode convertNode,
-                        @Cached GilNode gil) {
-            gil.release(true);
+                        @Cached GilNode.Interop gil) {
+            PythonContext context = PythonContext.get(inliningTarget);
+            gil.release(context, true);
             try {
                 return convertNode.executeConvert(lib.getIterator(object));
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             } finally {
-                gil.acquire();
+                gil.acquire(context, inliningTarget);
             }
         }
     }

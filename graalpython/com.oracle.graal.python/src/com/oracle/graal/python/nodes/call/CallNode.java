@@ -58,6 +58,7 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -158,13 +159,14 @@ public abstract class CallNode extends PNodeWithContext {
                     @Cached PForeignToPTypeNode fromForeign,
                     @Cached InlinedBranchProfile keywordsError,
                     @Cached InlinedBranchProfile typeError,
-                    @Cached GilNode gil,
+                    @Cached GilNode.Interop gil,
                     @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interop) {
         if (keywords.length != 0) {
             keywordsError.enter(inliningTarget);
             throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);
         }
-        gil.release(true);
+        PythonContext context = PythonContext.get(inliningTarget);
+        gil.release(context, true);
         try {
             return fromForeign.executeConvert(interop.invokeMember(callable.receiver, callable.methodName, arguments));
         } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
@@ -174,7 +176,7 @@ public abstract class CallNode extends PNodeWithContext {
             // PyObjectGetMethod is supposed to have checked isMemberInvocable
             throw CompilerDirectives.shouldNotReachHere("Cannot invoke member");
         } finally {
-            gil.acquire();
+            gil.acquire(context, inliningTarget);
         }
     }
 

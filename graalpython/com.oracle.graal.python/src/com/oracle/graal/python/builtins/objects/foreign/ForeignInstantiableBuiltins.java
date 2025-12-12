@@ -77,21 +77,21 @@ public final class ForeignInstantiableBuiltins extends PythonBuiltins {
     public abstract static class CallNode extends PythonBuiltinNode {
         @Specialization
         static Object doInteropCall(VirtualFrame frame, Object callee, Object[] arguments,
-                        @SuppressWarnings("unused") @Bind Node inliningTarget,
+                        @Bind Node inliningTarget,
                         @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary(limit = "4") InteropLibrary lib,
                         @Cached PForeignToPTypeNode toPTypeNode,
-                        @Cached GilNode gil,
+                        @Cached GilNode.Interop gil,
                         @Cached PRaiseNode raiseNode) {
             PythonContext context = PythonContext.get(inliningTarget);
             PythonLanguage language = context.getLanguage(inliningTarget);
             try {
                 Object state = InteropCallContext.enter(frame, language, context, callData);
-                gil.release(true);
+                gil.release(context, true);
                 try {
                     return toPTypeNode.executeConvert(lib.instantiate(callee, arguments));
                 } finally {
-                    gil.acquire();
+                    gil.acquire(context, inliningTarget);
                     InteropCallContext.exit(frame, language, context, state);
                 }
             } catch (ArityException | UnsupportedTypeException e) {

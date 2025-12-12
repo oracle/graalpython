@@ -44,11 +44,17 @@ package com.oracle.graal.python.runtime;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
+/**
+ * A node to handle acquiring and releasing the Global Interpreter Lock efficiently in various
+ * situations. Generally you will want to use this node, except for interop cases where you want to
+ * use the {@link Interop} class.
+ */
 public abstract class GilNode extends Node {
 
     private static final class Cached extends GilNode {
@@ -80,21 +86,7 @@ public abstract class GilNode extends Node {
         @Override
         public boolean acquire(PythonContext context, Node location) {
             if (binaryProfile.profile(!context.ownsGil())) {
-                try {
-                    TruffleSafepoint.setBlockedThreadInterruptible(location, PythonContext::acquireGil, context);
-                } catch (PythonThreadKillException | PythonExitException | ThreadDeath e) {
-                    throw e;
-                } catch (Throwable t) {
-                    /*
-                     * Safepoint actions may throw exceptions, so we need to make sure that we
-                     * really acquire the GIL in the end before we hand the exception to python. And
-                     * let's not allow safepoint actions anymore so the exception doesn't get
-                     * swallowed.
-                     */
-                    context.ensureGilAfterFailure();
-                    throw t;
-                }
-                return true;
+                return acquireGilOrThrow(context, location);
             }
             return false;
         }
@@ -120,23 +112,7 @@ public abstract class GilNode extends Node {
         @TruffleBoundary
         public final boolean acquire(PythonContext context, Node location) {
             if (!context.ownsGil()) {
-                if (!context.tryAcquireGil()) {
-                    try {
-                        TruffleSafepoint.setBlockedThreadInterruptible(location, PythonContext::acquireGil, context);
-                    } catch (PythonThreadKillException | PythonExitException | ThreadDeath e) {
-                        throw e;
-                    } catch (Throwable t) {
-                        /*
-                         * Safepoint actions may throw exceptions, so we need to make sure that we
-                         * really acquire the GIL in the end before we hand the exception to python.
-                         * And let's not allow safepoint actions anymore so the exception doesn't
-                         * get swallowed.
-                         */
-                        context.ensureGilAfterFailure();
-                        throw t;
-                    }
-                }
-                return true;
+                return acquireGilOrThrow(context, location);
             }
             return false;
         }
@@ -190,6 +166,56 @@ public abstract class GilNode extends Node {
                 // exiting with an exception
                 release(context, this == INSTANCE_WITH_RELEASE);
             }
+        }
+    }
+
+    /**
+     * A form of the GilNode to be used around interop operations. We cannot decide on the language
+     * if interop operations are going to be quick or not, so we cannot make a good decision about
+     * releasing the GIL around them. By default we <emph>do</emph> release the GIL to be safer and
+     * avoid potential deadlocks (an interop call could be calling into Java, creating a new thread,
+     * trying to eval Python code, and wait for that to finish.)
+     *
+     * There is an API to disable GIL release/acquire around interop, and this class honors that.
+     */
+    public static final class Interop extends GilNode {
+        private static final Interop INSTANCE = new Interop();
+
+        private Interop() {
+            super();
+        }
+
+        public static Interop getUncached() {
+            return INSTANCE;
+        }
+
+        @NeverDefault
+        public static Interop create() {
+            return INSTANCE;
+        }
+
+        @Override
+        public boolean isAdoptable() {
+            return false;
+        }
+
+        @Override
+        public final boolean acquire(PythonContext context, Node location) {
+            if (!context.ownsGil()) {
+                return acquireGilOrThrow(context, location);
+            }
+            return false;
+        }
+
+        @Override
+        public final void release(PythonContext context, boolean wasAcquired) {
+            assert wasAcquired;
+            context.releaseGilAroundForeignCall();
+        }
+
+        @Override
+        public final boolean tryRelease() {
+            throw CompilerDirectives.shouldNotReachHere("#tryRelease is not available for foreign calls");
         }
     }
 
@@ -272,5 +298,24 @@ public abstract class GilNode extends Node {
     public static GilNode getUncached() {
         // it doesn't matter which is used for the default uncached case
         return UncachedRelease.INSTANCE;
+    }
+
+    private static boolean acquireGilOrThrow(PythonContext context, Node location) {
+        if (!context.tryAcquireGil()) {
+            try {
+                TruffleSafepoint.setBlockedThreadInterruptible(location, PythonContext::acquireGil, context);
+            } catch (PythonThreadKillException | PythonExitException | ThreadDeath e) {
+                throw e;
+            } catch (Throwable t) {
+                /*
+                 * Safepoint actions may throw exceptions, so we need to make sure that we really
+                 * acquire the GIL in the end before we hand the exception to python. And let's not
+                 * allow safepoint actions anymore so the exception doesn't get swallowed.
+                 */
+                context.ensureGilAfterFailure();
+                throw t;
+            }
+        }
+        return true;
     }
 }
