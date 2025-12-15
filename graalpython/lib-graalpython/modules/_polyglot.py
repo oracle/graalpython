@@ -110,6 +110,17 @@ def interop_behavior(receiver):
 setattr(polyglot, "interop_behavior", interop_behavior)
 
 
+class CriticalInterop():
+    def __enter__(self):
+        polyglot.__enter_foreign_critical_region__()
+
+    def __exit__(self, *args):
+        polyglot.__leave_foreign_critical_region__()
+
+
+setattr(polyglot, "gil_locked_during_interop", CriticalInterop)
+
+
 # loading arrow structures on demand
 def __getattr__(name):
     if name == "arrow":

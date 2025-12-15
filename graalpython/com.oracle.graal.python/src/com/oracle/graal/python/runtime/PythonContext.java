@@ -2476,9 +2476,22 @@ public final class PythonContext extends Python3Core {
      * @see GilNode
      */
     void releaseGilAroundForeignCall() {
-        if (getLanguage().getForeignCriticalSection().get() == 0) {
+        if (getLanguage().getForeignCriticalSection().get()[0] == 0) {
             releaseGil();
         }
+    }
+
+    public int enterForeignCriticalSection() {
+        int[] current = getLanguage().getForeignCriticalSection().get();
+        current[0] += 1;
+        return current[0];
+    }
+
+    public int leaveForeignCriticalSection() {
+        int[] current = getLanguage().getForeignCriticalSection().get();
+        assert current[0] > 0 : "invalid nesting of foreign critical sections on this thread";
+        current[0] -= 1;
+        return current[0];
     }
 
     /**

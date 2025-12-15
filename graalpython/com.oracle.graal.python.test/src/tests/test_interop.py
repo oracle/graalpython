@@ -1520,3 +1520,44 @@ class InteropTests(unittest.TestCase):
         doctest.Example = Example
 
         assert doctest.testmod(m=polyglot, verbose=getattr(unittest, "verbose"), optionflags=doctest.ELLIPSIS).failed == 0
+
+    def test_keep_gil_around_interop(self):
+        import java.lang.Thread as Thread
+        import threading, time
+        lst = []
+        enter_sleep = threading.Event()
+        done = threading.Event()
+
+        def worker():
+            enter_sleep.wait(timeout=5)
+            lst.append(time.time())
+            done.set()
+
+        t = threading.Thread(target=worker)
+        t.start()
+        start = time.time()
+        enter_sleep.set()
+        Thread.sleep(1000)
+        end = time.time()
+        done.wait(timeout=5)
+        t.join(timeout=5)
+        assert lst, "worker thread did not run"
+        t_run = lst[0]
+        assert t_run <= end, f"worker ran only after sleep finished: t_run={t_run}, end={end}"
+
+        lst.clear()
+        with polyglot.gil_locked_during_interop():
+            enter_sleep = threading.Event()
+            done = threading.Event()
+
+            t = threading.Thread(target=worker)
+            t.start()
+            start = time.time()
+            enter_sleep.set()
+            Thread.sleep(1000)
+            end = time.time()
+            done.wait(timeout=5)
+            t.join(timeout=5)
+            assert lst, "worker thread did not run"
+            t_run = lst[0]
+            assert t_run >= end, f"worker ran before sleep finished: t_run={t_run}, end={end}"

@@ -401,7 +401,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     private final ContextThreadLocal<PythonThreadState> threadState = locals.createContextThreadLocal(PythonContext.PythonThreadState::new);
 
     /** For fast access to the PythonThreadState object by the owning thread. */
-    private final ContextThreadLocal<Integer> foreignCriticalSection = locals.createContextThreadLocal((c, t) -> 0);
+    private final ContextThreadLocal<int[]> foreignCriticalSection = locals.createContextThreadLocal((c, t) -> new int[]{0});
 
     private final MroShape mroShapeRoot = MroShape.createRoot();
 
@@ -435,7 +435,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     /**
      * <b>DO NOT DIRECTLY USE THIS METHOD !!!</b>
      */
-    public ContextThreadLocal<Integer> getForeignCriticalSection() {
+    public ContextThreadLocal<int[]> getForeignCriticalSection() {
         return foreignCriticalSection;
     }
 

@@ -207,6 +207,24 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "__enter_foreign_critical_region__", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class EnterForeignCriticalRegionNode extends PythonBuiltinNode {
+        @Specialization
+        static int enter(@Bind Node inliningTarget) {
+            return PythonContext.get(inliningTarget).enterForeignCriticalSection();
+        }
+    }
+
+    @Builtin(name = "__leave_foreign_critical_region__", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class LeaveForeignCriticalRegionNode extends PythonBuiltinNode {
+        @Specialization
+        static int leave(@Bind Node inliningTarget) {
+            return PythonContext.get(inliningTarget).leaveForeignCriticalSection();
+        }
+    }
+
     @Builtin(name = "import_value", minNumOfPositionalArgs = 1, parameterNames = {"name"})
     @GenerateNodeFactory
     public abstract static class ImportNode extends PythonBuiltinNode {
