@@ -91,7 +91,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.IndirectCallData;
-import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
@@ -854,17 +853,17 @@ public final class ErrorHandlers {
 
         @Specialization
         static DecodingErrorHandlerResult doTuple(VirtualFrame frame, Node inliningTarget, PTuple result,
-                        @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
-                        @Cached CastToTruffleStringChecked0Node castToTruffleStringCheckedNode,
+                        @Cached SequenceNodes.LenNode lenNode,
+                        @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
+                        @Cached CastToTruffleStringCheckedNode castToTruffleStringCheckedNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PRaiseNode raiseNode) {
             if (lenNode.execute(inliningTarget, result) != 2) {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.DECODING_ERROR_HANDLER_MUST_RETURN_STR_INT_TUPLE);
             }
-            Object item1 = getItemScalarNode.execute(inliningTarget, storage, 0);
-            Object item2 = getItemScalarNode.execute(inliningTarget, storage, 1);
-            TruffleString str = castToTruffleStringCheckedNode.cast(inliningTarget, item1, ErrorMessages.DECODING_ERROR_HANDLER_MUST_RETURN_STR_INT_TUPLE);
-            int pos = asSizeNode.executeExact(frame, inliningTarget, item2);
+            Object[] array = getObjectArrayNode.execute(inliningTarget, result);
+            TruffleString str = castToTruffleStringCheckedNode.cast(inliningTarget, array[0], ErrorMessages.DECODING_ERROR_HANDLER_MUST_RETURN_STR_INT_TUPLE);
+            int pos = asSizeNode.executeExact(frame, inliningTarget, array[1]);
             return new DecodingErrorHandlerResult(str, pos);
         }
 
@@ -926,7 +925,8 @@ public final class ErrorHandlers {
 
         @Specialization
         static EncodingErrorHandlerResult doTuple(VirtualFrame frame, Node inliningTarget, PTuple result,
-                        @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
+                        @Cached SequenceNodes.LenNode lenNode,
+                        @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PyUnicodeCheckNode pyUnicodeCheckNode,
                         @Cached PyBytesCheckNode pyBytesCheckNode,
@@ -943,8 +943,8 @@ public final class ErrorHandlers {
             } else {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.ENCODING_ERROR_HANDLER_MUST_RETURN_STR_BYTES_INT_TUPLE);
             }
-            int pos = asSizeNode.executeExact(frame, inliningTarget, item2);
-            return new EncodingErrorHandlerResult(item1, pos, isUnicode);
+            int pos = asSizeNode.executeExact(frame, inliningTarget, array[1]);
+            return new EncodingErrorHandlerResult(array[0], pos, isUnicode);
         }
 
         @Fallback
