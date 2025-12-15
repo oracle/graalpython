@@ -283,13 +283,13 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
             return CodecsModuleBuiltinsClinicProviders.CodecsDecodeNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization(limit = "3")
+        @Specialization
         static Object decode(VirtualFrame frame, Object input, TruffleString encoding, TruffleString errors, boolean finalData,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached("createFor($node)") InteropCallData callData,
-                        @CachedLibrary("input") PythonBufferAcquireLibrary acquireLib,
-                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached NormalizeEncodingNameNode normalizeEncodingNameNode,
                         @Cached ErrorHandlers.CallDecodingErrorHandlerNode callDecodingErrorHandlerNode,
