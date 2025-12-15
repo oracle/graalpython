@@ -85,6 +85,8 @@ RUNNER_ENV = {}
 DISABLE_JIT_ENV = {'GRAAL_PYTHON_VM_ARGS': '--experimental-options --engine.Compilation=false'}
 
 GITHUB_CI = os.environ.get("GITHUB_CI", None)
+if GITHUB_CI:
+    PLATFORM_KEYS.add("github")
 
 # We leave the JIT enabled for the tests themselves, but disable it for subprocesses
 # noinspection PyUnresolvedReferences
@@ -1208,43 +1210,37 @@ def collect(all_specifiers: list[TestSpecifier], *, use_tags=False, ignore=None,
 class Tag:
     test_id: TestId
     keys: frozenset[str]
-    excluded_keys: frozenset[str]
     is_exclusion: bool
     comment: str | None = False
 
     @classmethod
     def for_key(cls, test_id, key) -> 'Tag':
-        return Tag(test_id, frozenset({key}), excluded_keys=frozenset(), is_exclusion=False)
+        return Tag(test_id, frozenset({key}), is_exclusion=False)
 
     def with_key(self, key: str) -> 'Tag':
-        if GITHUB_CI:
-            return Tag(self.test_id, self.keys, self.excluded_keys - {key}, is_exclusion=self.is_exclusion)
-            
-        return Tag(self.test_id, self.keys | {key}, self.excluded_keys, is_exclusion=self.is_exclusion)
+        return Tag(self.test_id, self.keys | {key}, is_exclusion=self.is_exclusion)
 
     def without_key(self, key: str) -> 'Tag | None':
+        if GITHUB_CI:
+            return self.without_keys({f"{key}-github"})
         return self.without_keys({key})
 
     def without_keys(self, keys: set[str]) -> 'Tag | None':
-        # disable test/platform only for github, not completely for internal ci
-        if GITHUB_CI:
-            exclusions = frozenset(list(self.excluded_keys) + list(keys))
-            return Tag(self.test_id, self.keys, exclusions, is_exclusion=self.is_exclusion)
-
         keys = self.keys - keys
         if keys:
             if keys == self.keys:
                 return self
-            return Tag(self.test_id, keys, self.excluded_keys, is_exclusion=self.is_exclusion)
+            return Tag(self.test_id, keys, is_exclusion=self.is_exclusion)
 
     def is_platform_excluded(self, key: str) -> bool:
-        return key in self.excluded_keys
+        if GITHUB_CI:
+            return f"{key}-github" not in self.keys
+        return key not in self.keys
         
     def get_keys_as_str(self) -> list[str]:
         keys = []
         for key in sorted(self.keys):
-            if "$" in key: print(f"[WARNING]: Invalid key with $ found in tag keys: {key}, {self.keys}, {self.excluded_keys}")
-            keys.append(key if key not in self.excluded_keys else f"${key}")
+            keys.append(key)
         return keys
     
     def __str__(self):
@@ -1285,16 +1281,9 @@ def read_tags(test_file: TestFile, allow_exclusions=False) -> list[Tag]:
                 if not keys and not is_exclusion:
                     log(f'WARNING: invalid tag {test}: missing platform keys')
 
-                keys = keys.split(',') if keys else []
-                excluded_keys = []
-                for key in keys:
-                    if key.startswith('$'):
-                        excluded_keys.append(key.removeprefix('$'))
-
                 tag = Tag(
                     TestId(test_path, test),
-                    frozenset(keys),
-                    excluded_keys=frozenset(excluded_keys),
+                    frozenset(keys.split(',')) if keys else frozenset(keys),
                     is_exclusion=is_exclusion,
                     comment=comment,
                 )

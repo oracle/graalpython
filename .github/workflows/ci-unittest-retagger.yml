@@ -65,7 +65,7 @@ jobs:
           for os in "${os_list[@]}"; do
             echo "Merging tags for $os"
             python3 .github/scripts/merge_retagger_results.py --dir ../retagger-reports --outfile "../retagger-reports/reports-merged-$os.json" --pattern "*$os*" || true
-            python3 graalpython/com.oracle.graal.python.test/src/runner.py merge-tags-from-report "../retagger-reports/reports-merged-$os.json" --platform "$os" || true
+            python3 graalpython/com.oracle.graal.python.test/src/runner.py merge-tags-from-report "../retagger-reports/reports-merged-$os.json" --platform "$os-github" || true
             git add -A
             git commit -m "Apply retags for $os" || true
           done
