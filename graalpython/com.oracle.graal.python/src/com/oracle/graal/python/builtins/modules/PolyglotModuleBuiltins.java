@@ -77,7 +77,7 @@ import java.util.Map;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
-import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -102,7 +102,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
+import com.oracle.graal.python.nodes.attributes.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
@@ -125,7 +125,6 @@ import com.oracle.graal.python.runtime.sequence.storage.ArrayBasedSequenceStorag
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
@@ -194,6 +193,36 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
 
         // import polyglot decorators which are defined in Python code
         AbstractImportNode.importModule(T_INTERNAL_POLYGLOT_MODULE);
+    }
+
+    abstract static class InteropBuiltinBaseNode extends PythonBuiltinNode {
+        @Child InteropLibrary interop;
+
+        public InteropLibrary getInterop() {
+            if (interop == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                interop = insert(InteropLibrary.getFactory().createDispatched(1));
+            }
+            return interop;
+        }
+    }
+
+    @Builtin(name = "__enter_foreign_critical_region__", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class EnterForeignCriticalRegionNode extends PythonBuiltinNode {
+        @Specialization
+        static int enter(@Bind Node inliningTarget) {
+            return PythonContext.get(inliningTarget).enterForeignCriticalSection();
+        }
+    }
+
+    @Builtin(name = "__leave_foreign_critical_region__", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class LeaveForeignCriticalRegionNode extends PythonBuiltinNode {
+        @Specialization
+        static int leave(@Bind Node inliningTarget) {
+            return PythonContext.get(inliningTarget).leaveForeignCriticalSection();
+        }
     }
 
     @Builtin(name = "import_value", minNumOfPositionalArgs = 1, parameterNames = {"name"})
@@ -352,10 +381,10 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "isModuleMethod(fun)")
         static Object exportSymbol(VirtualFrame frame, Object fun, @SuppressWarnings("unused") PNone name,
                         @Bind Node inliningTarget,
-                        @Cached("create(T___NAME__)") GetAttributeNode.GetFixedAttributeNode getNameAttributeNode,
+                        @Cached("create(T___NAME__)") GetFixedAttributeNode getNameAttributeNode,
                         @Cached CastToJavaStringNode castToStringNode,
                         @Cached PRaiseNode raiseNode) {
-            Object attrNameValue = getNameAttributeNode.executeObject(frame, fun);
+            Object attrNameValue = getNameAttributeNode.execute(frame, fun);
             String methodName;
             try {
                 methodName = castToStringNode.execute(attrNameValue);
@@ -384,16 +413,6 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
             }
             env.exportSymbol(name, obj);
         }
-    }
-
-    @CompilationFinal static InteropLibrary UNCACHED_INTEROP;
-
-    static InteropLibrary getInterop() {
-        if (UNCACHED_INTEROP == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            UNCACHED_INTEROP = InteropLibrary.getFactory().getUncached();
-        }
-        return UNCACHED_INTEROP;
     }
 
     abstract static class FitsInNumberNode extends PythonUnaryBuiltinNode {
@@ -830,6 +849,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
+        // No BoundaryCallContext: lookups in hashmap that we control (only well-behaved keys)
         Object register(Object foreignClass, PythonClass pythonClass, boolean allowMethodOverwrites,
                         @Bind Node inliningTarget,
                         @Cached TypeNodes.IsTypeNode isClassTypeNode,
@@ -837,7 +857,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
                         @Cached ObjectHashMap.PutNode putNode,
                         @Cached ObjectHashMap.GetNode getNode,
                         @Cached PRaiseNode raiseNode) {
-            foreignClass = checkAndCleanForeignClass(inliningTarget, foreignClass, interopLibrary, raiseNode, getContext().getEnv());
+            foreignClass = checkAndCleanForeignClass(inliningTarget, foreignClass, interopLibrary, raiseNode);
 
             if (!isClassTypeNode.execute(inliningTarget, pythonClass)) {
                 throw raiseNode.raise(inliningTarget, ValueError, S_ARG_MUST_BE_S_NOT_P, "second", "a python class", pythonClass);
@@ -901,11 +921,11 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        private static Object checkAndCleanForeignClass(Node inliningTarget, Object object, InteropLibrary interopLibrary, PRaiseNode raiseNode, Env env) {
+        private static Object checkAndCleanForeignClass(Node inliningTarget, Object object, InteropLibrary interopLibrary, PRaiseNode raiseNode) {
             if (!interopLibrary.isMetaObject(object)) {
                 throw raiseNode.raise(inliningTarget, ValueError, S_ARG_MUST_BE_S_NOT_P, "first", "a class or interface", object);
             }
-            if (!env.isHostObject(object)) {
+            if (!interopLibrary.isHostObject(object)) {
                 return object;
             }
             final String memberClass = "class";
@@ -932,7 +952,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "__read__", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class ReadNode extends PythonBuiltinNode {
+    public abstract static class ReadNode extends InteropBuiltinBaseNode {
         @Specialization
         @TruffleBoundary
         Object read(Object receiver, Object key) {
@@ -954,7 +974,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "__write__", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    public abstract static class WriteNode extends PythonBuiltinNode {
+    public abstract static class WriteNode extends InteropBuiltinBaseNode {
         @Specialization
         @TruffleBoundary
         Object write(Object receiver, Object key, Object value) {
@@ -977,7 +997,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "__remove__", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class removeNode extends PythonBuiltinNode {
+    public abstract static class removeNode extends InteropBuiltinBaseNode {
         @Specialization
         @TruffleBoundary
         Object remove(Object receiver, Object key) {
@@ -1000,9 +1020,9 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "__execute__", minNumOfPositionalArgs = 1, takesVarArgs = true)
     @GenerateNodeFactory
-    public abstract static class executeNode extends PythonBuiltinNode {
+    public abstract static class executeNode extends InteropBuiltinBaseNode {
         @Specialization
-        static Object exec(Object receiver, Object[] arguments,
+        Object exec(Object receiver, Object[] arguments,
                         @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             try {
@@ -1015,9 +1035,9 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "__new__", minNumOfPositionalArgs = 1, takesVarArgs = true)
     @GenerateNodeFactory
-    public abstract static class newNode extends PythonBuiltinNode {
+    public abstract static class newNode extends InteropBuiltinBaseNode {
         @Specialization
-        static Object instantiate(Object receiver, Object[] arguments,
+        Object instantiate(Object receiver, Object[] arguments,
                         @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             try {
@@ -1030,9 +1050,9 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "__invoke__", minNumOfPositionalArgs = 2, takesVarArgs = true)
     @GenerateNodeFactory
-    public abstract static class invokeNode extends PythonBuiltinNode {
+    public abstract static class invokeNode extends InteropBuiltinBaseNode {
         @Specialization
-        static Object invoke(Object receiver, TruffleString key, Object[] arguments,
+        Object invoke(Object receiver, TruffleString key, Object[] arguments,
                         @Bind Node inliningTarget,
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                         @Cached PRaiseNode raiseNode) {
@@ -1046,27 +1066,27 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "__is_null__", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class IsNullNode extends PythonBuiltinNode {
+    public abstract static class IsNullNode extends InteropBuiltinBaseNode {
         @Specialization
-        static boolean isNull(Object receiver) {
+        boolean isNull(Object receiver) {
             return getInterop().isNull(receiver);
         }
     }
 
     @Builtin(name = "__has_size__", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class HasSizeNode extends PythonBuiltinNode {
+    public abstract static class HasSizeNode extends InteropBuiltinBaseNode {
         @Specialization
-        static boolean hasSize(Object receiver) {
+        boolean hasSize(Object receiver) {
             return getInterop().hasArrayElements(receiver);
         }
     }
 
     @Builtin(name = "__get_size__", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class GetSizeNode extends PythonBuiltinNode {
+    public abstract static class GetSizeNode extends InteropBuiltinBaseNode {
         @Specialization
-        static Object getSize(Object receiver,
+        Object getSize(Object receiver,
                         @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             try {
@@ -1079,27 +1099,27 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "__is_boxed__", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class IsBoxedNode extends PythonBuiltinNode {
+    public abstract static class IsBoxedNode extends InteropBuiltinBaseNode {
         @Specialization
-        static boolean isBoxed(Object receiver) {
+        boolean isBoxed(Object receiver) {
             return getInterop().isString(receiver) || getInterop().fitsInDouble(receiver) || getInterop().fitsInLong(receiver);
         }
     }
 
     @Builtin(name = "__has_keys__", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class HasKeysNode extends PythonBuiltinNode {
+    public abstract static class HasKeysNode extends InteropBuiltinBaseNode {
         @Specialization
-        static boolean hasKeys(Object receiver) {
+        boolean hasKeys(Object receiver) {
             return getInterop().hasMembers(receiver);
         }
     }
 
     @Builtin(name = "__key_info__", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    public abstract static class KeyInfoNode extends PythonBuiltinNode {
+    public abstract static class KeyInfoNode extends InteropBuiltinBaseNode {
         @Specialization
-        static boolean keyInfo(Object receiver, TruffleString tmember, TruffleString info,
+        boolean keyInfo(Object receiver, TruffleString tmember, TruffleString info,
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                         @Cached TruffleString.EqualNode equalNode) {
             String member = toJavaStringNode.execute(tmember);
@@ -1131,9 +1151,9 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "__keys__", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class KeysNode extends PythonBuiltinNode {
+    public abstract static class KeysNode extends InteropBuiltinBaseNode {
         @Specialization
-        static Object remove(Object receiver,
+        Object keys(Object receiver,
                         @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             try {
@@ -1147,9 +1167,9 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "__element_info__", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     @TypeSystemReference(PythonIntegerTypes.class)
-    public abstract static class ArrayElementInfoNode extends PythonBuiltinNode {
+    public abstract static class ArrayElementInfoNode extends InteropBuiltinBaseNode {
         @Specialization
-        static boolean keyInfo(Object receiver, long member, TruffleString info,
+        boolean keyInfo(Object receiver, long member, TruffleString info,
                         @Cached TruffleString.EqualNode equalNode) {
             if (equalNode.execute(info, T_EXISTS, TS_ENCODING)) {
                 return getInterop().isArrayElementExisting(receiver, member);
