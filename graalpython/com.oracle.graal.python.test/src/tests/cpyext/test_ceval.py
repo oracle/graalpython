@@ -1,4 +1,4 @@
-# Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -47,7 +47,8 @@ class TestCeval(CPyExtTestCase):
         lambda args: None if args[0] < 800 else RecursionError(args[1]),
         lambda: (
             (1, ": one"),
-            (500, ": five hundred"),
+            # C_RECURSION_LIMIT is very small on CPython debug builds
+            (400, ": four hundred"),
             (10000, ": ten thousand"),
         ),
         code="""

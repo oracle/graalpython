@@ -126,9 +126,7 @@ class TestPyTuple(CPyExtTestCase):
             ((1, 2, 3),),
             (("a", "b"),),
             (TupleSubclass(1, 2, 3),),
-            # no type checking, also accepts different objects
-            ([1, 2, 3, 4],),
-            ({"a": 1, "b":2},),
+            # no type checking, must not use non-tuple objects
         ),
         resultspec="n",
         argspec='O',

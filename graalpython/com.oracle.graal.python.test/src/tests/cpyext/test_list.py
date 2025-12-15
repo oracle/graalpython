@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -312,9 +312,7 @@ class TestPyList(CPyExtTestCase):
             ([None],),
             ([],),
             ([1,2,3,4],),
-            # no type checking, also accepts different objects
-            ((1,2,3,4,5),),
-            ({"a": 1, "b":2},),
+            # no type checking, must not use non-list objects
         ),
         resultspec="n",
         argspec='O',
