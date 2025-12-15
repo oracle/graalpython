@@ -90,6 +90,9 @@ static const ENCODING *
 NS(findEncoding)(const ENCODING *enc, const char *ptr, const char *end) {
 #  define ENCODING_MAX 128
   char buf[ENCODING_MAX];
+#ifndef NDEBUG // GraalPy change: satisfy compiler for debug build
+  memset(buf, '\0', sizeof(buf));
+#endif // GraalPy change
   char *p = buf;
   int i;
   XmlUtf8Convert(enc, &ptr, end, &p, p + ENCODING_MAX - 1);

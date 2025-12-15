@@ -46,7 +46,8 @@ py_sha3_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
     #endif  // !Py_BUILD_CORE
 
     static const char * const _keywords[] = {"", "usedforsecurity", NULL};
-    static _PyArg_Parser _parser = {
+    // GraalPy change: was 'static'
+    _PyArg_Parser _parser = {
         .keywords = _keywords,
         .fname = "sha3_224",
         .kwtuple = KWTUPLE,

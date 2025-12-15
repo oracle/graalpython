@@ -2855,7 +2855,7 @@ Py_ssize_t Py_REFCNT(PyObject *obj) {
         }
         res = pointer_to_stub(obj)->ob_refcnt;
 #ifndef NDEBUG
-        if (GraalPyPrivate_Debug_CAPI() && GraalPyPrivate_GET_PyObject_ob_refcnt(obj) != res)
+        if (GraalPyPrivate_Debug_CAPI() && GraalPyPrivate_Get_PyObject_ob_refcnt(obj) != res)
         {
             Py_FatalError("Refcount of native stub and managed object differ");
         }
