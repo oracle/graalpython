@@ -13,9 +13,6 @@ on:
         required: true
         type: string
 
-  schedule:
-    - cron: '0 0 * * 1'
-
 jobs:
   generate-tier1:
     runs-on: ubuntu-latest
@@ -58,12 +55,35 @@ jobs:
   tier1:
     needs: generate-tier1
     runs-on: ${{ matrix.os }}
-    env: ${{ matrix.env }}
+    #env: ${{ matrix.env }}
     strategy:
       fail-fast: false
       matrix:
         include: ${{ fromJson(needs.generate-tier1.outputs.matrix) }}
     steps: &buildsteps
+
+      - name: Setup env
+        shell: bash
+        if: runner.os != 'Windows'
+        run: |
+          matrix_env='${{ toJson(matrix.env) }}'
+          echo $matrix_env | jq -r 'to_entries[] | "\(.key)=\(.value)"' >> tmp.env
+          while IFS= read -r line; do
+            eval "echo \"$line\"" >> $GITHUB_ENV
+          done < tmp.env
+          rm tmp.env
+
+      - name: Setup env (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $matrix_env = '${{ toJson(matrix.env) }}'
+          $envs = $matrix_env | ConvertFrom-Json
+          foreach ($pair in $envs.PSObject.Properties) {
+            $full_value = $pair.Value -replace '%([A-Za-z0-9_]+)%', '$env:$1'
+            $value = $ExecutionContext.InvokeCommand.ExpandString($full_value)
+            "$($pair.Name)=$value" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          }
 
       - name: Actions/Checkout
         uses: actions/checkout@main
@@ -250,7 +270,7 @@ jobs:
     if: ${{ success() || inputs.jobs_to_run }}
     needs: [generate-tier2, tier1]
     runs-on: ${{ matrix.os }}
-    env: ${{ matrix.env }}
+    #env: ${{ matrix.env }}
     strategy:
       fail-fast: false
       matrix:
@@ -261,7 +281,7 @@ jobs:
     if: ${{ success() || inputs.jobs_to_run }}
     needs: [generate-tier3, tier2]
     runs-on: ${{ matrix.os }}
-    env: ${{ matrix.env }}
+    #env: ${{ matrix.env }}
     strategy:
       fail-fast: false
       matrix:
