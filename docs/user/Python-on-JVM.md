@@ -241,6 +241,11 @@ These reference each other and any methods that are declared in Python that over
 The created object does not behave like a Python object but instead in the same way as a foreign Java object.
 The reason for this is that when you create an instance of your new class, you get a reference to the *Java* object.
 
+#### Inheritance behavior up to GraalPy version 25.1
+
+When inheriting from a Java class, you can pass the keyword `new_style=False`.
+This is the default up to and including GraalPy version 25.1.
+The generated class is a Java object and no forwarding to the Python-side happens by default.
 To call Python methods that do *not* override or implement methods that already existed on the superclass, you need to use the special `this` attribute.
 Once you are in a Python method, your `self` refers to the Python object, and to get back from a Python method to Java, use the special attribute `__super__`.
 And since we do not expose static members on the instance side, if you need to call a static method from an instance on the Java side, use `getClass().static` to get to the meta-object holding the static members.
@@ -280,6 +285,54 @@ for record in handler.this.logged:
 ```
 
 For more information about how the generated Java subclass behaves, see the [Truffle documentation](https://www.graalvm.org/truffle/javadoc/com/oracle/truffle/api/TruffleLanguage.Env.html#createHostAdapter(java.lang.Object%5B%5D)).
+
+#### Inheritance behavior from GraalPy 25.1
+
+When inheriting from a Java class, you can pass the keyword `new_style=True`.
+This is the default after GraalPy version 25.1.
+The generated class is a Java object, but attribute lookup is dispatched to the Python object as needed.
+
+Multiple levels of inheritance are supported, and `super()` calls both in the constructor override via `__new__` as well as in Java method overrides work as expected.
+The `self` in a method refers to the Java object, but any access that does not refer to a field or method on the Java class is transparently dispatched to the Python side.
+Static methods can be called both from the instance as well as the class.
+
+For example:
+
+```python
+from java.util.logging import Level
+
+class PythonLevel(Level, new_style=True):
+    def __new__(cls, name="default name", level=2):
+        """Provide a default constructor that modifies
+        the construction of the Java instance"""
+        return super().__new__(cls, name, level)
+
+    def __init__(self, *args, **kwarg):
+        """After the instance is created, initialize the
+        misc_value field"""
+        self.misc_value = 42
+
+    def getName(self):
+        """This overrides the Java method on
+        java.util.logging.Level"""
+        return super().getName() + " from Python with super()"
+
+    def pythonName(self):
+        """This adds a method that is only visible from Python,
+        but self and super calls work as expected"""
+        return f"PythonName for Level {self.intValue()} named {super().getName()}"
+
+    def callStaticFromPython(self, name):
+        """Java static methods can be called from the
+        instance as well as the class"""
+        return self.parse(name)
+
+
+pl = PythonLevel()
+assert issubclass(PythonLevel, Level)
+assert PythonLevel.parse("INFO").getName() == "INFO"
+```
+
 
 ## Embedding Python into Java
 
