@@ -161,11 +161,14 @@ public abstract class StringNodes {
                         @Cached StringMaterializeNode materializeNode,
                         @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode) {
             NativeStringData nativeData = x.getNativeStringData(inliningTarget, readAttrNode);
-            if (oneByteProfile.profile(inliningTarget, nativeData.getCharSize() == 1)) {
-                return nativeData.length();
-            } else {
-                return doString(materializeNode.execute(inliningTarget, x), codePointLengthNode);
-            }
+            int charSize = nativeData.getCharSize();
+            assert charSize == 1 || charSize == 2 || charSize == 4;
+            /*
+             * Avoid materialization of strings backed by native memory. It is correct to use the
+             * 'length / charSize' because native data always contains characters with fixed byte
+             * size (i.e. Py_UCS1, Py_UCS2, or Py_UCS4).
+             */
+            return nativeData.length() / nativeData.getCharSize();
         }
 
         @Specialization
