@@ -151,14 +151,14 @@
         darwin: {
             common: ENV_POSIX + {
                 LC_CTYPE: "en_US.UTF-8",
-                PATH: utils.path_combine(ENVIRONMENT.common.PATH, "$PYTHON3_HOME:$MUSL_TOOLCHAIN/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/homebrew/bin:/opt/homebrew/sbin"),
+                PATH: utils.path_combine(ENVIRONMENT.common.PATH, "$PATH:$PYTHON3_HOME:$MUSL_TOOLCHAIN/bin"),
             },
             amd64: {},
             aarch64: {},
         },
         windows: {
             common: {
-                PATH: "$PATH;C:\\ProgramData\\chocolatey\\bin;C:\\hostedtoolcache\\windows\\Python\\3.12.3\\x64\\Scripts;C:\\hostedtoolcache\\windows\\Python\\3.12.3\\x64;C:\\Program Files\\PowerShell\\7;C:\\windows\\system32;C:\\windows;C:\\windows\\System32\\Wbem;C:\\windows\\System32\\WindowsPowerShell\\v1.0\\;C:\\windows\\System32\\OpenSSH\\;C:\\Program Files\\dotnet\\;C:\\Program Files\\Microsoft SQL Server\\150\\Tools\\Binn\\;C:\\Program Files\\Git\\cmd;C:\\Program Files\\Git\\usr\\bin;C:\\hostedtoolcache\\windows\\Ruby\\3.2.3\\x64\\bin;C:\\hostedtoolcache\\windows\\Go\\1.22.2\\x64\\bin;C:\\hostedtoolcache\\windows\\Node\\20.11.1\\x64\\;C:\\npm\\prefix;C:\\Program Files\\Amazon\\AWSCLIV2\\;C:\\Program Files\\Amazon\\SessionManagerPlugin\\bin\\;C:\\Program Files\\LLVM\\bin;C:\\Program Files\\CMake\\bin;C:\\Program Files\\OpenSSL\\bin;C:\\msys64\\usr\\bin;C:\\hostedtoolcache\\windows\\php\\8.2.15\\x64;C:\\Program Files\\Azure DevOps CLI\\bin;C:\\hostedtoolcache\\windows\\R\\4.3.3\\x64\\bin;C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\Enterprise\\Common7\\IDE\\Extensions\\Microsoft\\NuGet;",
+                PATH: "%MAVEN_HOME%;%PATH%",
             },
             amd64: {},
             aarch64: {},
@@ -170,7 +170,7 @@
         LD_LIBRARY_PATH: "$LIBGMP/lib:$LLVM/lib:$LD_LIBRARY_PATH",
         FORK_COUNTS_DIRECTORY: "$BUILD_DIR/benchmarking-config/fork-counts",
         RODINIA_DATASET_ZIP: $.overlay_imports.RODINIA_DATASET_ZIP,
-        PATH: utils.path_combine(ENVIRONMENT.common.PATH, "$PYTHON3_HOME:$MUSL_TOOLCHAIN/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin"),
+        PATH: utils.path_combine(ENVIRONMENT.common.PATH, "$PATH:$PYTHON3_HOME:$MUSL_TOOLCHAIN/bin"),
     },
 
     // This is the diff to 'ENVIRONMENT' and meant to be used on OL8 images.
