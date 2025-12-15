@@ -86,6 +86,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -164,6 +165,7 @@ public final class UnicodeDecodeErrorBuiltins extends PythonBuiltins {
     // Equivalent of make_decode_exception
     @GenerateInline
     @GenerateCached(false)
+    @GenerateUncached
     public abstract static class MakeDecodeExceptionNode extends Node {
 
         /**
@@ -206,6 +208,7 @@ public final class UnicodeDecodeErrorBuiltins extends PythonBuiltins {
     // Equivalent of PyUnicodeDecodeError_GetObject
     @GenerateInline
     @GenerateCached(false)
+    @GenerateUncached
     public abstract static class PyUnicodeDecodeErrorGetObjectNode extends Node {
 
         /**
@@ -234,6 +237,7 @@ public final class UnicodeDecodeErrorBuiltins extends PythonBuiltins {
     // Equivalent of PyUnicodeDecodeError_GetStart
     @GenerateInline
     @GenerateCached(false)
+    @GenerateUncached
     public abstract static class PyUnicodeDecodeErrorGetStartNode extends Node {
 
         /**
@@ -262,6 +266,7 @@ public final class UnicodeDecodeErrorBuiltins extends PythonBuiltins {
     // Equivalent of PyUnicodeDecodeError_GetEnd
     @GenerateInline
     @GenerateCached(false)
+    @GenerateUncached
     public abstract static class PyUnicodeDecodeErrorGetEndNode extends Node {
 
         /**
@@ -290,6 +295,7 @@ public final class UnicodeDecodeErrorBuiltins extends PythonBuiltins {
     // Equivalent of PyUnicodeDecodeError_GetEncoding
     @GenerateInline
     @GenerateCached(false)
+    @GenerateUncached
     public abstract static class PyUnicodeDecodeErrorGetEncodingNode extends Node {
 
         /**
