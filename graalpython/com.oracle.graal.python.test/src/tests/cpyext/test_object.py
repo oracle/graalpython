@@ -662,14 +662,22 @@ class TestObject(unittest.TestCase):
     def test_tp_alloc(self):
         TestTpAlloc = CPyExtType("TestTpAlloc",
                                 '''
-                                static PyObject* testslots_tp_alloc(PyObject* self) {
-                                    return (PyObject*) PyType_Type.tp_alloc(&PyType_Type, 0);
+                                #include "objimpl.h"
+                                
+                                static PyObject* testslots_has_tp_alloc_and_size(PyObject* self) {
+                                    if (!PyType_Type.tp_alloc) {
+                                        Py_RETURN_FALSE;
+                                    }
+                                    if (!_PyObject_VAR_SIZE(&PyType_Type, 0)) {
+                                        Py_RETURN_FALSE;
+                                    }
+                                    Py_RETURN_TRUE;
                                 }
                                 ''',
-                                tp_methods='{"get_tp_alloc", (PyCFunction)testslots_tp_alloc, METH_NOARGS, ""}',
+                                tp_methods='{"has_tp_alloc_and_size", (PyCFunction)testslots_has_tp_alloc_and_size, METH_NOARGS, ""}',
                                 )
         tester = TestTpAlloc()
-        assert tester.get_tp_alloc() != None
+        assert tester.has_tp_alloc_and_size()
 
     def test_slots_initialized(self):
         TestSlotsInitialized = CPyExtType("TestSlotsInitialized",
