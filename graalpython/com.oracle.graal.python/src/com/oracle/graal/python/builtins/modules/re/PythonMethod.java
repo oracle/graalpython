@@ -40,33 +40,29 @@
  */
 package com.oracle.graal.python.builtins.modules.re;
 
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.strings.TruffleString;
 
-import java.util.LinkedHashMap;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
-public class PPattern extends PythonBuiltinObject {
-    /** pattern string from which the pattern object was compiled */
-    public final Object source;
-    /**
-     * regex matching flags - combination of the flags given to compile(), implicit flags like
-     * UNICODE and any (?...) inlined into the pattern flags
-     */
-    public final int flags;
-    /** number of capturing groups in the pattern */
-    public final int groupsCount;
-    /** mapping captured group names (defined by (?P<id>)) to their numbers */
-    public final LinkedHashMap<String, Object> groupToIndexMap;
-    /** cached TRegex objects for different matching parameters (matching method and advancing) */
-    public final TRegexCache cache;
+public enum PythonMethod implements TruffleObject {
+    Search(tsLiteral("search")),
+    Match(tsLiteral("match")),
+    FullMatch(tsLiteral("fullmatch"));
 
-    PPattern(Object cls, Shape instanceShape, Object source, int flags, int groupsCount, LinkedHashMap<String, Object> groupToIndexMap, TRegexCache cache) {
-        super(cls, instanceShape);
+    public static final int PYTHON_METHOD_COUNT = PythonMethod.values().length;
 
-        this.source = source;
-        this.flags = flags;
-        this.groupsCount = groupsCount;
-        this.groupToIndexMap = groupToIndexMap;
-        this.cache = cache;
+    private final TruffleString name;
+
+    PythonMethod(TruffleString name) {
+        this.name = name;
+    }
+
+    public TruffleString getMethodName() {
+        return name;
+    }
+
+    public String getTRegexOption() {
+        return "PythonMethod=" + name.toJavaStringUncached();
     }
 }

@@ -214,7 +214,7 @@ public final class MatchBuiltins extends PythonBuiltins {
                         @Cached PyObjectCallMethodObjArgs callMethodObjArgs,
                         @Cached PyUnicodeCheckNode unicodeCheckNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
-                        @Cached SREModuleBuiltins.TRegexCallExec.BufferToTruffleStringNode bufferToTruffleStringNode,
+                        @Cached PatternNodes.TRegexCallExec.BufferToTruffleStringNode bufferToTruffleStringNode,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached MatchNodes.GetSliceNode getSliceNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode,
