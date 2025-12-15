@@ -98,7 +98,6 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_MINUS;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NEWLINE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NONE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_SPACE;
-import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRING_SOURCE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_TRUE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -1078,8 +1077,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Bind PythonContext context,
                         @Bind Node inliningTarget,
                         @Exclusive @Cached("createFor($node)") BoundaryCallData boundaryCallData,
-                        @Cached CodecsModuleBuiltins.HandleDecodingErrorNode handleDecodingErrorNode,
-                        @Cached PyObjectStrAsTruffleStringNode asStrNode,
                         @CachedLibrary("wSource") InteropLibrary interopLib,
                         @Cached PyUnicodeFSDecoderNode asPath,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
@@ -1102,8 +1099,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     RootCallTarget rootCallTarget = context.getLanguage(inliningTarget).compileModule(context, mod, source, false, optimize, null, null, flags);
                     return wrapRootCallTarget(rootCallTarget);
                 }
-                TruffleString source = sourceAsString(frame, inliningTarget, wSource, filename, interopLib, acquireLib, bufferLib, handleDecodingErrorNode, asStrNode, switchEncodingNode,
-                                raiseNode);
+                TruffleString source = sourceAsString(frame, inliningTarget, wSource, filename, interopLib, acquireLib, bufferLib, switchEncodingNode, raiseNode);
                 checkSource(source);
                 return compile(source, filename, mode, flags, dontInherit, optimize, featureVersion);
             } finally {
@@ -1165,8 +1161,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         // modeled after _Py_SourceAsString
         TruffleString sourceAsString(VirtualFrame frame, Node inliningTarget, Object source, TruffleString filename, InteropLibrary interopLib, PythonBufferAcquireLibrary acquireLib,
-                        PythonBufferAccessLibrary bufferLib, CodecsModuleBuiltins.HandleDecodingErrorNode handleDecodingErrorNode, PyObjectStrAsTruffleStringNode asStrNode,
-                        TruffleString.SwitchEncodingNode switchEncodingNode, PRaiseNode raiseNode) {
+                        PythonBufferAccessLibrary bufferLib, TruffleString.SwitchEncodingNode switchEncodingNode, PRaiseNode raiseNode) {
             if (interopLib.isString(source)) {
                 try {
                     return switchEncodingNode.execute(interopLib.asTruffleString(source), TS_ENCODING);
@@ -1185,24 +1180,26 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 try {
                     byte[] bytes = bufferLib.getInternalOrCopiedByteArray(source);
                     int bytesLen = bufferLib.getBufferLength(source);
-                    Charset charset = PythonFileDetector.findEncodingStrict(bytes, bytesLen);
-                    TruffleString pythonEncodingNameFromJavaName = CharsetMapping.getPythonEncodingNameFromJavaName(charset.name());
-                    CodecsModuleBuiltins.TruffleDecoder decoder = new CodecsModuleBuiltins.TruffleDecoder(pythonEncodingNameFromJavaName, charset, bytes, bytesLen, CodingErrorAction.REPORT);
-                    if (!decoder.decodingStep(true)) {
-                        try {
-                            handleDecodingErrorNode.execute(frame, decoder, T_STRICT, PFactory.createBytes(PythonLanguage.get(inliningTarget), bytes, bytesLen));
-                            throw CompilerDirectives.shouldNotReachHere();
-                        } catch (PException e) {
-                            throw raiseInvalidSyntax(filename, "(unicode error) %s", asStrNode.execute(frame, inliningTarget, e.getEscapedException()));
-                        }
-                    }
-                    return decoder.getString();
+                    return doDecodeSource(source, filename, bytes, bytesLen);
                 } catch (PythonFileDetector.InvalidEncodingException e) {
                     throw raiseInvalidSyntax(filename, "(unicode error) %s", e.getEncodingName());
                 } finally {
                     bufferLib.release(buffer, frame, InteropCallData.getUncached());
                 }
             }
+        }
+
+        @TruffleBoundary
+        private TruffleString doDecodeSource(Object source, TruffleString filename, byte[] bytes, int bytesLen) {
+            Charset charset = PythonFileDetector.findEncodingStrict(bytes, bytesLen);
+            TruffleString pythonEncoding = CharsetMapping.getPythonEncodingNameFromJavaName(charset.name());
+            CodecsModuleBuiltins.TruffleDecoder decoder = new CodecsModuleBuiltins.TruffleDecoder(pythonEncoding, charset, bytes, bytesLen, CodingErrorAction.REPORT);
+            if (!decoder.decodingStep(true)) {
+                int pos = decoder.getInputPosition();
+                Object exception = CallNode.executeUncached(PythonBuiltinClassType.UnicodeDecodeError, pythonEncoding, source, pos, pos + decoder.getErrorLength(), decoder.getErrorReason());
+                throw raiseInvalidSyntax(filename, "(unicode error) %s", PyObjectStrAsTruffleStringNode.executeUncached(exception));
+            }
+            return decoder.getString();
         }
 
         @TruffleBoundary
