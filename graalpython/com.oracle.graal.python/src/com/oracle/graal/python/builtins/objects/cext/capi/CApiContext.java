@@ -46,6 +46,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CAp
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readIntField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
 import static com.oracle.graal.python.builtins.objects.object.PythonObject.IMMORTAL_REFCNT;
+import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___FILE__;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DASH;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
@@ -89,6 +90,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
@@ -448,8 +450,11 @@ public final class CApiContext extends CExtContext {
         assert getContext().getCApiState() == CApiState.INITIALIZING || getContext().getCApiState() == CApiState.INITIALIZED;
         for (int i = 0; i < singletonNativePtrs.length; i++) {
             assert isSpecialSingleton(CONTEXT_INSENSITIVE_SINGLETONS[i]);
+            assert !PythonToNativeInternalNode.mapsToNull(CONTEXT_INSENSITIVE_SINGLETONS[i]);
             assert singletonNativePtrs[i] == UNINITIALIZED;
             singletonNativePtrs[i] = FirstToNativeNode.executeUncached(CONTEXT_INSENSITIVE_SINGLETONS[i], IMMORTAL_REFCNT);
+            assert singletonNativePtrs[i] != NULLPTR;
+            assert singletonNativePtrs[i] != UNINITIALIZED;
         }
     }
 

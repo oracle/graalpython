@@ -337,7 +337,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     private final Shape emptyShape = Shape.newBuilder().allowImplicitCastIntToDouble(false).allowImplicitCastIntToLong(true).shapeFlags(0).propertyAssumptions(true).build();
     @CompilationFinal(dimensions = 1) private final Shape[] builtinTypeInstanceShapes = new Shape[PythonBuiltinClassType.VALUES.length];
 
-    @CompilationFinal(dimensions = 1) public static final PythonAbstractObject[] CONTEXT_INSENSITIVE_SINGLETONS = new PythonAbstractObject[]{PNone.NONE, PNone.NO_VALUE, PEllipsis.INSTANCE,
+    @CompilationFinal(dimensions = 1) public static final PythonAbstractObject[] CONTEXT_INSENSITIVE_SINGLETONS = new PythonAbstractObject[]{PNone.NONE, PEllipsis.INSTANCE,
                     PNotImplemented.NOT_IMPLEMENTED};
 
     /**
