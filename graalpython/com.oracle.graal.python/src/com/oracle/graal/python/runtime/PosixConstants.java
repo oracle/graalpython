@@ -130,6 +130,17 @@ public final class PosixConstants {
     public static final OptionalIntConstant O_SEARCH;
     public static final OptionalIntConstant O_PATH;
     public static final OptionalIntConstant O_TTY_INIT;
+    public static final OptionalIntConstant O_EVTONLY;
+    public static final OptionalIntConstant O_FSYNC;
+    public static final OptionalIntConstant O_SYMLINK;
+    public static final OptionalIntConstant O_NOINHERIT;
+    public static final OptionalIntConstant O_NOFOLLOW;
+    public static final OptionalIntConstant O_NOFOLLOW_ANY;
+    public static final OptionalIntConstant O_NOLINKS;
+    public static final OptionalIntConstant O_NOATIME;
+    public static final OptionalIntConstant O_RANDOM;
+    public static final OptionalIntConstant O_SEQUENTIAL;
+    public static final OptionalIntConstant O_ASYNC;
     public static final MandatoryIntConstant S_IFMT;
     public static final MandatoryIntConstant S_IFSOCK;
     public static final MandatoryIntConstant S_IFLNK;
@@ -452,6 +463,17 @@ public final class PosixConstants {
         O_SEARCH = reg.createOptionalInt("O_SEARCH");
         O_PATH = reg.createOptionalInt("O_PATH");
         O_TTY_INIT = reg.createOptionalInt("O_TTY_INIT");
+        O_EVTONLY = reg.createOptionalInt("O_EVTONLY");
+        O_FSYNC = reg.createOptionalInt("O_FSYNC");
+        O_SYMLINK = reg.createOptionalInt("O_SYMLINK");
+        O_NOINHERIT = reg.createOptionalInt("O_NOINHERIT");
+        O_NOFOLLOW = reg.createOptionalInt("O_NOFOLLOW");
+        O_NOFOLLOW_ANY = reg.createOptionalInt("O_NOFOLLOW_ANY");
+        O_NOLINKS = reg.createOptionalInt("O_NOLINKS");
+        O_NOATIME = reg.createOptionalInt("O_NOATIME");
+        O_RANDOM = reg.createOptionalInt("O_RANDOM");
+        O_SEQUENTIAL = reg.createOptionalInt("O_SEQUENTIAL");
+        O_ASYNC = reg.createOptionalInt("O_ASYNC");
         S_IFMT = reg.createMandatoryInt("S_IFMT");
         S_IFSOCK = reg.createMandatoryInt("S_IFSOCK");
         S_IFLNK = reg.createMandatoryInt("S_IFLNK");
@@ -694,7 +716,8 @@ public final class PosixConstants {
         _SC_NPROCESSORS_ONLN = reg.createMandatoryInt("_SC_NPROCESSORS_ONLN");
 
         openFlags = new IntConstant[]{O_ACCMODE, O_RDONLY, O_WRONLY, O_RDWR, O_CREAT, O_EXCL, O_TRUNC, O_APPEND, O_NONBLOCK, O_NOCTTY, O_NDELAY, O_DSYNC, O_CLOEXEC, O_SYNC, O_DIRECT, O_RSYNC,
-                        O_TMPFILE, O_TEMPORARY, O_DIRECTORY, O_BINARY, O_TEXT, O_XATTR, O_LARGEFILE, O_SHLOCK, O_EXLOCK, O_EXEC, O_SEARCH, O_PATH, O_TTY_INIT};
+                        O_TMPFILE, O_TEMPORARY, O_DIRECTORY, O_BINARY, O_TEXT, O_XATTR, O_LARGEFILE, O_SHLOCK, O_EXLOCK, O_EXEC, O_SEARCH, O_PATH, O_TTY_INIT, O_EVTONLY, O_FSYNC, O_SYMLINK,
+                        O_NOINHERIT, O_NOFOLLOW, O_NOFOLLOW_ANY, O_NOLINKS, O_NOATIME, O_RANDOM, O_SEQUENTIAL, O_ASYNC};
         fileType = new IntConstant[]{S_IFMT, S_IFSOCK, S_IFLNK, S_IFREG, S_IFBLK, S_IFDIR, S_IFCHR, S_IFIFO};
         mmapFlags = new IntConstant[]{MAP_SHARED, MAP_PRIVATE, MAP_ANONYMOUS, MAP_DENYWRITE, MAP_EXECUTABLE};
         mmapProtection = new IntConstant[]{PROT_NONE, PROT_READ, PROT_WRITE, PROT_EXEC};
