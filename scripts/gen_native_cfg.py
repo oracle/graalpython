@@ -185,6 +185,17 @@ constant_defs = '''
 * x O_SEARCH
 * x O_PATH
 * x O_TTY_INIT
+* x O_EVTONLY
+* x O_FSYNC
+* x O_SYMLINK
+* x O_NOINHERIT
+* x O_NOFOLLOW
+* x O_NOFOLLOW_ANY
+* x O_NOLINKS
+* x O_NOATIME
+* x O_RANDOM
+* x O_SEQUENTIAL
+* x O_ASYNC
 
 [fileType]
 u x S_IFMT
