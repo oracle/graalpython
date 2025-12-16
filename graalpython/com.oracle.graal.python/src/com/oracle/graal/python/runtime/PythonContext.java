@@ -691,7 +691,7 @@ public final class PythonContext extends Python3Core {
         PythonThreadState doGeneric(@SuppressWarnings("unused") Node inliningTarget, PythonContext noContext) {
             PythonThreadState curThreadState = PythonLanguage.get(inliningTarget).getThreadStateLocal().get();
             if (curThreadState.isShuttingDown()) {
-                PythonContext.get(this).killThread();
+                throw PythonContext.get(this).killThread();
             }
             return curThreadState;
         }
@@ -708,7 +708,7 @@ public final class PythonContext extends Python3Core {
         PythonThreadState doGenericWithContext(Node inliningTarget, PythonContext context) {
             PythonThreadState curThreadState = context.getLanguage(inliningTarget).getThreadStateLocal().get(context.env.getContext());
             if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, curThreadState.isShuttingDown())) {
-                context.killThread();
+                throw context.killThread();
             }
             return curThreadState;
         }
@@ -2238,7 +2238,7 @@ public final class PythonContext extends Python3Core {
                         env.submitThreadLocal(new Thread[]{thread}, new ThreadLocalAction(true, false) {
                             @Override
                             protected void perform(ThreadLocalAction.Access access) {
-                                throw new PythonThreadKillException();
+                                throw PythonContext.get(null).killThread();
                             }
                         });
                     }
@@ -2310,12 +2310,7 @@ public final class PythonContext extends Python3Core {
         env.submitThreadLocal(new Thread[]{thread}, new ThreadLocalAction(true, false) {
             @Override
             protected void perform(ThreadLocalAction.Access access) {
-                // just in case the thread holds GIL
-                PythonContext ctx = PythonContext.get(null);
-                if (ctx.ownsGil()) {
-                    ctx.releaseGil();
-                }
-                throw new PythonThreadKillException();
+                throw PythonContext.get(null).killThread();
             }
         });
         thread.interrupt();
@@ -2455,7 +2450,7 @@ public final class PythonContext extends Python3Core {
     @TruffleBoundary
     // intentional catch of IllegalMonitorStateException, see inline comments
     @SuppressFBWarnings("IMSE_DONT_CATCH_IMSE")
-    void releaseGil() {
+    public void releaseGil() {
         // We allow hold count == 0 when cancelling, because a thread may have given up the GIL,
         // then a cancelling (subclass of ThreadDeath) exception is thrown inside the code running
         // without GIL through thread local action and in such case, we do not try to reacquire the
@@ -2562,18 +2557,18 @@ public final class PythonContext extends Python3Core {
     public PythonThreadState getThreadState(PythonLanguage lang) {
         PythonThreadState curThreadState = lang.getThreadStateLocal().get();
         if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, curThreadState.isShuttingDown())) {
-            killThread();
+            throw killThread();
         }
         return curThreadState;
     }
 
-    private void killThread() {
+    private PythonThreadKillException killThread() {
         // we're shutting down, just release and die
         CompilerDirectives.transferToInterpreter();
         if (ownsGil()) {
             releaseGil();
         }
-        throw new PythonThreadKillException();
+        throw PythonThreadKillException.INSTANCE;
     }
 
     private void applyToAllThreadStates(Consumer<PythonThreadState> action) {
