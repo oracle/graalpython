@@ -545,6 +545,13 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 }
             }
             return containsAnnotations(tryStmt.body) || containsAnnotations(tryStmt.finalBody) || containsAnnotations(tryStmt.orElse);
+        } else if (stmt instanceof StmtTy.Match) {
+            StmtTy.Match matchStmt = (StmtTy.Match) stmt;
+            for (MatchCaseTy _case : matchStmt.cases) {
+                if (containsAnnotations(_case.body)) {
+                    return true;
+                }
+            }
         }
         return false;
     }
