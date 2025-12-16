@@ -2317,12 +2317,22 @@ Fail:
     Py_DECREF(d);
     return NULL;
 }
+#endif // GraalPy change
 
 /* Methods */
 
 static void
 dict_dealloc(PyDictObject *mp)
 {
+    /* Special case for native dict subclasses: we need to
+     * prevent that the native part is free'd twice because
+     * the managed object still refers to the native part.
+     */
+    if (!points_to_py_handle_space(mp)) {
+        GraalPyPrivate_Dict_UnlinkNativePart((PyObject *)mp);
+        Py_TYPE(mp)->tp_free((PyObject *)mp);
+    }
+#if 0 // GraalPy change
     PyInterpreterState *interp = _PyInterpreterState_GET();
     assert(Py_REFCNT(mp) == 0);
     Py_SET_REFCNT(mp, 1);
@@ -2366,9 +2376,11 @@ dict_dealloc(PyDictObject *mp)
         Py_TYPE(mp)->tp_free((PyObject *)mp);
     }
     Py_TRASHCAN_END
+#endif // GraalPy change
 }
 
 
+#if 0 // GraalPy change
 static PyObject *
 dict_repr(PyDictObject *mp)
 {
@@ -3836,7 +3848,7 @@ PyTypeObject PyDict_Type = {
     "dict",
     sizeof(PyDictObject),
     0,
-    0,                                          /* tp_dealloc */ // GraalPy change: nulled
+    (destructor)dict_dealloc,                                          /* tp_dealloc */
     0,                                          /* tp_vectorcall_offset */
     0,                                          /* tp_getattr */
     0,                                          /* tp_setattr */

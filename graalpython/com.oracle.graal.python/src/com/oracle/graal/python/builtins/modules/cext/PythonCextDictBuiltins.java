@@ -47,6 +47,7 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.C
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_HASH_T_PTR_ZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_SSIZE_T_PTR_ZZZ;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PointerZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectPtrZZZ;
@@ -78,6 +79,8 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PromoteB
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.GcNativePtrToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.SetItemNode;
@@ -119,6 +122,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -135,6 +139,7 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 
 public final class PythonCextDictBuiltins {
+    private static final TruffleLogger LOGGER = CApiContext.getLogger(PythonCextDictBuiltins.class);
 
     @CApiBuiltin(ret = PyObjectTransfer, args = {}, call = Direct)
     abstract static class PyDict_New extends CApiNullaryBuiltinNode {
@@ -697,6 +702,37 @@ public final class PythonCextDictBuiltins {
                 }
             }
             return 1;
+        }
+    }
+
+    @CApiBuiltin(ret = Void, args = {PointerZZZ}, call = Ignored)
+    abstract static class GraalPyPrivate_Dict_UnlinkNativePart extends CApiUnaryBuiltinNode {
+
+        @Specialization
+        static Object doLong(long pointer,
+                        @Bind Node inliningTarget,
+                        @Cached GcNativePtrToPythonNode nativeToPythonNode) {
+            assert !HandlePointerConverter.pointsToPyHandleSpace(pointer);
+            Object resolved = nativeToPythonNode.execute(inliningTarget, pointer);
+            if (resolved == null) {
+                /*
+                 * This is fine because the managed object was already collected and deallocation
+                 * was triggered from managed side (e.g. context finalization). We don't need to do
+                 * anything.
+                 */
+                return PNone.NO_VALUE;
+            }
+            if (!(resolved instanceof PDict self)) {
+                LOGGER.severe(PythonUtils.formatJString("Expected pointer 0x%x to be linked to a managed dict but was %s", pointer, resolved));
+                return PNone.NO_VALUE;
+            }
+            assert self.isNative();
+            assert self.getNativePointer() == pointer;
+            if (LOGGER.isLoggable(Level.FINER)) {
+                LOGGER.finer(PythonUtils.formatJString("Unlinking managed dict %s from native part 0x%x", self, self.getNativePointer()));
+            }
+            self.clearNativePointer();
+            return PNone.NO_VALUE;
         }
     }
 }
