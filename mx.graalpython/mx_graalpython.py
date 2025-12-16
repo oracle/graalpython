@@ -830,7 +830,11 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
         if is_bytecode_dsl_interpreter != BYTECODE_DSL_INTERPRETER:
             requested = "Bytecode DSL" if BYTECODE_DSL_INTERPRETER else "Manual"
             actual = "Bytecode DSL" if is_bytecode_dsl_interpreter else "Manual"
-            mx.abort(f"GRAALPY_HOME is not compatible with requested interpreter kind ({requested=}, {actual=})")
+            mx.abort(f"GRAALPY_HOME is not compatible with requested interpreter kind ({requested=}, {actual=})\n"
+                     f"Used launcher: {launcher}\n"
+                     f"Found Python home: {python_home}\n"
+                     f"GRAALPY_HOME env variable: {os.environ.get('GRAALPY_HOME', None)}\n"
+                     f"Raw output:\n\n{out}\n\n")
 
         return python_home
 
