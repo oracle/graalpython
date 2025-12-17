@@ -131,6 +131,7 @@ MICRO_BENCHMARKS_SMALL = {
     'nano-arith': ITER_6 + WARMUP_2,
     'nano-loop': ITER_6 + WARMUP_2,
     'nano-if': ITER_6 + WARMUP_2,
+    'nano-attribute': ITER_6 + WARMUP_2,
     'jsonrpc-pipe': ITER_6 + WARMUP_2 + ['100', 'text', 'text', 'mask', '64'],
     'arith-modulo-sized': ITER_6 + WARMUP_2 + ['1'],
     'if-generic': ITER_10 + WARMUP_2 + ['500000'],
