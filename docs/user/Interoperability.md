@@ -1,26 +1,34 @@
 # Interoperability
 
-Besides being primarily recommended to use in your Java application, GraalPy can interoperate with other Graal languages (languages implemented on the [Truffle framework](https://www.graalvm.org/latest/graalvm-as-a-platform/language-implementation-framework/)).
-This means that you can use the objects and functions provided by those other languages directly from your Python scripts.
+GraalPy can interoperate with Java and other Graal languages that are implemented on the [Truffle framework](https://www.graalvm.org/latest/graalvm-as-a-platform/language-implementation-framework/).
+This means that you can use other languages' objects and functions directly from your Python scripts.
+This interoperability works in both directions. Python can call other languages, and other languages can call Python code.
 
 ## Interacting with Java from Python scripts
 
-Java is the host language of the JVM and runs the GraalPy interpreter itself.
-To interoperate with Java from Python scripts, use the `java` module:
+Java is the host language of the JVM and runs the GraalPy interpreter itself. This means you can seamlessly access any Java class available in your classpath directly from Python.
+
+### Basic Java access
+
+Import the `java` module to access Java classes and methods:
+
 ```python
 import java
 BigInteger = java.type("java.math.BigInteger")
 myBigInt = BigInteger.valueOf(42)
-# a public Java methods can just be called
+# Call Java methods directly
 myBigInt.shiftLeft(128) # returns a <JavaObject[java.math.BigInteger] at ...>
-# Java method names that are keywords in Python must be accessed using `getattr`
+# Java method names that are Python keywords must be accessed using `getattr`
 getattr(myBigInt, "not")() # returns a <JavaObject[java.math.BigInteger] at ...>
 byteArray = myBigInt.toByteArray()
 # Java arrays can act like Python lists
 assert len(byteArray) == 1 and byteArray[0] == 42
 ```
 
-To import packages from the `java` namespace, you can also use the conventional Python import syntax:
+### Importing Java packages
+
+You can import packages from the `java` namespace using conventional Python import syntax:
+
 ```python
 import java.util.ArrayList
 from java.util import ArrayList
@@ -32,14 +40,18 @@ al.add(12)
 assert list(al) == [1, 12]
 ```
 
+### Java module methods
+
 In addition to the `type` built-in method, the `java` module exposes the following methods:
 
-Built-in                 | Specification
----                      | ---
-`instanceof(obj, class)` | returns `True` if `obj` is an instance of `class` (`class` must be a foreign object class)
-`is_function(obj)`       | returns `True` if `obj` is a Java host language function wrapped using interop
-`is_object(obj)`         | returns `True` if `obj` if the argument is Java host language object wrapped using interop
-`is_symbol(obj)`         | returns `True` if `obj` if the argument is a Java host symbol, representing the constructor and static members of a Java class, as obtained by `java.type`
+| Built-in                 | Specification
+| ---                      | ---
+| `instanceof(obj, class)` | Returns `True` if `obj` is an instance of `class` (`class` must be a foreign object class). |
+| `is_function(obj)`       | Returns `True` if `obj` is a Java host language function wrapped using interop. |
+| `is_object(obj)`         | Returns `True` if `obj` is a Java host language object wrapped using interop. |
+| `is_symbol(obj)`         | Returns `True` if `obj` is a Java host symbol, representing the constructor and static members of a Java class, as obtained by `java.type`. |
+
+Here's how to use these methods in practice:
 
 ```python
 ArrayList = java.type('java.util.ArrayList')
@@ -51,11 +63,13 @@ assert java.is_function(my_list.add)
 assert java.instanceof(my_list, ArrayList)
 ```
 
-See [Polyglot Programming](https://github.com/oracle/graal/blob/master/docs/reference-manual/polyglot-programming.md) and [Embed Languages](https://github.com/oracle/graal/blob/master/docs/reference-manual/embedding/embed-languages.md) for more information about interoperability with other programming languages.
+See the [Polyglot Programming](https://github.com/oracle/graal/blob/master/docs/reference-manual/polyglot-programming.md) and [Embed Languages](https://github.com/oracle/graal/blob/master/docs/reference-manual/embedding/embed-languages.md) documentation for more information about interoperability with other programming languages.
 
 ## Interacting with foreign objects from Python scripts
 
-Foreign objects are given a Python class corresponding to their interop traits:
+When you use foreign objects in Python, GraalPy automatically makes them behave like their Python equivalents.
+
+For example, a Java `ArrayList` acts like a Python `list`, and a Java `HashMap` acts like a Python `dict`:
 
 ```python
 from java.util import ArrayList, HashMap
@@ -63,51 +77,56 @@ type(ArrayList()).mro() # => [<class 'polyglot.ForeignList'>, <class 'list'>, <c
 type(HashMap()).mro() # => [<class 'polyglot.ForeignDict'>, <class 'dict'>, <class 'polyglot.ForeignObject'>, <class 'object'>]
 ```
 
-This means all Python methods of these types are available on the corresponding foreign objects, which behave as close as possible as if they were Python objects:
+This means you can use Python methods on foreign objects:
 
 ```python
 from java.util import ArrayList, HashMap
+# ArrayList behaves like a Python list so you can use Python methods
 l = ArrayList()
-l.append(1) # l: [1]
-l.extend([2, 3]) # l: [1, 2, 3]
-l.add(4) # l: [1, 2, 3, 4] # we can still call Java methods, this is calling ArrayList#add
-l[1:3] # => [2, 3]
-l.pop(1) # => 2; l: [1, 3, 4]
-l.insert(1, 2) # l: [1, 2, 3, 4]
-l == [1, 2, 3, 4] # True
+l.append(1) # Python list method - l: [1]
+l.extend([2, 3]) # Python list method - l: [1, 2, 3]
+l.add(4) # Java ArrayList method still works - l: [1, 2, 3, 4]
+l[1:3] # Python slicing works - returns [2, 3]
+l.pop(1) # Python list method - returns 2, l: [1, 3, 4]
+l.insert(1, 2) # Python list method - l: [1, 2, 3, 4]
+l == [1, 2, 3, 4] # Python comparison works - True
 
+# HashMap behaves like a Python dict so you can use Python methods
 h = HashMap()
-h[1] = 2 # h: {1: 2}
-h.setdefault(3, 4) # h: {1: 2, 3: 4}
-h |= {3: 6} # {1: 2, 3: 6}
-h == {1: 2, 3: 6} # True
+h[1] = 2 # Python dict syntax - h: {1: 2}
+h.setdefault(3, 4) # Python dict method - h: {1: 2, 3: 4}
+h |= {3: 6} # Python dict operator - h: {1: 2, 3: 6}
+h == {1: 2, 3: 6} # Python comparison works - True
 ```
 
-In case of a method defined both in Python and on the foreign object, the Python method wins.
-To call the foreign method instead, use `super(type_owning_the_python_method, foreign_object).method(*args)`:
+When a method is defined both in Python and on the foreign object, the Python's method takes precedence.
+
+To call the foreign method explicitly, use `super(type_owning_the_python_method, foreign_object).method(*args)`:
 
 ```python
 from java.util import ArrayList
 l = ArrayList()
 l.extend([5, 6, 7])
-l.remove(7) # Python list.remove
+l.remove(7) # Calls Python list.remove()
 assert l == [5, 6]
 
-super(list, l).remove(0) # ArrayList#remove(int index)
+super(list, l).remove(0) # Calls Java's ArrayList.remove()
 assert l == [6]
 ```
 
-See [this section](#interop-types-to-python) for more interop traits and how they map to Python types.
+See the [Interop Types to Python](#interop-types-to-python) section for more interop traits and how they map to Python types.
 
 ## Interacting with other dynamic languages from Python scripts
 
-More general, non-JVM specific interactions with other languages from Python scripts are achieved via the _polyglot_ API.
+The _polyglot_ API allows non-JVM specific interactions with other languages from Python scripts.
 This includes all interactions with dynamic languages supported via the [Truffle framework](https://www.graalvm.org/latest/graalvm-as-a-platform/language-implementation-framework/), including JavaScript and Ruby.
 
 ### Installing other dynamic languages
 
-Other languages can be included by using their respective Maven dependencies in the same manner as GraalPy.
-For example, if you have already configured a Maven project with GraalPy, add the following dependency to gain access to JavaScript:
+To use other languages, like JavaScript, you need to add their Maven dependencies to your project.
+
+If you're using Maven with GraalPy, add the JavaScript dependency to your _pom.xml_ file:
+
 ```xml
 <dependency>
     <groupId>org.graalvm.polyglot</groupId>
@@ -117,14 +136,19 @@ For example, if you have already configured a Maven project with GraalPy, add th
 ```
 
 <aside markdown="1">
-For Python developers, other languages are only available for the GraalPy JVM distributions after using the `libexec/graalpy-polyglot-get` command from the distribution's root directory.
+For Python developers, you need to install other languages using the `libexec/graalpy-polyglot-get` command from your GraalPy installation directory.
+
 To install JavaScript, for example:
+
 ```bash
 libexec/graalpy-polyglot-get js
 ```
+
 </aside>
 
 ### Examples
+
+Here are practical examples of using the `polyglot` API to work with JavaScript from Python:
 
 1. Import the `polyglot` module to interact with other languages:
    ```python
@@ -143,7 +167,7 @@ libexec/graalpy-polyglot-get js
    polyglot.eval(path="./my_js_file.js", language="js")
    ```
 
-4. Import a glocal value from the polyglot scope:
+4. Import a global value from the polyglot scope:
    ```python
    Math = polyglot.import_value("JSMath")
    ```
@@ -179,19 +203,21 @@ libexec/graalpy-polyglot-get js
 
     This program matches Python strings using the JavaScript regular expression object. Python reads the captured group from the JavaScript result and checks for a substring in it.
 
-## Exporting Python Objects to other Languages
+## Exporting Python Objects to other languages
 
-The `polyglot` module can be used to expose Python objects to JVM languages and other Graal languages (languages implemented on the [Truffle framework](https://www.graalvm.org/latest/graalvm-as-a-platform/language-implementation-framework/)).
+Use the `polyglot` module to expose Python objects to JVM languages and other Graal languages (languages implemented on the [Truffle framework](https://www.graalvm.org/latest/graalvm-as-a-platform/language-implementation-framework/)).
 
-1. You can export some object from Python to other languages so they can import it:
+This allows other languages to call your Python code directly.
+
+1. You can export a Python object so other languages can access it:
    ```python
    import ssl
    polyglot.export_value(value=ssl, name="python_ssl")
    ```
    
-   Then use it in (for example) from JavaScript code:
+   Then use it, for example, from JavaScript code:
    ```js
-   Polyglot.import('python_ssl).get_server_certificate(["oracle.com", 443])
+   Polyglot.import('python_ssl').get_server_certificate(["oracle.com", 443])
    ```
 
 2. You can decorate a Python function to export it by name:
@@ -201,7 +227,7 @@ The `polyglot` module can be used to expose Python objects to JVM languages and 
        return "Hello from Python!"
    ```
 
-   Then use it (for example) from Java code:
+   Then use it, for example, from Java code:
    ```java
    import org.graalvm.polyglot.*;
 
@@ -221,9 +247,9 @@ The `polyglot` module can be used to expose Python objects to JVM languages and 
     }
     ```
 
-## Mapping Types between Python and Other Languages
+## Mapping types between Python and other languages
 
-The interop protocol defines different "types/traits" which can overlap in all kinds of ways and have restrictions on how they can interact with Python.
+The interop protocol defines different types and traits that determine foreign objects behavior and restrictions when used in Python.
 
 ### Interop Types to Python
 
@@ -231,69 +257,73 @@ All foreign objects passed into Python have the Python type `polyglot.ForeignObj
 
 Types not listed in the table below have no special interpretation in Python.
 
-| Interop Type   | Inherits from                     | Python Interpretation                                                                                                                                                                                                                      |
-|:---------------|:----------------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `null`         | ForeignNone, `NoneType`           | `null` is like `None`. Important to know: interop `null` values are all identical to `None`. JavaScript defines two "null-like" values; `undefined` and `null`, which are *not* identical, but when passed to Python, they are treated so. |
-| `boolean`      | ForeignBoolean, ForeignNumber     | `boolean` behaves like Python booleans, including the fact that in Python, all booleans are also integers (1 and 0 for true and false, respectively).                                                                                      |
-| `number`       | ForeignNumber                     | `number` behaves like Python numbers. Python only has one integer and one floating point type, but ranges are imported in some places such as typed arrays.                                                                                |
-| `string`       | ForeignString, `str`              | Behaves in the same way as a Python string.                                                                                                                                                                                                |
-| `buffer`       | ForeignObject                     | Buffers are also a concept in Python's native API (albeit slightly different). Interop buffers are treated in the same was as Python buffers in some places (such as `memoryview`) to avoid copies of data.                                |
+| Interop Type   | Inherits from                     | Python Interpretation                                                                                               |
+| :------------- | :-------------------------------- | :------------------------------------------------------------------------------------------------------------------ |
 | `array`        | ForeignList, `list`               | An `array` behaves like a Python `list`.                                                                                                                                                                                                   |
+| `boolean`      | ForeignBoolean, ForeignNumber     | `boolean` behaves like Python booleans, including the fact that in Python, all booleans are also integers (`1` and `0` for `true` and `false`, respectively).                                                                                      |
+| `buffer`       | ForeignObject                     | Buffers work like Python buffer objects (such as those used with `memoryview`) to avoid copying data.                            |
+| `exception`    | ForeignException, `BaseException` | An `exception` can be caught in a generic `except` clause.                                                                                                                                                                                 |
+| `executable`   | ForeignExecutable                 | An `executable` object can be executed as a function, but never with keyword arguments.                                                                                                                                                    |
 | `hash`         | ForeignDict, `dict`               | A `hash` behaves like a Python `dict`, with any "hashable" object as a key. "Hashable" follows Python semantics: generally every interop type with an identity is deemed "hashable".                                                       |
-| `members`      | ForeignObject                     | An object of type `members` can be read using conventional Python `.` notation or `getattr` and related functions.                                                                                                                         |
+| `instantiable` | ForeignInstantiable               | An `instantiable` object can be called just like a Python type, but never with keyword arguments.                                                                                                                                          |
 | `iterable`     | ForeignIterable                   | An `iterable` is treated in the same way as any Python object with an `__iter__` method. That is, it can be used in a loop and other places that accept Python iterables.                                                                  |
 | `iterator`     | ForeignIterator, `iterator`       | An `iterator` is treated in the same way as any Python object with a `__next__` method.                                                                                                                                                    |
-| `exception`    | ForeignException, `BaseException` | An `exception` can be caught in a generic `except` clause.                                                                                                                                                                                 |
+| `members`      | ForeignObject                     | Objects with `members` can be accessed using Python dot notation (`.`) or `getattr()`. |
 | `MetaObject`   | ForeignAbstractClass              | Meta objects can be used in subtype and `isinstance` checks.                                                                                                                                                                               |
-| `executable`   | ForeignExecutable                 | An `executable` object can be executed as a function, but never with keyword arguments.                                                                                                                                                    |
-| `instantiable` | ForeignInstantiable               | An `instantiable` object can be called just like a Python type, but never with keyword arguments.                                                                                                                                          |
+| `null`         | ForeignNone, `NoneType`           | `null` behaves like Python `None`. All interop null values (including JavaScript `undefined` and `null`) are treated as `None` in Python. |
+| `number`       | ForeignNumber                     | `number` behaves like Python numbers (`int` and `float`). Foreign ranges are imported in some places such as typed arrays.                                     |
+| `string`       | ForeignString, `str`              | Behaves in the same way as a Python string.                                                                                                                                                                                                |
 
 Foreign numbers inherit from `polyglot.ForeignNumber` and not `int` or `float` because `InteropLibrary` has currently no way to differentiate integers and floats.
+
 However:
+
 * When foreign numbers are represented as Java primitives `byte`, `short`, `int`, `long`, they are considered Python `int` objects.
 * When foreign numbers are represented as Java primitives `float`, `double`, they are considered Python `float` objects.
-* When foreign booleans re represented as Java primitives `boolean`, they are considered Python `bool` objects.
+* When foreign booleans are represented as Java primitives `boolean`, they are considered Python `bool` objects.
 
 ### Python to Interop Types
 
-| Interop Type                        | Python Interpretation                                                                                                                                                                   |
-|:--------------------------------|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `null`         | Only `None`.                                                                                                                                          |
+The following table shows how Python objects are converted to interop types when passed to other languages:
+
+| Interop Type   | Python Interpretation                                                                                                                                 |
+| :------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `array`        | Any object with `__getitem__` and `__len__` methods, but not if it also has `keys`, `values`, and `items` methods (in the same way that `dict` does.) |
 | `boolean`      | Only subtypes of Python `bool`. Note that in contrast to Python semantics, Python `bool` is *never* also an interop number.                           |
+| `exception`    | Any Python `BaseException` subtype.                                                                                                                   |
+| `executable`   | Any Python object with a `__call__` method.                                                                                                          |
+| `hash`         | Only subtypes of `dict`.                                                                                                                              |
+| `instantiable` | Any Python `type`.                                                                                                                                    |
+| `iterable`     | Any Python object that has `__iter__` or `__getitem__` methods.                                                                                     |
+| `iterator`     | Any Python object with a `__next__` method.                                                                                                           |
+| `members`      | Any Python object. Note that the rules for readable/writable are a bit ad-hoc, since checking that is not part of the Python MOP.                     |
+| `MetaObject`   | Any Python `type`.                                                                                                                                    |
+| `null`         | Only `None`.                                                                                                                                          |
 | `number`       | Only subtypes of `int` and `float`.                                                                                                                   |
 | `string`       | Only subtypes of `str`.                                                                                                                               |
-| `array`        | Any object with `__getitem__` and `__len__` methods, but not if it also has `keys`, `values`, and `items` methods (in the same way that `dict` does.) |
-| `hash`         | Only subtypes of `dict`.                                                                                                                              |
-| `members`      | Any Python object. Note that the rules for readable/writable are a bit ad-hoc, since checking that is not part of the Python MOP.                     |
-| `iterable`     | Any Python object that has `__iter__` or a `__getitem__` methods.                                                                                     |
-| `iterator`     | Any Python object with a `__next__` method.                                                                                                           |
-| `exception`    | Any Python `BaseException` subtype.                                                                                                                   |
-| `MetaObject`   | Any Python `type`.                                                                                                                                    |
-| `executable`   | Any Python object  with a `__call__` method.                                                                                                          |
-| `instantiable` | Any Python `type`.                                                                                                                                    |
 
 ## The Interoperability Extension API
 
-It is possible to extend the interoperability protocol directly from Python via a simple API defined in the `polyglot` module. 
-The purpose of this API is to enable custom / user defined types to take part in the interop ecosystem. 
-This is particularly useful for external types which are not compatible by default with the interop protocol. 
-An example in this sense are the `numpy` numeric types (for example, `numpy.int32`) which are not supported by default by the interop protocol. 
+You can extend the interoperability protocol directly from Python through a simple API defined in the `polyglot` module.
+This API lets you define interoperability behavior for custom or user-defined types that are not automatically supported.
+This is particularly useful for external types which are not compatible by default with the interop protocol.
+For example, `numpy` numeric types (for example, `numpy.int32`) which are not supported by default by the interop protocol need special handling to work properly with other languages.
 
-### The API 
+The `polyglot` module provides these functions for customizing interop behavior:
 
-| Function                        | Description                                                                                                                                                                   |
+| Function                          | Description                                                                                                                                                                   |
 |:--------------------------------|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| register_interop_behavior       | Takes the receiver **type** as first argument. The remainder keyword arguments correspond to the respective interop messages. Not All interop messages are supported. |
-| get_registered_interop_behavior | Takes the receiver **type** as first argument. Returns the list of extended interop messages for the given type.                                                      |
-| @interop_behavior               | Class decorator, takes the receiver **type** as only argument. The interop messages are extended via **static** methods defined in the decorated class (supplier).            |
-| register_interop_type           | Takes a `foreign class` and `python class` as positional arguments and `allow_method_overwrites` as optional argument (default: `False`). Every instance of foreign class is then treated as an instance of the given python class. |
-| @interop_type                   | Class decorator, takes the `foreign class` and optionally `allow_method_overwrites` as arguments. The instances of foreign class will be treated as an instance of the annotated python class.                                      |
+| `register_interop_behavior`       | Takes the receiver **type** as the first argument. The remaining keyword arguments correspond to the respective interop messages. Not all interop messages are supported. |
+| `get_registered_interop_behavior` | Takes the receiver **type** as the first argument. Returns the list of extended interop messages for the given type.                                                      |
+| `@interop_behavior`               | Class decorator that takes the receiver **type** as the only argument. The interop messages are extended via **static** methods defined in the decorated class (supplier).            |
+| `register_interop_type`           | Takes a `foreign class` and `python class` as positional arguments and `allow_method_overwrites` as an optional argument (default: `False`). Every instance of the foreign class is then treated as an instance of the given python class. |
+| `@interop_type`                   | Class decorator that takes the `foreign class` and optionally `allow_method_overwrites` as arguments. The instances of the foreign class will be treated as an instance of the annotated python class.                                      |
 
-### Usage Examples
+### Interop behavior usage example
 
-#### Interop Behavior
+You can use the `register_interop_behavior` API to add custom interop behavior to existing types:
 
-A simple `register_interop_behavior` API is available to register interop behaviors for existing types:
+For example, to make `numpy.int32` work properly with other languages:
 
 ```python
 import polyglot
@@ -314,9 +344,11 @@ polyglot.register_interop_behavior(numpy.int32,
 )
 ```
 
-The `@interop_behavior` decorator may be more convenient when declaring more behaviors.
-Interop message extension is achieved via **static** methods of the decorated class.
-The names of the static methods are identical to the keyword names expected by `register_interop_behavior`.
+Alternatively, you can use the `@interop_behavior` decorator when you need to define multiple behaviors for a type.
+With this decorator, you define interop behaviors using **static** methods in a decorated class.
+The static method names must match the keyword argument names used by `register_interop_behavior`.
+
+The following example uses the decorator approach for `numpy.float64`:
 
 ```python
 from polyglot import interop_behavior
@@ -324,7 +356,7 @@ import numpy
 
 
 @interop_behavior(numpy.float64)
-class Int8InteropBehaviorSupplier:
+class Float64InteropBehaviorSupplier:
     @staticmethod
     def is_number(_):
         return True
@@ -356,12 +388,15 @@ class Main {
     }
 }
 ```
-#### Interop Types
+
+### Interop types usage example
 
 The `register_interop_type` API allows the usage of python classes for foreign objects.
-The class of such a foreign object will no longer be `polyglot.ForeignObject` or `polyglot.Foreign*`. 
-Instead, it will be a generated class with the registered python classes and `polyglot.ForeignObject` as super class.
-This allows custom mapping of foreign methods and attributes to Python's magic methods or more idiomatic Python code.
+When you register a Python class for a foreign type, instances of that foreign object will no longer have the default `polyglot.ForeignObject` or `polyglot.Foreign* class`.
+Instead, GraalPy creates a new generated class that inherits from both your Python class and `polyglot.ForeignObject`.
+This lets you add Python methods to foreign objects, and map foreign functionality to Python's magic methods or more idiomatic Python patterns.
+
+This is a simple Java class to customize:
 
 ```java
 package org.example;
@@ -385,6 +420,8 @@ class MyJavaClass {
    }
 ```
 
+The following snippet sets up the Java environment and makes the object available to Python:
+
 ```java
 import org.example.MyJavaClass;
         
@@ -400,6 +437,8 @@ class Main {
    }
 }
 ```
+
+This snippet states how to customize the Java object's behavior using Python classes:
 
 ```python
 # example.py
@@ -426,7 +465,7 @@ class MyPythonClassTwo:
       return (self.getY(), self.getX())
    
    def __str__(self):
-      return f"MyJavaInstance(x={self.getX()}, y={self.getY()}"
+      return f"MyJavaInstance(x={self.getX()}, y={self.getY()})"
 
 # If 'allow_method_overwrites=True' is not given, this would lead to an error due to the method conflict of 'get_tuple'  
 register_interop_type(foreign_class, MyPythonClassTwo, allow_method_overwrites=True)
@@ -439,7 +478,8 @@ print(my_java_object.get_tuple()) # (17, 42)
 print(my_java_object) # MyJavaInstance(x=42, y=17)
 ```
 
-Registering classes may be more convenient with `@interop_type`:
+For simpler cases, you can use the `@interop_type` decorator:
+
 ```python
 import java
 from polyglot import interop_type
@@ -454,65 +494,65 @@ class MyPythonClass:
 
 ### Supported messages
 
-The majority (with some exceptions) of the interop messages are supported by the interop behavior extension API, as shown in the table below.  
-The naming convention for the `register_interop_behavior` keyword arguments follows the _snake_case_ naming convention, i.e. the interop `fitsInLong` message 
-becomes `fits_in_long` and so on. Each message can be extended with a **pure python function** (default keyword arguments, free vars and cell vars are not allowed) or a **boolean constant**. 
-The table below describes the supported interop messages:
+Most interop messages are supported by the interop behavior extension API. The naming convention for `register_interop_behavior` keyword arguments uses _snake_case_, so the interop `fitsInLong` message becomes `fits_in_long`. 
+Each message can be extended with either a **pure Python function** (no default keyword arguments, free vars, or cell vars allowed) or a **boolean constant**.
 
-| Message                  | Extension argument name     | Expected return type                                                                                  |
-|:-------------------------|:----------------------------|-------------------------------------------------------------------------------------------------------|
-| isBoolean                | is_boolean                  | bool                                                                                                  |
-| isDate                   | is_date                     | bool                                                                                                  |
-| isDuration               | is_duration                 | bool                                                                                                  |
-| isIterator               | is_iterator                 | bool                                                                                                  |
-| isNumber                 | is_number                   | bool                                                                                                  |
-| isString                 | is_string                   | bool                                                                                                  |
-| isTime                   | is_time                     | bool                                                                                                  |
-| isTimeZone               | is_time_zone                | bool                                                                                                  |
-| isExecutable             | is_executable               | bool                                                                                                  |
-| fitsInBigInteger         | fits_in_big_integer         | bool                                                                                                  |
-| fitsInByte               | fits_in_byte                | bool                                                                                                  |
-| fitsInDouble             | fits_in_double              | bool                                                                                                  |
-| fitsInFloat              | fits_in_float               | bool                                                                                                  |
-| fitsInInt                | fits_in_int                 | bool                                                                                                  |
-| fitsInLong               | fits_in_long                | bool                                                                                                  |
-| fitsInShort              | fits_in_short               | bool                                                                                                  |
-| asBigInteger             | as_big_integer              | int                                                                                                   |
-| asBoolean                | as_boolean                  | bool                                                                                                  |
-| asByte                   | as_byte                     | int                                                                                                   |
-| asDate                   | as_date                     | 3-tuple with the following elements: (`year`: int, `month`: int, `day`: int)                          |
-| asDouble                 | as_double                   | float                                                                                                 |
-| asDuration               | as_duration                 | 2-tuple with the following elements: (`seconds`: long, `nano_adjustment`: long)                       |
-| asFloat                  | as_float                    | float                                                                                                 |
-| asInt                    | as_int                      | int                                                                                                   |
-| asLong                   | as_long                     | int                                                                                                   |
-| asShort                  | as_short                    | int                                                                                                   |
-| asString                 | as_string                   | str                                                                                                   |
-| asTime                   | as_time                     | 4-tuple with the following elements:  (`hour`: int, `minute`: int, `second`: int, `microsecond`: int) |
-| asTimeZone               | as_time_zone                | a string (the timezone) or int (utc delta in seconds)                                                 |
-| execute                  | execute                     | object                                                                                                |
-| readArrayElement         | read_array_element          | object                                                                                                |
-| getArraySize             | get_array_size              | int                                                                                                   |
-| hasArrayElements         | has_array_elements          | bool                                                                                                  |
-| isArrayElementReadable   | is_array_element_readable   | bool                                                                                                  |
-| isArrayElementModifiable | is_array_element_modifiable | bool                                                                                                  |
-| isArrayElementInsertable | is_array_element_insertable | bool                                                                                                  |
-| isArrayElementRemovable  | is_array_element_removable  | bool                                                                                                  |
-| removeArrayElement       | remove_array_element        | NoneType                                                                                              |
-| writeArrayElement        | write_array_element         | NoneType                                                                                              |
-| hasIterator              | has_iterator                | bool                                                                                                  |
-| hasIteratorNextElement   | has_iterator_next_element   | bool                                                                                                  |
-| getIterator              | get_iterator                | a python iterator                                                                                     |
-| getIteratorNextElement   | get_iterator_next_element   | object                                                                                                |
-| hasHashEntries           | has_hash_entries            | bool                                                                                                  |
-| getHashEntriesIterator   | get_hash_entries_iterator   | a python iterator                                                                                     |
-| getHashKeysIterator      | get_hash_keys_iterator      | a python iterator                                                                                     |
-| getHashSize              | get_hash_size               | int                                                                                                   |
-| getHashValuesIterator    | get_hash_values_iterator    | a python iterator                                                                                     |
-| isHashEntryReadable      | is_hash_entry_readable      | bool                                                                                                  |
-| isHashEntryModifiable    | is_hash_entry_modifiable    | bool                                                                                                  |
-| isHashEntryInsertable    | is_hash_entry_insertable    | bool                                                                                                  |
-| isHashEntryRemovable     | is_hash_entry_removable     | bool                                                                                                  |
-| readHashValue            | read_hash_value             | object                                                                                                |
-| writeHashEntry           | write_hash_entry            | NoneType                                                                                              |
-| removeHashEntry          | remove_hash_entry           | NoneType                                                                                              | 
+The following table describes the supported interop messages:
+
+| Message                    | Extension argument name       | Expected return type                                                                 |
+| :------------------------- | :---------------------------- | :----------------------------------------------------------------------------------- |
+| `isBoolean`                | `is_boolean`                  | `bool`                                                                               |
+| `isDate`                   | `is_date`                     | `bool`                                                                               |
+| `isDuration`               | `is_duration`                 | `bool`                                                                               |
+| `isExecutable`             | `is_executable`               | `bool`                                                                               |
+| `isIterator`               | `is_iterator`                 | `bool`                                                                               |
+| `isNumber`                 | `is_number`                   | `bool`                                                                               |
+| `isString`                 | `is_string`                   | `bool`                                                                               |
+| `isTime`                   | `is_time`                     | `bool`                                                                               |
+| `isTimeZone`               | `is_time_zone`                | `bool`                                                                               |
+| `fitsInBigInteger`         | `fits_in_big_integer`         | `bool`                                                                               |
+| `fitsInByte`               | `fits_in_byte`                | `bool`                                                                               |
+| `fitsInDouble`             | `fits_in_double`              | `bool`                                                                               |
+| `fitsInFloat`              | `fits_in_float`               | `bool`                                                                               |
+| `fitsInInt`                | `fits_in_int`                 | `bool`                                                                               |
+| `fitsInLong`               | `fits_in_long`                | `bool`                                                                               |
+| `fitsInShort`              | `fits_in_short`               | `bool`                                                                               |
+| `asBigInteger`             | `as_big_integer`              | `int`                                                                                |
+| `asBoolean`                | `as_boolean`                  | `bool`                                                                               |
+| `asByte`                   | `as_byte`                     | `int`                                                                                |
+| `asDate`                   | `as_date`                     | tuple: (`year`: int, `month`: int, `day`: int)                                       |
+| `asDouble`                 | `as_double`                   | `float`                                                                              |
+| `asDuration`               | `as_duration`                 | tuple: (`seconds`: int, `nano_adjustment`: int)                                      |
+| `asFloat`                  | `as_float`                    | `float`                                                                              |
+| `asInt`                    | `as_int`                      | `int`                                                                                |
+| `asLong`                   | `as_long`                     | `int`                                                                                |
+| `asShort`                  | `as_short`                    | `int`                                                                                |
+| `asString`                 | `as_string`                   | `str`                                                                                |
+| `asTime`                   | `as_time`                     | tuple: (`hour`: int, `minute`: int, `second`: int, `microsecond`: int)               |
+| `asTimeZone`               | `as_time_zone`                | `str` (timezone name) or `int` (UTC delta in seconds)                               |
+| `execute`                  | `execute`                     | `object`                                                                             |
+| `readArrayElement`         | `read_array_element`          | `object`                                                                             |
+| `getArraySize`             | `get_array_size`              | `int`                                                                                |
+| `hasArrayElements`         | `has_array_elements`          | `bool`                                                                               |
+| `isArrayElementReadable`   | `is_array_element_readable`   | `bool`                                                                               |
+| `isArrayElementModifiable` | `is_array_element_modifiable` | `bool`                                                                               |
+| `isArrayElementInsertable` | `is_array_element_insertable` | `bool`                                                                               |
+| `isArrayElementRemovable`  | `is_array_element_removable`  | `bool`                                                                               |
+| `removeArrayElement`       | `remove_array_element`        | `None`                                                                               |
+| `writeArrayElement`        | `write_array_element`         | `None`                                                                               |
+| `hasIterator`              | `has_iterator`                | `bool`                                                                               |
+| `hasIteratorNextElement`   | `has_iterator_next_element`   | `bool`                                                                               |
+| `getIterator`              | `get_iterator`                | Python iterator                                                                      |
+| `getIteratorNextElement`   | `get_iterator_next_element`   | `object`                                                                             |
+| `hasHashEntries`           | `has_hash_entries`            | `bool`                                                                               |
+| `getHashEntriesIterator`   | `get_hash_entries_iterator`   | Python iterator                                                                      |
+| `getHashKeysIterator`      | `get_hash_keys_iterator`      | Python iterator                                                                      |
+| `getHashSize`              | `get_hash_size`               | `int`                                                                                |
+| `getHashValuesIterator`    | `get_hash_values_iterator`    | Python iterator                                                                      |
+| `isHashEntryReadable`      | `is_hash_entry_readable`      | `bool`                                                                               |
+| `isHashEntryModifiable`    | `is_hash_entry_modifiable`    | `bool`                                                                               |
+| `isHashEntryInsertable`    | `is_hash_entry_insertable`    | `bool`                                                                               |
+| `isHashEntryRemovable`     | `is_hash_entry_removable`     | `bool`                                                                               |
+| `readHashValue`            | `read_hash_value`             | `object`                                                                             |
+| `writeHashEntry`           | `write_hash_entry`            | `None`                                                                               |
+| `removeHashEntry`          | `remove_hash_entry`           | `None`                                                                               | 
