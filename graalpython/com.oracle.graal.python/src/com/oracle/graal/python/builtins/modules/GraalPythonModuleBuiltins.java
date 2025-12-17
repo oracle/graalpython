@@ -123,7 +123,6 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
@@ -1393,21 +1392,6 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             var schemaCapsuleName = new CArrayWrappers.CByteArrayWrapper(ArrowSchema.CAPSULE_NAME);
             PyCapsule arrowSchemaCapsule = pyCapsuleNewNode.execute(inliningTarget, arrowSchemaAddr, schemaCapsuleName, schemaDestructor);
             return PFactory.createTuple(ctx.getLanguage(inliningTarget), new Object[]{arrowSchemaCapsule, arrowArrayCapsule});
-        }
-    }
-
-    /**
-     * Used from datetime module to create new instances of objects that we allow subclassing from
-     * native. It's necessary, because the __new__ wrapper would reject native subclasses that
-     * override tp_new.
-     */
-    @Builtin(name = "unsafe_object_new", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class UnsafeObjectNewNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        static Object create(VirtualFrame frame, Object cls,
-                        @Cached ObjectBuiltins.ObjectNode objectNode) {
-            return objectNode.execute(frame, cls, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
         }
     }
 }
