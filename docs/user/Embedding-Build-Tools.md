@@ -84,7 +84,7 @@ To use an external directory, create your GraalPy context with:
 
 ## Directory Structure
 
-The [GraalPyResources](https://github.com/oracle/graalpy-extensions/blob/main/org.graalvm.python.embedding/src/main/java/org/graalvm/python/embedding/GraalPyResources.java) factory methods rely on this standardized [Python virtual environment](https://docs.python.org/3.11/tutorial/venv.html) structure:
+The [GraalPyResources](https://github.com/oracle/graalpy-extensions/blob/main/org.graalvm.python.embedding/src/main/java/org/graalvm/python/embedding/GraalPyResources.java) factory methods rely on this directory structure, which includes a standard [Python virtual environment](https://docs.python.org/3.11/tutorial/venv.html) in the `venv` subdirectory:
 
 | Directory       | Purpose                      | Management         | Python Path |
 | --------------- | ---------------------------- | ------------------ |------------ |
@@ -107,9 +107,9 @@ This means today's build might install `B==2.0.0`, but tomorrow's clean build co
 
 ### Locking Dependencies
 
-**We highly recommend locking all Python dependencies** when packages change. Run a Maven goal or Gradle task to generate `graalpy.lock`, which captures exact versions of all dependencies (those specified explicitly in the _pom.xml_ or _build.gradle_ files and all their transitive dependencies).
+**We highly recommend locking all Python dependencies** when packages change. Run a Maven goal or Gradle task to generate _graalpy.lock_, which captures exact versions of all dependencies (those specified explicitly in the _pom.xml_ or _build.gradle_ files and all their transitive dependencies).
 
-Commit the _graalpy.lock_ file to version control (e.g., git). Once this file exists, Maven or Gradle builds will install the exact same package versions captured in the lock file.
+Commit the _graalpy.lock_ file to version control (e.g., git). Once this file exists, Maven or Gradle builds will install the exact same package versions captured in the _graalpy.lock_ file.
 
 If you modify dependencies in _pom.xml_ or _build.gradle_ and they no longer match what's in _graalpy.lock_, the build will fail and the user will be asked to explicitly regenerate the _graalpy.lock_ file.
 
@@ -131,11 +131,12 @@ Configure the plugin in your _pom.xml_ file with these elements:
 
 | Element             | Description  |
 | ------------------- | ------------ |
-| `packages`          | Python dependencies using pip syntax (e.g., `requests>=2.25.0`) |
+| `packages`          | Python dependencies using pip syntax (e.g., `requests>=2.25.0`) - optional |
+| `requirementsFile`  | Path to pip-compatible _requirements.txt_ file - optional, mutually exclusive with `packages` |
 | `resourceDirectory` | Custom path for [Virtual Filesystem](#virtual-filesystem) deployment (must match Java runtime configuration) |
 | `externalDirectory` | Path for [External Directory](#external-directory) deployment (mutually exclusive with `resourceDirectory`) |
 
-**Example configuration:**
+Add the plugin configuration to your _pom.xml_ file:
 
 ```xml
 <plugin>
@@ -156,6 +157,30 @@ Configure the plugin in your _pom.xml_ file with these elements:
     </configuration>
 </plugin>
 ```
+
+#### Using `requirements.txt`
+
+The `requirementsFile` element declares a path to a pip-compatible _requirements.txt_ file.
+When configured, the plugin forwards this file directly to pip using `pip install -r`,
+allowing full use of pip's native dependency format.
+
+```xml
+<configuration>
+    <requirementsFile>requirements.txt</requirementsFile>
+    ...
+</configuration>
+```
+
+> **Important:** You must configure either `packages` or `requirementsFile`, but not both.
+> 
+> When `requirementsFile` is used:
+> - the GraalPy lock file is **not created and not used**
+> - the `lock-packages` goal is **disabled**
+> - dependency locking must be handled externally by pip (for example using `pip freeze`)
+> 
+> Mixing `packages` and `requirementsFile` in the same configuration is not supported.
+
+#### Excluding Build-Only Packages
 
 You can remove build-only packages from final JAR using `maven-jar-plugin`:
 
@@ -209,9 +234,11 @@ Configure the plugin in your _build.gradle_ file with these elements:
 | `packages`          | Python dependencies using pip syntax (e.g., `requests>=2.25.0`) |
 | `resourceDirectory` | Custom path for [Virtual Filesystem](#virtual-filesystem) deployment (must match Java runtime configuration) |
 | `externalDirectory` | Path for [External Directory](#external-directory) deployment (mutually exclusive with `resourceDirectory`) |
-| `community`         | Use community build instead of enterprise (defaults to `false`) |
+| `community`         | **[Deprecated]** Use community build instead of enterprise (defaults to `false`) |
 
-**Example configuration:**
+> **⚠️ Deprecation Notice:** The `community` configuration option will be removed in the next release. Users should migrate to explicitly specifying the desired GraalPy dependency in their build configuration.
+
+Add the plugin configuration to your _build.gradle_ file:
 
 ```groovy
 plugins {
@@ -229,7 +256,7 @@ graalPy {
     // OR External Directory (separate files)
     externalDirectory = file("$rootDir/python-resources")
     
-    // Optional: Use community build
+    // Optional: Use community build (DEPRECATED - will be removed in next release)
     community = true
 }
 ```
