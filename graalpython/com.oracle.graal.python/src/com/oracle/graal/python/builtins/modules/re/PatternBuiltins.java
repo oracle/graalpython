@@ -58,12 +58,10 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare;
 import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyObjectAsciiNode;
-import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
@@ -136,7 +134,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.MISSING_LEFT_ANGLE_BRA
 import static com.oracle.graal.python.nodes.ErrorMessages.MISSING_RIGHT_ANGLE_BRACKET;
 import static com.oracle.graal.python.nodes.ErrorMessages.OCTAL_ESCAPE_OUT_OF_RANGE;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNKNOWN_GROUP_NAME;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REPR__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING_BINARY;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -175,12 +172,12 @@ public final class PatternBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static Object newPattern(VirtualFrame frame, Object cls, Object source, int flags,
+        static Object newPattern(VirtualFrame frame, PythonBuiltinClassType cls, Object source, int flags,
                         @Bind Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @CachedLibrary(limit = "1") InteropLibrary interop,
                         @Cached PatternNodes.TRegexCompileNode tRegexCompileNodeNode,
-                        @Cached TRegexUtil.InteropReadMemberNode interopReadMemberNode,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+                        @Cached TRegexUtil.InteropReadMemberNode interopReadMemberNode) {
             try {
                 var cache = new TRegexCache(inliningTarget, source, flags);
 
@@ -237,7 +234,7 @@ public final class PatternBuiltins extends PythonBuiltins {
 
                 LinkedHashMap<String, Object> groupsMap = arrayToMap(keysAndValues);
 
-                Shape shape = getInstanceShape.execute(cls);
+                Shape shape = cls.getInstanceShape(language);
                 return new PPattern(cls, shape, source, flags | flagsInlined, groupsCount, groupsMap, cache);
             } catch (UnsupportedMessageException | UnknownIdentifierException | InvalidArrayIndexException e) {
                 throw CompilerDirectives.shouldNotReachHere();
@@ -311,11 +308,11 @@ public final class PatternBuiltins extends PythonBuiltins {
         @Specialization
         static TruffleString repr(VirtualFrame frame, PPattern self,
                         @Bind Node inliningTarget,
-                        @Cached PyObjectCallMethodObjArgs callMethodObjArgs,
+                        @Cached PyObjectReprAsTruffleStringNode reprNode,
                         @Cached CastToJavaStringNode castToJavaStringNode) {
             // pattern source string representation
-            Object sourceReprObject = callMethodObjArgs.execute(frame, inliningTarget, self.source, T___REPR__);
-            String sourceReprString = castToJavaStringNode.execute(sourceReprObject);
+            TruffleString sourceReprTS = reprNode.execute(frame, inliningTarget, self.source);
+            String sourceReprString = castToJavaStringNode.execute(sourceReprTS);
 
             return format(sourceReprString, self.flags, self.cache.isBinary());
         }
@@ -566,13 +563,12 @@ public final class PatternBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached PatternNodes.RECheckInputTypeNode reCheckInputTypeNode,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PyObjectGetAttr getAttr) {
             reCheckInputTypeNode.execute(frame, stringObject, self.cache.isBinary());
 
             // reuse _sre.SREScanner#search() and wrap it into an iterator
-            Object cls = PythonBuiltinClassType.SREScanner;
-            Shape shape = getInstanceShape.execute(cls);
+            PythonBuiltinClassType cls = PythonBuiltinClassType.SREScanner;
+            Shape shape = cls.getInstanceShape(language);
             Object scanner = new PSREScanner(cls, shape, self, stringObject, pos, endPos);
 
             Object searchFunction = getAttr.execute(frame, inliningTarget, scanner, T_SEARCH);
@@ -658,13 +654,13 @@ public final class PatternBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object getScanner(VirtualFrame frame, PPattern self, Object string, int pos, int endPos,
-                        @Cached PatternNodes.RECheckInputTypeNode reCheckInputTypeNode,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+                        @Bind PythonLanguage language,
+                        @Cached PatternNodes.RECheckInputTypeNode reCheckInputTypeNode) {
             // raise error immediately
             reCheckInputTypeNode.execute(frame, string, self.cache.isBinary());
 
-            Object cls = PythonBuiltinClassType.SREScanner;
-            Shape shape = getInstanceShape.execute(cls);
+            PythonBuiltinClassType cls = PythonBuiltinClassType.SREScanner;
+            Shape shape = cls.getInstanceShape(language);
             return new PSREScanner(cls, shape, self, string, pos, endPos);
         }
     }

@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -79,7 +80,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REPR__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING_BINARY;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -108,7 +108,7 @@ public final class MatchBuiltins extends PythonBuiltins {
                         @Cached MatchNodes.GetSliceNode getSliceNode,
                         @Cached TRegexUtil.InvokeGetGroupBoundariesMethodNode readStartNode,
                         @Cached TRegexUtil.InvokeGetGroupBoundariesMethodNode readEndNode,
-                        @Cached PyObjectCallMethodObjArgs callMethodObjArgs) {
+                        @Cached PyObjectReprAsTruffleStringNode reprNode) {
             int groupIndex = 0; // points at the whole matching substring
 
             int start = TRegexUtil.TRegexResultAccessor.captureGroupStart(self.regexResult, groupIndex, inliningTarget, readStartNode);
@@ -130,13 +130,7 @@ public final class MatchBuiltins extends PythonBuiltins {
 
             // either Python str or bytes
             Object substring = getSliceNode.execute(frame, inliningTarget, self, groupIndex);
-
-            // matching substring as a String literal
-            Object substringReprObject = callMethodObjArgs.execute(frame, inliningTarget, substring, T___REPR__);
-            if (!(substringReprObject instanceof TruffleString substringRepr)) {
-                throw CompilerDirectives.shouldNotReachHere();
-            }
-
+            TruffleString substringRepr = reprNode.execute(frame, inliningTarget, substring);
             return format(start, end, substringRepr);
         }
 

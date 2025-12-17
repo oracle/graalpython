@@ -46,11 +46,11 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -77,6 +77,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
+import org.graalvm.shadowed.com.ibm.icu.lang.UCharacter;
 
 @CoreFunctions(defineModule = "_sre")
 public final class SREModuleBuiltins extends PythonBuiltins {
@@ -122,11 +123,11 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static boolean isCased(Object module, int codepoint) {
-            if (Character.isLetter(codepoint)) {
+            if (UCharacter.isLetter(codepoint)) {
                 return false;
             }
 
-            return Character.toLowerCase(codepoint) != Character.toUpperCase(codepoint);
+            return UCharacter.toLowerCase(codepoint) != UCharacter.toUpperCase(codepoint);
         }
     }
 
@@ -143,7 +144,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static int toLower(Object module, int codepoint) {
-            return Character.toLowerCase(codepoint);
+            return UCharacter.toLowerCase(codepoint);
         }
     }
 
@@ -160,7 +161,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static boolean isCased(Object module, int codepoint) {
-            return codepoint < 128 && Character.isLetter(codepoint);
+            return codepoint < 128 && UCharacter.isLetter(codepoint);
         }
     }
 
@@ -181,7 +182,7 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                 return codepoint;
             }
 
-            return Character.toLowerCase(codepoint);
+            return UCharacter.toLowerCase(codepoint);
         }
     }
 
@@ -193,10 +194,10 @@ public final class SREModuleBuiltins extends PythonBuiltins {
         @Specialization
         PTemplate template(VirtualFrame frame, PPattern pattern, PList template,
                         @Bind Node inliningTarget,
+                        @Bind PythonLanguage language,
                         @Cached @Shared PRaiseNode raiseNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItem,
-                        @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+                        @Cached PyNumberAsSizeNode asSizeNode) {
             // template is a list containing interleaved literal strings (str or bytes)
             // and group indices (int), as returned by _parser.parse_template:
             // [str 1, int 1, str 2, int 2, ..., str N-1, int N-1, str N].
@@ -227,8 +228,8 @@ public final class SREModuleBuiltins extends PythonBuiltins {
                 }
             }
 
-            Object cls = PythonBuiltinClassType.SRETemplate;
-            Shape shape = getInstanceShape.execute(cls);
+            PythonBuiltinClassType cls = PythonBuiltinClassType.SRETemplate;
+            Shape shape = cls.getInstanceShape(language);
             return new PTemplate(cls, shape, literals, indices);
         }
 

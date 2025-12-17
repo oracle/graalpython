@@ -45,7 +45,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.TRegexUtil;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
@@ -54,7 +53,6 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -85,11 +83,11 @@ public class MatchNodes {
 
         @Specialization
         public static Object getSlice(Node inliningTarget, PPattern pattern, Object regexResult, Object stringObject, int pos, int endPos,
-                        @Cached PyUnicodeCheckNode unicodeCheckNode,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+                        @Bind PythonLanguage language,
+                        @Cached PyUnicodeCheckNode unicodeCheckNode) {
             boolean isBytesLike = !unicodeCheckNode.execute(inliningTarget, stringObject);
-            Object cls = PythonBuiltinClassType.PMatch;
-            Shape shape = getInstanceShape.execute(cls);
+            PythonBuiltinClassType cls = PythonBuiltinClassType.PMatch;
+            Shape shape = cls.getInstanceShape(language);
 
             return new PMatch(cls, shape, regexResult, pattern, stringObject, isBytesLike, pos, endPos);
         }
@@ -159,12 +157,7 @@ public class MatchNodes {
             final int groupIndex;
 
             if (indexCheckNode.execute(inliningTarget, groupIndexObject)) {
-                try {
-                    groupIndex = numberAsSizeNode.execute(frame, inliningTarget, groupIndexObject, PNone.NONE);
-                } catch (PException pe) {
-                    // does not fit into Java int
-                    throw raiseNode.raise(inliningTarget, IndexError, ErrorMessages.NO_SUCH_GROUP);
-                }
+                groupIndex = numberAsSizeNode.execute(frame, inliningTarget, groupIndexObject, PNone.NONE);
 
                 // index is 1-based, 0 - refers to the whole matched substring
                 if (groupIndex < 0 || groupIndex > match.pattern.groupsCount) {
