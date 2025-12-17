@@ -7456,3 +7456,23 @@ GraalPyPrivate_InitNativeDateTime()
     GraalPyPrivate_Set_Native_Slots(&PyDateTime_TimeType, getsets_time, NULL);
     GraalPyPrivate_Set_Native_Slots(&PyDateTime_DeltaType, NULL, members_delta);
 }
+
+// Used from Java to initialize native subtypes
+PyAPI_FUNC(PyObject*)
+GraalPyPrivate_Time_SubtypeNew(PyTypeObject* type, int hour, int minute, int second, int usecond, PyObject* tzinfo, int fold) {
+    char aware = tzinfo != NULL;
+    PyDateTime_Time *self = (PyDateTime_Time *) (type->tp_alloc(type, aware));
+    if (self != NULL) {
+        self->hastzinfo = aware;
+        self->hashcode = -1;
+        TIME_SET_HOUR(self, hour);
+        TIME_SET_MINUTE(self, minute);
+        TIME_SET_SECOND(self, second);
+        TIME_SET_MICROSECOND(self, usecond);
+        if (aware) {
+            self->tzinfo = Py_NewRef(tzinfo);
+        }
+        TIME_SET_FOLD(self, fold);
+    }
+    return (PyObject *)self;
+}

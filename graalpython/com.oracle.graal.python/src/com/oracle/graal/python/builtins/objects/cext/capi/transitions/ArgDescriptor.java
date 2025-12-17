@@ -78,6 +78,7 @@ enum ArgBehavior {
     WrappedPointer("POINTER", "J", "jlong", "long", null, WrappedPointerToPythonNodeGen::create, WrappedPointerToPythonNodeGen.getUncached()),
     TruffleStringPointer("POINTER", "J", "jlong", "long", null, CharPtrToPythonNode::create, CharPtrToPythonNode.getUncached()),
     Char8("SINT8", "C", "jbyte", "byte", null, null, null),
+    UChar8("UINT8", "C", "jbyte", "byte", null, null, null),
     Char16("SINT16", "C", "jchar", "char", null, null, null),
     Int32("SINT32", "I", "jint", "int", null, null, null),
     UInt32("UINT32", "I", "jint", "int", null, null, null),
@@ -161,6 +162,7 @@ public enum ArgDescriptor {
     _PYTIME_T_PTR("_PyTime_t*"),
     _PYUNICODEWRITER_PTR("_PyUnicodeWriter*"),
     CHAR(ArgBehavior.Char8, "char"),
+    UCHAR(ArgBehavior.UChar8, "unsigned char"),
     CHAR_CONST("char*const"),
     CHAR_CONST_PTR("char*const*"),
     CHAR_CONST_ARRAY("char*const []"),
@@ -515,7 +517,7 @@ public enum ArgDescriptor {
     }
 
     public boolean isI8() {
-        return behavior == ArgBehavior.Char8;
+        return behavior == ArgBehavior.Char8 || behavior == ArgBehavior.UChar8;
     }
 
     public boolean isI32() {

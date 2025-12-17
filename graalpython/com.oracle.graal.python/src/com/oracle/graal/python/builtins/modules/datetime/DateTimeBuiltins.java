@@ -2533,7 +2533,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
     abstract static class TimeTzNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        static PTime getTime(PDateTime self,
+        static Object getTime(PDateTime self,
                         @Bind Node inliningTarget,
                         @Cached TimeNodes.NewNode newTimeNode) {
             return newTimeNode.execute(inliningTarget,

@@ -94,6 +94,7 @@ public class CStructAccess {
 
     @ImportStatic(PGuards.class)
     @GenerateUncached
+    @GenerateInline(false)
     public abstract static class AllocateNode extends Node {
 
         abstract Object execute(long count, long elsize, boolean allocatePyMem);
@@ -171,6 +172,7 @@ public class CStructAccess {
 
     @ImportStatic(PGuards.class)
     @GenerateUncached
+    @GenerateInline(false)
     public abstract static class FreeNode extends Node {
 
         public static void executeUncached(Object pointer) {
@@ -220,6 +222,7 @@ public class CStructAccess {
 
     @ImportStatic(PGuards.class)
     @GenerateUncached
+    @GenerateInline(false)
     public abstract static class GetElementPtrNode extends ReadBaseNode {
 
         abstract Object execute(Object pointer, long offset);
@@ -259,6 +262,7 @@ public class CStructAccess {
 
     @ImportStatic(PGuards.class)
     @GenerateUncached
+    @GenerateInline(false)
     public abstract static class ReadByteNode extends ReadBaseNode {
 
         abstract int execute(Object pointer, long offset);
@@ -270,6 +274,10 @@ public class CStructAccess {
 
         public final int readFromObj(PythonNativeObject self, CFields field) {
             return read(self.getPtr(), field);
+        }
+
+        public final int readFromObj(PythonNativeObject self, CFields field, int offset) {
+            return execute(self.getPtr(), field.offset() + offset);
         }
 
         public final boolean accepts(ArgDescriptor desc) {
@@ -345,6 +353,7 @@ public class CStructAccess {
 
     @ImportStatic(PGuards.class)
     @GenerateUncached
+    @GenerateInline(false)
     public abstract static class ReadI16Node extends ReadBaseNode {
 
         abstract int execute(Object pointer, long offset);
@@ -389,6 +398,7 @@ public class CStructAccess {
 
     @ImportStatic(PGuards.class)
     @GenerateUncached
+    @GenerateInline(false)
     public abstract static class ReadI32Node extends ReadBaseNode {
 
         public static int readUncached(Object pointer, CFields field) {
@@ -545,6 +555,7 @@ public class CStructAccess {
      */
     @ImportStatic(PGuards.class)
     @GenerateUncached
+    @GenerateInline(false)
     public abstract static class ReadFloatNode extends ReadBaseNode {
 
         abstract double execute(Object pointer, long offset);
@@ -607,6 +618,7 @@ public class CStructAccess {
 
     @ImportStatic(PGuards.class)
     @GenerateUncached
+    @GenerateInline(false)
     public abstract static class ReadDoubleNode extends ReadBaseNode {
 
         abstract double execute(Object pointer, long offset);
@@ -669,6 +681,7 @@ public class CStructAccess {
 
     @ImportStatic(PGuards.class)
     @GenerateUncached
+    @GenerateInline(false)
     public abstract static class ReadPointerNode extends ReadBaseNode {
 
         abstract Object execute(Object pointer, long offset);
@@ -726,6 +739,7 @@ public class CStructAccess {
 
     @ImportStatic(PGuards.class)
     @GenerateUncached
+    @GenerateInline(false)
     public abstract static class ReadObjectNode extends ReadBaseNode {
         abstract Object execute(Object pointer, long offset);
 
@@ -844,6 +858,7 @@ public class CStructAccess {
 
     @ImportStatic(PGuards.class)
     @GenerateUncached
+    @GenerateInline(false)
     public abstract static class WriteByteNode extends Node implements CStructAccessNode {
 
         abstract void execute(Object pointer, long offset, byte value);
@@ -902,6 +917,7 @@ public class CStructAccess {
 
     @ImportStatic(PGuards.class)
     @GenerateUncached
+    @GenerateInline(false)
     public abstract static class WriteDoubleNode extends Node implements CStructAccessNode {
 
         abstract void execute(Object pointer, long offset, double value);
@@ -946,6 +962,7 @@ public class CStructAccess {
 
     @ImportStatic(PGuards.class)
     @GenerateUncached
+    @GenerateInline(false)
     public abstract static class WriteFloatNode extends Node implements CStructAccessNode {
 
         abstract void execute(Object pointer, long offset, float value);
@@ -986,6 +1003,7 @@ public class CStructAccess {
 
     @ImportStatic(PGuards.class)
     @GenerateUncached
+    @GenerateInline(false)
     public abstract static class WriteI16Node extends Node implements CStructAccessNode {
 
         abstract void execute(Object pointer, long offset, short value);
@@ -1026,6 +1044,7 @@ public class CStructAccess {
 
     @ImportStatic(PGuards.class)
     @GenerateUncached
+    @GenerateInline(false)
     public abstract static class WriteIntNode extends Node implements CStructAccessNode {
 
         public static void writeUncached(Object pointer, CFields field, int value) {
@@ -1092,6 +1111,7 @@ public class CStructAccess {
 
     @ImportStatic(PGuards.class)
     @GenerateUncached
+    @GenerateInline(false)
     public abstract static class WriteLongNode extends Node implements CStructAccessNode {
 
         abstract void execute(Object pointer, long offset, long value);
@@ -1150,6 +1170,7 @@ public class CStructAccess {
 
     @ImportStatic(PGuards.class)
     @GenerateUncached
+    @GenerateInline(false)
     public abstract static class WriteTruffleStringNode extends Node implements CStructAccessNode {
 
         abstract void execute(Object dstPointer, int dstOffset, TruffleString src, int srcOffset, int length, TruffleString.Encoding encoding);
@@ -1189,6 +1210,7 @@ public class CStructAccess {
 
     @ImportStatic(PGuards.class)
     @GenerateUncached
+    @GenerateInline(false)
     public abstract static class WritePointerNode extends Node implements CStructAccessNode {
 
         public static void writeUncached(Object pointer, CFields field, Object value) {
@@ -1263,6 +1285,7 @@ public class CStructAccess {
 
     @ImportStatic(PGuards.class)
     @GenerateUncached
+    @GenerateInline(false)
     public abstract static class WriteObjectNewRefNode extends Node implements CStructAccessNode {
 
         abstract void execute(Object pointer, long offset, Object value);
