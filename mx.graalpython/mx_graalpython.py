@@ -1018,7 +1018,7 @@ def deploy_graalpy_extensions_to_local_maven_repo(env=None):
             env=env, cwd=graalpy_extensions_path)
     mx.run([os.path.join(graalpy_extensions_path, mx.cmd_suffix('mvnw')),
             *common_args, '-DdeployAtEnd=true',
-            f'-DaltDeploymentRepository=local::default::file:{pathlib.Path(local_repo_path).as_uri()}',
+            f'-DaltDeploymentRepository=local::{pathlib.Path(local_repo_path).as_uri()}',
             'deploy'], env=env, cwd=graalpy_extensions_path)
 
     return local_repo_path, version, env
