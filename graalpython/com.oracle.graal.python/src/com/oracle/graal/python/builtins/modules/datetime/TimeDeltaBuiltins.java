@@ -40,9 +40,25 @@
  */
 package com.oracle.graal.python.builtins.modules.datetime;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ZeroDivisionError;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_MAX;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_MIN;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_RESOLUTION;
+import static com.oracle.graal.python.nodes.BuiltinNames.T__DATETIME;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
+import java.util.List;
+
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Builtin;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -89,20 +105,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
-import java.util.List;
-
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ZeroDivisionError;
-import static com.oracle.graal.python.nodes.BuiltinNames.T__DATETIME;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_MAX;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_MIN;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_RESOLUTION;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
-
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PTimeDelta)
 public final class TimeDeltaBuiltins extends PythonBuiltins {
 
@@ -137,8 +139,8 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
         self.setAttribute(T_RESOLUTION, resolution);
     }
 
-    @Slot(value = Slot.SlotKind.tp_new, isComplex = true)
-    @Slot.SlotSignature(name = "datetime.timedelta", minNumOfPositionalArgs = 1, parameterNames = {"$cls", "days", "seconds", "microseconds", "milliseconds", "minutes", "hours", "weeks"})
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "datetime.timedelta", minNumOfPositionalArgs = 1, parameterNames = {"$cls", "days", "seconds", "microseconds", "milliseconds", "minutes", "hours", "weeks"})
     @GenerateNodeFactory
     public abstract static class NewNode extends PythonBuiltinNode {
 
@@ -150,7 +152,7 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
         }
     }
 
-    @Slot(Slot.SlotKind.nb_bool)
+    @Slot(SlotKind.nb_bool)
     @GenerateUncached
     @GenerateNodeFactory
     abstract static class BoolNode extends TpSlotInquiry.NbBoolBuiltinNode {
@@ -161,7 +163,7 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
         }
     }
 
-    @Slot(value = Slot.SlotKind.tp_repr, isComplex = true)
+    @Slot(value = SlotKind.tp_repr, isComplex = true)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
 
@@ -206,7 +208,7 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
         }
     }
 
-    @Slot(value = Slot.SlotKind.tp_str, isComplex = true)
+    @Slot(value = SlotKind.tp_str, isComplex = true)
     @GenerateNodeFactory
     public abstract static class StrNode extends PythonUnaryBuiltinNode {
 
@@ -263,7 +265,7 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
         }
     }
 
-    @Slot(value = Slot.SlotKind.tp_richcompare, isComplex = true)
+    @Slot(value = SlotKind.tp_richcompare, isComplex = true)
     @GenerateNodeFactory
     abstract static class RichCmpNode extends RichCmpBuiltinNode {
 
@@ -279,7 +281,7 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
         }
     }
 
-    @Slot(value = Slot.SlotKind.tp_hash, isComplex = true)
+    @Slot(value = SlotKind.tp_hash, isComplex = true)
     @GenerateNodeFactory
     abstract static class HashNode extends TpSlotHashFun.HashBuiltinNode {
 
@@ -293,7 +295,7 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
         }
     }
 
-    @Slot(value = Slot.SlotKind.nb_add, isComplex = true)
+    @Slot(value = SlotKind.nb_add, isComplex = true)
     @GenerateUncached
     @GenerateNodeFactory
     abstract static class AddNode extends BinaryOpBuiltinNode {
@@ -312,7 +314,7 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
         }
     }
 
-    @Slot(value = Slot.SlotKind.nb_subtract, isComplex = true)
+    @Slot(value = SlotKind.nb_subtract, isComplex = true)
     @GenerateUncached
     @GenerateNodeFactory
     abstract static class SubNode extends BinaryOpBuiltinNode {
@@ -331,7 +333,7 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
         }
     }
 
-    @Slot(value = Slot.SlotKind.nb_multiply, isComplex = true)
+    @Slot(value = SlotKind.nb_multiply, isComplex = true)
     @GenerateUncached
     @GenerateNodeFactory
     abstract static class MulNode extends BinaryOpBuiltinNode {
@@ -424,7 +426,7 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
         }
     }
 
-    @Slot(value = Slot.SlotKind.nb_true_divide, isComplex = true)
+    @Slot(value = SlotKind.nb_true_divide, isComplex = true)
     @GenerateUncached
     @GenerateNodeFactory
     abstract static class DivNode extends BinaryOpBuiltinNode {
@@ -526,7 +528,7 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
         }
     }
 
-    @Slot(value = Slot.SlotKind.nb_floor_divide, isComplex = true)
+    @Slot(value = SlotKind.nb_floor_divide, isComplex = true)
     @GenerateUncached
     @GenerateNodeFactory
     abstract static class FloorDivNode extends BinaryOpBuiltinNode {
@@ -568,7 +570,7 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
         }
     }
 
-    @Slot(value = Slot.SlotKind.nb_divmod, isComplex = true)
+    @Slot(value = SlotKind.nb_divmod, isComplex = true)
     @GenerateNodeFactory
     abstract static class DivModNode extends BinaryOpBuiltinNode {
 
@@ -599,7 +601,7 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
         }
     }
 
-    @Slot(value = Slot.SlotKind.nb_remainder, isComplex = true)
+    @Slot(value = SlotKind.nb_remainder, isComplex = true)
     @GenerateNodeFactory
     abstract static class ModNode extends BinaryOpBuiltinNode {
 
@@ -625,7 +627,7 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
         }
     }
 
-    @Slot(value = Slot.SlotKind.nb_absolute, isComplex = true)
+    @Slot(value = SlotKind.nb_absolute, isComplex = true)
     @GenerateUncached
     @GenerateNodeFactory
     abstract static class AbsNode extends PythonUnaryBuiltinNode {
@@ -644,7 +646,7 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
         }
     }
 
-    @Slot(value = Slot.SlotKind.nb_positive, isComplex = true)
+    @Slot(value = SlotKind.nb_positive, isComplex = true)
     @GenerateNodeFactory
     abstract static class PosNode extends PythonUnaryBuiltinNode {
 
@@ -657,7 +659,7 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
         }
     }
 
-    @Slot(value = Slot.SlotKind.nb_negative, isComplex = true)
+    @Slot(value = SlotKind.nb_negative, isComplex = true)
     @GenerateNodeFactory
     abstract static class NegNode extends PythonUnaryBuiltinNode {
 

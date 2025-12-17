@@ -40,10 +40,58 @@
  */
 package com.oracle.graal.python.builtins.modules.datetime;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.builtins.modules.datetime.DatetimeModuleBuiltins.MAX_YEAR;
+import static com.oracle.graal.python.builtins.modules.datetime.DatetimeModuleBuiltins.MIN_YEAR;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_MAX;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_MIN;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_RESOLUTION;
+import static com.oracle.graal.python.nodes.BuiltinNames.T__DATETIME;
+import static com.oracle.graal.python.nodes.ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER;
+import static com.oracle.graal.python.nodes.ErrorMessages.WARN_DEPRECATED_UTCFROMTIMESTAMP;
+import static com.oracle.graal.python.nodes.ErrorMessages.WARN_DEPRECATED_UTCNOW;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE_EX__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_DATETIME;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
+import java.text.ParsePosition;
+import java.time.DateTimeException;
+import java.time.DayOfWeek;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.Month;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.chrono.IsoChronology;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.format.DateTimeParseException;
+import java.time.format.FormatStyle;
+import java.time.temporal.ChronoField;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.IsoFields;
+import java.time.temporal.TemporalAccessor;
+import java.time.temporal.WeekFields;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.TimeZone;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
-import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Builtin;
+import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -104,54 +152,6 @@ import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
-
-import java.text.ParsePosition;
-import java.time.DateTimeException;
-import java.time.DayOfWeek;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.Month;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.time.chrono.IsoChronology;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
-import java.time.format.DateTimeParseException;
-import java.time.format.FormatStyle;
-import java.time.temporal.ChronoField;
-import java.time.temporal.ChronoUnit;
-import java.time.temporal.IsoFields;
-import java.time.temporal.TemporalAccessor;
-import java.time.temporal.WeekFields;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.TimeZone;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.builtins.modules.datetime.DatetimeModuleBuiltins.MAX_YEAR;
-import static com.oracle.graal.python.builtins.modules.datetime.DatetimeModuleBuiltins.MIN_YEAR;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_MIN;
-import static com.oracle.graal.python.nodes.BuiltinNames.T__DATETIME;
-import static com.oracle.graal.python.nodes.ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER;
-import static com.oracle.graal.python.nodes.ErrorMessages.WARN_DEPRECATED_UTCFROMTIMESTAMP;
-import static com.oracle.graal.python.nodes.ErrorMessages.WARN_DEPRECATED_UTCNOW;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE_EX__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
-import static com.oracle.graal.python.nodes.StringLiterals.T_DATETIME;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_MAX;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_RESOLUTION;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PDateTime)
 public final class DateTimeBuiltins extends PythonBuiltins {
@@ -412,7 +412,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
             EncapsulatingNodeReference encapsulating = EncapsulatingNodeReference.getCurrent();
             Node encapsulatingNode = encapsulating.set(inliningTarget);
             try {
-                return reprBoundary(self, inliningTarget);
+                return reprBoundary(self);
             } finally {
                 // Some uncached nodes (e.g. PyFloatAsDoubleNode, PyLongAsLongNode,
                 // PyObjectReprAsObjectNode) may raise exceptions that are not
@@ -422,7 +422,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static TruffleString reprBoundary(PDateTime self, Node inliningTarget) {
+        private static TruffleString reprBoundary(PDateTime self) {
             var builder = new StringBuilder();
 
             builder.append(PythonUtils.formatJString("datetime.datetime(%d, %d, %d, %d, %d", self.year, self.month, self.day, self.hour, self.minute));
@@ -841,7 +841,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
     abstract static class HourNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        static int getHour(VirtualFrame frame, PDateTime self) {
+        static int getHour(PDateTime self) {
             return self.hour;
         }
     }
@@ -851,7 +851,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
     abstract static class MinuteNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        static int getMinute(VirtualFrame frame, PDateTime self) {
+        static int getMinute(PDateTime self) {
             return self.minute;
         }
     }
@@ -861,7 +861,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
     abstract static class SecondNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        static int getSecond(VirtualFrame frame, PDateTime self) {
+        static int getSecond(PDateTime self) {
             return self.second;
         }
     }
@@ -871,7 +871,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
     abstract static class MicrosecondNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        static int getMicrosecond(VirtualFrame frame, PDateTime self) {
+        static int getMicrosecond(PDateTime self) {
             return self.microsecond;
         }
     }
@@ -881,7 +881,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
     abstract static class TzInfoNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        static Object getTzInfo(VirtualFrame frame, PDateTime self) {
+        static Object getTzInfo(PDateTime self) {
             if (self.tzInfo == null) {
                 return PNone.NONE;
             }
@@ -895,7 +895,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
     abstract static class FoldNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        static int getFold(VirtualFrame frame, PDateTime self) {
+        static int getFold(PDateTime self) {
             return self.fold;
         }
     }
@@ -2498,7 +2498,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
     abstract static class DateNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        static PDate getDate(VirtualFrame frame, PDateTime self,
+        static PDate getDate(PDateTime self,
                         @Bind Node inliningTarget,
                         @Cached DateNodes.NewNode newDateNode) {
             return newDateNode.execute(inliningTarget,
@@ -2514,7 +2514,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
     abstract static class TimeNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        static PTime getTime(VirtualFrame frame, PDateTime self,
+        static Object getTime(PDateTime self,
                         @Bind Node inliningTarget,
                         @Cached TimeNodes.NewNode newTimeNode) {
             return newTimeNode.execute(inliningTarget,
@@ -2533,7 +2533,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
     abstract static class TimeTzNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        static PTime getTime(VirtualFrame frame, PDateTime self,
+        static PTime getTime(PDateTime self,
                         @Bind Node inliningTarget,
                         @Cached TimeNodes.NewNode newTimeNode) {
             return newTimeNode.execute(inliningTarget,

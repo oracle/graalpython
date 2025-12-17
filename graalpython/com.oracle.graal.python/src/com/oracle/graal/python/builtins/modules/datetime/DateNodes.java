@@ -40,6 +40,12 @@
  */
 package com.oracle.graal.python.builtins.modules.datetime;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.builtins.modules.datetime.DatetimeModuleBuiltins.MAX_YEAR;
+import static com.oracle.graal.python.builtins.modules.datetime.DatetimeModuleBuiltins.MIN_YEAR;
+
+import java.time.YearMonth;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
@@ -57,12 +63,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
-
-import java.time.YearMonth;
-
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.builtins.modules.datetime.DatetimeModuleBuiltins.MAX_YEAR;
-import static com.oracle.graal.python.builtins.modules.datetime.DatetimeModuleBuiltins.MIN_YEAR;
 
 public class DateNodes {
 
@@ -124,7 +124,7 @@ public class DateNodes {
         public abstract PDate execute(Node inliningTarget, Object cls, int year, int month, int day);
 
         @Specialization
-        static PDate newDate(Node inliningTarget, Object cls, int year, int month, int day,
+        static PDate newDate(Object cls, int year, int month, int day,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             Shape shape = getInstanceShape.execute(cls);
             return new PDate(cls, shape, year, month, day);
@@ -150,7 +150,7 @@ public class DateNodes {
 
         @Fallback
         @TruffleBoundary
-        static Object newDateGeneric(Node inliningTarget, Object cls, Object yearObject, Object monthObject, Object dayObject) {
+        static Object newDateGeneric(Object cls, Object yearObject, Object monthObject, Object dayObject) {
             return CallNode.executeUncached(cls, yearObject, monthObject, dayObject);
         }
 
