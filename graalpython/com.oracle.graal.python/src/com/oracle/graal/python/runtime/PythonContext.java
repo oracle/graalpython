@@ -260,18 +260,29 @@ public final class PythonContext extends Python3Core {
     }
 
     /**
-     * Encodes the provided TruffleString as UTF-8 bytes and copies the bytes (and an additional NUL
-     * char) to a freshly allocated off-heap {@code int8*} (using {@code Unsafe}). The memory will
-     * be released at context finalization.
+     * Encodes the provided {@link TruffleString} as UTF-8 bytes and copies the bytes (and an
+     * additional NUL char) to a freshly allocated off-heap {@code int8*} (using {@code Unsafe}).
+     *
+     * @param string The string to copy to native.
+     * @param contextMemory If {@code true}, the allocated memory will automatically be released at
+     *            context finalization. Otherwise, the caller needs to manually free the memory.
      */
-    public long stringToNativeUtf8Bytes(TruffleString string) {
-        TruffleString nativeString = string.switchEncodingUncached(Encoding.UTF_8).asNativeUncached(this::allocateContextMemory, Encoding.UTF_8, false, true);
-        Object pointerObject = nativeString.getInternalNativePointerUncached(Encoding.UTF_8);
-        return PythonUtils.coerceToLong(pointerObject, InteropLibrary.getUncached());
-    }
-
-    public long stringToNativeUtf8BytesUncached(TruffleString string) {
-        return stringToNativeUtf8Bytes(string);
+    @TruffleBoundary
+    public long stringToNativeUtf8Bytes(TruffleString string, boolean contextMemory) {
+        if (!isNativeAccessAllowed()) {
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+        TruffleString utf8String = string.switchEncodingUncached(Encoding.UTF_8);
+        NativePointer mem;
+        int byteLength = utf8String.byteLength(Encoding.UTF_8);
+        if (contextMemory) {
+            mem = allocateContextMemory(byteLength + 1);
+            NativeMemory.writeByte(mem.asPointer() + byteLength, (byte) 0);
+        } else {
+            mem = new NativePointer(NativeMemory.callocByteArray(byteLength + 1));
+        }
+        utf8String.copyToNativeMemoryUncached(0, mem, 0, byteLength, Encoding.UTF_8);
+        return mem.asPointer();
     }
 
     /**

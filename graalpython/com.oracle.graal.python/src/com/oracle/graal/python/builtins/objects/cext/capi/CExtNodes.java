@@ -1823,7 +1823,7 @@ public abstract class CExtNodes {
                 return NULLPTR;
             }
             assert PythonContext.get(inliningTarget).isNativeAccessAllowed();
-            long ptr = NativeMemory.malloc((long) data.length * Long.BYTES);
+            long ptr = NativeMemory.malloc((long) data.length * NativeMemory.POINTER_SIZE);
             for (int i = 0; i < data.length; i++) {
                 NativeMemory.writePtrArrayElement(ptr, i, toNativeNode.execute(inliningTarget, data[i], false));
             }

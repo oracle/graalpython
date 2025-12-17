@@ -130,7 +130,7 @@ public abstract class PyDateTimeCAPIWrapper {
 
         long pointer = allocatePyDatetimeCAPI(datetimeModule);
 
-        long name = context.stringToNativeUtf8Bytes(TruffleString.fromJavaStringUncached(J_PYDATETIME_CAPSULE_NAME, Encoding.US_ASCII));
+        long name = context.stringToNativeUtf8Bytes(TruffleString.fromJavaStringUncached(J_PYDATETIME_CAPSULE_NAME, Encoding.US_ASCII), true);
         PyCapsule capsule = PFactory.createCapsuleNativeName(context.getLanguage(), pointer, name);
         PyObjectSetAttr.executeUncached(datetimeModule, T_DATETIME_CAPI, capsule);
         assert PyObjectGetAttr.executeUncached(datetimeModule, T_DATETIME_CAPI) != context.getNativeNull();

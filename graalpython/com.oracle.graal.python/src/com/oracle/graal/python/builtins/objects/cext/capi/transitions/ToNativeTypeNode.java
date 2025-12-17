@@ -238,7 +238,7 @@ public abstract class ToNativeTypeNode {
         Object docObj = clazz.getAttribute(SpecialAttributeNames.T___DOC__);
         long docPtr;
         try {
-            docPtr = ctx.stringToNativeUtf8BytesUncached(CastToTruffleStringNode.executeUncached(docObj));
+            docPtr = ctx.stringToNativeUtf8Bytes(CastToTruffleStringNode.executeUncached(docObj), true);
         } catch (CannotCastException e) {
             // if not directly a string, give up (we don't call descriptors here)
             docPtr = NULLPTR;

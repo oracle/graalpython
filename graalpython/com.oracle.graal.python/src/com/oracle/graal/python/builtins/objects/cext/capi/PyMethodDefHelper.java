@@ -144,8 +144,8 @@ public record PyMethodDefHelper(TruffleString name, Object meth, int flags, Truf
     long allocate() {
         assert name != null;
         PythonContext pythonContext = PythonContext.get(null);
-        long nativeName = pythonContext.stringToNativeUtf8BytesUncached(name);
-        long nativeDoc = doc != null ? pythonContext.stringToNativeUtf8BytesUncached(doc) : 0L;
+        long nativeName = pythonContext.stringToNativeUtf8Bytes(name, false);
+        long nativeDoc = doc != null ? pythonContext.stringToNativeUtf8Bytes(doc, false) : 0L;
         long nativeMeth = CoerceNativePointerToLongNode.executeUncached(meth);
 
         long mem = CStructAccess.allocate(CStructs.PyMethodDef);
