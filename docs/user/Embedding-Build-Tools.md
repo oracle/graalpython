@@ -148,6 +148,30 @@ The Python packages and their versions are specified as if used with `pip`:
       ...
   </configuration>
   ```
+### Using `requirements.txt`
+
+The **`requirementsFile`** element declares a path to a pip-compatible `requirements.txt` file.
+When configured, the plugin forwards this file directly to pip using `pip install -r`,
+allowing full use of pip’s native dependency format.
+
+  ```xml
+  <configuration>
+      <requirementsFile>requirements.txt</requirementsFile>
+      ...
+  </configuration>
+  ```
+
+  > **_NOTE:_**
+  > 
+  > Exactly one of `packages` or `requirementsFile` must be configured.
+  > 
+  > When `requirementsFile` is used:
+  > - the GraalPy lock file is **not created and not used**
+  > - the `lock-packages` goal is **disabled**
+  > - dependency locking must be handled externally by pip (for example via `pip freeze`)
+  > 
+  > Mixing `packages` and `requirementsFile` in the same configuration is not supported.
+
 
 - The **resourceDirectory** element can specify the relative [Java resource path](#java-resource-path).
   Remember to use `VirtualFileSystem$Builder#resourceDirectory` when configuring the `VirtualFileSystem` in Java.
