@@ -1,11 +1,11 @@
 # GraalPy, the GraalVM Implementation of Python
 
 [![](https://img.shields.io/badge/maven-org.graalvm.polyglot/python-orange)](https://central.sonatype.com/artifact/org.graalvm.polyglot/python)
-[![](https://img.shields.io/badge/pyenv-graalpy-blue)](#start-replacing-cpython-with-graalpy) 
+[![](https://img.shields.io/badge/pyenv-graalpy-blue)](#start-replacing-cpython-with-graalpy)
 </a> [![Join Slack][badge-slack]][slack] [![GraalVM on Twitter][badge-twitter]][twitter] [![License](https://img.shields.io/badge/license-UPL-green)](#license)
 
-GraalPy is a high-performance implementation of the Python language for the JVM built on [GraalVM](https://www.graalvm.org/python). 
-GraalPy is a Python 3.11 compliant runtime.
+GraalPy is a high-performance implementation of the Python language for the JVM built on [GraalVM](https://www.graalvm.org/python).
+GraalPy is a Python 3.12 compliant runtime.
 It has first-class support for embedding in Java and can turn Python applications into fast, standalone binaries.
 GraalPy is ready for production running pure Python code and has experimental support for many popular native extension modules.
 
@@ -93,9 +93,9 @@ Thanks to our integration with GraalVM Native Image, we can deploy Python applic
   pyenv shell graalpy-25.0.1
   ```
   > NOTE: There will be a delay between GraalPy release and its availability on Pyenv. Make sure to update Pyenv.
-  
+
   Alternatively, you can download a compressed GraalPy installation file from [GitHub releases](https://github.com/oracle/graalpython/releases).
-  
+
   1. Find the download that matches the pattern _graalpy-XX.Y.Z-linux-amd64.tar.gz_ or _graalpy-XX.Y.Z-linux-aarch64.tar.gz_ (depending on your platform) and download.
   2. Uncompress the file and update your `PATH` environment variable to include the _graalpy-XX.Y.Z-linux-amd64/bin_ (or _graalpy-XX.Y.Z-linux-aarch64/bin_) directory.
 
@@ -112,8 +112,8 @@ Thanks to our integration with GraalVM Native Image, we can deploy Python applic
   > NOTE: There will be a delay between GraalPy release and its availability on Pyenv. Make sure to update Pyenv.
 
   Alternatively, you can download a compressed GraalPy installation file from [GitHub releases](https://github.com/oracle/graalpython/releases).
-  
-  1. Find the download that matches the pattern _graalpy-XX.Y.Z-macos-amd64.tar.gz_ or _graalpy-XX.Y.Z-macos-aarch64.tar.gz_ (depending on your platform) and download. 
+
+  1. Find the download that matches the pattern _graalpy-XX.Y.Z-macos-amd64.tar.gz_ or _graalpy-XX.Y.Z-macos-aarch64.tar.gz_ (depending on your platform) and download.
   2. Remove the quarantine attribute.
       ```bash
       sudo xattr -r -d com.apple.quarantine /path/to/graalpy
@@ -138,7 +138,7 @@ Thanks to our integration with GraalVM Native Image, we can deploy Python applic
   > NOTE: There will be a delay between GraalPy release and its availability on Pyenv. Make sure to update Pyenv.
 
   Alternatively, you can download a compressed GraalPy installation file from [GitHub releases](https://github.com/oracle/graalpython/releases).
-  
+
   1. Find the download that matches the pattern _graalpy-XX.Y.Z-windows-amd64.tar.gz_ and download.
   2. Uncompress the file and update your `PATH` variable to include to the _graalpy-XX.Y.Z-windows-amd64/bin_ directory.
 
@@ -165,7 +165,7 @@ GraalPy provides a [special mode](docs/user/Python-on-JVM.md) to facilitate migr
 To run Jython scripts, you need to use a GraalPy distribution running on the JVM so you can access Java classes from Python scripts.
 
 * Linux
-  
+
   1. Find and download a compressed GraalPy installation file from [GitHub releases](https://github.com/oracle/graalpython/releases) that matches the pattern _graalpy-jvm-XX.Y.Z-linux-amd64.tar.gz_ or _graalpy-jvm-XX.Y.Z-linux-aarch64.tar.gz_ (depending on your platform) and download.
   2. Uncompress the file and update your `PATH` environment variable to include the _graalpy-jvm-XX.Y.Z-linux-amd64/bin_ (or _graalpy-jvm-XX.Y.Z-linux-aarch64/bin_) directory.
   3. Run your scripts with `graalpy --python.EmulateJython`.

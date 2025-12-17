@@ -164,7 +164,8 @@ def ccompile(self, name, check_duplicate_name=True):
     # Note: It could be that the C source file's checksum didn't change but someone
     # manually deleted the shared library file.
     if available_checksum != cur_checksum or not lib_file.exists():
-        os.makedirs(build_dir, exist_ok=True)
+        shutil.rmtree(build_dir, ignore_errors=True)
+        os.makedirs(build_dir)
         # MSVC linker doesn't like absolute paths in some parameters, so just run from the build dir
         old_cwd = os.getcwd()
         os.chdir(build_dir)

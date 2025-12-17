@@ -248,7 +248,7 @@ public abstract class MaterializeFrameNode extends Node {
 
         // on a freshly created PFrame, we do always sync the arguments
         escapedFrame.setGlobals(PArguments.getGlobals(frameToMaterialize));
-        escapedFrame.setLastCallerFlags(getCallerFlags(forceSync));
+        escapedFrame.setLastCallerFlags(getCallerFlags(forceSync || syncValuesNode == null));
         if (forceSync) {
             syncValuesNode.execute(escapedFrame, frameToMaterialize, location);
         }
