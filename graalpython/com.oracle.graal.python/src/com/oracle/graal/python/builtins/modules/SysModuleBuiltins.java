@@ -1445,7 +1445,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                 }
                 if (!text.isEmpty()) {
                     int idx = 0;
-                    while (true) {
+                    while (idx < textLen) {
                         int cp = text.codePointAtIndexUncached(idx, TS_ENCODING);
                         if (!(cp == ' ' || cp == '\t' || cp == '\f')) {
                             break;

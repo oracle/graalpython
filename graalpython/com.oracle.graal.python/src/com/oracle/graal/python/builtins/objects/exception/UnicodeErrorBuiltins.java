@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PGuards;
@@ -128,17 +129,17 @@ public final class UnicodeErrorBuiltins extends PythonBuiltins {
             return value;
         }
 
-        @Specialization(guards = {"!isPBytes(value)", "!isString(value)"})
+        @Specialization(guards = {"!isPBytes(value)", "!isString(value)"}, limit = "3")
         static PBytes doOther(VirtualFrame frame, Object value,
                         @Cached("createFor($node)") InteropCallData callData,
+                        @CachedLibrary("value") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonBufferAccessLibrary bufferLib,
                         @Bind PythonLanguage language) {
+            Object buffer = acquireLib.acquireReadonly(value, frame, callData);
             try {
-                final byte[] buffer = bufferLib.getInternalOrCopiedByteArray(value);
-                final int bufferLength = bufferLib.getBufferLength(value);
-                return PFactory.createBytes(language, buffer, bufferLength);
+                return PFactory.createBytes(language, bufferLib.getCopiedByteArray(buffer));
             } finally {
-                bufferLib.release(value, frame, callData);
+                bufferLib.release(buffer, frame, callData);
             }
         }
     }

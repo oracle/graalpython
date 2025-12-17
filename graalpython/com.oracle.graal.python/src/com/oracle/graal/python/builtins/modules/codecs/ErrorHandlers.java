@@ -82,6 +82,7 @@ import com.oracle.graal.python.builtins.objects.exception.UnicodeEncodeErrorBuil
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked0Node;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyBytesCheckNode;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectTypeCheck;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
@@ -89,7 +90,6 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -103,7 +103,9 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
@@ -826,17 +828,17 @@ public final class ErrorHandlers {
         }
     }
 
-    static final class ErrorHandlerCache {
+    public static final class ErrorHandlerCache {
         ErrorHandler errorHandlerEnum = ErrorHandler.UNKNOWN;
         Object errorHandlerObject;
         PBaseException exceptionObject;
     }
 
     @ValueType
-    static final class DecodingErrorHandlerResult {
-        TruffleString str;
-        int newPos;
-        Object newSrcObj;
+    public static final class DecodingErrorHandlerResult {
+        public final TruffleString str;
+        public int newPos;
+        public Object newSrcObj;
 
         DecodingErrorHandlerResult(TruffleString str, int newPos) {
             this.str = str;
@@ -846,14 +848,15 @@ public final class ErrorHandlers {
 
     @GenerateInline
     @GenerateCached(false)
+    @GenerateUncached
     abstract static class ParseDecodingErrorHandlerResultNode extends Node {
         abstract DecodingErrorHandlerResult execute(VirtualFrame frame, Node inliningTarget, Object result);
 
         @Specialization
-        static DecodingErrorHandlerResult doTuple(Node inliningTarget, PTuple result,
+        static DecodingErrorHandlerResult doTuple(VirtualFrame frame, Node inliningTarget, PTuple result,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Cached CastToTruffleStringChecked0Node castToTruffleStringCheckedNode,
-                        @Cached CastToJavaIntExactNode castToJavaIntExactNode,
+                        @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PRaiseNode raiseNode) {
             SequenceStorage storage = result.getSequenceStorage();
             if (storage.length() != 2) {
@@ -862,7 +865,7 @@ public final class ErrorHandlers {
             Object item1 = getItemScalarNode.execute(inliningTarget, storage, 0);
             Object item2 = getItemScalarNode.execute(inliningTarget, storage, 1);
             TruffleString str = castToTruffleStringCheckedNode.cast(inliningTarget, item1, ErrorMessages.DECODING_ERROR_HANDLER_MUST_RETURN_STR_INT_TUPLE);
-            int pos = castToJavaIntExactNode.execute(inliningTarget, item2);
+            int pos = asSizeNode.executeExact(frame, inliningTarget, item2);
             return new DecodingErrorHandlerResult(str, pos);
         }
 
@@ -875,9 +878,10 @@ public final class ErrorHandlers {
     // Contains logic from unicode_decode_call_errorhandler_writer
     @GenerateInline
     @GenerateCached(false)
-    abstract static class CallDecodingErrorHandlerNode extends Node {
+    @GenerateUncached
+    public abstract static class CallDecodingErrorHandlerNode extends Node {
 
-        abstract DecodingErrorHandlerResult execute(VirtualFrame frame, Node inliningTarget, ErrorHandlerCache cache, TruffleString errors, TruffleString encoding, Object srcObj, int startPos,
+        public abstract DecodingErrorHandlerResult execute(VirtualFrame frame, Node inliningTarget, ErrorHandlerCache cache, TruffleString errors, TruffleString encoding, Object srcObj, int startPos,
                         int endPos, TruffleString reason);
 
         @Specialization
@@ -902,10 +906,11 @@ public final class ErrorHandlers {
     }
 
     @ValueType
-    static final class EncodingErrorHandlerResult {
-        Object replacement;
-        int newPos;
-        boolean isUnicode;  // whether `replacement` satisfies PyUnicode_Check or PyBytes_Check
+    public static final class EncodingErrorHandlerResult {
+        public final Object replacement;
+        public int newPos;
+        // whether `replacement` satisfies PyUnicode_Check or PyBytes_Check
+        public final boolean isUnicode;
 
         EncodingErrorHandlerResult(Object replacement, int newPos, boolean isUnicode) {
             this.replacement = replacement;
@@ -916,13 +921,14 @@ public final class ErrorHandlers {
 
     @GenerateInline
     @GenerateCached(false)
+    @GenerateUncached
     abstract static class ParseEncodingErrorHandlerResultNode extends Node {
-        abstract EncodingErrorHandlerResult execute(Node inliningTarget, Object result);
+        abstract EncodingErrorHandlerResult execute(Frame frame, Node inliningTarget, Object result);
 
         @Specialization
-        static EncodingErrorHandlerResult doTuple(Node inliningTarget, PTuple result,
+        static EncodingErrorHandlerResult doTuple(VirtualFrame frame, Node inliningTarget, PTuple result,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
-                        @Cached CastToJavaIntExactNode castToJavaIntExactNode,
+                        @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PyUnicodeCheckNode pyUnicodeCheckNode,
                         @Cached PyBytesCheckNode pyBytesCheckNode,
                         @Cached PRaiseNode raiseNode) {
@@ -940,7 +946,7 @@ public final class ErrorHandlers {
             } else {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.ENCODING_ERROR_HANDLER_MUST_RETURN_STR_BYTES_INT_TUPLE);
             }
-            int pos = castToJavaIntExactNode.execute(inliningTarget, item2);
+            int pos = asSizeNode.executeExact(frame, inliningTarget, item2);
             return new EncodingErrorHandlerResult(item1, pos, isUnicode);
         }
 
@@ -953,10 +959,11 @@ public final class ErrorHandlers {
     // Contains logic from unicode_encode_call_errorhandler
     @GenerateInline
     @GenerateCached(false)
-    abstract static class CallEncodingErrorHandlerNode extends Node {
+    @GenerateUncached
+    public abstract static class CallEncodingErrorHandlerNode extends Node {
 
-        abstract EncodingErrorHandlerResult execute(VirtualFrame frame, Node inliningTarget, ErrorHandlerCache cache, TruffleString errors, TruffleString encoding, TruffleString srcObj, int startPos,
-                        int endPos, TruffleString reason);
+        public abstract EncodingErrorHandlerResult execute(VirtualFrame frame, Node inliningTarget, ErrorHandlerCache cache, TruffleString errors, TruffleString encoding, TruffleString srcObj,
+                        int startPos, int endPos, TruffleString reason);
 
         @Specialization
         static EncodingErrorHandlerResult doIt(VirtualFrame frame, Node inliningTarget, ErrorHandlerCache cache, TruffleString errors, TruffleString encoding, TruffleString srcObj, int startPos,
@@ -971,7 +978,7 @@ public final class ErrorHandlers {
             int len = codePointLengthNode.execute(srcObj, TS_ENCODING);
             cache.exceptionObject = makeEncodeExceptionNode.execute(frame, inliningTarget, cache.exceptionObject, encoding, srcObj, startPos, endPos, reason);
             Object resultObj = callNode.execute(frame, cache.errorHandlerObject, cache.exceptionObject);
-            EncodingErrorHandlerResult result = parseResultNode.execute(inliningTarget, resultObj);
+            EncodingErrorHandlerResult result = parseResultNode.execute(frame, inliningTarget, resultObj);
             result.newPos = adjustAndCheckPos(result.newPos, len, inliningTarget, raiseNode);
             return result;
         }

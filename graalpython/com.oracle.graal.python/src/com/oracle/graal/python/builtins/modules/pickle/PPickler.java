@@ -1378,7 +1378,7 @@ public class PPickler extends PythonBuiltinObject {
             if (data == null) {
                 // Issue #8383: for strings with lone surrogates, fallback on the "surrogatepass"
                 // error handler.
-                encoded = getItem(frame, encode(obj, T_UTF8, T_ERRORS_SURROGATEPASS), 0);
+                encoded = getItem(frame, encode(frame, obj, T_UTF8, T_ERRORS_SURROGATEPASS), 0);
                 // Checkstyle: stop
                 //@formatter:off
                 // data = PickleUtils.encodeUTF8Strict(asStringStrict(encoded), ensureTsSwitchEncodingNode(), ensureTsCopyToByteArrayNode(), ensureTsGetCodeRangeNode());

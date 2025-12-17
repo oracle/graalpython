@@ -80,6 +80,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -165,6 +166,7 @@ public final class UnicodeEncodeErrorBuiltins extends PythonBuiltins {
     // Equivalent of make_encode_exception
     @GenerateInline
     @GenerateCached(false)
+    @GenerateUncached
     public abstract static class MakeEncodeExceptionNode extends Node {
 
         /**

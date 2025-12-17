@@ -67,7 +67,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions.IsInstanceNode;
 import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -95,6 +94,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun.SqRe
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.SqContainsBuiltinNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -205,10 +205,10 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
         static Object decode(VirtualFrame frame, Object self, TruffleString encoding, TruffleString errors,
                         @Bind Node inliningTarget,
                         @Cached CodecsModuleBuiltins.DecodeNode decodeNode,
-                        @Cached IsInstanceNode isInstanceNode,
+                        @Cached PyUnicodeCheckNode unicodeCheckNode,
                         @Cached PRaiseNode raiseNode) {
             Object result = decodeNode.executeWithStrings(frame, self, encoding, errors);
-            if (!isInstanceNode.executeWith(frame, result, PythonBuiltinClassType.PString)) {
+            if (!unicodeCheckNode.execute(inliningTarget, result)) {
                 throw raiseNode.raise(inliningTarget, TypeError, DECODER_RETURNED_P_INSTEAD_OF_BYTES, encoding, result);
             }
             return result;
