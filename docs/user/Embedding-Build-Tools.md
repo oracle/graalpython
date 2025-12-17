@@ -234,9 +234,6 @@ Configure the plugin in your _build.gradle_ file with these elements:
 | `packages`          | Python dependencies using pip syntax (e.g., `requests>=2.25.0`) |
 | `resourceDirectory` | Custom path for [Virtual Filesystem](#virtual-filesystem) deployment (must match Java runtime configuration) |
 | `externalDirectory` | Path for [External Directory](#external-directory) deployment (mutually exclusive with `resourceDirectory`) |
-| `community`         | **[Deprecated]** Use community build instead of enterprise (defaults to `false`) |
-
-> **⚠️ Deprecation Notice:** The `community` configuration option will be removed in the next release. Users should migrate to explicitly specifying the desired GraalPy dependency in their build configuration.
 
 Add the plugin configuration to your _build.gradle_ file:
 
@@ -255,15 +252,12 @@ graalPy {
     
     // OR External Directory (separate files)
     externalDirectory = file("$rootDir/python-resources")
-    
-    // Optional: Use community build (DEPRECATED - will be removed in next release)
-    community = true
 }
 ```
 
 The plugin automatically injects these dependencies of the same version as the plugin version:
 
-- `org.graalvm.python:python` (or `python-community` if `community = true`)
+- `org.graalvm.python:python`
 - `org.graalvm.python:python-embedding`
 
 ### Locking Python Packages
