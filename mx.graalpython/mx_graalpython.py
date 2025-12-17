@@ -983,7 +983,7 @@ def deploy_local_maven_repo(env=None):
     return path, version, env
 
 
-def deploy_graalpy_extensions_to_local_maven_repo(env=None):
+def deploy_graalpy_extensions_to_local_maven_repo(env=None, only_projects=None):
     env = update_maven_opts({**os.environ.copy(), **(env or {})})
     env["MVNW_REPOURL"] = mx_urlrewrites.rewriteurl("https://repo.maven.apache.org/maven2/").rstrip('/')
     env["MVNW_VERBOSE"] = "true"
@@ -1016,6 +1016,8 @@ def deploy_graalpy_extensions_to_local_maven_repo(env=None):
             *common_args, '-Pmxurlrewrite',
             '-N', 'exec:java@patch-gradle-props'],
             env=env, cwd=graalpy_extensions_path)
+    if only_projects:
+        common_args += ['-pl', ','.join(only_projects)]
     mx.run([os.path.join(graalpy_extensions_path, mx.cmd_suffix('mvnw')),
             *common_args, '-DdeployAtEnd=true',
             f'-DaltDeploymentRepository=local::{pathlib.Path(local_repo_path).as_uri()}',
@@ -1478,7 +1480,7 @@ def graalpython_gate_runner(_, tasks):
             gvm_jdk = graalvm_jdk()
             standalone_home = graalpy_standalone_home('jvm')
             mvn_repo_path, version, env = deploy_local_maven_repo()
-            deploy_graalpy_extensions_to_local_maven_repo()
+            deploy_graalpy_extensions_to_local_maven_repo(only_projects=['org.graalvm.python.embedding'])
 
             if RUNNING_ON_LATEST_JAVA:
                 # our standalone python binary is meant for standalone graalpy
