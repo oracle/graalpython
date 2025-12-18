@@ -34,6 +34,8 @@ import static com.oracle.graal.python.builtins.modules.SysModuleBuiltins.T_CACHE
 import static com.oracle.graal.python.builtins.modules.SysModuleBuiltins.T__MULTIARCH;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_CLOSED;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_FLUSH;
+import static com.oracle.graal.python.builtins.objects.PythonAbstractObject.NATIVE_POINTER_FREED;
+import static com.oracle.graal.python.builtins.objects.PythonAbstractObject.UNINITIALIZED;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.cat;
 import static com.oracle.graal.python.builtins.objects.thread.PThread.GRAALPYTHON_THREADS;
 import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
@@ -382,13 +384,8 @@ public final class PythonContext extends Python3Core {
         /* corresponds to 'PyThreadState.dict' */
         PDict dict;
 
-        /*
-         * This is the native wrapper object if we need to expose the thread state as PyThreadState
-         * object. We need to store it here because the wrapper may receive 'toNative' in which case
-         * a handle is allocated. In order to avoid leaks, the handle needs to be free'd when the
-         * owning thread (or the whole context) is disposed.
-         */
-        long nativeWrapper;
+        /* The native pointer if we need to expose the thread state as PyThreadState struct. */
+        long nativePointer = UNINITIALIZED;
 
         /*
          * Pointer to the native thread-local variable used to store the native PyThreadState struct
@@ -501,12 +498,19 @@ public final class PythonContext extends Python3Core {
             this.dict = dict;
         }
 
-        public long getNativeWrapper() {
-            return nativeWrapper;
+        public long getNativePointer() {
+            return nativePointer;
         }
 
-        public void setNativeWrapper(long pointer) {
-            this.nativeWrapper = pointer;
+        public void setNativePointer(long pointer) {
+            assert this.nativePointer == UNINITIALIZED;
+            assert pointer != NATIVE_POINTER_FREED;
+            this.nativePointer = pointer;
+        }
+
+        public void clearNativePointer() {
+            assert this.nativePointer != NATIVE_POINTER_FREED;
+            this.nativePointer = NATIVE_POINTER_FREED;
         }
 
         public PContextVarsContext getContextVarsContext(Node node) {
@@ -2148,7 +2152,7 @@ public final class PythonContext extends Python3Core {
             handler.shutdown();
             finalizing = true;
             if (cApiContext != null) {
-                cApiContext.finalizeCApi();
+                cApiContext.finalizeCApi(cancelling);
             }
             // interrupt and join or kill python threads
             joinPythonThreads();

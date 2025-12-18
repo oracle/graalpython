@@ -45,7 +45,6 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAcces
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readPtrField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.wrapPointer;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
-import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nfi2.NativeMemory.readByteArrayElement;
 import static com.oracle.graal.python.nfi2.NativeMemory.readByteArrayElements;
 import static com.oracle.graal.python.nfi2.NativeMemory.readIntArrayElement;
@@ -67,6 +66,7 @@ import java.util.logging.Level;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.BytesCommonBuiltins;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
@@ -451,8 +451,9 @@ public abstract class CExtCommonNodes {
         @Specialization
         static Object getException(PythonThreadState threadState,
                         @Cached CApiTransitions.NativeToPythonTransferNode nativeToPythonNode) {
-            long nativeThreadState = threadState.getNativeWrapper();
-            if (nativeThreadState != NULLPTR) {
+            long nativeThreadState = threadState.getNativePointer();
+            if (nativeThreadState != PythonAbstractObject.UNINITIALIZED) {
+                assert nativeThreadState != PythonAbstractObject.NATIVE_POINTER_FREED;
                 Object exception = nativeToPythonNode.execute(wrapPointer(readPtrField(nativeThreadState, CFields.PyThreadState__current_exception)));
                 writePtrField(nativeThreadState, CFields.PyThreadState__current_exception, 0L);
                 return exception;

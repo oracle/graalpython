@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import static com.oracle.graal.python.builtins.objects.PythonAbstractObject.NATIVE_POINTER_FREED;
+import static com.oracle.graal.python.builtins.objects.PythonAbstractObject.UNINITIALIZED;
 import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nfi2.NativeMemory.mallocPtrArray;
 import static com.oracle.graal.python.nfi2.NativeMemory.writePtrArrayElement;
@@ -88,10 +90,10 @@ public abstract class PThreadState {
     }
 
     public static long getOrCreateNativeThreadState(PythonThreadState threadState) {
-        long pointer = threadState.getNativeWrapper();
-        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, pointer == 0)) {
+        long pointer = threadState.getNativePointer();
+        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, pointer == UNINITIALIZED)) {
             pointer = PThreadState.allocateCLayout();
-            threadState.setNativeWrapper(pointer);
+            threadState.setNativePointer(pointer);
         }
         return pointer;
     }
@@ -104,7 +106,7 @@ public abstract class PThreadState {
          */
         assert context.getCApiState() == CApiState.INITIALIZED;
 
-        long nativeThreadState = threadState.getNativeWrapper();
+        long nativeThreadState = threadState.getNativePointer();
         assert nativeThreadState != NULLPTR;
 
         PDict threadStateDict = threadState.getDict();
@@ -162,13 +164,13 @@ public abstract class PThreadState {
 
     @TruffleBoundary
     public static void dispose(PythonThreadState threadState) {
-        long nativeCompanion = threadState.getNativeWrapper();
-        if (nativeCompanion == NULLPTR) {
+        long nativeCompanion = threadState.getNativePointer();
+        if (nativeCompanion == UNINITIALIZED || nativeCompanion == NATIVE_POINTER_FREED) {
             return;
         }
 
         assert !HandlePointerConverter.pointsToPyHandleSpace(nativeCompanion);
-        threadState.setNativeWrapper(NULLPTR);
+        threadState.clearNativePointer();
 
         // TODO(fa): decref PyThreadState__dict
         LOGGER.fine(String.format("Freeing (PyThreadState *)0x%x", nativeCompanion));

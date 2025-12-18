@@ -1107,15 +1107,12 @@ public final class CApiContext extends CExtContext {
              * interpreter.
              */
             pollReferenceQueue();
-            PythonThreadState threadState = getContext().getThreadState(getContext().getLanguage());
-            PThreadState.dispose(threadState);
-            pollReferenceQueue();
             CApiTransitions.deallocateNativeWeakRefs(getContext());
         }
     }
 
     @SuppressWarnings("try")
-    public void finalizeCApi() {
+    public void finalizeCApi(boolean cancelling) {
         CompilerAsserts.neverPartOfCompilation();
         PythonContext context = getContext();
         HandleContext handleContext = context.nativeContext;
@@ -1141,9 +1138,15 @@ public final class CApiContext extends CExtContext {
         try {
             // TODO(fa): remove GIL acquisition (GR-51314)
             try (GilNode.UncachedAcquire ignored = GilNode.uncachedAcquire()) {
-                // First we want to free all replacements for which we have to call tp_dealloc,
-                // while all our stubs are still available for the tp_dealloc code to run.
-                CApiTransitions.deallocNativeReplacements(context, handleContext);
+                /*
+                 * First we want to free all replacements for which we have to call tp_dealloc,
+                 * while all our stubs are still available for the tp_dealloc code to run. Since
+                 * tp_dealloc may run arbitrary user code, we must not do that if the context was
+                 * canceled.
+                 */
+                if (!cancelling) {
+                    CApiTransitions.deallocNativeReplacements(context, handleContext);
+                }
                 // The singletons can be freed now
                 freeSingletonNativeWrappers(handleContext);
                 // Now we can clear all native memory that was simply allocated from Java. This

@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi.transitions;
 
+import static com.oracle.graal.python.builtins.objects.PythonAbstractObject.NATIVE_POINTER_FREED;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PollingState.RQ_DISABLED_PERMANENT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PollingState.RQ_DISABLED_TEMP;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PollingState.RQ_POLLING;
@@ -81,11 +82,11 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupport.GCListRe
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupport.PyObjectGCDelNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupport.PyObjectGCTrackNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyMemoryViewWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.AllocateNativeObjectStubNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.FirstToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativePtrToPythonNodeGen;
@@ -652,6 +653,8 @@ public abstract class CApiTransitions {
              */
             assert context.ownsGil();
             PythonContext.PythonThreadState threadState = context.getThreadState(context.getLanguage());
+            // at this point, the thread state must not have been free'd
+            assert threadState.getNativePointer() != NATIVE_POINTER_FREED;
             /*
              * There can be an active exception. Since we might be calling arbitary python, we need
              * to stash it.
@@ -711,8 +714,20 @@ public abstract class CApiTransitions {
         return id <= 0 || nativeStubLookupGet(context, pointer, id) == null;
     }
 
+    /**
+     * Iterates through the native lookup table and for all Python object references that were not
+     * allocated from Java, it decrefs {@link PythonObject#MANAGED_REFCNT}, and if the refcount is
+     * then {@code 0} it eventually calls {@code Py_Dealloc} on those objects. Hence, this method
+     * may run user code.
+     *
+     * @param context
+     * @param handleContext
+     */
     public static void deallocNativeReplacements(PythonContext context, HandleContext handleContext) {
         assert context.ownsGil();
+        assert context.isFinalizing();
+        assert !context.getEnv().getContext().isCancelling() : "must not run user code when canceling";
+
         ArrayList<Long> referencesToBeFreed = new ArrayList<>();
         Iterator<Entry<Long, IdReference<?>>> iterator = handleContext.nativeLookup.entrySet().iterator();
         while (iterator.hasNext()) {
@@ -792,16 +807,20 @@ public abstract class CApiTransitions {
         }
     }
 
+    /**
+     * Free a native structure that was allocated from Java and is tied to the lifetime of a Java
+     * object. This method will be called during context finalization and must not run user code.
+     */
     private static void freeNativeStruct(PythonObjectReference ref) {
         assert ref.handleTableIndex == -1;
         assert ref.isAllocatedFromJava();
         assert !ref.gc;
-        LOGGER.fine(() -> PythonUtils.formatJString("releasing %s", ref.toString()));
+        LOGGER.fine(() -> PythonUtils.formatJString("releasing %s", ref));
         free(ref.pointer);
     }
 
     private static void freeNativeStorage(NativeStorageReference ref) {
-        LOGGER.fine(() -> PythonUtils.formatJString("releasing %s", ref.toString()));
+        LOGGER.fine(() -> PythonUtils.formatJString("releasing %s", ref));
         free(ref.ptr);
     }
 
