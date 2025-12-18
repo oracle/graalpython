@@ -124,6 +124,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_COMPLEX_SUBTYPE_FROM_DOUBLES("GraalPyPrivate_Complex_SubtypeFromDoubles", PyObjectTransfer, PyTypeObject, ArgDescriptor.Double, ArgDescriptor.Double),
     FUN_TIME_SUBTYPE_NEW("GraalPyPrivate_Time_SubtypeNew", PyObjectTransfer, PyTypeObject, Int, Int, Int, Int, PyObject, Int),
     FUN_DATE_SUBTYPE_NEW("GraalPyPrivate_Date_SubtypeNew", PyObjectTransfer, PyTypeObject, Int, Int, Int),
+    FUN_DATETIME_SUBTYPE_NEW("GraalPyPrivate_DateTime_SubtypeNew", PyObjectTransfer, PyTypeObject, Int, Int, Int, Int, Int, Int, Int, PyObject, Int),
     FUN_EXCEPTION_SUBTYPE_NEW("GraalPyPrivate_Exception_SubtypeNew", PyObjectTransfer, PyTypeObject, PyObject),
     FUN_UNICODE_SUBTYPE_NEW("GraalPyPrivate_Unicode_SubtypeNew", PyObjectTransfer, PyTypeObject, PyObject),
     FUN_CHECK_BASICSIZE_FOR_GETSTATE("GraalPyPrivate_CheckBasicsizeForGetstate", Int, PyTypeObject, Int),

@@ -81,6 +81,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext;
 import com.oracle.graal.python.runtime.IndirectCallData;
@@ -348,21 +349,21 @@ public final class TimeZoneBuiltins extends PythonBuiltins {
     public abstract static class FromUtcNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        static Object fromUtc(PTimeZone self, PDateTime dateTime,
+        static Object fromUtc(PTimeZone self, Object dateTime,
                         @Bind Node inliningTarget,
+                        @Cached BuiltinClassProfiles.IsBuiltinObjectProfile profile,
+                        @Cached DateTimeNodes.TzInfoNode tzInfoNode,
                         @Cached PRaiseNode raiseNode,
                         @Cached DateTimeNodes.SubclassNewNode dateTimeSubclassNewNode) {
-            if (dateTime.tzInfo != self) {
+            if (!profile.profileObject(inliningTarget, dateTime, PythonBuiltinClassType.PDateTime)) {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.FROMUTC_ARGUMENT_MUST_BE_A_DATETIME);
+            }
+            Object tzInfo = tzInfoNode.execute(inliningTarget, dateTime);
+            if (tzInfo != self) {
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.FROMUTC_DT_TZINFO_IS_NOT_SELF);
             }
 
             return DatetimeModuleBuiltins.addOffsetToDateTime(dateTime, self.offset, dateTimeSubclassNewNode, inliningTarget);
-        }
-
-        @Fallback
-        static void doGeneric(Object self, Object dateTime,
-                        @Bind Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.FROMUTC_ARGUMENT_MUST_BE_A_DATETIME);
         }
     }
 

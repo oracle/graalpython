@@ -66,6 +66,7 @@ import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -326,12 +327,13 @@ public class DatetimeModuleBuiltins extends PythonBuiltins {
     }
 
     @TruffleBoundary
-    public static Object addOffsetToDateTime(PDateTime dateTime, PTimeDelta offset, DateTimeNodes.SubclassNewNode subclassNewNode, Node inliningTarget) {
+    public static Object addOffsetToDateTime(Object dateTimeObj, PTimeDelta offset, DateTimeNodes.SubclassNewNode subclassNewNode, Node inliningTarget) {
+        PDateTime dateTime = DateTimeNodes.AsManagedDateTimeNode.executeUncached(dateTimeObj);
         LocalDateTime utc = LocalDateTime.of(dateTime.year, dateTime.month, dateTime.day, dateTime.hour, dateTime.minute, dateTime.second, dateTime.microsecond * 1_000).plusDays(
                         offset.days).plusSeconds(offset.seconds).plusNanos(offset.microseconds * 1_000L);
 
         return subclassNewNode.execute(inliningTarget,
-                        dateTime.getPythonClass(),
+                        GetClassNode.executeUncached(dateTimeObj),
                         utc.getYear(),
                         utc.getMonthValue(),
                         utc.getDayOfMonth(),

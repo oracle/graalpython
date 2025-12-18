@@ -7343,3 +7343,27 @@ GraalPyPrivate_Date_SubtypeNew(PyTypeObject* type, int year, int month, int day)
     }
     return (PyObject *)self;
 }
+
+PyAPI_FUNC(PyObject*)
+GraalPyPrivate_DateTime_SubtypeNew(PyTypeObject* type, int year, int month, int day, int hour, int minute, int second, int usecond, PyObject* tzinfo, int fold) {
+    char aware = tzinfo != NULL;
+    PyDateTime_DateTime *self = (PyDateTime_DateTime *) (type->tp_alloc(type, aware));
+    if (self != NULL) {
+        self->hastzinfo = aware;
+        self->hashcode = -1;
+        /* Date fields */
+        SET_YEAR((PyDateTime_Date *)self, year);
+        SET_MONTH((PyDateTime_Date *)self, month);
+        SET_DAY((PyDateTime_Date *)self, day);
+        /* Time fields */
+        DATE_SET_HOUR(self, hour);
+        DATE_SET_MINUTE(self, minute);
+        DATE_SET_SECOND(self, second);
+        DATE_SET_MICROSECOND(self, usecond);
+        if (aware) {
+            self->tzinfo = Py_NewRef(tzinfo);
+        }
+        DATE_SET_FOLD(self, fold);
+    }
+    return (PyObject *)self;
+}

@@ -71,12 +71,11 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -157,13 +156,19 @@ public final class TzInfoBuiltins extends PythonBuiltins {
         private static final TruffleString T_DST = tsLiteral("dst");
 
         @Specialization
-        static Object fromUtc(VirtualFrame frame, PTzInfo self, PDateTime dateTime,
+        static Object fromUtc(VirtualFrame frame, PTzInfo self, Object dateTime,
                         @Bind Node inliningTarget,
+                        @Cached BuiltinClassProfiles.IsBuiltinObjectProfile profile,
+                        @Cached DateTimeNodes.TzInfoNode tzInfoNode,
                         @Cached PyObjectCallMethodObjArgs callMethodObjArgs,
-                        @Cached @Exclusive PRaiseNode raiseNode,
+                        @Cached PRaiseNode raiseNode,
                         @Cached TimeDeltaNodes.NewNode newTimeDeltaNode,
                         @Cached DateTimeNodes.SubclassNewNode dateTimeSubclassNewNode) {
-            if (dateTime.tzInfo != self) {
+            if (!profile.profileObject(inliningTarget, dateTime, PythonBuiltinClassType.PDateTime)) {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.FROMUTC_ARGUMENT_MUST_BE_A_DATETIME);
+            }
+            Object tzInfo = tzInfoNode.execute(inliningTarget, dateTime);
+            if (tzInfo != self) {
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.FROMUTC_DT_TZINFO_IS_NOT_SELF);
             }
 
@@ -193,7 +198,7 @@ public final class TzInfoBuiltins extends PythonBuiltins {
 
             Object dateTimeInTimeZone = DatetimeModuleBuiltins.addOffsetToDateTime(dateTime, offsetStandard, dateTimeSubclassNewNode, inliningTarget);
 
-            if (dateTime.tzInfo == null) {
+            if (tzInfo == null) {
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.FROMUTC_TZ_DST_GAVE_INCONSISTENT_RESULT_CANNOT_CONVERT);
             }
 
@@ -206,15 +211,8 @@ public final class TzInfoBuiltins extends PythonBuiltins {
             if (dstNew.isZero()) {
                 return dateTimeInTimeZone;
             } else {
-                return DatetimeModuleBuiltins.addOffsetToDateTime((PDateTime) dateTimeInTimeZone, dstNew, dateTimeSubclassNewNode, inliningTarget);
+                return DatetimeModuleBuiltins.addOffsetToDateTime(dateTimeInTimeZone, dstNew, dateTimeSubclassNewNode, inliningTarget);
             }
-        }
-
-        @Fallback
-        static Object fromUtc(Object self, Object dateTimeObject,
-                        @Bind Node inliningTarget,
-                        @Cached @Exclusive PRaiseNode raiseNode) {
-            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.FROMUTC_ARGUMENT_MUST_BE_A_DATETIME);
         }
     }
 
