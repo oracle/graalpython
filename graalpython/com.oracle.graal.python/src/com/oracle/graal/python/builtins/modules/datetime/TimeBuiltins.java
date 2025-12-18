@@ -78,7 +78,6 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotHashFun.HashBuiltinNode;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.NbBoolBuiltinNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare.RichCmpBuiltinNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
@@ -108,7 +107,6 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -459,17 +457,6 @@ public final class TimeBuiltins extends PythonBuiltins {
                 long microsecondsTotal = toMicroseconds(self, utcOffset);
                 return hashNode.execute(frame, inliningTarget, microsecondsTotal);
             }
-        }
-    }
-
-    @Slot(value = SlotKind.nb_bool)
-    @GenerateUncached
-    @GenerateNodeFactory
-    public abstract static class BoolNode extends NbBoolBuiltinNode {
-
-        @Specialization
-        static boolean bool(PTime self) {
-            return true;
         }
     }
 
