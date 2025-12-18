@@ -12,6 +12,14 @@ on:
       jobs_to_run:
         required: true
         type: string
+      logs_retention_days:
+        required: false
+        type: number
+        default: 15
+      artifacts_retention_days:
+        required: false
+        type: number
+        default: 7
 
 jobs:
   generate-tier1:
@@ -55,7 +63,6 @@ jobs:
   tier1:
     needs: generate-tier1
     runs-on: ${{ matrix.os }}
-    #env: ${{ matrix.env }}
     strategy:
       fail-fast: false
       matrix:
@@ -150,6 +157,7 @@ jobs:
         if: ${{ matrix.mx_version }}
         shell: bash
         run: |
+          git config --global http.timeout 600
           git clone https://github.com/graalvm/mx
           if [[ "${RUNNER_OS}" == "Windows" ]]; then
             ./mx/mx.cmd fetch-jdk -A --jdk-id labsjdk-ce-latest
@@ -255,22 +263,23 @@ jobs:
         with:
           name: ${{ matrix.provide_artifact[0] }}
           path: main/${{ matrix.provide_artifact[0] }}.tar
-          retention-days: 1
+          retention-days: ${{ inputs.artifacts_retention_days || 7 }}
 
       - name: Upload logs
         if: ${{ matrix.logs }}
         uses: actions/upload-artifact@v5
+        continue-on-error: true
         with:
           name: ${{ format('{0}_logs', matrix.name) }}
           path: |
             ${{ matrix.logs }}
-          retention-days: 15
+          retention-days: ${{ inputs.logs_retention_days || 15 }}
+          if-no-files-found: ignore
 
   tier2:
     if: ${{ success() || inputs.jobs_to_run }}
     needs: [generate-tier2, tier1]
     runs-on: ${{ matrix.os }}
-    #env: ${{ matrix.env }}
     strategy:
       fail-fast: false
       matrix:
@@ -281,7 +290,6 @@ jobs:
     if: ${{ success() || inputs.jobs_to_run }}
     needs: [generate-tier3, tier2]
     runs-on: ${{ matrix.os }}
-    #env: ${{ matrix.env }}
     strategy:
       fail-fast: false
       matrix:

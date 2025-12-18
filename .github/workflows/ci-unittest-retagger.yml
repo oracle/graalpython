@@ -15,6 +15,7 @@ jobs:
     uses: ./.github/workflows/ci-matrix-gen.yml
     with:
       jobs_to_run: ^(?=.*python-svm-build).*$
+      artifacts_retention_days: 0
 
   run-retagger:
     if: success()
@@ -27,9 +28,12 @@ jobs:
     name: Run retagger on ${{ matrix.target }}
     with:
       jobs_to_run: ${{ github.event.inputs.jobs_to_run || format('^python-unittest-retagger.*{0}.*', matrix.target) }}
+      logs_retention_days: 7
+      artifacts_retention_days: 0
 
   merge_all_reports:
     runs-on: ubuntu-latest
+    if: always()
     needs: run-retagger
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -55,7 +59,7 @@ jobs:
           git config --global user.name "Retagger Workflow" 
           git config --global user.email "Retagger_Workflow@oracle.com"
           git fetch origin
-          git checkout -b weekly_retagger_${{ github.run_id }} origin/master
+          git checkout -b weekly_retagger_${{ github.run_id }} origin/${{ github.head_ref || github.ref_name }} 
 
       - name: Merge retagger reports
         env:
@@ -69,7 +73,7 @@ jobs:
           for os in "${os_list[@]}"; do
             echo "Merging tags for $os"
             python3 .github/scripts/merge_retagger_results.py --dir ../retagger-reports --outfile "../retagger-reports/reports-merged-$os.json" --pattern "*$os*" || true
-            python3 graalpython/com.oracle.graal.python.test/src/runner.py merge-tags-from-report "../retagger-reports/reports-merged-$os.json" --platform "$os" || true
+            python3 graalpython/com.oracle.graal.python.test/src/runner.py merge-tags-from-report "../retagger-reports/reports-merged-$os.json" --platform "$os-github" || true
             git add -A
             git commit -m "Apply retags for $os" || true
           done
@@ -77,6 +81,6 @@ jobs:
       - name: Push updates to a new PR
         working-directory: main
         run: |
-          [ "$(git diff origin/master...HEAD | wc -l)" -eq 0 ] && echo 'Nothing to push' || git push --set-upstream origin weekly_retagger_${{ github.run_id }}
+          [ "$(git diff origin/${{ github.head_ref || github.ref_name }}...HEAD | wc -l)" -eq 0 ] && echo 'Nothing to push' || git push --set-upstream origin weekly_retagger_${{ github.run_id }}
           gh label create "weekly-retagger" --color "BDDFDF" -d "[DO NOT ADD] Automatically set to weekly retagger PR" || echo "Label 'weekly-retagger' already exists"
           gh pr create -B master --title "[WORKFLOW] Weekly Retagger: Update tags" --body "Applied weekly retags on $os_list" -l "weekly-retagger" || echo "Nothing to push"

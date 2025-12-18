@@ -151,14 +151,14 @@
         darwin: {
             common: ENV_POSIX + {
                 LC_CTYPE: "en_US.UTF-8",
-                PATH: utils.path_combine(ENVIRONMENT.common.PATH, "$PATH:$PYTHON3_HOME:$MUSL_TOOLCHAIN/bin"),
+                PATH: utils.path_combine(ENVIRONMENT.common.PATH, "$PYTHON3_HOME:$PATH:$MUSL_TOOLCHAIN/bin"),
             },
             amd64: {},
             aarch64: {},
         },
         windows: {
             common: {
-                PATH: "%MAVEN_HOME%;%PATH%",
+                PATH: "%MAVEN_HOME%\\bin;%PATH%",
             },
             amd64: {},
             aarch64: {},
@@ -509,7 +509,7 @@
                 "mx", "graalpytest", "--svm",
                 "--tagged", "--all", "--continue-on-collection-errors", ".",
                 # More workers doesn't help, the job is bottlenecked on all the timeouts in test_asyncio
-                "-n", "6",
+                "-n", "4",
                 # The default timeout is very generous to allow for infrastructure flakiness,
                 # but we don't want to auto tag tests that take a long time
                 "--timeout-factor", "0.3",

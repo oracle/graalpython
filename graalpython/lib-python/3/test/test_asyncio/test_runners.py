@@ -5,6 +5,7 @@ import re
 import signal
 import threading
 import unittest
+import os
 from test.test_asyncio import utils as test_utils
 from unittest import mock
 from unittest.mock import patch
@@ -417,6 +418,7 @@ class RunnerTests(BaseTest):
                 runner.run(coro())
 
     def test_interrupt_wait(self):
+        if os.environ.get("GITHUB_CI"): self.skipTest("Crashes runner on GitHub CI")
         # interrupting when waiting a future cancels both future and main task
         assert threading.current_thread() is threading.main_thread()
 

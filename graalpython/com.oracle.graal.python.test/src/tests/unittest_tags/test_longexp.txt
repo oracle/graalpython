@@ -1,1 +1,1 @@
-test.test_longexp.LongExpText.test_longexp @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_longexp.LongExpText.test_longexp @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,win32-AMD64,win32-AMD64-github
