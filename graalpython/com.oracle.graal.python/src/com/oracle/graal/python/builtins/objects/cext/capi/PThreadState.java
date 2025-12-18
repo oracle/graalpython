@@ -59,6 +59,7 @@ import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.interop.InteropLibrary;
 
 /**
@@ -71,6 +72,8 @@ import com.oracle.truffle.api.interop.InteropLibrary;
  * </p>
  */
 public abstract class PThreadState {
+    private static final TruffleLogger LOGGER = CApiContext.getLogger(PThreadState.class);
+
     /** Same as _PY_NSMALLNEGINTS */
     public static final int PY_NSMALLNEGINTS = 5;
 
@@ -153,6 +156,7 @@ public abstract class PThreadState {
         CStructAccess.writeIntField(ptr, CFields.PyThreadState__py_recursion_remaining, recLimit);
         // c_recursion_remaining = Py_C_RECURSION_LIMIT (1000) (cpython/Include/cpython/pystate.h)
         CStructAccess.writeIntField(ptr, CFields.PyThreadState__c_recursion_remaining, recLimit);
+        LOGGER.fine(String.format("Allocated (PyThreadState *)0x%x", ptr));
         return ptr;
     }
 
@@ -167,6 +171,7 @@ public abstract class PThreadState {
         threadState.setNativeWrapper(NULLPTR);
 
         // TODO(fa): decref PyThreadState__dict
+        LOGGER.fine(String.format("Freeing (PyThreadState *)0x%x", nativeCompanion));
         NativeMemory.free(nativeCompanion);
     }
 }

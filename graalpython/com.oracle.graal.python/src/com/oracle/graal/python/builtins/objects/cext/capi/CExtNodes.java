@@ -86,6 +86,7 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
 import java.lang.ref.Reference;
+import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -193,6 +194,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -374,6 +376,8 @@ public abstract class CExtNodes {
     @GenerateUncached
     @GenerateInline(false) // footprint reduction 60 -> 41
     public abstract static class AsCharPointerNode extends Node {
+        private static final TruffleLogger LOGGER = CApiContext.getLogger(AsCharPointerNode.class);
+
         public abstract long execute(Object obj);
 
         @Specialization
@@ -391,7 +395,11 @@ public abstract class CExtNodes {
                         @Shared @Cached TruffleString.SwitchEncodingNode switchEncoding,
                         @Shared @Cached CStructAccess.WriteTruffleStringNode writeTruffleString) {
             TruffleString utf8Str = switchEncoding.execute(str, Encoding.UTF_8);
-            long mem = calloc(utf8Str.byteLength(Encoding.UTF_8) + 1);
+            int size = utf8Str.byteLength(Encoding.UTF_8) + 1;
+            long mem = calloc(size);
+            if (LOGGER.isLoggable(Level.FINE)) {
+                LOGGER.fine(PythonUtils.formatJString("Allocated (const char *)0x%x of size %d for %s", mem, size, utf8Str));
+            }
             writeTruffleString.write(mem, utf8Str, Encoding.UTF_8);
             return mem;
         }
@@ -412,7 +420,11 @@ public abstract class CExtNodes {
 
         @Specialization
         static long doByteArray(byte[] arr) {
-            long mem = mallocByteArray(arr.length + 1L);
+            long size = arr.length + 1L;
+            long mem = mallocByteArray(size);
+            if (LOGGER.isLoggable(Level.FINE)) {
+                LOGGER.fine(PythonUtils.formatJString("Allocated (const char *)0x%x of size %d for (byte[])%s", mem, size, arr));
+            }
             writeByteArrayElements(mem, 0, arr, 0, arr.length);
             writeByteArrayElement(mem, arr.length, (byte) 0);
             return mem;

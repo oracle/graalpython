@@ -48,11 +48,13 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETATTR__;
 
 import java.lang.ref.Reference;
+import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckInquiryResultNode;
@@ -81,8 +83,10 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -254,6 +258,7 @@ public class TpSlotSetAttr {
     @GenerateInline(false) // Used lazily
     @GenerateUncached
     abstract static class CallNativeSlotSetAttrNode extends Node {
+        private static final TruffleLogger LOGGER = CApiContext.getLogger(CallNativeSlotSetAttrNode.class);
         private static final CApiTiming C_API_TIMING = CApiTiming.create(true, "tp_setattr");
 
         // The caller should ensure that the "name" is a Unicode object (subclasses are permitted)
@@ -292,6 +297,9 @@ public class TpSlotSetAttr {
             } finally {
                 Reference.reachabilityFence(promotedSelf);
                 if (isSetAttr) {
+                    if (LOGGER.isLoggable(Level.FINE)) {
+                        LOGGER.fine(PythonUtils.formatJString("Freeing name (const char *)0x%x", nameArg));
+                    }
                     free(nameArg);
                 } else {
                     Reference.reachabilityFence(promotedName);

@@ -519,6 +519,7 @@ public final class CApiContext extends CExtContext {
     private void freeGCState() {
         CompilerAsserts.neverPartOfCompilation();
         if (gcState != 0L) {
+            LOGGER.fine(String.format("Freeing GC state at 0x%x", gcState));
             NativeMemory.free(gcState);
             gcState = 0L;
         }

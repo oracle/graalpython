@@ -2952,6 +2952,9 @@ public final class PythonContext extends Python3Core {
             nativeResources = new LinkedList<>();
         }
         NativePointer nativePointer = new NativePointer(NativeMemory.malloc(byteSize));
+        if (LOGGER.isLoggable(Level.FINE)) {
+            LOGGER.fine(String.format("Allocated %d bytes of context memory: %s", byteSize, nativePointer));
+        }
         nativeResources.add(nativePointer);
         return nativePointer;
     }
@@ -2960,6 +2963,9 @@ public final class PythonContext extends Python3Core {
         if (nativeResources != null) {
             ensureNativeAccess();
             for (NativePointer nativePointer : nativeResources) {
+                if (LOGGER.isLoggable(Level.FINE)) {
+                    LOGGER.fine(String.format("Freeing context memory: %s", nativePointer));
+                }
                 NativeMemory.free(nativePointer.asPointer());
             }
         }

@@ -65,6 +65,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsArray;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.lang.ref.Reference;
+import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -1471,6 +1472,7 @@ public abstract class ExternalFunctionNodes {
      * Wrapper root node for a get attribute function (C type {@code getattrfunc}).
      */
     static final class GetAttrFuncRootNode extends MethodDescriptorRoot {
+        private static final TruffleLogger LOGGER = CApiContext.getLogger(GetAttrFuncRootNode.class);
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "key"), true, false);
         @Child private ReadIndexedArgumentNode readArgNode;
         @Child private CExtNodes.AsCharPointerNode asCharPointerNode;
@@ -1492,7 +1494,11 @@ public abstract class ExternalFunctionNodes {
         @Override
         protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
             ensureReleaseNativeWrapperNode().execute(cArguments[0]);
-            free(((NativePointer) cArguments[1]).asPointer());
+            long nameArg = ((NativePointer) cArguments[1]).asPointer();
+            if (LOGGER.isLoggable(Level.FINE)) {
+                LOGGER.fine(PythonUtils.formatJString("Freeing name (const char *)0x%x", nameArg));
+            }
+            free(nameArg);
         }
 
         @Override
@@ -1505,6 +1511,7 @@ public abstract class ExternalFunctionNodes {
      * Wrapper root node for a set attribute function (C type {@code setattrfunc}).
      */
     static final class SetAttrFuncRootNode extends MethodDescriptorRoot {
+        private static final TruffleLogger LOGGER = CApiContext.getLogger(SetAttrFuncRootNode.class);
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "key", "value"), true, false);
         @Child private ReadIndexedArgumentNode readArg1Node;
         @Child private ReadIndexedArgumentNode readArg2Node;
@@ -1537,7 +1544,11 @@ public abstract class ExternalFunctionNodes {
         protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
             ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
             releaseNativeWrapperNode.execute(cArguments[0]);
-            free(((NativePointer) nativeArguments[1]).asPointer());
+            long nameArg = ((NativePointer) nativeArguments[1]).asPointer();
+            if (LOGGER.isLoggable(Level.FINE)) {
+                LOGGER.fine(PythonUtils.formatJString("Freeing name (const char *)0x%x", nameArg));
+            }
+            free(nameArg);
             releaseNativeWrapperNode.execute(cArguments[2]);
         }
 
