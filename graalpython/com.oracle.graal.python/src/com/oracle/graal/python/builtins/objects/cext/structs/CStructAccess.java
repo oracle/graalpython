@@ -265,19 +265,29 @@ public class CStructAccess {
     @GenerateInline(false)
     public abstract static class ReadByteNode extends ReadBaseNode {
 
-        abstract int execute(Object pointer, long offset);
+        abstract byte execute(Object pointer, long offset);
 
-        public final int read(Object pointer, CFields field) {
+        @Override
+        final Object executeGeneric(Object pointer, long offset) {
+            byte value = execute(pointer, offset);
+            return isCharSigned() ? (int) value : Byte.toUnsignedInt(value);
+        }
+
+        public final byte read(Object pointer, CFields field) {
             assert accepts(field);
             return execute(pointer, field.offset());
         }
 
-        public final int readFromObj(PythonNativeObject self, CFields field) {
+        public final byte readFromObj(PythonNativeObject self, CFields field) {
             return read(self.getPtr(), field);
         }
 
-        public final int readFromObj(PythonNativeObject self, CFields field, int offset) {
-            return execute(self.getPtr(), field.offset() + offset);
+        public final int readFromObjUnsigned(PythonNativeObject self, CFields field) {
+            return Byte.toUnsignedInt(read(self.getPtr(), field));
+        }
+
+        public final int readFromObjUnsigned(PythonNativeObject self, CFields field, int offset) {
+            return Byte.toUnsignedInt(execute(self.getPtr(), field.offset() + offset));
         }
 
         public final boolean accepts(ArgDescriptor desc) {
@@ -291,51 +301,39 @@ public class CStructAccess {
         public final byte[] readByteArray(Object pointer, int elements, long sourceOffset) {
             byte[] result = new byte[elements];
             for (int i = 0; i < result.length; i++) {
-                result[i] = (byte) execute(pointer, (i + sourceOffset) * Byte.BYTES);
+                result[i] = execute(pointer, (i + sourceOffset) * Byte.BYTES);
             }
             return result;
         }
 
         public final void readByteArray(Object pointer, byte[] target, int length, long sourceOffset, int targetOffset) {
             for (int i = 0; i < length; i++) {
-                target[i + targetOffset] = (byte) execute(pointer, (i + sourceOffset) * Byte.BYTES);
+                target[i + targetOffset] = execute(pointer, (i + sourceOffset) * Byte.BYTES);
             }
         }
 
         public final byte readArrayElement(Object pointer, long element) {
-            return (byte) execute(pointer, element);
+            return execute(pointer, element);
         }
 
         @Specialization
-        static int readLong(long pointer, long offset,
-                        @Shared @Cached(value = "isCharSigned()", allowUncached = true, neverDefault = false) boolean isCharSigned) {
+        static byte readLong(long pointer, long offset) {
             assert offset >= 0;
-            byte signedByteValue = UNSAFE.getByte(pointer + offset);
-            /*
-             * The C type 'char' may be signed or unsigned (depends on the specific
-             * architecture/platform/compiler). For example, 'char' is signed on amd64/linux/gcc but
-             * it is unsigned on aarch64/darwin/clang. If 'char' is unsigned, we must not do a
-             * sign-extending cast and therefore mask (after we casted to Java int) with 0xFF.
-             */
-            if (isCharSigned) {
-                return signedByteValue;
-            }
-            return Byte.toUnsignedInt(signedByteValue);
+            return UNSAFE.getByte(pointer + offset);
         }
 
         @Specialization(guards = {"!isLong(pointer)", "lib.isPointer(pointer)"}, limit = "3")
-        static int readPointer(Object pointer, long offset,
-                        @CachedLibrary("pointer") InteropLibrary lib,
-                        @Shared @Cached(value = "isCharSigned()", allowUncached = true, neverDefault = false) boolean isCharSigned) {
-            return readLong(asPointer(pointer, lib), offset, isCharSigned);
+        static byte readPointer(Object pointer, long offset,
+                        @CachedLibrary("pointer") InteropLibrary lib) {
+            return readLong(asPointer(pointer, lib), offset);
         }
 
         @Specialization(guards = {"!isLong(pointer)", "!lib.isPointer(pointer)"})
-        static int readManaged(Object pointer, long offset,
+        static byte readManaged(Object pointer, long offset,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached PCallCapiFunction call) {
             assert validPointer(pointer);
-            return (int) call.call(NativeCAPISymbol.FUN_READ_CHAR_MEMBER, pointer, offset);
+            return (byte) (int) call.call(NativeCAPISymbol.FUN_READ_CHAR_MEMBER, pointer, offset);
         }
 
         /**

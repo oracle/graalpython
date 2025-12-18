@@ -259,13 +259,13 @@ public class TimeNodes {
                         @Bind PythonLanguage language,
                         @Cached CStructAccess.ReadByteNode readByteNode,
                         @Cached CStructAccess.ReadObjectNode readObjectNode) {
-            int hour = readByteNode.readFromObj(nativeTime, CFields.PyDateTime_Time__data, 0);
-            int minute = readByteNode.readFromObj(nativeTime, CFields.PyDateTime_Time__data, 1);
-            int second = readByteNode.readFromObj(nativeTime, CFields.PyDateTime_Time__data, 2);
+            int hour = readByteNode.readFromObjUnsigned(nativeTime, CFields.PyDateTime_Time__data, 0);
+            int minute = readByteNode.readFromObjUnsigned(nativeTime, CFields.PyDateTime_Time__data, 1);
+            int second = readByteNode.readFromObjUnsigned(nativeTime, CFields.PyDateTime_Time__data, 2);
 
-            int micro3 = readByteNode.readFromObj(nativeTime, CFields.PyDateTime_Time__data, 3);
-            int micro4 = readByteNode.readFromObj(nativeTime, CFields.PyDateTime_Time__data, 4);
-            int micro5 = readByteNode.readFromObj(nativeTime, CFields.PyDateTime_Time__data, 5);
+            int micro3 = readByteNode.readFromObjUnsigned(nativeTime, CFields.PyDateTime_Time__data, 3);
+            int micro4 = readByteNode.readFromObjUnsigned(nativeTime, CFields.PyDateTime_Time__data, 4);
+            int micro5 = readByteNode.readFromObjUnsigned(nativeTime, CFields.PyDateTime_Time__data, 5);
             int microsecond = (micro3 << 16) | (micro4 << 8) | micro5;
 
             Object tzinfo = null;
@@ -276,7 +276,7 @@ public class TimeNodes {
                 }
             }
 
-            int fold = readByteNode.readFromObj(nativeTime, CFields.PyDateTime_Time__fold);
+            int fold = readByteNode.readFromObjUnsigned(nativeTime, CFields.PyDateTime_Time__fold);
 
             PythonBuiltinClassType cls = PythonBuiltinClassType.PTime;
             return new PTime(cls, cls.getInstanceShape(language), hour, minute, second, microsecond, tzinfo, fold);

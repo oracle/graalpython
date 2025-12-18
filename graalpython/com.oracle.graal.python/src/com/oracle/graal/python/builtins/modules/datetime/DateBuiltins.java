@@ -86,10 +86,14 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.BinaryOpBuiltinNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyFloatCheckNode;
@@ -108,6 +112,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -118,8 +123,6 @@ import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -229,7 +232,7 @@ public final class DateBuiltins extends PythonBuiltins {
          * Construct a Date instance from a pickle serialized representation. Date is serialized as
          * bytes - (year / 256, year % 256, month, day).
          */
-        private static PDate deserializeDate(byte[] bytes, Node inliningTarget, Object cls, DateNodes.NewUnsafeNode newNode) {
+        private static Object deserializeDate(byte[] bytes, Node inliningTarget, Object cls, DateNodes.NewUnsafeNode newNode) {
             int year = Byte.toUnsignedInt(bytes[0]) * 256 + Byte.toUnsignedInt(bytes[1]);
             int month = Byte.toUnsignedInt(bytes[2]);
             int day = Byte.toUnsignedInt(bytes[3]);
@@ -244,8 +247,10 @@ public final class DateBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        static TruffleString repr(PDate self) {
-            var string = String.format("datetime.date(%d, %d, %d)", self.year, self.month, self.day);
+        static TruffleString repr(Object self) {
+            PDate date = DateNodes.AsManagedDateNode.executeUncached(self);
+            TruffleString typeName = TypeNodes.GetTpNameNode.executeUncached(GetClassNode.executeUncached(self));
+            var string = String.format("%s(%d, %d, %d)", typeName, date.year, date.month, date.day);
             return TruffleString.FromJavaStringNode.getUncached().execute(string, TS_ENCODING);
         }
     }
@@ -256,8 +261,9 @@ public final class DateBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        static TruffleString str(PDate self) {
-            var string = String.format("%04d-%02d-%02d", self.year, self.month, self.day);
+        static TruffleString str(Object self) {
+            PDate date = DateNodes.AsManagedDateNode.executeUncached(self);
+            var string = String.format("%04d-%02d-%02d", date.year, date.month, date.day);
             return TruffleString.FromJavaStringNode.getUncached().execute(string, TS_ENCODING);
         }
     }
@@ -267,13 +273,14 @@ public final class DateBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        static Object reduce(PDate self,
+        static Object reduce(Object self,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
+                        @Cached DateNodes.AsManagedDateNode asManagedDateNode,
                         @Cached GetClassNode getClassNode) {
-            byte[] bytes = new byte[]{(byte) (self.year / 256), (byte) (self.year % 256), (byte) self.month, (byte) self.day};
+            PDate date = asManagedDateNode.execute(inliningTarget, self);
+            byte[] bytes = new byte[]{(byte) (date.year / 256), (byte) (date.year % 256), (byte) date.month, (byte) date.day};
             PBytes string = PFactory.createBytes(language, bytes);
-
             PTuple arguments = PFactory.createTuple(language, new Object[]{string});
             Object type = getClassNode.execute(inliningTarget, self);
             return PFactory.createTuple(language, new Object[]{type, arguments});
@@ -285,13 +292,16 @@ public final class DateBuiltins extends PythonBuiltins {
     abstract static class RichCmpNode extends RichCmpBuiltinNode {
 
         @Specialization
-        static Object richCmp(PDate self, PDate other, RichCmpOp op) {
-            int result = self.compareTo(other);
-            return op.compareResultToBool(result);
-        }
-
-        @Fallback
-        static PNotImplemented richCmp(Object self, Object other, RichCmpOp op) {
+        static Object richCmp(Object selfObj, Object otherObj, RichCmpOp op,
+                        @Bind Node inliningTarget,
+                        @Cached IsBuiltinObjectProfile profile,
+                        @Cached DateNodes.AsManagedDateNode asManagedDateNode) {
+            if (profile.profileObject(inliningTarget, selfObj, PythonBuiltinClassType.PDate) && profile.profileObject(inliningTarget, otherObj, PythonBuiltinClassType.PDate)) {
+                PDate self = asManagedDateNode.execute(inliningTarget, selfObj);
+                PDate other = asManagedDateNode.execute(inliningTarget, otherObj);
+                int result = self.compareTo(other);
+                return op.compareResultToBool(result);
+            }
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -301,11 +311,13 @@ public final class DateBuiltins extends PythonBuiltins {
     abstract static class HashNode extends HashBuiltinNode {
 
         @Specialization
-        static long hash(VirtualFrame frame, PDate self,
+        static long hash(VirtualFrame frame, Object self,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached PyObjectHashNode hashNode) {
-            var content = new int[]{self.year, self.month, self.day};
+                        @Cached PyObjectHashNode hashNode,
+                        @Cached DateNodes.AsManagedDateNode asManaged) {
+            PDate d = asManaged.execute(inliningTarget, self);
+            var content = new int[]{d.year, d.month, d.day};
             return hashNode.execute(frame, inliningTarget, PFactory.createTuple(language, content));
         }
     }
@@ -315,12 +327,12 @@ public final class DateBuiltins extends PythonBuiltins {
     abstract static class AddNode extends BinaryOpBuiltinNode {
 
         @Specialization
-        static Object add(VirtualFrame frame, PDate self, PTimeDelta timeDelta,
+        static Object add(VirtualFrame frame, Object self, Object other,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") @Shared IndirectCallData.BoundaryCallData boundaryCallData) {
+                        @Cached("createFor($node)") IndirectCallData.BoundaryCallData boundaryCallData) {
             Object saved = ExecutionContext.BoundaryCallContext.enter(frame, boundaryCallData);
             try {
-                return addBoundary(self, timeDelta, inliningTarget);
+                return addBoundary(self, other, inliningTarget);
             } finally {
                 // A Python method call (using DateNodes.SubclassNewNode) should be
                 // connected to a current node.
@@ -329,12 +341,29 @@ public final class DateBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static Object addBoundary(PDate self, PTimeDelta timeDelta, Node inliningTarget) {
+        private static Object addBoundary(Object selfObj, Object otherObj, Node inliningTarget) {
+            PDate date;
+            PTimeDelta delta;
+            if (IsBuiltinObjectProfile.profileObjectUncached(selfObj, PythonBuiltinClassType.PDate)) {
+                if (otherObj instanceof PTimeDelta timeDelta) {
+                    date = DateNodes.AsManagedDateNode.executeUncached(selfObj);
+                    delta = timeDelta;
+                } else {
+                    return PNotImplemented.NOT_IMPLEMENTED;
+                }
+            } else {
+                if (selfObj instanceof PTimeDelta timeDelta) {
+                    date = DateNodes.AsManagedDateNode.executeUncached(otherObj);
+                    delta = timeDelta;
+                } else {
+                    return PNotImplemented.NOT_IMPLEMENTED;
+                }
+            }
             LocalDate from = LocalDate.of(1, 1, 1);
-            LocalDate to = LocalDate.of(self.year, self.month, self.day);
+            LocalDate to = LocalDate.of(date.year, date.month, date.day);
             long days = ChronoUnit.DAYS.between(from, to) + 1;
 
-            days += timeDelta.days;
+            days += delta.days;
 
             if (days <= 0) {
                 throw PRaiseNode.raiseStatic(inliningTarget, OverflowError, ErrorMessages.DATE_VALUE_OUT_OF_RANGE);
@@ -345,22 +374,10 @@ public final class DateBuiltins extends PythonBuiltins {
 
             LocalDate localDate = ChronoUnit.DAYS.addTo(from, days - 1);
             return DateNodes.SubclassNewNode.getUncached().execute(inliningTarget,
-                            self.getPythonClass(),
+                            GetClassNode.executeUncached(selfObj),
                             localDate.getYear(),
                             localDate.getMonthValue(),
                             localDate.getDayOfMonth());
-        }
-
-        @Specialization
-        static Object radd(VirtualFrame frame, PTimeDelta timeDelta, PDate self,
-                        @Bind Node inliningTarget,
-                        @Cached("createFor($node)") @Shared IndirectCallData.BoundaryCallData boundaryCallData) {
-            return add(frame, self, timeDelta, inliningTarget, boundaryCallData);
-        }
-
-        @Fallback
-        Object addObject(Object self, Object other) {
-            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
@@ -369,32 +386,12 @@ public final class DateBuiltins extends PythonBuiltins {
     abstract static class SubNode extends BinaryOpBuiltinNode {
 
         @Specialization
-        @TruffleBoundary
-        static PTimeDelta sub(PDate self, PDate other,
-                        @Bind PythonLanguage language) {
-            LocalDate from = LocalDate.of(1, 1, 1);
-            LocalDate toSelf = LocalDate.of(self.year, self.month, self.day);
-            long daysSelf = ChronoUnit.DAYS.between(from, toSelf) + 1;
-
-            LocalDate toOther = LocalDate.of(other.year, other.month, other.day);
-            long daysOther = ChronoUnit.DAYS.between(from, toOther) + 1;
-
-            long days = daysSelf - daysOther;
-            return new PTimeDelta(
-                            PythonBuiltinClassType.PTimeDelta,
-                            PythonBuiltinClassType.PTimeDelta.getInstanceShape(language),
-                            (int) days,
-                            0,
-                            0);
-        }
-
-        @Specialization
-        static Object subTimeDelta(VirtualFrame frame, PDate self, PTimeDelta timeDelta,
+        static Object sub(VirtualFrame frame, Object self, Object other,
                         @Bind Node inliningTarget,
                         @Cached("createFor($node)") IndirectCallData.BoundaryCallData boundaryCallData) {
             Object saved = ExecutionContext.BoundaryCallContext.enter(frame, boundaryCallData);
             try {
-                return subTimeDeltaBoundary(self, timeDelta, inliningTarget);
+                return subBoundary(self, other, inliningTarget);
             } finally {
                 // A Python method call (using DateNodes.SubclassNewNode) should be
                 // connected to a current node.
@@ -403,30 +400,49 @@ public final class DateBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static Object subTimeDeltaBoundary(PDate self, PTimeDelta timeDelta, Node inliningTarget) {
-            LocalDate from = LocalDate.of(1, 1, 1);
-            LocalDate to = LocalDate.of(self.year, self.month, self.day);
-            long days = ChronoUnit.DAYS.between(from, to) + 1;
-
-            days -= timeDelta.days;
-
-            if (days <= 0) {
-                throw PRaiseNode.raiseStatic(inliningTarget, OverflowError, ErrorMessages.DATE_VALUE_OUT_OF_RANGE);
+        private static Object subBoundary(Object selfObj, Object otherObj, Node inliningTarget) {
+            if (!IsBuiltinObjectProfile.profileObjectUncached(selfObj, PythonBuiltinClassType.PDate)) {
+                return PNotImplemented.NOT_IMPLEMENTED;
             }
-            if (days >= MAX_ORDINAL) {
-                throw PRaiseNode.raiseStatic(inliningTarget, OverflowError, ErrorMessages.DATE_VALUE_OUT_OF_RANGE);
+            PDate self = DateNodes.AsManagedDateNode.executeUncached(selfObj);
+            if (IsBuiltinObjectProfile.profileObjectUncached(otherObj, PythonBuiltinClassType.PDate)) {
+                LocalDate from = LocalDate.of(1, 1, 1);
+                LocalDate toSelf = LocalDate.of(self.year, self.month, self.day);
+                long daysSelf = ChronoUnit.DAYS.between(from, toSelf) + 1;
+
+                PDate other = DateNodes.AsManagedDateNode.executeUncached(otherObj);
+                LocalDate toOther = LocalDate.of(other.year, other.month, other.day);
+                long daysOther = ChronoUnit.DAYS.between(from, toOther) + 1;
+
+                long days = daysSelf - daysOther;
+                return new PTimeDelta(
+                                PythonBuiltinClassType.PTimeDelta,
+                                PythonBuiltinClassType.PTimeDelta.getInstanceShape(PythonLanguage.get(null)),
+                                (int) days,
+                                0,
+                                0);
             }
+            if (otherObj instanceof PTimeDelta timeDelta) {
+                LocalDate from = LocalDate.of(1, 1, 1);
+                LocalDate to = LocalDate.of(self.year, self.month, self.day);
+                long days = ChronoUnit.DAYS.between(from, to) + 1;
 
-            LocalDate localDate = ChronoUnit.DAYS.addTo(from, days - 1);
-            return DateNodes.SubclassNewNode.getUncached().execute(inliningTarget,
-                            self.getPythonClass(),
-                            localDate.getYear(),
-                            localDate.getMonthValue(),
-                            localDate.getDayOfMonth());
-        }
+                days -= timeDelta.days;
 
-        @Fallback
-        Object subObject(Object self, Object other) {
+                if (days <= 0) {
+                    throw PRaiseNode.raiseStatic(inliningTarget, OverflowError, ErrorMessages.DATE_VALUE_OUT_OF_RANGE);
+                }
+                if (days >= MAX_ORDINAL) {
+                    throw PRaiseNode.raiseStatic(inliningTarget, OverflowError, ErrorMessages.DATE_VALUE_OUT_OF_RANGE);
+                }
+
+                LocalDate localDate = ChronoUnit.DAYS.addTo(from, days - 1);
+                return DateNodes.SubclassNewNode.getUncached().execute(inliningTarget,
+                                GetClassNode.executeUncached(selfObj),
+                                localDate.getYear(),
+                                localDate.getMonthValue(),
+                                localDate.getDayOfMonth());
+            }
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -439,6 +455,14 @@ public final class DateBuiltins extends PythonBuiltins {
         static int getYear(PDate self) {
             return self.year;
         }
+
+        @Specialization
+        static int getYear(PythonAbstractNativeObject self,
+                        @Cached CStructAccess.ReadByteNode readNode) {
+            int b0 = readNode.readFromObjUnsigned(self, CFields.PyDateTime_Date__data, 0);
+            int b1 = readNode.readFromObjUnsigned(self, CFields.PyDateTime_Date__data, 1);
+            return b0 << 8 | b1;
+        }
     }
 
     @Builtin(name = "month", minNumOfPositionalArgs = 1, isGetter = true)
@@ -449,6 +473,12 @@ public final class DateBuiltins extends PythonBuiltins {
         static int getMonth(PDate self) {
             return self.month;
         }
+
+        @Specialization
+        static int getMonth(PythonAbstractNativeObject self,
+                        @Cached CStructAccess.ReadByteNode readNode) {
+            return readNode.readFromObjUnsigned(self, CFields.PyDateTime_Date__data, 2);
+        }
     }
 
     @Builtin(name = "day", minNumOfPositionalArgs = 1, isGetter = true)
@@ -458,6 +488,12 @@ public final class DateBuiltins extends PythonBuiltins {
         @Specialization
         static int getDay(PDate self) {
             return self.day;
+        }
+
+        @Specialization
+        static int getDay(PythonAbstractNativeObject self,
+                        @Cached CStructAccess.ReadByteNode readNode) {
+            return readNode.readFromObjUnsigned(self, CFields.PyDateTime_Date__data, 3);
         }
     }
 
@@ -703,31 +739,34 @@ public final class DateBuiltins extends PythonBuiltins {
     public abstract static class ReplaceNode extends PythonBuiltinNode {
 
         @Specialization
-        static PDate replace(VirtualFrame frame, PDate self, Object yearObject, Object monthObject, Object dayObject,
+        static Object replace(VirtualFrame frame, Object self, Object yearObject, Object monthObject, Object dayObject,
                         @Bind Node inliningTarget,
+                        @Cached DateNodes.AsManagedDateNode asManagedDateNode,
                         @Cached PyLongAsLongNode longAsLongNode,
+                        @Cached GetClassNode getClassNode,
                         @Cached DateNodes.NewNode newNode) {
+            PDate date = asManagedDateNode.execute(inliningTarget, self);
             final int year, month, day;
 
             if (yearObject instanceof PNone) {
-                year = self.year;
+                year = date.year;
             } else {
                 year = (int) longAsLongNode.execute(frame, inliningTarget, yearObject);
             }
 
             if (monthObject instanceof PNone) {
-                month = self.month;
+                month = date.month;
             } else {
                 month = (int) longAsLongNode.execute(frame, inliningTarget, monthObject);
             }
 
             if (dayObject instanceof PNone) {
-                day = self.day;
+                day = date.day;
             } else {
                 day = (int) longAsLongNode.execute(frame, inliningTarget, dayObject);
             }
 
-            return newNode.execute(inliningTarget, self.getPythonClass(), year, month, day);
+            return newNode.execute(inliningTarget, getClassNode.execute(inliningTarget, self), year, month, day);
         }
     }
 
@@ -737,7 +776,8 @@ public final class DateBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        static long toOrdinal(PDate self) {
+        static long toOrdinal(Object selfObj) {
+            PDate self = DateNodes.AsManagedDateNode.executeUncached(selfObj);
             LocalDate from = LocalDate.of(1, 1, 1);
             LocalDate to = LocalDate.of(self.year, self.month, self.day);
             return ChronoUnit.DAYS.between(from, to) + 1;
@@ -787,7 +827,8 @@ public final class DateBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        static int weekDay(PDate self) {
+        static int weekDay(Object selfObj) {
+            PDate self = DateNodes.AsManagedDateNode.executeUncached(selfObj);
             LocalDate localDate = LocalDate.of(self.year, self.month, self.day);
             DayOfWeek dayOfWeek = localDate.getDayOfWeek();
 
@@ -802,7 +843,8 @@ public final class DateBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        static int weekDay(PDate self) {
+        static int weekDay(Object selfObj) {
+            PDate self = DateNodes.AsManagedDateNode.executeUncached(selfObj);
             LocalDate localDate = LocalDate.of(self.year, self.month, self.day);
             DayOfWeek dayOfWeek = localDate.getDayOfWeek();
             return dayOfWeek.getValue();
@@ -815,8 +857,9 @@ public final class DateBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        static PTuple isoCalendar(PDate self,
+        static PTuple isoCalendar(Object selfObj,
                         @Bind PythonLanguage language) {
+            PDate self = DateNodes.AsManagedDateNode.executeUncached(selfObj);
             LocalDate localDate = LocalDate.of(self.year, self.month, self.day);
 
             // use week based year ISO-8601 calendar
@@ -834,7 +877,8 @@ public final class DateBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        static TruffleString isoFormat(PDate self) {
+        static TruffleString isoFormat(Object selfObj) {
+            PDate self = DateNodes.AsManagedDateNode.executeUncached(selfObj);
             LocalDate locaDate = LocalDate.of(self.year, self.month, self.day);
             var isoString = locaDate.toString();
             return TruffleString.FromJavaStringNode.getUncached().execute(isoString, TS_ENCODING);
@@ -847,7 +891,8 @@ public final class DateBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        static TruffleString cTime(PDate self) {
+        static TruffleString cTime(Object selfObj) {
+            PDate self = DateNodes.AsManagedDateNode.executeUncached(selfObj);
             LocalDate localDate = LocalDate.of(self.year, self.month, self.day);
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEE LLL ppd 00:00:00 yyyy");
             String ctime = localDate.format(formatter);
@@ -861,8 +906,9 @@ public final class DateBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        static PTuple timeTuple(PDate self,
+        static PTuple timeTuple(Object selfObj,
                         @Bind PythonLanguage language) {
+            PDate self = DateNodes.AsManagedDateNode.executeUncached(selfObj);
             LocalDate localDate = LocalDate.of(self.year, self.month, self.day);
 
             // Python's day of week is in range 0-6
@@ -886,7 +932,8 @@ public final class DateBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        static TruffleString strftime(PDate self, TruffleString format) {
+        static TruffleString strftime(Object selfObj, TruffleString format) {
+            PDate self = DateNodes.AsManagedDateNode.executeUncached(selfObj);
             // Reuse time.strftime(format, time_tuple) method.
 
             // construct time_tuple
@@ -963,7 +1010,7 @@ public final class DateBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static Object format(VirtualFrame frame, PDate self, TruffleString format,
+        static Object format(VirtualFrame frame, Object self, TruffleString format,
                         @Bind Node inliningTarget,
                         @Cached PyObjectStrAsObjectNode strAsObjectNode,
                         @Cached PyObjectCallMethodObjArgs callMethodObjArgs) {

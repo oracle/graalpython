@@ -3033,7 +3033,7 @@ date_new(PyTypeObject *type, PyObject *args, PyObject *kw)
                                     &year, &month, &day)) {
         self = new_date_ex(year, month, day, type);
     }
-    return self;
+    return (PyObject*)self;
 }
 
 static PyObject *
@@ -7473,6 +7473,18 @@ GraalPyPrivate_Time_SubtypeNew(PyTypeObject* type, int hour, int minute, int sec
             self->tzinfo = Py_NewRef(tzinfo);
         }
         TIME_SET_FOLD(self, fold);
+    }
+    return (PyObject *)self;
+}
+
+PyAPI_FUNC(PyObject*)
+GraalPyPrivate_Date_SubtypeNew(PyTypeObject* type, int year, int month, int day) {
+    PyDateTime_Date *self = (PyDateTime_Date *)(type->tp_alloc(type, 0));
+    if (self) {
+        self->hashcode = -1;
+        SET_YEAR(self, year);
+        SET_MONTH(self, month);
+        SET_DAY(self, day);
     }
     return (PyObject *)self;
 }

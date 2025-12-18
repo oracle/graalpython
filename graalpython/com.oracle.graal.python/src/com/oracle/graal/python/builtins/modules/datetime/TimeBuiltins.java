@@ -485,7 +485,7 @@ public final class TimeBuiltins extends PythonBuiltins {
         @Specialization
         static int getHour(PythonAbstractNativeObject self,
                         @Cached CStructAccess.ReadByteNode readNode) {
-            return readNode.readFromObj(self, CFields.PyDateTime_Time__data, 0);
+            return readNode.readFromObjUnsigned(self, CFields.PyDateTime_Time__data, 0);
         }
     }
 
@@ -501,7 +501,7 @@ public final class TimeBuiltins extends PythonBuiltins {
         @Specialization
         static int getMinute(PythonAbstractNativeObject self,
                         @Cached CStructAccess.ReadByteNode readNode) {
-            return readNode.readFromObj(self, CFields.PyDateTime_Time__data, 1);
+            return readNode.readFromObjUnsigned(self, CFields.PyDateTime_Time__data, 1);
         }
     }
 
@@ -517,7 +517,7 @@ public final class TimeBuiltins extends PythonBuiltins {
         @Specialization
         static int getSecond(PythonAbstractNativeObject self,
                         @Cached CStructAccess.ReadByteNode readNode) {
-            return readNode.readFromObj(self, CFields.PyDateTime_Time__data, 2);
+            return readNode.readFromObjUnsigned(self, CFields.PyDateTime_Time__data, 2);
         }
     }
 
@@ -533,9 +533,9 @@ public final class TimeBuiltins extends PythonBuiltins {
         @Specialization
         static int getMicrosecond(PythonAbstractNativeObject self,
                         @Cached CStructAccess.ReadByteNode readNode) {
-            int b3 = readNode.readFromObj(self, CFields.PyDateTime_Time__data, 3);
-            int b4 = readNode.readFromObj(self, CFields.PyDateTime_Time__data, 4);
-            int b5 = readNode.readFromObj(self, CFields.PyDateTime_Time__data, 5);
+            int b3 = readNode.readFromObjUnsigned(self, CFields.PyDateTime_Time__data, 3);
+            int b4 = readNode.readFromObjUnsigned(self, CFields.PyDateTime_Time__data, 4);
+            int b5 = readNode.readFromObjUnsigned(self, CFields.PyDateTime_Time__data, 5);
             return (b3 << 16) | (b4 << 8) | b5;
         }
     }
@@ -565,7 +565,7 @@ public final class TimeBuiltins extends PythonBuiltins {
         @Specialization
         static int getFold(PythonAbstractNativeObject self,
                         @Cached CStructAccess.ReadByteNode readNode) {
-            return readNode.readFromObj(self, CFields.PyDateTime_Time__fold);
+            return readNode.readFromObjUnsigned(self, CFields.PyDateTime_Time__fold);
         }
     }
 

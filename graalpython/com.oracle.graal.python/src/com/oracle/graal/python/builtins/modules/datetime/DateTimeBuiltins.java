@@ -2498,7 +2498,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
     abstract static class DateNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        static PDate getDate(PDateTime self,
+        static Object getDate(PDateTime self,
                         @Bind Node inliningTarget,
                         @Cached DateNodes.NewNode newDateNode) {
             return newDateNode.execute(inliningTarget,
