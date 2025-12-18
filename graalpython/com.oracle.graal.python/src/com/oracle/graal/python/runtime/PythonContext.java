@@ -285,6 +285,13 @@ public final class PythonContext extends Python3Core {
         return mem.asPointer();
     }
 
+    public void ensureNativeAccess() {
+        if (!nativeAccessAllowed) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new RuntimeException("Native access not allowed, cannot manipulate native memory");
+        }
+    }
+
     /**
      * An enum of events which can currently be traced using python's tracing
      */
@@ -2927,50 +2934,6 @@ public final class PythonContext extends Python3Core {
         throw new RuntimeException("Native access not allowed, cannot manipulate native memory");
     }
 
-    public long allocateNativeMemory(long size) {
-        return allocateNativeMemoryBoundary(getUnsafe(), size);
-    }
-
-    @TruffleBoundary
-    private static long allocateNativeMemoryBoundary(Unsafe unsafe, long size) {
-        return unsafe.allocateMemory(size);
-    }
-
-    public void freeNativeMemory(long address) {
-        freeNativeMemoryBoundary(getUnsafe(), address);
-    }
-
-    @TruffleBoundary
-    private static void freeNativeMemoryBoundary(Unsafe unsafe, long address) {
-        unsafe.freeMemory(address);
-    }
-
-    public void copyNativeMemory(long dst, byte[] src, int srcOffset, int size) {
-        copyNativeMemoryBoundary(getUnsafe(), null, dst, src, byteArrayOffset(srcOffset), size);
-    }
-
-    public void copyNativeMemory(byte[] dst, int dstOffset, long src, int size) {
-        copyNativeMemoryBoundary(getUnsafe(), dst, byteArrayOffset(dstOffset), null, src, size);
-    }
-
-    private static long byteArrayOffset(int offset) {
-        return (long) Unsafe.ARRAY_BYTE_BASE_OFFSET + (long) Unsafe.ARRAY_BYTE_INDEX_SCALE * (long) offset;
-    }
-
-    @TruffleBoundary
-    private static void copyNativeMemoryBoundary(Unsafe unsafe, Object dst, long dstOffset, Object src, long srcOffset, int size) {
-        unsafe.copyMemory(src, srcOffset, dst, dstOffset, size);
-    }
-
-    public void setNativeMemory(long pointer, int size, byte value) {
-        setNativeMemoryBoundary(getUnsafe(), pointer, size, value);
-    }
-
-    @TruffleBoundary
-    private static void setNativeMemoryBoundary(Unsafe unsafe, long pointer, int size, byte value) {
-        unsafe.setMemory(pointer, size, value);
-    }
-
     @SuppressWarnings("AssertWithSideEffects")
     public static void setWasStackWalk() {
         assert (PythonContext.get(null).wasStackWalk = true);
@@ -2984,20 +2947,20 @@ public final class PythonContext extends Python3Core {
      */
     @TruffleBoundary
     public NativePointer allocateContextMemory(int byteSize) {
-        Unsafe unsafe = getUnsafe();
+        ensureNativeAccess();
         if (nativeResources == null) {
             nativeResources = new LinkedList<>();
         }
-        NativePointer nativePointer = new NativePointer(unsafe.allocateMemory(byteSize));
+        NativePointer nativePointer = new NativePointer(NativeMemory.malloc(byteSize));
         nativeResources.add(nativePointer);
         return nativePointer;
     }
 
     private void freeContextMemory() {
         if (nativeResources != null) {
-            Unsafe unsafe = getUnsafe();
+            ensureNativeAccess();
             for (NativePointer nativePointer : nativeResources) {
-                unsafe.freeMemory(nativePointer.asPointer());
+                NativeMemory.free(nativePointer.asPointer());
             }
         }
     }

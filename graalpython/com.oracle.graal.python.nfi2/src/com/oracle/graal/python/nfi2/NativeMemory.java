@@ -44,12 +44,11 @@ import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 
 import com.oracle.truffle.api.CompilerDirectives;
-
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+
 import sun.misc.Unsafe;
 
 public final class NativeMemory {
-
     public static final long NULLPTR = 0L;
     public static final long POINTER_SIZE = Long.BYTES;
 

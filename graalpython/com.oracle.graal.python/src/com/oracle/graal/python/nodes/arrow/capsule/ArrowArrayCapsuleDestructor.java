@@ -43,6 +43,7 @@ package com.oracle.graal.python.nodes.arrow.capsule;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextCapsuleBuiltins.PyCapsuleGetPointerNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.nfi2.NativeMemory;
 import com.oracle.graal.python.nodes.arrow.ArrowArray;
 import com.oracle.graal.python.nodes.arrow.InvokeArrowReleaseCallbackNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -82,6 +83,7 @@ public class ArrowArrayCapsuleDestructor implements TruffleObject {
 
         Object capsule = nativeToPythonNode.execute(args[0]);
         PythonContext ctx = PythonContext.get(inliningTarget);
+        ctx.ensureNativeAccess();
         TruffleString capsuleName = asNativeNode.execute(ArrowArray.CAPSULE_NAME, ctx::allocateContextMemory, Encoding.UTF_8, false, true);
         long capsuleNamePointer = PythonUtils.coerceToLong(getInternalNativePointerNode.execute(capsuleName, Encoding.UTF_8), lib);
         var arrowArray = ArrowArray.wrap(capsuleGetPointerNode.execute(inliningTarget, capsule, capsuleNamePointer));
@@ -97,7 +99,7 @@ public class ArrowArrayCapsuleDestructor implements TruffleObject {
         if (!arrowArray.isReleased()) {
             invokeReleaseCallbackNode.get(inliningTarget).executeCached(arrowArray.releaseCallback(), arrowArray.memoryAddress());
         }
-        ctx.getUnsafe().freeMemory(arrowArray.memoryAddress());
+        NativeMemory.free(arrowArray.memoryAddress());
         return PNone.NO_VALUE;
     }
 }
