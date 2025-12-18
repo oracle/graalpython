@@ -1231,9 +1231,7 @@ class Tag:
                 return self
             return Tag(self.test_id, keys, is_exclusion=self.is_exclusion)
 
-    def is_platform_excluded(self, key: str) -> bool:
-        return key not in self.keys
-        
+
     def __str__(self):
         s = ''
         if self.is_exclusion:
