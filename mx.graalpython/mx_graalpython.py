@@ -277,16 +277,15 @@ def libpythonvm_build_args():
         vc = SUITE.vc
         commit = str(vc.tip(SUITE.dir)).strip()
         branch = str(vc.active_branch(SUITE.dir, abortOnError=False) or 'master').strip()
-        dsl_suffix = '' if not BYTECODE_DSL_INTERPRETER else '-bytecode-dsl'
 
         if script := os.environ.get("ARTIFACT_DOWNLOAD_SCRIPT"):
             # This is always available in the GraalPy CI
-            profile = f"cached_profile{dsl_suffix}.iprof.gz"
+            profile = f"cached_profile.iprof.gz"
             run(
                 [
                     sys.executable,
                     script,
-                    f"graalpy/pgo{dsl_suffix}-{commit}",
+                    f"graalpy/pgo-{commit}",
                     profile,
                 ],
                 nonZeroIsFatal=False,
@@ -299,8 +298,6 @@ def libpythonvm_build_args():
                     if not profile:
                         try:
                             profile = get_profile(["--branch", b])
-                            if profile and dsl_suffix not in profile:
-                                mx.warn("PGO profile seems mismatched, you need newer graal-enterprise")
                         except BaseException:
                             pass
 
@@ -359,13 +356,9 @@ def graalpy_native_pgo_build_and_test(args=None):
                 GRAALPY_HOME=instrumented_home,
         ):
             graalpytest(["--python", instrumented_launcher, "test_venv.py"])
-            python_vm_config = 'custom'
-            if BYTECODE_DSL_INTERPRETER:
-                python_vm_config += '-bc-dsl'
-            mx.command_function('benchmark')(["meso-small:*", "--", "--python-vm", "graalpython", "--python-vm-config", python_vm_config])
-        dsl_suffix = '' if not BYTECODE_DSL_INTERPRETER else '-bytecode-dsl'
-        iprof_path = Path(SUITE.dir) / f'default{dsl_suffix}.iprof'
-        lcov_path = Path(SUITE.dir) / f'default{dsl_suffix}.lcov'
+            mx.command_function('benchmark')(["meso-small:*", "--", "--python-vm", "graalpython", "--python-vm-config", 'custom'])
+        iprof_path = Path(SUITE.dir) / f'default.iprof'
+        lcov_path = Path(SUITE.dir) / f'default.lcov'
 
         run([
             os.path.join(
@@ -418,7 +411,7 @@ def graalpy_native_pgo_build_and_test(args=None):
                 sys.executable,
                 script,
                 iprof_gz_path,
-                f"pgo{dsl_suffix}-{commit}",
+                f"pgo-{commit}",
                 "graalpy",
                 "--lifecycle",
                 "cache",
