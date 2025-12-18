@@ -1,1 +1,1 @@
-test.test_flufl.FLUFLTests.test_guido_as_bdfl @ $linux-aarch64,$linux-x86_64,$win32-AMD64,darwin-arm64
+test.test_flufl.FLUFLTests.test_guido_as_bdfl @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64,win32-AMD64-github

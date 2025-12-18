@@ -110,7 +110,7 @@
     local GRAAL_JDK_LATEST          = "graal-jdk-latest",
     local TAGGED_UNITTESTS_SPLIT    = 8,
     local COVERAGE_SPLIT            = 3,
-    local RETAGGER_SPLIT            = 12,
+    local RETAGGER_SPLIT            = 16,
 
     // -----------------------------------------------------------------------------------------------------------------
     // gates
@@ -242,10 +242,10 @@
             "linux:amd64:jdk-latest"     : tier1,
         }),
         "python-unittest-retagger": ut_retagger + platform_spec(no_jobs) + batches(RETAGGER_SPLIT) + platform_spec({
-            "linux:amd64:jdk-latest"     : weekly    + t("20:00:00"),
-            "linux:aarch64:jdk-latest"   : weekly    + t("20:00:00"),
-            "darwin:aarch64:jdk-latest"  : weekly    + t("20:00:00"),
-            "windows:amd64:jdk-latest"   : weekly    + t("20:00:00"),
+            "linux:amd64:jdk-latest"     : weekly    + t("20:00:00") + require(GPY_NATIVE_STANDALONE),
+            "linux:aarch64:jdk-latest"   : weekly    + t("20:00:00") + require(GPY_NATIVE_STANDALONE),
+            "darwin:aarch64:jdk-latest"  : weekly    + t("20:00:00") + require(GPY_NATIVE_STANDALONE),
+            "windows:amd64:jdk-latest"   : weekly    + t("20:00:00") + require(GPY_NATIVE_STANDALONE),
         }),
         "python-coverage-jacoco-tagged": cov_jacoco_tagged + batches(COVERAGE_SPLIT) + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk21"          : weekly    + t("20:00:00"),
