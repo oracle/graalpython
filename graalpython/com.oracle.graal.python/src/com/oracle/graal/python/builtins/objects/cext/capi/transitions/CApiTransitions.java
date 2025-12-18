@@ -1142,7 +1142,7 @@ public abstract class CApiTransitions {
 
         @Specialization
         @TruffleBoundary
-        static long doPythonManagedClass(Node inliningTarget, PythonManagedClass clazz, long initialRefCount) {
+        static long doPythonManagedClass(@SuppressWarnings("unused") Node inliningTarget, PythonManagedClass clazz, @SuppressWarnings("unused") long initialRefCount) {
             assert !clazz.isNative();
             /*
              * Note: it's important that we first allocate the empty 'PyTypeStruct' and register it
@@ -1178,7 +1178,7 @@ public abstract class CApiTransitions {
 
         @Specialization
         @TruffleBoundary
-        static long doMemoryView(Node inliningTarget, PMemoryView mv, long initialRefCount) {
+        static long doMemoryView(@SuppressWarnings("unused") Node inliningTarget, PMemoryView mv, long initialRefCount) {
             assert !mv.isNative();
             assert initialRefCount == IMMORTAL_REFCNT;
             long ptr = PyMemoryViewWrapper.allocate(mv);
@@ -1201,7 +1201,7 @@ public abstract class CApiTransitions {
             return AllocateNativeObjectStubNodeGen.getUncached().execute(inliningTarget, singletonObject, type, CStructs.GraalPyObject, IMMORTAL_REFCNT, false);
         }
 
-        @Specialization(guards = "!isManagedClass(pythonObject)")
+        @Specialization(guards = {"!isManagedClass(pythonObject)", "!isMemoryView(pythonObject)"})
         static long doOther(Node inliningTarget, PythonObject pythonObject, long initialRefCount,
                         @Exclusive @Cached InlinedConditionProfile isVarObjectProfile,
                         @Exclusive @Cached InlinedConditionProfile isGcProfile,
@@ -1212,6 +1212,9 @@ public abstract class CApiTransitions {
 
             // for types, we always need to allocate the full PyTypeObject
             assert !(pythonObject instanceof PythonManagedClass);
+            // for memoryview, we always need to allocate the full PyMemoryViewObject
+            assert !(pythonObject instanceof PMemoryView);
+            assert !CApiContext.isSpecialSingleton(pythonObject);
 
             Object type = getClassNode.execute(inliningTarget, pythonObject);
 
