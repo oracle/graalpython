@@ -218,6 +218,8 @@ import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObject
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
 import com.oracle.graal.python.nodes.object.IsNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
@@ -3203,12 +3205,22 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         public static Object perform(
                         int length,
                         @Variadic Object[] strings,
+                        @Bind Node inliningTarget,
+                        @Cached CastToTruffleStringNode castToStringNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendNode,
-                        @Cached TruffleStringBuilder.ToStringNode toString) {
+                        @Cached TruffleStringBuilder.ToStringNode toString,
+                        @Cached PRaiseNode raise) {
             var tsb = TruffleStringBuilderUTF32.create(PythonUtils.TS_ENCODING);
             CompilerAsserts.partialEvaluationConstant(length);
             for (int i = 0; i < length; i++) {
-                appendNode.execute(tsb, (TruffleString) strings[i]);
+                try {
+                    appendNode.execute(tsb, castToStringNode.execute(inliningTarget, strings[i]));
+                } catch (CannotCastException ex) {
+                    // Python should only permit str literals or calls to `format` builtin as
+                    // argument to this operation. The `format` builtin already ensures the result
+                    // is a Python string.
+                    throw CompilerDirectives.shouldNotReachHere(ex);
+                }
             }
             return toString.execute(tsb);
         }

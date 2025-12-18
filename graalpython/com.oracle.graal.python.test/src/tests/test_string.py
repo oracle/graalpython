@@ -1210,3 +1210,22 @@ def test_raw_unicode_escape_does_not_alter_encoded_string():
     original = "[\\xA0]"
     decoded = bytes(original, encoding="raw-unicode-escape").decode("raw-unicode-escape")
     assert original == decoded
+
+
+def test_fstring():
+    class FunkyFormat:
+        def __init__(self, f):
+            self.f = f
+        def __format__(self, _):
+            return self.f
+
+    class FunkyStr(str):
+        def __str__(self):
+            return self
+
+    assert type(f"{FunkyStr('abc')}") == FunkyStr
+    assert type(f"hello {FunkyFormat('world')}!") == str
+
+    assert f"hello {FunkyFormat('world')}!" == "hello world!"
+    assert f"hello {FunkyStr('world')}!" == "hello world!"
+    assertRaises(TypeError, lambda: f"hello {FunkyFormat(33)}!")
