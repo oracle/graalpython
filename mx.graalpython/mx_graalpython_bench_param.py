@@ -188,6 +188,7 @@ MICRO_BENCHMARKS_SMALL = {
     'c-issubtype-monorphic': ITER_5 + ['200000'],
     'c-call-method': ITER_5 + ['50000'],
     'c-call-method-int-float': ITER_5 + ['500000'],
+    'regexp': ITER_5 + WARMUP_2,
     'startup': ITER_5 + ['50'],
 }
 

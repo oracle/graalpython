@@ -568,10 +568,10 @@ public final class DateBuiltins extends PythonBuiltins {
         @Specialization
         static Object fromIsoFormat(VirtualFrame frame, Object cls, Object object,
                         @Bind Node inliningTarget,
-                        @Cached PyUnicodeCheckNode pyUnicodeCheckNode,
+                        @Cached PyUnicodeCheckNode unicodeCheckNode,
                         @Cached CastToJavaStringNode castToJavaStringNode,
                         @Cached("createFor($node)") IndirectCallData.BoundaryCallData boundaryCallData) {
-            if (!pyUnicodeCheckNode.execute(inliningTarget, object)) {
+            if (!unicodeCheckNode.execute(inliningTarget, object)) {
                 throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.FROMISOFORMAT_ARGUMENT_MUST_BE_STR);
             }
 

@@ -67,10 +67,10 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 /**
- * Equivalent of CPython's {@code PyNumber_AsSize} function. Converts the argument into integer (our
- * equivalent of {@code Py_ssize_t}) using its {@code __index__} method. Raises a {@code TypeError}
- * if the argument is not convertible to integer. Overflow behavior depends on the execute method
- * used:
+ * Equivalent of CPython's {@code PyNumber_AsSize} function. In addition, converts the argument into
+ * integer (our equivalent of {@code Py_ssize_t}) using its {@code __index__} method. Raises a
+ * {@code TypeError} if the argument is not convertible to integer. Overflow behavior depends on the
+ * execute method used:
  * <ul>
  * <li>{@link #executeLossy(Frame, Node, Object)} clamps the value to maximal/minimal integer
  * (equivalent of passing {@code NULL} in CPython).

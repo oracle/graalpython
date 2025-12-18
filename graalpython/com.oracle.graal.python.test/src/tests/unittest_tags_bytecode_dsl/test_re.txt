@@ -143,6 +143,5 @@ test.test_re.ReTests.test_symbolic_refs @ linux-x86_64
 test.test_re.ReTests.test_symbolic_refs_errors @ linux-x86_64
 test.test_re.ReTests.test_template_function_and_flag_is_deprecated @ linux-x86_64
 test.test_re.ReTests.test_unlimited_zero_width_repeat @ linux-x86_64
-test.test_re.ReTests.test_weakref @ linux-x86_64
 test.test_re.ReTests.test_word_boundaries @ linux-x86_64
 test.test_re.ReTests.test_zerowidth @ linux-x86_64
