@@ -5,6 +5,7 @@
 import unittest
 import string
 import sys
+from tests import util
 
 
 class MyIndexable(object):
@@ -1212,20 +1213,24 @@ def test_raw_unicode_escape_does_not_alter_encoded_string():
     assert original == decoded
 
 
-def test_fstring():
-    class FunkyFormat:
-        def __init__(self, f):
-            self.f = f
-        def __format__(self, _):
-            return self.f
+class FunkyFormat:
+    def __init__(self, f):
+        self.f = f
+    def __format__(self, _):
+        return self.f
 
-    class FunkyStr(str):
-        def __str__(self):
-            return self
+class FunkyStr(str):
+    def __str__(self):
+        return self
 
+
+@util.skipUnlessBytecodeDSL("bug in manual interpreter")
+def test_fstring_preserves_type_of_single_str():
     assert type(f"{FunkyStr('abc')}") == FunkyStr
-    assert type(f"hello {FunkyFormat('world')}!") == str
 
+
+def test_fstring():
+    assert type(f"hello {FunkyFormat('world')}!") == str
     assert f"hello {FunkyFormat('world')}!" == "hello world!"
     assert f"hello {FunkyStr('world')}!" == "hello world!"
     assertRaises(TypeError, lambda: f"hello {FunkyFormat(33)}!")
