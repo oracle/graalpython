@@ -2762,28 +2762,22 @@ delta_reduce(PyDateTime_Delta* self, PyObject *Py_UNUSED(ignored))
 {
     return Py_BuildValue("ON", Py_TYPE(self), delta_getstate(self));
 }
-#endif // GraalPy change
 
 #define OFFSET(field)  offsetof(PyDateTime_Delta, field)
 
-// GraalPy change: different members
 static PyMemberDef delta_members[] = {
 
-    {"_days",         T_INT, OFFSET(days),         0,
+    {"days",         T_INT, OFFSET(days),         READONLY,
      PyDoc_STR("Number of days.")},
 
-    {"_seconds",      T_INT, OFFSET(seconds),      0,
+    {"seconds",      T_INT, OFFSET(seconds),      READONLY,
      PyDoc_STR("Number of seconds (>= 0 and less than 1 day).")},
 
-    {"_microseconds", T_INT, OFFSET(microseconds), 0,
+    {"microseconds", T_INT, OFFSET(microseconds), READONLY,
      PyDoc_STR("Number of microseconds (>= 0 and less than 1 second).")},
-
-    {"_hashcode", T_PYSSIZET, OFFSET(hashcode), 0,
-     PyDoc_STR("hashcode")},
     {NULL}
 };
 
-#if 0 // GraalPy change
 static PyMethodDef delta_methods[] = {
     {"total_seconds", delta_total_seconds, METH_NOARGS,
      PyDoc_STR("Total seconds in the duration.")},
@@ -2867,7 +2861,7 @@ static PyTypeObject PyDateTime_DeltaType = {
     0,                                                  /* tp_iter */
     0,                                                  /* tp_iternext */
     0,                                                  /* tp_methods */ // GraalPy change: nulled
-    delta_members,                                      /* tp_members */
+    0,                                                  /* tp_members */ // GraalPy change: nulled
     0,                                                  /* tp_getset */
     0,                                                  /* tp_base */
     0,                                                  /* tp_dict */
@@ -2880,6 +2874,7 @@ static PyTypeObject PyDateTime_DeltaType = {
     0,                                                  /* tp_free */
 };
 
+#if 0 // GraalPy change
 /*
  * PyDateTime_Date implementation.
  */
@@ -2904,70 +2899,13 @@ date_day(PyDateTime_Date *self, void *unused)
     return PyLong_FromLong(GET_DAY(self));
 }
 
-// GraalPy-specific
-static int
-set_date_year(PyDateTime_Date *self, PyObject *value, void *unused)
-{
-	int ival = _PyLong_AsInt(value);
-    if (check_date_args(ival, 1, 1) < 0) {
-        return -1;
-    }
-    self->hashcode = -1;
-    SET_YEAR(self, ival);
-    return 0;
-}
-
-// GraalPy-specific
-static int
-set_date_month(PyDateTime_Date *self, PyObject *value, void *unused)
-{
-	int ival = _PyLong_AsInt(value);
-    if (check_date_args(MINYEAR, ival, 1) < 0) {
-        return -1;
-    }
-    self->hashcode = -1;
-    SET_MONTH(self, ival);
-    return 0;
-}
-
-// GraalPy-specific
-static int
-set_date_day(PyDateTime_Date *self, PyObject *value, void *unused)
-{
-	int ival = _PyLong_AsInt(value);
-    if (check_date_args(MINYEAR, 1, ival) < 0) {
-        return -1;
-    }
-    self->hashcode = -1;
-    SET_DAY(self, ival);
-    return 0;
-}
-
-// GraalPy-specific
-static PyObject *
-base_hashcode(_PyDateTime_BaseTZInfo *self, void *unused)
-{
-    return PyLong_FromSsize_t(self->hashcode);
-}
-
-// GraalPy-specific
-static int
-set_base_hashcode(_PyDateTime_BaseTZInfo *self, PyObject *value, void *unused)
-{
-    self->hashcode = (Py_hash_t) PyLong_AsSsize_t(value);
-    return 0;
-}
-
-// GraalPy change: different members
 static PyGetSetDef date_getset[] = {
-    {"_year",        (getter)date_year, (setter)set_date_year},
-    {"_month",       (getter)date_month, (setter)set_date_month},
-    {"_day",         (getter)date_day, (setter)set_date_day},
-    {"_hashcode",   (getter)base_hashcode, (setter)set_base_hashcode},
+    {"year",        (getter)date_year},
+    {"month",       (getter)date_month},
+    {"day",         (getter)date_day},
     {NULL}
 };
 
-#if 0 // GraalPy change
 /* Constructors. */
 
 static char *date_kws[] = {"year", "month", "day", NULL};
@@ -3033,7 +2971,7 @@ date_new(PyTypeObject *type, PyObject *args, PyObject *kw)
                                     &year, &month, &day)) {
         self = new_date_ex(year, month, day, type);
     }
-    return (PyObject*)self;
+    return self;
 }
 
 static PyObject *
@@ -3581,7 +3519,6 @@ date_replace(PyDateTime_Date *self, PyObject *args, PyObject *kw)
     Py_DECREF(tuple);
     return clone;
 }
-#endif // GraalPy change
 
 static Py_hash_t
 generic_hash(unsigned char *data, int len)
@@ -3603,7 +3540,6 @@ date_hash(PyDateTime_Date *self)
     return self->hashcode;
 }
 
-#if 0 // GraalPy change
 static PyObject *
 date_toordinal(PyDateTime_Date *self, PyObject *Py_UNUSED(ignored))
 {
@@ -3735,7 +3671,7 @@ static PyTypeObject PyDateTime_DateType = {
     0,                                                  /* tp_as_number */ // GraalPy change: nulled
     0,                                                  /* tp_as_sequence */
     0,                                                  /* tp_as_mapping */
-    (hashfunc)date_hash,                                /* tp_hash */
+    0,                                                  /* tp_hash */ // GraalPy change: nulled
     0,                                                  /* tp_call */
     0,                                                  /* tp_str */ // GraalPy change: nulled
     0,                                                  /* tp_getattro */ // GraalPy change: nulled
@@ -3751,7 +3687,7 @@ static PyTypeObject PyDateTime_DateType = {
     0,                                                  /* tp_iternext */
     0,                                                  /* tp_methods */ // GraalPy change: nulled
     0,                                                  /* tp_members */
-    date_getset,                                        /* tp_getset */
+    0,                                                  /* tp_getset */ // GraalPy change: nulled
     0,                                                  /* tp_base */
     0,                                                  /* tp_dict */
     0,                                                  /* tp_descr_get */
@@ -4223,7 +4159,6 @@ static PyTypeObject PyDateTime_TimeZoneType = {
     0,                                /* tp_alloc */
     timezone_new,                     /* tp_new */
 };
-#endif // GraalPy change
 
 /*
  * PyDateTime_Time implementation.
@@ -4270,92 +4205,13 @@ time_fold(PyDateTime_Time *self, void *unused)
     return PyLong_FromLong(TIME_GET_FOLD(self));
 }
 
-// GraalPy-specific
-static PyObject *
-set_time_hour(PyDateTime_Time *self, PyObject* value, void *unused)
-{
-	int ival = _PyLong_AsInt(value);
-    if (check_time_args(ival, 0, 0, 0, 0) < 0) {
-        return -1;
-    }
-    self->hashcode = -1;
-    TIME_SET_HOUR(self, ival);
-    return 0;
-}
-
-// GraalPy-specific
-static PyObject *
-set_time_minute(PyDateTime_Time *self, PyObject* value, void *unused)
-{
-	int ival = _PyLong_AsInt(value);
-    if (check_time_args(0, ival, 0, 0, 0) < 0) {
-        return -1;
-    }
-    self->hashcode = -1;
-    TIME_SET_MINUTE(self, ival);
-    return 0;
-}
-
-// GraalPy-specific
-/* The name time_second conflicted with some platform header file. */
-static PyObject *
-set_py_time_second(PyDateTime_Time *self, PyObject* value, void *unused)
-{
-	int ival = _PyLong_AsInt(value);
-    if (check_time_args(0, 0, ival, 0, 0) < 0) {
-        return -1;
-    }
-    self->hashcode = -1;
-    TIME_SET_SECOND(self, ival);
-    return 0;
-}
-
-// GraalPy-specific
-static PyObject *
-set_time_microsecond(PyDateTime_Time *self, PyObject* value, void *unused)
-{
-	int ival = _PyLong_AsInt(value);
-    if (check_time_args(0, 0, 0, ival, 0) < 0) {
-        return -1;
-    }
-    self->hashcode = -1;
-    TIME_SET_MICROSECOND(self, ival);
-    return 0;
-}
-
-// GraalPy-specific
-static PyObject *
-set_time_tzinfo(PyDateTime_Time *self, PyObject* value, void *unused)
-{
-    if (value != Py_None) {
-        Py_INCREF(value);
-        self->tzinfo = value;
-    }
-    return 0;
-}
-
-// GraalPy-specific
-static PyObject *
-set_time_fold(PyDateTime_Time *self, PyObject* value, void *unused)
-{
-	int ival = _PyLong_AsInt(value);
-    if (check_time_args(0, 0, 0, 0, ival) < 0) {
-        return -1;
-    }
-    self->hashcode = -1;
-    TIME_SET_FOLD(self, ival);
-    return 0;
-}
-
-// GraalPy change: different members
 static PyGetSetDef time_getset[] = {
-    {"_hour",        (getter)time_hour, (setter)set_time_hour},
-    {"_minute",      (getter)time_minute, (setter)set_time_minute},
-    {"_second",      (getter)py_time_second, (setter)set_py_time_second},
-    {"_microsecond", (getter)time_microsecond, (setter)set_time_microsecond},
-    {"_tzinfo",      (getter)time_tzinfo, (setter)set_time_tzinfo},
-    {"_fold",        (getter)time_fold, (setter)set_time_fold},
-    {"_hashcode",    (getter)base_hashcode, (setter)set_base_hashcode},
+    {"hour",        (getter)time_hour},
+    {"minute",      (getter)time_minute},
+    {"second",      (getter)py_time_second},
+    {"microsecond", (getter)time_microsecond},
+    {"tzinfo",      (getter)time_tzinfo},
+    {"fold",        (getter)time_fold},
     {NULL}
 };
 
@@ -4363,7 +4219,6 @@ static PyGetSetDef time_getset[] = {
  * Constructors.
  */
 
-#if 0 // GraalPy change
 static char *time_kws[] = {"hour", "minute", "second", "microsecond",
                            "tzinfo", "fold", NULL};
 
@@ -4966,7 +4821,7 @@ static PyTypeObject PyDateTime_TimeType = {
     0,                                          /* tp_iternext */
     0,                                          /* tp_methods */ // GraalPy change: nulled
     0,                                          /* tp_members */
-    time_getset,                                /* tp_getset */
+    0,                                          /* tp_getset */ // GraalPy change: nulled
     0,                                          /* tp_base */
     0,                                          /* tp_dict */
     0,                                          /* tp_descr_get */
@@ -4978,6 +4833,7 @@ static PyTypeObject PyDateTime_TimeType = {
     0,                                          /* tp_free */
 };
 
+#if 0 // GraalPy change
 /*
  * PyDateTime_DateTime implementation.
  */
@@ -5108,7 +4964,6 @@ static PyGetSetDef datetime_getset[] = {
  * Constructors.
  */
 
-#if 0 // GraalPy change
 static char *datetime_kws[] = {
     "year", "month", "day", "hour", "minute", "second",
     "microsecond", "tzinfo", "fold", NULL
@@ -6917,7 +6772,7 @@ static PyTypeObject PyDateTime_DateTimeType = {
     0,                                          /* tp_iternext */
     0,                                          /* tp_methods */ // GraalPy change: nulled
     0,                                          /* tp_members */
-    datetime_getset,                            /* tp_getset */
+    0,                                          /* tp_getset */ // GraalPy change: nulled
     &PyDateTime_DateType,                       /* tp_base */
     0,                                          /* tp_dict */
     0,                                          /* tp_descr_get */
