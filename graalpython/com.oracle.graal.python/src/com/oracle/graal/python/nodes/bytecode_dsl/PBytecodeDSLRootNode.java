@@ -354,7 +354,6 @@ import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 @ShortCircuitOperation(name = "BoolAnd", booleanConverter = PyObjectIsTrueNode.class, operator = Operator.AND_RETURN_VALUE)
 @ShortCircuitOperation(name = "BoolOr", booleanConverter = PyObjectIsTrueNode.class, operator = Operator.OR_RETURN_VALUE)
 @ShortCircuitOperation(name = "PrimitiveBoolAnd", operator = Operator.AND_RETURN_VALUE)
-@SuppressWarnings({"unused"})
 public abstract class PBytecodeDSLRootNode extends PRootNode implements BytecodeRootNode {
     public static final int EXPLODE_LOOP_THRESHOLD = 30;
     private static final BytecodeConfig TRACE_AND_PROFILE_CONFIG = PBytecodeDSLRootNodeGen.newConfigBuilder().//
@@ -2033,7 +2032,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @ConstantOperand(type = int.class)
     @ConstantOperand(type = LocalRangeAccessor.class)
     @ImportStatic({PGuards.class})
-    @SuppressWarnings("truffle-interpreted-performance")
     public static final class UnpackStarredToLocals {
         @Specialization(guards = "isBuiltinSequence(sequence)")
         public static void doUnpackSequence(VirtualFrame localFrame,
@@ -2041,12 +2039,12 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         LocalRangeAccessor results,
                         PSequence sequence,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Shared @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
-                        @Shared @Cached SequenceStorageNodes.GetItemSliceNode getItemSliceNode,
+                        @Exclusive @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
+                        @Exclusive @Cached SequenceStorageNodes.GetItemSliceNode getItemSliceNode,
                         @Bind PBytecodeDSLRootNode rootNode,
                         @Bind BytecodeNode bytecode,
                         @Bind Node inliningTarget,
-                        @Shared @Cached PRaiseNode raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             int resultsLength = results.getLength();
             int countBefore = starIndex;
             int countAfter = resultsLength - starIndex - 1;
@@ -2075,12 +2073,12 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Cached PyIterNextNode getNextNode,
                         @Cached IsBuiltinObjectProfile notIterableProfile,
                         @Cached ListNodes.ConstructListNode constructListNode,
-                        @Shared @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
-                        @Shared @Cached SequenceStorageNodes.GetItemSliceNode getItemSliceNode,
+                        @Exclusive @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
+                        @Exclusive @Cached SequenceStorageNodes.GetItemSliceNode getItemSliceNode,
                         @Bind PBytecodeDSLRootNode rootNode,
                         @Bind BytecodeNode bytecode,
                         @Bind Node inliningTarget,
-                        @Shared @Cached PRaiseNode raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             int resultsLength = results.getLength();
             int countBefore = starIndex;
             int countAfter = resultsLength - starIndex - 1;
@@ -2663,16 +2661,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind BytecodeNode bytecodeNode) {
             checkUnboundCell(cell, index, bytecodeNode);
             cell.clearRef();
-        }
-    }
-
-    @Operation(storeBytecodeIndex = false)
-    @ConstantOperand(type = LocalAccessor.class)
-    public static final class ClearLocal {
-        @Specialization
-        public static void doClearLocal(VirtualFrame frame, LocalAccessor localAccessor,
-                        @Bind BytecodeNode bytecode) {
-            localAccessor.setObject(bytecode, frame, null);
         }
     }
 
@@ -3362,7 +3350,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = LocalAccessor.class)
     @ConstantOperand(type = LocalAccessor.class)
-    @SuppressWarnings("truffle-interpreted-performance")
     public static final class YieldFromSend {
         private static final TruffleString T_SEND = tsLiteral("send");
 
@@ -3375,8 +3362,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind Node inliningTarget,
                         @Bind BytecodeNode bytecode,
                         @Cached CommonGeneratorBuiltins.SendNode sendNode,
-                        @Shared @Cached IsBuiltinObjectProfile stopIterationProfile,
-                        @Shared @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
+                        @Exclusive @Cached IsBuiltinObjectProfile stopIterationProfile,
+                        @Exclusive @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
             try {
                 Object value = sendNode.execute(virtualFrame, generator, arg);
                 yieldedValue.setObject(bytecode, virtualFrame, value);
@@ -3403,8 +3390,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind("getSlots.execute(inliningTarget, iter)") TpSlots slots,
                         @Cached CallSlotTpIterNextNode callIterNext,
                         @Exclusive @Cached InlinedBranchProfile exhaustedNoException,
-                        @Shared @Cached IsBuiltinObjectProfile stopIterationProfile,
-                        @Shared @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
+                        @Exclusive @Cached IsBuiltinObjectProfile stopIterationProfile,
+                        @Exclusive @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
             try {
                 Object value = callIterNext.execute(virtualFrame, inliningTarget, slots.tp_iternext(), iter);
                 yieldedValue.setObject(bytecode, virtualFrame, value);
@@ -3429,8 +3416,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind BytecodeNode bytecode,
                         @Bind("$bytecodeIndex") int bci,
                         @Cached PyObjectCallMethodObjArgs callMethodNode,
-                        @Shared @Cached IsBuiltinObjectProfile stopIterationProfile,
-                        @Shared @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
+                        @Exclusive @Cached IsBuiltinObjectProfile stopIterationProfile,
+                        @Exclusive @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
             try {
                 Object value = callMethodNode.execute(virtualFrame, inliningTarget, obj, T_SEND, arg);
                 yieldedValue.setObject(bytecode, virtualFrame, value);
@@ -3454,7 +3441,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = LocalAccessor.class)
     @ConstantOperand(type = LocalAccessor.class)
-    @SuppressWarnings("truffle-interpreted-performance")
     public static final class YieldFromThrow {
 
         private static final TruffleString T_CLOSE = tsLiteral("close");
@@ -3470,9 +3456,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind BytecodeNode bytecode,
                         @Cached CommonGeneratorBuiltins.ThrowNode throwNode,
                         @Cached CommonGeneratorBuiltins.CloseNode closeNode,
-                        @Shared @Cached IsBuiltinObjectProfile profileExit,
-                        @Shared @Cached IsBuiltinObjectProfile stopIterationProfile,
-                        @Shared @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
+                        @Exclusive @Cached IsBuiltinObjectProfile profileExit,
+                        @Exclusive @Cached IsBuiltinObjectProfile stopIterationProfile,
+                        @Exclusive @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
             if (profileExit.profileException(inliningTarget, exception, GeneratorExit)) {
                 closeNode.execute(frame, generator);
                 throw exception;
@@ -3501,9 +3487,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Cached CallNode callThrow,
                         @Cached CallNode callClose,
                         @Cached WriteUnraisableNode writeUnraisableNode,
-                        @Shared @Cached IsBuiltinObjectProfile profileExit,
-                        @Shared @Cached IsBuiltinObjectProfile stopIterationProfile,
-                        @Shared @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
+                        @Exclusive @Cached IsBuiltinObjectProfile profileExit,
+                        @Exclusive @Cached IsBuiltinObjectProfile stopIterationProfile,
+                        @Exclusive @Cached StopIterationBuiltins.StopIterationValueNode getValue) {
             PException pException = (PException) exception;
             if (profileExit.profileException(inliningTarget, pException, GeneratorExit)) {
                 Object close = PNone.NO_VALUE;

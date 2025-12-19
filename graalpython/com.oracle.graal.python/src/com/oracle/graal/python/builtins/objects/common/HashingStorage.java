@@ -72,7 +72,6 @@ import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -80,6 +79,7 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 public abstract class HashingStorage {
@@ -101,25 +101,22 @@ public abstract class HashingStorage {
             return new KeywordsStorage(kwargs);
         }
 
-        @Specialization(guards = {"isEmpty(kwargs)", "hasBuiltinDictIter(inliningTarget, dict, getClassNode, getSlots)"})
-        static HashingStorage doPDict(PDict dict, @SuppressWarnings("unused") PKeyword[] kwargs,
+        @Specialization(guards = "hasBuiltinDictIter(inliningTarget, dict, getClassNode, getSlots)", limit = "1")
+        static HashingStorage doPDict(VirtualFrame frame, PDict dict, @SuppressWarnings("unused") PKeyword[] kwargs,
                         @Bind Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared @Cached GetClassNode.GetPythonObjectClassNode getClassNode,
-                        @SuppressWarnings("unused") @Shared @Cached GetCachedTpSlotsNode getSlots,
-                        @Shared @Cached HashingStorageCopy copyNode) {
-            return copyNode.execute(inliningTarget, dict.getDictStorage());
-        }
-
-        @Specialization(guards = {"!isEmpty(kwargs)", "hasBuiltinDictIter(inliningTarget, dict, getClassNode, getSlots)"})
-        static HashingStorage doPDictKwargs(VirtualFrame frame, PDict dict, PKeyword[] kwargs,
-                        @Bind Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared @Cached GetClassNode.GetPythonObjectClassNode getClassNode,
-                        @SuppressWarnings("unused") @Shared @Cached GetCachedTpSlotsNode getSlots,
-                        @Shared @Cached HashingStorageCopy copyNode,
+                        @SuppressWarnings("unused") @Cached GetClassNode.GetPythonObjectClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached GetCachedTpSlotsNode getSlots,
+                        @Cached InlinedBranchProfile notEmptyProfile,
+                        @Cached HashingStorageCopy copyNode,
                         @Exclusive @Cached HashingStorageAddAllToOther addAllToOther) {
-            HashingStorage iterableDictStorage = dict.getDictStorage();
-            HashingStorage dictStorage = copyNode.execute(inliningTarget, iterableDictStorage);
-            return addAllToOther.execute(frame, inliningTarget, new KeywordsStorage(kwargs), dictStorage);
+            if (kwargs.length == 0) {
+                return copyNode.execute(inliningTarget, dict.getDictStorage());
+            } else {
+                notEmptyProfile.enter(inliningTarget);
+                HashingStorage iterableDictStorage = dict.getDictStorage();
+                HashingStorage dictStorage = copyNode.execute(inliningTarget, iterableDictStorage);
+                return addAllToOther.execute(frame, inliningTarget, new KeywordsStorage(kwargs), dictStorage);
+            }
         }
 
         @Fallback
@@ -193,8 +190,6 @@ public abstract class HashingStorage {
     // partial impl dict_update_arg
     @GenerateCached
     @GenerateInline(false)
-    // spurious warning, since we don't generate inline variant
-    @SuppressWarnings("truffle-interpreted-performance")
     public abstract static class ObjectToArrayPairNode extends PNodeWithContext {
         public abstract ArrayBuilder<KeyValue> execute(VirtualFrame frame, Object mapping, Object keyAttr);
 
@@ -206,8 +201,8 @@ public abstract class HashingStorage {
         @Specialization(guards = "!isNoValue(keyAttr)")
         static ArrayBuilder<KeyValue> partialMerge(VirtualFrame frame, Object mapping, Object keyAttr,
                         @Bind Node inliningTarget,
-                        @Shared @Cached PyObjectGetIter getIter,
-                        @Shared @Cached PyIterNextNode nextNode,
+                        @Exclusive @Cached PyObjectGetIter getIter,
+                        @Exclusive @Cached PyIterNextNode nextNode,
                         @Cached PyObjectGetItem getItemNode,
                         @Cached CallNode callKeysMethod) {
             // We don't need to pass self as the attribute object has it already.
@@ -228,11 +223,11 @@ public abstract class HashingStorage {
         }
 
         // partial impl PyDict_MergeFromSeq2
-        @Specialization
+        @Specialization(guards = "isNoValue(keyAttr)")
         static ArrayBuilder<KeyValue> partialMergeFromSeq2(VirtualFrame frame, Object iterable, @SuppressWarnings("unused") PNone keyAttr,
                         @Bind Node inliningTarget,
-                        @Shared @Cached PyObjectGetIter getIter,
-                        @Shared @Cached PyIterNextNode nextNode,
+                        @Exclusive @Cached PyObjectGetIter getIter,
+                        @Exclusive @Cached PyIterNextNode nextNode,
                         @Cached FastConstructListNode createListNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Cached PRaiseNode raise,

@@ -1229,9 +1229,9 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Shared @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @Shared @Cached GilNode gil,
-                        @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Exclusive @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Exclusive @Cached GilNode gil,
+                        @Exclusive @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             auditNode.audit(inliningTarget, "os.truncate", path.originalObject, length);
             try {
                 gil.release(true);
@@ -1251,10 +1251,10 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Shared @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @Shared @Cached GilNode gil,
-                        @Cached InlinedBranchProfile errorProfile,
-                        @Shared @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+                        @Exclusive @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Exclusive @Cached GilNode gil,
+                        @Exclusive @Cached InlinedBranchProfile errorProfile,
+                        @Exclusive @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
             return FtruncateNode.ftruncate(frame, fd.fd, length, inliningTarget, context, posixLib, auditNode, gil, errorProfile, constructAndRaiseNode);
         }
     }
@@ -2019,7 +2019,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = {"isNoValue(ns)"})
         static long[] times(VirtualFrame frame, PTuple times, @SuppressWarnings("unused") PNone ns,
                         @Bind Node inliningTarget,
-                        @Shared @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
+                        @Exclusive @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                         @Cached ObjectToTimespecNode objectToTimespecNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             return convertToTimespec(frame, inliningTarget, times, getItemNode, objectToTimespecNode, raiseNode);
@@ -2028,7 +2028,7 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         static long[] ns(VirtualFrame frame, @SuppressWarnings("unused") PNone times, PTuple ns,
                         @Bind Node inliningTarget,
-                        @Shared @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
+                        @Exclusive @Cached SequenceStorageNodes.GetItemScalarNode getItemNode,
                         @Cached SplitLongToSAndNsNode splitLongToSAndNsNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             return convertToTimespec(frame, inliningTarget, ns, getItemNode, splitLongToSAndNsNode, raiseNode);

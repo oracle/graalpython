@@ -253,6 +253,7 @@ import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.nodes.util.LazyInteropLibrary;
 import com.oracle.graal.python.pegparser.AbstractParser;
 import com.oracle.graal.python.pegparser.FutureFeature;
 import com.oracle.graal.python.pegparser.InputType;
@@ -285,7 +286,6 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.bytecode.OperationProxy;
 import com.oracle.truffle.api.debug.Debugger;
 import com.oracle.truffle.api.dsl.Bind;
@@ -2131,8 +2131,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
             @Specialization(guards = "isDouble(start) || isInt(start)")
             static Object sumDoubleIterator(Node inliningTarget, PDoubleSequenceIterator iterator, Object start,
-                            @Cached @Exclusive InlinedConditionProfile startIsDouble,
-                            @Shared @Cached InlinedLoopConditionProfile loopProfilePrimitive) {
+                            @Exclusive @Cached InlinedConditionProfile startIsDouble,
+                            @Exclusive @Cached InlinedLoopConditionProfile loopProfilePrimitive) {
                 /*
                  * Need to make sure we keep start type if the iterator was empty
                  */
@@ -2152,7 +2152,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                             @Exclusive @Cached InlinedLoopConditionProfile loopProfilePrimitive,
                             @Exclusive @Cached InlinedLoopConditionProfile loopProfileGeneric,
                             @Cached PyIterNextNode nextNode,
-                            @Shared @Cached PyNumberAddNode addNode,
+                            @Exclusive @Cached PyNumberAddNode addNode,
                             @Exclusive @Cached InlinedConditionProfile resultFitsInInt,
                             @Exclusive @Cached InlinedBranchProfile seenObject,
                             @Exclusive @Cached InlinedBranchProfile seenInt,
@@ -2458,7 +2458,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached PyObjectSetItem setOrigBases,
                         @Cached GetClassNode getClass,
                         @Cached IsBuiltinObjectProfile noAttributeProfile,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode,
+                        @Cached LazyInteropLibrary lazyInteropLibrary) {
 
             if (arguments.length < 1) {
                 throw raiseNode.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.BUILD_CLS_NOT_ENOUGH_ARGS);
@@ -2475,15 +2476,17 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
 
             PythonContext ctx = PythonContext.get(inliningTarget);
-            Env env = ctx.getEnv();
             PythonLanguage language = ctx.getLanguage(inliningTarget);
 
             Object[] basesArray = Arrays.copyOfRange(arguments, 1, arguments.length);
             PTuple origBases = PFactory.createTuple(language, basesArray);
 
-            if (arguments.length == 2 && env.isHostObject(arguments[1]) && env.asHostObject(arguments[1]) instanceof Class<?>) {
-                // we want to subclass a Java class
-                return buildJavaClass(frame, inliningTarget, language, (PFunction) function, arguments, keywords, invokeBody, name);
+            if (arguments.length == 2) {
+                InteropLibrary lib = lazyInteropLibrary.get(inliningTarget);
+                if (lib.isHostObject(arguments[1]) && lib.isMetaObject(arguments[1])) {
+                    // we want to subclass a Java class
+                    return buildJavaClass(frame, inliningTarget, language, (PFunction) function, arguments, keywords, invokeBody, name);
+                }
             }
 
             class InitializeBuildClass {

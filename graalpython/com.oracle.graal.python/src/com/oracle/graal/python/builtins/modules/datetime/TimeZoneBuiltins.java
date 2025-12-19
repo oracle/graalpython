@@ -40,9 +40,23 @@
  */
 package com.oracle.graal.python.builtins.modules.datetime;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_MAX;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_MIN;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_TIMEZONE;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_UTC;
+import static com.oracle.graal.python.nodes.BuiltinNames.T__DATETIME;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETINITARGS__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REPR__;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
+import java.util.List;
+
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Builtin;
+import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -72,7 +86,6 @@ import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -81,20 +94,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.AbstractTruffleString;
 import com.oracle.truffle.api.strings.TruffleString;
-
-import java.util.List;
-
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_MIN;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_TIMEZONE;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_UTC;
-import static com.oracle.graal.python.nodes.BuiltinNames.T__DATETIME;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETINITARGS__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REPR__;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_MAX;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PTimezone)
 public final class TimeZoneBuiltins extends PythonBuiltins {
@@ -349,7 +348,7 @@ public final class TimeZoneBuiltins extends PythonBuiltins {
         @Specialization
         static Object fromUtc(PTimeZone self, PDateTime dateTime,
                         @Bind Node inliningTarget,
-                        @Cached @Shared PRaiseNode raiseNode,
+                        @Cached PRaiseNode raiseNode,
                         @Cached DateTimeNodes.SubclassNewNode dateTimeSubclassNewNode) {
             if (dateTime.tzInfo != self) {
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.FROMUTC_DT_TZINFO_IS_NOT_SELF);
@@ -360,9 +359,8 @@ public final class TimeZoneBuiltins extends PythonBuiltins {
 
         @Fallback
         static void doGeneric(Object self, Object dateTime,
-                        @Bind Node inliningTarget,
-                        @Cached @Shared PRaiseNode raiseNode) {
-            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.FROMUTC_ARGUMENT_MUST_BE_A_DATETIME);
+                        @Bind Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.FROMUTC_ARGUMENT_MUST_BE_A_DATETIME);
         }
     }
 

@@ -62,7 +62,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -193,14 +193,14 @@ public class CallDispatchers {
         static Object callBuiltinFunctionCached(VirtualFrame frame, Node inliningTarget, @SuppressWarnings("unused") PBuiltinFunction callee, Object[] arguments,
                         @SuppressWarnings("unused") @Cached("callee") PBuiltinFunction cachedCallee,
                         @Cached("createDirectCallNodeFor(callee)") DirectCallNode callNode,
-                        @Cached @Shared SimpleDirectInvokeNode invoke) {
+                        @Exclusive @Cached SimpleDirectInvokeNode invoke) {
             return invoke.execute(frame, inliningTarget, callNode, arguments);
         }
 
         @Specialization(guards = "sameCallTarget(callee.getCallTarget(), callNode)", limit = "getCallSiteInlineCacheMaxDepth()", replaces = "callBuiltinFunctionCached")
         static Object callBuiltinFunctionCachedCt(VirtualFrame frame, Node inliningTarget, @SuppressWarnings("unused") PBuiltinFunction callee, Object[] arguments,
                         @Cached("createDirectCallNodeFor(callee)") DirectCallNode callNode,
-                        @Cached @Shared SimpleDirectInvokeNode invoke) {
+                        @Exclusive @Cached SimpleDirectInvokeNode invoke) {
             return invoke.execute(frame, inliningTarget, callNode, arguments);
         }
 
@@ -208,7 +208,7 @@ public class CallDispatchers {
         @Megamorphic
         @InliningCutoff
         static Object callBuiltinFunctionMegamorphic(VirtualFrame frame, Node inliningTarget, PBuiltinFunction callee, Object[] arguments,
-                        @Cached SimpleIndirectInvokeNode invoke) {
+                        @Exclusive @Cached SimpleIndirectInvokeNode invoke) {
             return invoke.execute(frame, inliningTarget, callee.getCallTarget(), arguments);
         }
     }
@@ -228,9 +228,9 @@ public class CallDispatchers {
         @Specialization(guards = {"isSingleContext()", "callee == cachedCallee"}, limit = "getCallSiteInlineCacheMaxDepth()")
         static Object callBuiltinFunctionCached(VirtualFrame frame, Node inliningTarget, @SuppressWarnings("unused") PBuiltinFunction callee, Object[] arguments, PKeyword[] keywords,
                         @Cached("callee") PBuiltinFunction cachedCallee,
-                        @Shared @Cached CreateArgumentsNode createArgs,
+                        @Exclusive @Cached CreateArgumentsNode createArgs,
                         @Cached("createDirectCallNodeFor(callee)") DirectCallNode callNode,
-                        @Shared @Cached SimpleDirectInvokeNode invoke) {
+                        @Exclusive @Cached SimpleDirectInvokeNode invoke) {
             Object[] pArguments = createArgs.execute(inliningTarget, cachedCallee, arguments, keywords, cachedCallee.getSignature(), null, null,
                             cachedCallee.getDefaults(), cachedCallee.getKwDefaults(), false);
             return invoke.execute(frame, inliningTarget, callNode, pArguments);
@@ -238,9 +238,9 @@ public class CallDispatchers {
 
         @Specialization(guards = "sameCallTarget(callee.getCallTarget(), callNode)", limit = "getCallSiteInlineCacheMaxDepth()", replaces = "callBuiltinFunctionCached")
         static Object callBuiltinFunctionCachedCt(VirtualFrame frame, Node inliningTarget, PBuiltinFunction callee, Object[] arguments, PKeyword[] keywords,
-                        @Shared @Cached CreateArgumentsNode createArgs,
+                        @Exclusive @Cached CreateArgumentsNode createArgs,
                         @Cached("createDirectCallNodeFor(callee)") DirectCallNode callNode,
-                        @Shared @Cached SimpleDirectInvokeNode invoke) {
+                        @Exclusive @Cached SimpleDirectInvokeNode invoke) {
             Signature signature;
             /*
              * The signature is PE-constant for a given callTarget, but getting it from there needs
@@ -260,8 +260,8 @@ public class CallDispatchers {
         @Megamorphic
         @InliningCutoff
         static Object callBuiltinFunctionMegamorphic(VirtualFrame frame, Node inliningTarget, PBuiltinFunction callee, Object[] arguments, PKeyword[] keywords,
-                        @Shared @Cached CreateArgumentsNode createArgs,
-                        @Cached SimpleIndirectInvokeNode invoke) {
+                        @Exclusive @Cached CreateArgumentsNode createArgs,
+                        @Exclusive @Cached SimpleIndirectInvokeNode invoke) {
             Object[] pArguments = createArgs.execute(inliningTarget, callee, arguments, keywords, callee.getSignature(), null, null,
                             callee.getDefaults(), callee.getKwDefaults(), false);
             return invoke.execute(frame, inliningTarget, callee.getCallTarget(), pArguments);
@@ -284,9 +284,9 @@ public class CallDispatchers {
         static Object callBuiltinMethodCached(VirtualFrame frame, Node inliningTarget, @SuppressWarnings("unused") PBuiltinMethod callee, Object[] arguments, PKeyword[] keywords,
                         @Cached(value = "callee", weak = true) PBuiltinMethod cachedCallee,
                         @Bind("cachedCallee.getBuiltinFunction()") PBuiltinFunction function,
-                        @Shared @Cached CreateArgumentsNode createArgs,
+                        @Exclusive @Cached CreateArgumentsNode createArgs,
                         @Cached("createDirectCallNodeFor(function)") DirectCallNode callNode,
-                        @Cached @Shared SimpleDirectInvokeNode invoke) {
+                        @Exclusive @Cached SimpleDirectInvokeNode invoke) {
             Object[] pArguments = createArgs.execute(inliningTarget, cachedCallee, arguments, keywords, function.getSignature(), callee.getSelf(), callee.getClassObject(),
                             function.getDefaults(), function.getKwDefaults(), isMethodcall(callee));
             return invoke.execute(frame, inliningTarget, callNode, pArguments);
@@ -295,9 +295,9 @@ public class CallDispatchers {
         @Specialization(guards = "sameCallTarget(function.getCallTarget(), callNode)", limit = "getCallSiteInlineCacheMaxDepth()", replaces = "callBuiltinMethodCached")
         static Object callBuiltinMethodCachedCt(VirtualFrame frame, Node inliningTarget, PBuiltinMethod callee, Object[] arguments, PKeyword[] keywords,
                         @Bind("callee.getBuiltinFunction()") PBuiltinFunction function,
-                        @Shared @Cached CreateArgumentsNode createArgs,
+                        @Exclusive @Cached CreateArgumentsNode createArgs,
                         @Cached("createDirectCallNodeFor(function)") DirectCallNode callNode,
-                        @Cached @Shared SimpleDirectInvokeNode invoke) {
+                        @Exclusive @Cached SimpleDirectInvokeNode invoke) {
             Signature signature;
             /*
              * The signature is PE-constant for a given callTarget, but getting it from there needs
@@ -317,7 +317,7 @@ public class CallDispatchers {
         @Megamorphic
         @InliningCutoff
         static Object callBuiltinMethodMegamorphic(VirtualFrame frame, Node inliningTarget, PBuiltinMethod callee, Object[] arguments, PKeyword[] keywords,
-                        @Shared @Cached CreateArgumentsNode createArgs,
+                        @Exclusive @Cached CreateArgumentsNode createArgs,
                         @Cached SimpleIndirectInvokeNode invoke) {
             PBuiltinFunction function = callee.getBuiltinFunction();
             Object[] pArguments = createArgs.execute(inliningTarget, callee, arguments, keywords, function.getSignature(), callee.getSelf(), callee.getClassObject(),
@@ -386,7 +386,7 @@ public class CallDispatchers {
         static Object callFunctionCached(VirtualFrame frame, Node inliningTarget, @SuppressWarnings("unused") PFunction callee, Object[] arguments,
                         @SuppressWarnings("unused") @Cached(value = "callee", weak = true) PFunction cachedCallee,
                         @Cached("createDirectCallNodeFor(callee)") DirectCallNode callNode,
-                        @Shared @Cached FunctionDirectInvokeNode invoke) {
+                        @Exclusive @Cached FunctionDirectInvokeNode invoke) {
             return invoke.execute(frame, inliningTarget, callNode, cachedCallee, arguments);
         }
 
@@ -394,7 +394,7 @@ public class CallDispatchers {
         @Specialization(guards = {"sameCallTarget(callee.getCallTarget(), callNode)"}, limit = "getCallSiteInlineCacheMaxDepth()", replaces = "callFunctionCached")
         static Object callFunctionCachedCt(VirtualFrame frame, Node inliningTarget, PFunction callee, Object[] arguments,
                         @Cached("createDirectCallNodeFor(callee)") DirectCallNode callNode,
-                        @Shared @Cached FunctionDirectInvokeNode invoke) {
+                        @Exclusive @Cached FunctionDirectInvokeNode invoke) {
             return invoke.execute(frame, inliningTarget, callNode, callee, arguments);
         }
 
@@ -422,9 +422,9 @@ public class CallDispatchers {
         @Specialization(guards = {"isSingleContext()", "callee == cachedCallee"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "cachedCallee.getCodeStableAssumption()")
         static Object callFunctionCached(VirtualFrame frame, Node inliningTarget, @SuppressWarnings("unused") PFunction callee, Object[] arguments, PKeyword[] keywords,
                         @Cached(value = "callee", weak = true) PFunction cachedCallee,
-                        @Shared @Cached CreateArgumentsNode createArgs,
+                        @Exclusive @Cached CreateArgumentsNode createArgs,
                         @Cached("createDirectCallNodeFor(callee)") DirectCallNode callNode,
-                        @Shared @Cached FunctionDirectInvokeNode invoke) {
+                        @Exclusive @Cached FunctionDirectInvokeNode invoke) {
             Object[] pArguments = createArgs.execute(inliningTarget, cachedCallee, arguments, keywords, cachedCallee.getCode().getSignature(), null, null,
                             cachedCallee.getDefaults(), cachedCallee.getKwDefaults(), false);
             return invoke.execute(frame, inliningTarget, callNode, cachedCallee, pArguments);
@@ -433,9 +433,9 @@ public class CallDispatchers {
         // We have multiple contexts, don't cache the objects so that contexts can be cleaned up
         @Specialization(guards = {"sameCallTarget(callee.getCallTarget(), callNode)"}, limit = "getCallSiteInlineCacheMaxDepth()", replaces = "callFunctionCached")
         static Object callFunctionCachedCt(VirtualFrame frame, Node inliningTarget, PFunction callee, Object[] arguments, PKeyword[] keywords,
-                        @Shared @Cached CreateArgumentsNode createArgs,
+                        @Exclusive @Cached CreateArgumentsNode createArgs,
                         @Cached("createDirectCallNodeFor(callee)") DirectCallNode callNode,
-                        @Shared @Cached FunctionDirectInvokeNode invoke) {
+                        @Exclusive @Cached FunctionDirectInvokeNode invoke) {
             Signature signature;
             /*
              * The signature is PE-constant for a given callTarget, but getting it from there needs
@@ -455,7 +455,7 @@ public class CallDispatchers {
         @Megamorphic
         @InliningCutoff
         static Object callFunctionMegamorphic(VirtualFrame frame, Node inliningTarget, PFunction callee, Object[] arguments, PKeyword[] keywords,
-                        @Shared @Cached CreateArgumentsNode createArgs,
+                        @Exclusive @Cached CreateArgumentsNode createArgs,
                         @Cached FunctionIndirectInvokeNode invoke) {
             Object[] pArguments = createArgs.execute(inliningTarget, callee, arguments, keywords, callee.getCode().getSignature(), null, null,
                             callee.getDefaults(), callee.getKwDefaults(), false);

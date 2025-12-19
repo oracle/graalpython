@@ -219,8 +219,8 @@ public final class ArrayBuiltins extends PythonBuiltins {
 
             @Specialization(guards = "isNoValue(initializer)")
             static PArray array(Node inliningTarget, Object cls, TruffleString typeCode, @SuppressWarnings("unused") PNone initializer,
-                            @Shared @Cached GetFormatCheckedNode getFormatCheckedNode,
-                            @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+                            @Exclusive @Cached GetFormatCheckedNode getFormatCheckedNode,
+                            @Exclusive @Cached TypeNodes.GetInstanceShape getInstanceShape) {
                 BufferFormat format = getFormatCheckedNode.execute(inliningTarget, typeCode);
                 return PFactory.createArray(cls, getInstanceShape.execute(cls), typeCode, format);
             }
@@ -228,8 +228,8 @@ public final class ArrayBuiltins extends PythonBuiltins {
             @Specialization
             @InliningCutoff
             static PArray arrayWithRangeInitializer(Node inliningTarget, Object cls, TruffleString typeCode, PIntRange range,
-                            @Shared @Cached GetFormatCheckedNode getFormatCheckedNode,
-                            @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                            @Exclusive @Cached GetFormatCheckedNode getFormatCheckedNode,
+                            @Exclusive @Cached TypeNodes.GetInstanceShape getInstanceShape,
                             @Exclusive @Cached ArrayNodes.PutValueNode putValueNode) {
                 BufferFormat format = getFormatCheckedNode.execute(inliningTarget, typeCode);
                 PArray array;
@@ -253,8 +253,8 @@ public final class ArrayBuiltins extends PythonBuiltins {
 
             @Specialization
             static PArray arrayWithBytesInitializer(VirtualFrame frame, Node inliningTarget, Object cls, TruffleString typeCode, PBytesLike bytes,
-                            @Shared @Cached GetFormatCheckedNode getFormatCheckedNode,
-                            @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                            @Exclusive @Cached GetFormatCheckedNode getFormatCheckedNode,
+                            @Exclusive @Cached TypeNodes.GetInstanceShape getInstanceShape,
                             @Cached(inline = false) ArrayBuiltins.FromBytesNode fromBytesNode) {
                 BufferFormat format = getFormatCheckedNode.execute(inliningTarget, typeCode);
                 PArray array = PFactory.createArray(cls, getInstanceShape.execute(cls), typeCode, format);
@@ -265,8 +265,8 @@ public final class ArrayBuiltins extends PythonBuiltins {
             @Specialization(guards = "isString(initializer)")
             @InliningCutoff
             static PArray arrayWithStringInitializer(VirtualFrame frame, Node inliningTarget, Object cls, TruffleString typeCode, Object initializer,
-                            @Shared @Cached GetFormatCheckedNode getFormatCheckedNode,
-                            @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                            @Exclusive @Cached GetFormatCheckedNode getFormatCheckedNode,
+                            @Exclusive @Cached TypeNodes.GetInstanceShape getInstanceShape,
                             @Cached(inline = false) ArrayBuiltins.FromUnicodeNode fromUnicodeNode,
                             @Cached PRaiseNode raise) {
                 BufferFormat format = getFormatCheckedNode.execute(inliningTarget, typeCode);
@@ -281,8 +281,8 @@ public final class ArrayBuiltins extends PythonBuiltins {
             @Specialization
             @InliningCutoff
             static PArray arrayArrayInitializer(VirtualFrame frame, Node inliningTarget, Object cls, TruffleString typeCode, PArray initializer,
-                            @Shared @Cached GetFormatCheckedNode getFormatCheckedNode,
-                            @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                            @Exclusive @Cached GetFormatCheckedNode getFormatCheckedNode,
+                            @Exclusive @Cached TypeNodes.GetInstanceShape getInstanceShape,
                             @Exclusive @Cached ArrayNodes.PutValueNode putValueNode,
                             @Cached ArrayNodes.GetValueNode getValueNode) {
                 BufferFormat format = getFormatCheckedNode.execute(inliningTarget, typeCode);
@@ -302,8 +302,8 @@ public final class ArrayBuiltins extends PythonBuiltins {
             @Specialization(guards = "!isBytes(initializer)")
             @InliningCutoff
             static PArray arraySequenceInitializer(VirtualFrame frame, Node inliningTarget, Object cls, TruffleString typeCode, PSequence initializer,
-                            @Shared @Cached GetFormatCheckedNode getFormatCheckedNode,
-                            @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                            @Exclusive @Cached GetFormatCheckedNode getFormatCheckedNode,
+                            @Exclusive @Cached TypeNodes.GetInstanceShape getInstanceShape,
                             @Exclusive @Cached ArrayNodes.PutValueNode putValueNode,
                             @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                             @Cached SequenceStorageNodes.GetItemScalarNode getItemNode) {
@@ -326,8 +326,8 @@ public final class ArrayBuiltins extends PythonBuiltins {
             @InliningCutoff
             static PArray arrayIteratorInitializer(VirtualFrame frame, Node inliningTarget, Object cls, TruffleString typeCode, Object initializer,
                             @Cached PyObjectGetIter getIter,
-                            @Shared @Cached GetFormatCheckedNode getFormatCheckedNode,
-                            @Shared @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                            @Exclusive @Cached GetFormatCheckedNode getFormatCheckedNode,
+                            @Exclusive @Cached TypeNodes.GetInstanceShape getInstanceShape,
                             @Exclusive @Cached ArrayNodes.PutValueNode putValueNode,
                             @Cached PyIterNextNode nextNode,
                             @Cached ArrayNodes.SetLengthNode setLengthNode,
