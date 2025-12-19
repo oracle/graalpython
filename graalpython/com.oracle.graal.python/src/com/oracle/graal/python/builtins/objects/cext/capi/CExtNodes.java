@@ -101,14 +101,14 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.ModuleSpec;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.DefaultCheckFunctionResultNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.EnsurePythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.PythonObjectArrayCreateNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ResolvePointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.UnicodeFromFormatNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.DefaultCheckFunctionResultNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
@@ -1723,28 +1723,6 @@ public abstract class CExtNodes {
         }
     }
 
-    @GenerateInline(false)
-    abstract static class ReleaseNativeWrapperNode extends Node {
-
-        public abstract void execute(Object pythonObject);
-
-// @Specialization
-// static void doNativeWrapper(@SuppressWarnings("unused") PythonAbstractObjectNativeWrapper
-// nativeWrapper) {
-// /*
-// * TODO(fa): this is the place where we should decrease the wrapper's refcount by 1 and
-// * also make the ref weak
-// */
-// }
-
-// @Specialization(guards = "!isNativeWrapper(object)")
-        @Specialization
-        @SuppressWarnings("unused")
-        static void doOther(Object object) {
-            // just do nothing; this is an implicit profile
-        }
-    }
-
     /**
      * Special helper node that promotes primitive values to {@link PythonObject} such that they can
      * be connected with a native companion.
@@ -1862,9 +1840,7 @@ public abstract class CExtNodes {
              * with native objects. They would need to be decref'd here and the commented out code
              * below doesn't do this.
              */
-            // for (int i = 0; i < wrappers.length; i++) {
-            // releaseNativeWrapperNode.execute(wrappers[i]);
-            // }
+
             assert PythonContext.get(this).isNativeAccessAllowed();
             NativeMemory.free(pointer);
         }

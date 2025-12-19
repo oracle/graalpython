@@ -74,7 +74,6 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PythonObjectArrayCreateNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PythonObjectArrayFreeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ReleaseNativeWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CreateArgsTupleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.DefaultCheckFunctionResultNodeGen;
@@ -725,13 +724,6 @@ public abstract class ExternalFunctionNodes {
         }
 
         @Override
-        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
-            for (int i = 0; i < cArguments.length; i++) {
-                ensureReleaseNativeWrapperNode().execute(cArguments[i]);
-            }
-        }
-
-        @Override
         public Signature getSignature() {
             return SIGNATURE;
         }
@@ -861,7 +853,6 @@ public abstract class ExternalFunctionNodes {
         @Child private ExternalFunctionWrapperInvokeNode externalInvokeNode;
         @Child private ReadIndexedArgumentNode readSelfNode;
         @Child private ReadIndexedArgumentNode readCallableNode;
-        @Child private ReleaseNativeWrapperNode releaseNativeWrapperNode;
         @Child private EnsurePythonObjectNode ensurePythonObjectNode;
         @Child private PythonObjectArrayCreateNode pythonObjectArrayCreateNode;
         @Child private PythonObjectArrayFreeNode pythonObjectArrayFreeNode;
@@ -937,14 +928,6 @@ public abstract class ExternalFunctionNodes {
                 readCallableNode = insert(ReadIndexedArgumentNode.create(hiddenArg));
             }
             return readCallableNode;
-        }
-
-        final ReleaseNativeWrapperNode ensureReleaseNativeWrapperNode() {
-            if (releaseNativeWrapperNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                releaseNativeWrapperNode = insert(ReleaseNativeWrapperNodeGen.create());
-            }
-            return releaseNativeWrapperNode;
         }
 
         protected final Object ensurePythonObject(Object object) {
@@ -1045,13 +1028,10 @@ public abstract class ExternalFunctionNodes {
 
         @Override
         protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
-            ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
-            releaseNativeWrapperNode.execute(cArguments[0]);
             boolean freed = MethVarargsRoot.releaseArgsTuple(cArguments[1], freeNode, seenNativeArgsTupleStorage);
             if (!seenNativeArgsTupleStorage && freed) {
                 seenNativeArgsTupleStorage = true;
             }
-            releaseNativeWrapperNode.execute(cArguments[2]);
         }
 
         @Override
@@ -1087,9 +1067,6 @@ public abstract class ExternalFunctionNodes {
 
         @Override
         protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
-            ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
-            releaseNativeWrapperNode.execute(cArguments[0]);
-            // releaseNativeWrapperNode.execute(cArguments[1]);
             boolean freed = releaseArgsTuple(cArguments[1], freeNode, seenNativeArgsTupleStorage);
             if (!seenNativeArgsTupleStorage && freed) {
                 seenNativeArgsTupleStorage = true;
@@ -1192,11 +1169,6 @@ public abstract class ExternalFunctionNodes {
         }
 
         @Override
-        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
-            ensureReleaseNativeWrapperNode().execute(cArguments[0]);
-        }
-
-        @Override
         public Signature getSignature() {
             return SIGNATURE;
         }
@@ -1214,11 +1186,6 @@ public abstract class ExternalFunctionNodes {
             Object self = readSelf(frame);
             assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
             return new Object[]{self, PNone.NO_VALUE};
-        }
-
-        @Override
-        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
-            ensureReleaseNativeWrapperNode().execute(cArguments[0]);
         }
 
         @Override
@@ -1242,13 +1209,6 @@ public abstract class ExternalFunctionNodes {
             assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
             Object arg = ensurePythonObject(readArgNode.execute(frame));
             return new Object[]{self, arg};
-        }
-
-        @Override
-        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
-            ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
-            releaseNativeWrapperNode.execute(cArguments[0]);
-            releaseNativeWrapperNode.execute(cArguments[1]);
         }
 
         @Override
@@ -1303,14 +1263,11 @@ public abstract class ExternalFunctionNodes {
 
         @Override
         protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
-            ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
-            releaseNativeWrapperNode.execute(cArguments[0]);
             assert cArguments[1] instanceof Object[];
             assert cArguments[2] instanceof Integer;
             assert cArguments[3] == PNone.NO_VALUE || cArguments[3] instanceof PTuple;
             assert ((Object[]) cArguments[1]).length == (Integer) cArguments[2] + (cArguments[3] != PNone.NO_VALUE ? ((PTuple) cArguments[3]).getSequenceStorage().length() : 0);
             ensureArrayFreeNode().execute((long) nativeArguments[1]);
-            releaseNativeWrapperNode.execute(cArguments[3]);
         }
 
         @Override
@@ -1363,15 +1320,11 @@ public abstract class ExternalFunctionNodes {
 
         @Override
         protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
-            ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
-            releaseNativeWrapperNode.execute(cArguments[0]);
-            releaseNativeWrapperNode.execute(cArguments[1]);
             assert cArguments[2] instanceof Object[];
             assert cArguments[3] instanceof Integer;
             assert cArguments[4] instanceof PTuple;
             assert ((Object[]) cArguments[2]).length == (Integer) cArguments[3] + ((PTuple) cArguments[4]).getSequenceStorage().length();
             ensureArrayFreeNode().execute((long) nativeArguments[2]);
-            releaseNativeWrapperNode.execute(cArguments[4]);
         }
 
         @Override
@@ -1413,8 +1366,6 @@ public abstract class ExternalFunctionNodes {
 
         @Override
         protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
-            ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
-            releaseNativeWrapperNode.execute(cArguments[0]);
             assert cArguments[1] instanceof Object[];
             assert cArguments[2] instanceof Integer;
             assert ((Object[]) cArguments[1]).length == (int) cArguments[2];
@@ -1454,11 +1405,6 @@ public abstract class ExternalFunctionNodes {
         }
 
         @Override
-        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
-            ensureReleaseNativeWrapperNode().execute(cArguments[0]);
-        }
-
-        @Override
         public Signature getSignature() {
             return SIGNATURE;
         }
@@ -1489,7 +1435,6 @@ public abstract class ExternalFunctionNodes {
 
         @Override
         protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
-            ensureReleaseNativeWrapperNode().execute(cArguments[0]);
             long nameArg = ((NativePointer) cArguments[1]).asPointer();
             if (LOGGER.isLoggable(Level.FINE)) {
                 LOGGER.fine(PythonUtils.formatJString("Freeing name (const char *)0x%x", nameArg));
@@ -1538,14 +1483,11 @@ public abstract class ExternalFunctionNodes {
 
         @Override
         protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
-            ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
-            releaseNativeWrapperNode.execute(cArguments[0]);
             long nameArg = ((NativePointer) nativeArguments[1]).asPointer();
             if (LOGGER.isLoggable(Level.FINE)) {
                 LOGGER.fine(PythonUtils.formatJString("Freeing name (const char *)0x%x", nameArg));
             }
             free(nameArg);
-            releaseNativeWrapperNode.execute(cArguments[2]);
         }
 
         @Override
@@ -1584,13 +1526,6 @@ public abstract class ExternalFunctionNodes {
         }
 
         @Override
-        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
-            ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
-            releaseNativeWrapperNode.execute(cArguments[0]);
-            releaseNativeWrapperNode.execute(cArguments[1]);
-        }
-
-        @Override
         public Signature getSignature() {
             return SIGNATURE;
         }
@@ -1617,11 +1552,6 @@ public abstract class ExternalFunctionNodes {
             assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
             Object arg1 = readArg1Node.execute(frame);
             return new Object[]{self, getIndexNode.execute(self, arg1)};
-        }
-
-        @Override
-        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
-            ensureReleaseNativeWrapperNode().execute(cArguments[0]);
         }
 
         @Override
@@ -1656,13 +1586,6 @@ public abstract class ExternalFunctionNodes {
         }
 
         @Override
-        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
-            ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
-            releaseNativeWrapperNode.execute(cArguments[0]);
-            releaseNativeWrapperNode.execute(cArguments[2]);
-        }
-
-        @Override
         public Signature getSignature() {
             return SIGNATURE;
         }
@@ -1692,14 +1615,6 @@ public abstract class ExternalFunctionNodes {
         }
 
         @Override
-        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
-            ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
-            releaseNativeWrapperNode.execute(cArguments[0]);
-            releaseNativeWrapperNode.execute(cArguments[1]);
-            releaseNativeWrapperNode.execute(cArguments[2]);
-        }
-
-        @Override
         public Signature getSignature() {
             return SIGNATURE;
         }
@@ -1723,13 +1638,6 @@ public abstract class ExternalFunctionNodes {
             assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
             Object obj = ensurePythonObject(readObj.execute(frame));
             return new Object[]{self, obj, PNone.NO_VALUE};
-        }
-
-        @Override
-        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
-            ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
-            releaseNativeWrapperNode.execute(cArguments[0]);
-            releaseNativeWrapperNode.execute(cArguments[1]);
         }
 
         @Override
@@ -1760,13 +1668,6 @@ public abstract class ExternalFunctionNodes {
         }
 
         @Override
-        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
-            ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
-            releaseNativeWrapperNode.execute(cArguments[0]);
-            releaseNativeWrapperNode.execute(cArguments[1]);
-        }
-
-        @Override
         public Signature getSignature() {
             return SIGNATURE;
         }
@@ -1794,14 +1695,6 @@ public abstract class ExternalFunctionNodes {
         }
 
         @Override
-        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
-            ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
-            releaseNativeWrapperNode.execute(cArguments[0]);
-            releaseNativeWrapperNode.execute(cArguments[1]);
-            releaseNativeWrapperNode.execute(cArguments[2]);
-        }
-
-        @Override
         public Signature getSignature() {
             return SIGNATURE;
         }
@@ -1826,13 +1719,6 @@ public abstract class ExternalFunctionNodes {
             Object arg0 = ensurePythonObject(readArg0Node.execute(frame));
             Object arg1 = ensurePythonObject(readArg1Node.execute(frame));
             return new Object[]{arg1, arg0};
-        }
-
-        @Override
-        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
-            ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
-            releaseNativeWrapperNode.execute(cArguments[0]);
-            releaseNativeWrapperNode.execute(cArguments[1]);
         }
 
         @Override
@@ -1869,14 +1755,6 @@ public abstract class ExternalFunctionNodes {
 
         Object[] getArguments(Object arg0, Object arg1, Object arg2) {
             return new Object[]{arg0, arg1, arg2};
-        }
-
-        @Override
-        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
-            ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
-            releaseNativeWrapperNode.execute(cArguments[0]);
-            releaseNativeWrapperNode.execute(cArguments[1]);
-            releaseNativeWrapperNode.execute(cArguments[2]);
         }
 
         @Override
@@ -1924,13 +1802,6 @@ public abstract class ExternalFunctionNodes {
         }
 
         @Override
-        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
-            ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
-            releaseNativeWrapperNode.execute(cArguments[0]);
-            releaseNativeWrapperNode.execute(cArguments[1]);
-        }
-
-        @Override
         public Signature getSignature() {
             return SIGNATURE;
         }
@@ -1948,11 +1819,6 @@ public abstract class ExternalFunctionNodes {
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
             return new Object[]{readSelf(frame)};
-        }
-
-        @Override
-        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
-            ensureReleaseNativeWrapperNode().execute(cArguments[0]);
         }
 
         @Override
@@ -2000,11 +1866,6 @@ public abstract class ExternalFunctionNodes {
         }
 
         @Override
-        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
-            ensureReleaseNativeWrapperNode().execute(cArguments[0]);
-        }
-
-        @Override
         public Signature getSignature() {
             return SIGNATURE;
         }
@@ -2028,13 +1889,6 @@ public abstract class ExternalFunctionNodes {
             assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
             Object arg = ensurePythonObject(ensureReadArgNode().execute(frame));
             return new Object[]{self, arg, readClosure(frame)};
-        }
-
-        @Override
-        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
-            ReleaseNativeWrapperNode releaseNativeWrapperNode = ensureReleaseNativeWrapperNode();
-            releaseNativeWrapperNode.execute(cArguments[0]);
-            releaseNativeWrapperNode.execute(cArguments[1]);
         }
 
         @Override
