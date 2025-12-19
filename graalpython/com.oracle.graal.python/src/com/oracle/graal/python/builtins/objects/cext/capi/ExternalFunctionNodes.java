@@ -63,6 +63,8 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.util.PythonUtils.tsArray;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
+import java.lang.ref.Reference;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -864,12 +866,16 @@ public abstract class ExternalFunctionNodes {
         }
 
         @ExplodeLoop
-        private void prepareArguments(Object[] arguments) {
+        private Object[] prepareArguments(Object[] arguments) {
+            Object[] nativeArgs = new Object[arguments.length];
             for (int i = 0; i < convertArgs.length; i++) {
                 if (convertArgs[i] != null) {
-                    arguments[i] = convertArgs[i].execute(arguments[i]);
+                    nativeArgs[i] = convertArgs[i].execute(arguments[i]);
+                } else {
+                    nativeArgs[i] = arguments[i];
                 }
             }
+            return nativeArgs;
         }
 
         @Override
@@ -881,12 +887,12 @@ public abstract class ExternalFunctionNodes {
                     throw CompilerDirectives.shouldNotReachHere();
                 }
                 Object[] cArguments = prepareCArguments(frame);
-                prepareArguments(cArguments);
                 try {
                     assert this.provider != null : "the provider cannot be null";
-                    return externalInvokeNode.execute(frame, provider, timing, name, boundFunction, cArguments);
+                    return externalInvokeNode.execute(frame, provider, timing, name, boundFunction, prepareArguments(cArguments));
                 } finally {
                     postprocessCArguments(frame, cArguments);
+                    Reference.reachabilityFence(cArguments);
                 }
             } finally {
                 calleeContext.exit(frame, this);
