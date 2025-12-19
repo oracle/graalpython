@@ -96,7 +96,6 @@
     local GPY_JVM21_STANDALONE      = "graalpy-jvm21-standalone",
     local GPY_JVM_STANDALONE        = "graalpy-jvm-standalone",
     local GPY_NATIVE_STANDALONE     = "graalpy-native-standalone",
-    local GPY_NATIVE_MANUAL_STANDALONE = "graalpy-native-bc-dsl-standalone",
     local GPYEE_JVM_STANDALONE      = "graalpy-ee-jvm-standalone",
     local GPYEE_NATIVE_STANDALONE   = "graalpy-ee-native-standalone",
     local GRAAL_JDK_LATEST          = "graal-jdk-latest",
@@ -221,7 +220,7 @@
             "windows:amd64:jdk-latest"   : tier3                     + require(GPY_NATIVE_STANDALONE) + batches(2),
         }),
         "python-svm-unittest-manual-interpreter": gpgate + platform_spec(no_jobs) + manual_interpreter_gate("python-svm-unittest") + platform_spec({
-            "linux:amd64:jdk-latest"     : tier2                     + provide(GPY_NATIVE_MANUAL_STANDALONE),
+            "linux:amd64:jdk-latest"     : tier2,
         }),
         "python-tagged-unittest": gpgate + require(GPY_NATIVE_STANDALONE) + batches(TAGGED_UNITTESTS_SPLIT) + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk-latest"     : tier2,
