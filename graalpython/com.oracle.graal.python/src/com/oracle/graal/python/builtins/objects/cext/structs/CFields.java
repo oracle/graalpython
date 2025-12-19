@@ -182,6 +182,9 @@ public enum CFields {
     PyDateTime_DateTime__hastzinfo(CHAR),
     PyDateTime_DateTime__tzinfo(PyObject),
     PyDateTime_DateTime__fold(UCHAR),
+    PyDateTime_Delta__days(Int),
+    PyDateTime_Delta__seconds(Int),
+    PyDateTime_Delta__microseconds(Int),
 
     PyNumberMethods__nb_add(binaryfunc),
     PyNumberMethods__nb_subtract(binaryfunc),

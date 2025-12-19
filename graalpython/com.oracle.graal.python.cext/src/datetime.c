@@ -7367,3 +7367,15 @@ GraalPyPrivate_DateTime_SubtypeNew(PyTypeObject* type, int year, int month, int 
     }
     return (PyObject *)self;
 }
+
+PyAPI_FUNC(PyObject*)
+GraalPyPrivate_TimeDelta_SubtypeNew(PyTypeObject* type, int days, int seconds, int microseconds) {
+    PyDateTime_Delta *self = (PyDateTime_Delta *) (type->tp_alloc(type, 0));
+    if (self != NULL) {
+        self->hashcode = -1;
+        SET_TD_DAYS(self, days);
+        SET_TD_SECONDS(self, seconds);
+        SET_TD_MICROSECONDS(self, microseconds);
+    }
+    return (PyObject *) self;
+}

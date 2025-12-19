@@ -81,7 +81,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext;
 import com.oracle.graal.python.runtime.IndirectCallData;
@@ -351,11 +350,11 @@ public final class TimeZoneBuiltins extends PythonBuiltins {
         @Specialization
         static Object fromUtc(PTimeZone self, Object dateTime,
                         @Bind Node inliningTarget,
-                        @Cached BuiltinClassProfiles.IsBuiltinObjectProfile profile,
+                        @Cached DateTimeNodes.DateTimeCheckNode dateTimeCheckNode,
                         @Cached DateTimeNodes.TzInfoNode tzInfoNode,
                         @Cached PRaiseNode raiseNode,
                         @Cached DateTimeNodes.SubclassNewNode dateTimeSubclassNewNode) {
-            if (!profile.profileObject(inliningTarget, dateTime, PythonBuiltinClassType.PDateTime)) {
+            if (!dateTimeCheckNode.execute(inliningTarget, dateTime)) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.FROMUTC_ARGUMENT_MUST_BE_A_DATETIME);
             }
             Object tzInfo = tzInfoNode.execute(inliningTarget, dateTime);

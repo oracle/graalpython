@@ -98,7 +98,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -206,7 +205,7 @@ public final class TimeBuiltins extends PythonBuiltins {
                     throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.BAD_TZINFO_STATE_ARG);
                 }
 
-                return deserializeTime(bytes, tzInfo, inliningTarget, cls);
+                return deserializeTime(bytes, tzInfo, cls);
             }
 
             return null;
@@ -218,7 +217,7 @@ public final class TimeBuiltins extends PythonBuiltins {
          * microseconds 2nd byte, microseconds 3d byte), <optional tzInfo> ) fold is encoded into
          * the first bit of the first byte.
          */
-        private static Object deserializeTime(byte[] bytes, Object tzInfo, Node inliningTarget, Object cls) {
+        private static Object deserializeTime(byte[] bytes, Object tzInfo, Object cls) {
             int fold = Byte.toUnsignedInt(bytes[0]) >> 7; // get the 1st bit
             int hours = Byte.toUnsignedInt(bytes[0]) & 0x7F; // ignore the 1st bit
             int minutes = Byte.toUnsignedInt(bytes[1]);
@@ -228,7 +227,7 @@ public final class TimeBuiltins extends PythonBuiltins {
                             (Byte.toUnsignedInt(bytes[4]) << 8) +
                             Byte.toUnsignedInt(bytes[5]);
 
-            return TimeNodes.NewUncheckedNode.getUncached().execute(inliningTarget, cls, hours, minutes, seconds, microseconds, tzInfo, fold);
+            return TimeNodes.NewNode.newTimeUnchecked(cls, hours, minutes, seconds, microseconds, tzInfo, fold);
         }
 
         /**
@@ -397,8 +396,7 @@ public final class TimeBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static Object richCmpBoundary(Object selfObj, Object otherObj, RichCmpOp op, Node inliningTarget) {
-            if ((!(selfObj instanceof PTime) && !IsBuiltinObjectProfile.profileObjectUncached(selfObj, PythonBuiltinClassType.PTime)) ||
-                            (!(otherObj instanceof PTime) && !IsBuiltinObjectProfile.profileObjectUncached(otherObj, PythonBuiltinClassType.PTime))) {
+            if (!TimeNodes.TimeCheckNode.executeUncached(selfObj) || !TimeNodes.TimeCheckNode.executeUncached(otherObj)) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
             PTime self = TimeNodes.AsManagedTimeNode.executeUncached(selfObj);
@@ -621,14 +619,13 @@ public final class TimeBuiltins extends PythonBuiltins {
                 } else if (utcOffset.isUtc()) {
                     timezone = DatetimeModuleBuiltins.getUtcTimeZone(getContext(inliningTarget));
                 } else {
-                    Object timeDeltaType = PythonBuiltinClassType.PTimeDelta;
-
                     final PTimeDelta timeDelta;
                     if (utcOffset.sign >= 0) {
-                        timeDelta = TimeDeltaNodes.NewNode.getUncached().execute(inliningTarget, timeDeltaType, 0, utcOffset.seconds, utcOffset.microseconds, 0, utcOffset.minutes, utcOffset.hours, 0);
+                        timeDelta = TimeDeltaNodes.NewNode.getUncached().executeBuiltin(inliningTarget,
+                                        0, utcOffset.seconds, utcOffset.microseconds, 0, utcOffset.minutes, utcOffset.hours, 0);
                     } else {
-                        timeDelta = TimeDeltaNodes.NewNode.getUncached().execute(inliningTarget, timeDeltaType, 0, -utcOffset.seconds, -utcOffset.microseconds, 0, -utcOffset.minutes, -utcOffset.hours,
-                                        0);
+                        timeDelta = TimeDeltaNodes.NewNode.getUncached().executeBuiltin(inliningTarget,
+                                        0, -utcOffset.seconds, -utcOffset.microseconds, 0, -utcOffset.minutes, -utcOffset.hours, 0);
                     }
 
                     DatetimeModuleBuiltins.validateUtcOffset(timeDelta, inliningTarget);

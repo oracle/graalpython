@@ -50,6 +50,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
@@ -60,6 +61,8 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -135,15 +138,20 @@ public class DateNodes {
         }
 
         @Specialization
-        static Object newDate(Object cls, int year, int month, int day,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            if (!TypeNodes.NeedsNativeAllocationNode.executeUncached(cls)) {
+        static Object newDate(Node inliningTarget, Object cls, int year, int month, int day,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                        @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
+                        @Cached CExtNodes.PCallCapiFunction callCapiFunction,
+                        @Cached ExternalFunctionNodes.DefaultCheckFunctionResultNode checkFunctionResultNode,
+                        @Cached CApiTransitions.PythonToNativeNode toNativeNode,
+                        @Cached CApiTransitions.NativeToPythonTransferNode fromNativeNode) {
+            if (!needsNativeAllocationNode.execute(inliningTarget, cls)) {
                 Shape shape = getInstanceShape.execute(cls);
                 return new PDate(cls, shape, year, month, day);
             } else {
-                Object nativeResult = CExtNodes.PCallCapiFunction.callUncached(
-                                NativeCAPISymbol.FUN_DATE_SUBTYPE_NEW, CApiTransitions.PythonToNativeNode.executeUncached(cls), year, month, day);
-                return CApiTransitions.NativeToPythonTransferNode.executeUncached(nativeResult);
+                Object nativeResult = callCapiFunction.call(NativeCAPISymbol.FUN_DATE_SUBTYPE_NEW, toNativeNode.execute(cls), year, month, day);
+                checkFunctionResultNode.execute(PythonContext.get(inliningTarget), NativeCAPISymbol.FUN_DATE_SUBTYPE_NEW.getTsName(), nativeResult);
+                return fromNativeNode.execute(nativeResult);
             }
         }
     }
@@ -201,6 +209,33 @@ public class DateNodes {
             int day = readByteNode.readFromObjUnsigned(obj, CFields.PyDateTime_Date__data, 3);
             PythonBuiltinClassType cls = PythonBuiltinClassType.PDate;
             return new PDate(cls, cls.getInstanceShape(language), year, month, day);
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class DateCheckNode extends Node {
+        public abstract boolean execute(Node inliningTarget, Object obj);
+
+        public static boolean executeUncached(Object obj) {
+            return DateNodesFactory.DateCheckNodeGen.getUncached().execute(null, obj);
+        }
+
+        @Specialization
+        static boolean doManaged(@SuppressWarnings("unused") PDate value) {
+            return true;
+        }
+
+        @Specialization
+        static boolean doNative(Node inliningTarget, PythonAbstractNativeObject value,
+                        @Cached BuiltinClassProfiles.IsBuiltinObjectProfile profile) {
+            return profile.profileObject(inliningTarget, value, PythonBuiltinClassType.PDate);
+        }
+
+        @Fallback
+        static boolean doOther(@SuppressWarnings("unused") Object value) {
+            return false;
         }
     }
 }

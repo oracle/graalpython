@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
@@ -61,6 +62,8 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -140,7 +143,28 @@ public class TimeNodes {
             }
 
             validateTimeComponents(inliningTarget, hour, minute, second, microsecond, tzInfo, fold);
-            return NewUncheckedNode.getUncached().execute(null, cls, hour, minute, second, microsecond, tzInfo, fold);
+            return newTimeUnchecked(cls, hour, minute, second, microsecond, tzInfo, fold);
+        }
+
+        @TruffleBoundary
+        public static Object newTimeUnchecked(Object cls, int hour, int minute, int second, int microsecond, Object tzInfoObject, int fold) {
+            final Object tzInfo;
+            if (tzInfoObject instanceof PNone) {
+                tzInfo = null;
+            } else {
+                tzInfo = tzInfoObject;
+            }
+
+            if (!TypeNodes.NeedsNativeAllocationNode.executeUncached(cls)) {
+                Shape shape = GetInstanceShape.executeUncached(cls);
+                return new PTime(cls, shape, hour, minute, second, microsecond, tzInfo, fold);
+            } else {
+                CApiTransitions.PythonToNativeNode toNative = CApiTransitions.PythonToNativeNode.getUncached();
+                Object nativeResult = CExtNodes.PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_TIME_SUBTYPE_NEW,
+                                toNative.execute(cls), hour, minute, second, microsecond, toNative.execute(tzInfo != null ? tzInfo : PNone.NO_VALUE), fold);
+                ExternalFunctionNodes.DefaultCheckFunctionResultNode.getUncached().execute(PythonContext.get(null), NativeCAPISymbol.FUN_TIME_SUBTYPE_NEW.getTsName(), nativeResult);
+                return CApiTransitions.NativeToPythonTransferNode.executeUncached(nativeResult);
+            }
         }
 
         @TruffleBoundary
@@ -167,39 +191,6 @@ public class TimeNodes {
 
             if (fold != 0 && fold != 1) {
                 throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.FOLD_MUST_BE_EITHER_0_OR_1);
-            }
-        }
-    }
-
-    @GenerateUncached
-    @GenerateInline
-    @GenerateCached(false)
-    public abstract static class NewUncheckedNode extends Node {
-
-        public abstract Object execute(Node inliningTarget, Object cls, int hour, int minute, int second, int microsecond, Object tzInfo, int fold);
-
-        public static NewUncheckedNode getUncached() {
-            return TimeNodesFactory.NewUncheckedNodeGen.getUncached();
-        }
-
-        @Specialization
-        static Object newTime(Object cls, int hour, int minute, int second, int microsecond, Object tzInfoObject, int fold) {
-            final Object tzInfo;
-            if (tzInfoObject instanceof PNone) {
-                tzInfo = null;
-            } else {
-                tzInfo = tzInfoObject;
-            }
-
-            if (!TypeNodes.NeedsNativeAllocationNode.executeUncached(cls)) {
-                Shape shape = GetInstanceShape.executeUncached(cls);
-                return new PTime(cls, shape, hour, minute, second, microsecond, tzInfo, fold);
-            } else {
-                CApiTransitions.PythonToNativeNode toNative = CApiTransitions.PythonToNativeNode.getUncached();
-                Object nativeResult = CExtNodes.PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_TIME_SUBTYPE_NEW,
-                                toNative.execute(cls), hour, minute, second, microsecond, toNative.execute(tzInfo != null ? tzInfo : PNone.NO_VALUE), fold);
-                // TODO exception handling
-                return CApiTransitions.NativeToPythonTransferNode.executeUncached(nativeResult);
             }
         }
     }
@@ -280,6 +271,33 @@ public class TimeNodes {
 
             PythonBuiltinClassType cls = PythonBuiltinClassType.PTime;
             return new PTime(cls, cls.getInstanceShape(language), hour, minute, second, microsecond, tzinfo, fold);
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class TimeCheckNode extends Node {
+        public abstract boolean execute(Node inliningTarget, Object obj);
+
+        public static boolean executeUncached(Object obj) {
+            return TimeNodesFactory.TimeCheckNodeGen.getUncached().execute(null, obj);
+        }
+
+        @Specialization
+        static boolean doManaged(@SuppressWarnings("unused") PTime value) {
+            return true;
+        }
+
+        @Specialization
+        static boolean doNative(Node inliningTarget, PythonAbstractNativeObject value,
+                        @Cached BuiltinClassProfiles.IsBuiltinObjectProfile profile) {
+            return profile.profileObject(inliningTarget, value, PythonBuiltinClassType.PTime);
+        }
+
+        @Fallback
+        static boolean doOther(@SuppressWarnings("unused") Object value) {
+            return false;
         }
     }
 

@@ -112,7 +112,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -294,9 +293,9 @@ public final class DateBuiltins extends PythonBuiltins {
         @Specialization
         static Object richCmp(Object selfObj, Object otherObj, RichCmpOp op,
                         @Bind Node inliningTarget,
-                        @Cached IsBuiltinObjectProfile profile,
+                        @Cached DateNodes.DateCheckNode dateCheckNode,
                         @Cached DateNodes.AsManagedDateNode asManagedDateNode) {
-            if (profile.profileObject(inliningTarget, selfObj, PythonBuiltinClassType.PDate) && profile.profileObject(inliningTarget, otherObj, PythonBuiltinClassType.PDate)) {
+            if (dateCheckNode.execute(inliningTarget, selfObj) && dateCheckNode.execute(inliningTarget, otherObj)) {
                 PDate self = asManagedDateNode.execute(inliningTarget, selfObj);
                 PDate other = asManagedDateNode.execute(inliningTarget, otherObj);
                 int result = self.compareTo(other);
@@ -343,21 +342,21 @@ public final class DateBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private static Object addBoundary(Object left, Object right, Node inliningTarget) {
             Object dateObj, deltaObj;
-            if (IsBuiltinObjectProfile.profileObjectUncached(left, PythonBuiltinClassType.PDate)) {
-                if (right instanceof PTimeDelta) {
+            if (DateNodes.DateCheckNode.executeUncached(left)) {
+                if (TimeDeltaNodes.TimeDeltaCheckNode.executeUncached(right)) {
                     dateObj = left;
                     deltaObj = right;
                 } else {
                     return PNotImplemented.NOT_IMPLEMENTED;
                 }
-            } else if (left instanceof PTimeDelta) {
+            } else if (TimeDeltaNodes.TimeDeltaCheckNode.executeUncached(left)) {
                 dateObj = right;
                 deltaObj = left;
             } else {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
             PDate date = DateNodes.AsManagedDateNode.executeUncached(dateObj);
-            PTimeDelta delta = (PTimeDelta) deltaObj;
+            PTimeDelta delta = TimeDeltaNodes.AsManagedTimeDeltaNode.executeUncached(deltaObj);
 
             LocalDate from = LocalDate.of(1, 1, 1);
             LocalDate to = LocalDate.of(date.year, date.month, date.day);
@@ -401,11 +400,11 @@ public final class DateBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static Object subBoundary(Object left, Object right, Node inliningTarget) {
-            if (!IsBuiltinObjectProfile.profileObjectUncached(left, PythonBuiltinClassType.PDate)) {
+            if (!DateNodes.DateCheckNode.executeUncached(left)) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
             PDate date = DateNodes.AsManagedDateNode.executeUncached(left);
-            if (IsBuiltinObjectProfile.profileObjectUncached(right, PythonBuiltinClassType.PDate)) {
+            if (DateNodes.DateCheckNode.executeUncached(right)) {
                 LocalDate from = LocalDate.of(1, 1, 1);
                 LocalDate toSelf = LocalDate.of(date.year, date.month, date.day);
                 long daysSelf = ChronoUnit.DAYS.between(from, toSelf) + 1;
@@ -422,7 +421,8 @@ public final class DateBuiltins extends PythonBuiltins {
                                 0,
                                 0);
             }
-            if (right instanceof PTimeDelta timeDelta) {
+            if (TimeDeltaNodes.TimeDeltaCheckNode.executeUncached(right)) {
+                PTimeDelta timeDelta = TimeDeltaNodes.AsManagedTimeDeltaNode.executeUncached(right);
                 LocalDate from = LocalDate.of(1, 1, 1);
                 LocalDate to = LocalDate.of(date.year, date.month, date.day);
                 long days = ChronoUnit.DAYS.between(from, to) + 1;

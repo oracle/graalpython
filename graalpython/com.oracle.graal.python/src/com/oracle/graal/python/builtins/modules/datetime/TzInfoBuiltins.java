@@ -71,7 +71,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
@@ -158,13 +157,13 @@ public final class TzInfoBuiltins extends PythonBuiltins {
         @Specialization
         static Object fromUtc(VirtualFrame frame, PTzInfo self, Object dateTime,
                         @Bind Node inliningTarget,
-                        @Cached BuiltinClassProfiles.IsBuiltinObjectProfile profile,
+                        @Cached DateTimeNodes.DateTimeCheckNode dateTimeCheckNode,
                         @Cached DateTimeNodes.TzInfoNode tzInfoNode,
                         @Cached PyObjectCallMethodObjArgs callMethodObjArgs,
                         @Cached PRaiseNode raiseNode,
                         @Cached TimeDeltaNodes.NewNode newTimeDeltaNode,
                         @Cached DateTimeNodes.SubclassNewNode dateTimeSubclassNewNode) {
-            if (!profile.profileObject(inliningTarget, dateTime, PythonBuiltinClassType.PDateTime)) {
+            if (!dateTimeCheckNode.execute(inliningTarget, dateTime)) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.FROMUTC_ARGUMENT_MUST_BE_A_DATETIME);
             }
             Object tzInfo = tzInfoNode.execute(inliningTarget, dateTime);
@@ -186,8 +185,7 @@ public final class TzInfoBuiltins extends PythonBuiltins {
             PTimeDelta dst = (PTimeDelta) dstObject;
 
             // calculate `offset - dst` (that's standard utc offset)
-            PTimeDelta offsetStandard = newTimeDeltaNode.execute(inliningTarget,
-                            PythonBuiltinClassType.PTimeDelta,
+            PTimeDelta offsetStandard = newTimeDeltaNode.executeBuiltin(inliningTarget,
                             offset.days - dst.days,
                             offset.seconds - dst.seconds,
                             offset.microseconds - dst.microseconds,

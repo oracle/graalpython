@@ -40,15 +40,29 @@
  */
 package com.oracle.graal.python.builtins.modules.datetime;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyLongFromDoubleNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -56,8 +70,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
-
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
 public class TimeDeltaNodes {
     @GenerateUncached
@@ -68,14 +80,18 @@ public class TimeDeltaNodes {
         private static final int MAX_DAYS = 999_999_999;
         private static final int MIN_DAYS = -999_999_999;
 
-        public abstract PTimeDelta execute(Node inliningTarget, Object cls, Object days, Object seconds, Object microseconds, Object milliseconds, Object minutes, Object hours, Object weeks);
+        public abstract Object execute(Node inliningTarget, Object cls, Object days, Object seconds, Object microseconds, Object milliseconds, Object minutes, Object hours, Object weeks);
+
+        public final PTimeDelta executeBuiltin(Node inliningTarget, Object days, Object seconds, Object microseconds, Object milliseconds, Object minutes, Object hours, Object weeks) {
+            return (PTimeDelta) execute(inliningTarget, PythonBuiltinClassType.PTimeDelta, days, seconds, microseconds, milliseconds, minutes, hours, weeks);
+        }
 
         public static TimeDeltaNodes.NewNode getUncached() {
             return TimeDeltaNodesFactory.NewNodeGen.getUncached();
         }
 
         @Specialization
-        static PTimeDelta newTimeDelta(Node inliningTarget, Object cls, Object days, Object seconds, Object microseconds, Object milliseconds, Object minutes, Object hours, Object weeks,
+        static Object newTimeDelta(Node inliningTarget, Object cls, Object days, Object seconds, Object microseconds, Object milliseconds, Object minutes, Object hours, Object weeks,
                         @Cached PRaiseNode raiseNode,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             if (days == PNone.NO_VALUE) {
@@ -129,7 +145,7 @@ public class TimeDeltaNodes {
         }
 
         @TruffleBoundary
-        private static PTimeDelta createTimeDelta(Node inliningTarget, Object cls, Shape shape, Object days, Object seconds, Object microseconds, Object milliseconds, Object minutes, Object hours,
+        private static Object createTimeDelta(Node inliningTarget, Object cls, Shape shape, Object days, Object seconds, Object microseconds, Object milliseconds, Object minutes, Object hours,
                         Object weeks) {
             Accumulator accumulator = new Accumulator();
             accumulator.addDays(days);
@@ -164,10 +180,17 @@ public class TimeDeltaNodes {
                                 MAX_DAYS);
             }
 
-            return new PTimeDelta(cls, shape,
-                            (int) daysNormalized,
-                            (int) secondsNormalized,
-                            (int) microsecondsNormalized);
+            if (!TypeNodes.NeedsNativeAllocationNode.executeUncached(cls)) {
+                return new PTimeDelta(cls, shape,
+                                (int) daysNormalized,
+                                (int) secondsNormalized,
+                                (int) microsecondsNormalized);
+            } else {
+                Object nativeResult = CExtNodes.PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_TIMEDELTA_SUBTYPE_NEW,
+                                CApiTransitions.PythonToNativeNode.executeUncached(cls), (int) daysNormalized, (int) secondsNormalized, (int) microsecondsNormalized);
+                ExternalFunctionNodes.DefaultCheckFunctionResultNode.getUncached().execute(PythonContext.get(null), NativeCAPISymbol.FUN_TIMEDELTA_SUBTYPE_NEW.getTsName(), nativeResult);
+                return CApiTransitions.NativeToPythonTransferNode.executeUncached(nativeResult);
+            }
         }
 
         private static class Accumulator {
@@ -359,6 +382,61 @@ public class TimeDeltaNodes {
                     seconds = seconds % (24 * 3600);
                 }
             }
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class TimeDeltaCheckNode extends Node {
+        public abstract boolean execute(Node inliningTarget, Object obj);
+
+        public static boolean executeUncached(Object obj) {
+            return TimeDeltaNodesFactory.TimeDeltaCheckNodeGen.getUncached().execute(null, obj);
+        }
+
+        @Specialization
+        static boolean doManaged(@SuppressWarnings("unused") PTimeDelta value) {
+            return true;
+        }
+
+        @Specialization
+        static boolean doNative(Node inliningTarget, PythonAbstractNativeObject value,
+                        @Cached BuiltinClassProfiles.IsBuiltinObjectProfile profile) {
+            return profile.profileObject(inliningTarget, value, PythonBuiltinClassType.PTimeDelta);
+        }
+
+        @Fallback
+        static boolean doOther(@SuppressWarnings("unused") Object value) {
+            return false;
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class AsManagedTimeDeltaNode extends Node {
+        public abstract PTimeDelta execute(Node inliningTarget, Object obj);
+
+        public static PTimeDelta executeUncached(Object obj) {
+            return TimeDeltaNodesFactory.AsManagedTimeDeltaNodeGen.getUncached().execute(null, obj);
+        }
+
+        @Specialization
+        static PTimeDelta doPTimeDelta(PTimeDelta value) {
+            return value;
+        }
+
+        @Specialization
+        static PTimeDelta doNative(PythonAbstractNativeObject nativeDelta,
+                        @Bind PythonLanguage language,
+                        @Cached CStructAccess.ReadI32Node readIntNode) {
+            int days = readIntNode.readFromObj(nativeDelta, CFields.PyDateTime_Delta__days);
+            int seconds = readIntNode.readFromObj(nativeDelta, CFields.PyDateTime_Delta__seconds);
+            int microseconds = readIntNode.readFromObj(nativeDelta, CFields.PyDateTime_Delta__microseconds);
+
+            PythonBuiltinClassType cls = PythonBuiltinClassType.PTimeDelta;
+            return new PTimeDelta(cls, cls.getInstanceShape(language), days, seconds, microseconds);
         }
     }
 }

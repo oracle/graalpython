@@ -133,7 +133,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
@@ -560,7 +559,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static Object richCmpBoundary(Object selfObj, Object otherObj, RichCmpOp op, Node inliningTarget) {
-            if (!IsBuiltinObjectProfile.profileObjectUncached(otherObj, PythonBuiltinClassType.PDateTime)) {
+            if (!DateTimeNodes.DateTimeCheckNode.executeUncached(otherObj)) {
                 /*
                  * Prevent invocation of date_richcompare. We want to return NotImplemented here to
                  * give the other object a chance. But since DateTime is a subclass of Date, if the
@@ -568,7 +567,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
                  * alone, and we don't want that. So force unequal or uncomparable here in that
                  * case.
                  */
-                if (IsBuiltinObjectProfile.profileObjectUncached(otherObj, PythonBuiltinClassType.PDate)) {
+                if (DateNodes.DateCheckNode.executeUncached(otherObj)) {
                     if (op == RichCmpOp.Py_EQ) {
                         return false;
                     } else if (op == RichCmpOp.Py_NE) {
@@ -733,21 +732,21 @@ public final class DateTimeBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private static Object addBoundary(Object left, Object right, Node inliningTarget) {
             Object dateTimeObj, deltaObj;
-            if (IsBuiltinObjectProfile.profileObjectUncached(left, PythonBuiltinClassType.PDateTime)) {
-                if (right instanceof PTimeDelta) {
+            if (DateTimeNodes.DateTimeCheckNode.executeUncached(left)) {
+                if (TimeDeltaNodes.TimeDeltaCheckNode.executeUncached(right)) {
                     dateTimeObj = left;
                     deltaObj = right;
                 } else {
                     return PNotImplemented.NOT_IMPLEMENTED;
                 }
-            } else if (left instanceof PTimeDelta) {
+            } else if (TimeDeltaNodes.TimeDeltaCheckNode.executeUncached(left)) {
                 dateTimeObj = right;
                 deltaObj = left;
             } else {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
             PDateTime date = DateTimeNodes.AsManagedDateTimeNode.executeUncached(dateTimeObj);
-            PTimeDelta delta = (PTimeDelta) deltaObj;
+            PTimeDelta delta = TimeDeltaNodes.AsManagedTimeDeltaNode.executeUncached(deltaObj);
 
             LocalDateTime local = toLocalDateTime(date);
             LocalDateTime localAdjusted = local.plusDays(delta.days).plusSeconds(delta.seconds).plusNanos(delta.microseconds * 1_000L);
@@ -780,11 +779,11 @@ public final class DateTimeBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private static Object subBoundary(Object left, Object right, Node inliningTarget) {
-            if (!IsBuiltinObjectProfile.profileObjectUncached(left, PythonBuiltinClassType.PDateTime)) {
+            if (!DateTimeNodes.DateTimeCheckNode.executeUncached(left)) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
             PDateTime self = DateTimeNodes.AsManagedDateTimeNode.executeUncached(left);
-            if (IsBuiltinObjectProfile.profileObjectUncached(right, PythonBuiltinClassType.PDateTime)) {
+            if (DateTimeNodes.DateTimeCheckNode.executeUncached(right)) {
                 PDateTime other = DateTimeNodes.AsManagedDateTimeNode.executeUncached(right);
 
                 final PTimeDelta selfOffset;
@@ -820,7 +819,8 @@ public final class DateTimeBuiltins extends PythonBuiltins {
                                 0,
                                 0,
                                 0);
-            } else if (right instanceof PTimeDelta timeDelta) {
+            } else if (TimeDeltaNodes.TimeDeltaCheckNode.executeUncached(right)) {
+                PTimeDelta timeDelta = TimeDeltaNodes.AsManagedTimeDeltaNode.executeUncached(right);
                 LocalDateTime local = toLocalDateTime(self);
                 LocalDateTime localAdjusted = local.minusDays(timeDelta.days).minusSeconds(timeDelta.seconds).minusNanos(timeDelta.microseconds * 1_000L);
 
@@ -1156,7 +1156,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode,
                         @Cached DateTimeNodes.SubclassNewNode newNode) {
-            if (!(dateObject instanceof PDate date)) {
+            if (!DateNodes.DateCheckNode.executeUncached(dateObject)) {
                 throw raiseNode.raise(inliningTarget,
                                 TypeError,
                                 ErrorMessages.ARG_D_MUST_BE_S_NOT_P,
@@ -1166,7 +1166,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
                                 dateObject);
             }
 
-            if (!(timeObject instanceof PTime time)) {
+            if (!TimeNodes.TimeCheckNode.executeUncached(timeObject)) {
                 throw raiseNode.raise(inliningTarget,
                                 TypeError,
                                 ErrorMessages.ARG_D_MUST_BE_S_NOT_P,
@@ -1175,6 +1175,9 @@ public final class DateTimeBuiltins extends PythonBuiltins {
                                 "datetime.time",
                                 timeObject);
             }
+
+            PDate date = DateNodes.AsManagedDateNode.executeUncached(dateObject);
+            PTime time = TimeNodes.AsManagedTimeNode.executeUncached(timeObject);
 
             final Object tzInfo;
             if (tzInfoObject instanceof PNone) {
@@ -1270,15 +1273,13 @@ public final class DateTimeBuiltins extends PythonBuiltins {
                 } else if (utcOffset.isUtc()) {
                     timezone = DatetimeModuleBuiltins.getUtcTimeZone(getContext(inliningTarget));
                 } else {
-                    Object timeDeltaType = PythonBuiltinClassType.PTimeDelta;
-
                     final PTimeDelta timeDelta;
                     if (utcOffset.sign >= 0) {
-                        timeDelta = TimeDeltaNodes.NewNode.getUncached().execute(inliningTarget, timeDeltaType, 0, utcOffset.seconds, utcOffset.microseconds, 0, utcOffset.minutes,
-                                        utcOffset.hours, 0);
+                        timeDelta = TimeDeltaNodes.NewNode.getUncached().executeBuiltin(inliningTarget,
+                                        0, utcOffset.seconds, utcOffset.microseconds, 0, utcOffset.minutes, utcOffset.hours, 0);
                     } else {
-                        timeDelta = TimeDeltaNodes.NewNode.getUncached().execute(inliningTarget, timeDeltaType, 0, -utcOffset.seconds, -utcOffset.microseconds, 0, -utcOffset.minutes,
-                                        -utcOffset.hours, 0);
+                        timeDelta = TimeDeltaNodes.NewNode.getUncached().executeBuiltin(inliningTarget,
+                                        0, -utcOffset.seconds, -utcOffset.microseconds, 0, -utcOffset.minutes, -utcOffset.hours, 0);
                     }
 
                     DatetimeModuleBuiltins.validateUtcOffset(timeDelta, inliningTarget);
@@ -2456,10 +2457,11 @@ public final class DateTimeBuiltins extends PythonBuiltins {
                 if (builder.getTimeZoneUtcOffsetAsSeconds() != null) {
                     final PTimeDelta utcOffset;
                     if (builder.getTimeZoneUtcOffsetMicroseconds() == null) {
-                        utcOffset = TimeDeltaNodes.NewNode.getUncached().execute(inliningTarget, PythonBuiltinClassType.PTimeDelta, 0, builder.getTimeZoneUtcOffsetAsSeconds(), 0, 0, 0, 0, 0);
+                        utcOffset = TimeDeltaNodes.NewNode.getUncached().executeBuiltin(inliningTarget,
+                                        0, builder.getTimeZoneUtcOffsetAsSeconds(), 0, 0, 0, 0, 0);
                     } else {
-                        utcOffset = TimeDeltaNodes.NewNode.getUncached().execute(inliningTarget, PythonBuiltinClassType.PTimeDelta, 0, builder.getTimeZoneUtcOffsetAsSeconds(),
-                                        builder.getTimeZoneUtcOffsetMicroseconds(), 0, 0, 0, 0);
+                        utcOffset = TimeDeltaNodes.NewNode.getUncached().executeBuiltin(inliningTarget,
+                                        0, builder.getTimeZoneUtcOffsetAsSeconds(), builder.getTimeZoneUtcOffsetMicroseconds(), 0, 0, 0, 0);
                     }
 
                     if (builder.getTimeZoneName() == null) {
@@ -2750,7 +2752,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
             int offsetMilliseconds = timeZone.getOffset(timestampMillis);
 
             Object timeDeltaType = PythonBuiltinClassType.PTimeDelta;
-            PTimeDelta offset = TimeDeltaNodes.NewNode.getUncached().execute(inliningTarget, timeDeltaType, 0, 0, 0, offsetMilliseconds, 0, 0, 0);
+            Object offset = TimeDeltaNodes.NewNode.getUncached().execute(inliningTarget, timeDeltaType, 0, 0, 0, offsetMilliseconds, 0, 0, 0);
 
             Object timeZoneType = PythonBuiltinClassType.PTimezone;
             TruffleString timeZoneNameTS = TruffleString.FromJavaStringNode.getUncached().execute(timeZoneName, TS_ENCODING);

@@ -410,6 +410,10 @@ public class CStructAccess {
             return execute(pointer, field.offset());
         }
 
+        public final int readFromObj(PythonNativeObject self, CFields field) {
+            return read(self.getPtr(), field);
+        }
+
         public final boolean accepts(ArgDescriptor desc) {
             return desc.isI32();
         }
