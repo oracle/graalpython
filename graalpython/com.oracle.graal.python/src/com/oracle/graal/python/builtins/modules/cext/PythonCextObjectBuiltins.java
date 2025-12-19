@@ -174,7 +174,7 @@ public abstract class PythonCextObjectBuiltins {
         @Specialization
         static Object doLong(long pointer, long refCount,
                         @Bind Node inliningTarget,
-                        @Shared @Cached UpdateHandleTableReferenceNode updateRefNode) {
+                        @Cached UpdateHandleTableReferenceNode updateRefNode) {
             assert HandlePointerConverter.pointsToPyHandleSpace(pointer);
             assert !HandlePointerConverter.pointsToPyIntHandle(pointer);
             assert !HandlePointerConverter.pointsToPyFloatHandle(pointer);
@@ -185,18 +185,6 @@ public abstract class PythonCextObjectBuiltins {
             int hti = CStructAccess.readIntField(HandlePointerConverter.pointerToStub(pointer), CFields.GraalPyObject__handle_table_index);
             updateRefNode.execute(inliningTarget, handleContext, pointer, hti, refCount);
             return PNone.NO_VALUE;
-        }
-
-        @Specialization(limit = "1")
-        static Object doInteropPointer(Object pointer, long refCount,
-                        @Bind Node inliningTarget,
-                        @Shared @Cached UpdateHandleTableReferenceNode updateRefNode,
-                        @CachedLibrary("pointer") InteropLibrary lib) {
-            try {
-                return doLong(lib.asPointer(pointer), refCount, inliningTarget, updateRefNode);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
         }
     }
 
