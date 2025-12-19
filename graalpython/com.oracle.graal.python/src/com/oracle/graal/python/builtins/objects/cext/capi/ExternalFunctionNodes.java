@@ -81,7 +81,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesF
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ExternalFunctionInvokeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ReleaseNativeSequenceStorageNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ReleaseNativeWrapperNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.MaterializePrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
@@ -101,14 +100,11 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.StorageToNativeNode;
-import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
@@ -2121,10 +2117,10 @@ public abstract class ExternalFunctionNodes {
         @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL)
         static PTuple doCachedLen(PythonContext context, Object[] args, @SuppressWarnings("unused") boolean eagerNative,
                         @Cached("args.length") int cachedLen,
-                        @Cached("createMaterializeNodes(args.length)") MaterializePrimitiveNode[] materializePrimitiveNodes) {
+                        @Cached("createMaterializeNodes(args.length)") EnsurePythonObjectNode[] materializePrimitiveNodes) {
 
             for (int i = 0; i < cachedLen; i++) {
-                args[i] = materializePrimitiveNodes[i].execute(context.getLanguage(), args[i]);
+                args[i] = materializePrimitiveNodes[i].execute(context, args[i], false);
             }
             return PFactory.createTuple(context.getLanguage(), args);
         }
@@ -2134,11 +2130,11 @@ public abstract class ExternalFunctionNodes {
         static PTuple doCachedLenEagerNative(PythonContext context, Object[] args, @SuppressWarnings("unused") boolean eagerNative,
                         @Bind Node inliningTarget,
                         @Cached("args.length") int cachedLen,
-                        @Cached("createMaterializeNodes(args.length)") MaterializePrimitiveNode[] materializePrimitiveNodes,
+                        @Cached("createMaterializeNodes(args.length)") EnsurePythonObjectNode[] materializePrimitiveNodes,
                         @Exclusive @Cached StorageToNativeNode storageToNativeNode) {
 
             for (int i = 0; i < cachedLen; i++) {
-                args[i] = materializePrimitiveNodes[i].execute(context.getLanguage(), args[i]);
+                args[i] = materializePrimitiveNodes[i].execute(context, args[i], false);
             }
             return PFactory.createTuple(context.getLanguage(), storageToNativeNode.execute(inliningTarget, args, cachedLen, true));
         }
@@ -2146,12 +2142,12 @@ public abstract class ExternalFunctionNodes {
         @Specialization(replaces = {"doCachedLen", "doCachedLenEagerNative"})
         static PTuple doGeneric(PythonContext context, Object[] args, boolean eagerNative,
                         @Bind Node inliningTarget,
-                        @Cached MaterializePrimitiveNode materializePrimitiveNode,
+                        @Cached EnsurePythonObjectNode materializePrimitiveNode,
                         @Exclusive @Cached StorageToNativeNode storageToNativeNode) {
 
             int n = args.length;
             for (int i = 0; i < n; i++) {
-                args[i] = materializePrimitiveNode.execute(context.getLanguage(), args[i]);
+                args[i] = materializePrimitiveNode.execute(context, args[i], false);
             }
             SequenceStorage storage;
             if (eagerNative) {
@@ -2162,10 +2158,10 @@ public abstract class ExternalFunctionNodes {
             return PFactory.createTuple(context.getLanguage(), storage);
         }
 
-        static MaterializePrimitiveNode[] createMaterializeNodes(int length) {
-            MaterializePrimitiveNode[] materializePrimitiveNodes = new MaterializePrimitiveNode[length];
+        static EnsurePythonObjectNode[] createMaterializeNodes(int length) {
+            EnsurePythonObjectNode[] materializePrimitiveNodes = new EnsurePythonObjectNode[length];
             for (int i = 0; i < length; i++) {
-                materializePrimitiveNodes[i] = MaterializePrimitiveNodeGen.create();
+                materializePrimitiveNodes[i] = EnsurePythonObjectNode.create();
             }
             return materializePrimitiveNodes;
         }
@@ -2201,44 +2197,6 @@ public abstract class ExternalFunctionNodes {
             }
             // in this case, the runtime still exclusively owns the memory
             free(storage.getPtr());
-        }
-    }
-
-    /**
-     * Special helper nodes that materializes any primitive that would leak the wrapper if the
-     * reference is owned by managed code only.
-     */
-    @GenerateInline(false)
-    @GenerateUncached
-    abstract static class MaterializePrimitiveNode extends Node {
-
-        public abstract Object execute(PythonLanguage language, Object object);
-
-        // NOTE: Booleans don't need to be materialized because they are singletons.
-
-        @Specialization
-        static PInt doInteger(PythonLanguage language, int i) {
-            return PFactory.createInt(language, i);
-        }
-
-        @Specialization
-        static PInt doLong(PythonLanguage language, long l) {
-            return PFactory.createInt(language, l);
-        }
-
-        @Specialization
-        static PFloat doDouble(PythonLanguage language, double d) {
-            return PFactory.createFloat(language, d);
-        }
-
-        @Specialization
-        static PString doString(PythonLanguage language, TruffleString s) {
-            return PFactory.createString(language, s);
-        }
-
-        @Fallback
-        static Object doObject(@SuppressWarnings("unused") PythonLanguage language, Object object) {
-            return object;
         }
     }
 
