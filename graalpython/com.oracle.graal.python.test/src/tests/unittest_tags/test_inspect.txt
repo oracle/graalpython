@@ -62,11 +62,12 @@ test.test_inspect.test_inspect.TestClassesAndFunctions.test_pep_695_generic_meth
 test.test_inspect.test_inspect.TestClassesAndFunctions.test_pep_695_generic_method_with_future_annotations_name_clash_with_global_and_local_vars @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_inspect.test_inspect.TestClassesAndFunctions.test_pep_695_generic_method_with_future_annotations_name_clash_with_global_vars @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_inspect.test_inspect.TestClassesAndFunctions.test_pep_695_generics_with_future_annotations_nested_in_function @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_inspect.test_inspect.TestComplexDecorator.test_parens_in_decorator @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_inspect.test_inspect.TestDecorators.test_decorator_with_lambda @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_inspect.test_inspect.TestDecorators.test_getsource_unwrap @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+# GR-71889
+!test.test_inspect.test_inspect.TestComplexDecorator.test_parens_in_decorator @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+!test.test_inspect.test_inspect.TestDecorators.test_decorator_with_lambda @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+!test.test_inspect.test_inspect.TestDecorators.test_getsource_unwrap @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_inspect.test_inspect.TestDecorators.test_replacing_decorator @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_inspect.test_inspect.TestDecorators.test_wrapped_decorator @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+!test.test_inspect.test_inspect.TestDecorators.test_wrapped_decorator @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_inspect.test_inspect.TestFormatAnnotation.test_typing_replacement @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_inspect.test_inspect.TestGetAsyncGenState.test_easy_debugging @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_inspect.test_inspect.TestGetAsyncGenState.test_getasyncgenlocals @ darwin-arm64,linux-aarch64,linux-x86_64
@@ -183,6 +184,7 @@ test.test_inspect.test_inspect.TestPredicates.test_excluding_predicates @ darwin
 test.test_inspect.test_inspect.TestPredicates.test_get_slot_members @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_inspect.test_inspect.TestPredicates.test_isabstract @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_inspect.test_inspect.TestPredicates.test_isabstract_during_init_subclass @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_inspect.test_inspect.TestPredicates.test_isawaitable @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_inspect.test_inspect.TestPredicates.test_isclass @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_inspect.test_inspect.TestPredicates.test_iscoroutine @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_inspect.test_inspect.TestPredicates.test_isroutine @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64

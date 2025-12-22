@@ -297,14 +297,7 @@ class GraalPythonVm(AbstractPythonIterationsControlVm):
         return launcher
 
     def post_process_command_line_args(self, args):
-        if os.environ.get('BYTECODE_DSL_INTERPRETER', '').lower() == 'true' and not self.is_bytecode_dsl_config():
-            print("Found environment variable BYTECODE_DSL_INTERPRETER, but the guest vm config is not Bytecode DSL config.")
-            print("Did you want to use, e.g., `mx benchmark ... -- --python-vm-config=default-bc-dsl`?")
-            sys.exit(1)
         return self.get_extra_polyglot_args() + args
-
-    def is_bytecode_dsl_config(self):
-        return '--vm.Dpython.EnableBytecodeDSLInterpreter=true' in self.get_extra_polyglot_args()
 
     def extract_vm_info(self, args=None):
         out_version = subprocess.check_output([self.interpreter, '--version'], universal_newlines=True)
@@ -331,15 +324,6 @@ class GraalPythonVm(AbstractPythonIterationsControlVm):
     def run(self, *args, **kwargs):
         code, out, dims = super().run(*args, **kwargs)
         dims.update(self._dims)
-
-        is_bytecode_dsl_config = self.is_bytecode_dsl_config()
-        if "using bytecode DSL interpreter:" not in out:
-            # Let's be lenient unless in CI
-            print(f"BENCHMARK WARNING: could not verify whether running on bytecode DSL or not")
-        elif code == 0 and not f"using bytecode DSL interpreter: {is_bytecode_dsl_config}" in out:
-            print(f"ERROR: host VM config does not match what the the harness reported. "
-                  f"Expected Bytecode DSL interpreter = {is_bytecode_dsl_config}. Harness output:\n{out}", file=sys.stderr)
-            return 1, out, dims
         return code, out, dims
 
     def get_extra_polyglot_args(self):
@@ -1094,10 +1078,6 @@ def register_vms(suite, sandboxed_options):
     add_graalpy_vm(CONFIGURATION_NATIVE_MULTI, '--experimental-options', '-multi-context')
     add_graalpy_vm(CONFIGURATION_NATIVE_INTERPRETER_MULTI, '--experimental-options', '-multi-context', '--engine.Compilation=false')
     add_graalpy_vm(CONFIGURATION_NATIVE_MULTI_TIER, '--experimental-options', '--engine.MultiTier=true')
-
-    # all of the graalpy vms, but with bc dsl
-    for name, extra_polyglot_args in graalpy_vms[:]:
-        add_graalpy_vm(f'{name}-bc-dsl', *['--vm.Dpython.EnableBytecodeDSLInterpreter=true', *extra_polyglot_args])
 
     # all of the graalpy vms, but with different numbers of compiler threads
     for name, extra_polyglot_args in graalpy_vms[:]:

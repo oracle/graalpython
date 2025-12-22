@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.modules.datetime;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -48,7 +50,6 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -57,8 +58,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
-
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
 public class TimeZoneNodes {
     @GenerateUncached
@@ -75,7 +74,7 @@ public class TimeZoneNodes {
         @Specialization
         static PTimeZone newTimezone(Node inliningTarget, PythonContext context, Object cls, PTimeDelta offset, Object nameObject,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
-                        @Cached @Shared PRaiseNode raiseNode,
+                        @Cached PRaiseNode raiseNode,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
             final TruffleString name;
             if (nameObject == PNone.NO_VALUE) {
@@ -105,9 +104,8 @@ public class TimeZoneNodes {
         }
 
         @Fallback
-        static PTimeZone doGeneric(Node inliningTarget, PythonContext context, Object cls, Object offset, Object name,
-                        @Cached @Shared PRaiseNode raiseNode) {
-            throw raiseNode.raise(inliningTarget,
+        static PTimeZone doGeneric(Node inliningTarget, PythonContext context, Object cls, Object offset, Object name) {
+            throw PRaiseNode.raiseStatic(inliningTarget,
                             TypeError,
                             ErrorMessages.ARG_D_MUST_BE_S_NOT_P,
                             "timezone()",

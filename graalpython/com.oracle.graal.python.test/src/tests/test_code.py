@@ -231,3 +231,57 @@ def test_generator_and_gen_body_code_are_equal():
 
     x = g()
     assert g.__code__ is x.gi_code
+
+def dedup(lst, prev=object()):
+    for item in lst:
+        if item != prev:
+            yield item
+            prev = item
+
+def check_lines(func):
+    co = func.__code__
+    lines = [line for _, _, line in co.co_lines()]
+    assert lines == list(dedup(lines))
+
+def test_check_lines_dedup():
+    def misshappen():
+        """
+
+
+
+
+
+        """
+        x = (
+
+
+                4
+
+                +
+
+                y
+
+        )
+        y = (
+                a
+                +
+                b
+                +
+
+                d
+        )
+        return q if (
+
+            x
+
+        ) else p
+
+    def bug93662():
+        example_report_generation_message= (
+            """
+            """
+        ).strip()
+        raise ValueError()
+
+    check_lines(misshappen)
+    check_lines(bug93662)

@@ -681,7 +681,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
             RootNode rootNode;
             if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                rootNode = compileForBytecodeDSLInterpreter(context, mod, source, optimize, errorCb, futureFeatures);
+                rootNode = compileForBytecodeDSLInterpreter(mod, source, optimize, errorCb, futureFeatures);
             } else {
                 rootNode = compileForBytecodeInterpreter(mod, source, optimize, errorCb, futureFeatures);
             }
@@ -717,9 +717,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return PBytecodeRootNode.create(this, co, new LazySource(source), source.isInternal(), parserCallbacks);
     }
 
-    private RootNode compileForBytecodeDSLInterpreter(PythonContext context, ModTy mod, Source source, int optimize,
+    private RootNode compileForBytecodeDSLInterpreter(ModTy mod, Source source, int optimize,
                     ParserCallbacksImpl parserCallbacks, EnumSet<FutureFeature> futureFeatures) {
-        BytecodeDSLCompilerResult result = BytecodeDSLCompiler.compile(this, context, mod, source, optimize, parserCallbacks, futureFeatures);
+        BytecodeDSLCompilerResult result = BytecodeDSLCompiler.compile(this, mod, source, optimize, parserCallbacks, futureFeatures);
         return result.rootNode();
     }
 

@@ -770,4 +770,4 @@ def compile(p, flags=0):
         )
 
 
-compile = _sre.setup(compile, error, _parser.FLAGS)
+compile = _sre.setup(compile, error)

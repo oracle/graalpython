@@ -728,7 +728,7 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
         @Override
         protected TruffleString defaultConversion(VirtualFrame frame, InteropLibrary lib, Object object) {
             try {
-                if (getContext().getEnv().isHostObject(object)) {
+                if (lib.isHostObject(object)) {
                     boolean isMetaObject = lib.isMetaObject(object);
                     Object metaObject = null;
                     if (isMetaObject) {

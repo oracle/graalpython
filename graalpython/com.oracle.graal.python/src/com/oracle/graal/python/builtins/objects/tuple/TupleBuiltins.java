@@ -90,6 +90,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -129,50 +130,29 @@ public final class TupleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class TupleNode extends PythonBinaryBuiltinNode {
 
-        @Specialization(guards = "isBuiltinTupleType(cls)")
-        static Object doBuiltin(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object iterable,
-                        @Shared @Cached TupleNodes.ConstructTupleNode constructTupleNode) {
-            return constructTupleNode.execute(frame, iterable);
-        }
-
-        @Specialization(guards = "!needsNativeAllocationNode.execute(inliningTarget, cls)", replaces = "doBuiltin")
-        static PTuple constructTuple(VirtualFrame frame, Object cls, Object iterable,
-                        @SuppressWarnings("unused") @Bind Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
-                        @Shared @Cached TupleNodes.ConstructTupleNode constructTupleNode,
-                        @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            PTuple tuple = constructTupleNode.execute(frame, iterable);
-            if (isSameTypeNode.execute(inliningTarget, cls, PythonBuiltinClassType.PTuple)) {
-                return tuple;
+        @Specialization
+        static Object doGeneric(VirtualFrame frame, Object cls, Object iterable,
+                        @Bind Node inliningTarget,
+                        @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
+                        @Cached TupleNodes.ConstructTupleNode constructTupleNode,
+                        @Cached BuiltinClassProfiles.IsBuiltinClassExactProfile exactClassProfile,
+                        @Cached IsSubtypeNode subtypeNode,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                        @Cached CExtNodes.TupleSubtypeNew subtypeNew,
+                        @Cached PRaiseNode raiseNode) {
+            if (exactClassProfile.profileClass(inliningTarget, cls, PythonBuiltinClassType.PTuple)) {
+                return constructTupleNode.execute(frame, iterable);
+            } else if (subtypeNode.execute(cls, PythonBuiltinClassType.PTuple)) {
+                if (needsNativeAllocationNode.execute(inliningTarget, cls)) {
+                    // delegate to tuple_subtype_new(PyTypeObject *type, PyObject *x)
+                    return subtypeNew.call(cls, iterable);
+                } else {
+                    PTuple tuple = constructTupleNode.execute(frame, iterable);
+                    return PFactory.createTuple(cls, getInstanceShape.execute(cls), tuple.getSequenceStorage());
+                }
             } else {
-                return PFactory.createTuple(cls, getInstanceShape.execute(cls), tuple.getSequenceStorage());
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
             }
-        }
-
-        // delegate to tuple_subtype_new(PyTypeObject *type, PyObject *x)
-        @Specialization(guards = {"needsNativeAllocationNode.execute(inliningTarget, cls)", "isSubtypeOfTuple( isSubtype, cls)"}, limit = "1")
-        @InliningCutoff
-        static Object doNative(@SuppressWarnings("unused") VirtualFrame frame, Object cls, Object iterable,
-                        @SuppressWarnings("unused") @Bind Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
-                        @Cached @SuppressWarnings("unused") IsSubtypeNode isSubtype,
-                        @Cached CExtNodes.TupleSubtypeNew subtypeNew) {
-            return subtypeNew.call(cls, iterable);
-        }
-
-        protected static boolean isBuiltinTupleType(Object cls) {
-            return cls == PythonBuiltinClassType.PTuple;
-        }
-
-        protected static boolean isSubtypeOfTuple(IsSubtypeNode isSubtypeNode, Object cls) {
-            return isSubtypeNode.execute(cls, PythonBuiltinClassType.PTuple);
-        }
-
-        @Fallback
-        static PTuple tupleObject(Object cls, @SuppressWarnings("unused") Object arg,
-                        @Bind Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.IS_NOT_TYPE_OBJ, "'cls'", cls);
         }
     }
 

@@ -572,7 +572,7 @@ public class MemoryViewNodes {
         @Specialization(guards = "self.getReference() == null")
         static void releaseSimple(PMemoryView self,
                         @Bind Node inliningTarget,
-                        @Shared("raise") @Cached PRaiseNode raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             self.checkExports(inliningTarget, raiseNode);
             self.setReleased();
         }
@@ -582,7 +582,7 @@ public class MemoryViewNodes {
                         @Bind Node inliningTarget,
                         @Cached("createFor($node)") InteropCallData callData,
                         @Cached ReleaseBufferNode releaseNode,
-                        @Shared("raise") @Cached PRaiseNode raiseNode) {
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             self.checkExports(inliningTarget, raiseNode);
             if (self.checkShouldReleaseBuffer()) {
                 releaseNode.execute(frame, inliningTarget, callData, self.getLifecycleManager());

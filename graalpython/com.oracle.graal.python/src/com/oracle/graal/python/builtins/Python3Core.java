@@ -102,7 +102,9 @@ import com.oracle.graal.python.builtins.modules.QueueModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.RandomModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ReadlineModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ResourceModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.SREModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.re.MatchBuiltins;
+import com.oracle.graal.python.builtins.modules.re.PatternBuiltins;
+import com.oracle.graal.python.builtins.modules.re.SREModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SSLModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SelectModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SignalModuleBuiltins;
@@ -202,6 +204,7 @@ import com.oracle.graal.python.builtins.modules.pickle.PicklerBuiltins;
 import com.oracle.graal.python.builtins.modules.pickle.PicklerMemoProxyBuiltins;
 import com.oracle.graal.python.builtins.modules.pickle.UnpicklerBuiltins;
 import com.oracle.graal.python.builtins.modules.pickle.UnpicklerMemoProxyBuiltins;
+import com.oracle.graal.python.builtins.modules.re.SREScannerBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZLibModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZlibCompressBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZlibDecompressBuiltins;
@@ -773,7 +776,7 @@ public abstract class Python3Core {
                         new StructBuiltins(),
                         new StructUnpackIteratorBuiltins(),
 
-                        // datetime
+                        // _datetime
                         new DateBuiltins(),
                         new TimeDeltaBuiltins(),
                         new DateTimeBuiltins(),
@@ -782,6 +785,11 @@ public abstract class Python3Core {
                         new TzInfoBuiltins(),
                         new TimeZoneBuiltins(),
                         new DatetimeModuleBuiltins(),
+
+                        // _sre
+                        new PatternBuiltins(),
+                        new MatchBuiltins(),
+                        new SREScannerBuiltins(),
 
                         // _asyncio
                         new AsyncioModuleBuiltins(),

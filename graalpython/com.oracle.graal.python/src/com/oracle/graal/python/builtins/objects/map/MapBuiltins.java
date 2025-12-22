@@ -47,10 +47,10 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -141,7 +141,7 @@ public final class MapBuiltins extends PythonBuiltins {
                         @Shared @Cached TpSlots.GetObjectSlotsNode getSlots,
                         @Shared @Cached TpSlotIterNext.CallSlotTpIterNextNode callTpIternext,
                         @Shared @Cached CallNode callNode,
-                        @Cached InlinedLoopConditionProfile loopProfile) {
+                        @Shared @Cached InlinedLoopConditionProfile loopProfile) {
             Object[] iterators = self.getIterators();
             Object[] arguments = new Object[iterators.length];
             loopProfile.profileCounted(inliningTarget, iterators.length);

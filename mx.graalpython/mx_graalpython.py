@@ -126,7 +126,7 @@ CI = get_boolean_env("CI")
 GITHUB_CI = get_boolean_env("GITHUB_CI")
 WIN32 = sys.platform == "win32"
 BUILD_NATIVE_IMAGE_WITH_ASSERTIONS = get_boolean_env('BUILD_WITH_ASSERTIONS', CI)
-BYTECODE_DSL_INTERPRETER = get_boolean_env('BYTECODE_DSL_INTERPRETER', False)
+BYTECODE_DSL_INTERPRETER = get_boolean_env('BYTECODE_DSL_INTERPRETER', True)
 
 mx_gate.add_jacoco_excludes([
     "com.oracle.graal.python.pegparser.sst",
@@ -271,8 +271,7 @@ def github_ci_build_args():
         ]
 
 def libpythonvm_build_args():
-    build_args = []
-    build_args += bytecode_dsl_build_args()
+    build_args = bytecode_dsl_build_args()
 
     if os.environ.get("GITHUB_CI"):
         build_args += github_ci_build_args()
@@ -301,16 +300,15 @@ def libpythonvm_build_args():
         vc = SUITE.vc
         commit = str(vc.tip(SUITE.dir)).strip()
         branch = str(vc.active_branch(SUITE.dir, abortOnError=False) or 'master').strip()
-        dsl_suffix = '' if not BYTECODE_DSL_INTERPRETER else '-bytecode-dsl'
 
         if script := os.environ.get("ARTIFACT_DOWNLOAD_SCRIPT"):
             # This is always available in the GraalPy CI
-            profile = f"cached_profile{dsl_suffix}.iprof.gz"
+            profile = f"cached_profile.iprof.gz"
             run(
                 [
                     sys.executable,
                     script,
-                    f"graalpy/pgo{dsl_suffix}-{commit}",
+                    f"graalpy/pgo-{commit}",
                     profile,
                 ],
                 nonZeroIsFatal=False,
@@ -323,8 +321,6 @@ def libpythonvm_build_args():
                     if not profile:
                         try:
                             profile = get_profile(["--branch", b])
-                            if profile and dsl_suffix not in profile:
-                                mx.warn("PGO profile seems mismatched, you need newer graal-enterprise")
                         except BaseException:
                             pass
 
@@ -383,13 +379,9 @@ def graalpy_native_pgo_build_and_test(args=None):
                 GRAALPY_HOME=instrumented_home,
         ):
             graalpytest(["--python", instrumented_launcher, "test_venv.py"])
-            python_vm_config = 'custom'
-            if BYTECODE_DSL_INTERPRETER:
-                python_vm_config += '-bc-dsl'
-            mx.command_function('benchmark')(["meso-small:*", "--", "--python-vm", "graalpython", "--python-vm-config", python_vm_config])
-        dsl_suffix = '' if not BYTECODE_DSL_INTERPRETER else '-bytecode-dsl'
-        iprof_path = Path(SUITE.dir) / f'default{dsl_suffix}.iprof'
-        lcov_path = Path(SUITE.dir) / f'default{dsl_suffix}.lcov'
+            mx.command_function('benchmark')(["meso-small:*", "--", "--python-vm", "graalpython", "--python-vm-config", 'custom'])
+        iprof_path = Path(SUITE.dir) / f'default.iprof'
+        lcov_path = Path(SUITE.dir) / f'default.lcov'
 
         run([
             os.path.join(
@@ -442,7 +434,7 @@ def graalpy_native_pgo_build_and_test(args=None):
                 sys.executable,
                 script,
                 iprof_gz_path,
-                f"pgo{dsl_suffix}-{commit}",
+                f"pgo-{commit}",
                 "graalpy",
                 "--lifecycle",
                 "cache",
@@ -637,10 +629,7 @@ def punittest(ars, report: Union[Task, bool, None] = False):
     if is_collecting_coverage():
         skip_leak_tests = True
 
-    vm_args = ['-Dpolyglot.engine.WarnInterpreterOnly=false']
-
-    if BYTECODE_DSL_INTERPRETER:
-        vm_args.append("-Dpython.EnableBytecodeDSLInterpreter=true")
+    vm_args = ['-Dpolyglot.engine.WarnInterpreterOnly=false'] + bytecode_dsl_build_args()
 
     # Note: we must use filters instead of --regex so that mx correctly processes the unit test configs,
     # but it is OK to apply --regex on top of the filters
@@ -870,9 +859,7 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
         mx_args.append("--extra-image-builder-argument=-ea")
 
     if mx_gate.get_jacoco_agent_args() or (build and not DISABLE_REBUILD):
-        mx_build_args = mx_args
-        if BYTECODE_DSL_INTERPRETER:
-            mx_build_args = mx_args + ["--extra-image-builder-argument=-Dpython.EnableBytecodeDSLInterpreter=true"]
+        mx_build_args = mx_args + bytecode_dsl_build_args(prefix="--extra-image-builder-argument=")
         # This build is purposefully done without the LATEST_JAVA_HOME in the
         # environment, so we can build JVM standalones on an older Graal JDK
         run_mx(mx_build_args + ["build", "--target", standalone_dist])
@@ -1016,7 +1003,7 @@ def deploy_local_maven_repo(env=None):
     return path, version, env
 
 
-def deploy_graalpy_extensions_to_local_maven_repo(env=None):
+def deploy_graalpy_extensions_to_local_maven_repo(env=None, only_projects=None):
     env = update_maven_opts({**os.environ.copy(), **(env or {})})
     env["MVNW_REPOURL"] = mx_urlrewrites.rewriteurl("https://repo.maven.apache.org/maven2/").rstrip('/')
     env["MVNW_VERBOSE"] = "true"
@@ -1038,19 +1025,34 @@ def deploy_graalpy_extensions_to_local_maven_repo(env=None):
 
     local_repo_path = os.path.join(SUITE.get_mx_output_dir(), 'public-maven-repo')
     version = GRAAL_VERSION
+    common_args = [
+        '-DskipJavainterfacegen',
+        '-DskipTests',
+        f'-Drevision={version}',
+        f'-Dlocal.repo.url=' + pathlib.Path(local_repo_path).as_uri(),
+        f"-Dgradle.java.home={gradle_java_home}"
+    ]
     mx.run([os.path.join(graalpy_extensions_path, mx.cmd_suffix('mvnw')),
-            '-Pmxurlrewrite', '-DskipJavainterfacegen', '-DskipTests', '-DdeployAtEnd=true',
-            f'-Drevision={version}',
-            f'-Dlocal.repo.url=' + pathlib.Path(local_repo_path).as_uri(),
-            f'-DaltDeploymentRepository=local::default::file:{local_repo_path}',
-            f"-Dgradle.java.home={gradle_java_home}",
+            *common_args, '-Pmxurlrewrite',
+            '-N', 'exec:java@patch-gradle-props'],
+            env=env, cwd=graalpy_extensions_path)
+    if only_projects:
+        common_args += ['-pl', ','.join(only_projects)]
+    mx.run([os.path.join(graalpy_extensions_path, mx.cmd_suffix('mvnw')),
+            *common_args, '-DdeployAtEnd=true',
+            f'-DaltDeploymentRepository=local::{pathlib.Path(local_repo_path).as_uri()}',
             'deploy'], env=env, cwd=graalpy_extensions_path)
 
     return local_repo_path, version, env
 
 
-def deploy_local_maven_repo_wrapper(*_):
+def deploy_graalpy_extensions_to_local_maven_repo_wrapper(*args):
+    deploy_graalpy_extensions_to_local_maven_repo()
+
+def deploy_local_maven_repo_wrapper(*args):
     p, _, _ = deploy_local_maven_repo()
+    if '--with-extensions' in args:
+        deploy_graalpy_extensions_to_local_maven_repo()
     print(f"local Maven repo path: {p}")
 
 
@@ -1178,8 +1180,8 @@ def graalpytest(args):
             gp_args += ["--vm.ea", "--vm.esa"]
         mx.log(f"Executable seems to be GraalPy, prepending arguments: {gp_args}")
         python_args += gp_args
-    if is_graalpy and BYTECODE_DSL_INTERPRETER:
-        python_args.insert(0, "--vm.Dpython.EnableBytecodeDSLInterpreter=true")
+    if is_graalpy and not BYTECODE_DSL_INTERPRETER:
+        python_args.insert(0, "--vm.Dpython.EnableBytecodeDSLInterpreter=false")
 
     runner_args.append(f'--subprocess-args={shlex.join(python_args)}')
     if is_graalpy:
@@ -1233,8 +1235,8 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
         # index in in that case
         env["PIP_EXTRA_INDEX_URL"] = pip_index
 
-    if BYTECODE_DSL_INTERPRETER:
-        args += ['--vm.Dpython.EnableBytecodeDSLInterpreter=true']
+    if not BYTECODE_DSL_INTERPRETER:
+        args += ['--vm.Dpython.EnableBytecodeDSLInterpreter=false']
     args += [_python_test_runner(), "run", "--durations", "10", "-n", parallelism, f"--subprocess-args={shlex.join(args)}"]
 
     if runner_args:
@@ -1356,7 +1358,8 @@ def graalpython_gate_runner(_, tasks):
                 jdk = mx.get_jdk()
                 prev = jdk.java_args_pfx
                 try:
-                    jdk.java_args_pfx = (mx._opts.java_args or []) + ['-Dpython.WithoutPlatformAccess=true']
+                    java_args = shlex.split(mx._opts.java_args) if mx._opts.java_args else []
+                    jdk.java_args_pfx = java_args + ['-Dpython.WithoutPlatformAccess=true']
                     punittest(['--verbose', '--no-leak-tests', '--regex', 'com.oracle.graal.python.test.advanced.ExclusionsTest'])
                 finally:
                     jdk.java_args_pfx = prev
@@ -1498,7 +1501,7 @@ def graalpython_gate_runner(_, tasks):
             gvm_jdk = graalvm_jdk()
             standalone_home = graalpy_standalone_home('jvm')
             mvn_repo_path, version, env = deploy_local_maven_repo()
-            deploy_graalpy_extensions_to_local_maven_repo()
+            deploy_graalpy_extensions_to_local_maven_repo(only_projects=['org.graalvm.python.embedding'])
 
             if RUNNING_ON_LATEST_JAVA:
                 # our standalone python binary is meant for standalone graalpy
@@ -2145,8 +2148,8 @@ mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
 ))
 
 
-def bytecode_dsl_build_args():
-    return ['-Dpython.EnableBytecodeDSLInterpreter=true'] if BYTECODE_DSL_INTERPRETER else []
+def bytecode_dsl_build_args(prefix=''):
+    return [] if BYTECODE_DSL_INTERPRETER else [prefix + '-Dpython.EnableBytecodeDSLInterpreter=false']
 
 mx_sdk.register_graalvm_component(mx_sdk.GraalVmLanguage(
     suite=SUITE,
@@ -2573,7 +2576,7 @@ class GraalpythonFrozenModuleBuildTask(GraalpythonBuildTask):
         dsl_vm_args = ["-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:8000"] if 'DEBUG_FROZEN_BCI' in os.environ else []
 
         return bool(
-            self.run_for(args, "manual bytecode", extra_vm_args=manual_vm_args) or
+            self.run_for(args, "manual bytecode", extra_vm_args=manual_vm_args + ["-Dpython.EnableBytecodeDSLInterpreter=false"]) or
             self.run_for(args, "dsl", extra_vm_args=dsl_vm_args + ["-Dpython.EnableBytecodeDSLInterpreter=true"])
         )
 
@@ -2613,7 +2616,7 @@ def run_leak_launcher(input_args):
 
     args = ["--lang", "python",
             "--forbidden-class", "com.oracle.graal.python.builtins.objects.object.PythonObject",
-            "--python.ForceImportSite", "--python.TRegexUsesSREFallback=false"]
+            "--python.ForceImportSite"]
     args += input_args
     args = [
         "--keep-dump",
@@ -2835,7 +2838,8 @@ mx.update_commands(SUITE, {
     'host-inlining-log-extract': [host_inlining_log_extract_method, ''],
     'tox-example': [tox_example, ''],
     'graalpy-jmh': [graalpy_jmh, ''],
-    'deploy-local-maven-repo': [deploy_local_maven_repo_wrapper, ''],
+    'deploy-local-maven-repo': [deploy_local_maven_repo_wrapper, '[--with-extensions]'],
+    'deploy-extensions-to-local-maven-repo': [deploy_graalpy_extensions_to_local_maven_repo_wrapper, ''],
     'downstream-test': [run_downstream_test, ''],
     'python-native-pgo': [graalpy_native_pgo_build_and_test, 'Build PGO-instrumented native image, run tests, then build PGO-optimized native image'],
 })

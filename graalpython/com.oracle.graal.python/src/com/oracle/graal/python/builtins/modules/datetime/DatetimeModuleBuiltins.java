@@ -99,12 +99,12 @@ public class DatetimeModuleBuiltins extends PythonBuiltins {
 
     @Override
     public void initialize(Python3Core core) {
-        super.initialize(core);
-
         addBuiltinConstant("MINYEAR", MIN_YEAR);
         addBuiltinConstant("MAXYEAR", MAX_YEAR);
 
         StructSequence.initType(core, ISO_CALENDAR_DATE);
+
+        super.initialize(core);
     }
 
     @Override

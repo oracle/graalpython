@@ -74,7 +74,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -91,6 +90,7 @@ public final class CodecsRegistry {
     // Equivalent of PyCodec_LookupError
     @GenerateInline
     @GenerateCached(false)
+    @GenerateUncached
     public abstract static class PyCodecLookupErrorNode extends Node {
 
         public abstract Object execute(Frame frame, Node inliningTarget, TruffleString name);
@@ -120,19 +120,17 @@ public final class CodecsRegistry {
 
         public abstract void execute(VirtualFrame frame, Node inliningTarget, TruffleString name, Object handler);
 
-        @Specialization(guards = "callableCheckNode.execute(inliningTarget, handler)")
+        @Specialization
         static void register(VirtualFrame frame, Node inliningTarget, TruffleString name, Object handler,
-                        @SuppressWarnings("unused") @Cached @Shared("callableCheck") PyCallableCheckNode callableCheckNode,
-                        @Cached CodecsRegistry.EnsureRegistryInitializedNode ensureRegistryInitializedNode) {
+                        @Cached PyCallableCheckNode callableCheckNode,
+                        @Cached CodecsRegistry.EnsureRegistryInitializedNode ensureRegistryInitializedNode,
+                        @Cached PRaiseNode raiseNode) {
+            if (!callableCheckNode.execute(inliningTarget, handler)) {
+                throw raiseNode.raise(inliningTarget, TypeError, HANDLER_MUST_BE_CALLABLE);
+            }
             PythonContext context = PythonContext.get(inliningTarget);
             ensureRegistryInitializedNode.execute(frame, inliningTarget, context);
             putErrorHandler(context, name, handler);
-        }
-
-        @Specialization(guards = "!callableCheckNode.execute(inliningTarget, handler)")
-        static void registerNoCallable(@SuppressWarnings("unused") Node inliningTarget, @SuppressWarnings("unused") TruffleString name, @SuppressWarnings("unused") Object handler,
-                        @SuppressWarnings("unused") @Cached @Shared("callableCheck") PyCallableCheckNode callableCheckNode) {
-            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, HANDLER_MUST_BE_CALLABLE);
         }
     }
 

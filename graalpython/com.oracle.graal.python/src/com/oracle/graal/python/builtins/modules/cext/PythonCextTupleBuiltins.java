@@ -78,6 +78,7 @@ import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -116,11 +117,11 @@ public final class PythonCextTupleBuiltins {
         @Specialization
         static Object doPTuple(PTuple tuple, long key,
                         @Bind Node inliningTarget,
-                        @Shared("promote") @Cached PromoteBorrowedValue promoteNode,
-                        @Cached ListGeneralizationNode generalizationNode,
-                        @Shared @Cached SetItemScalarNode setItemNode,
-                        @Shared @Cached GetItemScalarNode getItemNode,
-                        @Shared @Cached PRaiseNode raiseNode) {
+                        @Exclusive @Cached PromoteBorrowedValue promoteNode,
+                        @Exclusive @Cached ListGeneralizationNode generalizationNode,
+                        @Exclusive @Cached SetItemScalarNode setItemNode,
+                        @Exclusive @Cached GetItemScalarNode getItemNode,
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             SequenceStorage sequenceStorage = tuple.getSequenceStorage();
             int index = checkIndex(inliningTarget, key, sequenceStorage, raiseNode);
             Object result = getItemNode.execute(inliningTarget, sequenceStorage, index);
@@ -138,11 +139,11 @@ public final class PythonCextTupleBuiltins {
         @Specialization
         static Object doNative(PythonAbstractNativeObject tuple, long key,
                         @Bind Node inliningTarget,
-                        @Cached GetNativeTupleStorage asNativeStorage,
-                        @Shared("promote") @Cached PromoteBorrowedValue promoteNode,
-                        @Shared @Cached SetItemScalarNode setItemNode,
-                        @Shared @Cached GetItemScalarNode getItemNode,
-                        @Shared @Cached PRaiseNode raiseNode) {
+                        @Exclusive @Cached GetNativeTupleStorage asNativeStorage,
+                        @Exclusive @Cached PromoteBorrowedValue promoteNode,
+                        @Exclusive @Cached SetItemScalarNode setItemNode,
+                        @Exclusive @Cached GetItemScalarNode getItemNode,
+                        @Exclusive @Cached PRaiseNode raiseNode) {
             SequenceStorage sequenceStorage = asNativeStorage.execute(tuple);
             int index = checkIndex(inliningTarget, key, sequenceStorage, raiseNode);
             Object result = getItemNode.execute(inliningTarget, sequenceStorage, index);

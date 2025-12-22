@@ -839,7 +839,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
                         @Cached ObjectHashMap.PutNode putNode,
                         @Cached ObjectHashMap.GetNode getNode,
                         @Cached PRaiseNode raiseNode) {
-            foreignClass = checkAndCleanForeignClass(inliningTarget, foreignClass, interopLibrary, raiseNode, getContext().getEnv());
+            foreignClass = checkAndCleanForeignClass(inliningTarget, foreignClass, interopLibrary, raiseNode);
 
             if (!isClassTypeNode.execute(inliningTarget, pythonClass)) {
                 throw raiseNode.raise(inliningTarget, ValueError, S_ARG_MUST_BE_S_NOT_P, "second", "a python class", pythonClass);
@@ -903,11 +903,11 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        private static Object checkAndCleanForeignClass(Node inliningTarget, Object object, InteropLibrary interopLibrary, PRaiseNode raiseNode, Env env) {
+        private static Object checkAndCleanForeignClass(Node inliningTarget, Object object, InteropLibrary interopLibrary, PRaiseNode raiseNode) {
             if (!interopLibrary.isMetaObject(object)) {
                 throw raiseNode.raise(inliningTarget, ValueError, S_ARG_MUST_BE_S_NOT_P, "first", "a class or interface", object);
             }
-            if (!env.isHostObject(object)) {
+            if (!interopLibrary.isHostObject(object)) {
                 return object;
             }
             final String memberClass = "class";
@@ -1135,7 +1135,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class KeysNode extends InteropBuiltinBaseNode {
         @Specialization
-        Object remove(Object receiver,
+        Object keys(Object receiver,
                         @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             try {

@@ -32,6 +32,8 @@ import java.io.PrintStream;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
+import org.graalvm.polyglot.Value;
+import org.junit.Assert;
 import org.junit.Test;
 
 import com.oracle.graal.python.test.integration.PythonTests;
@@ -48,6 +50,12 @@ public class HelloWorldTests {
         org.graalvm.polyglot.Source source = PythonTests.createSource("try: print(value)\nexcept:print('hello')\nvalue='world'");
         PythonTests.assertPrints("hello\n", source);
         PythonTests.assertPrints("hello\n", source);
+    }
+
+    @Test
+    public void helloworldExpression() {
+        Value value = PythonTests.eval("'hello world'");
+        Assert.assertEquals("hello world", value.asString());
     }
 
     @Test

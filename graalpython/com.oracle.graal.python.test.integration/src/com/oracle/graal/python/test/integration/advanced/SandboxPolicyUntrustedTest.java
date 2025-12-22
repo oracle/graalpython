@@ -43,14 +43,23 @@ package com.oracle.graal.python.test.integration.advanced;
 import static org.junit.Assert.assertEquals;
 
 import java.io.ByteArrayOutputStream;
+import java.nio.charset.Charset;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.SandboxPolicy;
 import org.graalvm.polyglot.Value;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class SandboxPolicyUntrustedTest {
     @BeforeClass
     public static void setupClass() {
@@ -58,43 +67,77 @@ public class SandboxPolicyUntrustedTest {
         Assume.assumeTrue(requestedTest != null && requestedTest.equals(SandboxPolicyUntrustedTest.class.getSimpleName()));
     }
 
-    private static Value run(String source) {
+    public record ContextConfig(String name, Consumer<Context.Builder> config) {
+        @Override
+        public String toString() {
+            return name();
+        }
+    }
+
+    @Parameters(name = "{0}")
+    public static ContextConfig[] configs() {
+        return new ContextConfig[]{
+                        new ContextConfig("UNTRUSTED", b -> b //
+                                        .sandbox(SandboxPolicy.ISOLATED) //
+                                        .option("engine.MaxIsolateMemory", "1GB")),
+                        new ContextConfig("ISOLATED", b -> b //
+                                        .sandbox(SandboxPolicy.ISOLATED) //
+                                        .option("engine.MaxIsolateMemory", "1GB")),
+                        new ContextConfig("CONSTRAINED", b -> b //
+                                        .sandbox(SandboxPolicy.CONSTRAINED)),
+        };
+    }
+
+    @Parameter public ContextConfig config;
+
+    private <R> R run(String source, Function<Value, R> resultFun) {
+        // encodings import during ctx init takes 19 frames
+        return run(source, 20, resultFun);
+    }
+
+    private <R> R run(String source, int maxStackFrames, Function<Value, R> resultFun) {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         ByteArrayOutputStream errorOutput = new ByteArrayOutputStream();
         try (Context context = Context.newBuilder("python") //
-                        .sandbox(SandboxPolicy.UNTRUSTED) //
                         .out(output) //
                         .err(errorOutput) //
-                        .option("engine.MaxIsolateMemory", "1GB") //
-                        .option("sandbox.MaxHeapMemory", "800MB") //
+                        .apply(config.config()).option("sandbox.MaxHeapMemory", "800MB") //
                         .option("sandbox.MaxCPUTime", "10s") //
                         .option("sandbox.MaxASTDepth", "100") //
-                        .option("sandbox.MaxStackFrames", "10") //
+                        .option("sandbox.MaxStackFrames", Integer.toString(maxStackFrames)) //
                         .option("sandbox.MaxThreads", "1") //
                         .option("sandbox.MaxOutputStreamSize", "1MB") //
                         .option("sandbox.MaxErrorStreamSize", "1MB") //
                         .build()) {
-            return context.eval("python", source);
+            return resultFun.apply(context.eval("python", source));
+        } catch (PolyglotException e) {
+            System.out.println("stdout:");
+            System.out.println(output.toString(Charset.defaultCharset()));
+            System.out.println("--------");
+            System.out.println("stderr:");
+            System.out.println(errorOutput.toString(Charset.defaultCharset()));
+            throw e;
         }
     }
 
     @Test
     public void helloworld() {
-        assertEquals("hello world", run("'hello world'").asString());
+        assertEquals("hello world", run("'hello world'", Value::asString));
     }
 
     @Test
     public void canImportBuiltinModules() {
-        assertEquals("graalpy", run("import sys; sys.implementation.name").asString());
+        assertEquals("graalpy", run("import sys; sys.implementation.name", Value::asString));
     }
 
     @Test
     public void canImportNonBuiltinModules() {
-        assertEquals("email", run("import email; email.__name__").asString());
+        assertEquals("email", run("import email; email.__name__", Value::asString));
     }
 
     @Test
     public void doesNotLeakEnvironmentVariables() {
-        assertEquals("<empty>", run("import os; os.environ.get('JAVA_HOME', '<empty>')").asString());
+        int maxStackFrames = 27;
+        assertEquals("<empty>", run("import os; os.environ.get('JAVA_HOME', '<empty>')", maxStackFrames, Value::asString));
     }
 }

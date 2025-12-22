@@ -225,7 +225,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
             assert !PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER || !(unwrapContinuationRoot(rootNode) instanceof PBytecodeDSLRootNode) || location != null : rootNode;
             // create the PFrame and refresh frame values
             Frame frame = PGenerator.unwrapDSLGeneratorFrame(element);
-            return materializeFrameNode.execute(location, false, true, frame);
+            return materializeFrameNode.execute(location, true, true, frame);
         }
     }
 

@@ -38,7 +38,7 @@
 # SOFTWARE.
 import os
 import sys
-
+from tests import util
 
 # IMPORTANT: DO NOT MOVE!
 # This test checks that lineno works on frames,
@@ -46,7 +46,7 @@ import sys
 def test_lineno():
     assert sys._getframe(0).f_lineno == 47
 
-if not os.environ.get('BYTECODE_DSL_INTERPRETER'): # Blocked by GR-61955
+if not util.IS_BYTECODE_DSL: # Blocked by GR-61955
     # IMPORTANT: DO NOT MOVE!
     def test_nested_lineno():
         def test_nested():

@@ -68,7 +68,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -187,87 +186,60 @@ public final class JavaModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "is_function", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IsFunctionNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        boolean check(Object object) {
-            Env env = getContext().getEnv();
-            return env.isHostFunction(object);
+        @Specialization(limit = "3")
+        boolean check(Object object,
+                        @CachedLibrary("object") InteropLibrary lib) {
+            return lib.isHostObject(object) && lib.isExecutable(object) && !lib.hasMembers(object);
         }
     }
 
     @Builtin(name = "is_object", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IsObjectNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        boolean check(Object object) {
-            Env env = getContext().getEnv();
-            return env.isHostObject(object);
+        @Specialization(limit = "3")
+        boolean check(Object object,
+                        @CachedLibrary("object") InteropLibrary lib) {
+            return lib.isHostObject(object);
         }
     }
 
     @Builtin(name = "is_symbol", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IsSymbolNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        boolean check(Object object) {
-            Env env = getContext().getEnv();
-            return env.isHostSymbol(object);
+        @Specialization(limit = "3")
+        boolean check(Object object,
+                        @CachedLibrary("object") InteropLibrary lib) {
+            return lib.isHostObject(object) && lib.isScope(object);
         }
     }
 
     @Builtin(name = "is_type", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IsTypeNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        boolean isType(Object object) {
-            Env env = getContext().getEnv();
-            return env.isHostObject(object) && env.asHostObject(object) instanceof Class<?>;
+        @Specialization(limit = "3")
+        boolean isType(Object object,
+                        @CachedLibrary("object") InteropLibrary lib) {
+            return lib.isHostObject(object) && lib.isMetaObject(object);
         }
     }
 
     @Builtin(name = "instanceof", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class InstanceOfNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = {"!isForeign1.execute(inliningTarget, object)", "isForeign2.execute(inliningTarget, klass)"})
+        @Specialization(limit = "3")
         static boolean check(Object object, Object klass,
                         @Bind Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared("isForeign1") @Cached IsForeignObjectNode isForeign1,
-                        @SuppressWarnings("unused") @Shared("isForeign2") @Cached IsForeignObjectNode isForeign2,
+                        @CachedLibrary("klass") InteropLibrary lib,
                         @Shared @Cached PRaiseNode raiseNode) {
-            Env env = PythonContext.get(inliningTarget).getEnv();
-            try {
-                Object hostKlass = env.asHostObject(klass);
-                if (hostKlass instanceof Class<?>) {
-                    return ((Class<?>) hostKlass).isInstance(object);
+            if (lib.isHostObject(klass) && lib.isMetaObject(klass)) {
+                try {
+                    return lib.isMetaInstance(klass, object);
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
                 }
-            } catch (ClassCastException cce) {
+            } else {
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.KLASS_ARG_IS_NOT_HOST_OBJ, klass);
             }
-            return false;
-        }
-
-        @Specialization(guards = {"isForeign1.execute(inliningTarget, object)", "isForeign2.execute(inliningTarget, klass)"})
-        static boolean checkForeign(Object object, Object klass,
-                        @Bind Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared("isForeign1") @Cached IsForeignObjectNode isForeign1,
-                        @SuppressWarnings("unused") @Shared("isForeign2") @Cached IsForeignObjectNode isForeign2,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            Env env = PythonContext.get(inliningTarget).getEnv();
-            try {
-                Object hostObject = env.asHostObject(object);
-                Object hostKlass = env.asHostObject(klass);
-                if (hostKlass instanceof Class<?>) {
-                    return ((Class<?>) hostKlass).isInstance(hostObject);
-                }
-            } catch (ClassCastException cce) {
-                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.OBJ_OR_KLASS_ARGS_IS_NOT_HOST_OBJ, object, klass);
-            }
-            return false;
-        }
-
-        @Fallback
-        static boolean fallback(Object object, Object klass,
-                        @Bind Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.UNSUPPORTED_INSTANCEOF, object, klass);
         }
     }
 

@@ -41,6 +41,7 @@ import os
 import doctest
 import sys
 import unittest
+from tests import util
 
 
 # Copied from test_doctest
@@ -69,8 +70,6 @@ class PdbTestInput(object):
         if self.orig_trace:
             sys.settrace(self.orig_trace)
 
-
-@unittest.skipIf(os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: FrameSlotTypeException with reparsing")
 def doctest_pdb_locals():
     """
     Test that locals get synced after breakpoint
@@ -101,63 +100,61 @@ def doctest_pdb_locals():
     """
 
 
-@unittest.skipIf(os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: FrameSlotTypeException with reparsing")
-def doctest_pdb_locals_generator():
-    """
-    Test that locals get synced after breakpoint in a generator
+if not util.IS_BYTECODE_DSL:
+    def doctest_pdb_locals_generator():
+        """
+        Test that locals get synced after breakpoint in a generator
 
-    >>> def test_function():
-    ...     a = 1
-    ...     import pdb; pdb.Pdb(nosigint=True, readrc=False).set_trace()
-    ...     a = 2
-    ...     yield
+        >>> def test_function():
+        ...     a = 1
+        ...     import pdb; pdb.Pdb(nosigint=True, readrc=False).set_trace()
+        ...     a = 2
+        ...     yield
 
-    >>> with PdbTestInput([
-    ...     'p a',
-    ...     'next',
-    ...     'p a',
-    ...     'continue',
-    ... ]):
-    ...     next(test_function())
-    > <doctest tests.test_pdb.doctest_pdb_locals_generator[0]>(4)test_function()
-    -> a = 2
-    (Pdb) p a
-    1
-    (Pdb) next
-    > <doctest tests.test_pdb.doctest_pdb_locals_generator[0]>(5)test_function()
-    -> yield
-    (Pdb) p a
-    2
-    (Pdb) continue
-    """
-
-
-@unittest.skipIf(os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: FrameSlotTypeException with reparsing")
-def doctest_pdb_locals_sync_back():
-    """
-    Test that locals set by debugger get propagated back into the frame.
-
-    >>> def test_function():
-    ...     foo = 1
-    ...     import pdb; pdb.Pdb(nosigint=True, readrc=False).set_trace()
-    ...     return foo
-
-    >>> with PdbTestInput([
-    ...     'p foo',
-    ...     'foo = 5',
-    ...     'continue',
-    ... ]):
-    ...     print(test_function())
-    > <doctest tests.test_pdb.doctest_pdb_locals_sync_back[0]>(4)test_function()
-    -> return foo
-    (Pdb) p foo
-    1
-    (Pdb) foo = 5
-    (Pdb) continue
-    5
-    """
+        >>> with PdbTestInput([
+        ...     'p a',
+        ...     'next',
+        ...     'p a',
+        ...     'continue',
+        ... ]):
+        ...     next(test_function())
+        > <doctest tests.test_pdb.doctest_pdb_locals_generator[0]>(4)test_function()
+        -> a = 2
+        (Pdb) p a
+        1
+        (Pdb) next
+        > <doctest tests.test_pdb.doctest_pdb_locals_generator[0]>(5)test_function()
+        -> yield
+        (Pdb) p a
+        2
+        (Pdb) continue
+        """
 
 
-@unittest.skipIf(os.environ.get('BYTECODE_DSL_INTERPRETER'), "TODO: FrameSlotTypeException with reparsing")
+    def doctest_pdb_locals_sync_back():
+        """
+        Test that locals set by debugger get propagated back into the frame.
+
+        >>> def test_function():
+        ...     foo = 1
+        ...     import pdb; pdb.Pdb(nosigint=True, readrc=False).set_trace()
+        ...     return foo
+
+        >>> with PdbTestInput([
+        ...     'p foo',
+        ...     'foo = 5',
+        ...     'continue',
+        ... ]):
+        ...     print(test_function())
+        > <doctest tests.test_pdb.doctest_pdb_locals_sync_back[0]>(4)test_function()
+        -> return foo
+        (Pdb) p foo
+        1
+        (Pdb) foo = 5
+        (Pdb) continue
+        5
+        """
+
+
 def test_run_doctests():
     doctest.testmod(sys.modules[__name__], raise_on_error=True)

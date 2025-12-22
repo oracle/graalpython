@@ -561,7 +561,7 @@ public final class PException extends AbstractTruffleException {
                     @Shared @Cached ExceptionNodes.GetContextNode getContextNode,
                     @Shared @Cached ExceptionNodes.GetSuppressContextNode getSuppressContextNode,
                     @Shared @Cached ExceptionNodes.GetCauseNode getCauseNode,
-                    @Exclusive @Cached InlinedBranchProfile unsupportedProfile,
+                    @Shared @Cached InlinedBranchProfile unsupportedProfile,
                     @Shared("gil") @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {

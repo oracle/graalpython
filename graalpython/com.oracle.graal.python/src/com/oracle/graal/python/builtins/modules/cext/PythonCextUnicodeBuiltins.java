@@ -174,7 +174,6 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
-import com.oracle.truffle.api.strings.TruffleString.FromByteArrayNode;
 import com.oracle.truffle.api.strings.TruffleString.FromNativePointerNode;
 import com.oracle.truffle.api.strings.TruffleString.SwitchEncodingNode;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
@@ -577,11 +576,11 @@ public final class PythonCextUnicodeBuiltins {
     @ImportStatic(PythonCextUnicodeBuiltins.class)
     abstract static class PyUnicode_Compare extends CApiBinaryBuiltinNode {
 
-        @Specialization(guards = {"isAnyString(inliningTarget, left, getClassNode, isSubtypeNode)", "isAnyString(inliningTarget, right, getClassNode, isSubtypeNode)"})
+        @Specialization(guards = {"isAnyString(inliningTarget, left, getClassNode, isSubtypeNode)", "isAnyString(inliningTarget, right, getClassNode, isSubtypeNode)"}, limit = "1")
         static Object compare(Object left, Object right,
                         @SuppressWarnings("unused") @Bind Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
                         @Cached StringBuiltins.StringRichCmpNode eqNode,
                         @Cached StringBuiltins.StringRichCmpNode ltNode,
                         @Cached InlinedConditionProfile eqProfile) {
@@ -592,10 +591,8 @@ public final class PythonCextUnicodeBuiltins {
             }
         }
 
-        @Specialization(guards = {"!isAnyString(inliningTarget, left, getClassNode, isSubtypeNode) || !isAnyString(inliningTarget, right, getClassNode, isSubtypeNode)"})
+        @Fallback
         static Object compare(Object left, Object right,
-                        @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode,
                         @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.CANT_COMPARE, left, right);
         }
@@ -821,13 +818,12 @@ public final class PythonCextUnicodeBuiltins {
             };
         }
 
-        @Specialization(guards = "ptrLib.isPointer(ptr)")
+        @Specialization
         static Object doNative(Object ptr, long byteLength, int kind,
                         @Bind Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared("ptrLib") @CachedLibrary(limit = "1") InteropLibrary ptrLib,
                         @Cached FromNativePointerNode fromNativePointerNode,
-                        @Shared("switchEncodingNode") @Cached SwitchEncodingNode switchEncodingNode,
-                        @Shared @Cached PRaiseNode raiseNode) {
+                        @Cached SwitchEncodingNode switchEncodingNode,
+                        @Cached PRaiseNode raiseNode) {
             try {
                 int iByteLength = PInt.intValueExact(byteLength);
                 Encoding srcEncoding = encodingFromKind(inliningTarget, kind, raiseNode);
@@ -838,30 +834,6 @@ public final class PythonCextUnicodeBuiltins {
                  */
                 TruffleString ts = fromNativePointerNode.execute(ptr, 0, iByteLength, srcEncoding, true);
                 return PFactory.createString(PythonLanguage.get(inliningTarget), switchEncodingNode.execute(ts, TS_ENCODING));
-            } catch (OverflowException e) {
-                throw raiseNode.raise(inliningTarget, MemoryError);
-            }
-        }
-
-        @Specialization(guards = "!ptrLib.isPointer(ptr)")
-        static Object doManaged(Object ptr, long byteLength, int kind,
-                        @Bind Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared("ptrLib") @CachedLibrary(limit = "1") InteropLibrary ptrLib,
-                        @Cached GetByteArrayNode getByteArrayNode,
-                        @Cached FromByteArrayNode fromByteArrayNode,
-                        @Shared("switchEncodingNode") @Cached SwitchEncodingNode switchEncodingNode,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            try {
-                Encoding srcEncoding = encodingFromKind(inliningTarget, kind, raiseNode);
-                byte[] ucsBytes = getByteArrayNode.execute(inliningTarget, ptr, byteLength);
-                TruffleString ts = fromByteArrayNode.execute(ucsBytes, srcEncoding);
-                return PFactory.createString(PythonLanguage.get(inliningTarget), switchEncodingNode.execute(ts, TS_ENCODING));
-            } catch (InteropException e) {
-                /*
-                 * This means that we cannot read the array-like foreign object or the foreign
-                 * elements cannot be interpreted as bytes. In any case, that's a fatal error.
-                 */
-                throw raiseNode.raise(inliningTarget, SystemError, ErrorMessages.M, e);
             } catch (OverflowException e) {
                 throw raiseNode.raise(inliningTarget, MemoryError);
             }
@@ -890,42 +862,17 @@ public final class PythonCextUnicodeBuiltins {
             };
         }
 
-        @Specialization(guards = "ptrLib.isPointer(ptr)")
+        @Specialization
         static Object doNative(Object ptr, long byteLength, int kind,
                         @Bind Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared("ptrLib") @CachedLibrary(limit = "1") InteropLibrary ptrLib,
                         @Cached FromNativePointerNode fromNativePointerNode,
-                        @Shared("switchEncodingNode") @Cached SwitchEncodingNode switchEncodingNode,
-                        @Shared @Cached PRaiseNode raiseNode) {
+                        @Cached SwitchEncodingNode switchEncodingNode,
+                        @Cached PRaiseNode raiseNode) {
             try {
                 int iByteLength = PInt.intValueExact(byteLength);
                 Encoding srcEncoding = encodingFromKind(inliningTarget, kind, raiseNode);
                 TruffleString ts = fromNativePointerNode.execute(ptr, 0, iByteLength, srcEncoding, true);
                 return PFactory.createString(PythonLanguage.get(inliningTarget), switchEncodingNode.execute(ts, TS_ENCODING));
-            } catch (OverflowException e) {
-                throw raiseNode.raise(inliningTarget, MemoryError);
-            }
-        }
-
-        @Specialization(guards = "!ptrLib.isPointer(ptr)")
-        static Object doManaged(Object ptr, long byteLength, int kind,
-                        @Bind Node inliningTarget,
-                        @SuppressWarnings("unused") @Shared("ptrLib") @CachedLibrary(limit = "1") InteropLibrary ptrLib,
-                        @Cached GetByteArrayNode getByteArrayNode,
-                        @Cached FromByteArrayNode fromByteArrayNode,
-                        @Shared("switchEncodingNode") @Cached SwitchEncodingNode switchEncodingNode,
-                        @Shared @Cached PRaiseNode raiseNode) {
-            try {
-                Encoding srcEncoding = encodingFromKind(inliningTarget, kind, raiseNode);
-                byte[] ucsBytes = getByteArrayNode.execute(inliningTarget, ptr, byteLength);
-                TruffleString ts = fromByteArrayNode.execute(ucsBytes, srcEncoding);
-                return PFactory.createString(PythonLanguage.get(inliningTarget), switchEncodingNode.execute(ts, TS_ENCODING));
-            } catch (InteropException e) {
-                /*
-                 * This means that we cannot read the array-like foreign object or the foreign
-                 * elements cannot be interpreted as bytes. In any case, that's a fatal error.
-                 */
-                throw raiseNode.raise(inliningTarget, SystemError, ErrorMessages.M, e);
             } catch (OverflowException e) {
                 throw raiseNode.raise(inliningTarget, MemoryError);
             }

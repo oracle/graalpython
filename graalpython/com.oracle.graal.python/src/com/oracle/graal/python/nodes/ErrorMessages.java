@@ -443,7 +443,7 @@ public abstract class ErrorMessages {
     public static final TruffleString KEY_LENGTH_MUST_BE_GREATER_THAN_ZERO = tsLiteral("key length must be greater than 0.");
     public static final TruffleString KEYWORD_NAMES_MUST_BE_STR_GOT_P = tsLiteral("keyword names must be str, get %p");
     public static final TruffleString KEYWORDS_S_MUST_BE_STRINGS = tsLiteral("keywords must be strings");
-    public static final TruffleString KLASS_ARG_IS_NOT_HOST_OBJ = tsLiteral("klass argument '%p' is not a host object");
+    public static final TruffleString KLASS_ARG_IS_NOT_HOST_OBJ = tsLiteral("instanceof second argument '%p' is not a Java class");
     public static final TruffleString LAZY_INITIALIZATION_FAILED = tsLiteral("lazy initialization of type %N failed");
     public static final TruffleString LEN_OF_UNSIZED_OBJECT = tsLiteral("len() of unsized object");
     public static final TruffleString LEN_SHOULD_RETURN_GT_ZERO = tsLiteral("__len__() should return >= 0");
@@ -581,7 +581,6 @@ public abstract class ErrorMessages {
     public static final TruffleString ARGUMENT_OF_TYPE_P_IS_NOT_ITERABLE = tsLiteral("argument of type '%p' is not iterable");
     public static final TruffleString OBJ_NOT_SUBSCRIPTABLE = tsLiteral("'%p' object is not subscriptable");
     public static final TruffleString TYPE_NOT_SUBSCRIPTABLE = tsLiteral("type '%N' is not subscriptable");
-    public static final TruffleString OBJ_OR_KLASS_ARGS_IS_NOT_HOST_OBJ = tsLiteral("the object '%p' or klass '%p' arguments is not a host object");
     public static final TruffleString OBJ_P_HAS_NO_ATTR_S = tsLiteral("'%p' object has no attribute '%s'");
     public static final TruffleString OBJ_S_HAS_NO_ATTR_S = tsLiteral("'%s' object has no attribute '%s'");
     public static final TruffleString OBJ_N_HAS_NO_ATTR_S = tsLiteral("'%N' object has no attribute '%s'");
@@ -767,7 +766,6 @@ public abstract class ErrorMessages {
     public static final TruffleString UNRECOGNIZED_KIND = tsLiteral("unrecognized kind");
     public static final TruffleString UNSUPPORTED_FORMAT_CHAR_AT_INDEX = tsLiteral("unsupported format character '%c' (0x%x) at index %d");
     public static final TruffleString UNSUPPORTED_HASH_TYPE = tsLiteral("unsupported hash type %s");
-    public static final TruffleString UNSUPPORTED_INSTANCEOF = tsLiteral("unsupported instanceof(%p, %p)");
     public static final TruffleString UNSUPPORTED_LOCALE_SETTING = tsLiteral("unsupported locale setting");
     public static final TruffleString UNSUPPORTED_OBJ_IN = tsLiteral("unsupported object in '%s'");
     public static final TruffleString UNSUPPORTED_OPERAND_P = tsLiteral("unsupported operand '%p'");
@@ -913,6 +911,7 @@ public abstract class ErrorMessages {
     public static final TruffleString N_PREPARE_MUST_RETURN_MAPPING = tsLiteral("%N.__prepare__() must return a mapping, not %p");
     public static final TruffleString INVALID_TYPE_CODE = tsLiteral("Invalid type code '%s'");
     public static final TruffleString SECOND_ARG_MUST_BE_STR_OR_JAVA_CLS = tsLiteral("Second argument must be a string type code or a java.lang.Class object, not %p");
+    public static final TruffleString CANNOT_ACCESS_JAVA_CLASS_FROM_DIFFERENT_HEAP = tsLiteral("Cannot access Java class from different heap");
     public static final TruffleString READ_RETURNED_NOT_BYTES = tsLiteral("file.read() returned not bytes but %p");
     public static final TruffleString UNSUPPORTED_OPERAND_TYPES_OR_COMBINATION_OF_TYPES = tsLiteral("unsupported operand types(s) or combination of types: '%p' and '%p'");
     public static final TruffleString UNRECOGNIZED_CONF_NAME = tsLiteral("unrecognized configuration name");
@@ -1627,7 +1626,7 @@ public abstract class ErrorMessages {
     public static final TruffleString NOT_A_DECIMAL = tsLiteral("not a decimal");
 
     // re module errors
-    public static final TruffleString BAD_ESCAPE = tsLiteral("bad escape");
+    public static final TruffleString BAD_ESCAPE_S = tsLiteral("bad escape %s");
     public static final TruffleString BAD_ESCAPE_END_OF_STRING = tsLiteral("bad escape (end of string)");
     public static final TruffleString BAD_CHAR_IN_GROUP_NAME = tsLiteral("bad character in group name %s");
     public static final TruffleString INVALID_GROUP_REFERENCE = tsLiteral("invalid group reference %s");
@@ -1698,4 +1697,5 @@ public abstract class ErrorMessages {
     public static final TruffleString ISO_WEEK_DIRECTIVE_IS_INCOMPATIBLE_WITH = tsLiteral("ISO week directive '%V' is incompatible with the year directive '%Y'. Use the ISO year '%G' instead.");
     public static final TruffleString INCONSISTENT_USE_OF_COLON_IN_S = tsLiteral("Inconsistent use of : in %s");
     public static final TruffleString NO_EXCEPTION_GROUPS_IN_EXCEPT_STAR = tsLiteral("catching ExceptionGroup with except* is not allowed. Use except instead.");
+    public static final TruffleString NO_SUCH_GROUP = tsLiteral("no such group");
 }
