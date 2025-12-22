@@ -250,15 +250,38 @@ public class TimeNodes {
                         @Bind PythonLanguage language,
                         @Cached CStructAccess.ReadByteNode readByteNode,
                         @Cached CStructAccess.ReadObjectNode readObjectNode) {
-            int hour = readByteNode.readFromObjUnsigned(nativeTime, CFields.PyDateTime_Time__data, 0);
-            int minute = readByteNode.readFromObjUnsigned(nativeTime, CFields.PyDateTime_Time__data, 1);
-            int second = readByteNode.readFromObjUnsigned(nativeTime, CFields.PyDateTime_Time__data, 2);
+            int hour = getHour(nativeTime, readByteNode);
+            int minute = getMinute(nativeTime, readByteNode);
+            int second = getSecond(nativeTime, readByteNode);
+            int microsecond = getMicrosecond(nativeTime, readByteNode);
 
-            int micro3 = readByteNode.readFromObjUnsigned(nativeTime, CFields.PyDateTime_Time__data, 3);
-            int micro4 = readByteNode.readFromObjUnsigned(nativeTime, CFields.PyDateTime_Time__data, 4);
-            int micro5 = readByteNode.readFromObjUnsigned(nativeTime, CFields.PyDateTime_Time__data, 5);
-            int microsecond = (micro3 << 16) | (micro4 << 8) | micro5;
+            Object tzinfo = getTzInfo(nativeTime, readByteNode, readObjectNode);
+            int fold = getFold(nativeTime, readByteNode);
 
+            PythonBuiltinClassType cls = PythonBuiltinClassType.PTime;
+            return new PTime(cls, cls.getInstanceShape(language), hour, minute, second, microsecond, tzinfo, fold);
+        }
+
+        static int getHour(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
+            return readNode.readFromObjUnsigned(self, CFields.PyDateTime_Time__data, 0);
+        }
+
+        static int getMinute(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
+            return readNode.readFromObjUnsigned(self, CFields.PyDateTime_Time__data, 1);
+        }
+
+        static int getSecond(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
+            return readNode.readFromObjUnsigned(self, CFields.PyDateTime_Time__data, 2);
+        }
+
+        static int getMicrosecond(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
+            int b3 = readNode.readFromObjUnsigned(self, CFields.PyDateTime_Time__data, 3);
+            int b4 = readNode.readFromObjUnsigned(self, CFields.PyDateTime_Time__data, 4);
+            int b5 = readNode.readFromObjUnsigned(self, CFields.PyDateTime_Time__data, 5);
+            return (b3 << 16) | (b4 << 8) | b5;
+        }
+
+        private static Object getTzInfo(PythonAbstractNativeObject nativeTime, CStructAccess.ReadByteNode readByteNode, CStructAccess.ReadObjectNode readObjectNode) {
             Object tzinfo = null;
             if (readByteNode.readFromObj(nativeTime, CFields.PyDateTime_Time__hastzinfo) != 0) {
                 Object tzinfoObj = readObjectNode.readFromObj(nativeTime, CFields.PyDateTime_Time__tzinfo);
@@ -266,11 +289,11 @@ public class TimeNodes {
                     tzinfo = tzinfoObj;
                 }
             }
+            return tzinfo;
+        }
 
-            int fold = readByteNode.readFromObjUnsigned(nativeTime, CFields.PyDateTime_Time__fold);
-
-            PythonBuiltinClassType cls = PythonBuiltinClassType.PTime;
-            return new PTime(cls, cls.getInstanceShape(language), hour, minute, second, microsecond, tzinfo, fold);
+        static int getFold(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
+            return readNode.readFromObjUnsigned(self, CFields.PyDateTime_Time__fold);
         }
     }
 
@@ -317,14 +340,7 @@ public class TimeNodes {
         static Object getTzInfo(PythonAbstractNativeObject self,
                         @Cached CStructAccess.ReadByteNode readByteNode,
                         @Cached CStructAccess.ReadObjectNode readObjectNode) {
-            Object tzinfo = null;
-            if (readByteNode.readFromObj(self, CFields.PyDateTime_Time__hastzinfo) != 0) {
-                Object tzinfoObj = readObjectNode.readFromObj(self, CFields.PyDateTime_Time__tzinfo);
-                if (tzinfoObj != PNone.NO_VALUE) {
-                    tzinfo = tzinfoObj;
-                }
-            }
-            return tzinfo;
+            return AsManagedTimeNode.getTzInfo(self, readByteNode, readObjectNode);
         }
     }
 }

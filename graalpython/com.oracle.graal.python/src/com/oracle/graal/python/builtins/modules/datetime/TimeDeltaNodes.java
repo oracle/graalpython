@@ -431,12 +431,24 @@ public class TimeDeltaNodes {
         static PTimeDelta doNative(PythonAbstractNativeObject nativeDelta,
                         @Bind PythonLanguage language,
                         @Cached CStructAccess.ReadI32Node readIntNode) {
-            int days = readIntNode.readFromObj(nativeDelta, CFields.PyDateTime_Delta__days);
-            int seconds = readIntNode.readFromObj(nativeDelta, CFields.PyDateTime_Delta__seconds);
-            int microseconds = readIntNode.readFromObj(nativeDelta, CFields.PyDateTime_Delta__microseconds);
+            int days = getDays(nativeDelta, readIntNode);
+            int seconds = getSeconds(nativeDelta, readIntNode);
+            int microseconds = getMicroseconds(nativeDelta, readIntNode);
 
             PythonBuiltinClassType cls = PythonBuiltinClassType.PTimeDelta;
             return new PTimeDelta(cls, cls.getInstanceShape(language), days, seconds, microseconds);
+        }
+
+        static int getDays(PythonAbstractNativeObject self, CStructAccess.ReadI32Node readNode) {
+            return readNode.readFromObj(self, CFields.PyDateTime_Delta__days);
+        }
+
+        static int getSeconds(PythonAbstractNativeObject self, CStructAccess.ReadI32Node readNode) {
+            return readNode.readFromObj(self, CFields.PyDateTime_Delta__seconds);
+        }
+
+        static int getMicroseconds(PythonAbstractNativeObject self, CStructAccess.ReadI32Node readNode) {
+            return readNode.readFromObj(self, CFields.PyDateTime_Delta__microseconds);
         }
     }
 }

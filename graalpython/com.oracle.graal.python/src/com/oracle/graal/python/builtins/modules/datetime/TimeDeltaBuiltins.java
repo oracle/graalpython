@@ -65,7 +65,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -689,7 +688,7 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
         @Specialization
         static int getDays(PythonAbstractNativeObject self,
                         @Cached CStructAccess.ReadI32Node readNode) {
-            return readNode.readFromObj(self, CFields.PyDateTime_Delta__days);
+            return TimeDeltaNodes.AsManagedTimeDeltaNode.getDays(self, readNode);
         }
     }
 
@@ -705,7 +704,7 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
         @Specialization
         static int getSeconds(PythonAbstractNativeObject self,
                         @Cached CStructAccess.ReadI32Node readNode) {
-            return readNode.readFromObj(self, CFields.PyDateTime_Delta__seconds);
+            return TimeDeltaNodes.AsManagedTimeDeltaNode.getSeconds(self, readNode);
         }
     }
 
@@ -721,7 +720,7 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
         @Specialization
         static int getMicroseconds(PythonAbstractNativeObject self,
                         @Cached CStructAccess.ReadI32Node readNode) {
-            return readNode.readFromObj(self, CFields.PyDateTime_Delta__microseconds);
+            return TimeDeltaNodes.AsManagedTimeDeltaNode.getMicroseconds(self, readNode);
         }
     }
 

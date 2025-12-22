@@ -310,21 +310,56 @@ public class DateTimeNodes {
                         @Bind PythonLanguage language,
                         @Cached CStructAccess.ReadByteNode readByteNode,
                         @Cached CStructAccess.ReadObjectNode readObjectNode) {
-            int y0 = readByteNode.readFromObjUnsigned(obj, CFields.PyDateTime_DateTime__data, 0);
-            int y1 = readByteNode.readFromObjUnsigned(obj, CFields.PyDateTime_DateTime__data, 1);
-            int year = (y0 << 8) | y1;
-            int month = readByteNode.readFromObjUnsigned(obj, CFields.PyDateTime_DateTime__data, 2);
-            int day = readByteNode.readFromObjUnsigned(obj, CFields.PyDateTime_DateTime__data, 3);
+            int year = getYear(obj, readByteNode);
+            int month = getMonth(obj, readByteNode);
+            int day = getDay(obj, readByteNode);
 
-            int hour = readByteNode.readFromObjUnsigned(obj, CFields.PyDateTime_DateTime__data, 4);
-            int minute = readByteNode.readFromObjUnsigned(obj, CFields.PyDateTime_DateTime__data, 5);
-            int second = readByteNode.readFromObjUnsigned(obj, CFields.PyDateTime_DateTime__data, 6);
+            int hour = getHour(obj, readByteNode);
+            int minute = getMinute(obj, readByteNode);
+            int second = getSecond(obj, readByteNode);
+            int microsecond = getMicrosecond(obj, readByteNode);
 
-            int micro3 = readByteNode.readFromObjUnsigned(obj, CFields.PyDateTime_DateTime__data, 7);
-            int micro4 = readByteNode.readFromObjUnsigned(obj, CFields.PyDateTime_DateTime__data, 8);
-            int micro5 = readByteNode.readFromObjUnsigned(obj, CFields.PyDateTime_DateTime__data, 9);
-            int microsecond = (micro3 << 16) | (micro4 << 8) | micro5;
+            Object tzInfo = getTzInfo(obj, readByteNode, readObjectNode);
+            int fold = getFold(obj, readByteNode);
 
+            PythonBuiltinClassType cls = PythonBuiltinClassType.PDateTime;
+            return new PDateTime(cls, cls.getInstanceShape(language), year, month, day, hour, minute, second, microsecond, tzInfo, fold);
+        }
+
+        static int getYear(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
+            int b0 = readNode.readFromObjUnsigned(self, CFields.PyDateTime_DateTime__data, 0);
+            int b1 = readNode.readFromObjUnsigned(self, CFields.PyDateTime_DateTime__data, 1);
+            return (b0 << 8) | b1;
+        }
+
+        static int getMonth(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
+            return readNode.readFromObjUnsigned(self, CFields.PyDateTime_DateTime__data, 2);
+        }
+
+        static int getDay(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
+            return readNode.readFromObjUnsigned(self, CFields.PyDateTime_DateTime__data, 3);
+        }
+
+        static int getHour(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
+            return readNode.readFromObjUnsigned(self, CFields.PyDateTime_DateTime__data, 4);
+        }
+
+        static int getMinute(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
+            return readNode.readFromObjUnsigned(self, CFields.PyDateTime_DateTime__data, 5);
+        }
+
+        static int getSecond(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
+            return readNode.readFromObjUnsigned(self, CFields.PyDateTime_DateTime__data, 6);
+        }
+
+        static int getMicrosecond(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
+            int b3 = readNode.readFromObjUnsigned(self, CFields.PyDateTime_DateTime__data, 7);
+            int b4 = readNode.readFromObjUnsigned(self, CFields.PyDateTime_DateTime__data, 8);
+            int b5 = readNode.readFromObjUnsigned(self, CFields.PyDateTime_DateTime__data, 9);
+            return (b3 << 16) | (b4 << 8) | b5;
+        }
+
+        private static Object getTzInfo(PythonAbstractNativeObject obj, CStructAccess.ReadByteNode readByteNode, CStructAccess.ReadObjectNode readObjectNode) {
             Object tzInfo = null;
             if (readByteNode.readFromObj(obj, CFields.PyDateTime_DateTime__hastzinfo) != 0) {
                 Object tzinfoObj = readObjectNode.readFromObj(obj, CFields.PyDateTime_DateTime__tzinfo);
@@ -332,10 +367,11 @@ public class DateTimeNodes {
                     tzInfo = tzinfoObj;
                 }
             }
-            int fold = readByteNode.readFromObjUnsigned(obj, CFields.PyDateTime_DateTime__fold);
+            return tzInfo;
+        }
 
-            PythonBuiltinClassType cls = PythonBuiltinClassType.PDateTime;
-            return new PDateTime(cls, cls.getInstanceShape(language), year, month, day, hour, minute, second, microsecond, tzInfo, fold);
+        static int getFold(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
+            return readNode.readFromObjUnsigned(self, CFields.PyDateTime_DateTime__fold);
         }
     }
 
@@ -355,14 +391,7 @@ public class DateTimeNodes {
         static Object getTzInfo(PythonAbstractNativeObject self,
                         @Cached CStructAccess.ReadByteNode readByteNode,
                         @Cached CStructAccess.ReadObjectNode readObjectNode) {
-            Object tzinfo = null;
-            if (readByteNode.readFromObj(self, CFields.PyDateTime_DateTime__hastzinfo) != 0) {
-                Object tzinfoObj = readObjectNode.readFromObj(self, CFields.PyDateTime_DateTime__tzinfo);
-                if (tzinfoObj != PNone.NO_VALUE) {
-                    tzinfo = tzinfoObj;
-                }
-            }
-            return tzinfo;
+            return AsManagedDateTimeNode.getTzInfo(self, readByteNode, readObjectNode);
         }
     }
 

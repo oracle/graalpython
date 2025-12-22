@@ -203,12 +203,25 @@ public class DateNodes {
         static PDate asManagedNative(PythonAbstractNativeObject obj,
                         @Bind PythonLanguage language,
                         @Cached CStructAccess.ReadByteNode readByteNode) {
-            int year = (readByteNode.readFromObjUnsigned(obj, CFields.PyDateTime_Date__data, 0) << 8) |
-                            readByteNode.readFromObjUnsigned(obj, CFields.PyDateTime_Date__data, 1);
-            int month = readByteNode.readFromObjUnsigned(obj, CFields.PyDateTime_Date__data, 2);
-            int day = readByteNode.readFromObjUnsigned(obj, CFields.PyDateTime_Date__data, 3);
+            int year = getYear(obj, readByteNode);
+            int month = getMonth(obj, readByteNode);
+            int day = getDay(obj, readByteNode);
             PythonBuiltinClassType cls = PythonBuiltinClassType.PDate;
             return new PDate(cls, cls.getInstanceShape(language), year, month, day);
+        }
+
+        static int getYear(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
+            int b0 = readNode.readFromObjUnsigned(self, CFields.PyDateTime_Date__data, 0);
+            int b1 = readNode.readFromObjUnsigned(self, CFields.PyDateTime_Date__data, 1);
+            return b0 << 8 | b1;
+        }
+
+        static int getMonth(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
+            return readNode.readFromObjUnsigned(self, CFields.PyDateTime_Date__data, 2);
+        }
+
+        static int getDay(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
+            return readNode.readFromObjUnsigned(self, CFields.PyDateTime_Date__data, 3);
         }
     }
 
