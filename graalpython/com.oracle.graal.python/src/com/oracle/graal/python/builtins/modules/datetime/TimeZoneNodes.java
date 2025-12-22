@@ -50,7 +50,6 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -72,10 +71,22 @@ public class TimeZoneNodes {
         }
 
         @Specialization
-        static PTimeZone newTimezone(Node inliningTarget, PythonContext context, Object cls, PTimeDelta offset, Object nameObject,
+        static PTimeZone newTimezone(Node inliningTarget, PythonContext context, Object cls, Object offsetObj, Object nameObject,
+                        @Cached TimeDeltaNodes.TimeDeltaCheckNode timeDeltaCheckNode,
+                        @Cached TimeDeltaNodes.AsManagedTimeDeltaNode asManagedTimeDeltaNode,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached PRaiseNode raiseNode,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape) {
+            if (!timeDeltaCheckNode.execute(inliningTarget, offsetObj)) {
+                throw raiseNode.raise(inliningTarget,
+                                TypeError,
+                                ErrorMessages.ARG_D_MUST_BE_S_NOT_P,
+                                "timezone()",
+                                1,
+                                "datetime.timedelta",
+                                offsetObj);
+            }
+            PTimeDelta offset = asManagedTimeDeltaNode.execute(inliningTarget, offsetObj);
             final TruffleString name;
             if (nameObject == PNone.NO_VALUE) {
                 name = null;
@@ -101,17 +112,6 @@ public class TimeZoneNodes {
 
             Shape shape = getInstanceShape.execute(cls);
             return new PTimeZone(cls, shape, offset, name);
-        }
-
-        @Fallback
-        static PTimeZone doGeneric(Node inliningTarget, PythonContext context, Object cls, Object offset, Object name) {
-            throw PRaiseNode.raiseStatic(inliningTarget,
-                            TypeError,
-                            ErrorMessages.ARG_D_MUST_BE_S_NOT_P,
-                            "timezone()",
-                            1,
-                            "datetime.timedelta",
-                            offset);
         }
     }
 }

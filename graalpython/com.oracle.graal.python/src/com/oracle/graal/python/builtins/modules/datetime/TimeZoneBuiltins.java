@@ -57,6 +57,8 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -134,8 +136,8 @@ public final class TimeZoneBuiltins extends PythonBuiltins {
         self.setAttribute(T_UTC_ATTRIBUTE, utc);
     }
 
-    @Slot(value = Slot.SlotKind.tp_new, isComplex = true)
-    @Slot.SlotSignature(name = "datetime.timezone", minNumOfPositionalArgs = 2, parameterNames = {"$cls", "offset", "name"})
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "datetime.timezone", minNumOfPositionalArgs = 2, parameterNames = {"$cls", "offset", "name"})
     @GenerateNodeFactory
     public abstract static class NewNode extends PythonBuiltinNode {
 
@@ -147,7 +149,7 @@ public final class TimeZoneBuiltins extends PythonBuiltins {
         }
     }
 
-    @Slot(value = Slot.SlotKind.tp_str, isComplex = true)
+    @Slot(value = SlotKind.tp_str, isComplex = true)
     @GenerateNodeFactory
     public abstract static class StrNode extends PythonUnaryBuiltinNode {
 
@@ -158,7 +160,7 @@ public final class TimeZoneBuiltins extends PythonBuiltins {
         }
     }
 
-    @Slot(value = Slot.SlotKind.tp_repr, isComplex = true)
+    @Slot(value = SlotKind.tp_repr, isComplex = true)
     @GenerateNodeFactory
     public abstract static class ReprNode extends PythonUnaryBuiltinNode {
 
@@ -207,7 +209,7 @@ public final class TimeZoneBuiltins extends PythonBuiltins {
         }
     }
 
-    @Slot(value = Slot.SlotKind.tp_richcompare, isComplex = true)
+    @Slot(value = SlotKind.tp_richcompare, isComplex = true)
     @GenerateNodeFactory
     abstract static class RichCmpNode extends RichCmpBuiltinNode {
 
@@ -227,7 +229,7 @@ public final class TimeZoneBuiltins extends PythonBuiltins {
         }
     }
 
-    @Slot(value = Slot.SlotKind.tp_hash, isComplex = true)
+    @Slot(value = SlotKind.tp_hash, isComplex = true)
     @GenerateNodeFactory
     abstract static class HashNode extends TpSlotHashFun.HashBuiltinNode {
 
@@ -346,21 +348,21 @@ public final class TimeZoneBuiltins extends PythonBuiltins {
     public abstract static class FromUtcNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        static Object fromUtc(PTimeZone self, PDateTime dateTime,
+        static Object fromUtc(PTimeZone self, Object dateTime,
                         @Bind Node inliningTarget,
+                        @Cached DateTimeNodes.DateTimeCheckNode dateTimeCheckNode,
+                        @Cached DateTimeNodes.TzInfoNode tzInfoNode,
                         @Cached PRaiseNode raiseNode,
                         @Cached DateTimeNodes.SubclassNewNode dateTimeSubclassNewNode) {
-            if (dateTime.tzInfo != self) {
+            if (!dateTimeCheckNode.execute(inliningTarget, dateTime)) {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.FROMUTC_ARGUMENT_MUST_BE_A_DATETIME);
+            }
+            Object tzInfo = tzInfoNode.execute(inliningTarget, dateTime);
+            if (tzInfo != self) {
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.FROMUTC_DT_TZINFO_IS_NOT_SELF);
             }
 
             return DatetimeModuleBuiltins.addOffsetToDateTime(dateTime, self.offset, dateTimeSubclassNewNode, inliningTarget);
-        }
-
-        @Fallback
-        static void doGeneric(Object self, Object dateTime,
-                        @Bind Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.FROMUTC_ARGUMENT_MUST_BE_A_DATETIME);
         }
     }
 

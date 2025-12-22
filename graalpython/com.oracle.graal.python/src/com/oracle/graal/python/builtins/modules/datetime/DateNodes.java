@@ -40,14 +40,31 @@
  */
 package com.oracle.graal.python.builtins.modules.datetime;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.builtins.modules.datetime.DatetimeModuleBuiltins.MAX_YEAR;
+import static com.oracle.graal.python.builtins.modules.datetime.DatetimeModuleBuiltins.MIN_YEAR;
+
+import java.time.YearMonth;
+
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
-import com.oracle.graal.python.lib.PyLongAsLongNode;
+import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -58,12 +75,6 @@ import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 
-import java.time.YearMonth;
-
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.builtins.modules.datetime.DatetimeModuleBuiltins.MAX_YEAR;
-import static com.oracle.graal.python.builtins.modules.datetime.DatetimeModuleBuiltins.MIN_YEAR;
-
 public class DateNodes {
 
     @GenerateUncached
@@ -71,10 +82,10 @@ public class DateNodes {
     @GenerateCached(false)
     public abstract static class NewNode extends Node {
 
-        public abstract PDate execute(Node inliningTarget, Object cls, Object yearObject, Object monthObject, Object dayObject);
+        public abstract Object execute(Node inliningTarget, Object cls, Object yearObject, Object monthObject, Object dayObject);
 
         @Specialization
-        static PDate newDate(Node inliningTarget, Object cls, Object yearObject, Object monthObject, Object dayObject) {
+        static Object newDate(Node inliningTarget, Object cls, Object yearObject, Object monthObject, Object dayObject) {
             EncapsulatingNodeReference encapsulating = EncapsulatingNodeReference.getCurrent();
             Node encapsulatingNode = encapsulating.set(inliningTarget);
             try {
@@ -88,10 +99,10 @@ public class DateNodes {
         }
 
         @TruffleBoundary
-        private static PDate newDateBoundary(Node inliningTarget, Object cls, Object yearObject, Object monthObject, Object dayObject) {
-            long year = PyLongAsLongNode.executeUncached(yearObject);
-            long month = PyLongAsLongNode.executeUncached(monthObject);
-            long day = PyLongAsLongNode.executeUncached(dayObject);
+        private static Object newDateBoundary(Node inliningTarget, Object cls, Object yearObject, Object monthObject, Object dayObject) {
+            int year = PyLongAsIntNode.executeUncached(yearObject);
+            int month = PyLongAsIntNode.executeUncached(monthObject);
+            int day = PyLongAsIntNode.executeUncached(dayObject);
 
             if (year < MIN_YEAR || year > MAX_YEAR) {
                 throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.YEAR_D_IS_OUT_OF_RANGE, year);
@@ -101,12 +112,11 @@ public class DateNodes {
                 throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.MONTH_MUST_BE_IN);
             }
 
-            if (day <= 0 || day > getMaxDayOfMonth((int) year, (int) month)) {
+            if (day <= 0 || day > getMaxDayOfMonth(year, month)) {
                 throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.DAY_IS_OUT_OF_RANGE_FOR_MONTH);
             }
 
-            Shape shape = TypeNodes.GetInstanceShape.executeUncached(cls);
-            return new PDate(cls, shape, (int) year, (int) month, (int) day);
+            return NewUnsafeNode.executeUncached(cls, year, month, day);
         }
 
         @TruffleBoundary
@@ -121,13 +131,28 @@ public class DateNodes {
     @GenerateCached(false)
     public abstract static class NewUnsafeNode extends Node {
 
-        public abstract PDate execute(Node inliningTarget, Object cls, int year, int month, int day);
+        public abstract Object execute(Node inliningTarget, Object cls, int year, int month, int day);
+
+        public static Object executeUncached(Object cls, int year, int month, int day) {
+            return DateNodesFactory.NewUnsafeNodeGen.getUncached().execute(null, cls, year, month, day);
+        }
 
         @Specialization
-        static PDate newDate(Node inliningTarget, Object cls, int year, int month, int day,
-                        @Cached TypeNodes.GetInstanceShape getInstanceShape) {
-            Shape shape = getInstanceShape.execute(cls);
-            return new PDate(cls, shape, year, month, day);
+        static Object newDate(Node inliningTarget, Object cls, int year, int month, int day,
+                        @Cached TypeNodes.GetInstanceShape getInstanceShape,
+                        @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
+                        @Cached CExtNodes.PCallCapiFunction callCapiFunction,
+                        @Cached ExternalFunctionNodes.DefaultCheckFunctionResultNode checkFunctionResultNode,
+                        @Cached CApiTransitions.PythonToNativeNode toNativeNode,
+                        @Cached CApiTransitions.NativeToPythonTransferNode fromNativeNode) {
+            if (!needsNativeAllocationNode.execute(inliningTarget, cls)) {
+                Shape shape = getInstanceShape.execute(cls);
+                return new PDate(cls, shape, year, month, day);
+            } else {
+                Object nativeResult = callCapiFunction.call(NativeCAPISymbol.FUN_DATE_SUBTYPE_NEW, toNativeNode.execute(cls), year, month, day);
+                checkFunctionResultNode.execute(PythonContext.get(inliningTarget), NativeCAPISymbol.FUN_DATE_SUBTYPE_NEW.getTsName(), nativeResult);
+                return fromNativeNode.execute(nativeResult);
+            }
         }
     }
 
@@ -150,12 +175,80 @@ public class DateNodes {
 
         @Fallback
         @TruffleBoundary
-        static Object newDateGeneric(Node inliningTarget, Object cls, Object yearObject, Object monthObject, Object dayObject) {
+        static Object newDateGeneric(Object cls, Object yearObject, Object monthObject, Object dayObject) {
             return CallNode.executeUncached(cls, yearObject, monthObject, dayObject);
         }
 
         static boolean isBuiltinClass(Object cls) {
             return PGuards.isBuiltinClass(cls, PythonBuiltinClassType.PDate);
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class AsManagedDateNode extends Node {
+        public abstract PDate execute(Node inliningTarget, Object obj);
+
+        public static PDate executeUncached(Object obj) {
+            return DateNodesFactory.AsManagedDateNodeGen.getUncached().execute(null, obj);
+        }
+
+        @Specialization
+        static PDate asManaged(PDate obj) {
+            return obj;
+        }
+
+        @Specialization
+        static PDate asManagedNative(PythonAbstractNativeObject obj,
+                        @Bind PythonLanguage language,
+                        @Cached CStructAccess.ReadByteNode readByteNode) {
+            int year = getYear(obj, readByteNode);
+            int month = getMonth(obj, readByteNode);
+            int day = getDay(obj, readByteNode);
+            PythonBuiltinClassType cls = PythonBuiltinClassType.PDate;
+            return new PDate(cls, cls.getInstanceShape(language), year, month, day);
+        }
+
+        static int getYear(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
+            int b0 = readNode.readFromObjUnsigned(self, CFields.PyDateTime_Date__data, 0);
+            int b1 = readNode.readFromObjUnsigned(self, CFields.PyDateTime_Date__data, 1);
+            return b0 << 8 | b1;
+        }
+
+        static int getMonth(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
+            return readNode.readFromObjUnsigned(self, CFields.PyDateTime_Date__data, 2);
+        }
+
+        static int getDay(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
+            return readNode.readFromObjUnsigned(self, CFields.PyDateTime_Date__data, 3);
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class DateCheckNode extends Node {
+        public abstract boolean execute(Node inliningTarget, Object obj);
+
+        public static boolean executeUncached(Object obj) {
+            return DateNodesFactory.DateCheckNodeGen.getUncached().execute(null, obj);
+        }
+
+        @Specialization
+        static boolean doManaged(@SuppressWarnings("unused") PDate value) {
+            return true;
+        }
+
+        @Specialization
+        static boolean doNative(Node inliningTarget, PythonAbstractNativeObject value,
+                        @Cached BuiltinClassProfiles.IsBuiltinObjectProfile profile) {
+            return profile.profileObject(inliningTarget, value, PythonBuiltinClassType.PDate);
+        }
+
+        @Fallback
+        static boolean doOther(@SuppressWarnings("unused") Object value) {
+            return false;
         }
     }
 }

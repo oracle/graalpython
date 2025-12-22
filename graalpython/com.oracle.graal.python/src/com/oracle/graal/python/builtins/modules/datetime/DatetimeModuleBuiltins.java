@@ -40,6 +40,19 @@
  */
 package com.oracle.graal.python.builtins.modules.datetime;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_TIMEZONE;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_UTC;
+import static com.oracle.graal.python.nodes.BuiltinNames.T__DATETIME;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -53,6 +66,7 @@ import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -61,19 +75,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
-
-import java.time.DayOfWeek;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_TIMEZONE;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_UTC;
-import static com.oracle.graal.python.nodes.BuiltinNames.T__DATETIME;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 @CoreFunctions(defineModule = "_datetime")
 public class DatetimeModuleBuiltins extends PythonBuiltins {
@@ -192,11 +193,7 @@ public class DatetimeModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        if (dayOfWeek <= 0 || dayOfWeek >= 8) {
-            return false;
-        }
-
-        return true;
+        return dayOfWeek > 0 && dayOfWeek < 8;
     }
 
     // CPython: format_utcoffset()
@@ -330,12 +327,13 @@ public class DatetimeModuleBuiltins extends PythonBuiltins {
     }
 
     @TruffleBoundary
-    public static Object addOffsetToDateTime(PDateTime dateTime, PTimeDelta offset, DateTimeNodes.SubclassNewNode subclassNewNode, Node inliningTarget) {
+    public static Object addOffsetToDateTime(Object dateTimeObj, PTimeDelta offset, DateTimeNodes.SubclassNewNode subclassNewNode, Node inliningTarget) {
+        PDateTime dateTime = DateTimeNodes.AsManagedDateTimeNode.executeUncached(dateTimeObj);
         LocalDateTime utc = LocalDateTime.of(dateTime.year, dateTime.month, dateTime.day, dateTime.hour, dateTime.minute, dateTime.second, dateTime.microsecond * 1_000).plusDays(
                         offset.days).plusSeconds(offset.seconds).plusNanos(offset.microseconds * 1_000L);
 
         return subclassNewNode.execute(inliningTarget,
-                        dateTime.getPythonClass(),
+                        GetClassNode.executeUncached(dateTimeObj),
                         utc.getYear(),
                         utc.getMonthValue(),
                         utc.getDayOfMonth(),
