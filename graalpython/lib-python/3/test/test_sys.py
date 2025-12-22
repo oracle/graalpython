@@ -1193,13 +1193,17 @@ class SysModuleTest(unittest.TestCase):
 
     @support.requires_subprocess()
     def test_orig_argv(self):
+        # GraalPy change: remove vars that could influence the test
+        env = os.environ.copy()
+        env.pop('GRAAL_PYTHON_ARGS', None)
+        env.pop('GRAAL_PYTHON_VM_ARGS', None)
         code = textwrap.dedent('''
             import sys
             print(sys.argv)
             print(sys.orig_argv)
         ''')
         args = [sys.executable, '-I', '-X', 'utf8', '-c', code, 'arg']
-        proc = subprocess.run(args, check=True, capture_output=True, text=True)
+        proc = subprocess.run(args, check=True, capture_output=True, text=True, env=env)
         expected = [
             repr(['-c', 'arg']),  # sys.argv
             repr(args),  # sys.orig_argv

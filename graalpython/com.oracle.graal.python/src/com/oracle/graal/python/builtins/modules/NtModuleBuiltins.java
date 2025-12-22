@@ -88,8 +88,6 @@ public final class NtModuleBuiltins extends PythonBuiltins {
     public void initialize(Python3Core core) {
         super.initialize(core);
         if (PythonOS.getPythonOS() == PythonOS.PLATFORM_WIN32) {
-            addBuiltinConstant("_LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR", 0x100);
-            addBuiltinConstant("_LOAD_LIBRARY_SEARCH_DEFAULT_DIRS", 0x1000);
             core.removeBuiltinModule(T_POSIX);
         } else {
             core.removeBuiltinModule(T_NT);

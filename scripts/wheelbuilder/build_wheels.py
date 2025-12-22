@@ -47,23 +47,21 @@ The steps are:
 4. Go over the build scripts and run them in the venv
 """
 
-import hashlib
 import importlib
 import os
-import platform
-import re
 import shlex
 import shutil
 import subprocess
 import sys
 import tarfile
 import zipfile
-
 from argparse import ArgumentParser
 from glob import glob
-from os.path import abspath, basename, dirname, exists, expanduser, isabs, isdir, join, splitext
-from tempfile import TemporaryDirectory
+from os.path import abspath, dirname, exists, expanduser, isdir, join, splitext
 from urllib.request import urlretrieve
+
+sys.path.append(os.path.dirname(__file__))
+from repair_wheels import repair_wheels
 
 
 def ensure_installed(name, *extra):
@@ -189,66 +187,6 @@ def build_wheels(pip):
         return True
 
 
-def repair_wheels():
-    whls = glob("*.whl")
-    env = os.environ.copy()
-    env["PYTHONUTF8"] = "1"
-    env["PATH"] = abspath(dirname(sys.executable)) + os.pathsep + env["PATH"]
-    for whl in whls:
-        if sys.platform == "win32":
-            ensure_installed("delvewheel")
-            p = subprocess.run(
-                [
-                    sys.executable,
-                    "-m",
-                    "delvewheel",
-                    "repair",
-                    "-v",
-                    "--exclude",
-                    "python-native.dll",
-                    "-w",
-                    "wheelhouse",
-                    whl,
-                ],
-                env=env,
-            )
-        elif sys.platform == "linux":
-            ensure_installed("auditwheel", "patchelf")
-            p = subprocess.run(
-                [
-                    join(dirname(sys.executable), "auditwheel"),
-                    "repair",
-                    "--plat",
-                    "manylinux_2_28_x86_64" if platform.processor() == "x86_64" else "manylinux_2_28_aarch64",
-                    "-w",
-                    "wheelhouse",
-                    whl,
-                ],
-                env=env,
-            )
-        elif sys.platform == "darwin":
-            ensure_installed("delocate")
-            p = subprocess.run(
-                [
-                    join(dirname(sys.executable), "delocate-wheel"),
-                    "-v",
-                    "--ignore-missing-dependencies",
-                    "--require-archs",
-                    "arm64" if platform.processor() == "arm" else "x86_64",
-                    "-w",
-                    "wheelhouse",
-                    whl,
-                ],
-                env=env,
-            )
-        if p.returncode != 0:
-            print("Repairing", whl, "failed, copying as is.")
-            try:
-                shutil.copy(whl, "wheelhouse")
-            except:
-                pass
-
-
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("graalpy_url")
@@ -261,6 +199,6 @@ if __name__ == "__main__":
     extract(outpath)
     pip = create_venv()
     success = build_wheels(pip)
-    repair_wheels()
+    repair_wheels("wheelhouse")
     if not success and not args.ignore_failures:
         sys.exit(1)

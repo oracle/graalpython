@@ -37,29 +37,37 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import nt
+import shlex
+import shutil
+import subprocess
+import sys
 
 
-def _add_dll_directory(path):
-    import ctypes, os
-    AddDllDirectory = ctypes.windll.kernel32['AddDllDirectory']
-    AddDllDirectory.argtypes = [ctypes.c_wchar_p]
-    AddDllDirectory.restype = ctypes.c_void_p
-    result = AddDllDirectory(os.fspath(path))
-    if result == 0:
-        raise OSError(f"add_dll_directory: {ctypes.windll.kernel32.GetLastError()}")
-    return result
+def build_testlib(tmpdir, orig_testlib):
+    tmp_testlib = tmpdir / "testlib"
+    shutil.copytree(orig_testlib, tmp_testlib)
+    testlib_build = tmp_testlib / "build"
+    if testlib_build.exists():
+        shutil.rmtree(testlib_build)
+    testlib_build.mkdir(parents=True, exist_ok=True)
 
+    cmd = ["cmake", "-DCMAKE_BUILD_TYPE=Release", ".."]
+    if sys.platform == 'win32':
+        cmd += ["-G", "Ninja"]
+    print("Running:", shlex.join(cmd))
+    subprocess.check_call(cmd, cwd=str(testlib_build))
+    cmd = ["cmake", "--build", ".", "--config", "Release"]
+    print("Running:", shlex.join(cmd))
+    subprocess.check_call(cmd, cwd=str(testlib_build))
 
-def _remove_dll_directory(cookie):
-    import ctypes
-    RemoveDllDirectory = ctypes.windll.kernel32['RemoveDllDirectory']
-    RemoveDllDirectory.argtypes = [ctypes.c_void_p]
-    RemoveDllDirectory.restype = ctypes.c_int
-    result = RemoveDllDirectory(cookie)
-    if result == 0:
-        raise OSError(f"remove_dll_directory: {ctypes.windll.kernel32.GetLastError()}")
+    if sys.platform == 'win32':
+        lib_name = "answer.dll"
+    elif sys.platform == 'darwin':
+        lib_name = "libanswer.dylib"
+    else:
+        lib_name = 'libanswer.so'
+    lib_path = testlib_build / lib_name
+    if not lib_path.exists():
+        raise FileNotFoundError(f"Failed to locate built library at: {lib_path}")
 
-
-nt._add_dll_directory = _add_dll_directory
-nt._remove_dll_directory = _remove_dll_directory
+    return lib_path

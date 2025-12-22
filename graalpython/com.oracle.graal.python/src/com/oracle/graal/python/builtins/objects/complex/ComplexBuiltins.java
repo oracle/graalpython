@@ -1291,7 +1291,7 @@ public final class ComplexBuiltins extends PythonBuiltins {
             return FormatNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization
+        @Specialization(guards = "!formatString.isEmpty()")
         @InliningCutoff
         static TruffleString format(Object self, TruffleString formatString,
                         @Bind Node inliningTarget,
