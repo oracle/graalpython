@@ -349,8 +349,6 @@ def _bisect_benchmark(argv, bisect_id, email_to):
 
     bad = get_commit(DIR, args.bad)
     good = get_commit(DIR, args.good)
-    if '-bc-dsl' in args.benchmark_command:
-        os.environ['BYTECODE_DSL_INTERPRETER'] = '1'
     result = run_bisect_benchmark(DIR, bad, good, benchmark_callback)
     visualization = result.visualize()
     summary = result.summarize()
