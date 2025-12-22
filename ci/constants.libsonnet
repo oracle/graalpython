@@ -57,17 +57,17 @@
 
     local PYVM_CONFIG = {
       default: "default",
-      default_bc_dsl: "default-bc-dsl",
+      default_manual: "default-manual",
       default_multi: "default-multi",
       interpreter: "interpreter",
-      interpreter_bc_dsl: "interpreter-bc-dsl",
+      interpreter_manual: "interpreter-manual",
       native_interpreter: "native-interpreter",
-      native_interpreter_bc_dsl: "native-interpreter-bc-dsl",
+      native_interpreter_manual: "native-interpreter-manual",
       interpreter_multi: "interpreter-multi",
       native_interpreter_multi: "native-interpreter-multi",
       default_multi_tier: "default-multi-tier",
       native: "native",
-      native_bc_dsl: "native-bc-dsl",
+      native_manual: "native-manual",
       native_multi: "native-multi",
       launcher: "launcher",
       panama: "panama",
@@ -128,25 +128,25 @@
         python_vm: PYVM.graalpython,
         python_vm_config: PYVM_CONFIG.default,
       },
-      graalpython_bc_dsl: {
+      graalpython_manual: {
         python_vm: PYVM.graalpython,
-        python_vm_config: PYVM_CONFIG.default_bc_dsl,
+        python_vm_config: PYVM_CONFIG.default_manual,
       },
       graalpython_interpreter: {
         python_vm: PYVM.graalpython,
         python_vm_config: PYVM_CONFIG.interpreter,
       },
-      graalpython_interpreter_bc_dsl: {
+      graalpython_interpreter_manual: {
         python_vm: PYVM.graalpython,
-        python_vm_config: PYVM_CONFIG.interpreter_bc_dsl,
+        python_vm_config: PYVM_CONFIG.interpreter_manual,
       },
       graalpython_native_interpreter: {
         python_vm: PYVM.graalpython,
         python_vm_config: PYVM_CONFIG.native_interpreter,
       },
-      graalpython_native_interpreter_bc_dsl: {
+      graalpython_native_interpreter_manual: {
         python_vm: PYVM.graalpython,
-        python_vm_config: PYVM_CONFIG.native_interpreter_bc_dsl,
+        python_vm_config: PYVM_CONFIG.native_interpreter_manual,
       },
       graalpython_multi: {
         python_vm: PYVM.graalpython,
@@ -168,9 +168,9 @@
         python_vm: PYVM.graalpython,
         python_vm_config: PYVM_CONFIG.native,
       },
-      graalpython_native_bc_dsl: {
+      graalpython_native_manual: {
         python_vm: PYVM.graalpython,
-        python_vm_config: PYVM_CONFIG.native_bc_dsl,
+        python_vm_config: PYVM_CONFIG.native_manual,
       },
       graalpython_native_multi: {
         python_vm: PYVM.graalpython,
@@ -209,26 +209,26 @@
     local VM = {
         // graalpy jvm standalones
         graalpython_core: PYTHON_VM.graalpython + JVM_VM.graaljdk_ce,
-        graalpython_core_bc_dsl: PYTHON_VM.graalpython_bc_dsl + JVM_VM.graaljdk_ce,
+        graalpython_core_manual: PYTHON_VM.graalpython_manual + JVM_VM.graaljdk_ce,
         graalpython_core_interpreter: PYTHON_VM.graalpython_interpreter + JVM_VM.graaljdk_ce,
-        graalpython_core_interpreter_bc_dsl: PYTHON_VM.graalpython_interpreter_bc_dsl + JVM_VM.graaljdk_ce,
+        graalpython_core_interpreter_manual: PYTHON_VM.graalpython_interpreter_manual + JVM_VM.graaljdk_ce,
         graalpython_core_multi: PYTHON_VM.graalpython_multi + JVM_VM.graaljdk_ce,
         graalpython_core_interpreter_multi: PYTHON_VM.graalpython_interpreter_multi + JVM_VM.graaljdk_ce,
         graalpython_core_multi_tier: PYTHON_VM.graalpython_multi_tier + JVM_VM.graaljdk_ce,
         graalpython_enterprise: PYTHON_VM.graalpython + JVM_VM.graaljdk_ee,
-        graalpython_enterprise_bc_dsl: PYTHON_VM.graalpython_bc_dsl + JVM_VM.graaljdk_ee,
+        graalpython_enterprise_manual: PYTHON_VM.graalpython_manual + JVM_VM.graaljdk_ee,
         graalpython_enterprise_multi: PYTHON_VM.graalpython_multi + JVM_VM.graaljdk_ee,
         graalpython_enterprise_multi_tier: PYTHON_VM.graalpython_multi_tier + JVM_VM.graaljdk_ee,
         graalpython_enterprise_interpreter: PYTHON_VM.graalpython_interpreter + JVM_VM.graaljdk_ee,
-        graalpython_enterprise_interpreter_bc_dsl: PYTHON_VM.graalpython_interpreter_bc_dsl + JVM_VM.graaljdk_ee,
+        graalpython_enterprise_interpreter_manual: PYTHON_VM.graalpython_interpreter_manual + JVM_VM.graaljdk_ee,
         graalpython_core_native: PYTHON_VM.graalpython_native + JVM_VM.graaljdk_ce,
-        graalpython_core_native_bc_dsl: PYTHON_VM.graalpython_native_bc_dsl + JVM_VM.graaljdk_ce,
+        graalpython_core_native_manual: PYTHON_VM.graalpython_native_manual + JVM_VM.graaljdk_ce,
         graalpython_core_native_interpreter: PYTHON_VM.graalpython_native_interpreter + JVM_VM.graaljdk_ce,
-        graalpython_core_native_interpreter_bc_dsl: PYTHON_VM.graalpython_native_interpreter_bc_dsl + JVM_VM.graaljdk_ce,
+        graalpython_core_native_interpreter_manual: PYTHON_VM.graalpython_native_interpreter_manual + JVM_VM.graaljdk_ce,
         graalpython_core_native_multi: PYTHON_VM.graalpython_native_multi + JVM_VM.graaljdk_ce,
         graalpython_core_native_interpreter_multi: PYTHON_VM.graalpython_native_interpreter_multi + JVM_VM.graaljdk_ce,
         graalpython_enterprise_native: PYTHON_VM.graalpython_native + JVM_VM.graaljdk_ee,
-        graalpython_enterprise_native_bc_dsl: PYTHON_VM.graalpython_native_bc_dsl + JVM_VM.graaljdk_ee,
+        graalpython_enterprise_native_manual: PYTHON_VM.graalpython_native_manual + JVM_VM.graaljdk_ee,
         graalpython_enterprise_native_multi: PYTHON_VM.graalpython_native_multi + JVM_VM.graaljdk_ee,
         graalpython_core_panama: PYTHON_VM.graalpython_panama + JVM_VM.graaljdk_ce,
         graalpython_enterprise_panama: PYTHON_VM.graalpython_panama + JVM_VM.graaljdk_ee,
@@ -237,9 +237,9 @@
         graalvm_ce_default: PYTHON_VM.graalpython + JVM_VM.graal_native_image_ce,
         graalvm_ce_default_interpreter: PYTHON_VM.graalpython_interpreter + JVM_VM.graal_native_image_ce,
         graalvm_ee_default: PYTHON_VM.graalpython + JVM_VM.graal_native_image_ee,
-        graalvm_ee_default_bc_dsl: PYTHON_VM.graalpython_bc_dsl + JVM_VM.graal_native_image_ee,
+        graalvm_ee_default_manual: PYTHON_VM.graalpython_manual + JVM_VM.graal_native_image_ee,
         graalvm_ee_default_interpreter: PYTHON_VM.graalpython_interpreter + JVM_VM.graal_native_image_ee,
-        graalvm_ee_default_interpreter_bc_dsl: PYTHON_VM.graalpython_interpreter_bc_dsl + JVM_VM.graal_native_image_ee,
+        graalvm_ee_default_interpreter_manual: PYTHON_VM.graalpython_interpreter_manual + JVM_VM.graal_native_image_ee,
         graalvm_ce_default_multi_tier: PYTHON_VM.graalpython_multi_tier + JVM_VM.graal_native_image_ce,
         graalvm_ee_default_multi_tier: PYTHON_VM.graalpython_multi_tier + JVM_VM.graal_native_image_ee,
 

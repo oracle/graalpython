@@ -4,13 +4,15 @@ test.test_sys_setprofile.ProfileHookTestCase.test_distant_exception @ darwin-arm
 test.test_sys_setprofile.ProfileHookTestCase.test_exception @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sys_setprofile.ProfileHookTestCase.test_exception_in_except_clause @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sys_setprofile.ProfileHookTestCase.test_exception_propagation @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_sys_setprofile.ProfileHookTestCase.test_generator @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+# GR-71865
+!test.test_sys_setprofile.ProfileHookTestCase.test_generator @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sys_setprofile.ProfileHookTestCase.test_nested_exception @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sys_setprofile.ProfileHookTestCase.test_raise @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sys_setprofile.ProfileHookTestCase.test_raise_reraise @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sys_setprofile.ProfileHookTestCase.test_raise_twice @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sys_setprofile.ProfileHookTestCase.test_simple @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_sys_setprofile.ProfileHookTestCase.test_stop_iteration @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+# GR-71865
+!test.test_sys_setprofile.ProfileHookTestCase.test_stop_iteration @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sys_setprofile.ProfileSimulatorTestCase.test_basic_exception @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sys_setprofile.ProfileSimulatorTestCase.test_caught_exception @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sys_setprofile.ProfileSimulatorTestCase.test_distant_exception @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64

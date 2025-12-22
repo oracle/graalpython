@@ -772,7 +772,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
     public BytecodeDSLCompilerResult visit(ModTy.Module node) {
         return compileRootNode("<module>", ArgumentInfo.NO_ARGS, node.getSourceRange(), b -> {
             beginRootNode(node, null, b);
-            visitModuleBody(node.body, b);
+            visitModuleBody(node.body, b, true);
             endRootNode(b);
         });
     }
@@ -792,12 +792,12 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
     public BytecodeDSLCompilerResult visit(ModTy.Interactive node) {
         return compileRootNode("<module>", ArgumentInfo.NO_ARGS, node.getSourceRange(), b -> {
             beginRootNode(node, null, b);
-            visitModuleBody(node.body, b);
+            visitModuleBody(node.body, b, false);
             endRootNode(b);
         });
     }
 
-    private void visitModuleBody(StmtTy[] body, Builder b) {
+    private void visitModuleBody(StmtTy[] body, Builder b, boolean returnLastStmt) {
         if (body != null) {
             if (containsAnnotations(body)) {
                 b.emitSetupAnnotations();
@@ -834,33 +834,30 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                         endStoreLocal("__doc__", b);
                     }
                 }
-                if (i == body.length) {
-                    // Special case: module body just consists of a docstring.
+
+                for (; i < body.length - 1; i++) {
+                    body[i].accept(statementCompiler);
+                }
+
+                /*
+                 * To support interop eval we need to return the value of the last statement even if
+                 * we're in file mode. Also used when parsing with arguments. Note that if there is
+                 * only a doc string, although we normally skip it, here we use it as a return
+                 * value.
+                 */
+                StmtTy lastStatement = body[body.length - 1];
+                if (returnLastStmt && lastStatement instanceof StmtTy.Expr expr) {
+                    // Return the value of the last statement for interop eval.
+                    beginReturn(b);
+                    boolean closeTag = beginSourceSection(expr, b);
+                    expr.value.accept(statementCompiler);
+                    endSourceSection(b, closeTag);
+                    endReturn(b);
+                } else {
+                    lastStatement.accept(statementCompiler);
                     beginReturn(b);
                     b.emitLoadConstant(PNone.NONE);
                     endReturn(b);
-                    return;
-                }
-
-                for (; i < body.length; i++) {
-                    StmtTy bodyNode = body[i];
-                    if (i == body.length - 1) {
-                        if (bodyNode instanceof StmtTy.Expr expr) {
-                            // Return the value of the last statement for interop eval.
-                            beginReturn(b);
-                            boolean closeTag = beginSourceSection(expr, b);
-                            expr.value.accept(statementCompiler);
-                            endSourceSection(b, closeTag);
-                            endReturn(b);
-                        } else {
-                            bodyNode.accept(statementCompiler);
-                            beginReturn(b);
-                            b.emitLoadConstant(PNone.NONE);
-                            endReturn(b);
-                        }
-                    } else {
-                        bodyNode.accept(statementCompiler);
-                    }
                 }
             }
         } else {
@@ -3146,17 +3143,20 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
             /**
              * This method unpacks the rhs (a sequence/iterable) to the elements on the lhs
-             * (specified by {@code nodes}.
+             * specified by {@code nodes}.
              */
             private void visitIterableAssign(ExprTy[] nodes) {
                 b.beginBlock();
 
-                /**
+                /*
                  * The rhs should be fully evaluated and unpacked into the expected number of
                  * elements before storing values into the lhs (e.g., if an lhs element is f().attr,
                  * but computing or unpacking rhs throws, f() is not computed). Thus, the unpacking
                  * step stores the unpacked values into intermediate variables, and then those
                  * variables are copied into the lhs elements afterward.
+                 *
+                 * On top of that, in order to pass the target BytecodeLocal variables as
+                 * LocalRangeAccessor, they must have consecutive indices.
                  */
                 BytecodeLocal[] targets = new BytecodeLocal[nodes.length];
                 for (int i = 0; i < targets.length; i++) {
@@ -3196,6 +3196,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                     target.accept(new StoreVisitor(() -> {
                         b.emitLoadLocal(targets[index]);
                     }));
+                    b.emitClearLocal(targets[index]);
                 }
 
                 b.endBlock();

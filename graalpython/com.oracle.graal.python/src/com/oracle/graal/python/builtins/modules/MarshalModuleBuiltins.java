@@ -1586,35 +1586,28 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
     public static BytecodeRootNodes<PBytecodeDSLRootNode> deserializeBytecodeNodes(PythonContext context, Source source, byte[] serialized) {
         try {
             Supplier<DataInput> supplier = () -> SerializationUtils.createDataInput(ByteBuffer.wrap(serialized));
-            return PBytecodeDSLRootNodeGen.deserialize(context.getLanguage(), BytecodeConfig.WITH_SOURCE, supplier, new MarshalModuleBuiltins.PBytecodeDSLDeserializer(context, source));
+            return PBytecodeDSLRootNodeGen.deserialize(context.getLanguage(), BytecodeConfig.WITH_SOURCE, supplier, new MarshalModuleBuiltins.PBytecodeDSLDeserializer(source));
         } catch (IOException e) {
             throw CompilerDirectives.shouldNotReachHere("Deserialization error.");
         }
     }
 
     public static class PBytecodeDSLSerializer implements BytecodeSerializer {
-        private final PythonContext pythonContext;
-
-        public PBytecodeDSLSerializer(PythonContext context) {
-            this.pythonContext = context;
-        }
-
         public void serialize(SerializerContext context, DataOutput buffer, Object object) throws IOException {
             /*
              * NB: Since the deserializer uses a fresh Marshal instance for each object (see below)
              * we must also do the same here. Otherwise, the encoding may be different (e.g., a
              * reference for an already-emitted object).
              */
+            PythonContext pythonContext = PythonContext.get(null);
             new Marshal(pythonContext, CURRENT_VERSION, pythonContext.getTrue(), pythonContext.getFalse(), buffer).writeObject(object);
         }
     }
 
     public static class PBytecodeDSLDeserializer implements BytecodeDeserializer {
-        private final PythonContext pythonContext;
         final Source source;
 
-        public PBytecodeDSLDeserializer(PythonContext context, Source source) {
-            this.pythonContext = context;
+        public PBytecodeDSLDeserializer(Source source) {
             this.source = source;
         }
 
@@ -1623,7 +1616,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
              * NB: Since a DSL node may reparse multiple times, we cannot reuse a common Marshal
              * object across calls (each call may take a different buffer).
              */
-            return new Marshal(pythonContext, buffer, source).readObject();
+            return new Marshal(PythonContext.get(null), buffer, source).readObject();
         }
     }
 }
