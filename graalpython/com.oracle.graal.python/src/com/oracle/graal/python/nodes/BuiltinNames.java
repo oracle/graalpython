@@ -212,6 +212,7 @@ public abstract class BuiltinNames {
     public static final TruffleString T_STR = tsLiteral(J_STR);
 
     public static final String J_BOOL = "bool";
+    public static final TruffleString T_BOOL = tsLiteral(J_BOOL);
 
     public static final String J_EXEC = "exec";
     public static final TruffleString T_EXEC = StringLiterals.T_EXEC;
@@ -331,6 +332,7 @@ public abstract class BuiltinNames {
     public static final String J_MAX = "max";
 
     public static final String J_ROUND = "round";
+    public static final TruffleString T_ROUND = tsLiteral(J_ROUND);
 
     public static final String J_DELATTR = "delattr";
 

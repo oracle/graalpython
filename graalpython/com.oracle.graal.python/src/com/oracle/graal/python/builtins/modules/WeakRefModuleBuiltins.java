@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.weakref.ProxyTypeBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -74,10 +75,14 @@ import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(defineModule = J__WEAKREF, isEager = true)
 public final class WeakRefModuleBuiltins extends PythonBuiltins {
@@ -252,6 +257,17 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
         public Object removeDeadRefs(@SuppressWarnings("unused") PDict dict, @SuppressWarnings("unused") Object key) {
             // TODO: do the removal from the dict ... (_weakref.c:60)
             return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "proxy", minNumOfPositionalArgs = 1, parameterNames = {"object", "callable"}, numOfPositionalOnlyArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class ProxyNode extends PythonBuiltinNode {
+        @Specialization
+        public static Object proxy(VirtualFrame frame, Object object, Object callback,
+                        @Bind Node inliningTarget,
+                        @Cached ProxyTypeBuiltins.NewProxyTypeNode newNode) {
+            return newNode.execute(frame, inliningTarget, object, callback);
         }
     }
 }

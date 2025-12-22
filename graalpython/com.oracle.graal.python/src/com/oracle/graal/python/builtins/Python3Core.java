@@ -205,6 +205,7 @@ import com.oracle.graal.python.builtins.modules.pickle.PicklerMemoProxyBuiltins;
 import com.oracle.graal.python.builtins.modules.pickle.UnpicklerBuiltins;
 import com.oracle.graal.python.builtins.modules.pickle.UnpicklerMemoProxyBuiltins;
 import com.oracle.graal.python.builtins.modules.re.SREScannerBuiltins;
+import com.oracle.graal.python.builtins.modules.weakref.ProxyTypeBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZLibModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZlibCompressBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZlibDecompressBuiltins;
@@ -430,7 +431,6 @@ public abstract class Python3Core {
         // Order matters!
         List<TruffleString> coreFiles = List.of(
                         T___GRAALPYTHON__,
-                        T__WEAKREF,
                         T__SRE,
                         T__SYSCONFIG,
                         T_JAVA,
@@ -569,6 +569,7 @@ public abstract class Python3Core {
                         new RandomBuiltins(),
                         new WeakRefModuleBuiltins(),
                         new ReferenceTypeBuiltins(),
+                        new ProxyTypeBuiltins(),
                         new TracemallocModuleBuiltins(),
                         new SysconfigModuleBuiltins(),
                         // contextvars

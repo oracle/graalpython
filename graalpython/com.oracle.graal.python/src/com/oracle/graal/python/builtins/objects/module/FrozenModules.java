@@ -102,7 +102,6 @@ public final class FrozenModules {
         private static final PythonFrozenModule GRAALPY___GRAALPYTHON__ = new PythonFrozenModule("GRAALPY___GRAALPYTHON__", null, false);
         private static final PythonFrozenModule GRAALPY__SRE = new PythonFrozenModule("GRAALPY__SRE", null, false);
         private static final PythonFrozenModule GRAALPY__SYSCONFIG = new PythonFrozenModule("GRAALPY__SYSCONFIG", null, false);
-        private static final PythonFrozenModule GRAALPY__WEAKREF = new PythonFrozenModule("GRAALPY__WEAKREF", null, false);
         private static final PythonFrozenModule GRAALPY_JAVA = new PythonFrozenModule("GRAALPY_JAVA", null, false);
         private static final PythonFrozenModule GRAALPY_PIP_HOOK = new PythonFrozenModule("GRAALPY_PIP_HOOK", null, false);
         private static final PythonFrozenModule GRAALPY__NT = new PythonFrozenModule("GRAALPY__NT", null, false);
@@ -236,8 +235,6 @@ public final class FrozenModules {
                 return Map.GRAALPY__SRE;
             case "graalpy._sysconfig":
                 return Map.GRAALPY__SYSCONFIG;
-            case "graalpy._weakref":
-                return Map.GRAALPY__WEAKREF;
             case "graalpy.java":
                 return Map.GRAALPY_JAVA;
             case "graalpy.pip_hook":

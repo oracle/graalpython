@@ -1,4 +1,4 @@
-# Copyright (c) 2025, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -48,7 +48,6 @@ expected_nosite_startup_modules = [
     '_frozen_importlib',
     '_frozen_importlib_external',
     '__graalpython__',
-    '_weakref',
     '_sre',
     '_sysconfig',
     'java',

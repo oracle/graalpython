@@ -1698,4 +1698,6 @@ public abstract class ErrorMessages {
     public static final TruffleString INCONSISTENT_USE_OF_COLON_IN_S = tsLiteral("Inconsistent use of : in %s");
     public static final TruffleString NO_EXCEPTION_GROUPS_IN_EXCEPT_STAR = tsLiteral("catching ExceptionGroup with except* is not allowed. Use except instead.");
     public static final TruffleString NO_SUCH_GROUP = tsLiteral("no such group");
+    public static final TruffleString WEAKLY_REFERENCED_OBJECT_NO_LONGER_EXISTS = tsLiteral("weakly-referenced object no longer exists");
+    public static final TruffleString WEAKREF_PROXY_REFERENCED_A_NON_ITERATOR_S_OBJECT = tsLiteral("Weakref proxy referenced a non-iterator '%s' object");
 }

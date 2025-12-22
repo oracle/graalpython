@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -36,6 +36,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import weakref
 
 MAX_WAIT_COUNT = 500
 
@@ -108,12 +109,14 @@ def test_weakref_hash():
 
         assert r1_hash == do_hash(r1)
 
+
 def test_weakref_reuse():
     from weakref import ref
     class A:
         pass
     a = A()
     assert ref(a) == ref(a)
+
 
 def test_weakref_object_type_support():
     from weakref import ref
@@ -123,3 +126,171 @@ def test_weakref_object_type_support():
         pass
     else:
         assert False, "should throw TypeError for unsupported objects"
+
+
+def test_proxy_getitem():
+    class A:
+        def __init__(self, collection):
+            self.collection = collection
+
+        def __getitem__(self, i):
+            return self.collection[i]
+
+    # integer index
+    a = A((1, 2, 3))
+    proxy = weakref.proxy(a)
+
+    assert proxy[0] == 1
+    assert proxy[1] == 2
+    assert proxy[2] == 3
+
+    # Object index
+    a = A({'a': 1, 'b': 2, 'c': 3})
+    proxy = weakref.proxy(a)
+
+    assert proxy['a'] == 1
+    assert proxy['b'] == 2
+    assert proxy['c'] == 3
+
+
+def test_proxy_settitem():
+    class A:
+        def __init__(self, collection):
+            self.collection = collection
+
+        def __getitem__(self, i):
+            return self.collection[i]
+
+        def __setitem__(self, i, value):
+            self.collection[i] = value
+
+    # integer index
+    a = A([1, 2, 3])
+    proxy = weakref.proxy(a)
+
+    proxy[0] = -1
+    assert proxy[0] == -1
+
+    # Object index
+    a = A({'a': 1, 'b': 2, 'c': 3})
+    proxy = weakref.proxy(a)
+
+    proxy['a'] = -1
+    assert proxy['a'] == -1
+
+
+def test_proxy_deltitem():
+    class A:
+        def __init__(self, collection):
+            self.collection = collection
+
+        def __getitem__(self, i):
+            return self.collection[i]
+
+        def __delitem__(self, i):
+            del self.collection[i]
+
+    # integer index
+    a = A([1, 2, 3])
+    proxy = weakref.proxy(a)
+
+    del proxy[0]
+    assert proxy[0] == 2
+    assert proxy[1] == 3
+
+    # Object index
+    d = {'a': 1, 'b': 2, 'c': 3}
+    a = A(d)
+    proxy = weakref.proxy(a)
+
+    del proxy['a']
+    assert d == {'b': 2, 'c': 3}
+
+
+def test_proxy_richcompare():
+    class A:
+        def __init__(self, n):
+            self.n = n
+
+        def __lt__(self, other):
+            return self.n < other
+
+        def __le__(self, other):
+            return self.n <= other
+
+        def __eq__(self, other):
+            return self.n == other
+
+        def __ne__(self, other):
+            return self.n != other
+
+        def __gt__(self, other):
+            return self.n > other
+
+        def __ge__(self, other):
+            return self.n >= other
+
+    a = A(5)
+    proxy = weakref.proxy(a)
+
+    assert proxy < 10
+    assert not(proxy < 0)
+
+    assert proxy <= 5
+    assert not(proxy <= 0)
+
+    assert proxy == 5
+    assert not(proxy == 0)
+
+    assert proxy != 10
+    assert not(proxy != 5)
+
+    assert proxy > 0
+    assert not(proxy > 10)
+
+    assert proxy >= 5
+    assert not(proxy >= 10)
+
+
+def test_proxy_bytes():
+    class A:
+        def __init__(self, bytes):
+            self.bytes = bytes
+
+        def __bytes__(self):
+            return self.bytes
+
+    a = A(b'bytes')
+    proxy = weakref.proxy(a)
+    assert bytes(proxy) == b'bytes'
+
+
+def test_proxy_bool():
+    class A:
+        def __init__(self, is_bool):
+            self.is_bool = is_bool
+
+        def __bool__(self):
+            return self.is_bool
+
+    a = A(True)
+    proxy = weakref.proxy(a)
+    assert bool(proxy) is True
+
+    a = A(False)
+    proxy = weakref.proxy(a)
+    assert bool(proxy) is False
+
+
+def test_proxy_call():
+    class A:
+        def __init__(self, value):
+            self.value = value
+
+        def __call__(self):
+            return self.value
+
+    a = A(42)
+    proxy = weakref.proxy(a)
+    assert callable(proxy) is True
+    assert proxy() == 42
