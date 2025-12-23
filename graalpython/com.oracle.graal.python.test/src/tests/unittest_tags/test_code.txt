@@ -1,6 +1,6 @@
-DocTestCase.test.test_code @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_code.CodeTest.test_code_hash_uses_bytecode @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_code.CodeTest.test_constructor @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_code.CodeTest.test_qualname @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_code.CodeTest.test_replace @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_code.CodeTest.test_shrinking_localsplus @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+DocTestCase.test.test_code @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,win32-AMD64
+test.test_code.CodeTest.test_code_hash_uses_bytecode @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,win32-AMD64
+test.test_code.CodeTest.test_constructor @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,win32-AMD64
+test.test_code.CodeTest.test_qualname @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,win32-AMD64
+test.test_code.CodeTest.test_replace @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,win32-AMD64
+test.test_code.CodeTest.test_shrinking_localsplus @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,win32-AMD64

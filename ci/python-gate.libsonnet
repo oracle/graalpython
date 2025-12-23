@@ -151,13 +151,14 @@
         darwin: {
             common: ENV_POSIX + {
                 LC_CTYPE: "en_US.UTF-8",
+                PATH: utils.path_combine(ENVIRONMENT.common.PATH, "$PYTHON3_HOME:$PATH:$MUSL_TOOLCHAIN/bin"),
             },
             amd64: {},
             aarch64: {},
         },
         windows: {
             common: {
-                PATH: "$MAVEN_HOME\\bin;$PATH",
+                PATH: "%MAVEN_HOME%\\bin;%PATH%",
                 # Gradle: this feature doesn't work on all Windows CI machines
                 GRADLE_OPTS: "-Dorg.gradle.vfs.watch=false",
             },
@@ -171,7 +172,7 @@
         LD_LIBRARY_PATH: "$LIBGMP/lib:$LLVM/lib:$LD_LIBRARY_PATH",
         FORK_COUNTS_DIRECTORY: "$BUILD_DIR/benchmarking-config/fork-counts",
         RODINIA_DATASET_ZIP: $.overlay_imports.RODINIA_DATASET_ZIP,
-        PATH: utils.path_combine(ENVIRONMENT.common.PATH, "$PYTHON3_HOME:$PATH:$MUSL_TOOLCHAIN/bin"),
+        PATH: utils.path_combine(ENVIRONMENT.common.PATH, "$PATH:$PYTHON3_HOME:$MUSL_TOOLCHAIN/bin"),
     },
 
     // This is the diff to 'ENVIRONMENT' and meant to be used on OL8 images.
@@ -211,6 +212,7 @@
                 llvm: "==8.0.0",
                 maven: ">=3.3.9",
                 curl: '==7.50.1',
+                "pip:psutil": "==7.1.3",
             },
             amd64: {},
             aarch64: {},
@@ -219,6 +221,7 @@
             common: {
                 coreutils: "",
                 maven: ">=3.3.9",
+                "pip:psutil": "==7.1.3",
             },
             amd64: {},
             aarch64: {},
@@ -226,6 +229,7 @@
         windows: {
             common: {
                 maven: ">=3.3.9",
+                "pip:psutil": "==7.1.3",
             },
             amd64: {},
             aarch64: {},
@@ -339,6 +343,8 @@
         task_spec({
             environment+: {
                 TAGGED_UNITTEST_PARTIAL: "%d/%d" % [i, num],
+                RETAGGER_BATCH_NO: i,
+                MX_REPORT_SUFFIX: "_batch_%d" % [i],
             },
             variations+::["batch" + i]
         }),
@@ -505,15 +511,15 @@
                 "mx", "graalpytest", "--svm",
                 "--tagged", "--all", "--continue-on-collection-errors", ".",
                 # More workers doesn't help, the job is bottlenecked on all the timeouts in test_asyncio
-                "-n", "6",
+                "-n", "4",
                 # The default timeout is very generous to allow for infrastructure flakiness,
                 # but we don't want to auto tag tests that take a long time
                 "--timeout-factor", "0.3",
-                "--mx-report", "report.json",
+                "--mx-report", "retagger-report.json",
                 "--exit-success-on-failures",
             ],
         ],
-        logs+: ["report.json"],
+        logs+: ["main/retagger-report*.json"],
     }),
 
     coverage_gate:: $.graalpy_gate + task_spec({

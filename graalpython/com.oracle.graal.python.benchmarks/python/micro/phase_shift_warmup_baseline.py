@@ -65,4 +65,3 @@ def __benchmark__(phase2it=0):
         tt = int(m.group(1))
     print(result.stdout)
     return tt * 1000000                
-
