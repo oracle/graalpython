@@ -1,4 +1,4 @@
-# Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -58,3 +58,22 @@ def test_overwrite___weakref__():
     class C:
         __weakref__ = 1
     assert C.__weakref__ == 1
+
+
+def test___hash___in___slots__():
+    class ObjWithoutHash:
+        def __eq__(self, other):
+            return True
+
+    assert ObjWithoutHash.__hash__ is None
+
+    class ObjWithHashSlot:
+        __slots__ = ("__hash__",)
+
+        def __eq__(self, other):
+            return True
+
+    assert ObjWithHashSlot.__hash__ is not None
+    o = ObjWithHashSlot()
+    o.__hash__ = lambda: 1
+    assert hash(o) == 1
