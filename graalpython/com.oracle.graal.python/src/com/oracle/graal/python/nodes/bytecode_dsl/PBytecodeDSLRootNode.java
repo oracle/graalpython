@@ -1432,7 +1432,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             PKeyword[] kwDefaults = new PKeyword[kwDefaultsObject.length];
             // Note: kwDefaultsObject should be a result of operation MakeKeywords, which produces
             // PKeyword[]
-            System.arraycopy(kwDefaultsObject, 0, kwDefaults, 0, kwDefaults.length);
+            PythonUtils.arraycopy(kwDefaultsObject, 0, kwDefaults, 0, kwDefaults.length);
             PFunction function = PFactory.createFunction(PythonLanguage.get(node), name, qualifiedName, code, PArguments.getGlobals(frame), defaults, kwDefaults, (PCell[]) closure);
 
             if (annotations != null) {
