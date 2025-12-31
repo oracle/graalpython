@@ -875,7 +875,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
     abstract static class IterNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        static Object getitem(PArray self,
+        static Object iter(PArray self,
                         @Bind PythonLanguage language) {
             return PFactory.createArrayIterator(language, self);
         }
