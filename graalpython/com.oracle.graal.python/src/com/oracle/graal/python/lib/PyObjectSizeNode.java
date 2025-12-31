@@ -40,25 +40,19 @@
  */
 package com.oracle.graal.python.lib;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -112,15 +106,13 @@ public abstract class PyObjectSizeNode extends PNodeWithContext {
         return object.getSequenceStorage().length();
     }
 
-    @Specialization(guards = "isBuiltinDict(object)")
-    static int doDict(Node inliningTarget, PDict object,
-                    @Shared("hashingStorageLen") @Cached HashingStorageLen lenNode) {
-        return lenNode.execute(inliningTarget, object.getDictStorage());
+    public static boolean isBuiltinHashingCollection(PHashingCollection object) {
+        return PGuards.isBuiltinDict(object) || PGuards.isBuiltinAnySet(object);
     }
 
-    @Specialization(guards = "isBuiltinAnySet(object)")
-    static int doSet(Node inliningTarget, PSet object,
-                    @Shared("hashingStorageLen") @Cached HashingStorageLen lenNode) {
+    @Specialization(guards = "isBuiltinHashingCollection(object)")
+    static int doSet(Node inliningTarget, PHashingCollection object,
+                    @Cached HashingStorageLen lenNode) {
         return lenNode.execute(inliningTarget, object.getDictStorage());
     }
 
@@ -141,33 +133,6 @@ public abstract class PyObjectSizeNode extends PNodeWithContext {
     static int doOthers(VirtualFrame frame, Object object,
                     @Cached(inline = false) PyObjectSizeGenericNode genericNode) {
         return genericNode.execute(frame, object);
-    }
-
-    static int checkLen(Node inliningTarget, PRaiseNode raiseNode, int len) {
-        if (len < 0) {
-            throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.LEN_SHOULD_RETURN_GT_ZERO);
-        }
-        return len;
-    }
-
-    public static int convertAndCheckLen(VirtualFrame frame, Node inliningTarget, Object result, PyNumberIndexNode indexNode,
-                    CastToJavaIntLossyNode castLossy, PyNumberAsSizeNode asSizeNode, PRaiseNode raiseNode) {
-        int len;
-        Object index = indexNode.execute(frame, inliningTarget, result);
-        try {
-            len = asSizeNode.executeExact(frame, inliningTarget, index);
-        } catch (PException e) {
-            /*
-             * CPython first checks whether the number is negative before converting it to an
-             * integer. Comparing PInts is not cheap for us, so we do the conversion first. If the
-             * conversion overflowed, we need to do the negativity check before raising the overflow
-             * error.
-             */
-            len = castLossy.execute(inliningTarget, index);
-            checkLen(inliningTarget, raiseNode, len);
-            throw e;
-        }
-        return checkLen(inliningTarget, raiseNode, len);
     }
 
     @NeverDefault

@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -81,11 +82,16 @@ public abstract class PyNumberSubtractFastPathsBase extends BinaryOpNode {
         /* Inlined version of Math.subtractExact(x, y) with BigInteger fallback. */
         long r = x - y;
         // HD 2-12 Overflow iff the arguments have different signs and
-        // the sign of the result is different than the sign of x
+        // the sign of the result is different from the sign of x
         if (((x ^ y) & (x ^ r)) < 0) {
-            return PFactory.createInt(PythonLanguage.get(inliningTarget), IntBuiltins.SubNode.sub(PInt.longToBigInteger(x), PInt.longToBigInteger(y)));
+            return subtractAsPInt(inliningTarget, x, y);
         }
         return r;
+    }
+
+    @InliningCutoff
+    private static PInt subtractAsPInt(Node inliningTarget, long x, long y) {
+        return PFactory.createInt(PythonLanguage.get(inliningTarget), IntBuiltins.SubNode.sub(PInt.longToBigInteger(x), PInt.longToBigInteger(y)));
     }
 
     /*

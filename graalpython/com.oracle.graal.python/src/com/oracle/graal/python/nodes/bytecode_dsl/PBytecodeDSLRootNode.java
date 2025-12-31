@@ -3592,8 +3592,13 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind BytecodeNode bytecodeNode,
                         @Cached IsBuiltinObjectProfile isStopAsyncIteration) {
             if (!isStopAsyncIteration.profileException(inliningTarget, exception, PythonBuiltinClassType.StopAsyncIteration)) {
-                throw exception.getExceptionForReraise(!((PBytecodeDSLRootNode) bytecodeNode.getRootNode()).internal);
+                reraiseException(exception, bytecodeNode);
             }
+        }
+
+        @InliningCutoff
+        private static void reraiseException(PException exception, BytecodeNode bytecodeNode) {
+            throw exception.getExceptionForReraise(!((PBytecodeDSLRootNode) bytecodeNode.getRootNode()).internal);
         }
 
         @Specialization(guards = "!isPException(exception)")
