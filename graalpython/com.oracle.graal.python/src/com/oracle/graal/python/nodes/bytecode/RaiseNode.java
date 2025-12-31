@@ -50,6 +50,7 @@ import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -63,11 +64,13 @@ import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
 @GenerateInline(false) // used in BCI root node
+@GenerateUncached
 public abstract class RaiseNode extends PNodeWithContext {
     public abstract void execute(VirtualFrame frame, Object typeOrExceptionObject, Object cause, boolean rootNodeVisible);
 
     @ImportStatic(PGuards.class)
     @GenerateInline(false) // Not used in all specializations, better be lazy
+    @GenerateUncached
     public abstract static class SetExceptionCauseNode extends Node {
         public abstract void execute(VirtualFrame frame, Object exception, Object cause);
 

@@ -55,6 +55,7 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
@@ -68,7 +69,8 @@ import com.oracle.truffle.api.strings.TruffleString;
  * {@link PyObjectIsNotTrueNode}.
  */
 @GenerateInline(false)
-@OperationProxy.Proxyable(storeBytecodeIndex = false)
+@GenerateUncached
+@OperationProxy.Proxyable(storeBytecodeIndex = false, allowUncached = true)
 public abstract class PyObjectIsNotTrueNode extends PNodeWithContext {
     public abstract boolean execute(Frame frame, Object object);
 

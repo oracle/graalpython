@@ -269,7 +269,7 @@ public abstract class ListNodes {
      */
     @GenerateUncached
     @GenerateInline(false) // footprint reduction 36 -> 17
-    @OperationProxy.Proxyable(storeBytecodeIndex = false)
+    @OperationProxy.Proxyable(allowUncached = true, storeBytecodeIndex = false)
     public abstract static class AppendNode extends PNodeWithContext {
         private static final BranchProfile[] DISABLED = new BranchProfile[]{BranchProfile.getUncached()};
 

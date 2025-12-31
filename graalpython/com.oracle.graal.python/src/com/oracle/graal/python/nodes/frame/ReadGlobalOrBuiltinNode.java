@@ -63,7 +63,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateUncached
 @GenerateInline(false)       // footprint reduction 48 -> 30
-@Proxyable(storeBytecodeIndex = false)
+@Proxyable(storeBytecodeIndex = false, allowUncached = true)
 @ConstantOperand(type = TruffleString.class)
 @ImportStatic(PGuards.class)
 public abstract class ReadGlobalOrBuiltinNode extends Node {

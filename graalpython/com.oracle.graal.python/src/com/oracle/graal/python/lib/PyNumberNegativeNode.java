@@ -63,7 +63,7 @@ import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
 @GenerateInline(false)
-@OperationProxy.Proxyable(storeBytecodeIndex = false)
+@OperationProxy.Proxyable(allowUncached = true, storeBytecodeIndex = false)
 public abstract class PyNumberNegativeNode extends UnaryOpNode {
 
     public static final int INT_MIN_VALUE = Integer.MIN_VALUE;

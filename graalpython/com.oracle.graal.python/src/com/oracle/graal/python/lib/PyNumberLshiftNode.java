@@ -56,7 +56,7 @@ import com.oracle.truffle.api.nodes.Node;
 // TODO: should inherit from PyNumberLshiftFastPathsBase, blocked by GR-64005
 @GenerateInline(false)
 @GenerateUncached
-@OperationProxy.Proxyable(storeBytecodeIndex = false)
+@OperationProxy.Proxyable(storeBytecodeIndex = false, allowUncached = true)
 public abstract class PyNumberLshiftNode extends BinaryOpNode {
 
     @Specialization     // (replaces = {"doII", "doLL"})

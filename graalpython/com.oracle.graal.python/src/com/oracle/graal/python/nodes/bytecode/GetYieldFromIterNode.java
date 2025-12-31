@@ -55,7 +55,7 @@ import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
 @GenerateInline(false) // used in BCI root node
-@OperationProxy.Proxyable(storeBytecodeIndex = false)
+@OperationProxy.Proxyable(allowUncached = true, storeBytecodeIndex = false)
 public abstract class GetYieldFromIterNode extends Node {
     public abstract Object execute(VirtualFrame frame, Object receiver);
 

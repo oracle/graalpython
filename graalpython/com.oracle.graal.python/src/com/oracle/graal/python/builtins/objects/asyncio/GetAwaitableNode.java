@@ -62,7 +62,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
-@OperationProxy.Proxyable(storeBytecodeIndex = true)
+@OperationProxy.Proxyable(allowUncached = true, storeBytecodeIndex = true)
 @GenerateInline(false)
 public abstract class GetAwaitableNode extends Node {
     public abstract Object execute(VirtualFrame frame, Object arg);

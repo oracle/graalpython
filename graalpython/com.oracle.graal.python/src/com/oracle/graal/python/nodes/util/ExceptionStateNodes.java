@@ -79,9 +79,17 @@ public abstract class ExceptionStateNodes {
     public static final class GetCaughtExceptionNode extends Node {
         @Child private GetThreadStateNode getThreadStateNode;
 
-        private final ConditionProfile nullFrameProfile = ConditionProfile.create();
-        private final ConditionProfile hasExceptionProfile = ConditionProfile.create();
-        private final ConditionProfile needsStackWalkProfile = ConditionProfile.create();
+        private final ConditionProfile nullFrameProfile;
+        private final ConditionProfile hasExceptionProfile;
+        private final ConditionProfile needsStackWalkProfile;
+
+        private GetCaughtExceptionNode(ConditionProfile nullFrameProfile, ConditionProfile hasExceptionProfile,
+                        ConditionProfile needsStackWalkProfile, GetThreadStateNode getThreadStateNode) {
+            this.nullFrameProfile = nullFrameProfile;
+            this.hasExceptionProfile = hasExceptionProfile;
+            this.needsStackWalkProfile = needsStackWalkProfile;
+            this.getThreadStateNode = getThreadStateNode;
+        }
 
         public AbstractTruffleException execute(VirtualFrame frame) {
             if (nullFrameProfile.profile(frame == null)) {
@@ -190,7 +198,14 @@ public abstract class ExceptionStateNodes {
 
         @NeverDefault
         public static GetCaughtExceptionNode create() {
-            return new GetCaughtExceptionNode();
+            return new GetCaughtExceptionNode(ConditionProfile.create(), ConditionProfile.create(), ConditionProfile.create(), null);
+        }
+
+        private static final GetCaughtExceptionNode UNCACHED = new GetCaughtExceptionNode(ConditionProfile.getUncached(), ConditionProfile.getUncached(), ConditionProfile.getUncached(),
+                        GetThreadStateNode.getUncached());
+
+        public static GetCaughtExceptionNode getUncached() {
+            return UNCACHED;
         }
     }
 }

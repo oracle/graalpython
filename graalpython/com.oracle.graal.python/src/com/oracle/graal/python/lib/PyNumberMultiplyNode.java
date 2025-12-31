@@ -64,7 +64,7 @@ import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 @GenerateInline(false)
 @GenerateUncached
-@OperationProxy.Proxyable(storeBytecodeIndex = false)
+@OperationProxy.Proxyable(allowUncached = true, storeBytecodeIndex = false)
 public abstract class PyNumberMultiplyNode extends PyNumberMultiplyFastPathsBase {
 
     @Fallback

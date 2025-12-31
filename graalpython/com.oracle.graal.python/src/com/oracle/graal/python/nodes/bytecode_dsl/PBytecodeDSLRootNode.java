@@ -197,6 +197,7 @@ import com.oracle.graal.python.nodes.bytecode.PrintExprNode;
 import com.oracle.graal.python.nodes.bytecode.RaiseNode;
 import com.oracle.graal.python.nodes.bytecode.SetupAnnotationsNode;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
+import com.oracle.graal.python.nodes.call.CallDispatchers.FunctionIndirectInvokeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallQuaternaryMethodNode;
@@ -313,8 +314,9 @@ import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
                 enableTagInstrumentation = true, //
                 boxingEliminationTypes = {int.class}, //
                 tagTreeNodeLibrary = PTagTreeNodeExports.class, //
-                storeBytecodeIndexInFrame = true //
-)
+                storeBytecodeIndexInFrame = true, //
+                defaultUncachedThreshold = "5", //
+                enableUncachedInterpreter = true)
 @OperationProxy(PyNumberSubtractNode.class)
 @OperationProxy(PyNumberTrueDivideNode.class)
 @OperationProxy(PyNumberFloorDivideNode.class)
@@ -343,17 +345,17 @@ import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 @OperationProxy(PyNumberInPlaceLshiftNode.class)
 @OperationProxy(PyNumberInPlaceRshiftNode.class)
 @OperationProxy(IsNode.class)
-@OperationProxy(FormatNode.class)
+@OperationProxy(value = FormatNode.class, forceCached = true)
 @OperationProxy(ExceptMatchNode.class)
-@OperationProxy(HandleExceptionsInHandlerNode.class)
-@OperationProxy(EncapsulateExceptionGroupNode.class)
+@OperationProxy(value = HandleExceptionsInHandlerNode.class, forceCached = true)
+@OperationProxy(value = EncapsulateExceptionGroupNode.class, forceCached = true)
 @OperationProxy(GetYieldFromIterNode.class)
 @OperationProxy(GetAwaitableNode.class)
 @OperationProxy(SetupAnnotationsNode.class)
 @OperationProxy(GetAIterNode.class)
 @OperationProxy(GetANextNode.class)
 @OperationProxy(value = ReadGlobalOrBuiltinNode.class, name = "ReadGlobal")
-@OperationProxy(value = CopyDictWithoutKeysNode.class, name = "CopyDictWithoutKeys")
+@OperationProxy(value = CopyDictWithoutKeysNode.class, name = "CopyDictWithoutKeys", forceCached = true)
 @OperationProxy(value = PyObjectIsTrueNode.class, name = "Yes")
 @OperationProxy(value = PyObjectIsNotTrueNode.class, name = "Not")
 @OperationProxy(value = ListNodes.AppendNode.class, name = "ListAppend")
@@ -1446,7 +1448,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation(storeBytecodeIndex = true)
+    @Operation(storeBytecodeIndex = true, forceCached = true)
     @ConstantOperand(type = LocalAccessor.class)
     public static final class MatchClass {
         @Specialization
@@ -1463,7 +1465,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @ConstantOperand(type = TruffleString.class, name = "qualifiedName")
     @ConstantOperand(type = BytecodeDSLCodeUnitAndRoot.class)
     public static final class MakeFunction {
-        @Specialization(guards = "isSingleContext(rootNode)")
+        @Specialization(guards = "isSingleContext(rootNode)", excludeForUncached = true)
         public static Object functionSingleContext(VirtualFrame frame,
                         TruffleString name,
                         TruffleString qualifiedName,
@@ -1646,12 +1648,19 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = TruffleString.class)
     public static final class GetAttribute {
-        @Specialization
+        @Specialization(excludeForUncached = true)
         public static Object doIt(VirtualFrame frame,
                         TruffleString name,
                         Object obj,
                         @Cached("create(name)") GetFixedAttributeNode getAttributeNode) {
             return getAttributeNode.execute(frame, obj);
+        }
+
+        @Specialization(replaces = "doIt")
+        @InliningCutoff
+        public static Object doItUncached(VirtualFrame frame, TruffleString name, Object obj,
+                        @Cached PyObjectGetAttr dummyToForceStoreBCI) {
+            return PyObjectGetAttr.getUncached().execute(frame, null, obj, name);
         }
     }
 
@@ -3095,7 +3104,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @Operation(storeBytecodeIndex = true)
     @ImportStatic(CallDispatchers.class)
     public static final class CallComprehension {
-        @Specialization
+        @Specialization(excludeForUncached = true)
         public static Object doObject(VirtualFrame frame, PFunction callable, Object arg,
                         @Bind Node inliningTarget,
                         @Cached("createDirectCallNodeFor(callable)") DirectCallNode callNode,
@@ -3103,6 +3112,14 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             Object[] args = PArguments.create(1);
             args[PArguments.USER_ARGUMENTS_OFFSET] = arg;
             return invoke.execute(frame, inliningTarget, callNode, callable, args);
+        }
+
+        @Specialization(replaces = "doObject")
+        @InliningCutoff
+        public static Object doObjectUncached(VirtualFrame frame, PFunction callable, Object arg) {
+            Object[] args = PArguments.create(1);
+            args[PArguments.USER_ARGUMENTS_OFFSET] = arg;
+            return FunctionIndirectInvokeNode.getUncached().execute(frame, null, callable, args);
         }
     }
 
@@ -3480,7 +3497,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation(storeBytecodeIndex = true)
+    /** Used in implementation of {@code yield from} */
+    @Operation(storeBytecodeIndex = true, forceCached = true)
     @ConstantOperand(type = LocalAccessor.class)
     @ConstantOperand(type = LocalAccessor.class)
     public static final class YieldFromSend {
@@ -3571,7 +3589,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
     }
 
-    @Operation(storeBytecodeIndex = true)
+    /** used in the implementation of {@code yield from} */
+    @Operation(storeBytecodeIndex = true, forceCached = true)
     @ConstantOperand(type = LocalAccessor.class)
     @ConstantOperand(type = LocalAccessor.class)
     public static final class YieldFromThrow {
@@ -3873,7 +3892,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @ImportStatic(PGuards.class)
-    @Operation(storeBytecodeIndex = true)
+    @Operation(storeBytecodeIndex = true, forceCached = true)
     @GenerateInline(false)
     @ConstantOperand(type = LocalAccessor.class)
     @ConstantOperand(type = LocalAccessor.class)

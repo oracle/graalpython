@@ -193,7 +193,7 @@ abstract class SequenceFromArrayNode extends Node {
             }
         };
 
-        public static ListFromArrayNode getUncached(int ignored) {
+        public static ListFromArrayNode getUncached() {
             return UNCACHED;
         }
 

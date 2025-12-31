@@ -56,7 +56,7 @@ import com.oracle.truffle.api.nodes.Node;
 
 @GenerateInline(false)
 @GenerateUncached
-@OperationProxy.Proxyable(storeBytecodeIndex = false)
+@OperationProxy.Proxyable(allowUncached = true, storeBytecodeIndex = false)
 public abstract class PyNumberInPlaceFloorDivideNode extends PyNumberFloorDivideFastPathsBase {
     @Fallback
     @InliningCutoff
