@@ -75,6 +75,15 @@
     local bench_task(bench=null, benchmarks=BENCHMARKS) = super.bench_task(bench=bench, benchmarks=benchmarks),
     local bisect_bench_task     = self.bisect_bench_task,
 
+    local native_debug_build_env = task_spec({
+       environment +: {
+           GRAALPY_NATIVE_DEBUG_BUILD: "true"
+       },
+    }),
+    local native_debug_build_gate(name) = native_debug_build_env + task_spec({
+        tags :: name,
+    }),
+
     // Manual interpreter variants (DSL disabled)
     local manual_interpreter_env = task_spec({
         environment +: {
@@ -115,6 +124,9 @@
             "linux:aarch64:jdk-latest"   : tier3                     + provide(GPY_JVM_STANDALONE),
             "darwin:aarch64:jdk-latest"  : tier3                     + provide(GPY_JVM_STANDALONE),
             "windows:amd64:jdk-latest"   : tier3                     + provide(GPY_JVM_STANDALONE),
+        }),
+        "python-unittest-native-debug-build": gpgate + platform_spec(no_jobs) + native_debug_build_gate("python-unittest") + platform_spec({
+            "linux:amd64:jdk-latest"     : tier3,
         }),
         "python-unittest-manual-interpreter": gpgate + platform_spec(no_jobs) + manual_interpreter_gate("python-unittest") + platform_spec({
             "linux:amd64:jdk-latest"     : daily     + t("01:00:00"),
