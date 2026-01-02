@@ -170,7 +170,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
             self.setRunning(true);
             Object generatorResult;
             try {
-                self.prepareResume();
+                Object[] generatorArguments = self.prepareResume();
                 RootCallTarget callTarget = (RootCallTarget) callNode.getCurrentCallTarget();
                 PRootNode rootNode = PGenerator.unwrapContinuationRoot((ContinuationRootNode) callTarget.getRootNode());
                 /*
@@ -186,7 +186,6 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                  */
                 MaterializedFrame generatorFrame = self.getGeneratorFrame();
                 Object[] callArguments = new Object[]{generatorFrame, sendValue};
-                Object[] generatorArguments = generatorFrame.getArguments();
                 if (frame == null) {
                     PythonContext context = PythonContext.get(inliningTarget);
                     PythonThreadState threadState = context.getThreadState(context.getLanguage(inliningTarget));
@@ -252,13 +251,12 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
             self.setRunning(true);
             Object generatorResult;
             try {
-                self.prepareResume();
+                Object[] generatorArguments = self.prepareResume();
                 RootCallTarget callTarget = self.getCurrentCallTarget();
                 // See the cached specialization for notes about the arguments handling
                 PRootNode rootNode = PGenerator.unwrapContinuationRoot((ContinuationRootNode) callTarget.getRootNode());
                 MaterializedFrame generatorFrame = self.getGeneratorFrame();
                 Object[] callArguments = new Object[]{generatorFrame, sendValue};
-                Object[] generatorArguments = generatorFrame.getArguments();
                 if (frame == null) {
                     PythonContext context = PythonContext.get(inliningTarget);
                     PythonThreadState threadState = context.getThreadState(context.getLanguage(inliningTarget));
