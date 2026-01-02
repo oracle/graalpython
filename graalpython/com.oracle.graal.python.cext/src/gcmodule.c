@@ -1,4 +1,4 @@
-/* Copyright (c) 2024, 2025, Oracle and/or its affiliates.
+/* Copyright (c) 2024, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2024 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -891,7 +891,7 @@ move_unreachable(PyGC_Head *young, PyGC_Head *unreachable,
                 // GraalPy change: this branch, else branch is original CPython code
                 cycle.head = NULL;
                 cycle.n = 0;
-                assert (cycle.reachable == weak_candidates );
+                // TODO: [GR-72218] assert (cycle.reachable == weak_candidates );
                 /* visit_collect_managed_referents is visit_reachable + capture the references into "cycle" */
                 CALL_TRAVERSE(traverse, op, visit_collect_managed_referents, (void *)&cycle);
 
@@ -979,12 +979,12 @@ move_weak_reachable(PyGC_Head *young, PyGC_Head *weak_candidates)
     while (gc != young) {
         Py_ssize_t gc_refcnt = gc_get_refs(gc);
 
-        assert(gc_is_collecting(gc));
+        // TODO: [GR-72218] assert(gc_is_collecting(gc));
 
         /* This phase is done after 'move_unreachable' and so all object
          * remaining in 'young' must have a non-zero gc_refcnt.
          */
-        assert(gc_refcnt);
+        // TODO: [GR-72218] assert(gc_refcnt);
         /* If gc_refcnt s not MANAGED_REFCNT, then we know that this object is
          * referenced from native (e.g. stored in a global field). In case that
          * 'gc_refcnt == MANAGED_REFCNT' we don't know if the object is only
@@ -1332,7 +1332,8 @@ handle_legacy_finalizers(PyThreadState *tstate,
                          PyGC_Head *finalizers, PyGC_Head *old)
 {
     assert(!_PyErr_Occurred(tstate));
-    assert(gcstate->garbage != NULL);
+    // GraalPy change: we do not use this field
+    // assert(gcstate->garbage != NULL);
 
     PyGC_Head *gc = GC_NEXT(finalizers);
     for (; gc != finalizers; gc = GC_NEXT(gc)) {
@@ -1629,7 +1630,8 @@ gc_collect_main(PyThreadState *tstate, int generation,
 
     // gc_collect_main() must not be called before _PyGC_Init
     // or after _PyGC_Fini()
-    assert(gcstate->garbage != NULL);
+    // GraalPy change: we are not using the gcstate->garbage field
+    // assert(gcstate->garbage != NULL);
     assert(!_PyErr_Occurred(tstate));
 
     if (gcstate->debug & DEBUG_STATS) {

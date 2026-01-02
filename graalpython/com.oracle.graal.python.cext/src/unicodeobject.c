@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2025, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -672,6 +672,7 @@ _PyUnicode_CheckConsistency(PyObject *op, int check_content)
     assert(op != NULL);
     CHECK(PyUnicode_Check(op));
 
+#if 0 // GraalPy change (different internal representation)
     PyASCIIObject *ascii = _PyASCIIObject_CAST(op);
     int kind = ascii->state.kind;
 
@@ -778,6 +779,7 @@ _PyUnicode_CheckConsistency(PyObject *op, int check_content)
             Py_UNREACHABLE();
     }
 #endif
+#endif // GraalPy change
 
     return 1;
 
