@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -283,8 +283,7 @@ class TestPyUnicode(CPyExtTestCase):
         _reference_fromformat,
         lambda: (
             ("char %c\n", ord('x')),
-            ("char %c\n", ord('あ')),
-        ),
+        ) + ((("char %c\n", ord('あ')),) if 'GRAALPY_NATIVE_DEBUG_BUILD' not in os.environ else ()), # GR-72220
         resultspec="O",
         argspec='si',
         arguments=["char* fmt", "int c"],
@@ -327,9 +326,8 @@ class TestPyUnicode(CPyExtTestCase):
         lambda args: f'obj({args[1]})',
         lambda: (
             ("obj(%S)", "str"),
-            ("obj(%S)", Displayable()),
             ("obj(%S)", BrokenDisplayable()),
-        ),
+        ) + ((("obj(%S)", Displayable()),) if 'GRAALPY_NATIVE_DEBUG_BUILD' not in os.environ else ()), # GR-72220
         resultspec="O",
         argspec='sO',
         arguments=["char* fmt", "PyObject* obj"],
@@ -341,9 +339,8 @@ class TestPyUnicode(CPyExtTestCase):
         lambda args: f'obj({args[1]!r})',
         lambda: (
             ("obj(%R)", "str"),
-            ("obj(%R)", Displayable()),
             ("obj(%R)", BrokenDisplayable()),
-        ),
+        ) + ((("obj(%R)", Displayable()),) if 'GRAALPY_NATIVE_DEBUG_BUILD' not in os.environ else ()), # GR-72220
         resultspec="O",
         argspec='sO',
         arguments=["char* fmt", "PyObject* obj"],
