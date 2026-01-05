@@ -441,6 +441,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
         instrumentationDataIndex = co.instrumentationDataIndex;
         yieldFromGeneratorIndex = co.yieldFromGeneratorIndex;
+        if (PythonOptions.UNCACHED_BYTECODE_DSL_INTERPRETER_LIMIT != -1) {
+            getBytecodeNode().setUncachedThreshold(PythonOptions.UNCACHED_BYTECODE_DSL_INTERPRETER_LIMIT);
+        }
     }
 
     @Override

@@ -284,6 +284,10 @@ def github_ci_build_args():
 def libpythonvm_build_args():
     build_args = bytecode_dsl_build_args()
 
+    if limit := os.environ.get('GRAALPY_UncachedInterpreterLimit'):
+        mx.log(f"Uncached interpreter limit explicitly set to {limit}")
+        build_args += [f'-Dpython.UncachedInterpreterLimit={limit}']
+
     if os.environ.get("GITHUB_CI"):
         build_args += github_ci_build_args()
 
