@@ -93,7 +93,7 @@ jobs:
           }
 
       - name: Actions/Checkout
-        uses: actions/checkout@main
+        uses: actions/checkout@v4
         with:
           path: main
 
