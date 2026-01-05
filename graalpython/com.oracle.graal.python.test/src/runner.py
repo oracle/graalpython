@@ -84,6 +84,11 @@ CURRENT_PLATFORM_KEYS = frozenset({CURRENT_PLATFORM})
 RUNNER_ENV = {}
 DISABLE_JIT_ENV = {'GRAAL_PYTHON_VM_ARGS': '--experimental-options --engine.Compilation=false'}
 
+GITHUB_CI = os.environ.get("GITHUB_CI", None)
+if GITHUB_CI:
+    PLATFORM_KEYS.add("github")
+    CURRENT_PLATFORM += "-github"
+
 # We leave the JIT enabled for the tests themselves, but disable it for subprocesses
 # noinspection PyUnresolvedReferences
 if IS_GRAALPY and __graalpython__.is_native and 'GRAAL_PYTHON_VM_ARGS' not in os.environ:
@@ -446,6 +451,14 @@ class TestRunner:
         self.display_summary()
 
     def generate_mx_report(self, path: str):
+        # Some reports may be split when ran on github, this sets different file names
+        report_suffix = os.environ.get("MX_REPORT_SUFFIX")
+        if report_suffix:
+            if os.environ.get("GITHUB_CI"):
+                report_suffix = f"{report_suffix}_{CURRENT_PLATFORM}"
+            tmppath, ext = os.path.splitext(path)
+            path = f"{tmppath}{report_suffix}{ext}"
+
         report_data = []
         for result in self.results:
             # Skip synthetic results for failed class setups and such
@@ -897,7 +910,13 @@ class SubprocessWorker:
 
 
 def platform_keys_match(items: typing.Iterable[str]):
-    return any(all(key in PLATFORM_KEYS for key in item.split('-')) for item in items)
+    matches = []
+    for item in items:
+        if GITHUB_CI:
+            if not "github" in item.split('-'):
+                continue
+        matches.append(all(key in PLATFORM_KEYS for key in item.split('-')))
+    return any(matches)
 
 
 @dataclass
@@ -1188,7 +1207,6 @@ def collect(all_specifiers: list[TestSpecifier], *, use_tags=False, ignore=None,
             to_run.append(collected)
     return to_run
 
-
 @dataclass(frozen=True)
 class Tag:
     test_id: TestId
@@ -1212,6 +1230,7 @@ class Tag:
             if keys == self.keys:
                 return self
             return Tag(self.test_id, keys, is_exclusion=self.is_exclusion)
+
 
     def __str__(self):
         s = ''
@@ -1248,11 +1267,13 @@ def read_tags(test_file: TestFile, allow_exclusions=False) -> list[Tag]:
                     is_exclusion = True
                     test = test.removeprefix('!')
 
+
                 if not keys and not is_exclusion:
                     log(f'WARNING: invalid tag {test}: missing platform keys')
+
                 tag = Tag(
                     TestId(test_path, test),
-                    frozenset(keys.split(',') if keys else frozenset()),
+                    frozenset(keys.split(',')) if keys else frozenset(keys),
                     is_exclusion=is_exclusion,
                     comment=comment,
                 )
@@ -1343,7 +1364,7 @@ def main_merge_tags(args):
             test_file,
             results,
             tag_platform=args.platform,
-            untag_failed=False,
+            untag_failed=os.environ.get("GITHUB_CI") is not None,
             untag_skipped=True,
             untag_missing=True,
         )
@@ -1503,7 +1524,7 @@ def main():
     # merge-tags-from-report command declaration
     merge_tags_parser = subparsers.add_parser('merge-tags-from-report', help="Merge tags from automated retagger")
     merge_tags_parser.set_defaults(main=main_merge_tags)
-    merge_tags_parser.add_argument('platform')
+    merge_tags_parser.add_argument('--platform', default=CURRENT_PLATFORM)
     merge_tags_parser.add_argument('report_path')
 
     # run the appropriate command

@@ -1,4 +1,0 @@
-test.test_tty.TestTty.test_cfmakecbreak @ linux-x86_64
-test.test_tty.TestTty.test_cfmakeraw @ linux-x86_64
-test.test_tty.TestTty.test_setcbreak @ linux-x86_64
-test.test_tty.TestTty.test_setraw @ linux-x86_64

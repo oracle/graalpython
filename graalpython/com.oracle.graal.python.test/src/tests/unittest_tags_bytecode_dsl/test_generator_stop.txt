@@ -1,2 +1,0 @@
-test.test_generator_stop.TestPEP479.test_stopiteration_wrapping @ linux-x86_64
-test.test_generator_stop.TestPEP479.test_stopiteration_wrapping_context @ linux-x86_64

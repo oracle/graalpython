@@ -1,6 +1,0 @@
-test.test_int_literal.TestHexOctBin.test_bin_baseline @ linux-x86_64
-test.test_int_literal.TestHexOctBin.test_bin_unsigned @ linux-x86_64
-test.test_int_literal.TestHexOctBin.test_hex_baseline @ linux-x86_64
-test.test_int_literal.TestHexOctBin.test_hex_unsigned @ linux-x86_64
-test.test_int_literal.TestHexOctBin.test_oct_baseline @ linux-x86_64
-test.test_int_literal.TestHexOctBin.test_oct_unsigned @ linux-x86_64

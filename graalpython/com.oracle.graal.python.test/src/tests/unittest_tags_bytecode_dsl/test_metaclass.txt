@@ -1,1 +1,0 @@
-DocTestCase.test.test_metaclass.__test__.doctests @ linux-x86_64

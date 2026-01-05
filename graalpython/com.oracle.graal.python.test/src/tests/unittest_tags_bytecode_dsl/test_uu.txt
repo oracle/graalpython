@@ -1,2 +1,0 @@
-test.test_uu.UUTest.test_missingbegin @ linux-x86_64
-test.test_uu.UUTest.test_no_directory_traversal @ linux-x86_64

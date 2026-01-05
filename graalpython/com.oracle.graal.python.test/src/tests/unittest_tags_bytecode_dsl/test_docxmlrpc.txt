@@ -1,9 +1,0 @@
-test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_annotations @ linux-x86_64
-test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_autolink_dotted_methods @ linux-x86_64
-test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_autolinking @ linux-x86_64
-test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_get_css @ linux-x86_64
-test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_invalid_get_response @ linux-x86_64
-test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_lambda @ linux-x86_64
-test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_server_title_escape @ linux-x86_64
-test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_system_methods @ linux-x86_64
-test.test_docxmlrpc.DocXMLRPCHTTPGETServer.test_valid_get_response @ linux-x86_64

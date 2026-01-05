@@ -1,6 +1,0 @@
-test.test_typechecks.TypeChecksTest.testIsInstanceActual @ linux-x86_64
-test.test_typechecks.TypeChecksTest.testIsInstanceBuiltin @ linux-x86_64
-test.test_typechecks.TypeChecksTest.testIsSubclassActual @ linux-x86_64
-test.test_typechecks.TypeChecksTest.testIsSubclassBuiltin @ linux-x86_64
-test.test_typechecks.TypeChecksTest.testIsSubclassInternal @ linux-x86_64
-test.test_typechecks.TypeChecksTest.testSubclassBehavior @ linux-x86_64

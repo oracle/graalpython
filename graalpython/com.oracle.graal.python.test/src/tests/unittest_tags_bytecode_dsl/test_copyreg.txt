@@ -1,6 +1,0 @@
-test.test_copyreg.CopyRegTestCase.test_bool @ linux-x86_64
-test.test_copyreg.CopyRegTestCase.test_class @ linux-x86_64
-test.test_copyreg.CopyRegTestCase.test_extension_registry @ linux-x86_64
-test.test_copyreg.CopyRegTestCase.test_noncallable_constructor @ linux-x86_64
-test.test_copyreg.CopyRegTestCase.test_noncallable_reduce @ linux-x86_64
-test.test_copyreg.CopyRegTestCase.test_slotnames @ linux-x86_64

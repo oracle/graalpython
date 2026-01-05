@@ -1,3 +1,0 @@
-DocTestCase.test.test_cmd.samplecmdclass @ linux-x86_64
-test.test_cmd.TestAlternateInput.test_file_with_missing_final_nl @ linux-x86_64
-test.test_cmd.TestAlternateInput.test_input_reset_at_EOF @ linux-x86_64
