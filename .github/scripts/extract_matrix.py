@@ -133,10 +133,10 @@ class Job:
 
         if self.runs_on == "windows-latest":
             return (f"""
-            Invoke-WebRequest -Uri {download_link} -OutFile {filename}
-            $dirname = (& tar -tzf {filename} | Select-Object -First 1).Split('/')[0]
-            tar -xzf {filename}
-            Add-Content $env:GITHUB_ENV "{key}=$(Resolve-Path $dirname)"
+                Invoke-WebRequest -Uri {download_link} -OutFile {filename}
+                Expand-Archive -Path {filename} -DestinationPath .
+                $dirname = (Get-ChildItem -Directory | Select-Object -First 1).Name
+                Add-Content $env:GITHUB_ENV "{key}=$(Resolve-Path $dirname)"
             """)
 
         return (f"wget -q {download_link} && "

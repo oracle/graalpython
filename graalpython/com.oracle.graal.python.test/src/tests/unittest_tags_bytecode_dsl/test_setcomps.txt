@@ -1,1 +1,0 @@
-DocTestCase.test.test_setcomps.__test__.doctests @ linux-x86_64

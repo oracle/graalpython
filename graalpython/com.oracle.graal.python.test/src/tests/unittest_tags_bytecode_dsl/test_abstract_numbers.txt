@@ -1,7 +1,0 @@
-test.test_abstract_numbers.TestNumbers.test_complex @ linux-x86_64
-test.test_abstract_numbers.TestNumbers.test_float @ linux-x86_64
-test.test_abstract_numbers.TestNumbers.test_int @ linux-x86_64
-test.test_abstract_numbers.TestNumbersDefaultMethods.test_complex @ linux-x86_64
-test.test_abstract_numbers.TestNumbersDefaultMethods.test_integral @ linux-x86_64
-test.test_abstract_numbers.TestNumbersDefaultMethods.test_rational @ linux-x86_64
-test.test_abstract_numbers.TestNumbersDefaultMethods.test_real @ linux-x86_64
