@@ -1,8 +1,0 @@
-test.test_codecencodings_iso2022.Test_ISO2022_JP.test_chunkcoding @ linux-x86_64
-test.test_codecencodings_iso2022.Test_ISO2022_JP.test_streamwriter_reset_no_pending @ linux-x86_64
-test.test_codecencodings_iso2022.Test_ISO2022_JP.test_xmlcharrefreplace @ linux-x86_64
-test.test_codecencodings_iso2022.Test_ISO2022_JP2.test_chunkcoding @ linux-x86_64
-test.test_codecencodings_iso2022.Test_ISO2022_JP2.test_streamwriter_reset_no_pending @ linux-x86_64
-test.test_codecencodings_iso2022.Test_ISO2022_JP2.test_xmlcharrefreplace @ linux-x86_64
-test.test_codecencodings_iso2022.Test_ISO2022_KR.test_streamwriter_reset_no_pending @ linux-x86_64
-test.test_codecencodings_iso2022.Test_ISO2022_KR.test_xmlcharrefreplace @ linux-x86_64

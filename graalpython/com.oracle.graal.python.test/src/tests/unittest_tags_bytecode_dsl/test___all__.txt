@@ -1,1 +1,0 @@
-test.test___all__.AllTest.test_all @ linux-x86_64

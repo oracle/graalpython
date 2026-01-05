@@ -1,7 +1,0 @@
-DocTestCase.test.test_descrtut.__test__.tut1 @ linux-x86_64
-DocTestCase.test.test_descrtut.__test__.tut2 @ linux-x86_64
-DocTestCase.test.test_descrtut.__test__.tut4 @ linux-x86_64
-DocTestCase.test.test_descrtut.__test__.tut5 @ linux-x86_64
-DocTestCase.test.test_descrtut.__test__.tut6 @ linux-x86_64
-DocTestCase.test.test_descrtut.__test__.tut7 @ linux-x86_64
-DocTestCase.test.test_descrtut.__test__.tut8 @ linux-x86_64

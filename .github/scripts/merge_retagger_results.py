@@ -27,7 +27,7 @@ def read_report(path: str) -> list[Test]:
     with open(path) as f:
         data = json.load(f)
         for result in data:
-            name, status, duration = result.values()
+            name, status, duration = result["name"], result["status"], result["duration"]
             if status in EXPORT_STATUS: tests.append(Test(f"{name}", status, duration))
 
     return tests

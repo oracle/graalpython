@@ -1,1 +1,0 @@
-test.test_threadedtempfile.ThreadedTempFileTest.test_main @ linux-x86_64

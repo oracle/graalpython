@@ -1,8 +1,0 @@
-test.test_picklebuffer.PickleBufferTest.test_basics @ linux-x86_64
-test.test_picklebuffer.PickleBufferTest.test_constructor_failure @ linux-x86_64
-test.test_picklebuffer.PickleBufferTest.test_ndarray_2d @ linux-x86_64
-test.test_picklebuffer.PickleBufferTest.test_raw @ linux-x86_64
-test.test_picklebuffer.PickleBufferTest.test_raw_ndarray @ linux-x86_64
-test.test_picklebuffer.PickleBufferTest.test_raw_non_contiguous @ linux-x86_64
-test.test_picklebuffer.PickleBufferTest.test_raw_released @ linux-x86_64
-test.test_picklebuffer.PickleBufferTest.test_release @ linux-x86_64
