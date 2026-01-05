@@ -91,11 +91,7 @@ public class CallDispatchers {
 
     @NeverDefault
     public static DirectCallNode createDirectCallNodeFor(PFunction callee) {
-        DirectCallNode callNode = Truffle.getRuntime().createDirectCallNode(callee.getCallTarget());
-        if (callee.forceSplitDirectCalls()) {
-            callNode.cloneCallTarget();
-        }
-        return callNode;
+        return Truffle.getRuntime().createDirectCallNode(callee.getCallTarget());
     }
 
     public static boolean sameCallTarget(RootCallTarget callTarget, DirectCallNode callNode) {

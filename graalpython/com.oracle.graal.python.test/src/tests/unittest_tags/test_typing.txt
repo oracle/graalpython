@@ -436,6 +436,7 @@ test.test_typing.ProtocolTests.test_supports_int @ darwin-arm64,linux-aarch64,li
 test.test_typing.ProtocolTests.test_supports_round @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_typing.RETests.test_alias_equality @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_typing.RETests.test_basics @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_typing.RETests.test_cannot_subclass @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_typing.RETests.test_errors @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_typing.RETests.test_re_submodule @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_typing.RETests.test_re_submodule_access_basics @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64

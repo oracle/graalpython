@@ -40,9 +40,20 @@
  */
 package com.oracle.graal.python.builtins.modules.datetime;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETINITARGS__;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
+import java.util.List;
+
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Builtin;
+import com.oracle.graal.python.annotations.Slot;
+import com.oracle.graal.python.annotations.Slot.SlotKind;
+import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -64,23 +75,12 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
-
-import java.util.List;
-
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETINITARGS__;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PTzInfo, PythonBuiltinClassType.PTimezone})
 public final class TzInfoBuiltins extends PythonBuiltins {
@@ -91,8 +91,8 @@ public final class TzInfoBuiltins extends PythonBuiltins {
         return TzInfoBuiltinsFactory.getFactories();
     }
 
-    @Slot(value = Slot.SlotKind.tp_new, isComplex = true)
-    @Slot.SlotSignature(name = "datetime.tzinfo", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
+    @Slot(value = SlotKind.tp_new, isComplex = true)
+    @SlotSignature(name = "datetime.tzinfo", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
     public abstract static class NewNode extends PythonBuiltinNode {
 
@@ -155,13 +155,19 @@ public final class TzInfoBuiltins extends PythonBuiltins {
         private static final TruffleString T_DST = tsLiteral("dst");
 
         @Specialization
-        static Object fromUtc(VirtualFrame frame, PTzInfo self, PDateTime dateTime,
+        static Object fromUtc(VirtualFrame frame, PTzInfo self, Object dateTime,
                         @Bind Node inliningTarget,
+                        @Cached DateTimeNodes.DateTimeCheckNode dateTimeCheckNode,
+                        @Cached DateTimeNodes.TzInfoNode tzInfoNode,
                         @Cached PyObjectCallMethodObjArgs callMethodObjArgs,
-                        @Cached @Exclusive PRaiseNode raiseNode,
+                        @Cached PRaiseNode raiseNode,
                         @Cached TimeDeltaNodes.NewNode newTimeDeltaNode,
                         @Cached DateTimeNodes.SubclassNewNode dateTimeSubclassNewNode) {
-            if (dateTime.tzInfo != self) {
+            if (!dateTimeCheckNode.execute(inliningTarget, dateTime)) {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.FROMUTC_ARGUMENT_MUST_BE_A_DATETIME);
+            }
+            Object tzInfo = tzInfoNode.execute(inliningTarget, dateTime);
+            if (tzInfo != self) {
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.FROMUTC_DT_TZINFO_IS_NOT_SELF);
             }
 
@@ -179,8 +185,7 @@ public final class TzInfoBuiltins extends PythonBuiltins {
             PTimeDelta dst = (PTimeDelta) dstObject;
 
             // calculate `offset - dst` (that's standard utc offset)
-            PTimeDelta offsetStandard = newTimeDeltaNode.execute(inliningTarget,
-                            PythonBuiltinClassType.PTimeDelta,
+            PTimeDelta offsetStandard = newTimeDeltaNode.executeBuiltin(inliningTarget,
                             offset.days - dst.days,
                             offset.seconds - dst.seconds,
                             offset.microseconds - dst.microseconds,
@@ -191,7 +196,7 @@ public final class TzInfoBuiltins extends PythonBuiltins {
 
             Object dateTimeInTimeZone = DatetimeModuleBuiltins.addOffsetToDateTime(dateTime, offsetStandard, dateTimeSubclassNewNode, inliningTarget);
 
-            if (dateTime.tzInfo == null) {
+            if (tzInfo == null) {
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.FROMUTC_TZ_DST_GAVE_INCONSISTENT_RESULT_CANNOT_CONVERT);
             }
 
@@ -204,15 +209,8 @@ public final class TzInfoBuiltins extends PythonBuiltins {
             if (dstNew.isZero()) {
                 return dateTimeInTimeZone;
             } else {
-                return DatetimeModuleBuiltins.addOffsetToDateTime((PDateTime) dateTimeInTimeZone, dstNew, dateTimeSubclassNewNode, inliningTarget);
+                return DatetimeModuleBuiltins.addOffsetToDateTime(dateTimeInTimeZone, dstNew, dateTimeSubclassNewNode, inliningTarget);
             }
-        }
-
-        @Fallback
-        static Object fromUtc(Object self, Object dateTimeObject,
-                        @Bind Node inliningTarget,
-                        @Cached @Exclusive PRaiseNode raiseNode) {
-            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.FROMUTC_ARGUMENT_MUST_BE_A_DATETIME);
         }
     }
 

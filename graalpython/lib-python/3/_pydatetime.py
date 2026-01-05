@@ -696,8 +696,7 @@ class timedelta:
         if abs(d) > 999999999:
             raise OverflowError("timedelta # of days is too large: %d" % d)
 
-        # GraalPy change: unsafe ctor to allow native subclasses
-        self = __graalpython__.unsafe_object_new(cls)
+        self = object.__new__(cls)
         self._days = d
         self._seconds = s
         self._microseconds = us
@@ -954,14 +953,12 @@ class date:
                         "Failed to encode latin1 string when unpickling "
                         "a date object. "
                         "pickle.load(data, encoding='latin1') is assumed.")
-            # GraalPy change: unsafe ctor to allow native subclasses
-            self = __graalpython__.unsafe_object_new(cls)
+            self = object.__new__(cls)
             self.__setstate(year)
             self._hashcode = -1
             return self
         year, month, day = _check_date_fields(year, month, day)
-        # GraalPy change: unsafe ctor to allow native subclasses
-        self = __graalpython__.unsafe_object_new(cls)
+        self = object.__new__(cls)
         self._year = year
         self._month = month
         self._day = day
@@ -1373,16 +1370,14 @@ class time:
                         "Failed to encode latin1 string when unpickling "
                         "a time object. "
                         "pickle.load(data, encoding='latin1') is assumed.")
-            # GraalPy change: unsafe ctor to allow native subclasses
-            self = __graalpython__.unsafe_object_new(cls)
+            self = object.__new__(cls)
             self.__setstate(hour, minute or None)
             self._hashcode = -1
             return self
         hour, minute, second, microsecond, fold = _check_time_fields(
             hour, minute, second, microsecond, fold)
         _check_tzinfo_arg(tzinfo)
-        # GraalPy change: unsafe ctor to allow native subclasses
-        self = __graalpython__.unsafe_object_new(cls)
+        self = object.__new__(cls)
         self._hour = hour
         self._minute = minute
         self._second = second
@@ -1703,8 +1698,7 @@ class datetime(date):
                         "Failed to encode latin1 string when unpickling "
                         "a datetime object. "
                         "pickle.load(data, encoding='latin1') is assumed.")
-            # GraalPy change: unsafe ctor to allow native subclasses
-            self = __graalpython__.unsafe_object_new(cls)
+            self = object.__new__(cls)
             self.__setstate(year, month)
             self._hashcode = -1
             return self
@@ -1712,8 +1706,7 @@ class datetime(date):
         hour, minute, second, microsecond, fold = _check_time_fields(
             hour, minute, second, microsecond, fold)
         _check_tzinfo_arg(tzinfo)
-        # GraalPy change: unsafe ctor to allow native subclasses
-        self = __graalpython__.unsafe_object_new(cls)
+        self = object.__new__(cls)
         self._year = year
         self._month = month
         self._day = day

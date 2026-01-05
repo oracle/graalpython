@@ -40,16 +40,32 @@
  */
 package com.oracle.graal.python.builtins.modules.datetime;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetInstanceShape;
-import com.oracle.graal.python.lib.PyLongAsLongNode;
+import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -61,10 +77,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
-
 public class TimeNodes {
 
     @GenerateUncached
@@ -72,10 +84,10 @@ public class TimeNodes {
     @GenerateCached(false)
     public abstract static class NewNode extends Node {
 
-        public abstract PTime execute(Node inliningTarget, Object cls, Object hour, Object minute, Object second, Object microsecond, Object tzInfo, Object fold);
+        public abstract Object execute(Node inliningTarget, Object cls, Object hour, Object minute, Object second, Object microsecond, Object tzInfo, Object fold);
 
         @Specialization
-        static PTime newTime(Node inliningTarget, Object cls, Object hourObject, Object minuteObject, Object secondObject, Object microsecondObject, Object tzInfoObject, Object foldObject) {
+        static Object newTime(Node inliningTarget, Object cls, Object hourObject, Object minuteObject, Object secondObject, Object microsecondObject, Object tzInfoObject, Object foldObject) {
             EncapsulatingNodeReference encapsulating = EncapsulatingNodeReference.getCurrent();
             Node encapsulatingNode = encapsulating.set(inliningTarget);
             try {
@@ -89,32 +101,32 @@ public class TimeNodes {
         }
 
         @TruffleBoundary
-        static PTime newTimeBoundary(Node inliningTarget, Object cls, Object hourObject, Object minuteObject, Object secondObject, Object microsecondObject, Object tzInfoObject, Object foldObject) {
-            final long hour, minute, second, microsecond, fold;
+        static Object newTimeBoundary(Node inliningTarget, Object cls, Object hourObject, Object minuteObject, Object secondObject, Object microsecondObject, Object tzInfoObject, Object foldObject) {
+            final int hour, minute, second, microsecond, fold;
             final Object tzInfo;
 
             if (hourObject == PNone.NO_VALUE) {
                 hour = 0;
             } else {
-                hour = PyLongAsLongNode.executeUncached(hourObject);
+                hour = PyLongAsIntNode.executeUncached(hourObject);
             }
 
             if (minuteObject == PNone.NO_VALUE) {
                 minute = 0;
             } else {
-                minute = PyLongAsLongNode.executeUncached(minuteObject);
+                minute = PyLongAsIntNode.executeUncached(minuteObject);
             }
 
             if (secondObject == PNone.NO_VALUE) {
                 second = 0;
             } else {
-                second = PyLongAsLongNode.executeUncached(secondObject);
+                second = PyLongAsIntNode.executeUncached(secondObject);
             }
 
             if (microsecondObject == PNone.NO_VALUE) {
                 microsecond = 0;
             } else {
-                microsecond = PyLongAsLongNode.executeUncached(microsecondObject);
+                microsecond = PyLongAsIntNode.executeUncached(microsecondObject);
             }
 
             // both PNone.NO_VALUE and PNone.NONE are acceptable
@@ -127,12 +139,32 @@ public class TimeNodes {
             if (foldObject == PNone.NO_VALUE) {
                 fold = 0;
             } else {
-                fold = PyLongAsLongNode.executeUncached(foldObject);
+                fold = PyLongAsIntNode.executeUncached(foldObject);
             }
 
             validateTimeComponents(inliningTarget, hour, minute, second, microsecond, tzInfo, fold);
-            Shape shape = GetInstanceShape.executeUncached(cls);
-            return new PTime(cls, shape, (int) hour, (int) minute, (int) second, (int) microsecond, tzInfo, (int) fold);
+            return newTimeUnchecked(cls, hour, minute, second, microsecond, tzInfo, fold);
+        }
+
+        @TruffleBoundary
+        public static Object newTimeUnchecked(Object cls, int hour, int minute, int second, int microsecond, Object tzInfoObject, int fold) {
+            final Object tzInfo;
+            if (tzInfoObject instanceof PNone) {
+                tzInfo = null;
+            } else {
+                tzInfo = tzInfoObject;
+            }
+
+            if (!TypeNodes.NeedsNativeAllocationNode.executeUncached(cls)) {
+                Shape shape = GetInstanceShape.executeUncached(cls);
+                return new PTime(cls, shape, hour, minute, second, microsecond, tzInfo, fold);
+            } else {
+                CApiTransitions.PythonToNativeNode toNative = CApiTransitions.PythonToNativeNode.getUncached();
+                Object nativeResult = CExtNodes.PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_TIME_SUBTYPE_NEW,
+                                toNative.execute(cls), hour, minute, second, microsecond, toNative.execute(tzInfo != null ? tzInfo : PNone.NO_VALUE), fold);
+                ExternalFunctionNodes.DefaultCheckFunctionResultNode.getUncached().execute(PythonContext.get(null), NativeCAPISymbol.FUN_TIME_SUBTYPE_NEW.getTsName(), nativeResult);
+                return CApiTransitions.NativeToPythonTransferNode.executeUncached(nativeResult);
+            }
         }
 
         @TruffleBoundary
@@ -166,32 +198,6 @@ public class TimeNodes {
     @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
-    public abstract static class NewUnsafeNode extends Node {
-
-        public abstract PTime execute(Node inliningTarget, Object cls, int hour, int minute, int second, int microsecond, Object tzInfo, int fold);
-
-        public static TimeNodes.NewUnsafeNode getUncached() {
-            return TimeNodesFactory.NewUnsafeNodeGen.getUncached();
-        }
-
-        @Specialization
-        static PTime newTime(Node inliningTarget, Object cls, int hour, int minute, int second, int microsecond, Object tzInfoObject, int fold,
-                        @Cached GetInstanceShape getInstanceShape) {
-            final Object tzInfo;
-            if (tzInfoObject instanceof PNone) {
-                tzInfo = null;
-            } else {
-                tzInfo = tzInfoObject;
-            }
-
-            Shape shape = getInstanceShape.execute(cls);
-            return new PTime(cls, shape, hour, minute, second, microsecond, tzInfo, fold);
-        }
-    }
-
-    @GenerateUncached
-    @GenerateInline
-    @GenerateCached(false)
     public abstract static class SubclassNewNode extends Node {
 
         private static final TruffleString T_FOLD = tsLiteral("fold");
@@ -211,7 +217,7 @@ public class TimeNodes {
 
         @Fallback
         @TruffleBoundary
-        static Object newTimeGeneric(Node inliningTarget, Object cls, Object hourObject, Object minuteObject, Object secondObject, Object microsecondObject, Object tzInfoObject, Object foldObject) {
+        static Object newTimeGeneric(Object cls, Object hourObject, Object minuteObject, Object secondObject, Object microsecondObject, Object tzInfoObject, Object foldObject) {
             Object[] arguments = new Object[]{hourObject, minuteObject, secondObject, microsecondObject, tzInfoObject};
             PKeyword foldKeyword = new PKeyword(T_FOLD, foldObject);
             PKeyword[] keywords = new PKeyword[]{foldKeyword};
@@ -221,6 +227,120 @@ public class TimeNodes {
 
         static boolean isBuiltinClass(Object cls) {
             return PGuards.isBuiltinClass(cls, PythonBuiltinClassType.PTime);
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class AsManagedTimeNode extends Node {
+        public abstract PTime execute(Node inliningTarget, Object obj);
+
+        public static PTime executeUncached(Object obj) {
+            return TimeNodesFactory.AsManagedTimeNodeGen.getUncached().execute(null, obj);
+        }
+
+        @Specialization
+        static PTime doPTime(PTime value) {
+            return value;
+        }
+
+        @Specialization
+        static PTime doNative(PythonAbstractNativeObject nativeTime,
+                        @Bind PythonLanguage language,
+                        @Cached CStructAccess.ReadByteNode readByteNode,
+                        @Cached CStructAccess.ReadObjectNode readObjectNode) {
+            int hour = getHour(nativeTime, readByteNode);
+            int minute = getMinute(nativeTime, readByteNode);
+            int second = getSecond(nativeTime, readByteNode);
+            int microsecond = getMicrosecond(nativeTime, readByteNode);
+
+            Object tzinfo = getTzInfo(nativeTime, readByteNode, readObjectNode);
+            int fold = getFold(nativeTime, readByteNode);
+
+            PythonBuiltinClassType cls = PythonBuiltinClassType.PTime;
+            return new PTime(cls, cls.getInstanceShape(language), hour, minute, second, microsecond, tzinfo, fold);
+        }
+
+        static int getHour(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
+            return readNode.readFromObjUnsigned(self, CFields.PyDateTime_Time__data, 0);
+        }
+
+        static int getMinute(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
+            return readNode.readFromObjUnsigned(self, CFields.PyDateTime_Time__data, 1);
+        }
+
+        static int getSecond(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
+            return readNode.readFromObjUnsigned(self, CFields.PyDateTime_Time__data, 2);
+        }
+
+        static int getMicrosecond(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
+            int b3 = readNode.readFromObjUnsigned(self, CFields.PyDateTime_Time__data, 3);
+            int b4 = readNode.readFromObjUnsigned(self, CFields.PyDateTime_Time__data, 4);
+            int b5 = readNode.readFromObjUnsigned(self, CFields.PyDateTime_Time__data, 5);
+            return (b3 << 16) | (b4 << 8) | b5;
+        }
+
+        private static Object getTzInfo(PythonAbstractNativeObject nativeTime, CStructAccess.ReadByteNode readByteNode, CStructAccess.ReadObjectNode readObjectNode) {
+            Object tzinfo = null;
+            if (readByteNode.readFromObj(nativeTime, CFields.PyDateTime_Time__hastzinfo) != 0) {
+                Object tzinfoObj = readObjectNode.readFromObj(nativeTime, CFields.PyDateTime_Time__tzinfo);
+                if (tzinfoObj != PNone.NO_VALUE) {
+                    tzinfo = tzinfoObj;
+                }
+            }
+            return tzinfo;
+        }
+
+        static int getFold(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
+            return readNode.readFromObjUnsigned(self, CFields.PyDateTime_Time__fold);
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class TimeCheckNode extends Node {
+        public abstract boolean execute(Node inliningTarget, Object obj);
+
+        public static boolean executeUncached(Object obj) {
+            return TimeNodesFactory.TimeCheckNodeGen.getUncached().execute(null, obj);
+        }
+
+        @Specialization
+        static boolean doManaged(@SuppressWarnings("unused") PTime value) {
+            return true;
+        }
+
+        @Specialization
+        static boolean doNative(Node inliningTarget, PythonAbstractNativeObject value,
+                        @Cached BuiltinClassProfiles.IsBuiltinObjectProfile profile) {
+            return profile.profileObject(inliningTarget, value, PythonBuiltinClassType.PTime);
+        }
+
+        @Fallback
+        static boolean doOther(@SuppressWarnings("unused") Object value) {
+            return false;
+        }
+    }
+
+    @GenerateInline
+    @GenerateCached(false)
+    @GenerateUncached
+    abstract static class TzInfoNode extends Node {
+        public abstract Object execute(Node inliningTarget, Object obj);
+
+        @Specialization
+        static Object getTzInfo(PTime self) {
+            return self.tzInfo;
+
+        }
+
+        @Specialization
+        static Object getTzInfo(PythonAbstractNativeObject self,
+                        @Cached CStructAccess.ReadByteNode readByteNode,
+                        @Cached CStructAccess.ReadObjectNode readObjectNode) {
+            return AsManagedTimeNode.getTzInfo(self, readByteNode, readObjectNode);
         }
     }
 }

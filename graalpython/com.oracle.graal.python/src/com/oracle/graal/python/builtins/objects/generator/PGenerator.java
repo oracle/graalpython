@@ -84,6 +84,11 @@ public class PGenerator extends PythonBuiltinObject {
          * Each AST can then specialize towards which nodes are executed when starting from that
          * particular entry point. When yielding, the next index to the next call target to continue
          * from is updated via {@link #handleResult}.
+         * <p>
+         * The owner of this array is really the
+         * {@link com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorFunctionRootNode}. Every
+         * {@link PGenerator} instance representing the same generator on AST level gets reference
+         * to the same array with call targets.
          */
         @CompilationFinal(dimensions = 1) private final RootCallTarget[] callTargets;
         private int currentCallTarget;
@@ -191,11 +196,12 @@ public class PGenerator extends PythonBuiltinObject {
         }
     }
 
-    public void prepareResume() {
+    public Object[] prepareResume() {
         assert PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER; // not needed for manual interpreter
-        Object[] frame = getGeneratorFrame().getArguments();
-        PArguments.setException(frame, null);
-        PArguments.setCallerFrameInfo(frame, null);
+        Object[] arguments = getGeneratorFrame().getArguments();
+        PArguments.setException(arguments, null);
+        PArguments.setCallerFrameInfo(arguments, null);
+        return arguments;
     }
 
     /**

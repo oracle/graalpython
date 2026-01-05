@@ -845,7 +845,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                  * only a doc string, although we normally skip it, here we use it as a return
                  * value.
                  */
-                StmtTy lastStatement = body[body.length - 1];
+                StmtTy lastStatement = body.length > 0 ? body[body.length - 1] : null;
                 if (returnLastStmt && lastStatement instanceof StmtTy.Expr expr) {
                     // Return the value of the last statement for interop eval.
                     beginReturn(b);
@@ -854,7 +854,9 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                     endSourceSection(b, closeTag);
                     endReturn(b);
                 } else {
-                    lastStatement.accept(statementCompiler);
+                    if (lastStatement != null) {
+                        lastStatement.accept(statementCompiler);
+                    }
                     beginReturn(b);
                     b.emitLoadConstant(PNone.NONE);
                     endReturn(b);

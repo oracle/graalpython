@@ -2174,6 +2174,10 @@ public abstract class ExternalFunctionNodes {
         protected static boolean isPythonNativeWrapper(Object object) {
             return object instanceof PythonNativeWrapper;
         }
+
+        public static DefaultCheckFunctionResultNode getUncached() {
+            return DefaultCheckFunctionResultNodeGen.getUncached();
+        }
     }
 
     // roughly equivalent to _Py_CheckFunctionResult in Objects/call.c

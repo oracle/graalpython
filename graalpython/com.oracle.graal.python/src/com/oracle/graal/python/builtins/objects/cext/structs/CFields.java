@@ -65,6 +65,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_buffer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_hash_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UCHAR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UINTPTR_T;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_INT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_LONG;
@@ -171,6 +172,19 @@ public enum CFields {
     PyDateTime_CAPI__Date_FromTimestamp(Pointer),
     PyDateTime_CAPI__DateTime_FromDateAndTimeAndFold(Pointer),
     PyDateTime_CAPI__Time_FromTimeAndFold(Pointer),
+
+    PyDateTime_Time__data(Pointer),
+    PyDateTime_Time__hastzinfo(CHAR),
+    PyDateTime_Time__tzinfo(PyObject),
+    PyDateTime_Time__fold(UCHAR),
+    PyDateTime_Date__data(Pointer),
+    PyDateTime_DateTime__data(Pointer),
+    PyDateTime_DateTime__hastzinfo(CHAR),
+    PyDateTime_DateTime__tzinfo(PyObject),
+    PyDateTime_DateTime__fold(UCHAR),
+    PyDateTime_Delta__days(Int),
+    PyDateTime_Delta__seconds(Int),
+    PyDateTime_Delta__microseconds(Int),
 
     PyNumberMethods__nb_add(binaryfunc),
     PyNumberMethods__nb_subtract(binaryfunc),
