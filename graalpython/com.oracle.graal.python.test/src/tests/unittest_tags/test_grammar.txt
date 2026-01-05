@@ -48,6 +48,7 @@ test.test_grammar.GrammarTests.test_simple_stmt @ darwin-arm64,linux-aarch64,lin
 test.test_grammar.GrammarTests.test_suite @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_grammar.GrammarTests.test_test @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_grammar.GrammarTests.test_try @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_grammar.GrammarTests.test_try_star @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_grammar.GrammarTests.test_unary_ops @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_grammar.GrammarTests.test_var_annot_basic_semantics @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_grammar.GrammarTests.test_var_annot_basics @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64

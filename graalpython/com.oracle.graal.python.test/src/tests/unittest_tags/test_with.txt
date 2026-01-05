@@ -35,6 +35,7 @@ test.test_with.NestedWith.testEnterReturnsTuple @ darwin-arm64,linux-aarch64,lin
 test.test_with.NestedWith.testExceptionInEnter @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_with.NestedWith.testExceptionInExit @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_with.NestedWith.testExceptionInExprList @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_with.NestedWith.testExceptionLocation @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_with.NestedWith.testNoExceptions @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_with.NonLocalFlowControlTestCase.testWithBreak @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_with.NonLocalFlowControlTestCase.testWithContinue @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
