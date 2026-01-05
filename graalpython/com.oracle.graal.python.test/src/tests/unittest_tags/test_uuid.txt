@@ -1,4 +1,3 @@
-test.test_uuid.TestInternalsWithoutExtModule.test_arp_getnode @ darwin-arm64
 test.test_uuid.TestInternalsWithoutExtModule.test_find_mac_near_keyword @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_uuid.TestInternalsWithoutExtModule.test_find_under_heading @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_uuid.TestInternalsWithoutExtModule.test_find_under_heading_ipv6 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64

@@ -36,6 +36,7 @@ test.test_compile.TestSpecifics.test_if_expression_expression_empty_block @ darw
 test.test_compile.TestSpecifics.test_import @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_compile.TestSpecifics.test_indentation @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_compile.TestSpecifics.test_lambda_doc @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestSpecifics.test_lineno_procedure_call @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_compile.TestSpecifics.test_literals_with_leading_zeroes @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_compile.TestSpecifics.test_mangling @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_compile.TestSpecifics.test_multi_line_lambda_as_argument @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
