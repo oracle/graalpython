@@ -59,7 +59,6 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType;
 import com.oracle.graal.python.builtins.objects.referencetype.ReferenceTypeBuiltins.ReferenceTypeNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -101,14 +100,15 @@ public final class PythonCextWeakrefBuiltins {
     abstract static class PyWeakref_GetObject extends CApiUnaryBuiltinNode {
         @Specialization
         static Object call(Object reference,
-                        @Bind Node inliningTarget,
-                        @Cached ReadAttributeFromPythonObjectNode read) {
+                        @Bind Node inliningTarget) {
             if (reference instanceof PReferenceType ref) {
                 return ref.getPyObject();
             }
             if (reference instanceof PProxyType proxy) {
                 PReferenceType ref = proxy.weakReference;
-                return ref.getPyObject();
+                if (ref != null) {
+                    return ref.getPyObject();
+                }
             }
             /*
              * This weak reference has died in the managed side due to its referent being collected.
