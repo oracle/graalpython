@@ -1,5 +1,5 @@
 diff --git a/Cython/Build/Dependencies.py b/Cython/Build/Dependencies.py
-index 02298a9..8b01517 100644
+index f41c8bb..dc2fbc4 100644
 --- a/Cython/Build/Dependencies.py
 +++ b/Cython/Build/Dependencies.py
 @@ -1074,6 +1074,12 @@ def cythonize(module_list, exclude=None, nthreads=0, aliases=None, quiet=False,
@@ -23,7 +23,7 @@ index 02298a9..8b01517 100644
 +
      if N <= 1:
          nthreads = 0
-     if nthreads:
+     try:
 diff --git a/Cython/Compiler/Version.py b/Cython/Compiler/Version.py
 index 5ae2a4e..1d6e63d 100644
 --- a/Cython/Compiler/Version.py
@@ -104,7 +104,7 @@ index da988dc..b8c822e 100644
  cdef inline double total_seconds(timedelta obj) noexcept:
      # Mirrors the "timedelta.total_seconds()" method.
 diff --git a/Cython/Utility/Builtins.c b/Cython/Utility/Builtins.c
-index 15ba067..fdef8e5 100644
+index 8bf3081..9f3128d 100644
 --- a/Cython/Utility/Builtins.c
 +++ b/Cython/Utility/Builtins.c
 @@ -764,8 +764,13 @@ static {{out_type}} __Pyx_PyMemoryView_Get_{{name}}(PyObject *obj) {
@@ -123,10 +123,10 @@ index 15ba067..fdef8e5 100644
  #define __Pyx_PySlice_Stop(o) __Pyx_NewRef(PySlice_Stop((PySliceObject*)o))
  #define __Pyx_PySlice_Step(o) __Pyx_NewRef(PySlice_Step((PySliceObject*)o))
 diff --git a/Cython/Utility/CythonFunction.c b/Cython/Utility/CythonFunction.c
-index 685d287..1b27dd5 100644
+index b831336..ab22104 100644
 --- a/Cython/Utility/CythonFunction.c
 +++ b/Cython/Utility/CythonFunction.c
-@@ -1755,8 +1755,12 @@ static PyObject* __Pyx_Method_ClassMethod(PyObject *method) {
+@@ -1751,8 +1751,12 @@ static PyObject* __Pyx_Method_ClassMethod(PyObject *method) {
              "This is most likely a classmethod in a cdef class method with binding=False. "
              "Try setting 'binding' to True.",
              method);
@@ -141,7 +141,7 @@ index 685d287..1b27dd5 100644
          return PyDescr_NewClassMethod(d_type, PyMethodDescrObject_GetMethod(method));
  #else
 diff --git a/Cython/Utility/Exceptions.c b/Cython/Utility/Exceptions.c
-index 165a7ef..d88e279 100644
+index edd7817..08c0a61 100644
 --- a/Cython/Utility/Exceptions.c
 +++ b/Cython/Utility/Exceptions.c
 @@ -13,7 +13,7 @@ if (likely(__Pyx_init_assertions_enabled() == 0)); else
@@ -154,10 +154,10 @@ index 165a7ef..d88e279 100644
    static int __pyx_assertions_enabled_flag;
    #define __pyx_assertions_enabled() (__pyx_assertions_enabled_flag)
 diff --git a/Cython/Utility/ModuleSetupCode.c b/Cython/Utility/ModuleSetupCode.c
-index 6e29634..11f423e 100644
+index d9c9e39..c2d3c4b 100644
 --- a/Cython/Utility/ModuleSetupCode.c
 +++ b/Cython/Utility/ModuleSetupCode.c
-@@ -81,7 +81,7 @@
+@@ -89,7 +89,7 @@
    #undef CYTHON_AVOID_BORROWED_REFS
    #define CYTHON_AVOID_BORROWED_REFS 1
    #undef CYTHON_AVOID_THREAD_UNSAFE_BORROWED_REFS
@@ -166,7 +166,7 @@ index 6e29634..11f423e 100644
    #undef CYTHON_ASSUME_SAFE_MACROS
    #define CYTHON_ASSUME_SAFE_MACROS 0
    #undef CYTHON_ASSUME_SAFE_SIZE
-@@ -860,7 +860,11 @@ static CYTHON_INLINE int __Pyx__IsSameCFunction(PyObject *func, void (*cfunc)(vo
+@@ -878,7 +878,11 @@ static CYTHON_INLINE int __Pyx__IsSameCFunction(PyObject *func, void (*cfunc)(vo
  #if CYTHON_COMPILING_IN_LIMITED_API
    // __Pyx_PyCode_HasFreeVars isn't easily emulated in the limited API (but isn't really necessary)
    #define __Pyx_PyFrame_SetLineNumber(frame, lineno)
@@ -178,7 +178,7 @@ index 6e29634..11f423e 100644
    #define __Pyx_PyCode_HasFreeVars(co)  (PyCode_GetNumFree(co) > 0)
    #define __Pyx_PyFrame_SetLineNumber(frame, lineno) _PyFrame_SetLineNumber((frame), (lineno))
  #else
-@@ -1592,7 +1596,9 @@ static PY_INT64_T __Pyx_GetCurrentInterpreterId(void) {
+@@ -1610,7 +1614,9 @@ static PY_INT64_T __Pyx_GetCurrentInterpreterId(void) {
  #if !CYTHON_USE_MODULE_STATE
  static CYTHON_SMALL_CODE int __Pyx_check_single_interpreter(void) {
      static PY_INT64_T main_interpreter_id = -1;
@@ -189,19 +189,6 @@ index 6e29634..11f423e 100644
      PY_INT64_T current_id = PyInterpreterState_GetIDFromThreadState(PyThreadState_Get());
  #elif CYTHON_COMPILING_IN_LIMITED_API && __PYX_LIMITED_VERSION_HEX >= 0x03090000
      PY_INT64_T current_id = PyInterpreterState_GetID(PyInterpreterState_Get());
-diff --git a/Cython/Utility/Optimize.c b/Cython/Utility/Optimize.c
-index abc0614..0723227 100644
---- a/Cython/Utility/Optimize.c
-+++ b/Cython/Utility/Optimize.c
-@@ -477,7 +477,7 @@ static CYTHON_INLINE int __Pyx_dict_iter_next(
-         #endif
-         if (unlikely(pos >= list_size)) return 0;
-         *ppos = pos + 1;
--        #if CYTHON_AVOID_THREAD_UNSAFE_BORROWED_REFS
-+        #if CYTHON_AVOID_THREAD_UNSAFE_BORROWED_REFS && PY_VERSION_HEX >= 0x030d0000
-         next_item = PyList_GetItemRef(iter_obj, pos);
-         if (unlikely(!next_item)) return -1;
-         #elif CYTHON_ASSUME_SAFE_MACROS
 diff --git a/Cython/Utility/arrayarray.h b/Cython/Utility/arrayarray.h
 index d410e66..0110513 100644
 --- a/Cython/Utility/arrayarray.h
