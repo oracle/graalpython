@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2025, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -802,7 +802,7 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
 
     # Build
     if standalone_type == 'jvm':
-        if dev:
+        if dev or jdk_version < mx.VersionSpec("22.0.0"):
             env_file = 'jvm'
         else:
             env_file = 'jvm-ee-libgraal' if enterprise else 'jvm-ce-libgraal'
@@ -903,7 +903,7 @@ def graalvm_jdk(enterprise=False):
         if not java_version:
             mx.abort(f"Could not check Java version in GRAAL_JDK_HOME 'release' file.")
         actual_jdk_version = mx.VersionSpec(java_version.strip('JAVA_VERSION=').strip(' "\n\r'))
-        if actual_jdk_version != jdk_version:
+        if actual_jdk_version.parts[0] != jdk_version.parts[0]:
             mx.abort(f"GRAAL_JDK_HOME is not compatible with the requested JDK version.\n"
              f"actual version: '{actual_jdk_version}', version string: {java_version}, requested version: {jdk_version}.")
 
@@ -1367,9 +1367,14 @@ def graalpython_gate_runner(_, tasks):
 
             env['PATH'] = get_path_with_patchelf()
 
-            mx.log("Running integration JUnit tests on GraalVM SDK")
-            env['JAVA_HOME'] = graalvm_jdk()
-            mx.run_maven(mvn_cmd_base + ['-U', 'clean', 'test'], env=env)
+            default_runtime_arg = []
+            if mx.get_jdk().version < mx.VersionSpec("22.0.0"):
+                # Bytecode DSL does not work on JDK21 with optimizing runtime (GR-72424)
+                default_runtime_arg = ['-Dtruffle.UseFallbackRuntime=true']
+            graalvm_jdk_path = graalvm_jdk()
+            mx.log(f"Running integration JUnit tests on GraalVM SDK: {graalvm_jdk_path} (extra arguments: {' '.join(default_runtime_arg)})")
+            env['JAVA_HOME'] = graalvm_jdk_path
+            mx.run_maven(mvn_cmd_base + [*default_runtime_arg, '-U', 'clean', 'test'], env=env)
 
             env['JAVA_HOME'] = os.environ['JAVA_HOME']
             mx.log(f"Running integration JUnit tests on vanilla JDK: {os.environ.get('JAVA_HOME', 'system java')}")
