@@ -105,13 +105,13 @@ import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectRichCompare;
+import com.oracle.graal.python.lib.PyObjectSetAttrO;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.lib.PySequenceContainsNode;
 import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -217,11 +217,10 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
         static void setAttribute(VirtualFrame frame, PProxyType self, Object keyObject, Object value,
                         @Bind Node inliningTarget,
                         @Cached StringNodes.CastToTruffleStringChecked1Node castKeyNode,
-                        @Cached ObjectNodes.GenericSetAttrNode genericSetAttrNode,
-                        @Cached WriteAttributeToObjectNode write) {
+                        @Cached PyObjectSetAttrO setAttrNode) {
             TruffleString key = castKeyNode.cast(inliningTarget, keyObject, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObject);
             Object object = unwrap(self, inliningTarget);
-            genericSetAttrNode.execute(inliningTarget, frame, object, key, value, write);
+            setAttrNode.execute(frame, inliningTarget, object, key, value);
         }
     }
 
