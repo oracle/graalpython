@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -2476,22 +2476,16 @@ public final class PythonContext extends Python3Core {
      * @see GilNode
      */
     void releaseGilAroundForeignCall() {
-        if (getLanguage().getForeignCriticalSection().get()[0] == 0) {
+        if (!getLanguage().shouldGilBeLockedDuringForeignCalls().get()[0]) {
             releaseGil();
         }
     }
 
-    public int enterForeignCriticalSection() {
-        int[] current = getLanguage().getForeignCriticalSection().get();
-        current[0] += 1;
-        return current[0];
-    }
-
-    public int leaveForeignCriticalSection() {
-        int[] current = getLanguage().getForeignCriticalSection().get();
-        assert current[0] > 0 : "invalid nesting of foreign critical sections on this thread";
-        current[0] -= 1;
-        return current[0];
+    public boolean setGilLockedDuringForeignCalls(boolean lock) {
+        boolean[] current = getLanguage().shouldGilBeLockedDuringForeignCalls().get();
+        boolean old = current[0];
+        current[0] = lock;
+        return old;
     }
 
     /**

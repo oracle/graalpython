@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -83,6 +83,7 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.PolyglotModuleBuiltinsClinicProviders.RegisterInteropTypeNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.modules.PolyglotModuleBuiltinsClinicProviders.EnterForeignCriticalRegionNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
@@ -108,6 +109,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.interop.InteropBehavior;
 import com.oracle.graal.python.nodes.interop.InteropBehaviorMethod;
@@ -207,21 +209,18 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__enter_foreign_critical_region__", minNumOfPositionalArgs = 0)
+    @Builtin(name = "__set_gil_locked_during_foreign_calls__", parameterNames = {"lock"})
     @GenerateNodeFactory
-    public abstract static class EnterForeignCriticalRegionNode extends PythonBuiltinNode {
-        @Specialization
-        static int enter(@Bind Node inliningTarget) {
-            return PythonContext.get(inliningTarget).enterForeignCriticalSection();
+    @ArgumentClinic(name = "lock", conversion = ClinicConversion.Boolean)
+    public abstract static class EnterForeignCriticalRegionNode extends PythonUnaryClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return EnterForeignCriticalRegionNodeClinicProviderGen.INSTANCE;
         }
-    }
 
-    @Builtin(name = "__leave_foreign_critical_region__", minNumOfPositionalArgs = 0)
-    @GenerateNodeFactory
-    public abstract static class LeaveForeignCriticalRegionNode extends PythonBuiltinNode {
         @Specialization
-        static int leave(@Bind Node inliningTarget) {
-            return PythonContext.get(inliningTarget).leaveForeignCriticalSection();
+        static boolean enter(boolean lock, @Bind Node inliningTarget) {
+            return PythonContext.get(inliningTarget).setGilLockedDuringForeignCalls(lock);
         }
     }
 
