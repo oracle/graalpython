@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -43,6 +43,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.options.OptionCategory;
 import org.graalvm.options.OptionDescriptor;
 import org.graalvm.options.OptionDescriptors;
@@ -86,7 +87,25 @@ public final class PythonOptions {
      * Whether to use the experimental Bytecode DSL interpreter instead of the manually-written
      * bytecode interpreter.
      */
-    public static final boolean ENABLE_BYTECODE_DSL_INTERPRETER = !"false".equalsIgnoreCase(System.getProperty("python.EnableBytecodeDSLInterpreter"));
+    public static final boolean ENABLE_BYTECODE_DSL_INTERPRETER;
+    static {
+        String prop = System.getProperty("python.EnableBytecodeDSLInterpreter");
+        if (prop != null) {
+            ENABLE_BYTECODE_DSL_INTERPRETER = prop.equalsIgnoreCase("true");
+        } else if (!ImageInfo.inImageCode()) {
+            // In JVM mode we also honor the env variable so that subprocesses spawned from tests in
+            // JVM mode run the same type of interpreter
+            String env = System.getenv("BYTECODE_DSL_INTERPRETER");
+            if (env != null) {
+                ENABLE_BYTECODE_DSL_INTERPRETER = env.equalsIgnoreCase("true");
+            } else {
+                ENABLE_BYTECODE_DSL_INTERPRETER = true;
+            }
+        } else {
+            ENABLE_BYTECODE_DSL_INTERPRETER = true;
+        }
+    }
+
     private static final OptionType<TruffleString> TS_OPTION_TYPE = new OptionType<>("graal.python.TruffleString", PythonUtils::toTruffleStringUncached);
 
     private PythonOptions() {
