@@ -1846,6 +1846,10 @@ def release_level(variant=None):
     return level
 
 
+def graalpy_cmake_build_type(*_):
+    return 'Debug' if 'GRAALPY_NATIVE_DEBUG_BUILD' in os.environ else 'Release'
+
+
 def graalpy_ext(*_):
     os = mx_subst.path_substitutions.substitute('<os>')
     arch = mx_subst.path_substitutions.substitute('<arch>')
@@ -1899,6 +1903,8 @@ mx_subst.results_substitutions.register_with_arg('dev_tag', dev_tag)
 
 mx_subst.path_substitutions.register_no_arg('graalpy_ext', graalpy_ext)
 mx_subst.results_substitutions.register_no_arg('graalpy_ext', graalpy_ext)
+
+mx_subst.results_substitutions.register_no_arg('graalpy_cmake_build_type', graalpy_cmake_build_type)
 
 
 def update_import(name, suite_py: Path, args):

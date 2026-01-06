@@ -1,4 +1,4 @@
-/* Copyright (c) 2024, Oracle and/or its affiliates.
+/* Copyright (c) 2024, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2024 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -2078,13 +2078,13 @@ _parser_init(struct _PyArg_Parser *parser)
 static int
 parser_init(struct _PyArg_Parser *parser)
 {
-#if 0 // GraalPy change
     // volatile as it can be modified by other threads
     // and should not be optimized or reordered by compiler
     if (*((volatile int *)&parser->initialized)) {
         assert(parser->kwtuple != NULL);
         return 1;
     }
+#if 0 // GraalPy change (free-threading incompatible)
     PyThread_acquire_lock(_PyRuntime.getargs.mutex, WAIT_LOCK);
     // Check again if another thread initialized the parser
     // while we were waiting for the lock.

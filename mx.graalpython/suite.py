@@ -550,7 +550,7 @@ suite = {
                 "bin/<lib:bz2support>",
             ],
             "cmakeConfig": {
-                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_BUILD_TYPE": "<graalpy_cmake_build_type>",
                 "BZIP2_ROOT": "<path:BZIP2>",
                 "BZIP2_VERSION_MAJOR": "1",
                 "BZIP2_VERSION_MINOR": "0",
@@ -674,7 +674,7 @@ suite = {
                             # "Release": highest opt level, no debugging symbols, no assertions, -DNDEBUG, etc.
                             # "RelWithDebInfo": medium opt level, with debugging symbols, no assertions, -DNDEBUG
                             # "Debug": no opt level, debugging symbols, assertions, ...
-                            "CMAKE_BUILD_TYPE": "Release",
+                            "CMAKE_BUILD_TYPE": "<graalpy_cmake_build_type>",
                             "CAPI_INC_DIR": "<output_root:com.oracle.graal.python>/jni_gen",
                             "PYCONFIG_INCLUDE_DIR": "<output_root:graalpy-pyconfig>/<os>-<arch>/<multitarget_libc_selection>",
                             "TRUFFLE_NFI_H_INC": "<path:com.oracle.truffle.nfi.native>/include",
@@ -710,7 +710,7 @@ suite = {
                             # "Release": highest opt level (e.g. -O3, -lto), no debugging symbols, no assertions, -DNDEBUG, etc.
                             # "RelWithDebInfo": medium opt level (e.g. -O2, -lto), with debugging symbols, no assertions, -DNDEBUG
                             # "Debug": no opt level, debugging symbols, assertions, ...
-                            "CMAKE_BUILD_TYPE": "Release",
+                            "CMAKE_BUILD_TYPE": "<graalpy_cmake_build_type>",
                             "CAPI_INC_DIR": "<output_root:com.oracle.graal.python>/jni_gen",
                             "PYCONFIG_INCLUDE_DIR": "<output_root:graalpy-pyconfig>/<os>-<arch>/<multitarget_libc_selection>/",
                             "TRUFFLE_NFI_H_INC": "<path:com.oracle.truffle.nfi.native>/include",
