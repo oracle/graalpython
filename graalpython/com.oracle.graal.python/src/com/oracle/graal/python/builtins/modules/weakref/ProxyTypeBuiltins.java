@@ -49,7 +49,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.referencetype.PReferenceType;
@@ -104,7 +103,7 @@ import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectGetIter;
-import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectRichCompare;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
@@ -118,9 +117,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
-import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -140,7 +137,6 @@ import java.util.List;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ReferenceError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_BOOL;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___BYTES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REVERSED__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BYTES__;
@@ -322,16 +318,11 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
     public abstract static class BoolNode extends TpSlotInquiry.NbBoolBuiltinNode {
 
         @Specialization
+        @TruffleBoundary
         static boolean bool(PProxyType self,
-                        @Bind Node inliningTarget,
-                        @Cached PyObjectLookupAttr lookupNode,
-                        @Cached com.oracle.graal.python.nodes.call.CallNode callNode,
-                        @Cached CastToJavaBooleanNode castToJavaBooleanNode) {
+                        @Bind Node inliningTarget) {
             Object object = unwrap(self, inliningTarget);
-            PythonModule builtins = PythonContext.get(inliningTarget).getBuiltins();
-            Object bool = lookupNode.execute(null, inliningTarget, builtins, T_BOOL);
-            Object isBool = callNode.executeWithoutFrame(bool, object);
-            return castToJavaBooleanNode.execute(inliningTarget, isBool);
+            return PyObjectIsTrueNode.executeUncached(object);
         }
     }
 
