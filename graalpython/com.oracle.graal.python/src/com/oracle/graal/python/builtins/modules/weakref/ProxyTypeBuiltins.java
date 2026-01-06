@@ -144,7 +144,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T_BOOL;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___BYTES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REVERSED__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BYTES__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REVERSED__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETITEM__;
@@ -344,11 +343,9 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
         @Specialization
         static Object call(VirtualFrame frame, PProxyType self, Object[] arguments, PKeyword[] keywords,
                         @Bind Node inliningTarget,
-                        @Cached PyObjectLookupAttr lookupNode,
                         @Cached com.oracle.graal.python.nodes.call.CallNode callNode) {
             Object object = unwrap(self, inliningTarget);
-            Object call = lookupNode.execute(frame, inliningTarget, object, T___CALL__);
-            return callNode.execute(frame, call, arguments, keywords);
+            return callNode.execute(frame, object, arguments, keywords);
         }
     }
 
