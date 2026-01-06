@@ -235,19 +235,6 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Slot(value = Slot.SlotKind.sq_item, isComplex = true)
-    @GenerateNodeFactory
-    public abstract static class SqItemNode extends TpSlotSizeArgFun.SqItemBuiltinNode {
-
-        @Specialization
-        static Object getItem(VirtualFrame frame, PProxyType self, int index,
-                        @Bind Node inliningTarget,
-                        @Cached PyObjectGetItem getItem) {
-            Object object = unwrap(self, inliningTarget);
-            return getItem.execute(frame, inliningTarget, object, index);
-        }
-    }
-
     @Slot(value = Slot.SlotKind.mp_subscript, isComplex = true)
     @GenerateNodeFactory
     public abstract static class GetItemNode extends TpSlotBinaryFunc.MpSubscriptBuiltinNode {
@@ -258,27 +245,6 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
                         @Cached PyObjectGetItem getItem) {
             Object object = unwrap(self, inliningTarget);
             return getItem.execute(frame, inliningTarget, object, index);
-        }
-    }
-
-    @Slot(value = Slot.SlotKind.sq_ass_item, isComplex = true)
-    @GenerateNodeFactory
-    abstract static class SetItemNode extends TpSlotSqAssItem.SqAssItemBuiltinNode {
-
-        @Specialization(guards = "!isNoValue(value)")
-        static void setItem(VirtualFrame frame, PProxyType self, int index, Object value,
-                        @Bind Node inliningTarget,
-                        @Cached @Shared PyObjectCallMethodObjArgs callMethod) {
-            Object object = unwrap(self, inliningTarget);
-            callMethod.execute(frame, inliningTarget, object, T___SETITEM__, index, value);
-        }
-
-        @Specialization(guards = "isNoValue(value)")
-        static void deleteItem(VirtualFrame frame, PProxyType self, int index, @SuppressWarnings("unused") Object value,
-                        @Bind Node inliningTarget,
-                        @Cached @Shared PyObjectCallMethodObjArgs callMethod) {
-            Object object = unwrap(self, inliningTarget);
-            callMethod.execute(frame, inliningTarget, object, T___DELITEM__, index);
         }
     }
 
@@ -451,34 +417,6 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Slot(value = Slot.SlotKind.sq_concat, isComplex = true)
-    @GenerateNodeFactory
-    abstract static class ConcatNode extends TpSlotBinaryFunc.SqConcatBuiltinNode {
-
-        @Specialization
-        static Object concat(VirtualFrame frame, PProxyType left, Object right,
-                        @Bind Node inliningTarget,
-                        @Cached PyObjectCallMethodObjArgs callMethod) {
-            Object leftUnwrapped = unwrap(left, inliningTarget);
-            Object rightUnwrapped = unwrap(right, inliningTarget);
-            return callMethod.execute(frame, inliningTarget, leftUnwrapped, T___ADD__, rightUnwrapped);
-        }
-    }
-
-    @Slot(value = Slot.SlotKind.sq_inplace_concat, isComplex = true)
-    @GenerateNodeFactory
-    abstract static class IConcatNode extends TpSlotBinaryFunc.SqConcatBuiltinNode {
-
-        @Specialization
-        static Object iconcat(VirtualFrame frame, PProxyType left, Object right,
-                        @Bind Node inliningTarget,
-                        @Cached PyObjectCallMethodObjArgs callMethod) {
-            Object leftUnwrapped = unwrap(left, inliningTarget);
-            Object rightUnwrapped = unwrap(right, inliningTarget);
-            return callMethod.execute(frame, inliningTarget, leftUnwrapped, T___IADD__, rightUnwrapped);
-        }
-    }
-
     @Slot(value = Slot.SlotKind.nb_add, isComplex = true)
     @GenerateNodeFactory
     abstract static class AddNode extends TpSlotBinaryOp.BinaryOpBuiltinNode {
@@ -560,32 +498,6 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
             Object leftUnwrapped = unwrap(left, inliningTarget);
             Object rightUnwrapped = unwrap(right, inliningTarget);
             return callMethod.execute(frame, inliningTarget, leftUnwrapped, T___IMUL__, rightUnwrapped);
-        }
-    }
-
-    @Slot(value = Slot.SlotKind.sq_repeat, isComplex = true)
-    @GenerateNodeFactory
-    abstract static class RepeatNode extends TpSlotSizeArgFun.SqRepeatBuiltinNode {
-
-        @Specialization
-        static Object repeat(VirtualFrame frame, PProxyType self, int n,
-                        @Bind Node inliningTarget,
-                        @Cached PyObjectCallMethodObjArgs callMethod) {
-            Object object = unwrap(self, inliningTarget);
-            return callMethod.execute(frame, inliningTarget, object, T___MUL__, n);
-        }
-    }
-
-    @Slot(value = Slot.SlotKind.sq_inplace_repeat, isComplex = true)
-    @GenerateNodeFactory
-    abstract static class IRepeatNode extends TpSlotSizeArgFun.SqRepeatBuiltinNode {
-
-        @Specialization
-        static Object irepeat(VirtualFrame frame, PProxyType self, int n,
-                        @Bind Node inliningTarget,
-                        @Cached PyObjectCallMethodObjArgs callMethod) {
-            Object object = unwrap(self, inliningTarget);
-            return callMethod.execute(frame, inliningTarget, object, T___IMUL__, n);
         }
     }
 
@@ -986,22 +898,6 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
                         @Cached PyObjectCallMethodObjArgs callMethod) {
             Object object = unwrap(self, inliningTarget);
             return callMethod.execute(frame, inliningTarget, object, T___REVERSED__);
-        }
-    }
-
-    @Builtin(name = J___ROUND__, minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class RoundNode extends PythonUnaryBuiltinNode {
-
-        @Specialization
-        static Object round(VirtualFrame frame, PProxyType self,
-                        @Bind Node inliningTarget,
-                        @Cached PyObjectLookupAttr lookupNode,
-                        @Cached com.oracle.graal.python.nodes.call.CallNode callNode) {
-            Object object = unwrap(self, inliningTarget);
-            PythonModule builtins = PythonContext.get(inliningTarget).getBuiltins();
-            Object bool = lookupNode.execute(frame, inliningTarget, builtins, T_ROUND);
-            return callNode.executeWithoutFrame(bool, object);
         }
     }
 
