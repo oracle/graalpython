@@ -634,7 +634,7 @@ public final class TypeBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         @Specialization(guards = "isImmutable(object)")
-        // No BoundaryCallContext: sllowed only on startup and from internal code
+        // No BoundaryCallContext: allowed only on startup and from internal code
         void setBuiltin(Object object, Object key, Object value) {
             if (PythonContext.get(this).isInitialized()) {
                 throw PRaiseNode.raiseStatic(this, TypeError, ErrorMessages.CANT_SET_ATTRIBUTE_R_OF_IMMUTABLE_TYPE_N, PyObjectReprAsTruffleStringNode.executeUncached(key), object);
