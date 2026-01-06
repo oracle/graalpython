@@ -1457,7 +1457,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         BytecodeLocal local = locals.get(mangled);
         switch (op) {
             case Read:
-                b.emitCheckAndLoadLocal(local, varnames.get(mangled));
+                b.emitLoadLocal(local);
                 break;
             case Delete:
                 b.emitDeleteLocal(local, varnames.get(mangled));
@@ -1612,7 +1612,9 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         if (scope.isFunction()) {
             String[] regularVariables = orderedKeys(varnames, new String[0]);
             for (int i = 0; i < regularVariables.length; i++) {
-                locals.put(regularVariables[i], b.createLocal());
+                // For user locals, store a varnames table index in the "info" field.
+                int index = varnames.get(regularVariables[i]);
+                locals.put(regularVariables[i], b.createLocal(null, index));
             }
         }
 
