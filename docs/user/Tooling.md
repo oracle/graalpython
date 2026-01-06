@@ -11,28 +11,38 @@ To enable the debugger, pass the `--inspect` command-line option.
 You can inspect variables, set watch expressions, interactively evaluate code snippets, and so on.
 
 1. Run a Python script using the command-line option `--inspect`:
+
     ```bash
     graalpy --inspect my_script.py
-    ``` 
+    ```
 
 2. You should see output similar to:
+
     ```bash
     Debugger listening on ws://127.0.0.1:9229/VrhCaY7wR5tIqy2zLsdFr3f7ixY3QB6kVQ0S54_SOMo
     For help, see: https://www.graalvm.org/tools/chrome-debugger
     E.g. in Chrome open: devtools://devtools/bundled/js_app.html?ws=127.0.0.1:9229/VrhCaY7wR5tIqy2zLsdFr3f7ixY3QB6kVQ0S54_SOMo
     ```
 
-3. Open your Chrome browser and enter the URL provided. 
-Now you can inspect the stack, variables, evaluate variables, and selected expressions in a tooltip, and so on. For example: 
+3. Open Chrome browser and enter the provided URL.
+
+   You can now:
+   - Inspect the call stack and variables
+   - Set breakpoints and step through code
+   - Evaluate expressions in the console
+   - View variable values in tooltips
+
+   For example:
 
    ![Chrome Inspector](./assets/Chrome_Inspector.png)
 
 ## Profiling
 
-GraalPy provides three main profiling capabilities: a CPU sampler, a CPU tracer, and a memory tracer.
-These are described below. (For details, use the `graalpy --help:tools` command.)
+GraalPy provides three main profiling capabilities: CPU sampling, CPU tracing, and memory tracing. Each tool is described below.
 
-## CPU Sampler
+For complete options, use: `graalpy --help:tools`
+
+### CPU Sampler
 
 Use the `--cpusampler` command-line option to take a CPU sample. For example:
 ```bash
@@ -42,7 +52,9 @@ graalpy --cpusampler my_script.py
 You should see output similar to:
 
 {::options parse_block_html="true" /}
-<details><summary markdown="span">CPU Sampler Output (Click to expand)</summary>
+<details>
+  <summary markdown="span">CPU Sampler Output (Click to expand)</summary>
+
 ```bash
 --------------------------------------------------------------------------------------------------------------------------------------------------------------
 Sampling Histogram. Recorded 564 samples with period 10ms. Missed 235 samples.
@@ -61,12 +73,14 @@ Thread[main,5,main]
  ...
 --------------------------------------------------------------------------------------------------------------------------------------------------------------
 ```
+
 </details>
 {::options parse_block_html="false" /}
 
-## CPU Tracer
+### CPU Tracer
 
 Use the `--cputracer --cputracer.TraceStatements` command-line options to trace CPU usage. For example:
+
 ```bash
 graalpy --cputracer --cputracer.TraceStatements my_script.py
 ```
@@ -74,7 +88,9 @@ graalpy --cputracer --cputracer.TraceStatements my_script.py
 You should see output similar to:
 
 {::options parse_block_html="true" /}
-<details><summary markdown="span">CPU Tracer Output (Click to Expand)</summary>
+<details>
+  <summary markdown="span">CPU Tracer Output (Click to expand)</summary>
+
 ```bash
 --------------------------------------------------------------------------------------------------------------------
 Tracing Histogram. Counted a total of 1135 element executions.
@@ -96,12 +112,14 @@ Tracing Histogram. Counted a total of 1135 element executions.
  ...    
 --------------------------------------------------------------------------------------------------------------------
 ```
+
 </details>
 {::options parse_block_html="false" /}
 
-#### Memory Tracer
+### Memory Tracer
 
 Use the `--memtracer --memtracer.TraceStatements` command-line options to trace memory usage. For example:
+
 ```bash
 graalpy --experimental-options --memtracer --memtracer.TraceStatements my_script.py
 ```
@@ -110,7 +128,9 @@ You should see output similar to:
 
 {::options parse_block_html="true" /}
 
-<details><summary markdown="span">Memory Tracer Output (Click to Expand)</summary>
+<details>
+  <summary markdown="span">Memory Tracer Output (Click to expand)</summary>
+
 ```bash
 ----------------------------------------------------------------------------
  Location Histogram with Allocation Counts. Recorded a total of 565 allocations.
@@ -131,6 +151,7 @@ You should see output similar to:
  ...
 ----------------------------------------------------------------------------
 ```
+
 </details>
 {::options parse_block_html="false" /}
 
@@ -146,7 +167,10 @@ graalpy --coverage my_script.py
 You should see output similar to:
 
 {::options parse_block_html="true" /}
-<details><summary markdown="span">CPU Sampler Output (Click to expand)</summary>
+
+<details>
+  <summary markdown="span">Coverage Output (Click to expand)</summary>
+
 ```bash
 ------------------------------------------------------------------------------------------------------------------------------------------------
 Code coverage histogram.
@@ -196,6 +220,7 @@ Code coverage histogram.
  <src-dir>/my_script.py                                                        |     100.00% |  100.00% |  100.00%
 ------------------------------------------------------------------------------------------------------------------------------------------------
 ```
+
 </details>
 {::options parse_block_html="false" /}
 
@@ -203,7 +228,8 @@ Code coverage histogram.
 
 The standard Python `trace` module is also provided.
 > Note: This works in the same way as CPython.
-The programmatic API also works, with some limitations: it does not currently track calls, only line counts and called functions.
+
+The programmatic API also works but with limitations: it currently tracks only line counts and called functions, not calls themselves.
 
 For example, running this command:
 
@@ -214,7 +240,9 @@ graalpy -m trace -c -s text_styler.py Welcome to GraalPy!
 You should see output similar to:
 
 {::options parse_block_html="true" /}
-<details><summary markdown="span">CPU Tracer Output (Click to Expand)</summary>
+<details>
+  <summary markdown="span">CPU Tracer Output (Click to expand)</summary>
+
 ```bash
 _       __     __                             __     
 | |     / /__  / /________  ____ ___  ___     / /_____
@@ -311,7 +339,9 @@ lines   cov%   module   (path)
   127   100%   weakref   (<install-dir>/lib/python3.10/weakref.py)
   432   100%   zipfile   (<install-dir>/lib/python3.10/zipfile.py)
 ```
+
 </details>
+
 {::options parse_block_html="false" /}
 
 ## Using PyCharm with GraalPy
@@ -325,11 +355,13 @@ You can use GraalPy in PyCharm to create a virtual environment, install packages
 3. Create, or open, a Python project.
 (For more information, see [Create a Python project](https://www.jetbrains.com/help/pycharm/creating-empty-project.html), or [Open, reopen, and close projects](https://www.jetbrains.com/help/pycharm/open-projects.html), respectively.)
 
-4. Create a new `venv` virtual environment for your Python project.
-(For more information, see [Create a virtualenv environment](https://www.jetbrains.com/help/pycharm/creating-virtual-environment.html#python_create_virtual_env).)
+4. Create a new virtual environment using GraalPy:
+   - In PyCharm settings, set the interpreter to your GraalPy installation
+   - Create a new `venv` virtual environment
+   (For more information, see [Create a virtualenv environment](https://www.jetbrains.com/help/pycharm/creating-virtual-environment.html#python_create_virtual_env).)
 
-5. Install packages by following the PyCharm instructions.
-(For more information, see [Install, uninstall, and upgrade packages](https://www.jetbrains.com/help/pycharm/installing-uninstalling-and-upgrading-packages.html).)
+5. Install packages using pip or PyCharm's package manager.
+   (For more information, see [Install, uninstall, and upgrade packages](https://www.jetbrains.com/help/pycharm/installing-uninstalling-and-upgrading-packages.html).)
 
 6. Use the PyCharm menu items to [run your Python application](https://www.jetbrains.com/help/pycharm/running-applications.html). 
 Alternatively, use the terminal emulator to run the `graalpy` command.
@@ -337,7 +369,7 @@ Alternatively, use the terminal emulator to run the `graalpy` command.
 ## Using Visual Studio Code with GraalPy
 
 You can use GraalPy in Visual Studio (VS) Code to create a virtual environment, install packages, and develop and run your Python application.
- 
+
 1. Install `graalpy`. (For more information, see [Installing GraalPy](Python-Runtime.md).)
 
 2. Install VS Code and the Python Extension, following the instructions here: [Install Visual Studio Code and the Python Extension](https://code.visualstudio.com/docs/python/python-tutorial#_prerequisites).
@@ -353,5 +385,4 @@ You can use GraalPy in Visual Studio (VS) Code to create a virtual environment, 
 6. Use the VS Code menu items to run your Python application. (For more information, see [Run Hello World](https://code.visualstudio.com/docs/python/python-tutorial#_run-python-code).)
 Alternatively, use a VS Code terminal emulator to run the `graalpy` command.
 
-7. You cannot use VS Code to debug your Python application.
-Instead, open a VS Code terminal emulator and follow these instructions: [Debugging a Python Application](#debugging).
+7. You can use VS Code's built-in Python debugger to set breakpoints, inspect variables, and step through your code just like with standard Python.
