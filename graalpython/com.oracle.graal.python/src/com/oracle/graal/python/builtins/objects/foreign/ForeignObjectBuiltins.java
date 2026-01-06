@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -69,6 +69,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -171,10 +172,11 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
         static Object doIt(Node inliningTarget, Object object, Object memberObj,
                         @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") InteropLibrary lib,
                         @Cached(inline = false) CastToJavaStringNode castToString,
-                        @Cached(inline = false) GilNode gil,
+                        @Cached(inline = false) GilNode.Interop gil,
                         @Cached(inline = false) PForeignToPTypeNode toPythonNode,
                         @Cached PRaiseNode raiseNode) {
-            gil.release(true);
+            PythonContext context = PythonContext.get(inliningTarget);
+            gil.release(context, true);
             try {
                 String member;
                 try {
@@ -200,7 +202,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                 }
             } catch (UnknownIdentifierException | UnsupportedMessageException | ArityException ignore) {
             } finally {
-                gil.acquire();
+                gil.acquire(context, inliningTarget);
             }
             throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, memberObj);
         }
@@ -215,9 +217,10 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Shared @Cached CastToJavaStringNode castToString,
-                        @Shared @Cached GilNode gil,
+                        @Shared @Cached GilNode.Interop gil,
                         @Shared @Cached PRaiseNode raiseNode) {
-            gil.release(true);
+            PythonContext context = PythonContext.get(inliningTarget);
+            gil.release(context, true);
             String member;
             try {
                 member = castToString.execute(key);
@@ -247,7 +250,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
             } catch (UnsupportedTypeException e) {
                 throw raiseNode.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.INVALID_TYPE_FOR_S, key);
             } finally {
-                gil.acquire();
+                gil.acquire(context, inliningTarget);
             }
             throw raiseNode.raise(inliningTarget, PythonErrorType.AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, key);
         }
@@ -257,9 +260,10 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Shared @Cached CastToJavaStringNode castToString,
-                        @Shared @Cached GilNode gil,
+                        @Shared @Cached GilNode.Interop gil,
                         @Shared @Cached PRaiseNode raiseNode) {
-            gil.release(true);
+            PythonContext context = PythonContext.get(inliningTarget);
+            gil.release(context, true);
             try {
                 lib.removeMember(object, castToString.execute(key));
             } catch (CannotCastException e) {
@@ -267,7 +271,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
             } catch (UnknownIdentifierException | UnsupportedMessageException e) {
                 throw raiseNode.raise(inliningTarget, PythonErrorType.AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, key);
             } finally {
-                gil.acquire();
+                gil.acquire(context, inliningTarget);
             }
         }
     }
@@ -282,7 +286,7 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "3") InteropLibrary arrayInterop,
                         @CachedLibrary(limit = "3") InteropLibrary stringInterop,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Cached GilNode gil,
+                        @Cached GilNode.Interop gil,
                         @Cached InlinedConditionProfile profile,
                         @Cached GetClassNode getClassNode,
                         @Cached TypeBuiltins.DirNode typeDirNode,
@@ -296,13 +300,14 @@ public final class ForeignObjectBuiltins extends PythonBuiltins {
 
             if (profile.profile(inliningTarget, lib.hasMembers(object))) {
                 final Object members;
-                gil.release(true);
+                PythonContext context = PythonContext.get(inliningTarget);
+                gil.release(context, true);
                 try {
                     members = lib.getMembers(object);
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere("foreign object claims to have members, but does not return them");
                 } finally {
-                    gil.acquire();
+                    gil.acquire(context, inliningTarget);
                 }
 
                 try {

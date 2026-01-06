@@ -40,6 +40,7 @@ import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -77,15 +78,17 @@ public final class ForeignBooleanBuiltins extends PythonBuiltins {
     abstract static class BoolNode extends NbBoolBuiltinNode {
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         static boolean bool(Object receiver,
+                        @Bind Node inliningTarget,
                         @CachedLibrary("receiver") InteropLibrary lib,
-                        @Cached GilNode gil) {
-            gil.release(true);
+                        @Cached GilNode.Interop gil) {
+            PythonContext context = PythonContext.get(inliningTarget);
+            gil.release(context, true);
             try {
                 return lib.asBoolean(receiver);
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             } finally {
-                gil.acquire();
+                gil.acquire(context, inliningTarget);
             }
         }
     }
@@ -95,9 +98,11 @@ public final class ForeignBooleanBuiltins extends PythonBuiltins {
     abstract static class IndexNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "3")
         protected static int doIt(Object object,
+                        @Bind Node inliningTarget,
                         @CachedLibrary("object") InteropLibrary lib,
-                        @Cached GilNode gil) {
-            gil.release(true);
+                        @Cached GilNode.Interop gil) {
+            PythonContext context = PythonContext.get(inliningTarget);
+            gil.release(context, true);
             try {
                 try {
                     return PInt.intValue(lib.asBoolean(object));
@@ -105,7 +110,7 @@ public final class ForeignBooleanBuiltins extends PythonBuiltins {
                     throw CompilerDirectives.shouldNotReachHere("foreign value claims to be a boolean but isn't");
                 }
             } finally {
-                gil.acquire();
+                gil.acquire(context, inliningTarget);
             }
         }
     }
@@ -118,20 +123,18 @@ public final class ForeignBooleanBuiltins extends PythonBuiltins {
         Object str(VirtualFrame frame, Object object,
                         @Bind Node inliningTarget,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached GilNode gil,
+                        @Cached GilNode.Interop gil,
                         @Cached PyObjectStrAsTruffleStringNode strNode) {
             final Object value;
+            PythonContext context = PythonContext.get(inliningTarget);
+            gil.release(context, true);
             try {
-                gil.release(true);
-                try {
-                    value = lib.asBoolean(object);
-                } finally {
-                    gil.acquire();
-                }
+                value = lib.asBoolean(object);
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
+            } finally {
+                gil.acquire(context, inliningTarget);
             }
-
             return strNode.execute(frame, inliningTarget, value);
         }
     }

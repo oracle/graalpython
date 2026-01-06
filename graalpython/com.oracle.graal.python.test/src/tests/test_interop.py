@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -1520,3 +1520,39 @@ class InteropTests(unittest.TestCase):
         doctest.Example = Example
 
         assert doctest.testmod(m=polyglot, verbose=getattr(unittest, "verbose"), optionflags=doctest.ELLIPSIS).failed == 0
+
+    def test_keep_gil_around_interop(self):
+        import java.lang.Thread as Thread
+        import threading, time
+        lst = []
+        enter_sleep = threading.Event()
+        done = threading.Event()
+
+        def worker():
+            enter_sleep.wait(timeout=5)
+            lst.append(time.time())
+            done.set()
+
+        def gil_test(before_or_after):
+            enter_sleep.clear()
+            done.clear()
+            lst.clear()
+            t = threading.Thread(target=worker)
+            t.start()
+            start = time.time()
+            enter_sleep.set()
+            Thread.sleep(1000)
+            end = time.time()
+            done.wait(timeout=5)
+            t.join(timeout=5)
+            assert lst, "worker thread did not run"
+            t_run = lst[0]
+            result = t_run <= end if before_or_after == "after" else t_run >= end
+            assert result, f"worker ran {before_or_after} sleep finished: t_run={t_run}, end={end}"
+
+        gil_test("after")
+        with polyglot.gil_locked_during_interop(True):
+            gil_test("before")
+            with polyglot.gil_locked_during_interop(False):
+                gil_test("after")
+            gil_test("before")

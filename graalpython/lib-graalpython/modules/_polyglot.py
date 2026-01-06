@@ -1,4 +1,4 @@
-# Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2023, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -108,6 +108,34 @@ def interop_behavior(receiver):
 
 
 setattr(polyglot, "interop_behavior", interop_behavior)
+
+
+class gil_locked_during_interop():
+    """
+    A context manager to set if the global interpreter lock (GIL) should
+    be held when interacting with foreign objects. By default, it is released,
+    because the foreign object may be doing any kind of operation that either
+    is long running or blocking in some way, and then no other Python code
+    could run during that time on other threads. This can even lead to deadlocks
+    if the foreign language is able to spawn new threads and on those threads
+    tries to call back into Python.
+
+    However, for short calls to foreign objects, the overhead of repeatedly
+    (un)locking the GIL can be significant, so this context manager can be
+    used to explicitly control this behavior in a scope using either `true`
+    or `false` as argument to the initializer.
+    """
+    def __init__(self, lock):
+        self.lock = lock
+
+    def __enter__(self):
+        self.lock = polyglot.__set_gil_locked_during_foreign_calls__(self.lock)
+
+    def __exit__(self, *args):
+        polyglot.__set_gil_locked_during_foreign_calls__(self.lock)
+
+
+setattr(polyglot, "gil_locked_during_interop", gil_locked_during_interop)
 
 
 # loading arrow structures on demand

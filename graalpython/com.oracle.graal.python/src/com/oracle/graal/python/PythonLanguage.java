@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2015, Regents of the University of California
  *
  * All rights reserved.
@@ -400,6 +400,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     /** For fast access to the PythonThreadState object by the owning thread. */
     private final ContextThreadLocal<PythonThreadState> threadState = locals.createContextThreadLocal(PythonContext.PythonThreadState::new);
 
+    /** Whether to release the GIL around interop calls. */
+    private final ContextThreadLocal<boolean[]> shouldGilBeLockedDuringForeignCalls = locals.createContextThreadLocal((c, t) -> new boolean[]{false});
+
     private final MroShape mroShapeRoot = MroShape.createRoot();
 
     /**
@@ -427,6 +430,13 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
      */
     public ContextThreadLocal<PythonThreadState> getThreadStateLocal() {
         return threadState;
+    }
+
+    /**
+     * <b>DO NOT DIRECTLY USE THIS METHOD !!!</b>
+     */
+    public ContextThreadLocal<boolean[]> shouldGilBeLockedDuringForeignCalls() {
+        return shouldGilBeLockedDuringForeignCalls;
     }
 
     public MroShape getMroShapeRoot() {

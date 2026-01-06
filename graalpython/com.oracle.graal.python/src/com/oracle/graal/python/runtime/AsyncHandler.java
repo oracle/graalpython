@@ -418,7 +418,7 @@ public class AsyncHandler {
                                     // we only release the gil in ordinary Python code nodes
                                     GilNode gil = GilNode.getUncached();
                                     if (gil.tryRelease()) {
-                                        gil.acquire(access.getLocation());
+                                        gil.acquire(PythonContext.get(gil), access.getLocation());
                                     }
                                 }
                             }

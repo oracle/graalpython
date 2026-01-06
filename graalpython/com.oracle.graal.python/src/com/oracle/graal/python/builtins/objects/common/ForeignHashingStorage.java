@@ -51,6 +51,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
@@ -92,16 +93,17 @@ public final class ForeignHashingStorage extends HashingStorage {
         @Specialization
         static int length(Node inliningTarget, ForeignHashingStorage storage,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interop,
-                        @Cached(inline = false) GilNode gil,
+                        @Cached(inline = false) GilNode.Interop gil,
                         @Cached InlinedBranchProfile errorProfile) {
             long size;
-            gil.release(true);
+            PythonContext context = PythonContext.get(inliningTarget);
+            gil.release(context, true);
             try {
                 size = interop.getHashSize(storage.foreignDict);
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             } finally {
-                gil.acquire();
+                gil.acquire(context, inliningTarget);
             }
 
             return PInt.long2int(inliningTarget, size, errorProfile);
@@ -118,12 +120,13 @@ public final class ForeignHashingStorage extends HashingStorage {
         @Specialization
         static Object get(Node inliningTarget, ForeignHashingStorage storage, Object key,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interop,
-                        @Cached(inline = false) GilNode gil,
+                        @Cached(inline = false) GilNode.Interop gil,
                         @Cached(inline = false) PForeignToPTypeNode toPythonNode,
                         @Cached PRaiseNode raiseNode) {
             var dict = storage.foreignDict;
             Object value;
-            gil.release(true);
+            PythonContext context = PythonContext.get(inliningTarget);
+            gil.release(context, true);
             try {
                 value = interop.readHashValue(dict, key);
             } catch (UnknownKeyException e) {
@@ -131,7 +134,7 @@ public final class ForeignHashingStorage extends HashingStorage {
             } catch (UnsupportedMessageException e) {
                 throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.ATTR_S_OF_S_OBJ_IS_NOT_READABLE, key, dict);
             } finally {
-                gil.acquire();
+                gil.acquire(context, inliningTarget);
             }
 
             return toPythonNode.executeConvert(value);
@@ -148,10 +151,11 @@ public final class ForeignHashingStorage extends HashingStorage {
         @Specialization
         static void put(Node inliningTarget, ForeignHashingStorage storage, Object key, Object value,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interop,
-                        @Cached(inline = false) GilNode gil,
+                        @Cached(inline = false) GilNode.Interop gil,
                         @Cached PRaiseNode raiseNode) {
             var dict = storage.foreignDict;
-            gil.release(true);
+            PythonContext context = PythonContext.get(inliningTarget);
+            gil.release(context, true);
             try {
                 interop.writeHashEntry(dict, key, value);
             } catch (UnknownKeyException e) {
@@ -165,7 +169,7 @@ public final class ForeignHashingStorage extends HashingStorage {
             } catch (UnsupportedTypeException e) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.TYPE_P_NOT_SUPPORTED_BY_FOREIGN_OBJ, value);
             } finally {
-                gil.acquire();
+                gil.acquire(context, inliningTarget);
             }
         }
     }
@@ -180,11 +184,11 @@ public final class ForeignHashingStorage extends HashingStorage {
         @Specialization
         static boolean remove(Node inliningTarget, ForeignHashingStorage storage, Object key,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interop,
-                        @Cached(inline = false) GilNode gil,
+                        @Cached(inline = false) GilNode.Interop gil,
                         @Cached PRaiseNode raiseNode) {
             var dict = storage.foreignDict;
-
-            gil.release(true);
+            PythonContext context = PythonContext.get(inliningTarget);
+            gil.release(context, true);
             try {
                 interop.removeHashEntry(dict, key);
             } catch (UnknownKeyException e) {
@@ -192,7 +196,7 @@ public final class ForeignHashingStorage extends HashingStorage {
             } catch (UnsupportedMessageException e) {
                 throw raiseNode.raise(inliningTarget, AttributeError, ErrorMessages.ATTR_S_OF_S_OBJ_IS_NOT_REMOVABLE, key, dict);
             } finally {
-                gil.acquire();
+                gil.acquire(context, inliningTarget);
             }
 
             return true;
@@ -230,13 +234,14 @@ public final class ForeignHashingStorage extends HashingStorage {
         @Specialization
         static void clear(Node inliningTarget, ForeignHashingStorage storage,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interop,
-                        @Cached(inline = false) GilNode gil,
+                        @Cached(inline = false) GilNode.Interop gil,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary iteratorInterop,
                         @Cached PRaiseNode raiseNode) {
             // We cannot just remove while iterating otherwise we get e.g.
             // ConcurrentModificationException with java.util.HashMap
             // So we remove keys by batch of 32 keys.
-            gil.release(true);
+            PythonContext context = PythonContext.get(inliningTarget);
+            gil.release(context, true);
             try {
                 Object[] keys = new Object[32];
                 int i;
@@ -257,7 +262,7 @@ public final class ForeignHashingStorage extends HashingStorage {
             } catch (StopIterationException e) {
                 // continue
             } finally {
-                gil.acquire();
+                gil.acquire(context, inliningTarget);
             }
         }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -2468,6 +2468,24 @@ public final class PythonContext extends Python3Core {
                 throw ex;
             }
         }
+    }
+
+    /**
+     * Should not be called directly.
+     *
+     * @see GilNode
+     */
+    void releaseGilAroundForeignCall() {
+        if (!getLanguage().shouldGilBeLockedDuringForeignCalls().get()[0]) {
+            releaseGil();
+        }
+    }
+
+    public boolean setGilLockedDuringForeignCalls(boolean lock) {
+        boolean[] current = getLanguage().shouldGilBeLockedDuringForeignCalls().get();
+        boolean old = current[0];
+        current[0] = lock;
+        return old;
     }
 
     /**

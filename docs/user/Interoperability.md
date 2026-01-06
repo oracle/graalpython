@@ -121,6 +121,28 @@ See the [Interop Types to Python](#interop-types-to-python) section for more int
 The _polyglot_ API allows non-JVM specific interactions with other languages from Python scripts.
 This includes all interactions with dynamic languages supported via the [Truffle framework](https://www.graalvm.org/latest/graalvm-as-a-platform/language-implementation-framework/), including JavaScript and Ruby.
 
+## Multi-threading and other languages
+
+GraalPy implements the Python global interpreter lock (GIL), which prevents any two threads from executing Python code at the same instant.
+When methods in other languages are called from Python, no Python code is running while the other language executes.
+To give other Python threads a chance to run at this point in time, GraalPy releases the GIL around such foreign method calls by default.
+This (un)locking of the GIL can impact performance negatively if the foreign code runs only for a very short while, however, so this behavior can be controlled per dynamic scope using Python context managers.
+
+```python
+class JavaFile(io.FileIO):
+    def write(self, obj):
+        # Unlock the GIL when doing IO in Java
+        with polyglot.gil_locked_during_interop(False):
+            self.java_file.write(obj)
+
+with polyglot.gil_locked_during_interop(True):
+    # Keep the GIL locked when accessing Java maps, because those method calls will return very quickly
+    some_file.write(java_map.get(key1) + java_map.get(key2))
+```
+
+Beware of always keeping the GIL locked.
+That may lead to deadlocks if the foreign language attempts to wait on another thread of execution, and that thread tries to call back into Python.
+
 ### Installing other dynamic languages
 
 To use other languages, like JavaScript, you need to add their Maven dependencies to your project.
@@ -404,7 +426,7 @@ package org.example;
 class MyJavaClass {
       private int x;
       private int y;
-      
+
       public MyJavaClass(int x, int y) {
          this.x = x;
          this.y = y;
@@ -424,7 +446,7 @@ The following snippet sets up the Java environment and makes the object availabl
 
 ```java
 import org.example.MyJavaClass;
-        
+
 class Main {
 
    public static void main(String[] args) {
@@ -463,11 +485,11 @@ print(type(my_java_object).mro()) # [polyglot.Java_org.example.MyJavaClass_gener
 class MyPythonClassTwo:
    def get_tuple(self):
       return (self.getY(), self.getX())
-   
+
    def __str__(self):
       return f"MyJavaInstance(x={self.getX()}, y={self.getY()})"
 
-# If 'allow_method_overwrites=True' is not given, this would lead to an error due to the method conflict of 'get_tuple'  
+# If 'allow_method_overwrites=True' is not given, this would lead to an error due to the method conflict of 'get_tuple'
 register_interop_type(foreign_class, MyPythonClassTwo, allow_method_overwrites=True)
 
 # A newly registered class will be before already registered classes in the mro.

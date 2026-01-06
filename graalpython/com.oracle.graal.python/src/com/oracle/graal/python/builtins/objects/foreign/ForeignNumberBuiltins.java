@@ -91,6 +91,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -140,61 +141,69 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "lib.isBoolean(obj)")
         boolean doBool(Object obj,
+                        @Bind Node inliningTarget,
                         @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Shared @Cached(inline = false) GilNode gil) {
-            gil.release(true);
+                        @Shared @Cached(inline = false) GilNode.Interop gil) {
+            PythonContext context = PythonContext.get(inliningTarget);
+            gil.release(context, true);
             try {
                 return lib.asBoolean(obj);
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             } finally {
-                gil.acquire();
+                gil.acquire(context, inliningTarget);
             }
         }
 
         @Specialization(guards = "lib.fitsInLong(obj)")
         long doLong(Object obj,
+                        @Bind Node inliningTarget,
                         @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Shared @Cached(inline = false) GilNode gil) {
+                        @Shared @Cached(inline = false) GilNode.Interop gil) {
             assert !lib.isBoolean(obj);
-            gil.release(true);
+            PythonContext context = PythonContext.get(inliningTarget);
+            gil.release(context, true);
             try {
                 return lib.asLong(obj);
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             } finally {
-                gil.acquire();
+                gil.acquire(context, inliningTarget);
             }
         }
 
         @Specialization(guards = {"!lib.fitsInLong(obj)", "lib.fitsInBigInteger(obj)"})
         PInt doBigInt(Object obj,
+                        @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Shared @Cached(inline = false) GilNode gil) {
+                        @Shared @Cached(inline = false) GilNode.Interop gil) {
             assert !lib.isBoolean(obj);
-            gil.release(true);
+            PythonContext context = PythonContext.get(inliningTarget);
+            gil.release(context, true);
             try {
                 return PFactory.createInt(language, lib.asBigInteger(obj));
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             } finally {
-                gil.acquire();
+                gil.acquire(context, inliningTarget);
             }
         }
 
         @Specialization(guards = {"!lib.fitsInLong(obj)", "!lib.fitsInBigInteger(obj)", "lib.fitsInDouble(obj)"})
         double doDouble(Object obj,
+                        @Bind Node inliningTarget,
                         @Shared @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Shared @Cached(inline = false) GilNode gil) {
+                        @Shared @Cached(inline = false) GilNode.Interop gil) {
             assert !lib.isBoolean(obj);
-            gil.release(true);
+            PythonContext context = PythonContext.get(inliningTarget);
+            gil.release(context, true);
             try {
                 return lib.asDouble(obj);
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             } finally {
-                gil.acquire();
+                gil.acquire(context, inliningTarget);
             }
         }
 
@@ -328,10 +337,12 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
     abstract static class BoolNode extends NbBoolBuiltinNode {
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         static boolean bool(Object receiver,
+                        @Bind Node inliningTarget,
                         @CachedLibrary("receiver") InteropLibrary lib,
-                        @Cached GilNode gil) {
+                        @Cached GilNode.Interop gil) {
             assert !lib.isBoolean(receiver);
-            gil.release(true);
+            PythonContext context = PythonContext.get(inliningTarget);
+            gil.release(context, true);
             try {
                 if (lib.fitsInLong(receiver)) {
                     return lib.asLong(receiver) != 0;
@@ -346,7 +357,7 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             } finally {
-                gil.acquire();
+                gil.acquire(context, inliningTarget);
             }
         }
     }
@@ -647,9 +658,10 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode,
                         @CachedLibrary("object") InteropLibrary lib,
-                        @Cached GilNode gil) {
+                        @Cached GilNode.Interop gil) {
             assert !lib.isBoolean(object);
-            gil.release(true);
+            PythonContext context = PythonContext.get(inliningTarget);
+            gil.release(context, true);
             try {
                 if (lib.fitsInInt(object)) {
                     try {
@@ -678,7 +690,7 @@ public final class ForeignNumberBuiltins extends PythonBuiltins {
                 }
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, object);
             } finally {
-                gil.acquire();
+                gil.acquire(context, inliningTarget);
             }
         }
     }
