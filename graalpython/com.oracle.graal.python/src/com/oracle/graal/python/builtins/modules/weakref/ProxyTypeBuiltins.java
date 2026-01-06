@@ -65,19 +65,41 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscript;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompare;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSetAttr;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFun;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqAssItem;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains;
 import com.oracle.graal.python.lib.PyIterCheckNode;
 import com.oracle.graal.python.lib.PyIterNextNode;
 import com.oracle.graal.python.lib.PyNumberAbsoluteNode;
+import com.oracle.graal.python.lib.PyNumberAddNode;
+import com.oracle.graal.python.lib.PyNumberAndNode;
 import com.oracle.graal.python.lib.PyNumberDivmodNode;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
+import com.oracle.graal.python.lib.PyNumberFloorDivideNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceAddNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceFloorDivideNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceLshiftNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceMatrixMultiplyNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceMultiplyNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceOrNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceRemainderNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceRshiftNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceSubtractNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceTrueDivideNode;
+import com.oracle.graal.python.lib.PyNumberInPlaceXorNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyNumberInvertNode;
 import com.oracle.graal.python.lib.PyNumberLongNode;
+import com.oracle.graal.python.lib.PyNumberLshiftNode;
+import com.oracle.graal.python.lib.PyNumberMatrixMultiplyNode;
+import com.oracle.graal.python.lib.PyNumberMultiplyNode;
 import com.oracle.graal.python.lib.PyNumberNegativeNode;
+import com.oracle.graal.python.lib.PyNumberOrNode;
+import com.oracle.graal.python.lib.PyNumberPositiveNode;
 import com.oracle.graal.python.lib.PyNumberPowerNode;
+import com.oracle.graal.python.lib.PyNumberRemainderNode;
+import com.oracle.graal.python.lib.PyNumberRshiftNode;
+import com.oracle.graal.python.lib.PyNumberSubtractNode;
+import com.oracle.graal.python.lib.PyNumberTrueDivideNode;
+import com.oracle.graal.python.lib.PyNumberXorNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetItem;
@@ -119,40 +141,13 @@ import java.util.List;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ReferenceError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_BOOL;
-import static com.oracle.graal.python.nodes.BuiltinNames.T_ROUND;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___BYTES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REVERSED__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___ROUND__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ADD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___AND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BYTES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___FLOORDIV__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IADD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IAND__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IFLOORDIV__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ILSHIFT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IMATMUL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IMOD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IMUL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IOR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IRSHIFT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ISUB__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___ITRUEDIV__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___IXOR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___LSHIFT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MATMUL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MOD__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___MUL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___OR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___POS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REVERSED__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___RSHIFT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SUB__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___TRUEDIV__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___XOR__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PProxyType)
@@ -424,10 +419,10 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
         @Specialization
         static Object add(VirtualFrame frame, Object left, Object right,
                         @Bind Node inliningTarget,
-                        @Cached PyObjectCallMethodObjArgs callMethod) {
+                        @Cached PyNumberAddNode addNode) {
             Object leftUnwrapped = unwrap(left, inliningTarget);
             Object rightUnwrapped = unwrap(right, inliningTarget);
-            return callMethod.execute(frame, inliningTarget, leftUnwrapped, T___ADD__, rightUnwrapped);
+            return addNode.execute(frame, leftUnwrapped, rightUnwrapped);
         }
     }
 
@@ -438,10 +433,10 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
         @Specialization
         static Object iadd(VirtualFrame frame, PProxyType left, Object right,
                         @Bind Node inliningTarget,
-                        @Cached PyObjectCallMethodObjArgs callMethod) {
+                        @Cached PyNumberInPlaceAddNode addNode) {
             Object leftUnwrapped = unwrap(left, inliningTarget);
             Object rightUnwrapped = unwrap(right, inliningTarget);
-            return callMethod.execute(frame, inliningTarget, leftUnwrapped, T___IADD__, rightUnwrapped);
+            return addNode.execute(frame, leftUnwrapped, rightUnwrapped);
         }
     }
 
@@ -452,10 +447,10 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
         @Specialization
         static Object sub(VirtualFrame frame, Object left, Object right,
                         @Bind Node inliningTarget,
-                        @Cached PyObjectCallMethodObjArgs callMethod) {
+                        @Cached PyNumberSubtractNode subtractNode) {
             Object leftUnwrapped = unwrap(left, inliningTarget);
             Object rightUnwrapped = unwrap(right, inliningTarget);
-            return callMethod.execute(frame, inliningTarget, leftUnwrapped, T___SUB__, rightUnwrapped);
+            return subtractNode.execute(frame, leftUnwrapped, rightUnwrapped);
         }
     }
 
@@ -466,10 +461,10 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
         @Specialization
         static Object isub(VirtualFrame frame, PProxyType left, Object right,
                         @Bind Node inliningTarget,
-                        @Cached PyObjectCallMethodObjArgs callMethod) {
+                        @Cached PyNumberInPlaceSubtractNode subtractNode) {
             Object leftUnwrapped = unwrap(left, inliningTarget);
             Object rightUnwrapped = unwrap(right, inliningTarget);
-            return callMethod.execute(frame, inliningTarget, leftUnwrapped, T___ISUB__, rightUnwrapped);
+            return subtractNode.execute(frame, leftUnwrapped, rightUnwrapped);
         }
     }
 
@@ -480,10 +475,10 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
         @Specialization
         static Object mul(VirtualFrame frame, Object left, Object right,
                         @Bind Node inliningTarget,
-                        @Cached PyObjectCallMethodObjArgs callMethod) {
+                        @Cached PyNumberMultiplyNode multiplyNode) {
             Object leftUnwrapped = unwrap(left, inliningTarget);
             Object rightUnwrapped = unwrap(right, inliningTarget);
-            return callMethod.execute(frame, inliningTarget, leftUnwrapped, T___MUL__, rightUnwrapped);
+            return multiplyNode.execute(frame, leftUnwrapped, rightUnwrapped);
         }
     }
 
@@ -494,10 +489,10 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
         @Specialization
         static Object imul(VirtualFrame frame, PProxyType left, Object right,
                         @Bind Node inliningTarget,
-                        @Cached PyObjectCallMethodObjArgs callMethod) {
+                        @Cached PyNumberInPlaceMultiplyNode multiplyNode) {
             Object leftUnwrapped = unwrap(left, inliningTarget);
             Object rightUnwrapped = unwrap(right, inliningTarget);
-            return callMethod.execute(frame, inliningTarget, leftUnwrapped, T___IMUL__, rightUnwrapped);
+            return multiplyNode.execute(frame, leftUnwrapped, rightUnwrapped);
         }
     }
 
@@ -508,10 +503,10 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
         @Specialization
         static Object matmul(VirtualFrame frame, Object left, Object right,
                         @Bind Node inliningTarget,
-                        @Cached PyObjectCallMethodObjArgs callMethod) {
+                        @Cached PyNumberMatrixMultiplyNode matrixMultiplyNode) {
             Object leftUnwrapped = unwrap(left, inliningTarget);
             Object rightUnwrapped = unwrap(right, inliningTarget);
-            return callMethod.execute(frame, inliningTarget, leftUnwrapped, T___MATMUL__, rightUnwrapped);
+            return matrixMultiplyNode.execute(frame, leftUnwrapped, rightUnwrapped);
         }
     }
 
@@ -522,10 +517,10 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
         @Specialization
         static Object imatmul(VirtualFrame frame, PProxyType left, Object right,
                         @Bind Node inliningTarget,
-                        @Cached PyObjectCallMethodObjArgs callMethod) {
+                        @Cached PyNumberInPlaceMatrixMultiplyNode matrixMultiplyNode) {
             Object leftUnwrapped = unwrap(left, inliningTarget);
             Object rightUnwrapped = unwrap(right, inliningTarget);
-            return callMethod.execute(frame, inliningTarget, leftUnwrapped, T___IMATMUL__, rightUnwrapped);
+            return matrixMultiplyNode.execute(frame, leftUnwrapped, rightUnwrapped);
         }
     }
 
@@ -536,10 +531,10 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
         @Specialization
         static Object truediv(VirtualFrame frame, Object left, Object right,
                         @Bind Node inliningTarget,
-                        @Cached PyObjectCallMethodObjArgs callMethod) {
+                        @Cached PyNumberTrueDivideNode trueDivideNode) {
             Object leftUnwrapped = unwrap(left, inliningTarget);
             Object rightUnwrapped = unwrap(right, inliningTarget);
-            return callMethod.execute(frame, inliningTarget, leftUnwrapped, T___TRUEDIV__, rightUnwrapped);
+            return trueDivideNode.execute(frame, leftUnwrapped, rightUnwrapped);
         }
     }
 
@@ -550,10 +545,10 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
         @Specialization
         static Object itruediv(VirtualFrame frame, PProxyType left, Object right,
                         @Bind Node inliningTarget,
-                        @Cached PyObjectCallMethodObjArgs callMethod) {
+                        @Cached PyNumberInPlaceTrueDivideNode trueDivideNode) {
             Object leftUnwrapped = unwrap(left, inliningTarget);
             Object rightUnwrapped = unwrap(right, inliningTarget);
-            return callMethod.execute(frame, inliningTarget, leftUnwrapped, T___ITRUEDIV__, rightUnwrapped);
+            return trueDivideNode.execute(frame, leftUnwrapped, rightUnwrapped);
         }
     }
 
@@ -564,10 +559,10 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
         @Specialization
         static Object floordiv(VirtualFrame frame, Object left, Object right,
                         @Bind Node inliningTarget,
-                        @Cached PyObjectCallMethodObjArgs callMethod) {
+                        @Cached PyNumberFloorDivideNode floorDivNode) {
             Object leftUnwrapped = unwrap(left, inliningTarget);
             Object rightUnwrapped = unwrap(right, inliningTarget);
-            return callMethod.execute(frame, inliningTarget, leftUnwrapped, T___FLOORDIV__, rightUnwrapped);
+            return floorDivNode.execute(frame, leftUnwrapped, rightUnwrapped);
         }
     }
 
@@ -578,10 +573,10 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
         @Specialization
         static Object ifloordiv(VirtualFrame frame, PProxyType left, Object right,
                         @Bind Node inliningTarget,
-                        @Cached PyObjectCallMethodObjArgs callMethod) {
+                        @Cached PyNumberInPlaceFloorDivideNode floorDivNode) {
             Object leftUnwrapped = unwrap(left, inliningTarget);
             Object rightUnwrapped = unwrap(right, inliningTarget);
-            return callMethod.execute(frame, inliningTarget, leftUnwrapped, T___IFLOORDIV__, rightUnwrapped);
+            return floorDivNode.execute(frame, leftUnwrapped, rightUnwrapped);
         }
     }
 
@@ -592,10 +587,10 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
         @Specialization
         static Object mod(VirtualFrame frame, Object left, Object right,
                         @Bind Node inliningTarget,
-                        @Cached PyObjectCallMethodObjArgs callMethod) {
+                        @Cached PyNumberRemainderNode remainderNode) {
             Object leftUnwrapped = unwrap(left, inliningTarget);
             Object rightUnwrapped = unwrap(right, inliningTarget);
-            return callMethod.execute(frame, inliningTarget, leftUnwrapped, T___MOD__, rightUnwrapped);
+            return remainderNode.execute(frame, leftUnwrapped, rightUnwrapped);
         }
     }
 
@@ -606,10 +601,10 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
         @Specialization
         static Object imod(VirtualFrame frame, PProxyType left, Object right,
                         @Bind Node inliningTarget,
-                        @Cached PyObjectCallMethodObjArgs callMethod) {
+                        @Cached PyNumberInPlaceRemainderNode remainderNode) {
             Object leftUnwrapped = unwrap(left, inliningTarget);
             Object rightUnwrapped = unwrap(right, inliningTarget);
-            return callMethod.execute(frame, inliningTarget, leftUnwrapped, T___IMOD__, rightUnwrapped);
+            return remainderNode.execute(frame, leftUnwrapped, rightUnwrapped);
         }
     }
 
@@ -651,10 +646,10 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
         @Specialization
         static Object lshift(VirtualFrame frame, Object left, Object right,
                         @Bind Node inliningTarget,
-                        @Cached PyObjectCallMethodObjArgs callMethod) {
+                        @Cached PyNumberLshiftNode lshiftNode) {
             Object leftUnwrapped = unwrap(left, inliningTarget);
             Object rightUnwrapped = unwrap(right, inliningTarget);
-            return callMethod.execute(frame, inliningTarget, leftUnwrapped, T___LSHIFT__, rightUnwrapped);
+            return lshiftNode.execute(frame, leftUnwrapped, rightUnwrapped);
         }
     }
 
@@ -665,10 +660,10 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
         @Specialization
         static Object ilshift(VirtualFrame frame, PProxyType left, Object right,
                         @Bind Node inliningTarget,
-                        @Cached PyObjectCallMethodObjArgs callMethod) {
+                        @Cached PyNumberInPlaceLshiftNode lshiftNode) {
             Object leftUnwrapped = unwrap(left, inliningTarget);
             Object rightUnwrapped = unwrap(right, inliningTarget);
-            return callMethod.execute(frame, inliningTarget, leftUnwrapped, T___ILSHIFT__, rightUnwrapped);
+            return lshiftNode.execute(frame, leftUnwrapped, rightUnwrapped);
         }
     }
 
@@ -679,10 +674,10 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
         @Specialization
         static Object rshift(VirtualFrame frame, Object left, Object right,
                         @Bind Node inliningTarget,
-                        @Cached PyObjectCallMethodObjArgs callMethod) {
+                        @Cached PyNumberRshiftNode rshiftNode) {
             Object leftUnwrapped = unwrap(left, inliningTarget);
             Object rightUnwrapped = unwrap(right, inliningTarget);
-            return callMethod.execute(frame, inliningTarget, leftUnwrapped, T___RSHIFT__, rightUnwrapped);
+            return rshiftNode.execute(frame, leftUnwrapped, rightUnwrapped);
         }
     }
 
@@ -693,10 +688,10 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
         @Specialization
         static Object irshift(VirtualFrame frame, PProxyType left, Object right,
                         @Bind Node inliningTarget,
-                        @Cached PyObjectCallMethodObjArgs callMethod) {
+                        @Cached PyNumberInPlaceRshiftNode rshiftNode) {
             Object leftUnwrapped = unwrap(left, inliningTarget);
             Object rightUnwrapped = unwrap(right, inliningTarget);
-            return callMethod.execute(frame, inliningTarget, leftUnwrapped, T___IRSHIFT__, rightUnwrapped);
+            return rshiftNode.execute(frame, leftUnwrapped, rightUnwrapped);
         }
     }
 
@@ -707,10 +702,10 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
         @Specialization
         static Object and(VirtualFrame frame, Object left, Object right,
                         @Bind Node inliningTarget,
-                        @Cached PyObjectCallMethodObjArgs callMethod) {
+                        @Cached PyNumberAndNode andNode) {
             Object leftUnwrapped = unwrap(left, inliningTarget);
             Object rightUnwrapped = unwrap(right, inliningTarget);
-            return callMethod.execute(frame, inliningTarget, leftUnwrapped, T___AND__, rightUnwrapped);
+            return andNode.execute(frame, leftUnwrapped, rightUnwrapped);
         }
     }
 
@@ -721,10 +716,10 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
         @Specialization
         static Object iand(VirtualFrame frame, PProxyType left, Object right,
                         @Bind Node inliningTarget,
-                        @Cached PyObjectCallMethodObjArgs callMethod) {
+                        @Cached PyNumberInPlaceAddNode addNode) {
             Object leftUnwrapped = unwrap(left, inliningTarget);
             Object rightUnwrapped = unwrap(right, inliningTarget);
-            return callMethod.execute(frame, inliningTarget, leftUnwrapped, T___IAND__, rightUnwrapped);
+            return addNode.execute(frame, leftUnwrapped, rightUnwrapped);
         }
     }
 
@@ -735,10 +730,10 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
         @Specialization
         static Object xor(VirtualFrame frame, Object left, Object right,
                         @Bind Node inliningTarget,
-                        @Cached PyObjectCallMethodObjArgs callMethod) {
+                        @Cached PyNumberXorNode xorNode) {
             Object leftUnwrapped = unwrap(left, inliningTarget);
             Object rightUnwrapped = unwrap(right, inliningTarget);
-            return callMethod.execute(frame, inliningTarget, leftUnwrapped, T___XOR__, rightUnwrapped);
+            return xorNode.execute(frame, leftUnwrapped, rightUnwrapped);
         }
     }
 
@@ -749,10 +744,10 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
         @Specialization
         static Object ixor(VirtualFrame frame, PProxyType left, Object right,
                         @Bind Node inliningTarget,
-                        @Cached PyObjectCallMethodObjArgs callMethod) {
+                        @Cached PyNumberInPlaceXorNode xorNode) {
             Object leftUnwrapped = unwrap(left, inliningTarget);
             Object rightUnwrapped = unwrap(right, inliningTarget);
-            return callMethod.execute(frame, inliningTarget, leftUnwrapped, T___IXOR__, rightUnwrapped);
+            return xorNode.execute(frame, leftUnwrapped, rightUnwrapped);
         }
     }
 
@@ -763,10 +758,10 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
         @Specialization
         static Object or(VirtualFrame frame, Object left, Object right,
                         @Bind Node inliningTarget,
-                        @Cached PyObjectCallMethodObjArgs callMethod) {
+                        @Cached PyNumberOrNode orNode) {
             Object leftUnwrapped = unwrap(left, inliningTarget);
             Object rightUnwrapped = unwrap(right, inliningTarget);
-            return callMethod.execute(frame, inliningTarget, leftUnwrapped, T___OR__, rightUnwrapped);
+            return orNode.execute(frame, leftUnwrapped, rightUnwrapped);
         }
     }
 
@@ -777,10 +772,10 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
         @Specialization
         static Object ior(VirtualFrame frame, PProxyType left, Object right,
                         @Bind Node inliningTarget,
-                        @Cached PyObjectCallMethodObjArgs callMethod) {
+                        @Cached PyNumberInPlaceOrNode orNode) {
             Object leftUnwrapped = unwrap(left, inliningTarget);
             Object rightUnwrapped = unwrap(right, inliningTarget);
-            return callMethod.execute(frame, inliningTarget, leftUnwrapped, T___IOR__, rightUnwrapped);
+            return orNode.execute(frame, leftUnwrapped, rightUnwrapped);
         }
     }
 
@@ -804,9 +799,9 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
         @Specialization
         static Object positive(VirtualFrame frame, PProxyType self,
                         @Bind Node inliningTarget,
-                        @Cached PyObjectCallMethodObjArgs callMethod) {
+                        @Cached PyNumberPositiveNode positiveNode) {
             Object object = unwrap(self, inliningTarget);
-            return callMethod.execute(frame, inliningTarget, object, T___POS__);
+            return positiveNode.execute(frame, object);
         }
     }
 
