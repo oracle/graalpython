@@ -484,21 +484,12 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
     abstract static class AddNode extends TpSlotBinaryOp.BinaryOpBuiltinNode {
 
         @Specialization
-        static Object add(VirtualFrame frame, PProxyType left, Object right,
+        static Object add(VirtualFrame frame, Object left, Object right,
                         @Bind Node inliningTarget,
-                        @Cached @Shared PyObjectCallMethodObjArgs callMethod) {
+                        @Cached PyObjectCallMethodObjArgs callMethod) {
             Object leftUnwrapped = unwrap(left, inliningTarget);
             Object rightUnwrapped = unwrap(right, inliningTarget);
             return callMethod.execute(frame, inliningTarget, leftUnwrapped, T___ADD__, rightUnwrapped);
-        }
-
-        @Specialization
-        static Object radd(VirtualFrame frame, Object left, PProxyType right,
-                        @Bind Node inliningTarget,
-                        @Cached @Shared PyObjectCallMethodObjArgs callMethod) {
-            Object leftUnwrapped = unwrap(left, inliningTarget);
-            Object rightUnwrapped = unwrap(right, inliningTarget);
-            return callMethod.execute(frame, inliningTarget, rightUnwrapped, T___ADD__, leftUnwrapped);
         }
     }
 
@@ -521,21 +512,12 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
     abstract static class SubNode extends TpSlotBinaryOp.BinaryOpBuiltinNode {
 
         @Specialization
-        static Object sub(VirtualFrame frame, PProxyType left, Object right,
+        static Object sub(VirtualFrame frame, Object left, Object right,
                         @Bind Node inliningTarget,
-                        @Cached @Shared PyObjectCallMethodObjArgs callMethod) {
+                        @Cached PyObjectCallMethodObjArgs callMethod) {
             Object leftUnwrapped = unwrap(left, inliningTarget);
             Object rightUnwrapped = unwrap(right, inliningTarget);
             return callMethod.execute(frame, inliningTarget, leftUnwrapped, T___SUB__, rightUnwrapped);
-        }
-
-        @Specialization
-        static Object rsub(VirtualFrame frame, Object left, PProxyType right,
-                        @Bind Node inliningTarget,
-                        @Cached @Shared PyObjectCallMethodObjArgs callMethod) {
-            Object leftUnwrapped = unwrap(left, inliningTarget);
-            Object rightUnwrapped = unwrap(right, inliningTarget);
-            return callMethod.execute(frame, inliningTarget, rightUnwrapped, T___SUB__, leftUnwrapped);
         }
     }
 
@@ -558,21 +540,12 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
     abstract static class MulNode extends TpSlotBinaryOp.BinaryOpBuiltinNode {
 
         @Specialization
-        static Object mul(VirtualFrame frame, PProxyType left, Object right,
+        static Object mul(VirtualFrame frame, Object left, Object right,
                         @Bind Node inliningTarget,
-                        @Cached @Shared PyObjectCallMethodObjArgs callMethod) {
+                        @Cached PyObjectCallMethodObjArgs callMethod) {
             Object leftUnwrapped = unwrap(left, inliningTarget);
             Object rightUnwrapped = unwrap(right, inliningTarget);
             return callMethod.execute(frame, inliningTarget, leftUnwrapped, T___MUL__, rightUnwrapped);
-        }
-
-        @Specialization
-        static Object rmul(VirtualFrame frame, Object left, PProxyType right,
-                        @Bind Node inliningTarget,
-                        @Cached @Shared PyObjectCallMethodObjArgs callMethod) {
-            Object leftUnwrapped = unwrap(left, inliningTarget);
-            Object rightUnwrapped = unwrap(right, inliningTarget);
-            return callMethod.execute(frame, inliningTarget, rightUnwrapped, T___MUL__, leftUnwrapped);
         }
     }
 
@@ -621,21 +594,12 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
     abstract static class MatMulNode extends TpSlotBinaryOp.BinaryOpBuiltinNode {
 
         @Specialization
-        static Object matmul(VirtualFrame frame, PProxyType left, Object right,
+        static Object matmul(VirtualFrame frame, Object left, Object right,
                         @Bind Node inliningTarget,
-                        @Cached @Shared PyObjectCallMethodObjArgs callMethod) {
+                        @Cached PyObjectCallMethodObjArgs callMethod) {
             Object leftUnwrapped = unwrap(left, inliningTarget);
             Object rightUnwrapped = unwrap(right, inliningTarget);
             return callMethod.execute(frame, inliningTarget, leftUnwrapped, T___MATMUL__, rightUnwrapped);
-        }
-
-        @Specialization
-        static Object rmatmul(VirtualFrame frame, Object left, PProxyType right,
-                        @Bind Node inliningTarget,
-                        @Cached @Shared PyObjectCallMethodObjArgs callMethod) {
-            Object leftUnwrapped = unwrap(left, inliningTarget);
-            Object rightUnwrapped = unwrap(right, inliningTarget);
-            return callMethod.execute(frame, inliningTarget, rightUnwrapped, T___MATMUL__, leftUnwrapped);
         }
     }
 
@@ -658,21 +622,12 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
     abstract static class DivNode extends TpSlotBinaryOp.BinaryOpBuiltinNode {
 
         @Specialization
-        static Object truediv(VirtualFrame frame, PProxyType left, Object right,
+        static Object truediv(VirtualFrame frame, Object left, Object right,
                         @Bind Node inliningTarget,
-                        @Cached @Shared PyObjectCallMethodObjArgs callMethod) {
+                        @Cached PyObjectCallMethodObjArgs callMethod) {
             Object leftUnwrapped = unwrap(left, inliningTarget);
             Object rightUnwrapped = unwrap(right, inliningTarget);
             return callMethod.execute(frame, inliningTarget, leftUnwrapped, T___TRUEDIV__, rightUnwrapped);
-        }
-
-        @Specialization
-        static Object rtruediv(VirtualFrame frame, Object left, PProxyType right,
-                        @Bind Node inliningTarget,
-                        @Cached @Shared PyObjectCallMethodObjArgs callMethod) {
-            Object leftUnwrapped = unwrap(left, inliningTarget);
-            Object rightUnwrapped = unwrap(right, inliningTarget);
-            return callMethod.execute(frame, inliningTarget, rightUnwrapped, T___TRUEDIV__, leftUnwrapped);
         }
     }
 
@@ -695,21 +650,12 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
     abstract static class FloorDivNode extends TpSlotBinaryOp.BinaryOpBuiltinNode {
 
         @Specialization
-        static Object floordiv(VirtualFrame frame, PProxyType left, Object right,
+        static Object floordiv(VirtualFrame frame, Object left, Object right,
                         @Bind Node inliningTarget,
-                        @Cached @Shared PyObjectCallMethodObjArgs callMethod) {
+                        @Cached PyObjectCallMethodObjArgs callMethod) {
             Object leftUnwrapped = unwrap(left, inliningTarget);
             Object rightUnwrapped = unwrap(right, inliningTarget);
             return callMethod.execute(frame, inliningTarget, leftUnwrapped, T___FLOORDIV__, rightUnwrapped);
-        }
-
-        @Specialization
-        static Object rfloordiv(VirtualFrame frame, Object left, PProxyType right,
-                        @Bind Node inliningTarget,
-                        @Cached @Shared PyObjectCallMethodObjArgs callMethod) {
-            Object leftUnwrapped = unwrap(left, inliningTarget);
-            Object rightUnwrapped = unwrap(right, inliningTarget);
-            return callMethod.execute(frame, inliningTarget, rightUnwrapped, T___FLOORDIV__, leftUnwrapped);
         }
     }
 
@@ -732,21 +678,12 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
     public abstract static class ModNode extends TpSlotBinaryOp.BinaryOpBuiltinNode {
 
         @Specialization
-        static Object mod(VirtualFrame frame, PProxyType left, Object right,
+        static Object mod(VirtualFrame frame, Object left, Object right,
                         @Bind Node inliningTarget,
-                        @Cached @Shared PyObjectCallMethodObjArgs callMethod) {
+                        @Cached PyObjectCallMethodObjArgs callMethod) {
             Object leftUnwrapped = unwrap(left, inliningTarget);
             Object rightUnwrapped = unwrap(right, inliningTarget);
             return callMethod.execute(frame, inliningTarget, leftUnwrapped, T___MOD__, rightUnwrapped);
-        }
-
-        @Specialization
-        static Object rmod(VirtualFrame frame, Object left, PProxyType right,
-                        @Bind Node inliningTarget,
-                        @Cached @Shared PyObjectCallMethodObjArgs callMethod) {
-            Object leftUnwrapped = unwrap(left, inliningTarget);
-            Object rightUnwrapped = unwrap(right, inliningTarget);
-            return callMethod.execute(frame, inliningTarget, rightUnwrapped, T___MOD__, leftUnwrapped);
         }
     }
 
@@ -769,21 +706,12 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
     abstract static class DivModNode extends TpSlotBinaryOp.BinaryOpBuiltinNode {
 
         @Specialization
-        static Object divmod(VirtualFrame frame, PProxyType left, Object right,
+        static Object divmod(VirtualFrame frame, Object left, Object right,
                         @Bind Node inliningTarget,
-                        @Cached @Shared PyNumberDivmodNode divmodNode) {
+                        @Cached PyNumberDivmodNode divmodNode) {
             Object leftUnwrapped = unwrap(left, inliningTarget);
             Object rightUnwrapped = unwrap(right, inliningTarget);
             return divmodNode.execute(frame, inliningTarget, leftUnwrapped, rightUnwrapped);
-        }
-
-        @Specialization
-        static Object rdivmod(VirtualFrame frame, Object left, PProxyType right,
-                        @Bind Node inliningTarget,
-                        @Cached @Shared PyNumberDivmodNode divmodNode) {
-            Object leftUnwrapped = unwrap(left, inliningTarget);
-            Object rightUnwrapped = unwrap(right, inliningTarget);
-            return divmodNode.execute(frame, inliningTarget, rightUnwrapped, leftUnwrapped);
         }
     }
 
@@ -792,23 +720,13 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
     abstract static class PowerNode extends PythonTernaryBuiltinNode {
 
         @Specialization
-        static Object pow(VirtualFrame frame, PProxyType left, Object right, Object modObject,
+        static Object pow(VirtualFrame frame, Object left, Object right, Object modObject,
                         @Bind Node inliningTarget,
-                        @Cached @Shared PyNumberPowerNode power) {
+                        @Cached PyNumberPowerNode power) {
             Object leftUnwrapped = unwrap(left, inliningTarget);
             Object rightUnwrapped = unwrap(right, inliningTarget);
             Object mod = modObject == PNone.NO_VALUE ? PNone.NONE : modObject;
             return power.execute(frame, leftUnwrapped, rightUnwrapped, mod);
-        }
-
-        @Specialization
-        static Object rpow(VirtualFrame frame, Object left, PProxyType right, Object modObject,
-                        @Bind Node inliningTarget,
-                        @Cached @Shared PyNumberPowerNode power) {
-            Object leftUnwrapped = unwrap(left, inliningTarget);
-            Object rightUnwrapped = unwrap(right, inliningTarget);
-            Object mod = modObject == PNone.NO_VALUE ? PNone.NONE : modObject;
-            return power.execute(frame, rightUnwrapped, leftUnwrapped, mod);
         }
     }
 
@@ -819,21 +737,12 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
     abstract static class LShiftNode extends TpSlotBinaryOp.BinaryOpBuiltinNode {
 
         @Specialization
-        static Object lshift(VirtualFrame frame, PProxyType left, Object right,
+        static Object lshift(VirtualFrame frame, Object left, Object right,
                         @Bind Node inliningTarget,
-                        @Cached @Shared PyObjectCallMethodObjArgs callMethod) {
+                        @Cached PyObjectCallMethodObjArgs callMethod) {
             Object leftUnwrapped = unwrap(left, inliningTarget);
             Object rightUnwrapped = unwrap(right, inliningTarget);
             return callMethod.execute(frame, inliningTarget, leftUnwrapped, T___LSHIFT__, rightUnwrapped);
-        }
-
-        @Specialization
-        static Object rlshift(VirtualFrame frame, Object left, PProxyType right,
-                        @Bind Node inliningTarget,
-                        @Cached @Shared PyObjectCallMethodObjArgs callMethod) {
-            Object leftUnwrapped = unwrap(left, inliningTarget);
-            Object rightUnwrapped = unwrap(right, inliningTarget);
-            return callMethod.execute(frame, inliningTarget, rightUnwrapped, T___LSHIFT__, leftUnwrapped);
         }
     }
 
@@ -856,21 +765,12 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
     abstract static class RShiftNode extends TpSlotBinaryOp.BinaryOpBuiltinNode {
 
         @Specialization
-        static Object rshift(VirtualFrame frame, PProxyType left, Object right,
+        static Object rshift(VirtualFrame frame, Object left, Object right,
                         @Bind Node inliningTarget,
-                        @Cached @Shared PyObjectCallMethodObjArgs callMethod) {
+                        @Cached PyObjectCallMethodObjArgs callMethod) {
             Object leftUnwrapped = unwrap(left, inliningTarget);
             Object rightUnwrapped = unwrap(right, inliningTarget);
             return callMethod.execute(frame, inliningTarget, leftUnwrapped, T___RSHIFT__, rightUnwrapped);
-        }
-
-        @Specialization
-        static Object rrshift(VirtualFrame frame, Object left, PProxyType right,
-                        @Bind Node inliningTarget,
-                        @Cached @Shared PyObjectCallMethodObjArgs callMethod) {
-            Object leftUnwrapped = unwrap(left, inliningTarget);
-            Object rightUnwrapped = unwrap(right, inliningTarget);
-            return callMethod.execute(frame, inliningTarget, rightUnwrapped, T___RSHIFT__, leftUnwrapped);
         }
     }
 
@@ -893,21 +793,12 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
     abstract static class AndNode extends TpSlotBinaryOp.BinaryOpBuiltinNode {
 
         @Specialization
-        static Object and(VirtualFrame frame, PProxyType left, Object right,
+        static Object and(VirtualFrame frame, Object left, Object right,
                         @Bind Node inliningTarget,
-                        @Cached @Shared PyObjectCallMethodObjArgs callMethod) {
+                        @Cached PyObjectCallMethodObjArgs callMethod) {
             Object leftUnwrapped = unwrap(left, inliningTarget);
             Object rightUnwrapped = unwrap(right, inliningTarget);
             return callMethod.execute(frame, inliningTarget, leftUnwrapped, T___AND__, rightUnwrapped);
-        }
-
-        @Specialization
-        static Object rand(VirtualFrame frame, Object left, PProxyType right,
-                        @Bind Node inliningTarget,
-                        @Cached @Shared PyObjectCallMethodObjArgs callMethod) {
-            Object leftUnwrapped = unwrap(left, inliningTarget);
-            Object rightUnwrapped = unwrap(right, inliningTarget);
-            return callMethod.execute(frame, inliningTarget, rightUnwrapped, T___AND__, leftUnwrapped);
         }
     }
 
@@ -930,21 +821,12 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
     public abstract static class XorNode extends TpSlotBinaryOp.BinaryOpBuiltinNode {
 
         @Specialization
-        static Object xor(VirtualFrame frame, PProxyType left, Object right,
+        static Object xor(VirtualFrame frame, Object left, Object right,
                         @Bind Node inliningTarget,
-                        @Cached @Shared PyObjectCallMethodObjArgs callMethod) {
+                        @Cached PyObjectCallMethodObjArgs callMethod) {
             Object leftUnwrapped = unwrap(left, inliningTarget);
             Object rightUnwrapped = unwrap(right, inliningTarget);
             return callMethod.execute(frame, inliningTarget, leftUnwrapped, T___XOR__, rightUnwrapped);
-        }
-
-        @Specialization
-        static Object rxor(VirtualFrame frame, Object left, PProxyType right,
-                        @Bind Node inliningTarget,
-                        @Cached @Shared PyObjectCallMethodObjArgs callMethod) {
-            Object leftUnwrapped = unwrap(left, inliningTarget);
-            Object rightUnwrapped = unwrap(right, inliningTarget);
-            return callMethod.execute(frame, inliningTarget, rightUnwrapped, T___XOR__, leftUnwrapped);
         }
     }
 
@@ -967,21 +849,12 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
     public abstract static class OrNode extends TpSlotBinaryOp.BinaryOpBuiltinNode {
 
         @Specialization
-        static Object or(VirtualFrame frame, PProxyType left, Object right,
+        static Object or(VirtualFrame frame, Object left, Object right,
                         @Bind Node inliningTarget,
-                        @Cached @Shared PyObjectCallMethodObjArgs callMethod) {
+                        @Cached PyObjectCallMethodObjArgs callMethod) {
             Object leftUnwrapped = unwrap(left, inliningTarget);
             Object rightUnwrapped = unwrap(right, inliningTarget);
             return callMethod.execute(frame, inliningTarget, leftUnwrapped, T___OR__, rightUnwrapped);
-        }
-
-        @Specialization
-        static Object ror(VirtualFrame frame, Object left, PProxyType right,
-                        @Bind Node inliningTarget,
-                        @Cached @Shared PyObjectCallMethodObjArgs callMethod) {
-            Object leftUnwrapped = unwrap(left, inliningTarget);
-            Object rightUnwrapped = unwrap(right, inliningTarget);
-            return callMethod.execute(frame, inliningTarget, rightUnwrapped, T___OR__, leftUnwrapped);
         }
     }
 
