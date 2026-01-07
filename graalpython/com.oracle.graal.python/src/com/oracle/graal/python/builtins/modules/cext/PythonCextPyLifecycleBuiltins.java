@@ -49,8 +49,6 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnar
 import com.oracle.graal.python.nfi2.Nfi;
 import com.oracle.graal.python.nfi2.NfiDowncallSignature;
 import com.oracle.graal.python.nfi2.NfiType;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.util.ShutdownHook;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Specialization;
 
@@ -63,15 +61,15 @@ public final class PythonCextPyLifecycleBuiltins {
 
         @Specialization
         @TruffleBoundary
-        int doGeneric(long funcPtr) {
-            // TODO(NFI2) test this
-            getContext().registerAtexitHook(new ShutdownHook() {
-                @Override
-                @TruffleBoundary
-                public void call(PythonContext context) {
-                    CALLBACK_SIGNATURE.invoke(context.ensureNfiContext(), funcPtr);
-                }
-            });
+        int doGeneric(@SuppressWarnings("unused") long funcPtr) {
+            // TODO(NFI2) implement and test this once GR-72092 is fixed
+// getContext().registerAtexitHook(new ShutdownHook() {
+// @Override
+// @TruffleBoundary
+// public void call(PythonContext context) {
+// CALLBACK_SIGNATURE.invoke(context.ensureNfiContext(), funcPtr);
+// }
+// });
             return 0;
         }
     }
