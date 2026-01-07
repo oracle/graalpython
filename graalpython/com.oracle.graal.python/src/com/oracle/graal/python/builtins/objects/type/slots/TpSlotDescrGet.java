@@ -44,6 +44,8 @@ import static com.oracle.graal.python.builtins.objects.type.slots.BuiltinSlotWra
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GET__;
 
+import java.lang.ref.Reference;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -55,7 +57,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -93,8 +94,6 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
-
-import java.lang.ref.Reference;
 
 public abstract class TpSlotDescrGet {
     private TpSlotDescrGet() {
@@ -229,20 +228,18 @@ public abstract class TpSlotDescrGet {
                         @Cached(inline = false) PythonToNativeNode valueToNativeNode,
                         @Cached ExternalFunctionInvokeNode externalInvokeNode,
                         @Cached NativeToPythonInternalNode toPythonNode,
-                        @Cached(inline = false) PyObjectCheckFunctionResultNode checkResultNode,
-                        @Exclusive @Cached CoerceNativePointerToLongNode coerceNativePointerToLongNode) {
+                        @Cached(inline = false) PyObjectCheckFunctionResultNode checkResultNode) {
             PythonContext ctx = PythonContext.get(inliningTarget);
             PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, ctx);
             Object promotedSelf = ensurePythonObjectNode.execute(ctx, self, false);
             Object promotedObj = ensurePythonObjectNode.execute(ctx, obj, false);
             Object promotedValue = ensurePythonObjectNode.execute(ctx, value, false);
             try {
-                Object result = externalInvokeNode.call(frame, inliningTarget, threadState, C_API_TIMING, T___GET__, slot.callable, //
+                long result = (long) externalInvokeNode.call(frame, inliningTarget, threadState, C_API_TIMING, T___GET__, slot.callable, //
                                 selfToNativeNode.execute(promotedSelf), //
                                 objToNativeNode.execute(promotedObj), //
                                 valueToNativeNode.execute(promotedValue));
-                long lresult = coerceNativePointerToLongNode.execute(inliningTarget, result);
-                return checkResultNode.execute(threadState, T___GET__, toPythonNode.execute(inliningTarget, lresult, true));
+                return checkResultNode.execute(threadState, T___GET__, toPythonNode.execute(inliningTarget, result, true));
             } finally {
                 Reference.reachabilityFence(promotedSelf);
                 Reference.reachabilityFence(promotedObj);

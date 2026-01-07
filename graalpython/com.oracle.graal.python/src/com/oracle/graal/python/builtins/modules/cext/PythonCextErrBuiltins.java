@@ -156,7 +156,7 @@ public final class PythonCextErrBuiltins {
 
         @Specialization
         @SuppressWarnings("unused")
-        static Object doClear(@SuppressWarnings("unused") Object threadState, PNone val,
+        static Object doClear(@SuppressWarnings("unused") long threadState, PNone val,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context) {
             PythonLanguage lang = context.getLanguage(inliningTarget);
@@ -165,7 +165,7 @@ public final class PythonCextErrBuiltins {
         }
 
         @Specialization
-        static Object doFull(@SuppressWarnings("unused") Object threadState, PBaseException val,
+        static Object doFull(@SuppressWarnings("unused") long threadState, PBaseException val,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context) {
             PythonLanguage language = context.getLanguage(inliningTarget);
@@ -310,7 +310,7 @@ public final class PythonCextErrBuiltins {
     abstract static class _PyErr_GetHandledException extends CApiUnaryBuiltinNode {
 
         @Specialization
-        static Object get(@SuppressWarnings("unused") Object threadState,
+        static Object get(@SuppressWarnings("unused") long threadState,
                         @Bind Node inliningTarget,
                         @Cached GetCaughtExceptionNode getCaughtExceptionNode,
                         @Cached GetEscapedExceptionNode getEscapedExceptionNode) {

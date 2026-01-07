@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,11 +51,11 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_SSIZE_T_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyAsyncMethods;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyBufferProcsZZZ;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyBufferProcs;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyGetSetDef;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyMappingMethods;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyMemberDef;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyMethodDefZZZ;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyMethodDef;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyModuleDefSlot;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyNumberMethods;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
@@ -126,7 +126,7 @@ public enum CFields {
     PyModuleDef__m_name(ConstCharPtr),
     PyModuleDef__m_doc(ConstCharPtr),
     PyModuleDef__m_size(Py_ssize_t),
-    PyModuleDef__m_methods(PyMethodDefZZZ),
+    PyModuleDef__m_methods(PyMethodDef),
     PyModuleDef__m_slots(PyModuleDefSlot),
     PyModuleDef__m_traverse(traverseproc),
     PyModuleDef__m_clear(inquiry),
@@ -264,7 +264,7 @@ public enum CFields {
     PyTypeObject__tp_str(reprfunc),
     PyTypeObject__tp_getattro(getattrofunc),
     PyTypeObject__tp_setattro(setattrofunc),
-    PyTypeObject__tp_as_buffer(PyBufferProcsZZZ),
+    PyTypeObject__tp_as_buffer(PyBufferProcs),
     PyTypeObject__tp_flags(UNSIGNED_LONG),
     PyTypeObject__tp_doc(ConstCharPtr),
     PyTypeObject__tp_traverse(traverseproc),
@@ -273,7 +273,7 @@ public enum CFields {
     PyTypeObject__tp_weaklistoffset(Py_ssize_t),
     PyTypeObject__tp_iter(getiterfunc),
     PyTypeObject__tp_iternext(iternextfunc),
-    PyTypeObject__tp_methods(PyMethodDefZZZ),
+    PyTypeObject__tp_methods(PyMethodDef),
     PyTypeObject__tp_members(PyMemberDef),
     PyTypeObject__tp_getset(PyGetSetDef),
     PyTypeObject__tp_base(PyTypeObject),
@@ -300,7 +300,7 @@ public enum CFields {
     PyHeapTypeObject__as_number(PyNumberMethods),
     PyHeapTypeObject__as_mapping(PyMappingMethods),
     PyHeapTypeObject__as_sequence(PySequenceMethods),
-    PyHeapTypeObject__as_buffer(PyBufferProcsZZZ),
+    PyHeapTypeObject__as_buffer(PyBufferProcs),
     PyHeapTypeObject__ht_name(PyObject),
     PyHeapTypeObject__ht_slots(PyObject),
     PyHeapTypeObject__ht_qualname(PyObject),

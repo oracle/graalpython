@@ -167,7 +167,7 @@ public final class CApiContext extends CExtContext {
     /**
      * NFI signature for Python module init functions (i.e. {@code "PyInit_modname"}).
      */
-    private static final NfiDowncallSignature MODINIT_SIGNATURE = Nfi.createDowncallSignature(NfiType.POINTER);
+    private static final NfiDowncallSignature MODINIT_SIGNATURE = Nfi.createDowncallSignature(NfiType.RAW_POINTER);
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(LOGGER_CAPI_NAME);
     public static final TruffleLogger GC_LOGGER = PythonLanguage.getLogger(CApiContext.LOGGER_CAPI_NAME + ".gc");
@@ -194,7 +194,7 @@ public final class CApiContext extends CExtContext {
     /**
      * Thread local storage for PyThread_tss_* APIs
      */
-    private final ConcurrentHashMap<Long, ThreadLocal<Object>> tssStorage = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Long, ThreadLocal<Long>> tssStorage = new ConcurrentHashMap<>();
     /**
      * Next key that will be allocated byt PyThread_tss_create
      */
@@ -403,17 +403,17 @@ public final class CApiContext extends CExtContext {
     }
 
     @TruffleBoundary
-    public Object tssGet(long key) {
-        ThreadLocal<Object> local = tssStorage.get(key);
+    public long tssGet(long key) {
+        ThreadLocal<Long> local = tssStorage.get(key);
         if (local != null) {
             return local.get();
         }
-        return null;
+        return NULLPTR;
     }
 
     @TruffleBoundary
-    public void tssSet(long key, Object object) {
-        tssStorage.computeIfAbsent(key, (k) -> new ThreadLocal<>()).set(object);
+    public void tssSet(long key, long ptr) {
+        tssStorage.computeIfAbsent(key, (k) -> new ThreadLocal<>()).set(ptr);
     }
 
     @TruffleBoundary
@@ -593,12 +593,12 @@ public final class CApiContext extends CExtContext {
     }
 
     @SuppressWarnings("unused")
-    public void trackObject(Object ptr, PFrame.Reference curFrame, TruffleString clazzName) {
+    public void trackObject(long ptr, PFrame.Reference curFrame, TruffleString clazzName) {
         // TODO(fa): implement tracking of container objects for cycle detection
     }
 
     @SuppressWarnings("unused")
-    public void untrackObject(Object ptr, PFrame.Reference curFrame, TruffleString clazzName) {
+    public void untrackObject(long ptr, PFrame.Reference curFrame, TruffleString clazzName) {
         // TODO(fa): implement untracking of container objects
     }
 
@@ -1201,9 +1201,9 @@ public final class CApiContext extends CExtContext {
         if (pyinitFunc == 0L) {
             throw new ImportException(null, spec.name, spec.path, ErrorMessages.NO_FUNCTION_FOUND, "", initFuncName, spec.path);
         }
-        Object nativeResult = MODINIT_SIGNATURE.invoke(context.ensureNfiContext(), pyinitFunc);
+        long nativeResult = (long) MODINIT_SIGNATURE.invoke(context.ensureNfiContext(), pyinitFunc);
 
-        ExternalFunctionNodesFactory.DefaultCheckFunctionResultNodeGen.getUncached().execute(context, initFuncName, nativeResult);
+        ExternalFunctionNodesFactory.CheckRawPointerFunctionResultNodeGen.getUncached().execute(context, initFuncName, nativeResult);
 
         Object result = NativeToPythonNode.executeUncached(nativeResult);
         if (!(result instanceof PythonModule)) {

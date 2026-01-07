@@ -43,6 +43,8 @@ package com.oracle.graal.python.builtins.objects.type.slots;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEXT__;
 
+import java.lang.ref.Reference;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
@@ -54,9 +56,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeRawNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.type.slots.NodeFactoryUtils.WrapperNodeFactory;
@@ -77,7 +78,6 @@ import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -87,8 +87,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
-
-import java.lang.ref.Reference;
 
 public final class TpSlotIterNext {
     private TpSlotIterNext() {
@@ -193,19 +191,17 @@ public final class TpSlotIterNext {
         @Specialization
         static Object callNative(VirtualFrame frame, Node inliningTarget, TpSlotCExtNative slot, Object self,
                         @Cached GetThreadStateNode getThreadStateNode,
-                        @Cached(inline = false) PythonToNativeNode toNativeNode,
+                        @Cached(inline = false) PythonToNativeRawNode toNativeNode,
                         @Cached EnsurePythonObjectNode ensurePythonObjectNode,
                         @Cached ExternalFunctionInvokeNode externalInvokeNode,
                         @Cached NativeToPythonInternalNode toPythonNode,
-                        @Cached CExtCommonNodes.ReadAndClearNativeException readAndClearNativeException,
-                        @Exclusive @Cached CoerceNativePointerToLongNode coerceNativePointerToLongNode) {
+                        @Cached CExtCommonNodes.ReadAndClearNativeException readAndClearNativeException) {
             PythonContext ctx = PythonContext.get(inliningTarget);
             PythonThreadState state = getThreadStateNode.execute(inliningTarget, ctx);
             Object promotedSelf = ensurePythonObjectNode.execute(ctx, self, false);
             try {
-                Object nativeResult = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T___NEXT__, slot.callable, toNativeNode.execute(promotedSelf));
-                long lresult = coerceNativePointerToLongNode.execute(inliningTarget, nativeResult);
-                Object pythonResult = toPythonNode.execute(inliningTarget, lresult, true);
+                long nativeResult = (long) externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T___NEXT__, slot.callable, toNativeNode.execute(promotedSelf));
+                Object pythonResult = toPythonNode.execute(inliningTarget, nativeResult, true);
                 if (pythonResult == PNone.NO_VALUE) {
                     Object currentException = readAndClearNativeException.execute(inliningTarget, state);
                     if (currentException != PNone.NO_VALUE) {

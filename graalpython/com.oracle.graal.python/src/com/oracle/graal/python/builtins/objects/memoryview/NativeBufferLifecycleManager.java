@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.memoryview;
 
+import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
+
 /**
  * Object for tracking lifetime of buffers inside memoryviews. The only purpose is to release the
  * underlying buffer when this object's export count goes to 0 or it gets garbage collected. Should
@@ -57,10 +59,10 @@ public abstract class NativeBufferLifecycleManager extends BufferLifecycleManage
      */
     public static final class NativeBufferLifecycleManagerFromType extends NativeBufferLifecycleManager {
         /** Pointer to native Py_buffer */
-        final Object bufferStructPointer;
+        final long bufferStructPointer;
 
-        public NativeBufferLifecycleManagerFromType(Object bufferStructPointer) {
-            assert bufferStructPointer != null;
+        public NativeBufferLifecycleManagerFromType(long bufferStructPointer) {
+            assert bufferStructPointer != NULLPTR;
             this.bufferStructPointer = bufferStructPointer;
         }
     }

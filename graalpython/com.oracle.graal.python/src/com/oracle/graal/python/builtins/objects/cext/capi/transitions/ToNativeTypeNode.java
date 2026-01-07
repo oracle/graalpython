@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -177,7 +177,7 @@ public abstract class ToNativeTypeNode {
             writePtrField(mem, PyObject__ob_type, mem);
         } else {
             PythonAbstractObject promotedType = EnsurePythonObjectNode.executeUncached(ctx, GetClassNode.executeUncached(clazz));
-            writePtrField(mem, PyObject__ob_type, toNative.execute(promotedType));
+            writePtrField(mem, PyObject__ob_type, toNative.executeLong(promotedType));
         }
 
         long flags = getTypeFlagsNode.execute(clazz);
@@ -260,7 +260,7 @@ public abstract class ToNativeTypeNode {
         if (!isType) {
             // "object" base needs to be initialized explicitly in capi.c
             PythonAbstractObject promotedBase = EnsurePythonObjectNode.executeUncached(ctx, base);
-            writePtrField(mem, CFields.PyTypeObject__tp_base, toNative.execute(promotedBase));
+            writePtrField(mem, CFields.PyTypeObject__tp_base, toNative.executeLong(promotedBase));
         }
 
         // TODO(fa): we could cache the dict instance on the class' native wrapper
@@ -272,7 +272,7 @@ public abstract class ToNativeTypeNode {
             dict.setDictStorage(HashingStorageAddAllToOther.executeUncached(dictStorage, storage));
         }
         assert EnsurePythonObjectNode.doesNotNeedPromotion(dict);
-        writePtrField(mem, CFields.PyTypeObject__tp_dict, toNative.execute(dict));
+        writePtrField(mem, CFields.PyTypeObject__tp_dict, toNative.executeLong(dict));
 
         for (TpSlotMeta def : TpSlotMeta.VALUES) {
             if (!def.hasGroup() && def.hasNativeWrapperFactory()) {
@@ -289,15 +289,15 @@ public abstract class ToNativeTypeNode {
             clazz.basesTuple = PFactory.createTuple(language, GetBaseClassesNode.executeUncached(clazz));
         }
         assert EnsurePythonObjectNode.doesNotNeedPromotion(clazz.basesTuple);
-        writePtrField(mem, CFields.PyTypeObject__tp_bases, toNative.execute(clazz.basesTuple));
+        writePtrField(mem, CFields.PyTypeObject__tp_bases, toNative.executeLong(clazz.basesTuple));
         if (clazz.mroStore == null) {
             clazz.mroStore = PFactory.createTuple(language, GetMroStorageNode.executeUncached(clazz));
         }
         assert EnsurePythonObjectNode.doesNotNeedPromotion(clazz.mroStore);
-        writePtrField(mem, CFields.PyTypeObject__tp_mro, toNative.execute(clazz.mroStore));
+        writePtrField(mem, CFields.PyTypeObject__tp_mro, toNative.executeLong(clazz.mroStore));
         writePtrField(mem, CFields.PyTypeObject__tp_cache, NULLPTR);
         PDict subclasses = GetSubclassesNode.executeUncached(clazz);
-        writePtrField(mem, CFields.PyTypeObject__tp_subclasses, toNativeNewRef.execute(subclasses));
+        writePtrField(mem, CFields.PyTypeObject__tp_subclasses, toNativeNewRef.executeLong(subclasses));
         writePtrField(mem, CFields.PyTypeObject__tp_weaklist, NULLPTR);
         writePtrField(mem, CFields.PyTypeObject__tp_del, lookup(clazz, PyTypeObject__tp_del, HiddenAttr.DEL));
         writeIntField(mem, CFields.PyTypeObject__tp_version_tag, 0);
@@ -311,11 +311,11 @@ public abstract class ToNativeTypeNode {
             writePtrField(mem, CFields.PyHeapTypeObject__as_mapping, asMapping);
             writePtrField(mem, CFields.PyHeapTypeObject__as_sequence, asSequence);
             writePtrField(mem, CFields.PyHeapTypeObject__as_buffer, asBuffer);
-            writePtrField(mem, CFields.PyHeapTypeObject__ht_name, toNativeNewRef.execute(clazz.getName()));
-            writePtrField(mem, CFields.PyHeapTypeObject__ht_qualname, toNativeNewRef.execute(clazz.getQualName()));
+            writePtrField(mem, CFields.PyHeapTypeObject__ht_name, toNativeNewRef.executeLong(clazz.getName()));
+            writePtrField(mem, CFields.PyHeapTypeObject__ht_qualname, toNativeNewRef.executeLong(clazz.getQualName()));
             writePtrField(mem, CFields.PyHeapTypeObject__ht_module, NULLPTR);
             Object dunderSlots = clazz.getAttribute(SpecialAttributeNames.T___SLOTS__);
-            writePtrField(mem, CFields.PyHeapTypeObject__ht_slots, dunderSlots != PNone.NO_VALUE ? toNativeNewRef.execute(dunderSlots) : NULLPTR);
+            writePtrField(mem, CFields.PyHeapTypeObject__ht_slots, dunderSlots != PNone.NO_VALUE ? toNativeNewRef.executeLong(dunderSlots) : NULLPTR);
         }
     }
 

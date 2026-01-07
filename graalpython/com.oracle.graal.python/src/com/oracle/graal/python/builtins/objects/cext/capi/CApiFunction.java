@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -123,8 +123,8 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyInterpreterState;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyLongObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyMemberDef;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyMethodDefZZZ;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyModuleDefZZZ;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyMethodDef;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyModuleDef;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectConstPtr;
@@ -231,9 +231,9 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyCFunction_GetFlags", ret = Int, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyCFunction_GetFunction", ret = PY_C_FUNCTION, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyCFunction_GetSelf", ret = PyObject, args = {PyObject}, call = CImpl)
-    @CApiBuiltin(name = "PyCFunction_New", ret = PyObject, args = {PyMethodDefZZZ, PyObject}, call = CImpl)
-    @CApiBuiltin(name = "PyCFunction_NewEx", ret = PyObject, args = {PyMethodDefZZZ, PyObject, PyObject}, call = CImpl)
-    @CApiBuiltin(name = "PyCMethod_New", ret = PyObject, args = {PyMethodDefZZZ, PyObject, PyObject, PyTypeObject}, call = CImpl)
+    @CApiBuiltin(name = "PyCFunction_New", ret = PyObject, args = {PyMethodDef, PyObject}, call = CImpl)
+    @CApiBuiltin(name = "PyCFunction_NewEx", ret = PyObject, args = {PyMethodDef, PyObject, PyObject}, call = CImpl)
+    @CApiBuiltin(name = "PyCMethod_New", ret = PyObject, args = {PyMethodDef, PyObject, PyObject, PyTypeObject}, call = CImpl)
     @CApiBuiltin(name = "PyUnstable_Code_New", ret = PyCodeObject, args = {Int, Int, Int, Int, Int, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, PyObject, Int,
                     PyObject, PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyCodec_StrictErrors", ret = PyObject, args = {PyObject}, call = CImpl)
@@ -243,7 +243,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyComplex_RealAsDouble", ret = ArgDescriptor.Double, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyContextVar_Get", ret = Int, args = {PyObject, PyObject, PyObjectPtr}, call = CImpl)
     @CApiBuiltin(name = "PyDescr_IsData", ret = Int, args = {PyObject}, call = CImpl)
-    @CApiBuiltin(name = "PyDescr_NewClassMethod", ret = PyObject, args = {PyTypeObject, PyMethodDefZZZ}, call = CImpl)
+    @CApiBuiltin(name = "PyDescr_NewClassMethod", ret = PyObject, args = {PyTypeObject, PyMethodDef}, call = CImpl)
     @CApiBuiltin(name = "PyDescr_NewGetSet", ret = PyObject, args = {PyTypeObject, PyGetSetDef}, call = CImpl)
     @CApiBuiltin(name = "PyDict_DelItemString", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString}, call = CImpl)
     @CApiBuiltin(name = "PyDict_GetItemString", ret = PyObject, args = {PyObject, ConstCharPtrAsTruffleString}, call = CImpl)
@@ -357,14 +357,14 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyMethod_Function", ret = PyObject, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyMethod_Self", ret = PyObject, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyModuleDef_Init", ret = PyObject, args = {PYMODULEDEF_PTR}, call = CImpl)
-    @CApiBuiltin(name = "PyModule_AddFunctions", ret = Int, args = {PyObject, PyMethodDefZZZ}, call = CImpl)
+    @CApiBuiltin(name = "PyModule_AddFunctions", ret = Int, args = {PyObject, PyMethodDef}, call = CImpl)
     @CApiBuiltin(name = "PyModule_AddObject", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyModule_AddStringConstant", ret = Int, args = {PyObject, ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString}, call = CImpl)
     @CApiBuiltin(name = "PyModule_AddType", ret = Int, args = {PyObject, PyTypeObject}, call = CImpl)
     @CApiBuiltin(name = "PyModule_Create2", ret = PyObject, args = {PYMODULEDEF_PTR, Int}, call = CImpl)
-    @CApiBuiltin(name = "PyModule_FromDefAndSpec2", ret = PyObject, args = {PyModuleDefZZZ, PyObject, Int}, call = CImpl)
-    @CApiBuiltin(name = "PyModule_ExecDef", ret = Int, args = {PyObject, PyModuleDefZZZ}, call = CImpl)
-    @CApiBuiltin(name = "PyModule_GetDef", ret = PyModuleDefZZZ, args = {PyObject}, call = CImpl)
+    @CApiBuiltin(name = "PyModule_FromDefAndSpec2", ret = PyObject, args = {PyModuleDef, PyObject, Int}, call = CImpl)
+    @CApiBuiltin(name = "PyModule_ExecDef", ret = Int, args = {PyObject, PyModuleDef}, call = CImpl)
+    @CApiBuiltin(name = "PyModule_GetDef", ret = PyModuleDef, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyModule_GetDict", ret = PyObject, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyModule_GetFilename", ret = ConstCharPtrAsTruffleString, args = {PyObject}, call = CImpl)
     @CApiBuiltin(name = "PyModule_GetName", ret = ConstCharPtrAsTruffleString, args = {PyObject}, call = CImpl)
@@ -741,7 +741,7 @@ public final class CApiFunction {
     @CApiBuiltin(name = "PyContextVar_Reset", ret = Int, args = {PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyCoro_New", ret = PyObject, args = {PyFrameObject, PyObject, PyObject}, call = NotImplemented)
     @CApiBuiltin(name = "PyDescr_NewMember", ret = PyObject, args = {PyTypeObject, PyMemberDef}, call = NotImplemented)
-    @CApiBuiltin(name = "PyDescr_NewMethod", ret = PyObject, args = {PyTypeObject, PyMethodDefZZZ}, call = NotImplemented)
+    @CApiBuiltin(name = "PyDescr_NewMethod", ret = PyObject, args = {PyTypeObject, PyMethodDef}, call = NotImplemented)
     @CApiBuiltin(name = "PyDescr_NewWrapper", ret = PyObject, args = {PyTypeObject, WRAPPERBASE, Pointer}, call = NotImplemented)
     @CApiBuiltin(name = "PyDict_MergeFromSeq2", ret = Int, args = {PyObject, PyObject, Int}, call = NotImplemented)
     @CApiBuiltin(name = "PyErr_ProgramText", ret = PyObject, args = {ConstCharPtrAsTruffleString, Int}, call = NotImplemented)

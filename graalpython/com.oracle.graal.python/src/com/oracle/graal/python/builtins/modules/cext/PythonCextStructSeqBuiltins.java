@@ -45,7 +45,7 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.C
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PointerZZZ;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObjectTransfer;
@@ -94,7 +94,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextStructSeqBuiltins {
 
-    @CApiBuiltin(ret = Int, args = {PyTypeObject, PointerZZZ, Int}, call = Ignored)
+    @CApiBuiltin(ret = Int, args = {PyTypeObject, Pointer, Int}, call = Ignored)
     abstract static class GraalPyPrivate_StructSequence_InitType2 extends CApiTernaryBuiltinNode {
 
         @Specialization
@@ -128,7 +128,7 @@ public final class PythonCextStructSeqBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyTypeObjectTransfer, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, PointerZZZ, Int}, call = Ignored)
+    @CApiBuiltin(ret = PyTypeObjectTransfer, args = {ConstCharPtrAsTruffleString, ConstCharPtrAsTruffleString, Pointer, Int}, call = Ignored)
     abstract static class GraalPyPrivate_StructSequence_NewType extends CApiQuaternaryBuiltinNode {
 
         @Specialization

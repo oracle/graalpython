@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -83,10 +83,9 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeRawNode;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageDelItem;
@@ -379,11 +378,6 @@ public abstract class ObjectNodes {
         }
 
         @Specialization
-        Object id(PythonNativeVoidPtr self) {
-            return self.getNativePointer();
-        }
-
-        @Specialization
         Object id(PCell self) {
             return PythonContext.get(this).getNextObjectId(self);
         }
@@ -631,7 +625,7 @@ public abstract class ObjectNodes {
 
         @Specialization
         static boolean doNative(@SuppressWarnings("unused") PythonAbstractNativeObject obj, Object type, int slotNum,
-                        @Cached(inline = false) PythonToNativeNode toNativeNode,
+                        @Cached(inline = false) PythonToNativeRawNode toNativeNode,
                         @Cached(inline = false) CExtNodes.PCallCapiFunction callCapiFunction) {
             assert EnsurePythonObjectNode.doesNotNeedPromotion(type);
             Object result = callCapiFunction.call(FUN_CHECK_BASICSIZE_FOR_GETSTATE, toNativeNode.execute(type), slotNum);

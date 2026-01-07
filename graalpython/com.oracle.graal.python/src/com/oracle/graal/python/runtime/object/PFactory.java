@@ -94,7 +94,6 @@ import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.TruffleObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
@@ -271,14 +270,6 @@ public final class PFactory {
      */
     public static PythonObject createPythonObject(Object cls, Shape shape) {
         return new PythonObject(cls, shape);
-    }
-
-    public static PythonNativeVoidPtr createNativeVoidPtr(Object obj) {
-        return new PythonNativeVoidPtr(obj);
-    }
-
-    public static PythonNativeVoidPtr createNativeVoidPtr(Object obj, long nativePtr) {
-        return new PythonNativeVoidPtr(obj, nativePtr);
     }
 
     public static TruffleObjectNativeWrapper createPythonForeignObject(PythonLanguage language, Object clazz, Object foreignObject) {
@@ -862,7 +853,7 @@ public final class PFactory {
         return new PFrame(language, frameInfo, location, functionOrCode, hasCustomLocals);
     }
 
-    public static PFrame createPFrame(PythonLanguage language, Object threadState, PCode code, PythonObject globals, Object localsDict) {
+    public static PFrame createPFrame(PythonLanguage language, long threadState, PCode code, PythonObject globals, Object localsDict) {
         return new PFrame(language, threadState, code, globals, localsDict);
     }
 

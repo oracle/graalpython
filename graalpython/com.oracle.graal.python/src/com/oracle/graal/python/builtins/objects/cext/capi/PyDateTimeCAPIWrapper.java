@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -153,23 +153,23 @@ public abstract class PyDateTimeCAPIWrapper {
 
         PythonManagedClass date = (PythonManagedClass) getAttr.execute(null, datetimeModule, T_DATE);
         SetBasicSizeNode.executeUncached(date, CStructs.PyDateTime_Date.size());
-        long dateType = toNativeNode.execute(date);
+        long dateType = toNativeNode.executeLong(date);
 
         PythonManagedClass dt = (PythonManagedClass) getAttr.execute(null, datetimeModule, T_DATETIME);
         SetBasicSizeNode.executeUncached(dt, CStructs.PyDateTime_DateTime.size());
-        long datetimeType = toNativeNode.execute(dt);
+        long datetimeType = toNativeNode.executeLong(dt);
 
         PythonManagedClass time = (PythonManagedClass) getAttr.execute(null, datetimeModule, T_TIME);
         SetBasicSizeNode.executeUncached(time, CStructs.PyDateTime_Time.size());
-        long timeType = toNativeNode.execute(time);
+        long timeType = toNativeNode.executeLong(time);
 
         PythonManagedClass delta = (PythonManagedClass) getAttr.execute(null, datetimeModule, T_TIMEDELTA);
         SetBasicSizeNode.executeUncached(delta, CStructs.PyDateTime_Delta.size());
-        long deltaType = toNativeNode.execute(delta);
+        long deltaType = toNativeNode.executeLong(delta);
 
-        long tzInfoType = toNativeNode.execute(getAttr.execute(null, datetimeModule, T_TZINFO));
+        long tzInfoType = toNativeNode.executeLong(getAttr.execute(null, datetimeModule, T_TZINFO));
         Object timezoneType = getAttr.execute(null, datetimeModule, T_TIMEZONE);
-        long timezoneUTC = toNativeNode.execute(getAttr.execute(null, timezoneType, T_UTC));
+        long timezoneUTC = toNativeNode.executeLong(getAttr.execute(null, timezoneType, T_UTC));
 
         long mem = allocate(CStructs.PyDateTime_CAPI);
         writePtrField(mem, CFields.PyDateTime_CAPI__DateType, dateType);

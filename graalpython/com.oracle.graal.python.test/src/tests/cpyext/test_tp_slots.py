@@ -1,4 +1,4 @@
-# Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -1470,6 +1470,10 @@ def test_tp_iter_iternext_calls():
     for obj in [NativeSlotProxy(iter([1])), NativeSlotProxy(PureSlotProxy(iter([1])))]:
         assert next(obj) == 1
         assert_raises(StopIteration, next, obj)
+
+    for obj in [NativeSlotProxy(iter([1])), NativeSlotProxy(PureSlotProxy(iter([1])))]:
+        assert obj.__next__() == 1
+        assert_raises(StopIteration, obj.__next__)
 
 
 def test_tp_iternext_not_implemented():

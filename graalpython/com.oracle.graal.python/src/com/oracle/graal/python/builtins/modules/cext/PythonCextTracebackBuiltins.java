@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,6 +45,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyFrameObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
+import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
@@ -76,7 +77,7 @@ public final class PythonCextTracebackBuiltins {
                         @Cached PyCode_NewEmpty newCode,
                         @Cached PyTraceBack_Here pyTraceBackHereNode,
                         @Bind PythonLanguage language) {
-            PFrame frame = PFactory.createPFrame(language, null, newCode.execute(filename, funcname, lineno), PFactory.createDict(language), PFactory.createDict(language));
+            PFrame frame = PFactory.createPFrame(language, NULLPTR, newCode.execute(filename, funcname, lineno), PFactory.createDict(language), PFactory.createDict(language));
             pyTraceBackHereNode.execute(frame);
             return PNone.NONE;
         }

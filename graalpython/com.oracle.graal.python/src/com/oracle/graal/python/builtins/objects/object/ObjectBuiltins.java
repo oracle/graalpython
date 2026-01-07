@@ -351,7 +351,7 @@ public final class ObjectBuiltins extends PythonBuiltins {
 
             @Specialization
             static Object call(Object cls,
-                            @Cached(inline = false) CApiTransitions.PythonToNativeNode toNativeNode,
+                            @Cached(inline = false) CApiTransitions.PythonToNativeRawNode toNativeNode,
                             @Cached(inline = false) CApiTransitions.NativeToPythonTransferNode toPythonNode,
                             @Cached(inline = false) CExtNodes.PCallCapiFunction callCapiFunction) {
                 assert EnsurePythonObjectNode.doesNotNeedPromotion(cls);

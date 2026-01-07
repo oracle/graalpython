@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
-import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.wrapPointer;
 import static com.oracle.graal.python.builtins.objects.common.IndexNodes.checkBounds;
 import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nfi2.NativeMemory.callocByteArray;
@@ -654,7 +653,7 @@ public abstract class SequenceStorageNodes {
         @Specialization
         protected static Object doNativeObject(NativeObjectSequenceStorage storage, int idx,
                         @Cached NativeToPythonNode toJavaNode) {
-            return toJavaNode.execute(wrapPointer(readPtrArrayElement(storage.getPtr(), idx)));
+            return toJavaNode.executeRaw(readPtrArrayElement(storage.getPtr(), idx));
         }
 
         @Specialization
@@ -817,7 +816,7 @@ public abstract class SequenceStorageNodes {
                         @Cached NativeToPythonNode toJavaNode) {
             Object[] newArray = new Object[length];
             for (int i = start, j = 0; j < length; i += step, j++) {
-                newArray[j] = toJavaNode.execute(wrapPointer(readPtrArrayElement(storage.getPtr(), i)));
+                newArray[j] = toJavaNode.executeRaw(readPtrArrayElement(storage.getPtr(), i));
             }
             return new ObjectSequenceStorage(newArray);
         }
@@ -1385,7 +1384,7 @@ public abstract class SequenceStorageNodes {
                         @Cached PythonToNativeNewRefRawNode toNative,
                         @Cached CExtNodes.XDecRefPointerNode decRefPointerNode) {
             long old = readPtrArrayElement(storage.getPtr(), idx);
-            writePtrArrayElement(storage.getPtr(), idx, toNative.execute(value));
+            writePtrArrayElement(storage.getPtr(), idx, toNative.executeLong(value));
             decRefPointerNode.execute(inliningTarget, old);
         }
     }
@@ -1405,7 +1404,7 @@ public abstract class SequenceStorageNodes {
         @Specialization
         protected static void doNativeObject(NativeObjectSequenceStorage storage, int idx, Object value,
                         @Cached PythonToNativeNewRefRawNode toNative) {
-            writePtrArrayElement(storage.getPtr(), idx, toNative.execute(value));
+            writePtrArrayElement(storage.getPtr(), idx, toNative.executeLong(value));
         }
     }
 
@@ -4070,7 +4069,7 @@ public abstract class SequenceStorageNodes {
             for (int i = storage.length(); i > index; i--) {
                 writePtrArrayElement(storage.getPtr(), i, readPtrArrayElement(storage.getPtr(), i - 1));
             }
-            writePtrArrayElement(storage.getPtr(), index, toNative.execute(value));
+            writePtrArrayElement(storage.getPtr(), index, toNative.executeLong(value));
             storage.setNewLength(newLength);
             return storage;
         }

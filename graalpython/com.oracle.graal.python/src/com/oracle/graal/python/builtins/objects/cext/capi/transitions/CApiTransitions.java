@@ -46,12 +46,13 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CAp
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PollingState.RQ_POLLING;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PollingState.RQ_READY;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PollingState.RQ_UNINITIALIZED;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointer;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readIntField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeDoubleField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeIntField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeLongField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
+import static com.oracle.graal.python.builtins.objects.object.PythonObject.IMMORTAL_REFCNT;
+import static com.oracle.graal.python.builtins.objects.object.PythonObject.MANAGED_REFCNT;
 import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nfi2.NativeMemory.calloc;
 import static com.oracle.graal.python.nfi2.NativeMemory.free;
@@ -82,25 +83,24 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupport.GCListRe
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupport.PyObjectGCDelNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupport.PyObjectGCTrackNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyMemoryViewWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.AllocateNativeObjectStubNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.FirstToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativePtrToPythonNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonInternalNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonReturnNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonTransferNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeInternalNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNewRefNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonInternalNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonReturnNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeInternalNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNewRefRawNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeRawNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.HandleStack;
@@ -154,7 +154,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
-import com.oracle.truffle.api.strings.TruffleString;
 
 import sun.misc.Unsafe;
 
@@ -636,7 +635,7 @@ public abstract class CApiTransitions {
             // Our capsule is dead, so create a temporary copy that doesn't have a reference anymore
             PyCapsule capsule = PFactory.createCapsule(PythonLanguage.get(null), reference.data);
             assert EnsurePythonObjectNode.doesNotNeedPromotion(capsule);
-            PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_GRAALPY_CAPSULE_CALL_DESTRUCTOR, PythonToNativeNode.executeUncached(capsule), capsule.getDestructor());
+            PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_GRAALPY_CAPSULE_CALL_DESTRUCTOR, PythonToNativeRawNode.executeUncached(capsule), capsule.getDestructor());
         }
     }
 
@@ -1502,45 +1501,32 @@ public abstract class CApiTransitions {
 
     @GenerateUncached
     @GenerateInline(false)
+    @ImportStatic(NativeMemory.class)
     public abstract static class CharPtrToPythonNode extends CExtToJavaNode {
 
-        @Specialization
-        static Object doForeign(Object value,
+        public abstract Object execute(long pointer);
+
+        @Specialization(guards = "pointer == NULLPTR")
+        static Object doNull(@SuppressWarnings("unused") long pointer) {
+            // this specialization is not a shortcut; it actually returns a different object
+            return PNone.NO_VALUE;
+        }
+
+        @Specialization(guards = "pointer != NULLPTR")
+        static Object doPointer(long pointer,
                         @Bind Node inliningTarget,
-                        @CachedLibrary(limit = "3") InteropLibrary interopLibrary,
-                        @Cached InlinedExactClassProfile classProfile,
-                        @Cached InlinedConditionProfile isNullProfile,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached ResolveHandleNode resolveHandleNode) {
-            Object profiledValue = classProfile.profile(inliningTarget, value);
-            // this branch is not a shortcut; it actually returns a different object
-            if (isNullProfile.profile(inliningTarget, interopLibrary.isNull(profiledValue))) {
-                return PNone.NO_VALUE;
-            }
-            log(profiledValue);
-            assert !(profiledValue instanceof Long);
-            if (profiledValue instanceof String) {
-                return logResult(PythonUtils.toTruffleStringUncached((String) profiledValue));
-            } else if (profiledValue instanceof TruffleString) {
-                return logResult(profiledValue);
-            }
-            if (interopLibrary.isPointer(profiledValue)) {
-                long pointer;
-                try {
-                    pointer = interopLibrary.asPointer(profiledValue);
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
-                }
-                if (HandlePointerConverter.pointsToPyHandleSpace(pointer)) {
-                    assert !HandlePointerConverter.pointsToPyIntHandle(pointer);
-                    assert !HandlePointerConverter.pointsToPyFloatHandle(pointer);
-                    PythonObject obj = resolveHandleNode.execute(inliningTarget, pointer);
-                    if (obj != null) {
-                        return logResult(obj);
-                    }
+            log(pointer);
+            if (HandlePointerConverter.pointsToPyHandleSpace(pointer)) {
+                assert !HandlePointerConverter.pointsToPyIntHandle(pointer);
+                assert !HandlePointerConverter.pointsToPyFloatHandle(pointer);
+                PythonObject obj = resolveHandleNode.execute(inliningTarget, pointer);
+                if (obj != null) {
+                    return logResult(obj);
                 }
             }
-            return logResult(fromCharPointerNode.execute(profiledValue));
+            return logResult(fromCharPointerNode.execute(pointer));
         }
 
         @NeverDefault
@@ -1834,21 +1820,20 @@ public abstract class CApiTransitions {
 
     @GenerateUncached
     @GenerateInline(false)
-    public abstract static class PythonToNativeRawNode extends Node {
+    public abstract static class PythonToNativeRawNode extends CExtToNativeNode {
 
-        public abstract long execute(Object object);
+        public abstract long executeLong(Object object);
 
         @TruffleBoundary
         public static long executeUncached(Object obj) {
-            return PythonToNativeRawNodeGen.getUncached().execute(obj);
+            return PythonToNativeRawNodeGen.getUncached().executeLong(obj);
         }
 
         @Specialization
         static long doGeneric(Object obj,
                         @Bind Node inliningTarget,
-                        @Cached PythonToNativeInternalNode internalNode,
-                        @Cached CoerceNativePointerToLongNode coerceNode) {
-            return ensurePointer(internalNode.execute(inliningTarget, obj, false), inliningTarget, coerceNode);
+                        @Cached PythonToNativeInternalNode internalNode) {
+            return internalNode.execute(inliningTarget, obj, false);
         }
 
         @NeverDefault
@@ -1951,27 +1936,26 @@ public abstract class CApiTransitions {
      */
     @GenerateUncached
     @GenerateInline(false)
-    public abstract static class PythonToNativeNewRefRawNode extends Node {
+    public abstract static class PythonToNativeNewRefRawNode extends CExtToNativeNode {
 
-        public abstract long execute(Object object);
+        public abstract long executeLong(Object object);
 
         @TruffleBoundary
         public static long executeUncached(Object obj) {
-            return PythonToNativeNewRefRawNodeGen.getUncached().execute(obj);
+            return PythonToNativeNewRefRawNodeGen.getUncached().executeLong(obj);
         }
 
         @Specialization
         static long doGeneric(Object obj,
                         @Bind Node inliningTarget,
                         @Cached EnsurePythonObjectNode ensurePythonObjectNode,
-                        @Cached PythonToNativeInternalNode internalNode,
-                        @Cached CoerceNativePointerToLongNode coerceNode) {
+                        @Cached PythonToNativeInternalNode internalNode) {
             /*
              * In case of a new reference, we can promote the object here (if necessary) because it
              * will be kept alive with a strong reference from the handle table.
              */
             Object promoted = ensurePythonObjectNode.execute(PythonContext.get(inliningTarget), obj, false);
-            return ensurePointer(internalNode.execute(inliningTarget, promoted, true), inliningTarget, coerceNode);
+            return internalNode.execute(inliningTarget, promoted, true);
         }
 
         @NeverDefault
@@ -2113,6 +2097,13 @@ public abstract class CApiTransitions {
     @GenerateInline(false)
     public abstract static class NativeToPythonNode extends CExtToJavaNode {
 
+        public abstract Object executeRaw(long pointer);
+
+        @TruffleBoundary
+        public static Object executeRawUncached(long pointer) {
+            return NativeToPythonNodeGen.getUncached().executeRaw(pointer);
+        }
+
         @TruffleBoundary
         public static Object executeUncached(Object obj) {
             return NativeToPythonNodeGen.getUncached().execute(obj);
@@ -2130,6 +2121,7 @@ public abstract class CApiTransitions {
                         @Bind Node inliningTarget,
                         @Shared @Cached NativeToPythonInternalNode nativeToPythonInternalNode,
                         @CachedLibrary("nativePointer") InteropLibrary lib) {
+            // TODO(NFI2) remove this when there are no more interop pointers
             try {
                 return nativeToPythonInternalNode.execute(inliningTarget, lib.asPointer(nativePointer), false);
             } catch (UnsupportedMessageException e) {
@@ -2151,9 +2143,11 @@ public abstract class CApiTransitions {
     @GenerateInline(false)
     public abstract static class NativeToPythonTransferNode extends CExtToJavaNode {
 
+        public abstract Object executeRaw(long pointer);
+
         @TruffleBoundary
-        public static Object executeUncached(long pointer) {
-            return NativeToPythonTransferNodeGen.getUncached().execute(pointer);
+        public static Object executeRawUncached(long pointer) {
+            return NativeToPythonTransferNodeGen.getUncached().executeRaw(pointer);
         }
 
         @Specialization
@@ -2168,6 +2162,7 @@ public abstract class CApiTransitions {
                         @Bind Node inliningTarget,
                         @Shared @Cached NativeToPythonInternalNode nativeToPythonInternalNode,
                         @CachedLibrary("nativePointer") InteropLibrary lib) {
+            // TODO(NFI2) remove this when there are no more interop pointers
             try {
                 return nativeToPythonInternalNode.execute(inliningTarget, lib.asPointer(nativePointer), true);
             } catch (UnsupportedMessageException e) {

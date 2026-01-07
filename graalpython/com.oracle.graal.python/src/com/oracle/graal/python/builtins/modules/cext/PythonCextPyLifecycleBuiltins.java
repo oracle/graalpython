@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,31 +46,30 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
+import com.oracle.graal.python.nfi2.Nfi;
+import com.oracle.graal.python.nfi2.NfiDowncallSignature;
+import com.oracle.graal.python.nfi2.NfiType;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.ShutdownHook;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.ArityException;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
 
 public final class PythonCextPyLifecycleBuiltins {
 
     @CApiBuiltin(ret = Int, args = {func_voidvoid}, call = Direct)
     abstract static class Py_AtExit extends CApiUnaryBuiltinNode {
 
+        public static final NfiDowncallSignature CALLBACK_SIGNATURE = Nfi.createDowncallSignature(NfiType.VOID);
+
         @Specialization
         @TruffleBoundary
-        int doGeneric(Object funcPtr) {
+        int doGeneric(long funcPtr) {
+            // TODO(NFI2) test this
             getContext().registerAtexitHook(new ShutdownHook() {
                 @Override
-                public void call(@SuppressWarnings("unused") PythonContext context) {
-                    try {
-                        InteropLibrary.getUncached().execute(funcPtr);
-                    } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-                        // ignored
-                    }
+                @TruffleBoundary
+                public void call(PythonContext context) {
+                    CALLBACK_SIGNATURE.invoke(context.ensureNfiContext(), funcPtr);
                 }
             });
             return 0;

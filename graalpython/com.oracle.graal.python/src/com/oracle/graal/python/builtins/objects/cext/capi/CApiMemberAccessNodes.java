@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -39,8 +39,6 @@
  * SOFTWARE.
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
-
-import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.wrapPointer;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Builtin;
@@ -205,7 +203,7 @@ public class CApiMemberAccessNodes {
                         @Bind Node inliningTarget,
                         @Cached PythonToNativeRawNode toNativeNode,
                         @Cached PRaiseNode raiseNode) {
-            long selfPtr = toNativeNode.execute(self);
+            long selfPtr = toNativeNode.executeLong(self);
             long memberPtr = NativeMemory.getFieldPtr(selfPtr, offset);
             Object nativeResult = switch (type) {
                 case T_CHAR, T_BYTE, T_UBYTE, T_BOOL -> {
@@ -221,8 +219,8 @@ public class CApiMemberAccessNodes {
                 case T_FLOAT -> (double) NativeMemory.readFloat(memberPtr);
                 case T_DOUBLE -> NativeMemory.readDouble(memberPtr);
                 case T_OBJECT, T_OBJECT_EX -> NativeMemory.readPtr(memberPtr);
-                case T_STRING -> wrapPointer(NativeMemory.readPtr(memberPtr));
-                case T_STRING_INPLACE -> wrapPointer(memberPtr);
+                case T_STRING -> NativeMemory.readPtr(memberPtr);
+                case T_STRING_INPLACE -> memberPtr;
                 case T_LONGLONG, T_ULONGLONG -> {
                     assert CStructs.long__long.size() == Long.BYTES;
                     yield NativeMemory.readLong(memberPtr);
@@ -556,7 +554,7 @@ public class CApiMemberAccessNodes {
         Object doGeneric(Object self, Object value,
                         @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
-            long selfPtr = toSulongNode.execute(self) + offset;
+            long selfPtr = toSulongNode.executeLong(self) + offset;
 
             /*
              * Deleting values is only allowed for members with object type (see structmember.c:

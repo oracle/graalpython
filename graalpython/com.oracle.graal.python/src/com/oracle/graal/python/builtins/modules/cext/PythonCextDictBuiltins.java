@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,12 +45,12 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemErro
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_HASH_T_PTR_ZZZ;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_SSIZE_T_PTR_ZZZ;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PointerZZZ;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_HASH_T_PTR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_SSIZE_T_PTR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectPtrZZZ;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_hash_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
@@ -151,7 +151,7 @@ public final class PythonCextDictBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, PY_SSIZE_T_PTR_ZZZ, PyObjectPtrZZZ, PyObjectPtrZZZ, PY_HASH_T_PTR_ZZZ}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyObject, PY_SSIZE_T_PTR, PyObjectPtr, PyObjectPtr, PY_HASH_T_PTR}, call = Direct)
     abstract static class _PyDict_Next extends CApi5BuiltinNode {
 
         @Specialization
@@ -238,13 +238,13 @@ public final class PythonCextDictBuiltins {
                 Object key = itKey.execute(inliningTarget, storage, it);
                 assert promoteKeyNode.execute(inliningTarget, key) == null;
                 // Borrowed reference
-                NativeMemory.writePtr(keyPtr, toNativeNode.execute(key));
+                NativeMemory.writePtr(keyPtr, toNativeNode.executeLong(key));
             }
             if (valuePtr != NULLPTR) {
                 Object value = itValue.execute(inliningTarget, storage, it);
                 assert promoteValueNode.execute(inliningTarget, value) == null;
                 // Borrowed reference
-                NativeMemory.writePtr(valuePtr, toNativeNode.execute(value));
+                NativeMemory.writePtr(valuePtr, toNativeNode.executeLong(value));
             }
             if (hashPtr != NULLPTR) {
                 long hash = itKeyHash.execute(null, inliningTarget, storage, it);
@@ -705,7 +705,7 @@ public final class PythonCextDictBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Void, args = {PointerZZZ}, call = Ignored)
+    @CApiBuiltin(ret = Void, args = {Pointer}, call = Ignored)
     abstract static class GraalPyPrivate_Dict_UnlinkNativePart extends CApiUnaryBuiltinNode {
 
         @Specialization

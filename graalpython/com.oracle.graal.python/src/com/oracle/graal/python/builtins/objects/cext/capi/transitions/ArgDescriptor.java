@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,7 +52,9 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonReturnNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefRawNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeRawNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
@@ -60,42 +62,41 @@ import com.oracle.graal.python.nfi2.NfiType;
 import com.oracle.graal.python.util.Supplier;
 
 enum ArgBehavior {
-    PyObject(
-                    "POINTER",
+    PyObjectYYY(
                     NfiType.POINTER,
-                    "J",
-                    "jlong",
-                    "long",
                     PythonToNativeNode::create,
                     NativeToPythonNode::create,
                     NativeToPythonNode.getUncached(),
                     PythonToNativeNewRefNode::create,
                     NativeToPythonTransferNode::create,
                     NativeToPythonTransferNode.getUncached()),
-    PyObjectBorrowed("POINTER", NfiType.POINTER, "J", "jlong", "long", ToNativeBorrowedNode::new, NativeToPythonNode::create, NativeToPythonNode.getUncached(), null, null, null),
-    PyObjectAsTruffleString("POINTER", NfiType.POINTER, "J", "jlong", "long", null, ToPythonStringNode::create, ToPythonStringNode.getUncached(), null, null, null),
-    Pointer("POINTER", NfiType.POINTER, "J", "jlong", "long", null, null, null),
-    PointerZZZ("POINTER_ZZZ", NfiType.RAW_POINTER, "J", "jlong", "long", null, null, null),
-    TruffleStringPointer("POINTER", NfiType.POINTER, "J", "jlong", "long", null, CharPtrToPythonNode::create, CharPtrToPythonNode.getUncached()),
-    TruffleStringPointerZZZ("POINTER_ZZZ", NfiType.RAW_POINTER, "J", "jlong", "long", null, CharPtrToPythonNode::create, CharPtrToPythonNode.getUncached()),
-    Char8("SINT8", NfiType.SINT8, "C", "jbyte", "byte", null, null, null),
-    UChar8("UINT8", NfiType.SINT8, "C", "jbyte", "byte", null, null, null),
-    Char16("SINT16", NfiType.SINT16, "C", "jchar", "char", null, null, null),
-    Int32("SINT32", NfiType.SINT32, "I", "jint", "int", null, null, null),
-    UInt32("UINT32", NfiType.SINT32, "I", "jint", "int", null, null, null),
-    Int64("SINT64", NfiType.SINT64, "J", "jlong", "long", null, null, null),
-    UInt64("UINT64", NfiType.SINT64, "J", "jlong", "long", null, null, null),
-    Long("SINT64", NfiType.SINT64, "J", "jlong", "long", null, FromLongNode::create, FromLongNode.getUncached()),
-    Float32("FLOAT", NfiType.FLOAT, "F", "jfloat", "float", null, null, null),
-    Float64("DOUBLE", NfiType.DOUBLE, "D", "jdouble", "double", null, null, null),
-    Void("VOID", NfiType.VOID, "V", "void", "void", null, null, null),
-    Unknown("SINT64", NfiType.SINT64, "J", "jlong", "long", null, null, null);
+    PyObject(
+                    NfiType.RAW_POINTER,
+                    PythonToNativeRawNode::create,
+                    NativeToPythonNode::create,
+                    NativeToPythonNode.getUncached(),
+                    PythonToNativeNewRefRawNode::create,
+                    NativeToPythonTransferNode::create,
+                    NativeToPythonTransferNode.getUncached()),
+    PyObjectBorrowed(NfiType.RAW_POINTER, ToNativeBorrowedNode::new, NativeToPythonNode::create, NativeToPythonNode.getUncached(), null, null, null),
+    PyObjectAsTruffleString(NfiType.RAW_POINTER, null, ToPythonStringNode::create, ToPythonStringNode.getUncached(), null, null, null),
+    PointerYYY(NfiType.POINTER, null, null, null),
+    Pointer(NfiType.RAW_POINTER, null, null, null),
+    TruffleStringPointer(NfiType.RAW_POINTER, null, CharPtrToPythonNode::create, CharPtrToPythonNode.getUncached()),
+    Char8(NfiType.SINT8, null, null, null),
+    UChar8(NfiType.SINT8, null, null, null),
+    Char16(NfiType.SINT16, null, null, null),
+    Int32(NfiType.SINT32, null, null, null),
+    UInt32(NfiType.SINT32, null, null, null),
+    Int64(NfiType.SINT64, null, null, null),
+    UInt64(NfiType.SINT64, null, null, null),
+    Long(NfiType.SINT64, null, FromLongNode::create, FromLongNode.getUncached()),
+    Float32(NfiType.FLOAT, null, null, null),
+    Float64(NfiType.DOUBLE, null, null, null),
+    Void(NfiType.VOID, null, null, null),
+    Unknown(NfiType.SINT64, null, null, null);
 
-    public final String nfiSignature;
     public final NfiType nfi2Type;
-    public final String jniSignature;
-    public final String jniType;
-    public final String javaSignature;
     public final Supplier<CExtToNativeNode> pythonToNative;
     public final Supplier<CExtToJavaNode> nativeToPython;
     public final CExtToJavaNode uncachedNativeToPython;
@@ -103,14 +104,9 @@ enum ArgBehavior {
     public final Supplier<CExtToJavaNode> nativeToPythonTransfer;
     public final CExtToJavaNode uncachedNativeToPythonTransfer;
 
-    ArgBehavior(String nfiSignature, NfiType nfi2Type, String jniSignature, String jniType, String javaSignature, Supplier<CExtToNativeNode> pythonToNative, Supplier<CExtToJavaNode> nativeToPython,
-                    CExtToJavaNode uncachedNativeToPython,
+    ArgBehavior(NfiType nfi2Type, Supplier<CExtToNativeNode> pythonToNative, Supplier<CExtToJavaNode> nativeToPython, CExtToJavaNode uncachedNativeToPython,
                     Supplier<CExtToNativeNode> pythonToNativeTransfer, Supplier<CExtToJavaNode> nativeToPythonTransfer, CExtToJavaNode uncachedNativeToPythonTransfer) {
-        this.nfiSignature = nfiSignature;
         this.nfi2Type = nfi2Type;
-        this.jniSignature = jniSignature;
-        this.jniType = jniType;
-        this.javaSignature = javaSignature;
         this.pythonToNative = pythonToNative;
         this.nativeToPython = nativeToPython;
         this.uncachedNativeToPython = uncachedNativeToPython;
@@ -119,18 +115,19 @@ enum ArgBehavior {
         this.uncachedNativeToPythonTransfer = uncachedNativeToPythonTransfer;
     }
 
-    ArgBehavior(String nfiSignature, NfiType nfi2Type, String jniSignature, String jniType, String javaType, Supplier<CExtToNativeNode> pythonToNative, Supplier<CExtToJavaNode> nativeToPython,
-                    CExtToJavaNode uncachedNativeToPython) {
-        this(nfiSignature, nfi2Type, jniSignature, jniType, javaType, pythonToNative, nativeToPython, uncachedNativeToPython, null, null, null);
+    ArgBehavior(NfiType nfi2Type, Supplier<CExtToNativeNode> pythonToNative, Supplier<CExtToJavaNode> nativeToPython, CExtToJavaNode uncachedNativeToPython) {
+        this(nfi2Type, pythonToNative, nativeToPython, uncachedNativeToPython, null, null, null);
     }
 }
 
 public enum ArgDescriptor {
     Void(ArgBehavior.Void, "void"),
     VoidNoReturn(ArgBehavior.Void, "void"),
+    PyObjectYYY(ArgBehavior.PyObjectYYY, "PyObject*"),
     PyObject(ArgBehavior.PyObject, "PyObject*"),
     PyObjectBorrowed(ArgBehavior.PyObjectBorrowed, "PyObject*"),
     PyObjectAsTruffleString(ArgBehavior.PyObjectAsTruffleString, "PyObject*"),
+    PyTypeObjectYYY(ArgBehavior.PyObjectYYY, "PyTypeObject*"),
     PyTypeObject(ArgBehavior.PyObject, "PyTypeObject*"),
     PyTypeObjectBorrowed(ArgBehavior.PyObjectBorrowed, "PyTypeObject*"),
     PyTypeObjectTransfer(ArgBehavior.PyObject, "PyTypeObject*", true, false),
@@ -139,10 +136,10 @@ public enum ArgDescriptor {
     PyMethodObject(ArgBehavior.PyObject, "PyMethodObject*"),
     PyInstanceMethodObject(ArgBehavior.PyObject, "PyInstanceMethodObject*"),
     PyObjectTransfer(ArgBehavior.PyObject, "PyObject*", true, false),
-    PyObjectReturn(ArgBehavior.PyObject, "PyObject*", true, true),
+    PyObjectReturn(ArgBehavior.PyObjectYYY, "PyObject*", true, true),
     PyObjectRawPointer(ArgBehavior.Pointer, "PyObject*"),
+    PointerYYY(ArgBehavior.PointerYYY, "void*"),
     Pointer(ArgBehavior.Pointer, "void*"),
-    PointerZZZ(ArgBehavior.PointerZZZ, "void*"),
     Py_ssize_t(ArgBehavior.Int64, "Py_ssize_t"),
     Py_hash_t(ArgBehavior.Int64, "Py_hash_t"),
     Int(ArgBehavior.Int32, "int"),
@@ -150,7 +147,7 @@ public enum ArgDescriptor {
     Double(ArgBehavior.Float64, "double"),
     Float(ArgBehavior.Float32, "float"),
     Long(ArgBehavior.Long, "long"),
-    PyObjectConstArray(ArgBehavior.PointerZZZ, "PyObject *const *"),
+    PyObjectConstArray(ArgBehavior.Pointer, "PyObject *const *"),
 
     _FRAME(ArgBehavior.PyObject, "struct _frame*"),
     _MOD_PTR("struct _mod*"),
@@ -172,12 +169,9 @@ public enum ArgDescriptor {
     CHAR_CONST_PTR("char*const*"),
     CHAR_CONST_ARRAY("char*const []"),
     CHAR_PTR(ArgBehavior.Pointer, "char*"),
-    CHAR_PTR_ZZZ(ArgBehavior.PointerZZZ, "char*"),
     CHAR_PTR_LIST(ArgBehavior.Pointer, "char**"),
     ConstCharPtrAsTruffleString(ArgBehavior.TruffleStringPointer, "const char*"),
-    ConstCharPtrAsTruffleStringZZZ(ArgBehavior.TruffleStringPointerZZZ, "const char*"),
     ConstCharPtr(ArgBehavior.Pointer, "const char*"),
-    ConstCharPtrZZZ(ArgBehavior.PointerZZZ, "const char*"),
     CharPtrAsTruffleString(ArgBehavior.TruffleStringPointer, "char*"),
     CONST_CHAR_PTR_LIST("const char**"),
     CONST_PY_BUFFER("const Py_buffer*"),
@@ -188,19 +182,16 @@ public enum ArgDescriptor {
     CONST_PY_UNICODE("const Py_UNICODE*"),
     CONST_PYCONFIG_PTR("const PyConfig*"),
     CONST_PYPRECONFIG_PTR("const PyPreConfig*"),
-    CONST_UNSIGNED_CHAR_PTR_ZZZ(ArgBehavior.PointerZZZ, "const unsigned char*"),
+    CONST_UNSIGNED_CHAR_PTR(ArgBehavior.Pointer, "const unsigned char*"),
     CONST_VOID_PTR(ArgBehavior.Pointer, "const void*"),
-    CONST_VOID_PTR_ZZZ(ArgBehavior.PointerZZZ, "const void*"),
     CONST_VOID_PTR_LIST("const void**"),
     CONST_WCHAR_PTR(ArgBehavior.Pointer, "const wchar_t*"),
-    CONST_WCHAR_PTR_ZZZ(ArgBehavior.PointerZZZ, "const wchar_t*"),
     CROSSINTERPDATAFUNC("crossinterpdatafunc"),
     FILE_PTR("FILE*"),
     FREEFUNC("freefunc"),
     INITTAB("struct _inittab*"),
     INT_LIST("int*"),
     INT8_T_PTR(ArgBehavior.Pointer, "int8_t*"),
-    INT8_T_PTR_ZZZ(ArgBehavior.PointerZZZ, "int8_t*"),
     INT64_T(ArgBehavior.Int64, "int64_t"),
     LONG_LONG(ArgBehavior.Int64, "long long"),
     LONG_PTR("long*"),
@@ -209,14 +200,12 @@ public enum ArgDescriptor {
     PY_AUDITHOOKFUNCTION("Py_AuditHookFunction"),
     Py_buffer("Py_buffer"),
     PY_BUFFER_PTR(ArgBehavior.Pointer, "Py_buffer*"),
-    PY_BUFFER_PTR_ZZZ(ArgBehavior.PointerZZZ, "Py_buffer*"),
     CONST_PY_BUFFER_PTR(ArgBehavior.Pointer, "const Py_buffer*"),
     PY_C_FUNCTION(ArgBehavior.Pointer, "PyCFunction"),
     PyByteArrayObject(ArgBehavior.PyObject, "PyByteArrayObject*"),
     PyCFunctionObject(ArgBehavior.PyObject, "PyCFunctionObject*"),
     PyCMethodObject(ArgBehavior.PyObject, "PyCMethodObject*"),
     PY_CAPSULE_DESTRUCTOR(ArgBehavior.Pointer, "PyCapsule_Destructor"),
-    PY_CAPSULE_DESTRUCTOR_ZZZ(ArgBehavior.PointerZZZ, "PyCapsule_Destructor"),
     PyCodeObject(ArgBehavior.PyObject, "PyCodeObject*"),
     PyCodeObjectTransfer(ArgBehavior.PyObject, "PyCodeObject*", true, false),
     PyCode_WatchCallback(ArgBehavior.Pointer, "PyCode_WatchCallback"),
@@ -235,7 +224,6 @@ public enum ArgDescriptor {
     PyGetSetDef(ArgBehavior.Pointer, "PyGetSetDef*"),
     PY_GIL_STATE_STATE(ArgBehavior.Int32, "PyGILState_STATE"),
     PY_HASH_T_PTR(ArgBehavior.Pointer, "Py_hash_t*"),
-    PY_HASH_T_PTR_ZZZ(ArgBehavior.PointerZZZ, "Py_hash_t*"),
     PY_IDENTIFIER("_Py_Identifier*"),
     PyInterpreterState(ArgBehavior.Pointer, "PyInterpreterState*"),
     ConstPyInterpreterConfig(ArgBehavior.Pointer, "const PyInterpreterConfig*"),
@@ -246,15 +234,15 @@ public enum ArgDescriptor {
     PyMemberDef(ArgBehavior.Pointer, "PyMemberDef*"),
     PyModuleObject(ArgBehavior.PyObject, "PyModuleObject*"),
     PyModuleObjectTransfer(ArgBehavior.PyObject, "PyModuleObject*", true, false),
-    PyMethodDefZZZ(ArgBehavior.PointerZZZ, "PyMethodDef*"),
-    PyModuleDefZZZ(ArgBehavior.PointerZZZ, "PyModuleDef*"), // it's unclear if this should be
-                                                            // PyObject
+    PyMethodDef(ArgBehavior.Pointer, "PyMethodDef*"),
+    PyModuleDef(ArgBehavior.Pointer, "PyModuleDef*"), // it's unclear if this should be
+                                                      // PyObject
     PyModuleDefSlot(ArgBehavior.Pointer, "PyModuleDef_Slot*"),
     PyNumberMethods(ArgBehavior.Pointer, "PyNumberMethods*"),
     PySequenceMethods(ArgBehavior.Pointer, "PySequenceMethods*"),
     PyMappingMethods(ArgBehavior.Pointer, "PyMappingMethods*"),
     PyAsyncMethods(ArgBehavior.Pointer, "PyAsyncMethods*"),
-    PyBufferProcsZZZ(ArgBehavior.PointerZZZ, "PyBufferProcs*"),
+    PyBufferProcs(ArgBehavior.Pointer, "PyBufferProcs*"),
     PyMethodDescrObject(ArgBehavior.PyObject, "PyMethodDescrObject*"),
     PySendResult(ArgBehavior.Int32, "PySendResult"),
     PySetObject(ArgBehavior.PyObject, "PySetObject*"),
@@ -263,10 +251,8 @@ public enum ArgDescriptor {
     PY_OS_SIGHANDLER("PyOS_sighandler_t"),
     PySliceObject(ArgBehavior.PyObject, "PySliceObject*"),
     PY_SSIZE_T_PTR(ArgBehavior.Pointer, "Py_ssize_t*"),
-    PY_SSIZE_T_PTR_ZZZ(ArgBehavior.PointerZZZ, "Py_ssize_t*"),
     PY_STRUCT_SEQUENCE_DESC("PyStructSequence_Desc*"),
     PyThreadState(ArgBehavior.Pointer, "PyThreadState*"),
-    PyThreadStateZZZ(ArgBehavior.PointerZZZ, "PyThreadState*"),
     PyThreadStatePtr(ArgBehavior.Pointer, "PyThreadState**"),
     PY_THREAD_TYPE_LOCK(ArgBehavior.Int64, "PyThread_type_lock"),
     PY_THREAD_TYPE_LOCK_PTR(ArgBehavior.Pointer, "PyThread_type_lock*"),
@@ -278,7 +264,7 @@ public enum ArgDescriptor {
     PY_UCS4_PTR("Py_UCS4*"),
     PY_UNICODE("Py_UNICODE"),
     PyUnicodeObject(ArgBehavior.PyObject, "PyUnicodeObject*"),
-    PY_UNICODE_PTR_ZZZ(ArgBehavior.PointerZZZ, "Py_UNICODE*"),
+    PY_UNICODE_PTR(ArgBehavior.Pointer, "Py_UNICODE*"),
     PyVarObject(ArgBehavior.PyObject, "PyVarObject*"),
     ConstPyVarObject(ArgBehavior.PyObject, "const PyVarObject*"),
     PYADDRPAIR_PTR("PyAddrPair*"),
@@ -291,10 +277,8 @@ public enum ArgDescriptor {
     PYMODULEDEF_PTR("struct PyModuleDef*"),
     PyObjectConst("PyObject*const"),
     PyObjectConstPtr(ArgBehavior.Pointer, "PyObject*const*"),
-    PyObjectConstPtrZZZ(ArgBehavior.PointerZZZ, "PyObject*const*"),
     PYOBJECT_CONST_PTR_LIST("PyObject*const**"),
     PyObjectPtr(ArgBehavior.Pointer, "PyObject**"),
-    PyObjectPtrZZZ(ArgBehavior.PointerZZZ, "PyObject**"),
     PYOBJECTARENAALLOCATOR_PTR("PyObjectArenaAllocator*"),
     PYPRECONFIG_PTR("PyPreConfig*"),
     PYSTATUS("PyStatus"),
@@ -317,7 +301,6 @@ public enum ArgDescriptor {
     UINTPTR_T(ArgBehavior.UInt64, "uintptr_t"),
     UINT64_T(ArgBehavior.UInt64, "uint64_t"),
     UNSIGNED_CHAR_PTR(ArgBehavior.Pointer, "unsigned char*"),
-    UNSIGNED_CHAR_PTR_ZZZ(ArgBehavior.PointerZZZ, "unsigned char*"),
     UNSIGNED_INT(ArgBehavior.UInt32, "unsigned int"),
     UNSIGNED_LONG(ArgBehavior.Long, "unsigned long"),
     UNSIGNED_LONG_LONG(ArgBehavior.Int64, "unsigned long long"),
@@ -481,41 +464,26 @@ public enum ArgDescriptor {
         return uncachedCheckResult;
     }
 
-    public String getNFISignature() {
-        return behavior.nfiSignature;
-    }
-
     public NfiType getNFI2Type() {
         return behavior.nfi2Type;
     }
 
-    public String getJniSignature() {
-        return behavior.jniSignature;
-    }
-
-    public String getJniType() {
-        return behavior.jniType;
-    }
-
-    public String getJavaSignature() {
-        return behavior.javaSignature;
-    }
-
     public boolean isRawPyObjectOrPointer() {
-        return behavior == ArgBehavior.PointerZZZ || behavior == ArgBehavior.TruffleStringPointerZZZ;
+        return isPyObjectOrPointer() && behavior.nfi2Type == NfiType.RAW_POINTER;
     }
 
     public boolean isPyObjectOrPointer() {
-        return behavior == ArgBehavior.PyObject || behavior == ArgBehavior.PyObjectBorrowed || behavior == ArgBehavior.Pointer || behavior == ArgBehavior.PointerZZZ ||
-                        behavior == ArgBehavior.TruffleStringPointer || behavior == ArgBehavior.TruffleStringPointerZZZ;
+        return behavior == ArgBehavior.PyObject || behavior == ArgBehavior.PyObjectYYY || behavior == ArgBehavior.PyObjectBorrowed || behavior == ArgBehavior.PointerYYY ||
+                        behavior == ArgBehavior.Pointer ||
+                        behavior == ArgBehavior.TruffleStringPointer;
     }
 
     public boolean isPointer() {
-        return behavior == ArgBehavior.Pointer || behavior == ArgBehavior.TruffleStringPointer || behavior == ArgBehavior.TruffleStringPointerZZZ;
+        return behavior == ArgBehavior.PointerYYY || behavior == ArgBehavior.Pointer || behavior == ArgBehavior.TruffleStringPointer;
     }
 
     public boolean isPyObject() {
-        return behavior == ArgBehavior.PyObject || behavior == ArgBehavior.PyObjectBorrowed;
+        return behavior == ArgBehavior.PyObject || behavior == ArgBehavior.PyObjectYYY || behavior == ArgBehavior.PyObjectBorrowed;
     }
 
     public boolean isValidReturnType() {
@@ -523,7 +491,7 @@ public enum ArgDescriptor {
          * We don't want to allow "bare" PyObject and force ourselves to decide between
          * PyObjectTransfer and PyObjectBorrow
          */
-        return behavior != ArgBehavior.PyObject || transfer;
+        return behavior != ArgBehavior.PyObjectYYY || transfer;
     }
 
     public boolean isCharPtr() {

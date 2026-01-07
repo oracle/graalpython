@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,8 +44,8 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.C
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PointerZZZ;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyBufferProcsZZZ;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyBufferProcs;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
@@ -249,7 +249,7 @@ public final class PythonCextTypeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PointerZZZ}, call = Ignored)
+    @CApiBuiltin(ret = Int, args = {Pointer}, call = Ignored)
     abstract static class GraalPyPrivate_Trace_Type extends CApiUnaryBuiltinNode {
         private static final TruffleLogger LOGGER = CApiContext.getLogger(GraalPyPrivate_Trace_Type.class);
 
@@ -301,7 +301,7 @@ public final class PythonCextTypeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PointerZZZ, PyTypeObject, PyObject, ConstCharPtrAsTruffleString, PointerZZZ, Int, Int, ConstCharPtrAsTruffleString}, call = Ignored)
+    @CApiBuiltin(ret = Int, args = {Pointer, PyTypeObject, PyObject, ConstCharPtrAsTruffleString, Pointer, Int, Int, ConstCharPtrAsTruffleString}, call = Ignored)
     abstract static class GraalPyPrivate_Type_AddFunctionToType extends CApi8BuiltinNode {
 
         @Specialization
@@ -396,7 +396,7 @@ public final class PythonCextTypeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyTypeObject, PyObject, ConstCharPtrAsTruffleString, PointerZZZ, PointerZZZ, ConstCharPtrAsTruffleString, PointerZZZ}, call = Ignored)
+    @CApiBuiltin(ret = Int, args = {PyTypeObject, PyObject, ConstCharPtrAsTruffleString, Pointer, Pointer, ConstCharPtrAsTruffleString, Pointer}, call = Ignored)
     abstract static class GraalPyPrivate_Type_AddGetSet extends CApi7BuiltinNode {
 
         @Specialization
@@ -410,7 +410,7 @@ public final class PythonCextTypeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = ArgDescriptor.Void, args = {PyTypeObject, PyBufferProcsZZZ}, call = Ignored)
+    @CApiBuiltin(ret = ArgDescriptor.Void, args = {PyTypeObject, PyBufferProcs}, call = Ignored)
     abstract static class GraalPyPrivate_Type_SetBufferProcs extends CApiBinaryBuiltinNode {
 
         @Specialization

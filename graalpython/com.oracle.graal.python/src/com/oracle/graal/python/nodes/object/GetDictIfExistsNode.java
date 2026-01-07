@@ -50,7 +50,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeRawNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -135,7 +135,7 @@ public abstract class GetDictIfExistsNode extends PNodeWithContext {
                     @Bind Node inliningTarget,
                     @Cached IsTypeNode isTypeNode,
                     @Cached CStructAccess.ReadObjectNode getNativeDict,
-                    @Cached PythonToNativeNode toNative,
+                    @Cached PythonToNativeRawNode toNative,
                     @Cached CStructAccess.ReadObjectNode readObjectNode,
                     @Cached CStructAccess.WriteObjectNewRefNode writeObjectNode,
                     @Cached InlinedBranchProfile createDict,

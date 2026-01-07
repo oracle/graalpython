@@ -47,8 +47,7 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.C
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PointerZZZ;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyModuleDefZZZ;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyModuleDef;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyModuleObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyModuleObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
@@ -245,7 +244,7 @@ public final class PythonCextModuleBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PointerZZZ, PyObject, ConstCharPtrAsTruffleString, PointerZZZ, Int, Int, ConstCharPtrAsTruffleString}, call = Ignored)
+    @CApiBuiltin(ret = Int, args = {Pointer, PyObject, ConstCharPtrAsTruffleString, Pointer, Int, Int, ConstCharPtrAsTruffleString}, call = Ignored)
     abstract static class GraalPyPrivate_Module_AddFunctionToModule extends CApi7BuiltinNode {
 
         @Specialization
@@ -269,7 +268,7 @@ public final class PythonCextModuleBuiltins {
         private static final CApiTiming TIMING = CApiTiming.create(true, J__M_TRAVERSE);
 
         @Specialization
-        static int doGeneric(PythonModule self, Object visitFun, Object arg,
+        static int doGeneric(PythonModule self, long visitFun, long arg,
                         @Bind Node inliningTarget,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached ExternalFunctionInvokeNode externalFunctionInvokeNode,
@@ -289,7 +288,6 @@ public final class PythonCextModuleBuiltins {
                     if (mSize <= 0 || mdState != NULLPTR) {
                         PythonThreadState threadState = getThreadStateNode.execute(inliningTarget);
                         NfiBoundFunction traverseExecutable = ensureExecutable(mTraverse, PExternalFunctionWrapper.TRAVERSEPROC);
-                        // TODO(NFI2) call directly
                         Object res = externalFunctionInvokeNode.call(null, inliningTarget, threadState, TIMING, T__M_TRAVERSE, traverseExecutable, toNativeNode.execute(self), visitFun, arg);
                         int ires = (int) checkPrimitiveFunctionResultNode.executeLong(threadState, StringLiterals.T_VISIT, res);
                         if (ires != 0) {
@@ -324,7 +322,7 @@ public final class PythonCextModuleBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = ArgDescriptor.Void, args = {PyModuleObject, PyModuleDefZZZ}, call = Ignored)
+    @CApiBuiltin(ret = ArgDescriptor.Void, args = {PyModuleObject, PyModuleDef}, call = Ignored)
     abstract static class GraalPyPrivate_Module_SetDef extends CApiBinaryBuiltinNode {
         @Specialization
         static Object set(PythonModule object, long value) {
@@ -333,7 +331,7 @@ public final class PythonCextModuleBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = ArgDescriptor.Void, args = {PyModuleObject, PointerZZZ}, call = Ignored)
+    @CApiBuiltin(ret = ArgDescriptor.Void, args = {PyModuleObject, Pointer}, call = Ignored)
     abstract static class GraalPyPrivate_Module_SetState extends CApiBinaryBuiltinNode {
         @Specialization
         static Object set(PythonModule object, long value) {

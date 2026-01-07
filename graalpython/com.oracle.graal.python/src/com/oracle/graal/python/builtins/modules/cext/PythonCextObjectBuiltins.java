@@ -47,9 +47,8 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.C
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PointerZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectConstPtrZZZ;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectConstPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectRawPointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadState;
@@ -60,6 +59,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
 import static com.oracle.graal.python.builtins.objects.ints.PInt.intValue;
 import static com.oracle.graal.python.builtins.objects.object.PythonObject.IMMORTAL_REFCNT;
+import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nfi2.NativeMemory.readPtrArrayElement;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNHASHABLE_TYPE_P;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BYTES__;
@@ -155,7 +155,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -169,7 +168,7 @@ public abstract class PythonCextObjectBuiltins {
     private PythonCextObjectBuiltins() {
     }
 
-    @CApiBuiltin(ret = Void, args = {PointerZZZ, Py_ssize_t}, call = Ignored)
+    @CApiBuiltin(ret = Void, args = {Pointer, Py_ssize_t}, call = Ignored)
     abstract static class GraalPyPrivate_NotifyRefCount extends CApiBinaryBuiltinNode {
         @Specialization
         static Object doLong(long pointer, long refCount,
@@ -188,7 +187,7 @@ public abstract class PythonCextObjectBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Void, args = {PointerZZZ, Int}, call = Ignored)
+    @CApiBuiltin(ret = Void, args = {Pointer, Int}, call = Ignored)
     abstract static class GraalPyPrivate_BulkNotifyRefCount extends CApiBinaryBuiltinNode {
 
         @Specialization
@@ -261,18 +260,16 @@ public abstract class PythonCextObjectBuiltins {
     abstract static class GraalPyPrivate_Object_CallFunctionObjArgs extends CApiBinaryBuiltinNode {
 
         @Specialization
-        static Object doFunction(Object callable, Object vaList,
+        static Object doFunction(Object callable, long vaList,
                         @Bind Node inliningTarget,
                         @Cached GetNextVaArgNode getVaArgs,
-                        @CachedLibrary(limit = "2") InteropLibrary argLib,
                         @Cached CallNode callNode,
                         @Cached NativeToPythonNode toJavaNode) {
-            return callFunction(inliningTarget, callable, vaList, getVaArgs, argLib, callNode, toJavaNode);
+            return callFunction(inliningTarget, callable, vaList, getVaArgs, callNode, toJavaNode);
         }
 
-        static Object callFunction(Node inliningTarget, Object callable, Object vaList,
+        static Object callFunction(Node inliningTarget, Object callable, long vaList,
                         GetNextVaArgNode getVaArgs,
-                        InteropLibrary argLib,
                         CallNode callNode,
                         NativeToPythonNode toJavaNode) {
             /*
@@ -282,19 +279,14 @@ public abstract class PythonCextObjectBuiltins {
             Object[] args = new Object[4];
             int filled = 0;
             while (true) {
-                Object object;
-                try {
-                    object = getVaArgs.execute(inliningTarget, vaList);
-                } catch (InteropException e) {
-                    throw CompilerDirectives.shouldNotReachHere();
-                }
-                if (argLib.isNull(object)) {
+                long argPtr = getVaArgs.execute(inliningTarget, vaList);
+                if (argPtr == NULLPTR) {
                     break;
                 }
                 if (filled >= args.length) {
                     args = PythonUtils.arrayCopyOf(args, args.length * 2);
                 }
-                args[filled++] = toJavaNode.execute(object);
+                args[filled++] = toJavaNode.executeRaw(argPtr);
             }
             if (filled < args.length) {
                 args = PythonUtils.arrayCopyOf(args, filled);
@@ -307,16 +299,15 @@ public abstract class PythonCextObjectBuiltins {
     abstract static class GraalPyPrivate_Object_CallMethodObjArgs extends CApiTernaryBuiltinNode {
 
         @Specialization
-        static Object doMethod(Object receiver, Object methodName, Object vaList,
+        static Object doMethod(Object receiver, Object methodName, long vaList,
                         @Bind Node inliningTarget,
                         @Cached GetNextVaArgNode getVaArgs,
-                        @CachedLibrary(limit = "2") InteropLibrary argLib,
                         @Cached CallNode callNode,
                         @Cached PyObjectGetAttrO getAnyAttributeNode,
                         @Cached NativeToPythonNode toJavaNode) {
 
             Object method = getAnyAttributeNode.execute(null, inliningTarget, receiver, methodName);
-            return GraalPyPrivate_Object_CallFunctionObjArgs.callFunction(inliningTarget, method, vaList, getVaArgs, argLib, callNode, toJavaNode);
+            return GraalPyPrivate_Object_CallFunctionObjArgs.callFunction(inliningTarget, method, vaList, getVaArgs, callNode, toJavaNode);
         }
     }
 
@@ -339,11 +330,11 @@ public abstract class PythonCextObjectBuiltins {
     }
 
     // directly called without landing function
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyThreadState, PyObject, PyObjectConstPtrZZZ, Py_ssize_t, PyObject}, call = Direct)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyThreadState, PyObject, PyObjectConstPtr, Py_ssize_t, PyObject}, call = Direct)
     abstract static class _PyObject_MakeTpCall extends CApi5BuiltinNode {
 
         @Specialization
-        static Object doGeneric(@SuppressWarnings("unused") Object threadState, Object callable, long argsArray, long nargs, Object kwargs,
+        static Object doGeneric(@SuppressWarnings("unused") long threadState, Object callable, long argsArray, long nargs, Object kwargs,
                         @Cached CStructAccess.ReadObjectNode readNode,
                         @Bind Node inliningTarget,
                         @Cached CStructAccess.ReadObjectNode readKwNode,

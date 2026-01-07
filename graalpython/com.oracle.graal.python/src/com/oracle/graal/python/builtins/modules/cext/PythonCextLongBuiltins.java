@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,7 +43,7 @@ package com.oracle.graal.python.builtins.modules.cext;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_UNSIGNED_CHAR_PTR_ZZZ;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_UNSIGNED_CHAR_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstPyLongObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
@@ -54,7 +54,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.SIZE_T;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_CHAR_PTR_ZZZ;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_CHAR_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_LONG;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.UNSIGNED_LONG_LONG;
 import static com.oracle.graal.python.nfi2.NativeMemory.readByteArrayElements;
@@ -70,7 +70,6 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuil
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiQuaternaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CastToNativeLongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
@@ -99,9 +98,6 @@ import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
@@ -294,34 +290,12 @@ public final class PythonCextLongBuiltins {
         static long doSignedLong(long n) {
             return n;
         }
-
-        @Specialization(guards = "!isInteger(pointer)", limit = "2")
-        static Object doPointer(Object pointer,
-                        @CachedLibrary("pointer") InteropLibrary lib) {
-            // We capture the native pointer at the time when we create the wrapper if it exists.
-            if (lib.isPointer(pointer)) {
-                try {
-                    return PFactory.createNativeVoidPtr(pointer, lib.asPointer(pointer));
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
-                }
-            }
-            return PFactory.createNativeVoidPtr(pointer);
-        }
     }
 
     @CApiBuiltin(name = "PyLong_FromSize_t", ret = PyObjectTransfer, args = {SIZE_T}, call = Direct)
     @CApiBuiltin(name = "PyLong_FromUnsignedLong", ret = PyObjectTransfer, args = {UNSIGNED_LONG}, call = Direct)
     @CApiBuiltin(ret = PyObjectTransfer, args = {UNSIGNED_LONG_LONG}, call = Direct)
     abstract static class PyLong_FromUnsignedLongLong extends CApiUnaryBuiltinNode {
-
-        @Specialization
-        static long doUnsignedInt(int n) {
-            if (n < 0) {
-                return n & 0xFFFFFFFFL;
-            }
-            return n;
-        }
 
         @Specialization(guards = "n >= 0")
         static Object doUnsignedLongPositive(long n) {
@@ -332,20 +306,6 @@ public final class PythonCextLongBuiltins {
         static Object doUnsignedLongNegative(long n,
                         @Bind PythonLanguage language) {
             return PFactory.createInt(language, convertToBigInteger(n));
-        }
-
-        @Specialization(guards = "!isInteger(pointer)", limit = "2")
-        static Object doPointer(Object pointer,
-                        @CachedLibrary("pointer") InteropLibrary lib) {
-            // We capture the native pointer at the time when we create the wrapper if it exists.
-            if (lib.isPointer(pointer)) {
-                try {
-                    return PFactory.createNativeVoidPtr(pointer, lib.asPointer(pointer));
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
-                }
-            }
-            return PFactory.createNativeVoidPtr(pointer);
         }
 
         @TruffleBoundary
@@ -387,11 +347,6 @@ public final class PythonCextLongBuiltins {
             }
         }
 
-        @Specialization
-        static Object doPointer(PythonNativeVoidPtr n) {
-            return n.getPointerObject();
-        }
-
         @Fallback
         long doGeneric(Object n,
                         @Bind Node inliningTarget,
@@ -421,7 +376,7 @@ public final class PythonCextLongBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyLongObject, UNSIGNED_CHAR_PTR_ZZZ, SIZE_T, Int, Int}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyLongObject, UNSIGNED_CHAR_PTR, SIZE_T, Int, Int}, call = Direct)
     abstract static class _PyLong_AsByteArray extends CApi5BuiltinNode {
         private static void checkSign(Node inliningTarget, boolean negative, int isSigned, PRaiseNode raiseNode) {
             if (negative) {
@@ -475,7 +430,7 @@ public final class PythonCextLongBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {CONST_UNSIGNED_CHAR_PTR_ZZZ, SIZE_T, Int, Int}, call = Direct)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {CONST_UNSIGNED_CHAR_PTR, SIZE_T, Int, Int}, call = Direct)
     abstract static class _PyLong_FromByteArray extends CApiQuaternaryBuiltinNode {
         @Specialization
         static Object convert(long charPtr, long size, int littleEndian, int signed,

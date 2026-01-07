@@ -43,12 +43,11 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.INT64_T;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.IterResult;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_SSIZE_T_PTR_ZZZ;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_SSIZE_T_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PointerZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadStateZZZ;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadState;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.SIZE_T;
@@ -69,9 +68,9 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_NO_OP_CLEAR("GraalPyPrivate_NoOpClear", Int, PyObject),
     FUN_NO_OP_TRAVERSE("GraalPyPrivate_NoOpTraverse", Int, PyObject, Pointer, Pointer),
 
-    FUN_PYTRUFFLE_CONSTANTS("GraalPyPrivate_Constants", PY_SSIZE_T_PTR_ZZZ),
-    FUN_PYTRUFFLE_STRUCT_OFFSETS("GraalPyPrivate_StructOffsets", PY_SSIZE_T_PTR_ZZZ),
-    FUN_PYTRUFFLE_STRUCT_SIZES("GraalPyPrivate_StructSizes", PY_SSIZE_T_PTR_ZZZ),
+    FUN_PYTRUFFLE_CONSTANTS("GraalPyPrivate_Constants", PY_SSIZE_T_PTR),
+    FUN_PYTRUFFLE_STRUCT_OFFSETS("GraalPyPrivate_StructOffsets", PY_SSIZE_T_PTR),
+    FUN_PYTRUFFLE_STRUCT_SIZES("GraalPyPrivate_StructSizes", PY_SSIZE_T_PTR),
 
     /* Python C API functions */
 
@@ -81,24 +80,22 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_PY_TYPE_GENERIC_NEW("PyType_GenericNew", PyObjectTransfer, PyTypeObject, PyObject, PyObject),
     FUN_PY_TYPE_GENERIC_NEW_RAW("PyType_GenericNew", ArgDescriptor.UINTPTR_T, PyTypeObject, ArgDescriptor.UINTPTR_T, ArgDescriptor.UINTPTR_T),
     FUN_PY_TYPE_GENERIC_ALLOC("PyType_GenericAlloc", PyObjectTransfer, PyTypeObject, Py_ssize_t),
-    FUN_PY_OBJECT_GET_DICT_PTR("_PyObject_GetDictPtr", PointerZZZ, PyObject),
+    FUN_PY_OBJECT_GET_DICT_PTR("_PyObject_GetDictPtr", Pointer, PyObject),
     FUN_PY_UNICODE_GET_LENGTH("PyUnicode_GetLength", Py_ssize_t, PyObject),
-    FUN_PYMEM_ALLOC("PyMem_Calloc", PointerZZZ, SIZE_T, SIZE_T),
+    FUN_PYMEM_ALLOC("PyMem_Calloc", Pointer, SIZE_T, SIZE_T),
     FUN_PY_DEALLOC("_Py_Dealloc", Void, Pointer),
     FUN_PYOBJECT_HASH_NOT_IMPLEMENTED("PyObject_HashNotImplemented", ArgDescriptor.Py_hash_t, PyObject),
-    FUN_PY_GC_COLLECT_NO_FAIL("_PyGC_CollectNoFail", Py_ssize_t, PyThreadStateZZZ),
+    FUN_PY_GC_COLLECT_NO_FAIL("_PyGC_CollectNoFail", Py_ssize_t, PyThreadState),
     FUN_PY_OBJECT_NEXT_NOT_IMPLEMENTED("_PyObject_NextNotImplemented", IterResult, PyObject),
 
     /* GraalPy-specific helper functions */
-    FUN_PTR_COMPARE("GraalPyPrivate_PointerCompare", Int, Pointer, Pointer, Int),
-    FUN_PTR_ADD("GraalPyPrivate_PointerAddOffset", Pointer, Pointer, Py_ssize_t),
     FUN_OBJECT_ARRAY_RELEASE("GraalPyPrivate_ObjectArrayRelease", ArgDescriptor.Void, Pointer, Int),
     FUN_PY_OBJECT_NEW("GraalPyPrivate_ObjectNew", PyObjectTransfer, PyTypeObject),
     FUN_GRAALPY_OBJECT_GC_DEL("GraalPyPrivate_Object_GC_Del", Void, Pointer),
     FUN_BULK_DEALLOC("GraalPyPrivate_BulkDealloc", Py_ssize_t, ArgDescriptor.UINTPTR_T, INT64_T),
-    FUN_SHUTDOWN_BULK_DEALLOC("GraalPyPrivate_BulkDeallocOnShutdown", Py_ssize_t, PointerZZZ, INT64_T),
+    FUN_SHUTDOWN_BULK_DEALLOC("GraalPyPrivate_BulkDeallocOnShutdown", Py_ssize_t, Pointer, INT64_T),
     FUN_GET_CURRENT_RSS("GraalPyPrivate_GetCurrentRSS", SIZE_T),
-    FUN_ADD_SUBOFFSET("GraalPyPrivate_AddSuboffset", PointerZZZ, PointerZZZ, Py_ssize_t, Py_ssize_t),
+    FUN_ADD_SUBOFFSET("GraalPyPrivate_AddSuboffset", Pointer, Pointer, Py_ssize_t, Py_ssize_t),
     FUN_GRAALPY_MEMORYVIEW_FROM_OBJECT("GraalPyPrivate_MemoryViewFromObject", PyObjectTransfer, PyObject, Int),
     FUN_GRAALPY_RELEASE_BUFFER("GraalPyPrivate_ReleaseBuffer", ArgDescriptor.Void, Pointer),
     FUN_GRAALPY_CAPSULE_CALL_DESTRUCTOR("GraalPyPrivate_Capsule_CallDestructor", ArgDescriptor.Void, PyObject, ArgDescriptor.PY_CAPSULE_DESTRUCTOR),

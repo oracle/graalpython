@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.lib;
 
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.util.OverflowException;
@@ -91,11 +90,6 @@ public abstract class PyLongAsLongAndOverflowNode extends PNodeWithContext {
         return x ? 1 : 0;
     }
 
-    @Specialization
-    static long doNativePointer(PythonNativeVoidPtr object) {
-        return object.getNativePointer();
-    }
-
     // TODO When we implement casting native longs, this should cast them instead of calling their
     // __index__
     @Fallback
@@ -138,11 +132,6 @@ public abstract class PyLongAsLongAndOverflowNode extends PNodeWithContext {
         @Specialization
         static long doBoolean(boolean x) {
             return x ? 1 : 0;
-        }
-
-        @Specialization
-        static long doNativePointer(PythonNativeVoidPtr object) {
-            return object.getNativePointer();
         }
     }
 }

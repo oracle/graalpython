@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMe
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMethodDef__ml_flags;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMethodDef__ml_meth;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMethodDef__ml_name;
+import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 
 import java.util.logging.Level;
 
@@ -166,10 +167,10 @@ public record PyMethodDefHelper(TruffleString name, Object meth, int flags, Truf
 
         // we only read the other fields and decode strings for logging
         if (LOGGER.isLoggable(Level.FINER)) {
-            assert namePointer != 0L;
+            assert namePointer != NULLPTR;
             TruffleString name = FromCharPointerNode.executeUncached(namePointer, false);
             TruffleString doc = null;
-            if (docPointer != 0L) {
+            if (docPointer != NULLPTR) {
                 doc = FromCharPointerNodeGen.getUncached().execute(docPointer, false);
             }
             int flags = CStructAccess.readIntField(pointer, PyMethodDef__ml_flags);

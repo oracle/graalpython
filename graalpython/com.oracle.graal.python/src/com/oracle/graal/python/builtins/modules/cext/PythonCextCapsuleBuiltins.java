@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,10 +43,10 @@ package com.oracle.graal.python.builtins.modules.cext;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrZZZ;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_CAPSULE_DESTRUCTOR_ZZZ;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PointerZZZ;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_CAPSULE_DESTRUCTOR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
@@ -81,7 +81,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextCapsuleBuiltins {
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PointerZZZ, ConstCharPtrZZZ, PY_CAPSULE_DESTRUCTOR_ZZZ}, call = Direct)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, ConstCharPtr, PY_CAPSULE_DESTRUCTOR}, call = Direct)
     abstract static class PyCapsule_New extends CApiTernaryBuiltinNode {
         @Specialization
         static Object doGeneric(long pointer, long namePtr, long destructor,
@@ -112,7 +112,7 @@ public final class PythonCextCapsuleBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrZZZ}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtr}, call = Direct)
     abstract static class PyCapsule_IsValid extends CApiBinaryBuiltinNode {
         @Specialization
         static int doCapsule(PyCapsule o, long namePtr) {
@@ -131,7 +131,7 @@ public final class PythonCextCapsuleBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PointerZZZ, args = {PyObject, ConstCharPtrZZZ}, call = Direct)
+    @CApiBuiltin(ret = Pointer, args = {PyObject, ConstCharPtr}, call = Direct)
     abstract static class PyCapsule_GetPointer extends CApiBinaryBuiltinNode {
         @Specialization
         static long doCapsule(Object o, long name,
@@ -166,7 +166,7 @@ public final class PythonCextCapsuleBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = ConstCharPtrZZZ, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = ConstCharPtr, args = {PyObject}, call = Direct)
     abstract static class PyCapsule_GetName extends CApiUnaryBuiltinNode {
 
         @Specialization
@@ -186,7 +186,7 @@ public final class PythonCextCapsuleBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PY_CAPSULE_DESTRUCTOR_ZZZ, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = PY_CAPSULE_DESTRUCTOR, args = {PyObject}, call = Direct)
     abstract static class PyCapsule_GetDestructor extends CApiUnaryBuiltinNode {
         @Specialization
         long doCapsule(PyCapsule o,
@@ -205,7 +205,7 @@ public final class PythonCextCapsuleBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PointerZZZ, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = Pointer, args = {PyObject}, call = Direct)
     abstract static class PyCapsule_GetContext extends CApiUnaryBuiltinNode {
         @Specialization
         long doCapsule(PyCapsule o,
@@ -224,7 +224,7 @@ public final class PythonCextCapsuleBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, PointerZZZ}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyObject, Pointer}, call = Direct)
     abstract static class PyCapsule_SetPointer extends CApiBinaryBuiltinNode {
         @Specialization
         static int doCapsule(PyCapsule o, long pointer,
@@ -249,7 +249,7 @@ public final class PythonCextCapsuleBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrZZZ}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtr}, call = Direct)
     abstract static class PyCapsule_SetName extends CApiBinaryBuiltinNode {
         @Specialization
         static int set(PyCapsule o, long namePtr,
@@ -269,7 +269,7 @@ public final class PythonCextCapsuleBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, PY_CAPSULE_DESTRUCTOR_ZZZ}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyObject, PY_CAPSULE_DESTRUCTOR}, call = Direct)
     abstract static class PyCapsule_SetDestructor extends CApiBinaryBuiltinNode {
         @Specialization
         static int doCapsule(PyCapsule o, long destructor,
@@ -289,7 +289,7 @@ public final class PythonCextCapsuleBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, PointerZZZ}, call = Direct)
+    @CApiBuiltin(ret = Int, args = {PyObject, Pointer}, call = Direct)
     abstract static class PyCapsule_SetContext extends CApiBinaryBuiltinNode {
         @Specialization
         static int doCapsule(PyCapsule o, long context,
@@ -309,7 +309,7 @@ public final class PythonCextCapsuleBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PointerZZZ, args = {ConstCharPtrZZZ, Int}, call = Direct)
+    @CApiBuiltin(ret = Pointer, args = {ConstCharPtr, Int}, call = Direct)
     abstract static class PyCapsule_Import extends CApiBinaryBuiltinNode {
         @Specialization
         static long doGeneric(long namePtr, @SuppressWarnings("unused") int noBlock,
@@ -320,7 +320,7 @@ public final class PythonCextCapsuleBuiltins {
                         @Cached TruffleString.SubstringNode substringNode,
                         @Cached ReadAttributeFromObjectNode getAttrNode,
                         @Cached PRaiseNode raiseNode) {
-            TruffleString name = fromCharPointerNode.executeLong(namePtr, true);
+            TruffleString name = fromCharPointerNode.execute(namePtr, true);
             TruffleString trace = name;
             Object object = null;
             while (trace != null) {

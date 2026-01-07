@@ -43,12 +43,11 @@ package com.oracle.graal.python.builtins.modules.cext;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PointerZZZ;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyFrameObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadState;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadStateZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
 import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
@@ -120,7 +119,7 @@ public final class PythonCextPyStateBuiltins {
      * the C API, but were blocked at that time and therefore could not process the thread-local
      * action that eagerly initializes their native 'tstate_current' TLS slot.
      */
-    @CApiBuiltin(ret = PyThreadStateZZZ, args = {PointerZZZ}, acquireGil = false, call = Ignored)
+    @CApiBuiltin(ret = PyThreadState, args = {Pointer}, acquireGil = false, call = Ignored)
     abstract static class GraalPyPrivate_ThreadState_Get extends CApiUnaryBuiltinNode {
         private static final TruffleLogger LOGGER = CApiContext.getLogger(GraalPyPrivate_ThreadState_Get.class);
 
@@ -229,7 +228,7 @@ public final class PythonCextPyStateBuiltins {
     @CApiBuiltin(ret = PyFrameObjectTransfer, args = {PyThreadState}, call = Direct)
     abstract static class PyThreadState_GetFrame extends CApiUnaryBuiltinNode {
         @Specialization
-        Object get(@SuppressWarnings("unused") Object threadState,
+        Object get(@SuppressWarnings("unused") long threadState,
                         @Cached ReadFrameNode readFrameNode) {
             PFrame pFrame = readFrameNode.getCurrentPythonFrame(null);
             return pFrame != null ? pFrame : getNativeNull();

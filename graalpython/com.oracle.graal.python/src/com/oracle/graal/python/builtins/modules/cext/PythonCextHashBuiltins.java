@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,8 +42,8 @@ package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_VOID_PTR_ZZZ;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.INT8_T_PTR_ZZZ;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CONST_VOID_PTR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.INT8_T_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_hash_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
@@ -67,7 +67,7 @@ import com.oracle.truffle.api.strings.TruffleString.HashCodeNode;
 
 public final class PythonCextHashBuiltins {
 
-    @CApiBuiltin(ret = Void, args = {INT8_T_PTR_ZZZ}, call = Ignored)
+    @CApiBuiltin(ret = Void, args = {INT8_T_PTR}, call = Ignored)
     abstract static class GraalPyPrivate_Hash_InitSecret extends CApiUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
@@ -108,7 +108,7 @@ public final class PythonCextHashBuiltins {
         }
     }
 
-    @CApiBuiltin(name = "_Py_HashBytes", ret = Py_hash_t, args = {CONST_VOID_PTR_ZZZ, Py_ssize_t}, call = Direct)
+    @CApiBuiltin(name = "_Py_HashBytes", ret = Py_hash_t, args = {CONST_VOID_PTR, Py_ssize_t}, call = Direct)
     abstract static class _Py_HashBytes extends CApiBinaryBuiltinNode {
 
         @Specialization

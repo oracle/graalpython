@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.cext.common;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointer;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readPtrField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.wrapPointer;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
@@ -68,7 +67,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.BytesCommonBuiltins;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
@@ -86,6 +84,7 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.CallSlotLenNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.nfi2.NativeMemory;
 import com.oracle.graal.python.nfi2.NfiBoundFunction;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -116,7 +115,6 @@ import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -390,7 +388,7 @@ public abstract class CExtCommonNodes {
              * Run the ToNative conversion early so that the reference poll won't interrupt between
              * the read and write.
              */
-            long currentException = pythonToNativeNode.execute(pythonException);
+            long currentException = pythonToNativeNode.executeLong(pythonException);
             long nativeThreadState = PThreadState.getOrCreateNativeThreadState(getThreadStateNode.execute(inliningTarget));
             long oldException = readPtrField(nativeThreadState, CFields.PyThreadState__current_exception);
             writePtrField(nativeThreadState, CFields.PyThreadState__current_exception, currentException);
@@ -549,27 +547,8 @@ public abstract class CExtCommonNodes {
         }
     }
 
-    @GenerateInline
-    @GenerateCached(false)
-    @GenerateUncached
-    public abstract static class GetByteArrayNode extends Node {
-
-        public abstract byte[] execute(Node inliningTarget, Object obj, long n) throws InteropException, OverflowException;
-
-        @Specialization
-        static byte[] doForeign(Node inliningTarget, Object obj, long n,
-                        @Cached CoerceNativePointerToLongNode coerceNode) {
-            return readByteArrayElements(ensurePointer(obj, inliningTarget, coerceNode), 0, (int) n);
-        }
-
-        private static byte[] subRangeIfNeeded(byte[] bytes, long n) {
-            if (bytes.length > n && n >= 0) {
-                // cast to int is guaranteed because of 'bytes.length > n'
-                return PythonUtils.arrayCopyOf(bytes, (int) n);
-            } else {
-                return bytes;
-            }
-        }
+    public static byte[] getByteArray(long ptr, long n) throws OverflowException {
+        return readByteArrayElements(ptr, 0, PInt.intValueExact(n));
     }
 
     /**
@@ -719,12 +698,6 @@ public abstract class CExtCommonNodes {
             return (int) obj;
         }
 
-        @Specialization(guards = "targetTypeSize == 8")
-        @SuppressWarnings("unused")
-        static Object doVoidPtrToI64(PythonNativeVoidPtr obj, int signed, int targetTypeSize, boolean exact) {
-            return obj;
-        }
-
         @Specialization(guards = {"exact", "targetTypeSize == 4"})
         @SuppressWarnings("unused")
         @TruffleBoundary
@@ -784,7 +757,6 @@ public abstract class CExtCommonNodes {
                                         "doIntToInt64", "doIntToUInt64Pos", "doIntToUInt64", //
                                         "doLongToInt64", "doLongToUInt64Pos", "doLongToUInt64", //
                                         "doLongToInt32Exact", "doLongToUInt32PosExact", "doLongToUInt32Exact", "doLongToInt32Lossy", //
-                                        "doVoidPtrToI64", //
                                         "doPIntTo32Bit", "doPIntTo64Bit", "doPIntToInt32Lossy", "doPIntToInt64Lossy"})
         static Object doGeneric(Object obj, int signed, int targetTypeSize, boolean exact,
                         @Bind Node inliningTarget,
@@ -843,9 +815,6 @@ public abstract class CExtCommonNodes {
                     return doPIntTo32Bit(pval, signed, 4, true, inliningTarget, raiseNode);
                 }
                 return doPIntToInt32Lossy(pval, signed, 4, false);
-            } else if (object instanceof PythonNativeVoidPtr) {
-                // that's just not possible
-                throw raiseNode.raise(inliningTarget, PythonErrorType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE, 4);
             }
             throw raiseNode.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.INDEX_RETURNED_NON_INT, object);
         }
@@ -873,8 +842,6 @@ public abstract class CExtCommonNodes {
                     return doPIntTo64Bit(pval, signed, 8, true, inliningTarget, raiseNode);
                 }
                 return doPIntToInt64Lossy(pval, signed, 8, false);
-            } else if (object instanceof PythonNativeVoidPtr) {
-                return doVoidPtrToI64((PythonNativeVoidPtr) object, signed, 8, exact);
             }
             throw raiseNode.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.INDEX_RETURNED_NON_INT, object);
         }
@@ -888,6 +855,7 @@ public abstract class CExtCommonNodes {
      */
     @GenerateInline(false) // footprint reduction 32 -> 13, inherits non-inlineable execute()
     @GenerateUncached
+    @ImportStatic(NativeMemory.class)
     public abstract static class StringAsPythonStringNode extends CExtToJavaNode {
 
         @Specialization
@@ -903,14 +871,13 @@ public abstract class CExtCommonNodes {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = "interopLib.isNull(value)", limit = "3")
-        static Object doGeneric(Object value,
-                        @CachedLibrary("value") InteropLibrary interopLib) {
+        @Specialization(guards = "value == NULLPTR")
+        static Object doGeneric(long value) {
             return PNone.NONE;
         }
 
         @Specialization
-        static TruffleString doNative(Object value,
+        static TruffleString doNative(long value,
                         @Cached FromCharPointerNode fromPtr) {
             return fromPtr.execute(value);
         }

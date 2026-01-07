@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,7 +47,6 @@ import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.nodes.Node;
 
 /**
@@ -59,15 +58,15 @@ import com.oracle.truffle.api.nodes.Node;
 @GenerateUncached
 public abstract class GetNextVaArgNode extends Node {
 
-    public abstract Object execute(Node inliningTarget, Object valist) throws InteropException;
+    public abstract long execute(Node inliningTarget, long valist);
 
-    public static Object executeUncached(Object valist) throws InteropException {
+    public static long executeUncached(long valist) {
         return GetNextVaArgNodeGen.getUncached().execute(null, valist);
     }
 
     @Specialization
-    static Object doGeneric(Object valist,
+    static long doGeneric(long valist,
                     @Cached(inline = false) PCallCapiFunction nextNode) {
-        return nextNode.call(NativeCAPISymbol.FUN_VA_ARG_POINTER, valist);
+        return (long) nextNode.call(NativeCAPISymbol.FUN_VA_ARG_POINTER, valist);
     }
 }

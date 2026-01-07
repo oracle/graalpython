@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,13 +45,14 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemErro
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CHAR_PTR_ZZZ;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CHAR_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
+import static com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.getByteArray;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyVarObject__ob_size;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.getFieldPtr;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
@@ -72,7 +73,6 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetByteArrayNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
@@ -96,11 +96,9 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -183,15 +181,12 @@ public final class PythonCextBytesBuiltins {
     abstract static class GraalPyPrivate_Bytes_FromStringAndSize extends CApiBinaryBuiltinNode {
 
         @Specialization
-        static Object doNativePointer(Object nativePointer, long size,
+        static Object doNativePointer(long nativePointer, long size,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Exclusive @Cached GetByteArrayNode getByteArrayNode,
                         @Cached PRaiseNode raiseNode) {
             try {
-                return PFactory.createBytes(language, getByteArrayNode.execute(inliningTarget, nativePointer, size));
-            } catch (InteropException e) {
-                throw raiseNode.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.M, e);
+                return PFactory.createBytes(language, getByteArray(nativePointer, size));
             } catch (OverflowException e) {
                 throw raiseNode.raise(inliningTarget, PythonErrorType.SystemError, ErrorMessages.NEGATIVE_SIZE_PASSED);
             }
@@ -202,15 +197,12 @@ public final class PythonCextBytesBuiltins {
     abstract static class GraalPyPrivate_ByteArray_FromStringAndSize extends CApiBinaryBuiltinNode {
 
         @Specialization
-        static Object doNativePointer(Object nativePointer, long size,
+        static Object doNativePointer(long nativePointer, long size,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Exclusive @Cached GetByteArrayNode getByteArrayNode,
                         @Cached PRaiseNode raiseNode) {
             try {
-                return PFactory.createByteArray(language, getByteArrayNode.execute(inliningTarget, nativePointer, size));
-            } catch (InteropException e) {
-                return raiseNode.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.M, e);
+                return PFactory.createByteArray(language, getByteArray(nativePointer, size));
             } catch (OverflowException e) {
                 return raiseNode.raise(inliningTarget, PythonErrorType.SystemError, ErrorMessages.NEGATIVE_SIZE_PASSED);
             }
@@ -361,7 +353,7 @@ public final class PythonCextBytesBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = CHAR_PTR_ZZZ, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = CHAR_PTR, args = {PyObject}, call = Direct)
     abstract static class PyBytes_AsString extends CApiUnaryBuiltinNode {
         @Specialization
         static long doBytes(PBytes bytes) {

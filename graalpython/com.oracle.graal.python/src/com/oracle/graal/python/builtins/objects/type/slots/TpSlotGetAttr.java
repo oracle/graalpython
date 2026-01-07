@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.type.slots;
 
-import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.wrapPointer;
 import static com.oracle.graal.python.nfi2.NativeMemory.free;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETATTRIBUTE__;
@@ -269,13 +268,13 @@ public class TpSlotGetAttr {
                 nameArg = asCharPointerNode.execute(name);
             } else {
                 promotedName = ensurePythonObjectNode.execute(context, name, false);
-                nameArg = nameToNativeNode.execute(promotedName);
+                nameArg = nameToNativeNode.executeLong(promotedName);
             }
             Object result;
             PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, context);
             try {
                 result = externalInvokeNode.call(frame, inliningTarget, threadState, C_API_TIMING, T___GETATTR__, slot.callable,
-                                selfToNativeNode.execute(promotedSelf), wrapPointer(nameArg));
+                                selfToNativeNode.execute(promotedSelf), nameArg);
             } finally {
                 Reference.reachabilityFence(promotedSelf);
                 if (isGetAttr) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,6 +48,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_COMPILER_FLAGS;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
+import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_COMPILE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_EVAL;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_EXEC;
@@ -83,7 +84,7 @@ public final class PythonCextPythonRunBuiltins {
     abstract static class PyRun_StringFlags extends CApi5BuiltinNode {
 
         @Specialization(guards = "checkArgs(source, globals, locals, inliningTarget, isMapping)", limit = "1")
-        static Object run(Object source, int type, Object globals, Object locals, @SuppressWarnings("unused") Object flags,
+        static Object run(Object source, int type, Object globals, Object locals, @SuppressWarnings("unused") long flags,
                         @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Exclusive @Cached PyMappingCheckNode isMapping,
                         @Cached PyObjectLookupAttr lookupNode,
@@ -108,7 +109,7 @@ public final class PythonCextPythonRunBuiltins {
 
         @Specialization(guards = "!isString(source) || !isDict(globals)")
         static Object run(@SuppressWarnings("unused") Object source, @SuppressWarnings("unused") int type, @SuppressWarnings("unused") Object globals,
-                        @SuppressWarnings("unused") Object locals, @SuppressWarnings("unused") Object flags,
+                        @SuppressWarnings("unused") Object locals, @SuppressWarnings("unused") long flags,
                         @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, SystemError, BAD_ARG_TO_INTERNAL_FUNC);
         }
@@ -134,7 +135,7 @@ public final class PythonCextPythonRunBuiltins {
                         @Cached PRaiseNode raiseNode,
                         @Cached PyObjectLookupAttr lookupNode,
                         @Cached CallNode callNode) {
-            return Py_CompileStringExFlags.compile(source, filename, type, null, -1, inliningTarget, raiseNode, lookupNode, callNode);
+            return Py_CompileStringExFlags.compile(source, filename, type, NULLPTR, -1, inliningTarget, raiseNode, lookupNode, callNode);
         }
 
         @SuppressWarnings("unused")
@@ -149,7 +150,7 @@ public final class PythonCextPythonRunBuiltins {
     abstract static class Py_CompileStringExFlags extends CApi5BuiltinNode {
         @Specialization(guards = {"isString(source)", "isString(filename)"})
         static Object compile(Object source, Object filename, int type,
-                        @SuppressWarnings("unused") Object flags, int optimizationLevel,
+                        @SuppressWarnings("unused") long flags, int optimizationLevel,
                         @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode,
                         @Cached PyObjectLookupAttr lookupNode,
@@ -173,7 +174,7 @@ public final class PythonCextPythonRunBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!isString(source) || !isString(filename)")
-        static Object fail(Object source, Object filename, Object type, Object flags, Object optimizationLevel,
+        static Object fail(Object source, Object filename, Object type, long flags, Object optimizationLevel,
                         @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, SystemError, BAD_ARG_TO_INTERNAL_FUNC);
         }
@@ -183,18 +184,18 @@ public final class PythonCextPythonRunBuiltins {
     abstract static class Py_CompileStringObject extends CApi5BuiltinNode {
         @Specialization(guards = "isString(source)")
         static Object compile(Object source, Object filename, int type,
-                        @SuppressWarnings("unused") Object flags,
+                        @SuppressWarnings("unused") long flags,
                         int optimizationLevel,
                         @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode,
                         @Cached PyObjectLookupAttr lookupNode,
                         @Cached CallNode callNode) {
-            return Py_CompileStringExFlags.compile(source, filename, type, null, optimizationLevel, inliningTarget, raiseNode, lookupNode, callNode);
+            return Py_CompileStringExFlags.compile(source, filename, type, NULLPTR, optimizationLevel, inliningTarget, raiseNode, lookupNode, callNode);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!isString(source)")
-        static Object fail(Object source, Object filename, Object type, Object flags, Object optimizationLevel,
+        static Object fail(Object source, Object filename, Object type, long flags, Object optimizationLevel,
                         @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, SystemError, BAD_ARG_TO_INTERNAL_FUNC);
         }

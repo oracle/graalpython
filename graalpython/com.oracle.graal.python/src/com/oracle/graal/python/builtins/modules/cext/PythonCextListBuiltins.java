@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,7 +46,7 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.C
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.INT64_T;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PointerZZZ;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyListObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
@@ -301,7 +301,7 @@ public final class PythonCextListBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = INT64_T, args = {PyObject, PointerZZZ}, call = Ignored)
+    @CApiBuiltin(ret = INT64_T, args = {PyObject, Pointer}, call = Ignored)
     abstract static class GraalPyPrivate_List_ClearManagedOrGetItems extends CApiBinaryBuiltinNode {
 
         @Specialization
@@ -331,7 +331,7 @@ public final class PythonCextListBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = INT64_T, args = {PyObject, PointerZZZ}, call = Ignored)
+    @CApiBuiltin(ret = INT64_T, args = {PyObject, Pointer}, call = Ignored)
     abstract static class GraalPyPrivate_List_TryGetItems extends CApiBinaryBuiltinNode {
 
         @Specialization

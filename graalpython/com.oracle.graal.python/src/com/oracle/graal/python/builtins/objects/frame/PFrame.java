@@ -222,7 +222,7 @@ public final class PFrame extends PythonBuiltinObject {
         this.thread = Thread.currentThread();
     }
 
-    public PFrame(PythonLanguage lang, @SuppressWarnings("unused") Object threadState, PCode code, PythonObject globals, Object localsDict) {
+    public PFrame(PythonLanguage lang, @SuppressWarnings("unused") long threadState, PCode code, PythonObject globals, Object localsDict) {
         super(PythonBuiltinClassType.PFrame, PythonBuiltinClassType.PFrame.getInstanceShape(lang));
         // TODO: frames: extract the information from the threadState object
         this.globals = globals;

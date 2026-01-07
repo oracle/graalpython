@@ -42,9 +42,9 @@ package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CHAR_PTR_ZZZ;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CHAR_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_BUFFER_PTR_ZZZ;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PY_BUFFER_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
@@ -92,7 +92,7 @@ public final class PythonCextArrayBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = CHAR_PTR_ZZZ, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = CHAR_PTR, args = {PyObject}, call = Direct)
     abstract static class GraalPyArray_Data extends CApiUnaryBuiltinNode {
         @Specialization
         static long get(PArray array,
@@ -106,7 +106,7 @@ public final class PythonCextArrayBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, PY_BUFFER_PTR_ZZZ, Int}, call = Ignored)
+    @CApiBuiltin(ret = Int, args = {PyObject, PY_BUFFER_PTR, Int}, call = Ignored)
     abstract static class GraalPyPrivate_Array_getbuffer extends CApiTernaryBuiltinNode {
         @Specialization
         static int getbuffer(PArray array, long pyBufferPtr, int flags,
@@ -117,7 +117,7 @@ public final class PythonCextArrayBuiltins {
                         @Cached CStructAccess.WriteTruffleStringNode writeTruffleStringNode) {
             long bufPtr = ensureNativeStorageNode.execute(inliningTarget, array).getPtr();
             writePtrField(pyBufferPtr, CFields.Py_buffer__buf, bufPtr);
-            writePtrField(pyBufferPtr, CFields.Py_buffer__obj, toNativeNewRefNode.execute(array));
+            writePtrField(pyBufferPtr, CFields.Py_buffer__obj, toNativeNewRefNode.executeLong(array));
             writeLongField(pyBufferPtr, CFields.Py_buffer__len, array.getBytesLength());
             writeIntField(pyBufferPtr, CFields.Py_buffer__readonly, 0);
             writeIntField(pyBufferPtr, CFields.Py_buffer__ndim, 1);
@@ -153,7 +153,7 @@ public final class PythonCextArrayBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Void, args = {PyObject, PY_BUFFER_PTR_ZZZ}, call = Ignored)
+    @CApiBuiltin(ret = Void, args = {PyObject, PY_BUFFER_PTR}, call = Ignored)
     abstract static class GraalPyPrivate_Array_releasebuffer extends CApiBinaryBuiltinNode {
         @Specialization
         static Object releasebuffer(PArray array, long pyBufferPtr) {

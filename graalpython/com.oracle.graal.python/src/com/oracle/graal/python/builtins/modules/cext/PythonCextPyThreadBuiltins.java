@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -150,19 +150,15 @@ public final class PythonCextPyThreadBuiltins {
     @CApiBuiltin(ret = Pointer, args = {ArgDescriptor.Long}, call = Ignored)
     abstract static class GraalPyPrivate_tss_get extends CApiUnaryBuiltinNode {
         @Specialization
-        Object tssGet(long key) {
-            Object value = getCApiContext().tssGet(key);
-            if (value == null) {
-                return getNULL();
-            }
-            return value;
+        long tssGet(long key) {
+            return getCApiContext().tssGet(key);
         }
     }
 
     @CApiBuiltin(ret = Int, args = {ArgDescriptor.Long, Pointer}, call = Ignored)
     abstract static class GraalPyPrivate_tss_set extends CApiBinaryBuiltinNode {
         @Specialization
-        int tssSet(long key, Object value) {
+        int tssSet(long key, long value) {
             getCApiContext().tssSet(key, value);
             return 0;
         }

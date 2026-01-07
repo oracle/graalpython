@@ -47,17 +47,21 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.IterResult;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PointerYYY;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PrimitiveResult32;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PrimitiveResult64;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectConstArray;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectReturn;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectYYY;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObjectYYY;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ensureExecutable;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.wrapPointer;
 import static com.oracle.graal.python.builtins.objects.object.PythonObject.MANAGED_REFCNT;
+import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nfi2.NativeMemory.free;
 import static com.oracle.graal.python.nfi2.NativeMemory.readPtrArrayElement;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
@@ -75,6 +79,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePython
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PythonObjectArrayCreateNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PythonObjectArrayFreeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsCharPointerNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CheckRawPointerFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CreateArgsTupleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.DefaultCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ExternalFunctionInvokeNodeGen;
@@ -85,8 +90,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeRawNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeRawNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
@@ -293,7 +298,7 @@ public abstract class ExternalFunctionNodes {
     public static final class ToNativeBorrowedNode extends CExtToNativeNode {
 
         @Child private EnsurePythonObjectNode ensurePythonObjectNode = EnsurePythonObjectNode.create();
-        @Child private PythonToNativeNode toNative = PythonToNativeNodeGen.create();
+        @Child private PythonToNativeRawNode toNative = PythonToNativeRawNodeGen.create();
 
         @Override
         public Object execute(Object object) {
@@ -309,7 +314,7 @@ public abstract class ExternalFunctionNodes {
             PythonContext ctx = PythonContext.get(this);
             Object promoted = ensurePythonObjectNode.execute(ctx, object, false);
             assert promoted == object || PythonToNativeInternalNode.isImmortal(ctx, promoted);
-            return toNative.execute(promoted);
+            return toNative.executeLong(promoted);
         }
     }
 
@@ -317,11 +322,11 @@ public abstract class ExternalFunctionNodes {
     @GenerateInline(false)
     public abstract static class ToPythonStringNode extends CExtToJavaNode {
         @Specialization
-        static Object doIt(Object object,
+        static Object doIt(long pointer,
                         @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode castToStringNode,
                         @Cached NativeToPythonNode nativeToPythonNode) {
-            Object result = nativeToPythonNode.execute(object);
+            Object result = nativeToPythonNode.executeRaw(pointer);
             if (result == PNone.NO_VALUE) {
                 return result;
             }
@@ -343,56 +348,59 @@ public abstract class ExternalFunctionNodes {
      * the definition in {code capi.h}.
      */
     public enum PExternalFunctionWrapper implements NativeCExtSymbol {
-        DIRECT(1, PyObjectReturn, PyObject, PyObject), // TODO: remove?
-        FASTCALL(2, PyObjectReturn, PyObject, PyObjectConstArray, Py_ssize_t),
+        DIRECT(1, PyObjectReturn, PyObjectYYY, PyObjectYYY), // TODO: remove?
+        FASTCALL(2, PyObjectReturn, PyObjectYYY, PyObjectConstArray, Py_ssize_t),
         FASTCALL_WITH_KEYWORDS(3, PyObjectTransfer, PyObject, PyObjectConstArray, Py_ssize_t, PyObject),
-        KEYWORDS(4, PyObjectReturn, PyObject, PyObject, PyObject), // METH_VARARGS | METH_KEYWORDS
-        VARARGS(5, PyObjectReturn, PyObject, PyObject),            // METH_VARARGS
-        NOARGS(6, PyObjectReturn, PyObject, PyObject),             // METH_NOARGS
-        O(7, PyObjectReturn, PyObject, PyObject),                  // METH_O
+        KEYWORDS(4, PyObjectReturn, PyObjectYYY, PyObjectYYY, PyObjectYYY), // METH_VARARGS |
+                                                                            // METH_KEYWORDS
+        VARARGS(5, PyObjectReturn, PyObjectYYY, PyObjectYYY),            // METH_VARARGS
+        NOARGS(6, PyObjectReturn, PyObjectYYY, PyObjectYYY),             // METH_NOARGS
+        O(7, PyObjectReturn, PyObjectYYY, PyObjectYYY),                  // METH_O
         // METH_FASTCALL | METH_KEYWORDS | METH_METHOD:
-        METHOD(8, PyObjectReturn, PyObject, PyTypeObject, PyObjectConstArray, Py_ssize_t, PyObject),
+        METHOD(8, PyObjectReturn, PyObjectYYY, PyTypeObjectYYY, PyObjectConstArray, Py_ssize_t, PyObjectYYY),
         ALLOC(10, PyObjectTransfer, PyTypeObject, Py_ssize_t),
-        GETATTR(11, PyObjectReturn, PyObject, CharPtrAsTruffleString),
-        SETATTR(12, InitResult, PyObject, CharPtrAsTruffleString, PyObject),
-        RICHCMP(13, PyObjectReturn, PyObject, PyObject, Int),
-        SETITEM(14, InitResult, PyObject, Py_ssize_t, PyObject),
-        UNARYFUNC(15, PyObjectReturn, PyObject),
-        BINARYFUNC(16, PyObjectReturn, PyObject, PyObject),
-        BINARYFUNC_L(17, PyObjectReturn, PyObject, PyObject),
-        BINARYFUNC_R(18, PyObjectReturn, PyObject, PyObject),
-        TERNARYFUNC(19, PyObjectReturn, PyObject, PyObject, PyObject),
-        TERNARYFUNC_R(20, PyObjectReturn, PyObject, PyObject, PyObject),
-        LT(21, PyObjectReturn, PyObject, PyObject, Int),
-        LE(22, PyObjectReturn, PyObject, PyObject, Int),
-        EQ(23, PyObjectReturn, PyObject, PyObject, Int),
-        NE(24, PyObjectReturn, PyObject, PyObject, Int),
-        GT(25, PyObjectReturn, PyObject, PyObject, Int),
-        GE(26, PyObjectReturn, PyObject, PyObject, Int),
+        GETATTR(11, PyObjectReturn, PyObjectYYY, CharPtrAsTruffleString),
+        SETATTR(12, InitResult, PyObjectYYY, CharPtrAsTruffleString, PyObjectYYY),
+        RICHCMP(13, PyObjectReturn, PyObjectYYY, PyObjectYYY, Int),
+        SETITEM(14, InitResult, PyObjectYYY, Py_ssize_t, PyObjectYYY),
+        UNARYFUNC(15, PyObjectReturn, PyObjectYYY),
+        BINARYFUNC(16, PyObjectReturn, PyObjectYYY, PyObjectYYY),
+        BINARYFUNC_L(17, PyObjectReturn, PyObjectYYY, PyObjectYYY),
+        BINARYFUNC_R(18, PyObjectReturn, PyObjectYYY, PyObjectYYY),
+        TERNARYFUNC(19, PyObjectReturn, PyObjectYYY, PyObjectYYY, PyObjectYYY),
+        TERNARYFUNC_R(20, PyObjectReturn, PyObjectYYY, PyObjectYYY, PyObjectYYY),
+        LT(21, PyObjectReturn, PyObjectYYY, PyObjectYYY, Int),
+        LE(22, PyObjectReturn, PyObjectYYY, PyObjectYYY, Int),
+        EQ(23, PyObjectReturn, PyObjectYYY, PyObjectYYY, Int),
+        NE(24, PyObjectReturn, PyObjectYYY, PyObjectYYY, Int),
+        GT(25, PyObjectReturn, PyObjectYYY, PyObjectYYY, Int),
+        GE(26, PyObjectReturn, PyObjectYYY, PyObjectYYY, Int),
         ITERNEXT(27, IterResult, PyObject),
-        INQUIRY(28, InquiryResult, PyObject),
-        DELITEM(29, defaults(1), Int, PyObject, Py_ssize_t, PyObject),
-        GETITEM(30, PyObjectReturn, PyObject, Py_ssize_t),
-        GETTER(31, PyObjectReturn, PyObject, Pointer),
-        SETTER(32, InitResult, PyObject, PyObject, Pointer),
-        INITPROC(33, InitResult, PyObject, PyObject, PyObject),
-        HASHFUNC(34, PrimitiveResult64, PyObject),
-        CALL(35, PyObjectReturn, PyObject, PyObject, PyObject),
-        SETATTRO(36, InitResult, PyObject, PyObject, PyObject),
-        DESCR_GET(37, defaults(1), PyObjectTransfer, PyObject, PyObject, PyObject),
-        DESCR_SET(38, InitResult, PyObject, PyObject, PyObject),
-        LENFUNC(39, PrimitiveResult64, PyObject),
-        OBJOBJPROC(40, InquiryResult, PyObject, PyObject),
-        OBJOBJARGPROC(41, PrimitiveResult32, PyObject, PyObject, PyObject),
-        NEW(42, PyObjectReturn, PyObject, PyObject, PyObject),
-        MP_DELITEM(43, PrimitiveResult32, PyObject, PyObject, PyObject),
-        TP_STR(44, PyObjectReturn, PyObject),
-        TP_REPR(45, PyObjectReturn, PyObject),
-        DESCR_DELETE(46, InitResult, PyObject, PyObject, PyObject), // the last one is always NULL
-        DELATTRO(47, InitResult, PyObject, PyObject, PyObject), // the last one is always NULL
-        SSIZE_ARG(48, PyObjectReturn, PyObject, Py_ssize_t),
-        VISITPROC(49, Int, PyObject, Pointer),
-        TRAVERSEPROC(50, Int, PyObject, Pointer, Pointer);
+        INQUIRY(28, InquiryResult, PyObjectYYY),
+        DELITEM(29, defaults(1), Int, PyObjectYYY, Py_ssize_t, PyObjectYYY),
+        GETITEM(30, PyObjectReturn, PyObjectYYY, Py_ssize_t),
+        GETTER(31, PyObjectReturn, PyObjectYYY, Pointer),
+        SETTER(32, InitResult, PyObjectYYY, PyObjectYYY, Pointer),
+        INITPROC(33, InitResult, PyObjectYYY, PyObjectYYY, PyObjectYYY),
+        HASHFUNC(34, PrimitiveResult64, PyObjectYYY),
+        CALL(35, PyObjectReturn, PyObjectYYY, PyObjectYYY, PyObjectYYY),
+        SETATTRO(36, InitResult, PyObjectYYY, PyObjectYYY, PyObjectYYY),
+        DESCR_GET(37, defaults(1), PyObjectTransfer, PyObjectYYY, PyObjectYYY, PyObjectYYY),
+        DESCR_SET(38, InitResult, PyObjectYYY, PyObjectYYY, PyObjectYYY),
+        LENFUNC(39, PrimitiveResult64, PyObjectYYY),
+        OBJOBJPROC(40, InquiryResult, PyObjectYYY, PyObjectYYY),
+        OBJOBJARGPROC(41, PrimitiveResult32, PyObjectYYY, PyObjectYYY, PyObjectYYY),
+        NEW(42, PyObjectReturn, PyObjectYYY, PyObjectYYY, PyObjectYYY),
+        MP_DELITEM(43, PrimitiveResult32, PyObjectYYY, PyObjectYYY, PyObjectYYY),
+        TP_STR(44, PyObjectReturn, PyObjectYYY),
+        TP_REPR(45, PyObjectReturn, PyObjectYYY),
+        DESCR_DELETE(46, InitResult, PyObjectYYY, PyObjectYYY, PyObjectYYY), // the last one is
+                                                                             // always NULL
+        DELATTRO(47, InitResult, PyObjectYYY, PyObjectYYY, PyObjectYYY), // the last one is always
+                                                                         // NULL
+        SSIZE_ARG(48, PyObjectReturn, PyObjectYYY, Py_ssize_t),
+        VISITPROC(49, Int, PyObjectYYY, PointerYYY),
+        TRAVERSEPROC(50, Int, PyObjectYYY, Pointer, Pointer);
 
         private static int defaults(int x) {
             return x;
@@ -654,11 +662,19 @@ public abstract class ExternalFunctionNodes {
         }
 
         CheckFunctionResultNode createCheckFunctionResultNode() {
-            return returnValue.createCheckResultNode();
+            CheckFunctionResultNode node = returnValue.createCheckResultNode();
+            if (node == null && returnValue.getNFI2Type() == NfiType.RAW_POINTER) {
+                return CheckRawPointerFunctionResultNodeGen.create();
+            }
+            return node;
         }
 
         CheckFunctionResultNode getUncachedCheckFunctionResultNode() {
-            return returnValue.getUncachedCheckResultNode();
+            CheckFunctionResultNode node = returnValue.getUncachedCheckResultNode();
+            if (node == null && returnValue.getNFI2Type() == NfiType.RAW_POINTER) {
+                return CheckRawPointerFunctionResultNodeGen.getUncached();
+            }
+            return node;
         }
 
         CExtToJavaNode createConvertRetNode() {
@@ -1430,7 +1446,7 @@ public abstract class ExternalFunctionNodes {
             Object self = readSelf(frame);
             assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
             Object arg = readArgNode.execute(frame);
-            return new Object[]{self, wrapPointer(asCharPointerNode.execute(arg))};
+            return new Object[]{self, asCharPointerNode.execute(arg)};
         }
 
         @Override
@@ -2128,6 +2144,22 @@ public abstract class ExternalFunctionNodes {
         }
     }
 
+    // roughly equivalent to _Py_CheckFunctionResult in Objects/call.c, but only for functions
+    // returning raw pointers (primitive long)
+    @ImportStatic(PGuards.class)
+    @GenerateUncached
+    @GenerateInline(false)
+    public abstract static class CheckRawPointerFunctionResultNode extends CheckFunctionResultNode {
+
+        @Specialization
+        static Object doNativePointer(PythonThreadState state, TruffleString name, long result,
+                        @Bind Node inliningTarget,
+                        @Cached TransformExceptionFromNativeNode transformExceptionFromNativeNode) {
+            transformExceptionFromNativeNode.execute(inliningTarget, state, name, result == NULLPTR, true);
+            return result;
+        }
+    }
+
     // roughly equivalent to _Py_CheckFunctionResult in Objects/call.c
     @ImportStatic(PGuards.class)
     @GenerateUncached
@@ -2166,13 +2198,12 @@ public abstract class ExternalFunctionNodes {
     @GenerateUncached
     public abstract static class CheckIterNextResultNode extends CheckFunctionResultNode {
 
-        @Specialization(limit = "3")
-        static Object doGeneric(PythonThreadState state, @SuppressWarnings("unused") TruffleString name, Object result,
+        @Specialization
+        static long doGeneric(PythonThreadState state, @SuppressWarnings("unused") TruffleString name, long result,
                         @Bind Node inliningTarget,
-                        @CachedLibrary("result") InteropLibrary lib,
                         @Cached CExtCommonNodes.ReadAndClearNativeException readAndClearNativeException,
                         @Cached PRaiseNode raiseNode) {
-            if (lib.isNull(result)) {
+            if (result == NULLPTR) {
                 Object currentException = readAndClearNativeException.execute(inliningTarget, state);
                 // if no exception occurred, the iterator is exhausted -> raise StopIteration
                 if (currentException == PNone.NO_VALUE) {

@@ -45,7 +45,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbo
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GRAALPY_OBJECT_GC_DEL;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_NO_OP_CLEAR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_NO_OP_TRAVERSE;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PTR_COMPARE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_DEALLOC;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_OBJECT_FREE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TYPE_GENERIC_ALLOC;
@@ -99,7 +98,6 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.ModuleSpec;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.EnsurePythonObjectNodeGen;
@@ -107,20 +105,17 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromC
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.PythonObjectArrayCreateNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ResolvePointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.UnicodeFromFormatNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.DefaultCheckFunctionResultNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckRawPointerFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeRawNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.ResolveHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateStrongRefNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeRawNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureTruffleStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionFromNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformPExceptionToNativeNode;
@@ -156,7 +151,6 @@ import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
-import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nfi2.NativeMemory;
 import com.oracle.graal.python.nfi2.Nfi;
 import com.oracle.graal.python.nfi2.NfiBoundFunction;
@@ -178,7 +172,6 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupA
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
-import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
@@ -206,10 +199,8 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -245,7 +236,7 @@ public abstract class CExtNodes {
         @Specialization
         Object callNativeConstructor(Object object, Object arg,
                         @Bind Node inliningTarget,
-                        @Cached PythonToNativeNode toSulongNode,
+                        @Cached PythonToNativeRawNode toSulongNode,
                         @Cached NativeToPythonTransferNode toJavaNode) {
             assert TypeNodes.NeedsNativeAllocationNode.executeUncached(object);
             NfiBoundFunction callable = CApiContext.getNativeSymbol(inliningTarget, getFunction());
@@ -273,7 +264,7 @@ public abstract class CExtNodes {
 
     public abstract static class TupleSubtypeNew extends SubtypeNew {
 
-        @Child private PythonToNativeNode toNativeNode;
+        @Child private PythonToNativeRawNode toNativeNode;
 
         @Override
         protected final NativeCAPISymbol getFunction() {
@@ -283,7 +274,7 @@ public abstract class CExtNodes {
         public final Object call(Object object, Object arg) {
             if (toNativeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                toNativeNode = insert(PythonToNativeNodeGen.create());
+                toNativeNode = insert(PythonToNativeRawNodeGen.create());
             }
             return execute(object, toNativeNode.execute(arg));
         }
@@ -297,7 +288,7 @@ public abstract class CExtNodes {
     public abstract static class StringSubtypeNew extends SubtypeNew {
 
         @Child private EnsurePythonObjectNode ensurePythonObjectNode;
-        @Child private PythonToNativeNode toNativeNode;
+        @Child private PythonToNativeRawNode toNativeNode;
 
         @Override
         protected final NativeCAPISymbol getFunction() {
@@ -308,7 +299,7 @@ public abstract class CExtNodes {
             if (ensurePythonObjectNode == null || toNativeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 ensurePythonObjectNode = insert(EnsurePythonObjectNode.create());
-                toNativeNode = insert(PythonToNativeNodeGen.create());
+                toNativeNode = insert(PythonToNativeRawNodeGen.create());
             }
             Object promotedArg = ensurePythonObjectNode.execute(PythonContext.get(this), arg, false);
             Object result = execute(object, toNativeNode.execute(promotedArg));
@@ -329,7 +320,7 @@ public abstract class CExtNodes {
 
         @Specialization
         static PDict allocateNativePart(Object cls, PDict managedSide,
-                        @Cached PythonToNativeNode toNative,
+                        @Cached PythonToNativeRawNode toNative,
                         @Cached PCallCapiFunction call) {
             assert !managedSide.isNative();
             assert EnsurePythonObjectNode.doesNotNeedPromotion(cls);
@@ -439,54 +430,29 @@ public abstract class CExtNodes {
     @GenerateUncached
     @GenerateInline(false) // footprint reduction 36 -> 17
     public abstract static class FromCharPointerNode extends Node {
-        public final TruffleString execute(Object charPtr) {
+        public final TruffleString execute(long charPtr) {
             return execute(charPtr, true);
         }
 
         public static TruffleString executeUncached(long charPtr) {
-            return FromCharPointerNodeGen.getUncached().executeLong(charPtr, true);
+            return FromCharPointerNodeGen.getUncached().execute(charPtr, true);
         }
 
         public static TruffleString executeUncached(long charPtr, boolean copy) {
-            return FromCharPointerNodeGen.getUncached().executeLong(charPtr, copy);
-        }
-
-        public static TruffleString executeUncached(Object charPtr) {
-            return FromCharPointerNodeGen.getUncached().execute(charPtr);
-        }
-
-        public static TruffleString executeUncached(Object charPtr, boolean copy) {
             return FromCharPointerNodeGen.getUncached().execute(charPtr, copy);
         }
 
-        public abstract TruffleString executeLong(long charPtr, boolean copy);
-
-        public abstract TruffleString execute(Object charPtr, boolean copy);
+        public abstract TruffleString execute(long charPtr, boolean copy);
 
         @Specialization
         static TruffleString doPointer(long charPtr, boolean copy,
-                        @Shared @Cached TruffleString.FromNativePointerNode fromNativePointerNode,
-                        @Shared @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
+                        @Cached TruffleString.FromNativePointerNode fromNativePointerNode,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             int length = 0;
             while (readByteArrayElement(charPtr, length) != 0) {
                 length++;
             }
             TruffleString nativeBacked = fromNativePointerNode.execute(new NativePointer(charPtr), 0, length, Encoding.UTF_8, copy);
-            return switchEncodingNode.execute(nativeBacked, TS_ENCODING);
-        }
-
-        @Specialization
-        static TruffleString doInteropPointer(Object charPtr, boolean copy,
-                        @Bind Node inliningTarget,
-                        @Cached CoerceNativePointerToLongNode coerceNode,
-                        @Shared @Cached TruffleString.FromNativePointerNode fromNativePointerNode,
-                        @Shared @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
-            long rawCharPtr = coerceNode.execute(inliningTarget, charPtr);
-            int length = 0;
-            while (readByteArrayElement(rawCharPtr, length) != 0) {
-                length++;
-            }
-            TruffleString nativeBacked = fromNativePointerNode.execute(charPtr, 0, length, Encoding.UTF_8, copy);
             return switchEncodingNode.execute(nativeBacked, TS_ENCODING);
         }
     }
@@ -504,48 +470,6 @@ public abstract class CExtNodes {
                         @Cached ProfileClassNode classProfile) {
             // do not convert wrap 'object.object' since that is really the native pointer object
             return classProfile.profile(inliningTarget, callGetObTypeNode.readFromObj(object, PyObject__ob_type));
-        }
-    }
-
-    @GenerateUncached
-    @GenerateInline
-    @GenerateCached(false)
-    public abstract static class PointerCompareNode extends Node {
-
-        public abstract boolean execute(Node inliningTarget, RichCmpOp op, Object a, Object b);
-
-        @Specialization
-        static boolean doGeneric(Node inliningTarget, RichCmpOp op, Object a, Object b,
-                        @Cached NormalizePtrNode normalizeA,
-                        @Cached NormalizePtrNode normalizeB) {
-            CompilerAsserts.partialEvaluationConstant(op);
-            long ptrA = normalizeA.execute(inliningTarget, a);
-            long ptrB = normalizeB.execute(inliningTarget, b);
-            NfiBoundFunction sym = CApiContext.getNativeSymbol(inliningTarget, FUN_PTR_COMPARE);
-            return (int) sym.invoke(ptrA, ptrB, op.asNative()) != 0;
-        }
-
-        @TypeSystemReference(PythonIntegerTypes.class)
-        @GenerateInline
-        @GenerateCached(false)
-        @GenerateUncached
-        abstract static class NormalizePtrNode extends Node {
-            abstract long execute(Node inliningTarget, Object ptr);
-
-            @Specialization
-            static long doLong(long l) {
-                return l;
-            }
-
-            @Specialization
-            static long doLong(PythonNativeObject o) {
-                return o.getPtr();
-            }
-
-            @Specialization
-            static long doLong(PythonNativeVoidPtr o) {
-                return o.getNativePointer();
-            }
         }
     }
 
@@ -700,11 +624,6 @@ public abstract class CExtNodes {
         @Specialization
         static long doPFloat(PFloat value) {
             return (long) value.getValue();
-        }
-
-        @Specialization
-        static Object doPythonNativeVoidPtr(PythonNativeVoidPtr object) {
-            return object.getPointerObject();
         }
     }
 
@@ -1158,11 +1077,6 @@ public abstract class CExtNodes {
         public abstract long execute(Node inliningTarget, Object object);
 
         @Specialization
-        static long doPythonNativeVoidPtr(@SuppressWarnings("unused") PythonNativeVoidPtr object) {
-            return ((Long.SIZE - 1) / PYLONG_BITS_IN_DIGIT.intValue() + 1);
-        }
-
-        @Specialization
         static long doClass(@SuppressWarnings("unused") PythonManagedClass object) {
             return 0; // dummy value
         }
@@ -1184,7 +1098,7 @@ public abstract class CExtNodes {
     public abstract static class UnicodeFromFormatNode extends Node {
         private static Pattern pattern;
 
-        public static Object executeUncached(TruffleString format, Object vaList) {
+        public static Object executeUncached(TruffleString format, long vaList) {
             return UnicodeFromFormatNodeGen.getUncached().execute(null, format, vaList);
         }
 
@@ -1195,189 +1109,176 @@ public abstract class CExtNodes {
             return pattern.matcher(formatStr);
         }
 
-        public abstract Object execute(Node inliningTarget, TruffleString format, Object vaList);
+        public abstract Object execute(Node inliningTarget, TruffleString format, long vaList);
 
         @Specialization
         @TruffleBoundary
-        Object doGeneric(TruffleString f, Object vaList) {
+        Object doGeneric(TruffleString f, long vaList) {
             // TODO use TruffleString [GR-38103]
             String format = f.toJavaStringUncached();
 
             // helper nodes
-            NativeToPythonNode toJavaNode = NativeToPythonNodeGen.getUncached();
+            NativeToPythonNode toJavaNode = NativeToPythonNode.getUncached();
             CastToJavaStringNode castToJavaStringNode = CastToJavaStringNodeGen.getUncached();
             FromCharPointerNode fromCharPointerNode = FromCharPointerNodeGen.getUncached();
-            InteropLibrary interopLibrary = InteropLibrary.getUncached();
 
             StringBuilder result = new StringBuilder();
             int vaArgIdx = 0;
             Object unicodeObj;
-            try {
-                Matcher matcher = match(format);
-                int cur = 0;
-                while (matcher.find(cur)) {
-                    // not all combinations are valid
-                    boolean valid = false;
+            Matcher matcher = match(format);
+            int cur = 0;
+            while (matcher.find(cur)) {
+                // not all combinations are valid
+                boolean valid = false;
 
-                    // add anything before the match
-                    result.append(format, cur, matcher.start());
+                // add anything before the match
+                result.append(format, cur, matcher.start());
 
-                    cur = matcher.end();
+                cur = matcher.end();
 
-                    String spec = matcher.group("spec");
-                    String len = matcher.group("len");
-                    int prec = getPrec(matcher.group("prec"));
-                    assert spec.length() == 1;
-                    char la = spec.charAt(0);
-                    PythonContext context = PythonContext.get(null);
-                    switch (la) {
-                        case '%':
-                            // %%
-                            result.append('%');
-                            valid = true;
-                            break;
-                        case 'c':
-                            int ordinal = getAndCastToInt(interopLibrary, vaList);
-                            if (ordinal < 0 || ordinal > 0x110000) {
-                                throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.OverflowError, ErrorMessages.CHARACTER_ARG_NOT_IN_RANGE);
+                String spec = matcher.group("spec");
+                String len = matcher.group("len");
+                int prec = getPrec(matcher.group("prec"));
+                assert spec.length() == 1;
+                char la = spec.charAt(0);
+                PythonContext context = PythonContext.get(null);
+                switch (la) {
+                    case '%':
+                        // %%
+                        result.append('%');
+                        valid = true;
+                        break;
+                    case 'c':
+                        int ordinal = getAndCastToInt(vaList);
+                        if (ordinal < 0 || ordinal > 0x110000) {
+                            throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.OverflowError, ErrorMessages.CHARACTER_ARG_NOT_IN_RANGE);
+                        }
+                        result.append((char) ordinal);
+                        vaArgIdx++;
+                        valid = true;
+                        break;
+                    case 'd':
+                    case 'i':
+                        // %d, %i, %ld, %li, %lld, %lli, %zd, %zi
+                        if (len != null) {
+                            switch (len) {
+                                case "ll":
+                                case "l":
+                                case "z":
+                                    vaArgIdx++;
+                                    result.append(GetNextVaArgNode.executeUncached(vaList));
+                                    valid = true;
+                                    break;
                             }
-                            result.append((char) ordinal);
+                        } else {
+                            result.append(getAndCastToInt(vaList));
                             vaArgIdx++;
                             valid = true;
-                            break;
-                        case 'd':
-                        case 'i':
-                            // %d, %i, %ld, %li, %lld, %lli, %zd, %zi
-                            if (len != null) {
-                                switch (len) {
-                                    case "ll":
-                                    case "l":
-                                    case "z":
-                                        vaArgIdx++;
-                                        result.append(castToLong(interopLibrary, GetNextVaArgNode.executeUncached(vaList)));
-                                        valid = true;
-                                        break;
-                                }
+                        }
+                        break;
+                    case 'u':
+                        // %u, %lu, %llu, %zu
+                        if (len != null) {
+                            switch (len) {
+                                case "ll":
+                                case "l":
+                                case "z":
+                                    vaArgIdx++;
+                                    result.append(GetNextVaArgNode.executeUncached(vaList));
+                                    valid = true;
+                                    break;
+                            }
+                        } else {
+                            result.append(Integer.toUnsignedString(getAndCastToInt(vaList)));
+                            vaArgIdx++;
+                            valid = true;
+                        }
+                        break;
+                    case 'x':
+                        // %x
+                        result.append(Integer.toHexString(getAndCastToInt(vaList)));
+                        vaArgIdx++;
+                        valid = true;
+                        break;
+                    case 's':
+                        // %s
+                        long charPtr = GetNextVaArgNode.executeUncached(vaList);
+                        String sValue;
+                        if (charPtr == NULLPTR) {
+                            // CPython would segfault. Let's make debugging easier for ourselves
+                            sValue = "(NULL)";
+                        } else {
+                            unicodeObj = fromCharPointerNode.execute(charPtr);
+                            sValue = castToJavaStringNode.execute(unicodeObj);
+                        }
+                        try {
+                            if (prec == -1) {
+                                result.append(sValue);
                             } else {
-                                result.append(getAndCastToInt(interopLibrary, vaList));
-                                vaArgIdx++;
-                                valid = true;
+                                result.append(sValue, 0, Math.min(sValue.length(), prec));
                             }
-                            break;
-                        case 'u':
-                            // %u, %lu, %llu, %zu
-                            if (len != null) {
-                                switch (len) {
-                                    case "ll":
-                                    case "l":
-                                    case "z":
-                                        vaArgIdx++;
-                                        result.append(castToLong(interopLibrary, GetNextVaArgNode.executeUncached(vaList)));
-                                        valid = true;
-                                        break;
-                                }
-                            } else {
-                                result.append(Integer.toUnsignedString(getAndCastToInt(interopLibrary, vaList)));
-                                vaArgIdx++;
-                                valid = true;
-                            }
-                            break;
-                        case 'x':
-                            // %x
-                            result.append(Integer.toHexString(getAndCastToInt(interopLibrary, vaList)));
-                            vaArgIdx++;
-                            valid = true;
-                            break;
-                        case 's':
-                            // %s
-                            Object charPtr = GetNextVaArgNode.executeUncached(vaList);
-                            String sValue;
-                            if (interopLibrary.isNull(charPtr)) {
-                                // CPython would segfault. Let's make debugging easier for ourselves
-                                sValue = "(NULL)";
-                            } else {
-                                unicodeObj = fromCharPointerNode.execute(charPtr);
-                                sValue = castToJavaStringNode.execute(unicodeObj);
-                            }
-                            try {
-                                if (prec == -1) {
-                                    result.append(sValue);
-                                } else {
-                                    result.append(sValue, 0, Math.min(sValue.length(), prec));
-                                }
-                            } catch (CannotCastException e) {
-                                // That should really not happen because we created the unicode
-                                // object with FromCharPointerNode which guarantees to return a
-                                // String/PString.
-                                throw shouldNotReachHere();
-                            }
-                            vaArgIdx++;
-                            valid = true;
-                            break;
-                        case 'p':
-                            // %p
-                            Object ptr = GetNextVaArgNode.executeUncached(vaList);
-                            long value;
-                            if (interopLibrary.isPointer(ptr)) {
-                                value = interopLibrary.asPointer(ptr);
-                            } else if (interopLibrary.hasIdentity(ptr)) {
-                                value = interopLibrary.identityHashCode(ptr);
-                            } else {
-                                value = System.identityHashCode(ptr);
-                            }
-                            result.append(PythonUtils.formatJString("0x%x", value));
-                            vaArgIdx++;
-                            valid = true;
-                            break;
-                        case 'A':
-                            // %A
-                            result.append(callBuiltin(context, BuiltinNames.T_ASCII, getPyObject(vaList)));
-                            vaArgIdx++;
-                            valid = true;
-                            break;
-                        case 'U':
-                            // %U
-                            result.append(castToJavaStringNode.execute(getPyObject(vaList)));
-                            vaArgIdx++;
-                            valid = true;
-                            break;
-                        case 'V':
-                            // %V
-                            Object pyObjectPtr = GetNextVaArgNode.executeUncached(vaList);
-                            if (InteropLibrary.getUncached().isNull(pyObjectPtr)) {
-                                unicodeObj = fromCharPointerNode.execute(GetNextVaArgNode.executeUncached(vaList));
-                            } else {
-                                unicodeObj = toJavaNode.execute(pyObjectPtr);
-                            }
-                            result.append(castToJavaStringNode.execute(unicodeObj));
-                            vaArgIdx += 2;
-                            valid = true;
-                            break;
-                        case 'S':
-                            // %S
-                            result.append(callBuiltin(context, BuiltinNames.T_STR, getPyObject(vaList)));
-                            vaArgIdx++;
-                            valid = true;
-                            break;
-                        case 'R':
-                            // %R
-                            result.append(callBuiltin(context, BuiltinNames.T_REPR, getPyObject(vaList)));
-                            vaArgIdx++;
-                            valid = true;
-                            break;
-                    }
-                    // this means, we did not detect a valid format specifier, so add the whole
-                    // group
-                    if (!valid) {
-                        result.append(matcher.group());
-                    }
+                        } catch (CannotCastException e) {
+                            // That should really not happen because we created the unicode
+                            // object with FromCharPointerNode which guarantees to return a
+                            // String/PString.
+                            throw shouldNotReachHere();
+                        }
+                        vaArgIdx++;
+                        valid = true;
+                        break;
+                    case 'p':
+                        // %p
+                        long value = GetNextVaArgNode.executeUncached(vaList);
+                        result.append(PythonUtils.formatJString("0x%x", value));
+                        vaArgIdx++;
+                        valid = true;
+                        break;
+                    case 'A':
+                        // %A
+                        result.append(callBuiltin(context, BuiltinNames.T_ASCII, getPyObject(vaList)));
+                        vaArgIdx++;
+                        valid = true;
+                        break;
+                    case 'U':
+                        // %U
+                        result.append(castToJavaStringNode.execute(getPyObject(vaList)));
+                        vaArgIdx++;
+                        valid = true;
+                        break;
+                    case 'V':
+                        // %V
+                        long pyObjectPtr = GetNextVaArgNode.executeUncached(vaList);
+                        if (pyObjectPtr == NULLPTR) {
+                            unicodeObj = fromCharPointerNode.execute(GetNextVaArgNode.executeUncached(vaList));
+                        } else {
+                            unicodeObj = toJavaNode.executeRaw(pyObjectPtr);
+                        }
+                        result.append(castToJavaStringNode.execute(unicodeObj));
+                        vaArgIdx += 2;
+                        valid = true;
+                        break;
+                    case 'S':
+                        // %S
+                        result.append(callBuiltin(context, BuiltinNames.T_STR, getPyObject(vaList)));
+                        vaArgIdx++;
+                        valid = true;
+                        break;
+                    case 'R':
+                        // %R
+                        result.append(callBuiltin(context, BuiltinNames.T_REPR, getPyObject(vaList)));
+                        vaArgIdx++;
+                        valid = true;
+                        break;
                 }
-                // add anything after the last matched group (or the whole format string if nothing
-                // matched)
-                result.append(format, cur, format.length());
-            } catch (InteropException e) {
-                throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.SystemError, ErrorMessages.ERROR_WHEN_ACCESSING_VAR_ARG_AT_POS, vaArgIdx);
+                // this means, we did not detect a valid format specifier, so add the whole
+                // group
+                if (!valid) {
+                    result.append(matcher.group());
+                }
             }
+            // add anything after the last matched group (or the whole format string if nothing
+            // matched)
+            result.append(format, cur, format.length());
             return toTruffleStringUncached(result.toString());
         }
 
@@ -1392,55 +1293,12 @@ public abstract class CExtNodes {
          * Read an element from the {@code va_list} with the specified type and cast it to a Java
          * {@code int}. Throws a {@code SystemError} if this is not possible.
          */
-        private int getAndCastToInt(InteropLibrary lib, Object vaList) throws InteropException {
-            Object value = GetNextVaArgNode.executeUncached(vaList);
-            if (lib.fitsInInt(value)) {
-                try {
-                    return lib.asInt(value);
-                } catch (UnsupportedMessageException e) {
-                    throw shouldNotReachHere();
-                }
-            }
-            if (!lib.isPointer(value)) {
-                lib.toNative(value);
-            }
-            if (lib.isPointer(value)) {
-                try {
-                    return (int) lib.asPointer(value);
-                } catch (UnsupportedMessageException e) {
-                    throw shouldNotReachHere();
-                }
-            }
-            throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.SystemError, ErrorMessages.P_OBJ_CANT_BE_INTEPRETED_AS_INTEGER, value);
+        private int getAndCastToInt(long vaList) {
+            return (int) GetNextVaArgNode.executeUncached(vaList);
         }
 
-        /**
-         * Cast a value to a Java {@code long}. Throws a {@code SystemError} if this is not
-         * possible.
-         */
-        private long castToLong(InteropLibrary lib, Object value) {
-            if (lib.fitsInLong(value)) {
-                try {
-                    return lib.asLong(value);
-                } catch (UnsupportedMessageException e) {
-                    throw shouldNotReachHere();
-                }
-            }
-            if (!lib.isPointer(value)) {
-                lib.toNative(value);
-            }
-            if (lib.isPointer(value)) {
-                try {
-                    return lib.asPointer(value);
-                } catch (UnsupportedMessageException e) {
-                    throw shouldNotReachHere();
-                }
-            }
-            throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.SystemError, ErrorMessages.P_OBJ_CANT_BE_INTEPRETED_AS_INTEGER, value);
-        }
-
-        private static Object getPyObject(Object vaList) throws InteropException {
-            return NativeToPythonNode.executeUncached(GetNextVaArgNode.executeUncached(vaList));
+        private static Object getPyObject(long vaList) {
+            return NativeToPythonNode.executeRawUncached(GetNextVaArgNode.executeUncached(vaList));
         }
 
         @TruffleBoundary
@@ -1537,7 +1395,7 @@ public abstract class CExtNodes {
             PythonThreadState threadState = context.getThreadState(context.getLanguage());
             TransformExceptionFromNativeNode.getUncached().execute(null, threadState, mName, result == NULLPTR, true,
                             ErrorMessages.CREATION_FAILD_WITHOUT_EXCEPTION, ErrorMessages.CREATION_RAISED_EXCEPTION);
-            module = NativeToPythonTransferNode.executeUncached(result);
+            module = NativeToPythonTransferNode.executeRawUncached(result);
 
             /*
              * We are more strict than CPython and require this to be a PythonModule object. This
@@ -1713,13 +1571,13 @@ public abstract class CExtNodes {
 
         @Specialization
         static PMemoryView fromNative(PythonNativeObject buf, int flags,
-                        @Cached(inline = false) PythonToNativeNode toSulongNode,
+                        @Cached(inline = false) PythonToNativeRawNode toSulongNode,
                         @Cached(inline = false) NativeToPythonTransferNode asPythonObjectNode,
                         @Cached(inline = false) PCallCapiFunction callCapiFunction,
-                        @Cached(inline = false) DefaultCheckFunctionResultNode checkFunctionResultNode) {
-            Object result = callCapiFunction.call(FUN_GRAALPY_MEMORYVIEW_FROM_OBJECT, toSulongNode.execute(buf), flags);
+                        @Cached(inline = false) CheckRawPointerFunctionResultNode checkFunctionResultNode) {
+            long result = (long) callCapiFunction.call(FUN_GRAALPY_MEMORYVIEW_FROM_OBJECT, toSulongNode.execute(buf), flags);
             checkFunctionResultNode.execute(PythonContext.get(callCapiFunction), FUN_GRAALPY_MEMORYVIEW_FROM_OBJECT.getTsName(), result);
-            return (PMemoryView) asPythonObjectNode.execute(result);
+            return (PMemoryView) asPythonObjectNode.executeRaw(result);
         }
     }
 

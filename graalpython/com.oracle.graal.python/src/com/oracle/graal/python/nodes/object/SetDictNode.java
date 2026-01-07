@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,7 +48,7 @@ import java.lang.ref.Reference;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckPrimitiveFunctionResultNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeRawNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -89,8 +89,8 @@ public abstract class SetDictNode extends PNodeWithContext {
 
     @Specialization
     void doNativeObject(PythonAbstractNativeObject object, PDict dict,
-                    @Cached(inline = false) PythonToNativeNode objectToNative,
-                    @Cached(inline = false) PythonToNativeNode dictToNative,
+                    @Cached(inline = false) PythonToNativeRawNode objectToNative,
+                    @Cached(inline = false) PythonToNativeRawNode dictToNative,
                     @Cached(inline = false) CExtNodes.PCallCapiFunction callGetDictNode,
                     @Cached(inline = false) CheckPrimitiveFunctionResultNode checkResult) {
         assert !IsTypeNode.executeUncached(object);

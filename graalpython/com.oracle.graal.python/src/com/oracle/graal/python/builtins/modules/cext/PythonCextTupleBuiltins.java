@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,7 +45,7 @@ import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.C
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectPtrZZZ;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.nfi2.NativeMemory.callocPtrArray;
@@ -211,7 +211,7 @@ public final class PythonCextTupleBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectPtrZZZ, args = {PyObject, Py_ssize_t, PyObjectPtrZZZ}, call = Ignored)
+    @CApiBuiltin(ret = PyObjectPtr, args = {PyObject, Py_ssize_t, PyObjectPtr}, call = Ignored)
     abstract static class GraalPyPrivate_Tuple_Resize extends CApiTernaryBuiltinNode {
         @Specialization
         public static long size(PTuple tuple, long size, long obItemsPtr,

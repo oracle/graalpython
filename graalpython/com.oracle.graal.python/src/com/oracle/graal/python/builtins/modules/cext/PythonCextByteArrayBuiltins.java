@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,7 +41,7 @@
 package com.oracle.graal.python.builtins.modules.cext;
 
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CHAR_PTR_ZZZ;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CHAR_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.getFieldPtr;
 
@@ -65,7 +65,7 @@ import com.oracle.truffle.api.nodes.Node;
 
 public final class PythonCextByteArrayBuiltins {
 
-    @CApiBuiltin(ret = CHAR_PTR_ZZZ, args = {PyObject}, call = Direct)
+    @CApiBuiltin(ret = CHAR_PTR, args = {PyObject}, call = Direct)
     abstract static class PyByteArray_AsString extends CApiUnaryBuiltinNode {
         @Specialization
         static long doByteArray(PByteArray bytes) {

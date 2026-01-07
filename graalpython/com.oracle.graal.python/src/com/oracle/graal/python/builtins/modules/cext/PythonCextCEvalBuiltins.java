@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,10 +47,9 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyFrameObjectBorrowed;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectConstPtrZZZ;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectConstPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadState;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadStateZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -95,7 +94,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextCEvalBuiltins {
 
-    @CApiBuiltin(ret = PyThreadStateZZZ, args = {}, acquireGil = false, call = Direct)
+    @CApiBuiltin(ret = PyThreadState, args = {}, acquireGil = false, call = Direct)
     abstract static class PyEval_SaveThread extends CApiNullaryBuiltinNode {
         private static final TruffleLogger LOGGER = CApiContext.getLogger(PyEval_SaveThread.class);
 
@@ -115,7 +114,7 @@ public final class PythonCextCEvalBuiltins {
         private static final TruffleLogger LOGGER = CApiContext.getLogger(PyEval_RestoreThread.class);
 
         @Specialization
-        static Object restore(@SuppressWarnings("unused") Object ptr,
+        static Object restore(@SuppressWarnings("unused") long ptr,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached GilNode gil) {
@@ -150,7 +149,7 @@ public final class PythonCextCEvalBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject, PyObjectConstPtrZZZ, Int, PyObjectConstPtrZZZ, Int, PyObjectConstPtrZZZ, Int, PyObject, PyObject}, call = Ignored)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject, PyObjectConstPtr, Int, PyObjectConstPtr, Int, PyObjectConstPtr, Int, PyObject, PyObject}, call = Ignored)
     abstract static class GraalPyPrivate_Eval_EvalCodeEx extends CApi11BuiltinNode {
         @Specialization
         static Object doGeneric(PCode code, PythonObject globals, Object locals,

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -105,7 +105,7 @@ public final class PythonCextContextBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, Pointer}, call = Ignored)
     abstract static class GraalPyPrivate_ContextVar_Get extends CApiTernaryBuiltinNode {
         @Specialization
-        static Object doGeneric(Object var, Object def, Object marker,
+        static Object doGeneric(Object var, Object def, long marker,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached PRaiseNativeNode.Lazy raiseNative) {

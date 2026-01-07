@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -160,13 +160,13 @@ public final class BaseExceptionBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @Cached.Exclusive @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
                         @Bind PythonLanguage language,
                         @Cached CExtNodes.PCallCapiFunction callCapiFunction,
-                        @Cached CApiTransitions.PythonToNativeNode toNativeNode,
+                        @Cached CApiTransitions.PythonToNativeRawNode toNativeNode,
                         @Cached CApiTransitions.NativeToPythonTransferNode toPythonNode,
                         @Cached ExternalFunctionNodes.DefaultCheckFunctionResultNode checkFunctionResultNode) {
             Object argsTuple = args.length > 0 ? PFactory.createTuple(language, args) : PFactory.createEmptyTuple(language);
             assert EnsurePythonObjectNode.doesNotNeedPromotion(cls);
             assert EnsurePythonObjectNode.doesNotNeedPromotion(argsTuple);
-            Object nativeResult = callCapiFunction.call(NativeCAPISymbol.FUN_EXCEPTION_SUBTYPE_NEW, toNativeNode.execute(cls), toNativeNode.execute(argsTuple));
+            long nativeResult = (long) callCapiFunction.call(NativeCAPISymbol.FUN_EXCEPTION_SUBTYPE_NEW, toNativeNode.execute(cls), toNativeNode.execute(argsTuple));
             Reference.reachabilityFence(cls);
             Reference.reachabilityFence(argsTuple);
             return toPythonNode.execute(checkFunctionResultNode.execute(PythonContext.get(inliningTarget), NativeCAPISymbol.FUN_EXCEPTION_SUBTYPE_NEW.getTsName(), nativeResult));

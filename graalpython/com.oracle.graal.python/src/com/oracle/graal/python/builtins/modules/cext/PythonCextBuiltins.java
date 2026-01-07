@@ -52,7 +52,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PointerZZZ;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyCodeObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyFrameObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
@@ -138,7 +137,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateHandleTableReferenceNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ToNativeTypeNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformPExceptionToNativeCachedNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
@@ -1003,7 +1001,7 @@ public final class PythonCextBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyTypeObject, PointerZZZ, PointerZZZ}, call = Ignored)
+    @CApiBuiltin(ret = Int, args = {PyTypeObject, Pointer, Pointer}, call = Ignored)
     abstract static class GraalPyPrivate_Set_Native_Slots extends CApiTernaryBuiltinNode {
 
         @Specialization
@@ -1107,7 +1105,7 @@ public final class PythonCextBuiltins {
     @CApiBuiltin(ret = PyFrameObjectTransfer, args = {PyThreadState, PyCodeObject, PyObject, PyObject}, call = Direct)
     abstract static class PyFrame_New extends CApiQuaternaryBuiltinNode {
         @Specialization
-        static Object newFrame(Object threadState, PCode code, PythonObject globals, Object locals,
+        static Object newFrame(long threadState, PCode code, PythonObject globals, Object locals,
                         @Bind PythonLanguage language) {
             Object frameLocals;
             if (locals == null || PGuards.isPNone(locals)) {
@@ -1119,11 +1117,11 @@ public final class PythonCextBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, PyObject, Py_ssize_t, Int, Py_ssize_t, ConstCharPtrAsTruffleString, Int, PointerZZZ, PointerZZZ, PointerZZZ, PointerZZZ}, call = Ignored)
+    @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, PyObject, Py_ssize_t, Int, Py_ssize_t, ConstCharPtrAsTruffleString, Int, Pointer, Pointer, Pointer, Pointer}, call = Ignored)
     abstract static class GraalPyPrivate_MemoryViewFromBuffer extends CApi11BuiltinNode {
 
         @Specialization
-        static Object wrap(Object bufferStructPointer, Object ownerObj, long lenObj,
+        static Object wrap(long bufferStructPointer, Object ownerObj, long lenObj,
                         Object readonlyObj, Object itemsizeObj, TruffleString format,
                         Object ndimObj, long bufPointer, long shapePointer, long stridesPointer, long suboffsetsPointer,
                         @Bind Node inliningTarget,
@@ -1161,7 +1159,7 @@ public final class PythonCextBuiltins {
             Object buffer = NativeByteSequenceStorage.create(bufPointer, len, len, false);
             int flags = initFlagsNode.execute(inliningTarget, ndim, itemsize, shape, strides, suboffsets);
             BufferLifecycleManager bufferLifecycleManager = null;
-            if (!lib.isNull(bufferStructPointer)) {
+            if (bufferStructPointer != NULLPTR) {
                 bufferLifecycleManager = new NativeBufferLifecycleManager.NativeBufferLifecycleManagerFromType(bufferStructPointer);
             }
             return PFactory.createMemoryView(language, PythonContext.get(inliningTarget), bufferLifecycleManager, buffer, owner, len, readonly, itemsize,
@@ -1258,20 +1256,11 @@ public final class PythonCextBuiltins {
     @CApiBuiltin(ret = Void, args = {Pointer}, call = Ignored)
     abstract static class GraalPyPrivate_ManagedObject_GC_Del extends CApiUnaryBuiltinNode {
 
-        @Specialization(limit = "3")
-        static PNone doObject(Object ptr,
+        @Specialization
+        static PNone doObject(long ptr,
                         @Bind Node inliningTarget,
-                        @Cached PyObjectGCDelNode pyObjectGCDelNode,
-                        @CachedLibrary("ptr") InteropLibrary lib) {
-            // we expect a pointer object here because this is called from native
-            assert CApiTransitions.isBackendPointerObject(ptr);
-            if (lib.isPointer(ptr)) {
-                try {
-                    pyObjectGCDelNode.execute(inliningTarget, lib.asPointer(ptr));
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
-                }
-            }
+                        @Cached PyObjectGCDelNode pyObjectGCDelNode) {
+            pyObjectGCDelNode.execute(inliningTarget, ptr);
             return PNone.NO_VALUE;
         }
     }
@@ -1317,13 +1306,12 @@ public final class PythonCextBuiltins {
         Object doNativeWrapper(Object ptr,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
-                        @Cached GetCurrentFrameRef getCurrentFrameRef,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @Cached GetCurrentFrameRef getCurrentFrameRef) {
             PFrame.Reference ref = null;
             if (context.getOption(PythonOptions.TraceNativeMemoryCalls)) {
                 ref = getCurrentFrameRef.execute(null, inliningTarget);
             }
-            trace(context, CApiContext.asPointer(ptr, lib), ref, null);
+            trace(context, (long) ptr, ref, null);
             return PNone.NO_VALUE;
         }
 
@@ -1332,13 +1320,13 @@ public final class PythonCextBuiltins {
             return language.getEngineOption(PythonOptions.TraceNativeMemory);
         }
 
-        protected abstract void trace(PythonContext context, Object ptr, Reference ref, TruffleString className);
+        protected abstract void trace(PythonContext context, long ptr, Reference ref, TruffleString className);
     }
 
     @CApiBuiltin(ret = Void, args = {Pointer}, call = Ignored)
     abstract static class GraalPyPrivate_Object_GC_UnTrack extends GraalPyPrivate_GcTracingNode {
         @Override
-        protected void trace(PythonContext context, Object ptr, Reference ref, TruffleString className) {
+        protected void trace(PythonContext context, long ptr, Reference ref, TruffleString className) {
             GC_LOGGER.finer(() -> PythonUtils.formatJString("Untracking container object at %s", CApiContext.asHex(ptr)));
             context.getCApiContext().untrackObject(ptr, ref, className);
         }
@@ -1347,7 +1335,7 @@ public final class PythonCextBuiltins {
     @CApiBuiltin(ret = Void, args = {Pointer}, call = Ignored)
     abstract static class GraalPyPrivate_Object_GC_Track extends GraalPyPrivate_GcTracingNode {
         @Override
-        protected void trace(PythonContext context, Object ptr, Reference ref, TruffleString className) {
+        protected void trace(PythonContext context, long ptr, Reference ref, TruffleString className) {
             GC_LOGGER.finer(() -> PythonUtils.formatJString("Tracking container object at %s", CApiContext.asHex(ptr)));
             context.getCApiContext().trackObject(ptr, ref, className);
         }
@@ -1378,20 +1366,18 @@ public final class PythonCextBuiltins {
      * object) and then stored in a Java object array which is then attached to the primary object.
      * </p>
      */
-    @CApiBuiltin(ret = Void, args = {Pointer, PointerZZZ, Int}, call = Ignored)
+    @CApiBuiltin(ret = Void, args = {Pointer, Pointer, Int}, call = Ignored)
     abstract static class GraalPyPrivate_Object_ReplicateNativeReferences extends CApiTernaryBuiltinNode {
         private static final Level LEVEL = Level.FINER;
 
-        @Specialization(guards = "isNativeAccessAllowed()")
-        static Object doGeneric(Object pointer, long listHead, int n,
+        @Specialization
+        static Object doGeneric(long lPointer, long listHead, int n,
                         @Bind Node inliningTarget,
                         @Cached CStructAccess.ReadObjectNode readObjectNode,
-                        @Cached CoerceNativePointerToLongNode coerceNativePointerToLongNode,
                         @Cached GcNativePtrToPythonNode gcNativePtrToPythonNode) {
             assert PythonLanguage.get(inliningTarget).getEngineOption(PythonOptions.PythonGC);
 
             boolean loggable = GC_LOGGER.isLoggable(LEVEL);
-            long lPointer = coerceNativePointerToLongNode.execute(inliningTarget, pointer);
             assert lPointer != 0;
             Object object = gcNativePtrToPythonNode.execute(inliningTarget, lPointer);
 
@@ -1463,12 +1449,6 @@ public final class PythonCextBuiltins {
             return nativeSequenceStorage;
         }
 
-        @Specialization(guards = "!isNativeAccessAllowed()")
-        @SuppressWarnings("unused")
-        static Object doManaged(Object pointer, Object listHead, int n) {
-            return PNone.NO_VALUE;
-        }
-
         @TruffleBoundary
         private static String arraysToString(Object[] arr) {
             return Arrays.toString(arr);
@@ -1491,10 +1471,9 @@ public final class PythonCextBuiltins {
      */
     @CApiBuiltin(ret = Void, args = {Pointer}, call = Ignored)
     abstract static class GraalPyPrivate_Object_GC_EnsureWeak extends CApiUnaryBuiltinNode {
-        @Specialization(guards = "isNativeAccessAllowed()")
-        static Object doNative(Object weakCandidates,
+        @Specialization
+        static Object doNative(long head,
                         @Bind Node inliningTarget,
-                        @Cached CoerceNativePointerToLongNode coerceToLongNode,
                         @Cached UpdateHandleTableReferenceNode updateRefNode) {
             // guaranteed by the guard
             assert PythonContext.get(inliningTarget).isNativeAccessAllowed();
@@ -1506,7 +1485,6 @@ public final class PythonCextBuiltins {
              * The list's head is a dummy node that can not be a tagged pointer because it is not an
              * object and always allocated in native.
              */
-            long head = coerceToLongNode.execute(inliningTarget, weakCandidates);
             assert !HandlePointerConverter.pointsToPyHandleSpace(head);
 
             // PyGC_Head *gc = GC_NEXT(head)
@@ -1554,35 +1532,23 @@ public final class PythonCextBuiltins {
             }
             return PNone.NO_VALUE;
         }
-
-        @Specialization(guards = "!isNativeAccessAllowed()")
-        static Object doNative(@SuppressWarnings("unused") Object weakCandidates) {
-            return PNone.NO_VALUE;
-        }
     }
 
     @CApiBuiltin(ret = Int, args = {Pointer}, call = Ignored)
     abstract static class GraalPyPrivate_IsReferencedFromManaged extends CApiUnaryBuiltinNode {
-        @Specialization(guards = "isNativeAccessAllowed()")
-        static int doNative(Object pointer,
+        @Specialization
+        static int doNative(long lPointer,
                         @Bind Node inliningTarget,
-                        @Cached CoerceNativePointerToLongNode coerceToLongNode,
                         @Cached GcNativePtrToPythonNode gcNativePtrToPythonNode) {
             // guaranteed by the guard
             assert PythonContext.get(inliningTarget).isNativeAccessAllowed();
             assert PythonLanguage.get(inliningTarget).getEngineOption(PythonOptions.PythonGC);
 
-            long lPointer = coerceToLongNode.execute(inliningTarget, pointer);
             // this upcall doesn't make sense for managed objects
             assert !HandlePointerConverter.pointsToPyHandleSpace(lPointer);
 
             Object object = gcNativePtrToPythonNode.execute(inliningTarget, lPointer);
             return PInt.intValue(object != null);
-        }
-
-        @Specialization(guards = "!isNativeAccessAllowed()")
-        static Object doManaged(@SuppressWarnings("unused") Object pointer) {
-            return PInt.intValue(false);
         }
     }
 
@@ -1731,7 +1697,7 @@ public final class PythonCextBuiltins {
     abstract static class GraalPyPrivate_Debug extends CApiUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        static Object doIt(Object arg,
+        static Object doIt(long arg,
                         @Cached DebugNode debugNode) {
             debugNode.execute(new Object[]{arg});
             return 0;
@@ -1742,7 +1708,7 @@ public final class PythonCextBuiltins {
     abstract static class GraalPyPrivate_ToNative extends CApiUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        int doIt(Object object) {
+        int doIt(@SuppressWarnings("unused") long object) {
             if (!PythonOptions.EnableDebuggingBuiltins.getValue(getContext().getEnv().getOptions())) {
                 String message = "GraalPyPrivate_ToNative is not enabled - enable with --python.EnableDebuggingBuiltins\n";
                 try {
@@ -1752,7 +1718,6 @@ public final class PythonCextBuiltins {
                 }
                 return 1;
             }
-            InteropLibrary.getUncached().toNative(object);
             return 0;
         }
     }
@@ -1793,7 +1758,7 @@ public final class PythonCextBuiltins {
      *     }
      * </pre>
      */
-    @CApiBuiltin(ret = Void, args = {PointerZZZ}, call = Ignored)
+    @CApiBuiltin(ret = Void, args = {Pointer}, call = Ignored)
     abstract static class GraalPyPrivate_InitBuiltinTypesAndStructs extends CApiUnaryBuiltinNode {
 
         record ClassPtrPair(PythonManagedClass clazz, long ptr) {
@@ -1893,7 +1858,7 @@ public final class PythonCextBuiltins {
     abstract static class GraalPyPrivate_GetMMapData extends CApiUnaryBuiltinNode {
 
         @Specialization
-        Object get(PMMap object,
+        long get(PMMap object,
                         @Bind Node inliningTarget,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PConstructAndRaiseNode.Lazy raiseNode) {

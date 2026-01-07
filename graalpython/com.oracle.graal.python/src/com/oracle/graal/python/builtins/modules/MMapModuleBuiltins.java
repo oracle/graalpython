@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,7 +51,7 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeRawNode;
 import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.runtime.PosixConstants;
@@ -105,7 +105,7 @@ public final class MMapModuleBuiltins extends PythonBuiltins {
         super.postInitialize(core);
         core.getContext().registerCApiHook(() -> {
             PythonAbstractObject promoted = EnsurePythonObjectNode.executeUncached(core.getContext(), PythonBuiltinClassType.PMMap);
-            CExtNodes.PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_MMAP_INIT_BUFFERPROTOCOL, PythonToNativeNode.executeUncached(promoted));
+            CExtNodes.PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_MMAP_INIT_BUFFERPROTOCOL, PythonToNativeRawNode.executeUncached(promoted));
         });
     }
 }
