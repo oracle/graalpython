@@ -45,18 +45,14 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.NeverDefault;
-import com.oracle.truffle.api.dsl.NonIdempotent;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.object.DynamicObject;
-import com.oracle.truffle.api.object.Location;
-import com.oracle.truffle.api.object.Property;
-import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -89,74 +85,27 @@ public abstract class ReadAttributeFromPythonObjectNode extends PNodeWithContext
     // DynamicObject to ObjectHashMap
     public abstract Object execute(DynamicObject object, TruffleString key, Object defaultValue);
 
-    protected static Object getAttribute(DynamicObject object, TruffleString key, Object defaultValue) {
-        return DynamicObject.GetNode.getUncached().execute(object, key, defaultValue);
-    }
-
     @Idempotent
     protected static boolean isLongLivedObject(DynamicObject object) {
         return object instanceof PythonModule || object instanceof PythonManagedClass;
     }
 
-    @Idempotent
-    protected static boolean isPrimitive(Object value) {
-        return PythonUtils.isPrimitive(value);
-    }
-
-    @NonIdempotent
-    protected static boolean locationIsAssumedFinal(Location loc) {
-        return loc != null && loc.isAssumedFinal();
-    }
-
-    protected static Location getLocationOrNull(Property prop) {
-        return prop == null ? null : prop.getLocation();
-    }
-
     @SuppressWarnings("unused")
     @Specialization(limit = "1", //
                     guards = {
                                     "isSingleContext()",
                                     "dynamicObject == cachedObject",
                                     "isLongLivedObject(cachedObject)",
-                                    "key == cachedKey",
-                                    "dynamicObject.getShape() == cachedShape",
-                                    "locationIsAssumedFinal(loc)",
-                                    "!isPrimitive(value)"
-                    }, //
-                    assumptions = {"cachedShape.getValidAssumption()", "loc.getFinalAssumption()"})
+                    })
     protected static Object readFinalAttr(DynamicObject dynamicObject, TruffleString key, Object defaultValue,
-                    @Cached("key") TruffleString cachedKey,
-                    @Cached(value = "dynamicObject", weak = true) DynamicObject cachedObject,
-                    @Cached("dynamicObject.getShape()") Shape cachedShape,
-                    @Cached("getLocationOrNull(cachedShape.getProperty(cachedKey))") Location loc,
-                    @Cached(value = "getAttribute(dynamicObject, key, defaultValue)", weak = true) Object value) {
-        return value;
+                    @Shared @Cached DynamicObject.GetNode getNode,
+                    @Cached(value = "dynamicObject", weak = true) DynamicObject cachedObject) {
+        return getNode.execute(cachedObject, key, defaultValue);
     }
 
-    @SuppressWarnings("unused")
-    @Specialization(limit = "1", //
-                    guards = {
-                                    "isSingleContext()",
-                                    "dynamicObject == cachedObject",
-                                    "isLongLivedObject(cachedObject)",
-                                    "key == cachedKey",
-                                    "dynamicObject.getShape() == cachedShape",
-                                    "locationIsAssumedFinal(loc)",
-                                    "isPrimitive(value)"
-                    }, //
-                    assumptions = {"cachedShape.getValidAssumption()", "loc.getFinalAssumption()"})
-    protected static Object readFinalPrimitiveAttr(DynamicObject dynamicObject, TruffleString key, Object defaultValue,
-                    @Cached("key") TruffleString cachedKey,
-                    @Cached(value = "dynamicObject", weak = true) DynamicObject cachedObject,
-                    @Cached("dynamicObject.getShape()") Shape cachedShape,
-                    @Cached("getLocationOrNull(cachedShape.getProperty(cachedKey))") Location loc,
-                    @Cached(value = "getAttribute(dynamicObject, key, defaultValue)") Object value) {
-        return value;
-    }
-
-    @Specialization(replaces = {"readFinalAttr", "readFinalPrimitiveAttr"})
+    @Specialization(replaces = {"readFinalAttr"})
     protected static Object readDirect(DynamicObject dynamicObject, TruffleString key, Object defaultValue,
-                    @Cached DynamicObject.GetNode getNode) {
+                    @Shared @Cached DynamicObject.GetNode getNode) {
         return getNode.execute(dynamicObject, key, defaultValue);
     }
 }
