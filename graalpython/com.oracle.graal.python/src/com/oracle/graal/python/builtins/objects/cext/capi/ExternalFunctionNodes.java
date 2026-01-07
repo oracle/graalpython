@@ -90,8 +90,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeRawNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeRawNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
@@ -298,7 +297,7 @@ public abstract class ExternalFunctionNodes {
     public static final class ToNativeBorrowedNode extends CExtToNativeNode {
 
         @Child private EnsurePythonObjectNode ensurePythonObjectNode = EnsurePythonObjectNode.create();
-        @Child private PythonToNativeRawNode toNative = PythonToNativeRawNodeGen.create();
+        @Child private PythonToNativeNode toNative = PythonToNativeNode.create();
 
         @Override
         public Object execute(Object object) {

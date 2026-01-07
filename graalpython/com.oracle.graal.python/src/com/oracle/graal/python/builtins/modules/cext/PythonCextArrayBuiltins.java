@@ -113,7 +113,7 @@ public final class PythonCextArrayBuiltins {
                         @Bind Node inliningTarget,
                         @Cached ArrayNodes.EnsureNativeStorageNode ensureNativeStorageNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
-                        @Cached CApiTransitions.PythonToNativeNewRefRawNode toNativeNewRefNode,
+                        @Cached CApiTransitions.PythonToNativeNewRefNode toNativeNewRefNode,
                         @Cached CStructAccess.WriteTruffleStringNode writeTruffleStringNode) {
             long bufPtr = ensureNativeStorageNode.execute(inliningTarget, array).getPtr();
             writePtrField(pyBufferPtr, CFields.Py_buffer__buf, bufPtr);

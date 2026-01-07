@@ -48,7 +48,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPoin
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativePtrToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefRawNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.ReadCharPtrNodeGen;
@@ -287,7 +287,7 @@ public class CStructAccess {
         @Specialization
         static void writeLong(long pointer, long offset, Object value,
                         @Cached NativePtrToPythonNode toPython,
-                        @Cached PythonToNativeNewRefRawNode toNative) {
+                        @Cached PythonToNativeNewRefNode toNative) {
             assert offset >= 0;
             long old = NativeMemory.readPtr(pointer + offset);
             if (old != NULLPTR) {

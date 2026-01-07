@@ -50,7 +50,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeRawNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -135,7 +135,7 @@ public abstract class GetDictIfExistsNode extends PNodeWithContext {
                     @Bind Node inliningTarget,
                     @Cached IsTypeNode isTypeNode,
                     @Cached CStructAccess.ReadObjectNode getNativeDict,
-                    @Cached PythonToNativeRawNode toNative,
+                    @Cached PythonToNativeNode toNative,
                     @Cached CStructAccess.ReadObjectNode readObjectNode,
                     @Cached CStructAccess.WriteObjectNewRefNode writeObjectNode,
                     @Cached InlinedBranchProfile createDict,
@@ -152,7 +152,7 @@ public abstract class GetDictIfExistsNode extends PNodeWithContext {
         }
 
         assert EnsurePythonObjectNode.doesNotNeedPromotion(object);
-        long dictPtr = (long) callGetDictPtr.call(FUN_PY_OBJECT_GET_DICT_PTR, toNative.execute(object));
+        long dictPtr = (long) callGetDictPtr.call(FUN_PY_OBJECT_GET_DICT_PTR, toNative.executeLong(object));
         if (dictPtr == NULLPTR) {
             return null;
         } else {

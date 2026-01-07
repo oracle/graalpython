@@ -252,13 +252,13 @@ public final class ComplexBuiltins extends PythonBuiltins {
             @Fallback
             static Object doNative(Node inliningTarget, Object cls, double real, double imaginary,
                             @Cached(inline = false) CExtNodes.PCallCapiFunction callCapiFunction,
-                            @Cached(inline = false) CApiTransitions.PythonToNativeRawNode toNativeNode,
+                            @Cached(inline = false) CApiTransitions.PythonToNativeNode toNativeNode,
                             @Cached(inline = false) CApiTransitions.NativeToPythonTransferNode toPythonNode,
                             @Cached(inline = false) ExternalFunctionNodes.DefaultCheckFunctionResultNode checkFunctionResultNode) {
                 NativeCAPISymbol symbol = NativeCAPISymbol.FUN_COMPLEX_SUBTYPE_FROM_DOUBLES;
                 // classes are always Python objects
                 assert EnsurePythonObjectNode.doesNotNeedPromotion(cls);
-                long nativeResult = (long) callCapiFunction.call(symbol, toNativeNode.execute(cls), real, imaginary);
+                long nativeResult = (long) callCapiFunction.call(symbol, toNativeNode.executeLong(cls), real, imaginary);
                 return toPythonNode.execute(checkFunctionResultNode.execute(PythonContext.get(inliningTarget), symbol.getTsName(), nativeResult));
             }
         }

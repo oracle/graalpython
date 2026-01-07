@@ -52,9 +52,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonReturnNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefRawNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeRawNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
@@ -72,10 +70,10 @@ enum ArgBehavior {
                     NativeToPythonTransferNode.getUncached()),
     PyObject(
                     NfiType.RAW_POINTER,
-                    PythonToNativeRawNode::create,
+                    PythonToNativeNode::create,
                     NativeToPythonNode::create,
                     NativeToPythonNode.getUncached(),
-                    PythonToNativeNewRefRawNode::create,
+                    PythonToNativeNewRefNode::create,
                     NativeToPythonTransferNode::create,
                     NativeToPythonTransferNode.getUncached()),
     PyObjectBorrowed(NfiType.RAW_POINTER, ToNativeBorrowedNode::new, NativeToPythonNode::create, NativeToPythonNode.getUncached(), null, null, null),

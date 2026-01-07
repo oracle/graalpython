@@ -59,7 +59,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeRawNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.slots.PythonDispatchers.BinaryPythonSlotDispatcherNode;
@@ -254,7 +253,7 @@ public class TpSlotGetAttr {
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached InlinedConditionProfile isGetAttrProfile,
                         @Cached AsCharPointerNode asCharPointerNode,
-                        @Cached PythonToNativeRawNode nameToNativeNode,
+                        @Cached PythonToNativeNode nameToNativeNode,
                         @Cached EnsurePythonObjectNode ensurePythonObjectNode,
                         @Cached PythonToNativeNode selfToNativeNode,
                         @Cached NativeToPythonTransferNode toPythonNode,

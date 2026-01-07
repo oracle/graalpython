@@ -59,7 +59,7 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefRawNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexCustomMessageNode;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
@@ -1381,7 +1381,7 @@ public abstract class SequenceStorageNodes {
         @Specialization
         protected static void doNativeObject(NativeObjectSequenceStorage storage, int idx, Object value,
                         @Bind Node inliningTarget,
-                        @Cached PythonToNativeNewRefRawNode toNative,
+                        @Cached PythonToNativeNewRefNode toNative,
                         @Cached CExtNodes.XDecRefPointerNode decRefPointerNode) {
             long old = readPtrArrayElement(storage.getPtr(), idx);
             writePtrArrayElement(storage.getPtr(), idx, toNative.executeLong(value));
@@ -1403,7 +1403,7 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         protected static void doNativeObject(NativeObjectSequenceStorage storage, int idx, Object value,
-                        @Cached PythonToNativeNewRefRawNode toNative) {
+                        @Cached PythonToNativeNewRefNode toNative) {
             writePtrArrayElement(storage.getPtr(), idx, toNative.executeLong(value));
         }
     }
@@ -4063,7 +4063,7 @@ public abstract class SequenceStorageNodes {
         @Specialization
         protected static SequenceStorage doNativeObjectStorage(Node inliningTarget, NativeObjectSequenceStorage storage, int index, Object value,
                         @Exclusive @Cached EnsureCapacityNode ensureCapacityNode,
-                        @Cached PythonToNativeNewRefRawNode toNative) {
+                        @Cached PythonToNativeNewRefNode toNative) {
             int newLength = storage.length() + 1;
             ensureCapacityNode.execute(inliningTarget, storage, newLength);
             for (int i = storage.length(); i > index; i--) {

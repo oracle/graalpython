@@ -157,7 +157,7 @@ public final class PythonCextDictBuiltins {
         @Specialization
         static int next(PDict dict, long posPtr, long keyPtr, long valuePtr, long hashPtr,
                         @Bind Node inliningTarget,
-                        @Cached CApiTransitions.PythonToNativeRawNode toNativeNode,
+                        @Cached CApiTransitions.PythonToNativeNode toNativeNode,
                         @Cached InlinedBranchProfile needsRewriteProfile,
                         @Cached InlinedBranchProfile economicMapProfile,
                         @Cached HashingStorageLen lenNode,

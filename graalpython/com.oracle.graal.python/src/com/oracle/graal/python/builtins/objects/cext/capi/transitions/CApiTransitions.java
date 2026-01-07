@@ -98,8 +98,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeInternalNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNewRefNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeNewRefRawNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeRawNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
@@ -635,7 +633,7 @@ public abstract class CApiTransitions {
             // Our capsule is dead, so create a temporary copy that doesn't have a reference anymore
             PyCapsule capsule = PFactory.createCapsule(PythonLanguage.get(null), reference.data);
             assert EnsurePythonObjectNode.doesNotNeedPromotion(capsule);
-            PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_GRAALPY_CAPSULE_CALL_DESTRUCTOR, PythonToNativeRawNode.executeUncached(capsule), capsule.getDestructor());
+            PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_GRAALPY_CAPSULE_CALL_DESTRUCTOR, PythonToNativeNode.executeLongUncached(capsule), capsule.getDestructor());
         }
     }
 
@@ -1791,18 +1789,19 @@ public abstract class CApiTransitions {
         }
     }
 
-    // TODO(NFI2) replace usages with PythonToNativeRawNode
     @GenerateUncached
     @GenerateInline(false)
     public abstract static class PythonToNativeNode extends CExtToNativeNode {
 
+        public abstract long executeLong(Object object);
+
         @TruffleBoundary
-        public static Object executeUncached(Object obj) {
-            return PythonToNativeNodeGen.getUncached().execute(obj);
+        public static long executeLongUncached(Object obj) {
+            return getUncached().executeLong(obj);
         }
 
         @Specialization
-        static Object doGeneric(Object obj,
+        static long doGeneric(Object obj,
                         @Bind Node inliningTarget,
                         @Cached PythonToNativeInternalNode internalNode) {
             return internalNode.execute(inliningTarget, obj, false);
@@ -1815,34 +1814,6 @@ public abstract class CApiTransitions {
 
         public static PythonToNativeNode getUncached() {
             return PythonToNativeNodeGen.getUncached();
-        }
-    }
-
-    @GenerateUncached
-    @GenerateInline(false)
-    public abstract static class PythonToNativeRawNode extends CExtToNativeNode {
-
-        public abstract long executeLong(Object object);
-
-        @TruffleBoundary
-        public static long executeUncached(Object obj) {
-            return PythonToNativeRawNodeGen.getUncached().executeLong(obj);
-        }
-
-        @Specialization
-        static long doGeneric(Object obj,
-                        @Bind Node inliningTarget,
-                        @Cached PythonToNativeInternalNode internalNode) {
-            return internalNode.execute(inliningTarget, obj, false);
-        }
-
-        @NeverDefault
-        public static PythonToNativeRawNode create() {
-            return PythonToNativeRawNodeGen.create();
-        }
-
-        public static PythonToNativeRawNode getUncached() {
-            return PythonToNativeRawNodeGen.getUncached();
         }
     }
 
@@ -1873,18 +1844,19 @@ public abstract class CApiTransitions {
      * increase it since it will finally decrease it.
      * </p>
      */
-    // TODO(NFI2) replace usage with PythonToNativeNewRefRawNode
     @GenerateUncached
     @GenerateInline(false)
     public abstract static class PythonToNativeNewRefNode extends CExtToNativeNode {
 
+        public abstract long executeLong(Object object);
+
         @TruffleBoundary
-        public static Object executeUncached(Object obj) {
-            return PythonToNativeNewRefNodeGen.getUncached().execute(obj);
+        public static long executeLongUncached(Object obj) {
+            return getUncached().executeLong(obj);
         }
 
         @Specialization
-        static Object doGeneric(Object obj,
+        static long doGeneric(Object obj,
                         @Bind Node inliningTarget,
                         @Cached EnsurePythonObjectNode ensurePythonObjectNode,
                         @Cached PythonToNativeInternalNode internalNode) {
@@ -1903,68 +1875,6 @@ public abstract class CApiTransitions {
 
         public static PythonToNativeNewRefNode getUncached() {
             return PythonToNativeNewRefNodeGen.getUncached();
-        }
-    }
-
-    /**
-     * Same as {@code PythonToNativeRawNode} but ensures that a new Python reference is
-     * returned.<br/>
-     * Concept:<br/>
-     * <p>
-     * If the value to convert is a managed object or a Java primitive, we will (1) do nothing if a
-     * fresh wrapper is created, or (2) increase the reference count by 1 if the wrapper already
-     * exists.
-     * </p>
-     * <p>
-     * If the value to convert is a {@link PythonAbstractNativeObject} (i.e. a wrapped native
-     * pointer), the reference count will be increased by 1. This is necessary because if the
-     * currently returning upcall function already got a new reference, it won't have increased the
-     * refcnt but will eventually decreases it.<br/>
-     * Consider following example:<br/>
-     *
-     * <pre>
-     *     some.py: nativeLong0 * nativeLong1
-     * </pre>
-     *
-     * Assume that {@code nativeLong0} is a native object with a native type. It will call
-     * {@code nativeType->tp_as_number.nb_multiply}. This one then often uses
-     * {@code PyNumber_Multiply} which should just pass through the newly created native reference.
-     * But it will decrease the reference count since it wraps the gained native pointer. So, the
-     * intermediate upcall should effectively not alter the refcnt which means that we need to
-     * increase it since it will finally decrease it.
-     * </p>
-     */
-    @GenerateUncached
-    @GenerateInline(false)
-    public abstract static class PythonToNativeNewRefRawNode extends CExtToNativeNode {
-
-        public abstract long executeLong(Object object);
-
-        @TruffleBoundary
-        public static long executeUncached(Object obj) {
-            return PythonToNativeNewRefRawNodeGen.getUncached().executeLong(obj);
-        }
-
-        @Specialization
-        static long doGeneric(Object obj,
-                        @Bind Node inliningTarget,
-                        @Cached EnsurePythonObjectNode ensurePythonObjectNode,
-                        @Cached PythonToNativeInternalNode internalNode) {
-            /*
-             * In case of a new reference, we can promote the object here (if necessary) because it
-             * will be kept alive with a strong reference from the handle table.
-             */
-            Object promoted = ensurePythonObjectNode.execute(PythonContext.get(inliningTarget), obj, false);
-            return internalNode.execute(inliningTarget, promoted, true);
-        }
-
-        @NeverDefault
-        public static PythonToNativeNewRefRawNode create() {
-            return PythonToNativeNewRefRawNodeGen.create();
-        }
-
-        public static PythonToNativeNewRefRawNode getUncached() {
-            return PythonToNativeNewRefRawNodeGen.getUncached();
         }
     }
 

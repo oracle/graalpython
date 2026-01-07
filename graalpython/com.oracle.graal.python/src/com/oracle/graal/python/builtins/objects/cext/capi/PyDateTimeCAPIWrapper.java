@@ -52,7 +52,7 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinRegistry;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefRawNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
@@ -149,7 +149,7 @@ public abstract class PyDateTimeCAPIWrapper {
 
     private static long allocatePyDatetimeCAPI(Object datetimeModule) {
         PyObjectGetAttr getAttr = PyObjectGetAttr.getUncached();
-        PythonToNativeNewRefRawNode toNativeNode = PythonToNativeNewRefRawNode.getUncached();
+        PythonToNativeNewRefNode toNativeNode = PythonToNativeNewRefNode.getUncached();
 
         PythonManagedClass date = (PythonManagedClass) getAttr.execute(null, datetimeModule, T_DATE);
         SetBasicSizeNode.executeUncached(date, CStructs.PyDateTime_Date.size());

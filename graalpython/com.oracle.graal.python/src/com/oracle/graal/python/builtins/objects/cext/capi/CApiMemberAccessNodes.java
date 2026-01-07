@@ -45,6 +45,7 @@ import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodesFactory.BadMemberDescrNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodesFactory.NativePtrToPythonWrapperNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodesFactory.ReadMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodesFactory.ReadOnlyMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodesFactory.WriteByteNodeGen;
@@ -59,9 +60,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodesF
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodesFactory.WriteShortNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodesFactory.WriteUIntNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodesFactory.WriteULongNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodesFactory.NativePtrToPythonWrapperNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativePtrToPythonNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeRawNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativeCharNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativePrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.NativePrimitiveAsPythonBooleanNodeGen;
@@ -201,7 +201,7 @@ public class CApiMemberAccessNodes {
         @Specialization
         Object doGeneric(@SuppressWarnings("unused") VirtualFrame frame, Object self,
                         @Bind Node inliningTarget,
-                        @Cached PythonToNativeRawNode toNativeNode,
+                        @Cached PythonToNativeNode toNativeNode,
                         @Cached PRaiseNode raiseNode) {
             long selfPtr = toNativeNode.executeLong(self);
             long memberPtr = NativeMemory.getFieldPtr(selfPtr, offset);
@@ -532,7 +532,7 @@ public class CApiMemberAccessNodes {
     public abstract static class WriteMemberNode extends PythonBinaryBuiltinNode {
         private static final Builtin BUILTIN = WriteMemberNode.class.getAnnotation(Builtin.class);
 
-        @Child private PythonToNativeRawNode toSulongNode;
+        @Child private PythonToNativeNode toNativeNode;
         @Child private GetClassNode getClassNode;
         @Child private IsSameTypeNode isSameTypeNode;
         @Child private WriteTypeNode write;
@@ -547,14 +547,14 @@ public class CApiMemberAccessNodes {
             this.type = type;
             this.offset = offset;
             this.write = getWriteNode(type);
-            this.toSulongNode = PythonToNativeRawNode.create();
+            this.toNativeNode = PythonToNativeNode.create();
         }
 
         @Specialization
         Object doGeneric(Object self, Object value,
                         @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
-            long selfPtr = toSulongNode.executeLong(self) + offset;
+            long selfPtr = toNativeNode.executeLong(self) + offset;
 
             /*
              * Deleting values is only allowed for members with object type (see structmember.c:

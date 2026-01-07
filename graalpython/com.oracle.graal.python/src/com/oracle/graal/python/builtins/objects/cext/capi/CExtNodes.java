@@ -112,10 +112,9 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeRawNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.ResolveHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateStrongRefNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.PythonToNativeRawNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureTruffleStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionFromNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformPExceptionToNativeNode;
@@ -236,11 +235,11 @@ public abstract class CExtNodes {
         @Specialization
         Object callNativeConstructor(Object object, Object arg,
                         @Bind Node inliningTarget,
-                        @Cached PythonToNativeRawNode toSulongNode,
+                        @Cached PythonToNativeNode toNativeNode,
                         @Cached NativeToPythonTransferNode toJavaNode) {
             assert TypeNodes.NeedsNativeAllocationNode.executeUncached(object);
             NfiBoundFunction callable = CApiContext.getNativeSymbol(inliningTarget, getFunction());
-            Object result = callable.invoke(toSulongNode.execute(object), arg);
+            Object result = callable.invoke(toNativeNode.executeLong(object), arg);
             return toJavaNode.execute(result);
         }
     }
@@ -264,7 +263,7 @@ public abstract class CExtNodes {
 
     public abstract static class TupleSubtypeNew extends SubtypeNew {
 
-        @Child private PythonToNativeRawNode toNativeNode;
+        @Child private PythonToNativeNode toNativeNode;
 
         @Override
         protected final NativeCAPISymbol getFunction() {
@@ -274,9 +273,9 @@ public abstract class CExtNodes {
         public final Object call(Object object, Object arg) {
             if (toNativeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                toNativeNode = insert(PythonToNativeRawNodeGen.create());
+                toNativeNode = insert(PythonToNativeNode.create());
             }
-            return execute(object, toNativeNode.execute(arg));
+            return execute(object, toNativeNode.executeLong(arg));
         }
 
         @NeverDefault
@@ -288,7 +287,7 @@ public abstract class CExtNodes {
     public abstract static class StringSubtypeNew extends SubtypeNew {
 
         @Child private EnsurePythonObjectNode ensurePythonObjectNode;
-        @Child private PythonToNativeRawNode toNativeNode;
+        @Child private PythonToNativeNode toNativeNode;
 
         @Override
         protected final NativeCAPISymbol getFunction() {
@@ -299,10 +298,10 @@ public abstract class CExtNodes {
             if (ensurePythonObjectNode == null || toNativeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 ensurePythonObjectNode = insert(EnsurePythonObjectNode.create());
-                toNativeNode = insert(PythonToNativeRawNodeGen.create());
+                toNativeNode = insert(PythonToNativeNode.create());
             }
             Object promotedArg = ensurePythonObjectNode.execute(PythonContext.get(this), arg, false);
-            Object result = execute(object, toNativeNode.execute(promotedArg));
+            Object result = execute(object, toNativeNode.executeLong(promotedArg));
             Reference.reachabilityFence(promotedArg);
             return result;
         }
@@ -320,11 +319,11 @@ public abstract class CExtNodes {
 
         @Specialization
         static PDict allocateNativePart(Object cls, PDict managedSide,
-                        @Cached PythonToNativeRawNode toNative,
+                        @Cached PythonToNativeNode toNative,
                         @Cached PCallCapiFunction call) {
             assert !managedSide.isNative();
             assert EnsurePythonObjectNode.doesNotNeedPromotion(cls);
-            long nativeObject = (long) call.call(NativeCAPISymbol.FUN_PY_TYPE_GENERIC_NEW_RAW, toNative.execute(cls), 0L, 0L);
+            long nativeObject = (long) call.call(NativeCAPISymbol.FUN_PY_TYPE_GENERIC_NEW_RAW, toNative.executeLong(cls), 0L, 0L);
             CApiTransitions.writeNativeRefCount(nativeObject, MANAGED_REFCNT);
             CApiTransitions.createReference(managedSide, nativeObject, false);
             assert managedSide.isNative();
@@ -1391,7 +1390,7 @@ public abstract class CExtNodes {
         PythonContext context = capiContext.getContext();
         Object module;
         if (createFunction != NULLPTR) {
-            long result = (long) CREATE_SIGNATURE.invoke(context.ensureNfiContext(), createFunction, PythonToNativeRawNode.executeUncached(moduleSpec.originalModuleSpec), moduleDefPtr);
+            long result = (long) CREATE_SIGNATURE.invoke(context.ensureNfiContext(), createFunction, PythonToNativeNode.executeLongUncached(moduleSpec.originalModuleSpec), moduleDefPtr);
             PythonThreadState threadState = context.getThreadState(context.getLanguage());
             TransformExceptionFromNativeNode.getUncached().execute(null, threadState, mName, result == NULLPTR, true,
                             ErrorMessages.CREATION_FAILD_WITHOUT_EXCEPTION, ErrorMessages.CREATION_RAISED_EXCEPTION);
@@ -1479,7 +1478,7 @@ public abstract class CExtNodes {
                     case SLOT_PY_MOD_EXEC:
                         long execFunction = readStructArrayPtrField(slotDefinitions, i, PyModuleDef_Slot__value);
                         PythonContext context = capiContext.getContext();
-                        Object result = EXEC_SIGNATURE.invoke(context.ensureNfiContext(), execFunction, PythonToNativeRawNode.executeUncached(module));
+                        Object result = EXEC_SIGNATURE.invoke(context.ensureNfiContext(), execFunction, PythonToNativeNode.executeLongUncached(module));
                         int iResult = interopLib.asInt(result);
                         /*
                          * It's a bit counterintuitive that we use 'isPrimitiveValue = false' but
@@ -1571,11 +1570,11 @@ public abstract class CExtNodes {
 
         @Specialization
         static PMemoryView fromNative(PythonNativeObject buf, int flags,
-                        @Cached(inline = false) PythonToNativeRawNode toSulongNode,
+                        @Cached(inline = false) PythonToNativeNode toNativeNode,
                         @Cached(inline = false) NativeToPythonTransferNode asPythonObjectNode,
                         @Cached(inline = false) PCallCapiFunction callCapiFunction,
                         @Cached(inline = false) CheckRawPointerFunctionResultNode checkFunctionResultNode) {
-            long result = (long) callCapiFunction.call(FUN_GRAALPY_MEMORYVIEW_FROM_OBJECT, toSulongNode.execute(buf), flags);
+            long result = (long) callCapiFunction.call(FUN_GRAALPY_MEMORYVIEW_FROM_OBJECT, toNativeNode.executeLong(buf), flags);
             checkFunctionResultNode.execute(PythonContext.get(callCapiFunction), FUN_GRAALPY_MEMORYVIEW_FROM_OBJECT.getTsName(), result);
             return (PMemoryView) asPythonObjectNode.executeRaw(result);
         }

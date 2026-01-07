@@ -66,8 +66,8 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefRawNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeRawNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
@@ -163,8 +163,8 @@ public abstract class ToNativeTypeNode {
         TpSlots slots = GetTpSlotsNode.executeUncached(clazz);
         boolean isType = IsBuiltinClassExactProfile.profileClassSlowPath(clazz, PythonBuiltinClassType.PythonClass);
 
-        PythonToNativeRawNode toNative = PythonToNativeRawNode.getUncached();
-        PythonToNativeNewRefRawNode toNativeNewRef = PythonToNativeNewRefRawNode.getUncached();
+        PythonToNativeNode toNative = PythonToNativeNode.getUncached();
+        PythonToNativeNewRefNode toNativeNewRef = PythonToNativeNewRefNode.getUncached();
         GetTypeFlagsNode getTypeFlagsNode = GetTypeFlagsNodeGen.getUncached();
 
         PythonContext ctx = PythonContext.get(null);
