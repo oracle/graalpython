@@ -447,14 +447,15 @@
                 {
                     downloads+: {
                         LATEST_JAVA_HOME: common.jdks_data["labsjdk-ce-latest"],
+                        GRAAL_JDK_HOME: common.jdks_data["graalvm-ee-" + b.jdk_version],
                     }
                 } +
-                common.jdks["graalvm-ee-" + b.jdk_version] +
+                # Bytecode DSL does not work on JDK21 with optimizing runtime (GR-72424)
+                # We use OracleJDK as opposed to GraalVM JDK so that it falls back
+                # to default runtime implicitly
+                common.jdks["oraclejdk" + b.jdk_version] +
                 {
                     dynamic_imports+:: [],
-                    environment+: {
-                        GRAAL_JDK_HOME: "$JAVA_HOME"
-                    },
                 }
             else
                 {}
