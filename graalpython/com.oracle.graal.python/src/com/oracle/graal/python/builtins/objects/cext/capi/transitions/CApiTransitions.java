@@ -757,17 +757,20 @@ public abstract class CApiTransitions {
         assert context.ownsGil();
         handleContext.nativeLookup.forEach((l, ref) -> {
             if (ref instanceof PythonObjectReference reference) {
-                // We don't expect references to wrappers that would have a native object stub.
+                // We don't expect references to objects that would have a native object stub.
                 assert reference.handleTableIndex == -1;
-                // We expect at this point that most if not all references left were allocated
-                // from Java and can be freed here. There may be stragglers that are waiting
-                // for a GC though, so we have to check.
+                /*
+                 * We expect at this point that most if not all references left were allocated from
+                 * Java and can be freed here. There may be stragglers that are waiting for a GC
+                 * though, so we have to check.
+                 */
                 if (reference.isAllocatedFromJava()) {
                     freeNativeStruct(reference);
                 }
             }
         });
         handleContext.nativeLookup.clear();
+        Arrays.fill(handleContext.nativeTypeLookup, null);
     }
 
     public static boolean disableReferenceQueuePolling(HandleContext handleContext) {
@@ -1026,6 +1029,20 @@ public abstract class CApiTransitions {
         assert context.nativeTypeLookup[typeLookupIdx] != null;
         assert context.nativeTypeLookup[typeLookupIdx].get() == null;
         context.nativeTypeLookup[typeLookupIdx] = value;
+    }
+
+    public static void nativeTypeLookupRemove(HandleContext context, long ptr, int typeLookupIdx) {
+        CompilerAsserts.neverPartOfCompilation();
+        assert 0 < typeLookupIdx && typeLookupIdx < context.nativeTypeLookup.length;
+        assert context.nativeTypeLookup[typeLookupIdx] != null;
+        assert isValidTypeLookupEntry(context.nativeTypeLookup[typeLookupIdx].get(), ptr);
+        context.nativeTypeLookup[typeLookupIdx] = null;
+    }
+
+    private static boolean isValidTypeLookupEntry(Object entry, long ptr) {
+        return entry == null ||
+                        entry instanceof PythonManagedClass managedClass && managedClass.getNativePointer() == ptr ||
+                        entry instanceof PythonNativeClass nativeClass && nativeClass.getPtr() == ptr;
     }
 
     public static Object nativeStubLookupGet(HandleContext context, long pointer, int idx) {

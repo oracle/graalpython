@@ -82,6 +82,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.SetterRoot;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
@@ -427,6 +428,14 @@ public final class PythonCextTypeBuiltins {
                         @Shared @Cached HiddenAttr.WriteLongNode writeAttrNode) {
             writeAttrNode.execute(inliningTarget, object, AS_BUFFER, bufferProcs);
             return PNone.NO_VALUE;
+        }
+    }
+
+    @CApiBuiltin(ret = ArgDescriptor.Void, args = {Pointer, Int}, call = Ignored)
+    public static void GraalPyPrivate_Type_NotifyDealloc(long ptr, int typeLookupIdx) {
+        assert CStructAccess.readIntField(ptr, CFields.PyTypeObject__tp_version_tag) == typeLookupIdx;
+        if (typeLookupIdx != 0) {
+            CApiTransitions.nativeTypeLookupRemove(PythonContext.get(null).nativeContext, ptr, typeLookupIdx);
         }
     }
 }

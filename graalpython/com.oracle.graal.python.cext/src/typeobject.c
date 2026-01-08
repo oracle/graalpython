@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2025, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -5038,20 +5038,28 @@ type_setattro(PyTypeObject *type, PyObject *name, PyObject *value)
 
 extern void
 _PyDictKeys_DecRef(PyDictKeysObject *keys);
+#endif // GraalPy change
 
 
 static void
 type_dealloc_common(PyTypeObject *type)
 {
+#if 0 // GraalPy change
     PyObject *bases = lookup_tp_bases(type);
     if (bases != NULL) {
         PyObject *exc = PyErr_GetRaisedException();
         remove_all_subclasses(type, bases);
         PyErr_SetRaisedException(exc);
     }
+#endif // GraalPy change
+
+    // GraalPy change
+    GraalPyPrivate_Type_NotifyDealloc(type, type->tp_version_tag);
+    type->tp_version_tag = 0;
 }
 
 
+#if 0 // GraalPy change
 static void
 clear_static_tp_subclasses(PyTypeObject *type)
 {
@@ -5138,9 +5146,7 @@ type_dealloc(PyTypeObject *type)
 
     _PyObject_GC_UNTRACK(type);
 
-#if 0 // GraalPy change
     type_dealloc_common(type);
-#endif // GraalPy change
 
     // PyObject_ClearWeakRefs() raises an exception if Py_REFCNT() != 0
     assert(Py_REFCNT(type) == 0);
