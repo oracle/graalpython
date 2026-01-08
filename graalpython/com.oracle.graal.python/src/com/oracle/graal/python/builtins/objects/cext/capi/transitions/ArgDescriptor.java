@@ -78,21 +78,21 @@ enum ArgBehavior {
                     NativeToPythonTransferNode.getUncached()),
     PyObjectBorrowed(NfiType.RAW_POINTER, ToNativeBorrowedNode::new, NativeToPythonNode::create, NativeToPythonNode.getUncached(), null, null, null),
     PyObjectAsTruffleString(NfiType.RAW_POINTER, null, ToPythonStringNode::create, ToPythonStringNode.getUncached(), null, null, null),
-    PointerYYY(NfiType.POINTER, null, null, null),
-    Pointer(NfiType.RAW_POINTER, null, null, null),
+    PointerYYY(NfiType.POINTER),
+    Pointer(NfiType.RAW_POINTER),
     TruffleStringPointer(NfiType.RAW_POINTER, null, CharPtrToPythonNode::create, CharPtrToPythonNode.getUncached()),
-    Char8(NfiType.SINT8, null, null, null),
-    UChar8(NfiType.SINT8, null, null, null),
-    Char16(NfiType.SINT16, null, null, null),
-    Int32(NfiType.SINT32, null, null, null),
-    UInt32(NfiType.SINT32, null, null, null),
-    Int64(NfiType.SINT64, null, null, null),
-    UInt64(NfiType.SINT64, null, null, null),
+    Char8(NfiType.SINT8),
+    UChar8(NfiType.SINT8),
+    Char16(NfiType.SINT16),
+    Int32(NfiType.SINT32),
+    UInt32(NfiType.SINT32),
+    Int64(NfiType.SINT64),
+    UInt64(NfiType.SINT64),
     Long(NfiType.SINT64, null, FromLongNode::create, FromLongNode.getUncached()),
-    Float32(NfiType.FLOAT, null, null, null),
-    Float64(NfiType.DOUBLE, null, null, null),
-    Void(NfiType.VOID, null, null, null),
-    Unknown(NfiType.SINT64, null, null, null);
+    Float32(NfiType.FLOAT),
+    Float64(NfiType.DOUBLE),
+    Void(NfiType.VOID),
+    Unknown(NfiType.SINT64);
 
     public final NfiType nfi2Type;
     public final Supplier<CExtToNativeNode> pythonToNative;
@@ -116,6 +116,11 @@ enum ArgBehavior {
     ArgBehavior(NfiType nfi2Type, Supplier<CExtToNativeNode> pythonToNative, Supplier<CExtToJavaNode> nativeToPython, CExtToJavaNode uncachedNativeToPython) {
         this(nfi2Type, pythonToNative, nativeToPython, uncachedNativeToPython, null, null, null);
     }
+
+    ArgBehavior(NfiType nfi2Type) {
+        this(nfi2Type, null, null, null, null, null, null);
+    }
+
 }
 
 public enum ArgDescriptor {

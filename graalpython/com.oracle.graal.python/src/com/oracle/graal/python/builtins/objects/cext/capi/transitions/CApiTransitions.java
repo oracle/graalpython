@@ -1512,18 +1512,9 @@ public abstract class CApiTransitions {
 
         @Specialization(guards = "pointer != NULLPTR")
         static Object doPointer(long pointer,
-                        @Bind Node inliningTarget,
-                        @Cached FromCharPointerNode fromCharPointerNode,
-                        @Cached ResolveHandleNode resolveHandleNode) {
+                        @Cached FromCharPointerNode fromCharPointerNode) {
             log(pointer);
-            if (HandlePointerConverter.pointsToPyHandleSpace(pointer)) {
-                assert !HandlePointerConverter.pointsToPyIntHandle(pointer);
-                assert !HandlePointerConverter.pointsToPyFloatHandle(pointer);
-                PythonObject obj = resolveHandleNode.execute(inliningTarget, pointer);
-                if (obj != null) {
-                    return logResult(obj);
-                }
-            }
+            assert !HandlePointerConverter.pointsToPyHandleSpace(pointer);
             return logResult(fromCharPointerNode.execute(pointer));
         }
 
