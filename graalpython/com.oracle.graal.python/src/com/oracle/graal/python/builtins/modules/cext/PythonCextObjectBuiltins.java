@@ -182,7 +182,16 @@ public abstract class PythonCextObjectBuiltins {
             assert refCount != PythonObject.IMMORTAL_REFCNT;
             HandleContext handleContext = PythonContext.get(inliningTarget).nativeContext;
             int hti = CStructAccess.readIntField(HandlePointerConverter.pointerToStub(pointer), CFields.GraalPyObject__handle_table_index);
-            updateRefNode.execute(inliningTarget, handleContext, pointer, hti, refCount);
+            /*
+             * The handle table index may be 0. This means that the managed object was already
+             * collected but the native companion was still not freed because its refcount was not
+             * 0. This can happen if the object is a GC object. For more explanation, see
+             * 'CApiTransitions.pollReferenceQueue' (in the branch where
+             * 'CFields.GraalPyObject__handle_table_index' is set to 0).
+             */
+            if (hti != 0) {
+                updateRefNode.execute(inliningTarget, handleContext, pointer, hti, refCount);
+            }
             return PNone.NO_VALUE;
         }
     }
@@ -216,7 +225,16 @@ public abstract class PythonCextObjectBuiltins {
                 // refcounting on an immortal object should be a NOP
                 assert refCount != PythonObject.IMMORTAL_REFCNT;
                 int hti = CStructAccess.readIntField(pointers[i], CFields.GraalPyObject__handle_table_index);
-                updateRefNode.execute(inliningTarget, handleContext, pointers[i], hti, refCount);
+                /*
+                 * The handle table index may be 0. This means that the managed object was already
+                 * collected but the native companion was still not freed because its refcount was
+                 * not 0. This can happen if the object is a GC object. For more explanation, see
+                 * 'CApiTransitions.pollReferenceQueue' (in the branch where
+                 * 'CFields.GraalPyObject__handle_table_index' is set to 0).
+                 */
+                if (hti != 0) {
+                    updateRefNode.execute(inliningTarget, handleContext, pointers[i], hti, refCount);
+                }
             }
             Reference.reachabilityFence(resolved);
             return PNone.NO_VALUE;
