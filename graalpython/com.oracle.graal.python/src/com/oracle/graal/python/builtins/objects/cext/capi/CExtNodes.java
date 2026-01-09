@@ -103,7 +103,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsCha
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.EnsurePythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.PythonObjectArrayCreateNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ResolvePointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.UnicodeFromFormatNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckRawPointerFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
@@ -114,7 +113,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.ResolveHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateStrongRefNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureTruffleStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionFromNativeNode;
@@ -190,7 +188,6 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -203,7 +200,6 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
@@ -934,76 +930,6 @@ public abstract class CExtNodes {
                     callDealloc.call(FUN_PY_DEALLOC, pointer);
                 }
             }
-        }
-    }
-
-    @GenerateUncached
-    @GenerateInline
-    @GenerateCached(false)
-    public abstract static class ResolvePointerNode extends PNodeWithContext {
-
-        public static Object executeUncached(Object pointerObject) {
-            return ResolvePointerNodeGen.getUncached().execute(null, pointerObject);
-        }
-
-        public abstract Object execute(Node inliningTarget, Object pointerObject);
-
-        public abstract Object executeLong(Node inliningTarget, long pointer);
-
-        @Specialization
-        static Object resolveLongCached(Node inliningTarget, long pointer,
-                        @Exclusive @Cached ResolveHandleNode resolveHandleNode,
-                        @Exclusive @Cached UpdateStrongRefNode updateRefNode) {
-            Object lookup = CApiTransitions.lookupNative(pointer);
-            if (lookup != null) {
-                if (lookup instanceof PythonObject pythonObject) {
-                    updateRefNode.execute(inliningTarget, pythonObject, pythonObject.incRef());
-                }
-                return lookup;
-            }
-            if (HandlePointerConverter.pointsToPyHandleSpace(pointer)) {
-                if (HandlePointerConverter.pointsToPyIntHandle(pointer)) {
-                    return HandlePointerConverter.pointerToLong(pointer);
-                } else if (HandlePointerConverter.pointsToPyFloatHandle(pointer)) {
-                    return HandlePointerConverter.pointerToDouble(pointer);
-                }
-                return resolveHandleNode.execute(inliningTarget, pointer);
-            }
-            return pointer;
-        }
-
-        @Specialization(guards = "!isLong(pointerObject)")
-        static Object resolveGeneric(Node inliningTarget, Object pointerObject,
-                        @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Exclusive @Cached ResolveHandleNode resolveHandleNode,
-                        @Exclusive @Cached UpdateStrongRefNode updateRefNode) {
-            if (lib.isPointer(pointerObject)) {
-                Object lookup;
-                long pointer;
-                try {
-                    pointer = lib.asPointer(pointerObject);
-                } catch (UnsupportedMessageException e) {
-                    throw shouldNotReachHere(e);
-                }
-                if (HandlePointerConverter.pointsToPyIntHandle(pointer)) {
-                    return HandlePointerConverter.pointerToLong(pointer);
-                } else if (HandlePointerConverter.pointsToPyFloatHandle(pointer)) {
-                    return HandlePointerConverter.pointerToDouble(pointer);
-                }
-                lookup = CApiTransitions.lookupNative(pointer);
-                if (lookup != null) {
-                    if (lookup instanceof PythonObject pythonObject) {
-                        updateRefNode.execute(inliningTarget, pythonObject, pythonObject.incRef());
-                    }
-                    return lookup;
-                }
-                if (HandlePointerConverter.pointsToPyHandleSpace(pointer)) {
-                    return resolveHandleNode.execute(inliningTarget, pointer);
-                }
-            }
-            // In this case, it cannot be a handle so we can just return the pointer object. It
-            // could, of course, still be a native pointer.
-            return pointerObject;
         }
     }
 

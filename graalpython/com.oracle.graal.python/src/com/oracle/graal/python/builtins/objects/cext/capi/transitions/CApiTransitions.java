@@ -1568,45 +1568,6 @@ public abstract class CApiTransitions {
         return value;
     }
 
-    /**
-     * Resolves a native handle to the corresponding {@link PythonObject}. This node assumes that
-     * {@code pointer} points to handle space (i.e.
-     * {@link HandlePointerConverter#pointsToPyHandleSpace(long)} is {@code true}) and essential
-     * just looks up the handle in the table. It will additionally increment the reference count if
-     * the object is a subclass of {@link PythonObject}.
-     */
-    @GenerateUncached
-    @GenerateInline
-    @GenerateCached(false)
-    public abstract static class ResolveHandleNode extends Node {
-
-        public abstract PythonObject execute(Node inliningTarget, long pointer);
-
-        @Specialization
-        static PythonObject doGeneric(Node inliningTarget, long pointer,
-                        @Cached InlinedExactClassProfile profile,
-                        @Cached UpdateStrongRefNode updateRefNode) {
-            if (HandlePointerConverter.pointsToPyIntHandle(pointer)) {
-                throw CompilerDirectives.shouldNotReachHere("ResolveHandleNode int");
-            } else if (HandlePointerConverter.pointsToPyFloatHandle(pointer)) {
-                throw CompilerDirectives.shouldNotReachHere("ResolveHandleNode float");
-            }
-            HandleContext nativeContext = PythonContext.get(inliningTarget).nativeContext;
-            int idx = readIntField(HandlePointerConverter.pointerToStub(pointer), CFields.GraalPyObject__handle_table_index);
-            Object reference = nativeStubLookupGet(nativeContext, pointer, idx);
-            PythonObject wrapper;
-            if (reference instanceof PythonObject) {
-                wrapper = profile.profile(inliningTarget, (PythonObject) reference);
-            } else {
-                assert reference instanceof PythonObjectReference;
-                wrapper = profile.profile(inliningTarget, ((PythonObjectReference) reference).get());
-            }
-            assert wrapper != null : "reference was collected: " + Long.toHexString(pointer);
-            updateRefNode.execute(inliningTarget, wrapper, wrapper.incRef());
-            return wrapper;
-        }
-    }
-
     @GenerateUncached
     @GenerateInline(false)
     @ImportStatic(NativeMemory.class)
