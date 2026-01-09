@@ -1515,7 +1515,7 @@ public final class PythonCextBuiltins {
 
                 if (HandlePointerConverter.pointsToPyHandleSpace(op)) {
                     int hti = readIntField(HandlePointerConverter.pointerToStub(op), CFields.GraalPyObject__handle_table_index);
-                    updateRefNode.clearStrongRef(inliningTarget, handleContext, op, hti);
+                    updateRefNode.clearStrongRefButKeepInGCList(inliningTarget, handleContext, op, hti);
                 } else {
                     // TODO(fa): investigate if that case is valid and necessary
                     throw CompilerDirectives.shouldNotReachHere();

@@ -59,6 +59,7 @@ import static com.oracle.graal.python.nfi2.NativeMemory.free;
 import static com.oracle.graal.python.nfi2.NativeMemory.mallocPtrArray;
 import static com.oracle.graal.python.nfi2.NativeMemory.writePtrArrayElements;
 
+import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -2638,15 +2639,9 @@ public abstract class CApiTransitions {
     }
 
     /**
-     * Adjusts the native wrapper's reference to be weak (if {@code refCount <= MANAGED_REFCNT}) or
-     * to be strong (if {@code refCount > MANAGED_REFCNT}) if there is a reference. This node should
-     * be called at appropriate points in the program, e.g., it should be called from native code if
-     * the refcount falls below {@link PythonObject#MANAGED_REFCNT}.
-     *
-     * Additionally, if the reference to a wrapper will be made weak and the wrapper takes part in
-     * the Python GC and is currently tracked, it will be removed from the GC list. This is done to
-     * reduce the GC list size and avoid repeated upcalls to ensure that a
-     * {@link PythonObjectReference} is weak.
+     * Same as {@link UpdateHandleTableReferenceNode} but the handle table reference is directly
+     * accessed via {@link PythonObject#ref}. This node should be used of you have the
+     * {@link PythonObject} at hand.
      */
     @GenerateUncached
     @GenerateInline
@@ -2661,27 +2656,20 @@ public abstract class CApiTransitions {
             execute(inliningTarget, pythonObject, refCount > MANAGED_REFCNT, release, false);
         }
 
-        /**
-         * Makes the handle table reference of the given wrapper weak but keeps the native object
-         * stub in the GC list (if currently contained in any). The only valid use case for this
-         * method is when iterating over all objects of a GC list, calling this method on each
-         * object and in the end, dropping the whole GC list.
-         */
-        public final void clearStrongRefButKeepInGCList(Node inliningTarget, PythonObject pythonObject) {
-            execute(inliningTarget, pythonObject, false, false, true);
-        }
-
-        public abstract void execute(Node inliningTarget, PythonObject pythonObject, boolean setStrong, boolean release, boolean keepInGcList);
+        protected abstract void execute(Node inliningTarget, PythonObject pythonObject, boolean setStrong, boolean release, boolean keepInGcList);
 
         @Specialization
         static void doGeneric(Node inliningTarget, PythonObject pythonObject, boolean setStrong, boolean release, boolean keepInGcList,
-                        @Cached InlinedConditionProfile hasRefProfile,
+                        @Cached InlinedBranchProfile hasWeakRef,
                         @Cached PyObjectGCTrackNode gcTrackNode,
                         @Cached GCListRemoveNode gcListRemoveNode,
                         @Cached InlinedConditionProfile isGcProfile,
-                        @Cached GetClassNode getClassNode,
+                        @Cached GetPythonObjectClassNode getClassNode,
                         @Cached(inline = false) GetTypeFlagsNode getTypeFlagsNode) {
+            assert CompilerDirectives.isPartialEvaluationConstant(release);
             assert CompilerDirectives.isPartialEvaluationConstant(keepInGcList);
+
+            boolean isLoggable = LOGGER.isLoggable(Level.FINER);
 
             /*
              * There are two cases: (1) the pythonObject has a PythonObjectReference, and (2)
@@ -2689,63 +2677,40 @@ public abstract class CApiTransitions {
              * may now need to introduce a weak reference.
              */
             long taggedPointer = pythonObject.getNativePointer();
-            PythonObjectReference ref;
-            if (hasRefProfile.profile(inliningTarget, (ref = pythonObject.ref) != null)) {
-                assert ref.pointer == taggedPointer;
-                if (setStrong && !ref.isStrongReference()) {
-                    ref.setStrongReference(pythonObject);
-                    if (ref.gc) {
-                        gcTrackNode.executeOp(inliningTarget, taggedPointer);
-                    }
-                } else if (!setStrong && ref.isStrongReference()) {
-                    ref.setStrongReference(null);
-                }
+            PythonObjectReference pythonObjectReference;
+            if ((pythonObjectReference = pythonObject.ref) != null) {
+                hasWeakRef.enter(inliningTarget);
+                UpdateHandleTableReferenceNode.handlePythonObjectReference(inliningTarget, pythonObjectReference, taggedPointer, pythonObjectReference.handleTableIndex,
+                                setStrong, isLoggable,
+                                gcTrackNode);
+                Reference.reachabilityFence(pythonObject);
             } else if (!setStrong) {
-                // no PythonObjectReference in the handle table -> reference is strong
+                // 'pythonObject.ref == null' -> reference is strong
 
-                assert pythonObject.ref == null;
                 HandleContext handleContext = PythonContext.get(inliningTarget).nativeContext;
                 long untaggedPointer = HandlePointerConverter.pointerToStub(taggedPointer);
-                int idx = readIntField(untaggedPointer, CFields.GraalPyObject__handle_table_index);
-                Object type = getClassNode.execute(inliningTarget, pythonObject);
-                boolean gc = (getTypeFlagsNode.execute(type) & TypeFlags.HAVE_GC) != 0;
+                int handleTableIndex = readIntField(untaggedPointer, CFields.GraalPyObject__handle_table_index);
+                assert nativeStubLookupGet(handleContext, taggedPointer, handleTableIndex) == pythonObject;
 
-                /*
-                 * At this point, we would commonly expect that 'pythonObject.getRefCount() ==
-                 * MANAGED_REFCNT'. However, in order to break reference cycles with managed
-                 * objects, we make references weak even if that is not the case. So, for all non-gc
-                 * objects, we strongly expect MANAGED_REFCNT.
-                 */
-                assert gc || pythonObject.getRefCount() == MANAGED_REFCNT;
-
-                if (release) {
-                    writeIntField(untaggedPointer, CFields.GraalPyObject__handle_table_index, 0);
-                    pythonObject.clearNativePointer();
-                    Object removed = CApiTransitions.nativeStubLookupRemove(handleContext, idx);
-                    assert pythonObject == removed;
-                    freeNativeStub(taggedPointer, isGcProfile.profile(inliningTarget, gc));
-                } else {
-                    /*
-                     * The reference should be weak but we may not release the native object stub.
-                     * We need to create a PythonObjectReference.
-                     */
-                    PythonObjectReference pythonObjectReference = PythonObjectReference.createStub(handleContext, pythonObject, false, taggedPointer, idx, gc);
-                    nativeStubLookupReplaceByWeak(handleContext, idx, pythonObjectReference, taggedPointer);
-
-                    /*
-                     * As soon as the reference is made weak, we remove it from the GC list because
-                     * there are ways to iterate a GC list (e.g. 'PyUnstable_GC_VisitObjects') and
-                     * while doing so, the objects may be accessed. Since weakly referenced objects
-                     * may die any time, this could lead to dangling pointers being used.
-                     */
-                    if (!keepInGcList && gc) {
-                        gcListRemoveNode.executeOp(inliningTarget, pythonObject.getNativePointer());
-                    }
-                }
+                UpdateHandleTableReferenceNode.makeDirectReferenceWeak(inliningTarget, handleContext, pythonObject, taggedPointer, handleTableIndex,
+                                release, keepInGcList, isLoggable,
+                                gcListRemoveNode, isGcProfile, getClassNode, getTypeFlagsNode);
             }
         }
     }
 
+    /**
+     * Adjusts the handle table reference of a PythonObject to be weak (if
+     * {@code refCount <= MANAGED_REFCNT}) or to be strong (if {@code refCount > MANAGED_REFCNT}).
+     * The handle table reference is identified by the native (tagged) pointer of the managed object
+     * and the handle table index. This node needs to be called every time the reference count of a
+     * native companion is changed. Therefore, immortal objects don't need this operation.
+     *
+     * Additionally, if the reference to the PythonObject is up to be made weak and the object is a
+     * tracked GC object, it will be removed from the GC list. This is necessary because weak
+     * objects may die anytime but if their native companion is still reachable from the GC list, we
+     * will fail resolving the object for replicating the native references.
+     */
     @GenerateUncached
     @GenerateInline
     @GenerateCached(false)
@@ -2755,57 +2720,43 @@ public abstract class CApiTransitions {
             execute(inliningTarget, handleContext, pointer, handleTableIndex, refCount > MANAGED_REFCNT, false);
         }
 
-        public final void execute(Node inliningTarget, HandleContext handleContext, long pointer, int handleTableIndex, long refCount, boolean release) {
-            execute(inliningTarget, handleContext, pointer, handleTableIndex, refCount > MANAGED_REFCNT, release);
+        /**
+         * Makes the handle table reference of the given wrapper weak but keeps the native object
+         * stub in the GC list (if currently contained in any). The only valid use case for this
+         * method is when iterating over all objects of a GC list, calling this method on each
+         * object and in the end, dropping the whole GC list.
+         */
+        public final void clearStrongRefButKeepInGCList(Node inliningTarget, HandleContext handleContext, long pointer, int handleTableIndex) {
+            execute(inliningTarget, handleContext, pointer, handleTableIndex, false, true);
         }
 
-        public final void clearStrongRef(Node inliningTarget, HandleContext handleContext, long pointer, int handleTableIndex) {
-            execute(inliningTarget, handleContext, pointer, handleTableIndex, false, false);
-        }
-
-        public abstract void execute(Node inliningTarget, HandleContext handleContext, long pointer, int handleTableIndex, boolean setStrong, boolean release);
+        protected abstract void execute(Node inliningTarget, HandleContext handleContext, long pointer, int handleTableIndex, boolean setStrong, boolean keepInGcList);
 
         @Specialization
-        static void doGeneric(Node inliningTarget, HandleContext handleContext, long pointer, int handleTableIndex, boolean setStrong, boolean release,
+        static void doGeneric(Node inliningTarget, HandleContext handleContext, long taggedPointer, int handleTableIndex, boolean setStrong, boolean keepInGcList,
                         @Cached InlinedBranchProfile hasWeakRef,
                         @Cached PyObjectGCTrackNode gcTrackNode,
+                        @Cached GCListRemoveNode gcListRemoveNode,
                         @Cached InlinedConditionProfile isGcProfile,
                         @Cached GetPythonObjectClassNode getClassNode,
                         @Cached(inline = false) GetTypeFlagsNode getTypeFlagsNode) {
+            assert CompilerDirectives.isPartialEvaluationConstant(keepInGcList);
+
+            boolean isLoggable = LOGGER.isLoggable(Level.FINER);
+
             /*
              * There are two cases: (1) the pythonObject has a PythonObjectReference, and (2)
              * doesn't have one. In case of (2), the object was strongly referenced so far and we
              * may now need to introduce a weak reference.
              */
-            assert HandlePointerConverter.pointsToPyHandleSpace(pointer);
-            assert !HandlePointerConverter.pointsToPyIntHandle(pointer);
-            assert !HandlePointerConverter.pointsToPyFloatHandle(pointer);
+            assert HandlePointerConverter.pointsToPyHandleSpace(taggedPointer);
+            assert !HandlePointerConverter.pointsToPyIntHandle(taggedPointer);
+            assert !HandlePointerConverter.pointsToPyFloatHandle(taggedPointer);
 
-            boolean isLoggable = LOGGER.isLoggable(Level.FINER);
-
-            Object ref = nativeStubLookupGet(handleContext, pointer, handleTableIndex);
+            Object ref = nativeStubLookupGet(handleContext, taggedPointer, handleTableIndex);
             if (ref instanceof PythonObjectReference pythonObjectReference) {
                 hasWeakRef.enter(inliningTarget);
-                assert pythonObjectReference.pointer == pointer;
-                if (setStrong && !pythonObjectReference.isStrongReference()) {
-                    PythonObject pythonObject = pythonObjectReference.get();
-                    if (isLoggable) {
-                        logWeakToStrong(pointer, handleTableIndex, pythonObject);
-                    }
-                    if (pythonObject == null) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        throw CompilerDirectives.shouldNotReachHere("reference was collected: 0x" + Long.toHexString(pointer));
-                    }
-                    pythonObjectReference.setStrongReference(pythonObject);
-                    if (pythonObjectReference.gc) {
-                        gcTrackNode.executeOp(inliningTarget, pointer);
-                    }
-                } else if (!setStrong && pythonObjectReference.isStrongReference()) {
-                    if (isLoggable) {
-                        logStrongToWeak(pointer, handleTableIndex, pythonObjectReference.strongReference);
-                    }
-                    pythonObjectReference.setStrongReference(null);
-                }
+                handlePythonObjectReference(inliningTarget, pythonObjectReference, taggedPointer, handleTableIndex, setStrong, isLoggable, gcTrackNode);
             } else if (!setStrong) {
                 // no PythonObjectReference in the handle table -> reference is strong
 
@@ -2816,36 +2767,85 @@ public abstract class CApiTransitions {
                  */
                 assert ref instanceof PythonObject;
                 PythonObject pythonObject = (PythonObject) ref;
+                assert pythonObject.ref == null;
 
-                if (isLoggable) {
-                    logStrongToWeak(pointer, handleTableIndex, pythonObject);
+                makeDirectReferenceWeak(inliningTarget, handleContext, pythonObject, taggedPointer, handleTableIndex,
+                                false, keepInGcList, isLoggable,
+                                gcListRemoveNode, isGcProfile, getClassNode, getTypeFlagsNode);
+            }
+        }
+
+        static void handlePythonObjectReference(Node inliningTarget, PythonObjectReference pythonObjectReference, long taggedPointer, int handleTableIndex, boolean setStrong, boolean isLoggable,
+                        PyObjectGCTrackNode gcTrackNode) {
+            assert pythonObjectReference.handleTableIndex == handleTableIndex;
+            assert pythonObjectReference.pointer == taggedPointer;
+            if (setStrong && !pythonObjectReference.isStrongReference()) {
+                PythonObject pythonObject = pythonObjectReference.get();
+                if (pythonObject == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw CompilerDirectives.shouldNotReachHere("reference was collected: 0x" + Long.toHexString(taggedPointer));
                 }
+                if (isLoggable) {
+                    logWeakToStrong(taggedPointer, handleTableIndex, pythonObject);
+                }
+                pythonObjectReference.setStrongReference(pythonObject);
+                if (pythonObjectReference.gc) {
+                    gcTrackNode.executeOp(inliningTarget, taggedPointer);
+                }
+            } else if (!setStrong && pythonObjectReference.isStrongReference()) {
+                if (isLoggable) {
+                    logStrongToWeak(taggedPointer, handleTableIndex, pythonObjectReference.strongReference);
+                }
+                pythonObjectReference.setStrongReference(null);
+            }
+        }
 
-                Object type = getClassNode.execute(inliningTarget, pythonObject);
-                boolean gc = (getTypeFlagsNode.execute(type) & TypeFlags.HAVE_GC) != 0;
+        static void makeDirectReferenceWeak(Node inliningTarget, HandleContext handleContext, PythonObject pythonObject, long taggedPointer, int handleTableIndex,
+                        boolean release, boolean keepInGcList, boolean isLoggable,
+                        GCListRemoveNode gcListRemoveNode,
+                        InlinedConditionProfile isGcProfile,
+                        GetPythonObjectClassNode getClassNode,
+                        GetTypeFlagsNode getTypeFlagsNode) {
+            long untaggedPointer = HandlePointerConverter.pointerToStub(taggedPointer);
+
+            if (isLoggable) {
+                logStrongToWeak(taggedPointer, handleTableIndex, pythonObject);
+            }
+
+            Object type = getClassNode.execute(inliningTarget, pythonObject);
+            boolean gc = (getTypeFlagsNode.execute(type) & TypeFlags.HAVE_GC) != 0;
+
+            /*
+             * At this point, we would commonly expect that 'pythonObject.getRefCount() ==
+             * MANAGED_REFCNT'. However, in order to break reference cycles with managed objects, we
+             * make references weak even if that is not the case. So, for all non-gc objects, we
+             * strongly expect MANAGED_REFCNT.
+             */
+            assert gc || pythonObject.getRefCount() == MANAGED_REFCNT;
+
+            if (release) {
+                // clear all links between the managed and the native companion object
+                writeIntField(untaggedPointer, CFields.GraalPyObject__handle_table_index, 0);
+                pythonObject.clearNativePointer();
+                Object removed = CApiTransitions.nativeStubLookupRemove(handleContext, handleTableIndex);
+                assert pythonObject == removed;
+                freeNativeStub(taggedPointer, isGcProfile.profile(inliningTarget, gc));
+            } else {
+                /*
+                 * The reference should be weak but we may not release the native object stub. We
+                 * need to create a PythonObjectReference.
+                 */
+                PythonObjectReference pythonObjectReference = PythonObjectReference.createStub(handleContext, pythonObject, false, taggedPointer, handleTableIndex, gc);
+                nativeStubLookupReplaceByWeak(handleContext, handleTableIndex, pythonObjectReference, taggedPointer);
 
                 /*
-                 * At this point, we would commonly expect that 'pythonObject.getRefCount() ==
-                 * MANAGED_REFCNT'. However, in order to break reference cycles with managed
-                 * objects, we make references weak even if that is not the case. So, for all non-gc
-                 * objects, we strongly expect MANAGED_REFCNT.
+                 * As soon as the reference is made weak, we remove it from the GC list because
+                 * there are ways to iterate a GC list (e.g. 'PyUnstable_GC_VisitObjects') and while
+                 * doing so, the objects may be accessed. Since weakly referenced objects may die
+                 * any time, this could lead to dangling pointers being used.
                  */
-                assert gc || pythonObject.getRefCount() == MANAGED_REFCNT;
-
-                if (release) {
-                    // clear all links between the managed and the native companion object
-                    writeIntField(HandlePointerConverter.pointerToStub(pointer), CFields.GraalPyObject__handle_table_index, 0);
-                    pythonObject.clearNativePointer();
-                    Object removed = CApiTransitions.nativeStubLookupRemove(handleContext, handleTableIndex);
-                    assert pythonObject == removed;
-                    freeNativeStub(pointer, isGcProfile.profile(inliningTarget, gc));
-                } else {
-                    /*
-                     * The reference should be weak but we may not release the native object stub.
-                     * We need to create a PythonObjectReference.
-                     */
-                    PythonObjectReference pythonObjectReference = PythonObjectReference.createStub(handleContext, pythonObject, false, pointer, handleTableIndex, gc);
-                    nativeStubLookupReplaceByWeak(handleContext, handleTableIndex, pythonObjectReference, pointer);
+                if (!keepInGcList && gc) {
+                    gcListRemoveNode.executeOp(inliningTarget, pythonObject.getNativePointer());
                 }
             }
         }
