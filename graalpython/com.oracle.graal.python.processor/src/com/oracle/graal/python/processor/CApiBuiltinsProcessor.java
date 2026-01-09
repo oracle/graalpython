@@ -47,6 +47,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -74,6 +75,7 @@ import javax.tools.Diagnostic.Kind;
 import javax.tools.StandardLocation;
 
 import com.oracle.graal.python.annotations.CApiConstants;
+import com.oracle.graal.python.annotations.CApiExternalFunctionSignatures;
 import com.oracle.graal.python.annotations.CApiFields;
 import com.oracle.graal.python.annotations.CApiStructs;
 import com.sun.source.tree.VariableTree;
@@ -96,6 +98,10 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
 
     private Map<String, String> signatureToArgDescriptor = new HashMap<>();
     private Map<String, String> argDescriptorToInitializer = new HashMap<>();
+
+    private Map<String, String> signatureToExternalFunctionSignature = new HashMap<>();
+    private Map<String, String> externalFunctionSignatureToInitializer = new HashMap<>();
+
     private Trees trees;
 
     private String getFieldInitializer(VariableElement theField) {
@@ -114,6 +120,25 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             }
         }
         return argDescriptorToInitializer.get(name(theField));
+    }
+
+    private String getExternalFunctionSignatureInitializer(VariableElement theField) {
+        if (trees == null) {
+            return "";
+        }
+        if (externalFunctionSignatureToInitializer.isEmpty()) {
+            // lazily initialize all external function signatures in a single scan
+            var codeScanner = new ArgDescriptorsTreeScanner();
+            var tp = trees.getPath(theField.getEnclosingElement());
+            codeScanner.initializerMap = externalFunctionSignatureToInitializer;
+            codeScanner.scan(tp, this.trees);
+// for (var e : externalFunctionSignatureToInitializer.entrySet()) {
+// var signature = getCSignature(e.getValue());
+// signatureToExternalFunctionSignature.putIfAbsent(signature, e.getKey());
+// }
+        }
+        return externalFunctionSignatureToInitializer.get(name(theField));
+
     }
 
     @Override
@@ -223,10 +248,11 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
 
     private static final String CAPI_BUILTIN = "com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin";
     private static final String CAPI_BUILTINS = "com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltins";
+    private static final String EXFUNC_INVOKE = "com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionSignature.CApiExternalFunctionRootNode";
 
     @Override
     public Set<String> getSupportedAnnotationTypes() {
-        return Set.of(CAPI_BUILTIN, CAPI_BUILTINS, CApiFields.class.getName(), CApiConstants.class.getName(), CApiStructs.class.getName());
+        return Set.of(CAPI_BUILTIN, CAPI_BUILTINS, CApiFields.class.getName(), CApiConstants.class.getName(), CApiStructs.class.getName(), CApiExternalFunctionSignatures.class.getName());
     }
 
     @Override
@@ -984,6 +1010,192 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         }
     }
 
+    private static final class CApiExternalFunctionSignatureDesc {
+        public final VariableElement origin;
+        public final String name;
+
+        String returnType;
+        String[] argumentTypes;
+
+        public CApiExternalFunctionSignatureDesc(VariableElement origin, String name) {
+            this.origin = origin;
+            this.name = name;
+        }
+    }
+
+    private static final String NFI2_PACKAGE = "com.oracle.graal.python.nfi2";
+    private static final String JAVA_TYPE_NFI_DOWNCALL_SIGNATURE = "NfiDowncallSignature";
+    private static final String EXFUNC_INVOKER_PACKAGE = "com.oracle.graal.python.builtins.objects.cext.capi";
+    private static final String EXFUNC_INVOKER_CLASS_NAME = "ExternalFunctionInvoker";
+
+    /**
+     * Maps an {@code com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgBehavior} to
+     * the NFI Java type.
+     */
+    private String toJavaType(String argDescriptor) {
+        // TODO: types should be inferred with: 'ArgDescriptor.behavior.nfi2Type'
+        return switch (argDescriptor) {
+            case "Void" -> "void";
+            case "Int", "InquiryResult", "InitResult", "PrimitiveResult32" -> "int";
+            case "Py_ssize_t", "PrimitiveResult64", "PyObjectReturn", "PyObject", "PyObjectTransfer", "PyObjectConstArray", "PyTypeObject", "CharPtrAsTruffleString", "IterResult", "Pointer",
+                            "CHAR_PTR" ->
+                "long";
+            default -> {
+                processingEnv.getMessager().printError(String.format("Unexpected ArgDescriptor: '%s'", argDescriptor));
+                yield null;
+            }
+        };
+    }
+
+    /**
+     * Maps an {@code com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgBehavior} to
+     * the NFI type.
+     */
+    private String toNfiType(String argDescriptor) {
+        // TODO: types should be inferred with: 'ArgDescriptor.behavior.nfi2Type'
+        return switch (argDescriptor) {
+            case "Void" -> "NfiType.VOID";
+            case "Int", "InquiryResult", "InitResult", "PrimitiveResult32" -> "NfiType.SINT32";
+            case "Py_ssize_t", "PrimitiveResult64" -> "NfiType.SINT64";
+            case "PyObjectReturn", "PyObject", "PyObjectTransfer", "Pointer", "PyObjectConstArray", "PyTypeObject", "CharPtrAsTruffleString", "IterResult", "CHAR_PTR" ->
+                "NfiType.RAW_POINTER";
+            default -> {
+                processingEnv.getMessager().printError(String.format("Unexpected ArgDescriptor: '%s'", argDescriptor));
+                yield null;
+            }
+        };
+    }
+
+    private static String getNfiSignatureVarName(String signatureName) {
+        return "NFI_SIGNATURE_" + signatureName;
+    }
+
+    private void generateExternalFunctionNodes(List<CApiExternalFunctionSignatureDesc> signatures) throws IOException {
+        ArrayList<String> lines = new ArrayList<>();
+
+        lines.add("// @formatter:off");
+        lines.add("// Checkstyle: stop");
+        lines.add("// Generated by annotation processor: " + getClass().getName());
+        lines.add("package " + EXFUNC_INVOKER_PACKAGE + ";");
+        lines.add("");
+        lines.add("import java.lang.invoke.MethodHandle;");
+        lines.add("import java.lang.invoke.MethodHandles;");
+        lines.add("import java.lang.invoke.MethodType;");
+        lines.add("");
+        lines.add("import org.graalvm.nativeimage.ImageInfo;");
+        lines.add("");
+        lines.add("import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;");
+        lines.add("import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;");
+        lines.add("import com.oracle.graal.python.builtins.objects.function.PArguments;");
+        lines.add("import " + NFI2_PACKAGE + ".Nfi;");
+        lines.add("import " + NFI2_PACKAGE + ".NfiBoundFunction;");
+        lines.add("import " + NFI2_PACKAGE + ".NfiContext;");
+        lines.add("import " + NFI2_PACKAGE + "." + JAVA_TYPE_NFI_DOWNCALL_SIGNATURE + ";");
+        lines.add("import " + NFI2_PACKAGE + ".NfiType;");
+        lines.add("import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;");
+        lines.add("import com.oracle.graal.python.runtime.GilNode;");
+        lines.add("import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;");
+        lines.add("import com.oracle.graal.python.runtime.PythonContext;");
+        lines.add("import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;");
+        lines.add("import com.oracle.truffle.api.CompilerDirectives;");
+        lines.add("import com.oracle.truffle.api.frame.VirtualFrame;");
+        lines.add("");
+        lines.add("public final class " + EXFUNC_INVOKER_CLASS_NAME + " {");
+        lines.add("");
+        lines.add("    private ExternalFunctionInvoker() {");
+        lines.add("        // no instances");
+        lines.add("    }");
+        lines.add("");
+
+        // declare downcall signature variables and resolve return and argument types
+        for (CApiExternalFunctionSignatureDesc sig : signatures) {
+            // determine arg types and return type for signature; initializer syntax:
+            // 'ExternalFunctionSignature(ArgDescriptor returnValue, ArgDescriptor... arguments)'
+            String externalFunctionSignatureInitializer = getExternalFunctionSignatureInitializer(sig.origin);
+
+            int start = externalFunctionSignatureInitializer.indexOf('(');
+            int end = externalFunctionSignatureInitializer.lastIndexOf(')');
+            String[] initArgs = externalFunctionSignatureInitializer.substring(start + 1, end).split(",");
+
+            assert sig.returnType == null;
+            sig.returnType = initArgs[0].strip();
+            assert sig.argumentTypes == null;
+            sig.argumentTypes = Arrays.stream(initArgs).skip(1).map(String::strip).toArray(String[]::new);
+
+            lines.add("    private static " + JAVA_TYPE_NFI_DOWNCALL_SIGNATURE + " " + getNfiSignatureVarName(sig.name) + " =  Nfi.createDowncallSignature(" + toNfiType(sig.returnType) + ", " +
+                            Arrays.stream(sig.argumentTypes).map(this::toNfiType).collect(Collectors.joining(", ")) + ");");
+        }
+
+        for (CApiExternalFunctionSignatureDesc sig : signatures) {
+            assert sig.returnType != null;
+            assert sig.argumentTypes != null;
+            String returnType = toJavaType(sig.returnType);
+            List<String> argTypes = Arrays.stream(sig.argumentTypes).map(this::toJavaType).toList();
+
+            boolean isVoidReturn = "void".equals(returnType);
+
+            List<String> invokeArgs = new LinkedList<>();
+            invokeArgs.add("VirtualFrame frame");
+            invokeArgs.add("CApiTiming timing");
+            invokeArgs.add("NfiContext nfiContext");
+            invokeArgs.add("BoundaryCallData boundaryCallData");
+            invokeArgs.add("PythonThreadState threadState");
+            invokeArgs.add("NfiBoundFunction nfiFunction");
+            int i = 0;
+            for (String argType : argTypes) {
+                invokeArgs.add(argType + " " + argName(i++));
+            }
+
+            List<String> cArgs = new LinkedList<>();
+            i = 0;
+            for (String ignored : argTypes) {
+                cArgs.add(argName(i++));
+            }
+
+            lines.add("");
+            lines.add("    public static " + returnType + " invoke" + sig.name + "(" + String.join(", ", invokeArgs) + ") {");
+            for (int j = 0; j < argTypes.size(); j++) {
+                if (argTypes.get(j).contains("PyObject")) {
+                    lines.add("    assert EnsurePythonObjectNode.doesNotNeedPromotion(" + argName(j) + ");");
+                }
+            }
+            String returnStmt = isVoidReturn ? "" : "return (" + returnType + ") ";
+            String argExpr = String.join(", ", cArgs);
+
+            lines.add("        // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store;");
+            lines.add("        // it to the context since we cannot propagate it through the native frames.");
+            lines.add("");
+            lines.add("        Object state = BoundaryCallContext.enter(frame, threadState, boundaryCallData);");
+            lines.add("        CApiTiming.enter();");
+            lines.add("        try {");
+            lines.add("            if (ImageInfo.inImageCode()) {");
+            lines.add("                " + returnStmt + getNfiSignatureVarName(sig.name) + ".invoke(nfiContext, nfiFunction.getAddress(), " + argExpr + ");");
+            lines.add("            } else {");
+            lines.add("                assert " + getNfiSignatureVarName(sig.name) + ".equals(nfiFunction.getSignature());");
+            lines.add("                " + returnStmt + "nfiFunction.invoke(" + argExpr + ");");
+            lines.add("            }");
+            lines.add("        } catch (Throwable exception) {");
+            lines.add("            CompilerDirectives.transferToInterpreterAndInvalidate();");
+            lines.add("            GilNode.uncachedAcquire();");
+            lines.add("            throw exception;");
+            lines.add("        } finally {");
+            lines.add("            CApiTiming.exit(timing);");
+            lines.add("            if (frame != null && threadState.getCaughtException() != null) {");
+            lines.add("                PArguments.setException(frame, threadState.getCaughtException());");
+            lines.add("            }");
+            lines.add("            BoundaryCallContext.exit(frame, threadState, state);");
+            lines.add("        }");
+            lines.add("    }");
+        }
+        lines.add("}");
+
+        var origins = signatures.stream().map((sig) -> sig.origin).toArray(Element[]::new);
+        var file = processingEnv.getFiler().createSourceFile(EXFUNC_INVOKER_PACKAGE + "." + EXFUNC_INVOKER_CLASS_NAME, origins);
+        try (var w = file.openWriter()) {
+            w.append(String.join(System.lineSeparator(), lines));
+        }
+    }
+
     @Override
     @SuppressWarnings({"try", "unused"})
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment re) {
@@ -1010,6 +1222,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         List<String> constants = new ArrayList<>();
         List<String> fields = new ArrayList<>();
         List<String> structs = new ArrayList<>();
+        List<CApiExternalFunctionSignatureDesc> externalFunctionSignatures = new ArrayList<>();
         for (var el : re.getElementsAnnotatedWith(CApiConstants.class)) {
             if (el.getKind() == ElementKind.ENUM) {
                 for (var enumBit : el.getEnclosedElements()) {
@@ -1023,7 +1236,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         }
         for (var el : re.getElementsAnnotatedWith(CApiFields.class)) {
             if (el.getKind() != ElementKind.ENUM) {
-                processingEnv.getMessager().printError(CApiConstants.class.getSimpleName() + " is only applicable for enums.", el);
+                processingEnv.getMessager().printError(CApiFields.class.getSimpleName() + " is only applicable for enums.", el);
             } else {
                 for (var enumBit : el.getEnclosedElements()) {
                     if (enumBit.getKind() == ElementKind.ENUM_CONSTANT) {
@@ -1034,13 +1247,24 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         }
         for (var el : re.getElementsAnnotatedWith(CApiStructs.class)) {
             if (el.getKind() != ElementKind.ENUM) {
-                processingEnv.getMessager().printError(CApiConstants.class.getSimpleName() + " is only applicable for enums.", el);
+                processingEnv.getMessager().printError(CApiStructs.class.getSimpleName() + " is only applicable for enums.", el);
             } else {
                 for (var enumBit : el.getEnclosedElements()) {
                     if (enumBit.getKind() == ElementKind.ENUM_CONSTANT) {
                         structs.add(enumBit.getSimpleName().toString());
                     }
                 }
+            }
+        }
+        for (var el : re.getElementsAnnotatedWith(CApiExternalFunctionSignatures.class)) {
+            if (el.getKind() == ElementKind.ENUM) {
+                for (var enumBit : el.getEnclosedElements()) {
+                    if (enumBit.getKind() == ElementKind.ENUM_CONSTANT) {
+                        externalFunctionSignatures.add(new CApiExternalFunctionSignatureDesc((VariableElement) enumBit, enumBit.getSimpleName().toString()));
+                    }
+                }
+            } else {
+                processingEnv.getMessager().printError(CApiExternalFunctionSignatures.class.getSimpleName() + " is only applicable for enums.", el);
             }
         }
 
@@ -1052,6 +1276,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                 // needs jdk.compiler
                 generateCApiSource(allBuiltins, constants, fields, structs);
                 generateCApiHeader(javaBuiltins);
+                generateExternalFunctionNodes(externalFunctionSignatures);
             }
             generateBuiltinRegistry(javaBuiltins);
             generateUpcallConfig(javaBuiltins);
