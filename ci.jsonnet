@@ -5,7 +5,7 @@
 (import "ci/python-gate.libsonnet") +
 (import "ci/python-bench.libsonnet") +
 {
-    overlay: "a8df46e16d6fcae69e9a7c42c632131fdf6e043e",
+    overlay: "ed8f5da14a487e075631a90cf50e7dbca5d171aa",
     specVersion: "6",
     // Until buildbot issues around CI tiers are resolved, we cannot use them
     // tierConfig: self.tierConfig,
@@ -31,6 +31,7 @@
         RODINIA_DATASET_ZIP: "",
         BUILDBOT_COMMIT_SERVICE: "",
     },
+    codeowners_builds: [],
 
     local run_spec              = import "ci/graal/ci/ci_common/run-spec.libsonnet",
     local utils                 = import "ci/utils.libsonnet",
@@ -432,7 +433,7 @@
                 {'defined_in': std.thisFile} + b for b in self.processed_gate_builds.list + self.processed_bench_builds.list
             ])
         )
-    ) + [
+    ) + self.codeowners_builds + [
         {
             name: "graalpy-website-build",
             targets: ["tier1"],

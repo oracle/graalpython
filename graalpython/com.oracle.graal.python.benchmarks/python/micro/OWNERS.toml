@@ -1,0 +1,6 @@
+[[rule]]
+files = "arith-binop.py arith-modulo-sized.py attribute-access.py attribute-access-polymorphic.py attribute-access-super.py attribute-bool.py boolean-logic-sized.py builtin-len.py builtin-len-tuple-sized.py call-classmethod-sized.py call-method-polymorphic.py bytecode-benchmark.py for-range.py generate-functions-sized.py c-arith-binop.py c-arith-binop2.py c-call-classmethod.py c-call-method-int-float.py c-call-method.py c-instantiate-large.py c-issubtype-monorphic.py c-issubtype-polymorphic.py c-list-iterating-obj.py c-magic-bool.py c-magic-iter.py c-member-access.py"
+any = [
+    "francois.farquet@oracle.com",
+    "andrija.kolic@oracle.com",
+]
