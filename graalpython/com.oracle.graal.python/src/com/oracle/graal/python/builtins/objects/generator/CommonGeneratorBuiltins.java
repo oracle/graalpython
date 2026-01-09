@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -160,8 +160,9 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
             return handleResult(inliningTarget, self, result);
         }
 
-        @Specialization(guards = {"isBytecodeDSLInterpreter()", "sameCallTarget(self.getCurrentCallTarget(), callNode)"}, limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = {"isBytecodeDSLInterpreter()", "self.getBytecodeDSLContinuationRootNode() == continuationRootNode"}, limit = "getCallSiteInlineCacheMaxDepth()")
         static Object cachedBytecodeDSL(VirtualFrame frame, Node inliningTarget, PGenerator self, Object sendValue,
+                        @Cached("self.getBytecodeDSLContinuationRootNode()") ContinuationRootNode continuationRootNode,
                         @Cached(parameters = "self.getCurrentCallTarget()") DirectCallNode callNode,
                         @Exclusive @Cached ExecutionContext.CallContext callContext,
                         @Exclusive @Cached InlinedBranchProfile returnProfile,
@@ -171,8 +172,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
             Object generatorResult;
             try {
                 Object[] generatorArguments = self.prepareResume();
-                RootCallTarget callTarget = (RootCallTarget) callNode.getCurrentCallTarget();
-                PRootNode rootNode = PGenerator.unwrapContinuationRoot((ContinuationRootNode) callTarget.getRootNode());
+                PRootNode rootNode = PGenerator.unwrapContinuationRoot(continuationRootNode);
                 /*
                  * When resuming a generator/coroutine, the call target is a ContinuationRoot with a
                  * different calling convention from regular PRootNodes. The first argument is a
@@ -407,7 +407,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                 }
                 MaterializedFrame generatorFrame = self.getGeneratorFrame();
                 PFrame.Reference ref = new PFrame.Reference(rootNode, PFrame.Reference.EMPTY);
-                PFrame pFrame = MaterializeFrameNode.materializeGeneratorFrame(location, generatorFrame, self.getGlobals(), ref);
+                PFrame pFrame = MaterializeFrameNode.materializeGeneratorFrame(PythonLanguage.get(inliningTarget), location, generatorFrame, self.getGlobals(), ref);
                 FrameInfo info = (FrameInfo) generatorFrame.getFrameDescriptor().getInfo();
                 pFrame.setLine(info.getFirstLineNumber());
                 Object existingTracebackObj = getTracebackNode.execute(inliningTarget, instance);
