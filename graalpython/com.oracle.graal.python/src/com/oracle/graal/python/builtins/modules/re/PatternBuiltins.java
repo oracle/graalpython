@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,34 @@
  */
 package com.oracle.graal.python.builtins.modules.re;
 
+import static com.oracle.graal.python.builtins.modules.re.TRegexCache.FLAG_ASCII;
+import static com.oracle.graal.python.builtins.modules.re.TRegexCache.FLAG_DOTALL;
+import static com.oracle.graal.python.builtins.modules.re.TRegexCache.FLAG_IGNORECASE;
+import static com.oracle.graal.python.builtins.modules.re.TRegexCache.FLAG_LOCALE;
+import static com.oracle.graal.python.builtins.modules.re.TRegexCache.FLAG_MULTILINE;
+import static com.oracle.graal.python.builtins.modules.re.TRegexCache.FLAG_UNICODE;
+import static com.oracle.graal.python.builtins.modules.re.TRegexCache.FLAG_VERBOSE;
+import static com.oracle.graal.python.nodes.BuiltinNames.T__SRE;
+import static com.oracle.graal.python.nodes.ErrorMessages.BAD_CHAR_IN_GROUP_NAME;
+import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ESCAPE_END_OF_STRING;
+import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ESCAPE_S;
+import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_GROUP_REFERENCE;
+import static com.oracle.graal.python.nodes.ErrorMessages.MISSING_GROUP_NAME;
+import static com.oracle.graal.python.nodes.ErrorMessages.MISSING_LEFT_ANGLE_BRACKET;
+import static com.oracle.graal.python.nodes.ErrorMessages.MISSING_RIGHT_ANGLE_BRACKET;
+import static com.oracle.graal.python.nodes.ErrorMessages.OCTAL_ESCAPE_OUT_OF_RANGE;
+import static com.oracle.graal.python.nodes.ErrorMessages.UNKNOWN_GROUP_NAME;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___COPY__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DEEPCOPY__;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING_BINARY;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.Builtin;
@@ -72,6 +100,7 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromModuleNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -112,31 +141,6 @@ import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
-
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-
-import static com.oracle.graal.python.builtins.modules.re.TRegexCache.FLAG_ASCII;
-import static com.oracle.graal.python.builtins.modules.re.TRegexCache.FLAG_DOTALL;
-import static com.oracle.graal.python.builtins.modules.re.TRegexCache.FLAG_IGNORECASE;
-import static com.oracle.graal.python.builtins.modules.re.TRegexCache.FLAG_LOCALE;
-import static com.oracle.graal.python.builtins.modules.re.TRegexCache.FLAG_MULTILINE;
-import static com.oracle.graal.python.builtins.modules.re.TRegexCache.FLAG_UNICODE;
-import static com.oracle.graal.python.builtins.modules.re.TRegexCache.FLAG_VERBOSE;
-import static com.oracle.graal.python.nodes.BuiltinNames.T__SRE;
-import static com.oracle.graal.python.nodes.ErrorMessages.BAD_CHAR_IN_GROUP_NAME;
-import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ESCAPE_END_OF_STRING;
-import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ESCAPE_S;
-import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_GROUP_REFERENCE;
-import static com.oracle.graal.python.nodes.ErrorMessages.MISSING_GROUP_NAME;
-import static com.oracle.graal.python.nodes.ErrorMessages.MISSING_LEFT_ANGLE_BRACKET;
-import static com.oracle.graal.python.nodes.ErrorMessages.MISSING_RIGHT_ANGLE_BRACKET;
-import static com.oracle.graal.python.nodes.ErrorMessages.OCTAL_ESCAPE_OUT_OF_RANGE;
-import static com.oracle.graal.python.nodes.ErrorMessages.UNKNOWN_GROUP_NAME;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING_BINARY;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PPattern})
 public final class PatternBuiltins extends PythonBuiltins {
@@ -665,7 +669,7 @@ public final class PatternBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__copy__", minNumOfPositionalArgs = 1, parameterNames = {"$self"}, doc = "__copy__($self, /)\n--\n\n")
+    @Builtin(name = J___COPY__, minNumOfPositionalArgs = 1, parameterNames = {"$self"}, doc = "__copy__($self, /)\n--\n\n")
     @GenerateNodeFactory
     public abstract static class CopyNode extends PythonBuiltinNode {
 
@@ -675,13 +679,23 @@ public final class PatternBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__deepcopy__", minNumOfPositionalArgs = 2, parameterNames = {"$self", "memo"}, doc = "__deepcopy__($self, memo, /)\n--\n\n")
+    @Builtin(name = J___DEEPCOPY__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "memo"}, doc = "__deepcopy__($self, memo, /)\n--\n\n")
     @GenerateNodeFactory
     public abstract static class DeepCopyNode extends PythonBuiltinNode {
 
         @Specialization
         static PPattern deepCopy(PPattern self, Object memo) {
             return self;
+        }
+    }
+
+    @Builtin(name = J___CLASS_GETITEM__, minNumOfPositionalArgs = 2, isClassmethod = true)
+    @GenerateNodeFactory
+    public abstract static class ClassGetItemNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        static Object classGetItem(Object cls, Object key,
+                        @Bind PythonLanguage language) {
+            return PFactory.createGenericAlias(language, cls, key);
         }
     }
 

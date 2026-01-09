@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,17 @@
  */
 package com.oracle.graal.python.builtins.modules.re;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___CLASS_GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___COPY__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DEEPCOPY__;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING_BINARY;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
@@ -58,6 +69,7 @@ import com.oracle.graal.python.lib.PyObjectReprAsTruffleStringNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
@@ -75,14 +87,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
-
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING_BINARY;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PMatch})
 public final class MatchBuiltins extends PythonBuiltins {
@@ -612,7 +616,7 @@ public final class MatchBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__copy__", minNumOfPositionalArgs = 1, parameterNames = {"$self"}, doc = "__copy__($self, /)\n--\n\n")
+    @Builtin(name = J___COPY__, minNumOfPositionalArgs = 1, parameterNames = {"$self"}, doc = "__copy__($self, /)\n--\n\n")
     @GenerateNodeFactory
     public abstract static class CopyNode extends PythonBuiltinNode {
 
@@ -622,13 +626,23 @@ public final class MatchBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__deepcopy__", minNumOfPositionalArgs = 2, parameterNames = {"$self", "memo"}, doc = "__deepcopy__($self, memo, /)\n--\n\n")
+    @Builtin(name = J___DEEPCOPY__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "memo"}, doc = "__deepcopy__($self, memo, /)\n--\n\n")
     @GenerateNodeFactory
     public abstract static class DeepCopyNode extends PythonBuiltinNode {
 
         @Specialization
         static PMatch deepCopy(PMatch self, Object memo) {
             return self;
+        }
+    }
+
+    @Builtin(name = J___CLASS_GETITEM__, minNumOfPositionalArgs = 2, isClassmethod = true)
+    @GenerateNodeFactory
+    public abstract static class ClassGetItemNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        static Object classGetItem(Object cls, Object key,
+                        @Bind PythonLanguage language) {
+            return PFactory.createGenericAlias(language, cls, key);
         }
     }
 }

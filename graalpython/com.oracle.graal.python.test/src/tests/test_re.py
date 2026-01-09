@@ -1,9 +1,10 @@
-# Copyright (c) 2019, 2025, Oracle and/or its affiliates.
+# Copyright (c) 2019, 2026, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
 import re
 import string
+import types
 import unittest
 import sys
 
@@ -1540,6 +1541,9 @@ class PatternTest(unittest.TestCase):
         with self.assertRaisesRegex(TypeError, "cannot use a bytes pattern on a string-like object"):
             pattern.scanner("abc")
 
+    def test_class_getitem(self):
+        self.assertIsInstance(re.Pattern[bytes], types.GenericAlias)
+
 
 class MatchTest(unittest.TestCase):
     def test_expand(self):
@@ -2080,6 +2084,9 @@ class MatchTest(unittest.TestCase):
         with self.assertRaisesRegex(TypeError, "type 're.Match' is not an acceptable base type"):
             class A(re.Match):
                 pass
+
+    def test_class_getitem(self):
+        self.assertIsInstance(re.Match[bytes], types.GenericAlias)
 
 
 class SREScannerTest(unittest.TestCase):
