@@ -118,7 +118,15 @@ class Job:
 
     @cached_property
     def env(self) -> dict[str, str]:
-        return self.job.get("environment", {}) | DEFAULT_ENV
+        environment = self.job.get("environment", {}) | DEFAULT_ENV
+        if self.runs_on == "windows-latest":
+            def _to_windows_env_format(s: str) -> str:
+                # Replace ${VAR} and $VAR with %VAR%
+                s = re.sub(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}", r"%\1%", s)
+                s = re.sub(r"\$([A-Za-z_][A-Za-z0-9_]*)", r"%\1%", s)
+                return s
+            environment = {k: _to_windows_env_format(v) for k, v in environment.items()}
+        return environment
 
     @cached_property
     def mx_version(self) -> str | None:
