@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -66,18 +66,17 @@ public final class NfiBoundFunction {
 
     @TruffleBoundary
     public Object invoke(Object... args) {
-        Object[] convertedArgs = signature.convertArgs(args);
+        assert signature.checkArgTypes(args);
         Object result;
         try {
             if (ImageInfo.inImageCode()) {
-                result = ForeignFunctions.invoke(signature.downcallDescriptor, ptr, convertedArgs);
+                result = ForeignFunctions.invoke(signature.downcallDescriptor, ptr, args);
             } else {
-                result = boundHandle.invokeExact(convertedArgs);
+                result = boundHandle.invokeExact(args);
             }
         } catch (Throwable e) {
             throw CompilerDirectives.shouldNotReachHere(e);
         } finally {
-            Reference.reachabilityFence(convertedArgs);
             Reference.reachabilityFence(args);
         }
         return signature.convertResult(result);

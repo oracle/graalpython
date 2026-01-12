@@ -141,7 +141,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ToNativeTy
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformPExceptionToNativeCachedNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.structs.CConstants;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
@@ -742,15 +741,10 @@ public final class PythonCextBuiltins {
             }
             try {
                 Object[] args = frame.getArguments();
-                Object[] newArgs = new Object[args.length];
                 for (int i = 0; i < args.length; i++) {
-                    if (signature.getArgTypes()[i] == NfiType.POINTER) {
-                        newArgs[i] = new NativePointer((long) args[i]);
-                    } else {
-                        newArgs[i] = args[i];
-                    }
+                    assert signature.getArgTypes()[i] != NfiType.POINTER;
                 }
-                Object result = executeBuiltinNode.execute(newArgs);
+                Object result = executeBuiltinNode.execute(args);
                 return signature.getReturnType().convertToNative(result);
             } catch (Throwable e) {
                 throw CompilerDirectives.shouldNotReachHere(e);

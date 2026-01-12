@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -65,19 +65,23 @@ public enum NfiType {
     }
 
     public Object convertToNative(Object value) {
-        return getConvertArgJavaToNativeNodeUncached().execute(value);
+        if (this == VOID) {
+            return null;
+        }
+        assert checkType(value);
+        return value;
     }
 
-    ConvertArgJavaToNativeNode getConvertArgJavaToNativeNodeUncached() {
+    boolean checkType(Object value) {
         return switch (this) {
-            case VOID -> ConvertArgJavaToNativeNodeFactory.ToVOIDNodeGen.getUncached();
-            case SINT8 -> ConvertArgJavaToNativeNodeFactory.ToINT8NodeGen.getUncached();
-            case SINT16 -> ConvertArgJavaToNativeNodeFactory.ToINT16NodeGen.getUncached();
-            case SINT32 -> ConvertArgJavaToNativeNodeFactory.ToINT32NodeGen.getUncached();
-            case SINT64, RAW_POINTER -> ConvertArgJavaToNativeNodeFactory.ToINT64NodeGen.getUncached();
-            case FLOAT -> ConvertArgJavaToNativeNodeFactory.ToFLOATNodeGen.getUncached();
-            case DOUBLE -> ConvertArgJavaToNativeNodeFactory.ToDOUBLENodeGen.getUncached();
-            case POINTER -> ConvertArgJavaToNativeNodeFactory.ToPointerNodeGen.getUncached();
+            case VOID -> value == null;
+            case SINT8 -> value instanceof Byte;
+            case SINT16 -> value instanceof Short;
+            case SINT32 -> value instanceof Integer;
+            case SINT64 -> value instanceof Long;
+            case FLOAT -> value instanceof Float;
+            case DOUBLE -> value instanceof Double;
+            case POINTER, RAW_POINTER -> value instanceof Long;
         };
     }
 }
