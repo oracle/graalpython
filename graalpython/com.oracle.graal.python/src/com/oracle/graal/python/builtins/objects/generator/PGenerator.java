@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -121,7 +121,6 @@ public class PGenerator extends PythonBuiltinObject {
     public static class BytecodeDSLState {
         private final PBytecodeDSLRootNode rootNode;
         private final Object[] arguments;
-        private BytecodeLocation lastLocation;
         private ContinuationRootNode continuationRootNode;
         private boolean isStarted;
 
@@ -134,7 +133,6 @@ public class PGenerator extends PythonBuiltinObject {
         public Object handleResult(PGenerator generator, ContinuationResult result) {
             assert result.getContinuationRootNode() == null || result.getContinuationRootNode().getFrameDescriptor() == generator.frame.getFrameDescriptor();
             isStarted = true;
-            lastLocation = continuationRootNode.getLocation();
             continuationRootNode = result.getContinuationRootNode();
             return result.getResult();
         }
@@ -202,6 +200,11 @@ public class PGenerator extends PythonBuiltinObject {
         PArguments.setException(arguments, null);
         PArguments.setCallerFrameInfo(arguments, null);
         return arguments;
+    }
+
+    public ContinuationRootNode getBytecodeDSLContinuationRootNode() {
+        assert PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER;
+        return getBytecodeDSLState().continuationRootNode;
     }
 
     /**
@@ -296,17 +299,38 @@ public class PGenerator extends PythonBuiltinObject {
         }
     }
 
-    /**
-     * Return the BytecodeNode that should be used for accessing the frame
-     */
     public BytecodeNode getBytecodeNode() {
         assert PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER;
         BytecodeDSLState state = getBytecodeDSLState();
-        if (state.lastLocation != null) {
-            return state.lastLocation.getBytecodeNode();
+        if (state.isStarted) {
+            return state.continuationRootNode.getLocation().getBytecodeNode();
         } else {
+            // Loading the BytecodeNode from the RootNode field is, in general, not correct, but can
+            // be used if we know that the generator function is currently not on stack.
             return state.rootNode.getBytecodeNode();
         }
+    }
+
+    /**
+     * Return the BytecodeNode that should be used for accessing the frame of a continuation root
+     * node.
+     */
+    public BytecodeNode getContinuationBytecodeNode() {
+        assert PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER;
+        BytecodeDSLState state = getBytecodeDSLState();
+        assert state.isStarted;
+        return state.continuationRootNode.getLocation().getBytecodeNode();
+    }
+
+    /**
+     * Loads the BytecodeNode from the RootNode field, which is in general not correct, but can be
+     * used if we know that the generator function is currently not on stack.
+     */
+    public BytecodeNode getGeneratorFunctionBytecodeNode() {
+        assert PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER;
+        BytecodeDSLState state = getBytecodeDSLState();
+        assert !state.isStarted;
+        return state.rootNode.getBytecodeNode();
     }
 
     public BytecodeLocation getCurrentLocation() {
@@ -324,7 +348,7 @@ public class PGenerator extends PythonBuiltinObject {
             if (rootNode.yieldFromGeneratorIndex == -1 || !getBytecodeDSLState().isStarted) {
                 return null;
             }
-            return getBytecodeNode().getLocalValue(0, getGeneratorFrame(), rootNode.yieldFromGeneratorIndex);
+            return getContinuationBytecodeNode().getLocalValue(0, getGeneratorFrame(), rootNode.yieldFromGeneratorIndex);
         } else {
             return frameInfo.getYieldFrom(frame, getBci(), getBytecodeState().getCurrentRootNode().getResumeStackTop());
         }

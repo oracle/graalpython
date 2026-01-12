@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -207,7 +207,7 @@ public final class GeneratorBuiltins extends PythonBuiltins {
                 if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
                     BytecodeDSLFrameInfo info = (BytecodeDSLFrameInfo) generatorFrame.getFrameDescriptor().getInfo();
                     if (pyFrame == null) {
-                        pyFrame = MaterializeFrameNode.materializeGeneratorFrame(self.getBytecodeNode(), generatorFrame, self.getGlobals(), currentRef);
+                        pyFrame = MaterializeFrameNode.materializeGeneratorFrame(PythonLanguage.get(readFrameNode), self.getBytecodeNode(), generatorFrame, self.getGlobals(), currentRef);
                     }
                     BytecodeLocation location = self.getCurrentLocation();
                     if (location != null) {
@@ -221,7 +221,7 @@ public final class GeneratorBuiltins extends PythonBuiltins {
                 } else {
                     BytecodeFrameInfo info = (BytecodeFrameInfo) generatorFrame.getFrameDescriptor().getInfo();
                     if (pyFrame == null) {
-                        pyFrame = MaterializeFrameNode.materializeGeneratorFrame(info.getRootNode(), generatorFrame, self.getGlobals(), currentRef);
+                        pyFrame = MaterializeFrameNode.materializeGeneratorFrame(PythonLanguage.get(readFrameNode), info.getRootNode(), generatorFrame, self.getGlobals(), currentRef);
                     }
                     int bci = self.getBci();
                     if (bci >= 0) {

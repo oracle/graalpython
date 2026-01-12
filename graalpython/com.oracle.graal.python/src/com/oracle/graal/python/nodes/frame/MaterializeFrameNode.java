@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -203,7 +203,11 @@ public abstract class MaterializeFrameNode extends Node {
     }
 
     public static PFrame materializeGeneratorFrame(Node location, MaterializedFrame generatorFrame, PythonObject globals, PFrame.Reference frameRef) {
-        PFrame escapedFrame = PFactory.createPFrame(PythonLanguage.get(location), frameRef, location, false);
+        return materializeGeneratorFrame(PythonLanguage.get(location), location, generatorFrame, globals, frameRef);
+    }
+
+    public static PFrame materializeGeneratorFrame(PythonLanguage language, Node location, MaterializedFrame generatorFrame, PythonObject globals, PFrame.Reference frameRef) {
+        PFrame escapedFrame = PFactory.createPFrame(language, frameRef, location, false);
         escapedFrame.setLocals(generatorFrame);
         escapedFrame.setGlobals(globals);
         frameRef.setPyFrame(escapedFrame);
