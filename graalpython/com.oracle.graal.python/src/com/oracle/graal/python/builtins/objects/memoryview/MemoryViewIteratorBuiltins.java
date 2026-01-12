@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -95,7 +95,7 @@ public final class MemoryViewIteratorBuiltins extends PythonBuiltins {
                 long ptr = seq.getBufferPointer();
                 int offset = seq.getOffset() + seq.getBufferStrides()[0] * self.index++;
                 if (seq.getBufferSuboffsets() != null && seq.getBufferSuboffsets()[0] >= 0) {
-                    ptr = (long) capiFunction.call(NativeCAPISymbol.FUN_ADD_SUBOFFSET, ptr, offset, seq.getBufferSuboffsets()[0]);
+                    ptr = (long) capiFunction.call(NativeCAPISymbol.FUN_ADD_SUBOFFSET, ptr, (long) offset, (long) seq.getBufferSuboffsets()[0]);
                     offset = 0;
                 }
                 return readItemAtNode.execute(frame, seq, ptr, offset);

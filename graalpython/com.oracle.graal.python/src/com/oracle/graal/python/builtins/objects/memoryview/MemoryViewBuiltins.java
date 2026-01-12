@@ -450,11 +450,11 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
                 long otherXPtr = otherPtr;
                 int otherXOffset = otherOffset;
                 if (self.getBufferSuboffsets() != null && self.getBufferSuboffsets()[dim] >= 0) {
-                    selfXPtr = (long) callCapiFunction.call(NativeCAPISymbol.FUN_ADD_SUBOFFSET, selfPtr, selfOffset, self.getBufferSuboffsets()[dim]);
+                    selfXPtr = (long) callCapiFunction.call(NativeCAPISymbol.FUN_ADD_SUBOFFSET, selfPtr, (long) selfOffset, (long) self.getBufferSuboffsets()[dim]);
                     selfXOffset = 0;
                 }
                 if (other.getBufferSuboffsets() != null && other.getBufferSuboffsets()[dim] >= 0) {
-                    otherXPtr = (long) callCapiFunction.call(NativeCAPISymbol.FUN_ADD_SUBOFFSET, otherPtr, otherOffset, other.getBufferSuboffsets()[dim]);
+                    otherXPtr = (long) callCapiFunction.call(NativeCAPISymbol.FUN_ADD_SUBOFFSET, otherPtr, (long) otherOffset, (long) other.getBufferSuboffsets()[dim]);
                     otherXOffset = 0;
                 }
                 if (dim == ndim - 1) {
