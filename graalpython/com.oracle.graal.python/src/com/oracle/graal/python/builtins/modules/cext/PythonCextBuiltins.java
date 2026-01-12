@@ -689,7 +689,7 @@ public final class PythonCextBuiltins {
             if (pointer == -1) {
                 try {
                     pointer = ((ExecuteCApiBuiltinRootNode) getCallTarget().getRootNode()).signature.createClosure(context.ensureNfiContext(), name, PythonCextBuiltinRegistry.getMethodHandle(id));
-                    context.getCApiContext().setClosurePointer(null, null, this, pointer);
+                    context.getCApiContext().setClosurePointer(null, this, pointer);
                     LOGGER.finer(CApiBuiltinExecutable.class.getSimpleName() + " toNative: " + id + " / " + name() + " -> " + pointer);
                 } catch (Throwable t) {
                     t.printStackTrace(new PrintStream(context.getEnv().err()));

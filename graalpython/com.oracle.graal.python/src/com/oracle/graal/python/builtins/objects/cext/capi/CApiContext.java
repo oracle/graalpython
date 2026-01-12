@@ -219,7 +219,7 @@ public final class CApiContext extends CExtContext {
         return getSingletonNativeWrapperIdx(delegate) != -1;
     }
 
-    private record ClosureInfo(Object closure, Object delegate, Object executable, long pointer) {
+    private record ClosureInfo(Object delegate, Object executable, long pointer) {
     }
 
     /**
@@ -1269,13 +1269,9 @@ public final class CApiContext extends CExtContext {
         return info == null ? null : info.executable;
     }
 
-    public void setClosurePointer(Object closure, Object delegate, Object executable, long pointer) {
+    public void setClosurePointer(Object delegate, Object executable, long pointer) {
         CompilerAsserts.neverPartOfCompilation();
-        // TODO(NFI2) closure in ClosureInfo is unused, but cpyext tests crash without it, we
-        // probably need to keep it strongly referenced. Remove once registerClosure uses panama
-        // directly
-        // EDIT: now it should always be null, review callers and remove the field
-        var info = new ClosureInfo(closure, delegate, executable, pointer);
+        var info = new ClosureInfo(delegate, executable, pointer);
         callableClosureByExecutable.put(executable, info);
         callableClosures.put(pointer, info);
         LOGGER.finer(() -> PythonUtils.formatJString("new NFI closure: (%s, %s) -> %d 0x%x", executable.getClass().getSimpleName(), delegate, pointer, pointer));
@@ -1340,7 +1336,7 @@ public final class CApiContext extends CExtContext {
 
         methodHandle = methodHandle.asType(UPCALL_METHOD_TYPE).asVarargsCollector(Object[].class);
         long pointer = signature.createClosure(context.ensureNfiContext(), name, methodHandle);
-        setClosurePointer(null, delegate, executable, pointer);
+        setClosurePointer(delegate, executable, pointer);
         return pointer;
     }
 
