@@ -255,8 +255,19 @@ def github_ci_build_args():
     # Determine memory and parallelism for GitHub CI builds
     # Use 90% of available memory up to 14GB, but at least 8GB
     # Set cores to number of CPUs if at least 4 cores and enough memory, otherwise 1
-    import psutil
-    total_mem = psutil.virtual_memory().total / (1024 ** 3)
+    total_mem = 0
+    try:
+        if mx.is_windows():
+            for m in subprocess.check_output(['wmic', 'memorychip', 'get', 'capacity'], encoding='utf-8').splitlines():
+                try:
+                    total_mem += int(m) / 1024**3
+                except ValueError:
+                    pass
+        else:
+            total_mem = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES') / 1024**3
+    except:
+        total_mem = 16.0
+
     min_bound = 8
     max_mem = 14*1024
     min_mem = int(1024 * (total_mem if total_mem < min_bound else total_mem * .9))
