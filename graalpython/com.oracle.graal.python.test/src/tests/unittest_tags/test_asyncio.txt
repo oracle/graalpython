@@ -274,6 +274,7 @@ test.test_asyncio.test_futures.PyFutureTests.test_wrap_future_use_running_loop @
 test.test_asyncio.test_futures.PyFutureTests.test_wrap_future_without_loop @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64
 test.test_asyncio.test_futures.PyFutureTests.test_yield_from_twice @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64
 test.test_asyncio.test_futures2.FutureReprTests.test_recursive_repr_for_pending_tasks @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64
+test.test_asyncio.test_futures2.PyFutureTests.test_future_traceback @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64
 test.test_asyncio.test_futures2.PyFutureTests.test_handle_exc_handler_correct_context @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64
 test.test_asyncio.test_locks.BarrierTests.test_abort_barrier @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64
 test.test_asyncio.test_locks.BarrierTests.test_abort_barrier_when_exception @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64
@@ -1296,3 +1297,11 @@ test.test_asyncio.test_waitfor.AsyncioWaitForTest.test_wait_for_waits_for_task_c
 test.test_asyncio.test_waitfor.WaitForShieldTests.test_none_timeout @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_waitfor.WaitForShieldTests.test_shielded_timeout @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_waitfor.WaitForShieldTests.test_zero_timeout @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_asyncio.test_streams.StreamTests.test_open_connection_happy_eyeball_refcycles @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_asyncio.test_taskgroups.TestTaskGroup.test_exception_refcycles_errors @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_asyncio.test_taskgroups.TestTaskGroup.test_exception_refcycles_parent_task @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_asyncio.test_taskgroups.TestTaskGroup.test_taskgroup_already_entered @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_asyncio.test_taskgroups.TestTaskGroup.test_taskgroup_context_manager_exit_raises @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_asyncio.test_taskgroups.TestTaskGroup.test_taskgroup_double_enter @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_asyncio.test_timeouts.TimeoutTests.test_timeout_already_entered @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_asyncio.test_timeouts.TimeoutTests.test_timeout_double_enter @ darwin-arm64,linux-aarch64,linux-x86_64

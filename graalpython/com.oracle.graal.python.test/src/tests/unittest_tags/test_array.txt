@@ -344,6 +344,7 @@ test.test_array.LongTest.test_tofrombytes @ darwin-arm64,linux-aarch64,linux-x86
 test.test_array.LongTest.test_tofromfile @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_array.LongTest.test_tofromlist @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_array.LongTest.test_type_error @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_array.MiscTest.test_bad_constructor @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_array.MiscTest.test_empty @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_array.ShortTest.test_add @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_array.ShortTest.test_assignment @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
