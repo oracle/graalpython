@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.checkThrowableBeforeNative;
+import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 
 import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -231,17 +232,17 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
                 }
                 try {
                     Object result;
-                    Object jArg0 = toJavaNode.execute(arguments[0]);
+                    Object jArg0 = toJavaNode.executeRaw((long) arguments[0]);
                     Object[] pArgs = createArgsNode.execute(inliningTarget, callTargetName, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS, signature, jArg0, null,
                                     defaults, PKeyword.EMPTY_KEYWORDS, false);
                     result = invokeNode.execute(null, inliningTarget, callTarget, pArgs);
-                    return toNativeNode.execute(result);
+                    return toNativeNode.executeLong(result);
                 } catch (Throwable t) {
                     throw checkThrowableBeforeNative(t, toString(), "");
                 }
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(inliningTarget, e);
-                return PythonContext.get(gil).getNativeNull();
+                return NULLPTR;
             } finally {
                 CApiTiming.exit(timing);
                 gil.release(mustRelease);
@@ -250,7 +251,7 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
 
         @Override
         protected NfiUpcallSignature getSignature() {
-            return Nfi.createUpcallSignature(NfiType.POINTER, NfiType.POINTER);
+            return Nfi.createUpcallSignature(NfiType.RAW_POINTER, NfiType.RAW_POINTER);
         }
 
         @Override
@@ -284,18 +285,18 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
                 }
                 try {
                     Object result;
-                    Object jArg0 = toJavaNode.execute(arguments[0]);
-                    Object jArg1 = toJavaNode.execute(arguments[1]);
+                    Object jArg0 = toJavaNode.executeRaw((long) arguments[0]);
+                    Object jArg1 = toJavaNode.executeRaw((long) arguments[1]);
                     Object[] pArgs = createArgsNode.execute(inliningTarget, callTargetName, new Object[]{jArg1}, PKeyword.EMPTY_KEYWORDS, signature, jArg0, null,
                                     defaults, PKeyword.EMPTY_KEYWORDS, false);
                     result = invokeNode.execute(null, inliningTarget, callTarget, pArgs);
-                    return toNativeNode.execute(result);
+                    return toNativeNode.executeLong(result);
                 } catch (Throwable t) {
                     throw checkThrowableBeforeNative(t, toString(), "");
                 }
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(inliningTarget, e);
-                return PythonContext.get(gil).getNativeNull();
+                return NULLPTR;
             } finally {
                 CApiTiming.exit(timing);
                 gil.release(mustRelease);
@@ -304,7 +305,7 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
 
         @Override
         protected NfiUpcallSignature getSignature() {
-            return Nfi.createUpcallSignature(NfiType.POINTER, NfiType.POINTER, NfiType.POINTER);
+            return Nfi.createUpcallSignature(NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER);
         }
 
         @Override
@@ -339,19 +340,19 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
                 }
                 try {
                     Object result;
-                    Object receiver = toJavaNode.execute(arguments[0]);
-                    Object starArgs = toJavaNode.execute(arguments[1]);
+                    Object receiver = toJavaNode.executeRaw((long) arguments[0]);
+                    Object starArgs = toJavaNode.executeRaw((long) arguments[1]);
                     Object[] starArgsArray = posStarargsNode.executeWith(null, starArgs);
                     Object[] pArgs = createArgsNode.execute(inliningTarget, callTargetName, starArgsArray, PKeyword.EMPTY_KEYWORDS, signature, receiver, null,
                                     defaults, PKeyword.EMPTY_KEYWORDS, false);
                     result = invokeNode.execute(null, inliningTarget, callTarget, pArgs);
-                    return toNativeNode.execute(result);
+                    return toNativeNode.executeLong(result);
                 } catch (Throwable t) {
                     throw checkThrowableBeforeNative(t, toString(), "");
                 }
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(inliningTarget, e);
-                return PythonContext.get(gil).getNativeNull();
+                return NULLPTR;
             } finally {
                 CApiTiming.exit(timing);
                 gil.release(mustRelease);
@@ -360,7 +361,7 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
 
         @Override
         protected NfiUpcallSignature getSignature() {
-            return Nfi.createUpcallSignature(NfiType.POINTER, NfiType.POINTER, NfiType.POINTER);
+            return Nfi.createUpcallSignature(NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER);
         }
 
         @Override
@@ -395,22 +396,22 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
                     throw ArityException.create(3, 3, arguments.length);
                 }
                 try {
-                    Object receiver = toJavaNode.execute(arguments[0]);
-                    Object starArgs = toJavaNode.execute(arguments[1]);
-                    Object kwArgs = toJavaNode.execute(arguments[2]);
+                    Object receiver = toJavaNode.executeRaw((long) arguments[0]);
+                    Object starArgs = toJavaNode.executeRaw((long) arguments[1]);
+                    Object kwArgs = toJavaNode.executeRaw((long) arguments[2]);
 
                     Object[] starArgsArray = posStarargsNode.executeWith(null, starArgs);
                     PKeyword[] kwArgsArray = expandKwargsNode.execute(inliningTarget, kwArgs);
                     Object[] pArgs = createArgsNode.execute(inliningTarget, callTargetName, starArgsArray, kwArgsArray, signature, receiver, null,
                                     defaults, PKeyword.EMPTY_KEYWORDS, false);
                     Object result = invokeNode.execute(null, inliningTarget, callTarget, pArgs);
-                    return toNativeNode.execute(result);
+                    return toNativeNode.executeLong(result);
                 } catch (Throwable t) {
                     throw checkThrowableBeforeNative(t, toString(), "");
                 }
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(inliningTarget, e);
-                return PythonContext.get(gil).getNativeNull();
+                return NULLPTR;
             } finally {
                 CApiTiming.exit(timing);
                 gil.release(mustRelease);
@@ -419,7 +420,7 @@ public abstract class PyCFunctionWrapper implements TruffleObject {
 
         @Override
         protected NfiUpcallSignature getSignature() {
-            return Nfi.createUpcallSignature(NfiType.POINTER, NfiType.POINTER, NfiType.POINTER, NfiType.POINTER);
+            return Nfi.createUpcallSignature(NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER);
         }
 
         @Override

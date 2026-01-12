@@ -1307,15 +1307,10 @@ public final class CApiContext extends CExtContext {
                 Object[] frameArgs = frame.getArguments();
                 Object receiver = frameArgs[0];
                 Object[] args = (Object[]) frameArgs[1];
-                Object[] newArgs = new Object[args.length];
                 for (int i = 0; i < args.length; i++) {
-                    if (signature.getArgTypes()[i] == NfiType.POINTER) {
-                        newArgs[i] = new NativePointer((long) args[i]);
-                    } else {
-                        newArgs[i] = args[i];
-                    }
+                    assert signature.getArgTypes()[i] != NfiType.POINTER;
                 }
-                Object result = interopLib.execute(receiver, newArgs);
+                Object result = interopLib.execute(receiver, args);
                 return signature.getReturnType().convertToNative(result);
             } catch (Throwable e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
