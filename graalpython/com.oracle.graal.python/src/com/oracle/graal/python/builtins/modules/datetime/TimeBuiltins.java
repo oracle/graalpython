@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -200,7 +200,7 @@ public final class TimeBuiltins extends PythonBuiltins {
 
             if (naiveBytesCheck(bytes)) {
                 // slightly different error message
-                if (tzInfo != PNone.NO_VALUE && !(tzInfo instanceof PTzInfo)) {
+                if (tzInfo != PNone.NO_VALUE && !TzInfoNodes.TzInfoCheckNode.executeUncached(tzInfo)) {
                     throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.BAD_TZINFO_STATE_ARG);
                 }
 

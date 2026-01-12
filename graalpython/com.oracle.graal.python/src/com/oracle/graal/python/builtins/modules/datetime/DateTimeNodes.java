@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -96,6 +96,7 @@ public class DateTimeNodes {
                         Object secondObject, Object microsecondObject, Object tzInfoObject, Object foldObject,
                         @Cached PyLongAsIntNode asIntNode,
                         @Cached DateTimeNodes.NewUnsafeNode newUnsafeNode,
+                        @Cached TzInfoNodes.TzInfoCheckNode tzInfoCheckNode,
                         @Cached PRaiseNode raiseNode) {
             int year = asIntNode.execute(frame, inliningTarget, yearObject);
             int month = asIntNode.execute(frame, inliningTarget, monthObject);
@@ -143,7 +144,7 @@ public class DateTimeNodes {
                 fold = asIntNode.execute(frame, inliningTarget, foldObject);
             }
 
-            validateTimeComponents(inliningTarget, raiseNode, hour, minute, second, microsecond, tzInfo, fold);
+            validateTimeComponents(inliningTarget, raiseNode, hour, minute, second, microsecond, tzInfo, fold, tzInfoCheckNode);
 
             return newUnsafeNode.execute(inliningTarget,
                             cls,
@@ -172,7 +173,8 @@ public class DateTimeNodes {
             }
         }
 
-        private static void validateTimeComponents(Node inliningTarget, PRaiseNode raiseNode, long hour, long minute, long second, long microsecond, Object tzInfo, long fold) {
+        private static void validateTimeComponents(Node inliningTarget, PRaiseNode raiseNode, long hour, long minute, long second, long microsecond, Object tzInfo, long fold,
+                        TzInfoNodes.TzInfoCheckNode tzInfoCheckNode) {
             if (hour < 0 || hour >= 24) {
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.HOUR_MUST_BE_IN);
             }
@@ -189,7 +191,7 @@ public class DateTimeNodes {
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.MICROSECOND_MUST_BE_IN);
             }
 
-            if (tzInfo != null && !(tzInfo instanceof PTzInfo)) {
+            if (tzInfo != null && !tzInfoCheckNode.execute(inliningTarget, tzInfo)) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.TZINFO_ARGUMENT_MUST_BE_NONE_OR_OF_A_TZINFO_SUBCLASS_NOT_TYPE_P, tzInfo);
             }
 
@@ -219,6 +221,7 @@ public class DateTimeNodes {
         @Specialization
         static Object newDateTime(Node inliningTarget, Object cls, int year, int month, int day, int hour, int minute, int second, int microsecond, Object tzInfoObject, int fold,
                         @Cached PRaiseNode raiseNode,
+                        @Cached TzInfoNodes.TzInfoCheckNode tzInfoCheckNode,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
                         @Cached CExtNodes.PCallCapiFunction callCapiFunction,
@@ -235,7 +238,7 @@ public class DateTimeNodes {
                 tzInfo = tzInfoObject;
             }
 
-            if (tzInfo != null && !(tzInfo instanceof PTzInfo)) {
+            if (tzInfo != null && !tzInfoCheckNode.execute(inliningTarget, tzInfo)) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.TZINFO_ARGUMENT_MUST_BE_NONE_OR_OF_A_TZINFO_SUBCLASS_NOT_TYPE_P, tzInfo);
             }
 

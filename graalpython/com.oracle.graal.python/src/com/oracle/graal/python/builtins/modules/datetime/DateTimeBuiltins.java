@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -247,7 +247,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
             }
 
             if (naiveBytesCheck(bytes)) {
-                if (tzInfo != PNone.NO_VALUE && !(tzInfo instanceof PTzInfo)) {
+                if (tzInfo != PNone.NO_VALUE && !TzInfoNodes.TzInfoCheckNode.executeUncached(tzInfo)) {
                     throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.BAD_TZINFO_STATE_ARG);
                 }
 
@@ -333,41 +333,6 @@ public final class DateTimeBuiltins extends PythonBuiltins {
     abstract static class NowNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        static Object nowInTimeZone(VirtualFrame frame, Object cls, PTzInfo tzInfo,
-                        @Bind Node inliningTarget,
-                        @Cached("createFor($node)") IndirectCallData.BoundaryCallData boundaryCallData) {
-            Object saved = ExecutionContext.BoundaryCallContext.enter(frame, boundaryCallData);
-            try {
-                return nowInTimeZoneBoundary(cls, tzInfo, inliningTarget);
-            } finally {
-                // A Python method call (using PyObjectCallMethodObjArgs and
-                // DateTimeNodes.SubclassNewNode) should be connected to a current node.
-                ExecutionContext.BoundaryCallContext.exit(frame, boundaryCallData, saved);
-            }
-        }
-
-        @TruffleBoundary
-        private static Object nowInTimeZoneBoundary(Object cls, PTzInfo tzInfo, Node inliningTarget) {
-            // convert current time in UTC to the given time zone with tzinfo.fromutc()
-            LocalDateTime utc = LocalDateTime.now(ZoneOffset.UTC);
-
-            Object self = DateTimeNodes.SubclassNewNode.getUncached().execute(inliningTarget,
-                            cls,
-                            utc.getYear(),
-                            utc.getMonthValue(),
-                            utc.getDayOfMonth(),
-                            utc.getHour(),
-                            utc.getMinute(),
-                            utc.getSecond(),
-                            utc.getNano() / 1_000,
-                            tzInfo, // set the final value beforehand - it's required by
-                                    // #fromutc()
-                            0);
-
-            return PyObjectCallMethodObjArgs.executeUncached(tzInfo, T_FROMUTC, self);
-        }
-
-        @Specialization
         @TruffleBoundary
         static Object nowNaive(Object cls, PNone tzInfo,
                         @Bind Node inliningTarget) {
@@ -386,10 +351,41 @@ public final class DateTimeBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        static void doGeneric(Object cls, Object tzInfo,
+        static Object nowInTimeZone(VirtualFrame frame, Object cls, Object tzInfo,
                         @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.TZINFO_ARGUMENT_MUST_BE_NONE_OR_OF_A_TZINFO_SUBCLASS_NOT_TYPE_P, tzInfo);
+                        @Cached("createFor($node)") IndirectCallData.BoundaryCallData boundaryCallData) {
+            Object saved = ExecutionContext.BoundaryCallContext.enter(frame, boundaryCallData);
+            try {
+                return nowInTimeZoneBoundary(cls, tzInfo, inliningTarget);
+            } finally {
+                // A Python method call (using PyObjectCallMethodObjArgs and
+                // DateTimeNodes.SubclassNewNode) should be connected to a current node.
+                ExecutionContext.BoundaryCallContext.exit(frame, boundaryCallData, saved);
+            }
+        }
+
+        @TruffleBoundary
+        private static Object nowInTimeZoneBoundary(Object cls, Object tzInfo, Node inliningTarget) {
+            if (!TzInfoNodes.TzInfoCheckNode.executeUncached(tzInfo)) {
+                throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.TZINFO_ARGUMENT_MUST_BE_NONE_OR_OF_A_TZINFO_SUBCLASS_NOT_TYPE_P, tzInfo);
+            }
+            // convert current time in UTC to the given time zone with tzinfo.fromutc()
+            LocalDateTime utc = LocalDateTime.now(ZoneOffset.UTC);
+
+            Object self = DateTimeNodes.SubclassNewNode.getUncached().execute(inliningTarget,
+                            cls,
+                            utc.getYear(),
+                            utc.getMonthValue(),
+                            utc.getDayOfMonth(),
+                            utc.getHour(),
+                            utc.getMinute(),
+                            utc.getSecond(),
+                            utc.getNano() / 1_000,
+                            tzInfo, // set the final value beforehand - it's required by
+                            // #fromutc()
+                            0);
+
+            return PyObjectCallMethodObjArgs.executeUncached(tzInfo, T_FROMUTC, self);
         }
     }
 
@@ -978,7 +974,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
             if (tzInfoObject instanceof PNone) {
                 tzInfo = null;
             } else {
-                if (!(tzInfoObject instanceof PTzInfo)) {
+                if (!TzInfoNodes.TzInfoCheckNode.executeUncached(tzInfoObject)) {
                     throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.TZINFO_ARGUMENT_MUST_BE_NONE_OR_OF_A_TZINFO_SUBCLASS_NOT_TYPE_P, tzInfoObject);
                 }
 
@@ -1182,7 +1178,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
                 tzInfo = tzInfoObject;
             }
 
-            if (tzInfo != null && !(tzInfo instanceof PTzInfo)) {
+            if (tzInfo != null && !TzInfoNodes.TzInfoCheckNode.executeUncached(tzInfo)) {
                 throw raiseNode.raise(inliningTarget,
                                 TypeError,
                                 ErrorMessages.TZINFO_ARGUMENT_MUST_BE_NONE_OR_OF_A_TZINFO_SUBCLASS_NOT_TYPE_P,
@@ -2703,7 +2699,7 @@ public final class DateTimeBuiltins extends PythonBuiltins {
             final Object targetTimeZone;
             if (tzInfo instanceof PNone) {
                 targetTimeZone = getSystemTimeZoneAt(toLocalDateTime(self), self.fold, inliningTarget);
-            } else if (!(tzInfo instanceof PTzInfo)) {
+            } else if (!TzInfoNodes.TzInfoCheckNode.executeUncached(tzInfo)) {
                 throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.TZINFO_ARGUMENT_MUST_BE_NONE_OR_OF_A_TZINFO_SUBCLASS_NOT_TYPE_P, tzInfo);
             } else {
                 targetTimeZone = tzInfo;

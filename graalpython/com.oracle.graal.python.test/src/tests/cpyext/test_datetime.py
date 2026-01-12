@@ -1,4 +1,4 @@
-# Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -67,6 +67,7 @@ NativeDateSubclass = create_datetime_subclass("Date")
 NativeTimeSubclass = create_datetime_subclass("Time")
 NativeDateTimeSubclass = create_datetime_subclass("DateTime")
 NativeDeltaSubclass = create_datetime_subclass("Delta")
+NativeTZInfoSubclass = create_datetime_subclass("TZInfo")
 
 
 class ManagedNativeDateSubclass(NativeDateSubclass):
@@ -83,6 +84,17 @@ class ManagedNativeDateTimeSubclass(NativeDateTimeSubclass):
 
 class ManagedNativeDeltaSubclass(NativeDeltaSubclass):
     pass
+
+
+class ManagedNativeTZInfoSubclass(NativeTZInfoSubclass):
+    def utcoffset(self, dt):
+        return datetime.timedelta(minutes=42)
+
+    def dst(self, dt):
+        return datetime.timedelta(0)
+
+    def tzname(self, dt):
+        return "ManagedNativeTZ"
 
 
 class TestPyDateTime(CPyExtTestCase):
@@ -910,3 +922,21 @@ class TestNativeSubclasses(unittest.TestCase):
             # Str/repr
             assert isinstance(str(x), str)
             assert isinstance(repr(x), str)
+
+    def test_tzinfo(self):
+        # Unlike the other tests, the managed subclass implements the abstract methods so that we can test interactions with other objects
+        cls = ManagedNativeTZInfoSubclass
+        x = cls()
+        assert is_native_object(x)
+        assert type(x) is cls
+        # Can pass as tzinfo argument
+        dt = datetime.datetime(2024, 1, 8, 14, 31, tzinfo=x)
+        assert dt.tzinfo is x
+        dt = datetime.datetime.now(x)
+        assert dt.tzinfo is x
+        # __str__ and __repr__
+        assert cls.__name__ in repr(x)
+        assert cls.__name__ in str(x)
+        # Pickle roundtrip
+        unpickled = pickle.loads(pickle.dumps(x))
+        assert type(unpickled) is cls
