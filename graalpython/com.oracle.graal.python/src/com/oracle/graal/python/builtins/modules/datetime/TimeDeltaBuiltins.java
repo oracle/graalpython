@@ -479,7 +479,7 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
                 return trueDivideNode.execute(frame, microsecondsSelf, microsecondsOther);
             } else if (longCheckNode.execute(inliningTarget, right)) {
                 Object microseconds = toMicroseconds(self, addNode, multiplyNode);
-                microseconds = trueDivideNode.execute(frame, microseconds, right);
+                microseconds = divideNearest(inliningTarget, microseconds, right);
                 return newNode.executeBuiltin(inliningTarget, 0, 0, microseconds, 0, 0, 0, 0);
             } else if (floatCheckNode.execute(inliningTarget, right)) {
                 Object selfAsMicroseconds = toMicroseconds(self, addNode, multiplyNode);
@@ -556,7 +556,7 @@ public final class TimeDeltaBuiltins extends PythonBuiltins {
                 Object microsecondsSelf = toMicrosecondsUncached(self);
                 Object microsecondsOther = toMicrosecondsUncached(other);
 
-                Object quotient = PyNumberTrueDivideNode.getUncached().execute(null, microsecondsSelf, microsecondsOther);
+                Object quotient = PyNumberFloorDivideNode.getUncached().execute(null, microsecondsSelf, microsecondsOther);
                 Object remainder = PyNumberRemainderNode.getUncached().execute(null, microsecondsSelf, microsecondsOther);
                 PTimeDelta remainderTimeDelta = TimeDeltaNodes.NewNode.getUncached().executeBuiltin(inliningTarget, 0, 0, remainder, 0, 0, 0, 0);
                 Object[] arguments = new Object[]{quotient, remainderTimeDelta};
