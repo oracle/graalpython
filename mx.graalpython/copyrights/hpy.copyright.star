@@ -1,6 +1,6 @@
 /* MIT License
  *
- * Copyright (c) 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2026, Oracle and/or its affiliates.
  * Copyright (c) 2019 pyhandle
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
