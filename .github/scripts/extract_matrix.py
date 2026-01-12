@@ -1,3 +1,42 @@
+# Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+#
+# The Universal Permissive License (UPL), Version 1.0
+#
+# Subject to the condition set forth below, permission is hereby granted to any
+# person obtaining a copy of this software, associated documentation and/or
+# data (collectively the "Software"), free of charge and under any and all
+# copyright rights in the Software, and any and all patent rights owned or
+# freely licensable by each licensor hereunder covering either (i) the
+# unmodified Software as contributed to or provided by such licensor, or (ii)
+# the Larger Works (as defined below), to deal in both
+#
+# (a) the Software, and
+#
+# (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
+# one is included with the Software each a "Larger Work" to which the Software
+# is contributed by such licensors),
+#
+# without restriction, including without limitation the rights to copy, create
+# derivative works of, display, perform, and distribute the Software and make,
+# use, sell, offer for sale, import, export, have made, and have sold the
+# Software and the Larger Work(s), and to sublicense the foregoing rights on
+# either these or other terms.
+#
+# This license is subject to the following condition:
+#
+# The above copyright notice and either this complete permission notice or at a
+# minimum a reference to the UPL must be included in all copies or substantial
+# portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 #!/usr/bin/env python3
 import argparse
 import fnmatch
@@ -66,7 +105,7 @@ class Job:
 
         for os, caps in OSS.items():
             if all(required in capabilities for required in caps): return os
-            
+
         return "ubuntu-latest"
 
     @cached_property
@@ -100,7 +139,7 @@ class Job:
             del self.env["MX_PYTHON"]
         if "MX_PYTHON_VERSION" in self.env:
             del self.env["MX_PYTHON_VERSION"]
-            
+
         if self.runs_on in PYTHON_VERSIONS:
             python_version = PYTHON_VERSIONS[self.runs_on]
         return python_version
@@ -143,8 +182,8 @@ class Job:
             f"dirname=$(tar -tzf {filename} | head -1 | cut -f1 -d '/') && "
             f"tar -xzf {filename} && "
             f'echo {key}=$(realpath "$dirname") >> $GITHUB_ENV')
-    
-    
+
+
     def get_download_link(self, key: str, version: str) -> str:
         os, arch = OSS[self.runs_on]
         major_version = version.split(".")[0]
@@ -154,8 +193,8 @@ class Job:
 
         vars = {
             "major_version": major_version,
-            "os":os, 
-            "arch": arch, 
+            "os":os,
+            "arch": arch,
             "arch_short": arch_short,
             "ext": extension,
         }
@@ -213,7 +252,7 @@ class Job:
             pattern = self.common_glob([a["name"] for a in artifacts])
             return Artifact(pattern, os.path.normpath(artifacts[0].get("dir", ".")))
         return None
-    
+
 
     @staticmethod
     def flatten_command(args: list[str | list[str]]) -> list[str]:
@@ -288,7 +327,7 @@ def get_tagged_jobs(buildspec, target, filter=None):
     for job in sorted([Job(build) for build in buildspec.get("builds", [])]):
         if not any(t for t in job.targets if t in [target]):
             if "weekly" in job.targets and target == "tier1": pass
-            else: 
+            else:
                 continue
         if filter and not re.match(filter, job.name):
             continue
