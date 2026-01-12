@@ -37,7 +37,6 @@ import shutil
 import subprocess
 import sys
 import time
-import psutil
 from functools import wraps
 from pathlib import Path
 from textwrap import dedent
@@ -256,15 +255,16 @@ def github_ci_build_args():
     # Determine memory and parallelism for GitHub CI builds
     # Use 90% of available memory up to 14GB, but at least 8GB
     # Set cores to number of CPUs if at least 4 cores and enough memory, otherwise 1
+    import psutil
     total_mem = psutil.virtual_memory().total / (1024 ** 3)
     min_bound = 8
     max_mem = 14*1024
     min_mem = int(1024 * (total_mem if total_mem < min_bound else total_mem * .9))
     os_cpu = os.cpu_count() or int(os.environ.get("NUMBER_OF_PROCESSORS", 1)) or 1
-       
+
     build_mem = min(min_mem, max_mem)
     parallelism = os_cpu if os_cpu >= 4 and build_mem >= min_bound*1024 else 1
-    
+
     return ["-Ob",
             f"-J-Xms{build_mem}m",
             f"--parallelism={parallelism}"
@@ -837,7 +837,7 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
         standalone_dist = 'GRAALPY_NATIVE_STANDALONE'
 
     mx_args = ['-p', SUITE.dir, *(['--env', env_file] if env_file else [])]
-    
+
     if GITHUB_CI:
         mx_args.append("--extra-image-builder-argument=-Ob")
     else:
