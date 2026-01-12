@@ -517,19 +517,16 @@ public enum ArgDescriptor {
         return this == CharPtrAsTruffleString || this == CHAR_PTR || this == ConstCharPtr || this == ConstCharPtrAsTruffleString;
     }
 
-    public boolean isIntType() {
-        switch (behavior) {
-            case Int32:
-            case UInt32:
-            case Int64:
-            case UInt64:
-            case Long:
-            case Char16:
-            case Unknown:
-                return true;
-            default:
-                return false;
-        }
+    public boolean isInt16Type() {
+        return getNFI2Type() == NfiType.SINT16;
+    }
+
+    public boolean isInt32Type() {
+        return getNFI2Type() == NfiType.SINT32;
+    }
+
+    public boolean isInt64Type() {
+        return getNFI2Type() == NfiType.SINT64;
     }
 
     public boolean isFloatType() {

@@ -814,8 +814,12 @@ public final class PythonCextBuiltins {
                     transformExceptionToNativeNode = insert(TransformPExceptionToNativeCachedNode.create());
                 }
                 transformExceptionToNativeNode.execute(e);
-                if (cachedSelf.getRetDescriptor().isIntType()) {
+                if (cachedSelf.getRetDescriptor().isInt16Type()) {
+                    return (short) -1;
+                } else if (cachedSelf.getRetDescriptor().isInt32Type()) {
                     return -1;
+                } else if (cachedSelf.getRetDescriptor().isInt64Type()) {
+                    return -1L;
                 } else if (cachedSelf.getRetDescriptor().isRawPyObjectOrPointer()) {
                     return NULLPTR;
                 } else if (cachedSelf.getRetDescriptor().isPyObjectOrPointer()) {

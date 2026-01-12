@@ -524,7 +524,7 @@ public abstract class PythonCextObjectBuiltins {
     @CApiBuiltin(ret = Py_hash_t, args = {PyObject}, call = Direct)
     abstract static class PyObject_HashNotImplemented extends CApiUnaryBuiltinNode {
         @Specialization
-        static Object unhashable(Object obj,
+        static long unhashable(Object obj,
                         @Bind Node inliningTarget) {
             throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, UNHASHABLE_TYPE_P, obj);
         }

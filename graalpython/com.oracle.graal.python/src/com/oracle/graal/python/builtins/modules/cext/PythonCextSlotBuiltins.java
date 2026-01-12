@@ -525,7 +525,7 @@ public final class PythonCextSlotBuiltins {
     @CApiBuiltin(ret = Py_ssize_t, args = {PyModuleDef}, call = Ignored)
     abstract static class GraalPyPrivate_Get_PyModuleDef_m_size extends CApiUnaryBuiltinNode {
         @Specialization
-        static int get(@SuppressWarnings("unused") long object) {
+        static long get(@SuppressWarnings("unused") long object) {
             throw CompilerDirectives.shouldNotReachHere();
         }
     }
@@ -559,7 +559,7 @@ public final class PythonCextSlotBuiltins {
     abstract static class GraalPyPrivate_Get_PyObject_ob_refcnt extends CApiUnaryBuiltinNode {
 
         @Specialization
-        static Object get(long pointer) {
+        static long get(long pointer) {
             /*
              * We are allocating native object stubs for each wrapper. Therefore, reference counting
              * should only be done on the native side. However, we allow access for debugging

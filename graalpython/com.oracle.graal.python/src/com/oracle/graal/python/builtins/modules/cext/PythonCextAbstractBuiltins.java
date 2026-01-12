@@ -671,7 +671,7 @@ public final class PythonCextAbstractBuiltins {
     abstract static class GraalPyPrivate_Sequence_Size extends CApiUnaryBuiltinNode {
 
         @Specialization
-        static int doSequence(Object obj,
+        static long doSequence(Object obj,
                         @Bind Node inliningTarget,
                         @Cached PySequenceSizeNode sizeNode) {
             return sizeNode.execute(null, inliningTarget, obj);
@@ -722,7 +722,7 @@ public final class PythonCextAbstractBuiltins {
     abstract static class PySequence_Count extends CApiBinaryBuiltinNode {
 
         @Specialization
-        static int contains(Object haystack, Object needle,
+        static long contains(Object haystack, Object needle,
                         @Bind Node inliningTarget,
                         @Cached PySequenceIterSearchNode searchNode) {
             return searchNode.execute(inliningTarget, haystack, needle, PySequenceIterSearchNode.PY_ITERSEARCH_COUNT);
@@ -733,7 +733,7 @@ public final class PythonCextAbstractBuiltins {
     abstract static class PySequence_Index extends CApiBinaryBuiltinNode {
 
         @Specialization
-        static int contains(Object haystack, Object needle,
+        static long contains(Object haystack, Object needle,
                         @Bind Node inliningTarget,
                         @Cached PySequenceIterSearchNode searchNode) {
             return searchNode.execute(inliningTarget, haystack, needle, PySequenceIterSearchNode.PY_ITERSEARCH_INDEX);
@@ -757,7 +757,7 @@ public final class PythonCextAbstractBuiltins {
     abstract static class GraalPyPrivate_Object_Size extends CApiUnaryBuiltinNode {
 
         @Specialization
-        static int doGenericUnboxed(Object obj,
+        static long doGenericUnboxed(Object obj,
                         @Bind Node inliningTarget,
                         @Cached com.oracle.graal.python.lib.PyObjectSizeNode sizeNode) {
             // Native objects are handled in C
@@ -859,7 +859,7 @@ public final class PythonCextAbstractBuiltins {
         // subclasses of types not accepted by PyMapping_Check as long they have an overriden
         // __len__ method
         @Specialization
-        static int doMapping(Object obj,
+        static long doMapping(Object obj,
                         @Bind Node inliningTarget,
                         @Cached com.oracle.graal.python.lib.PyObjectSizeNode sizeNode,
                         @Cached IsSameTypeNode isSameType,

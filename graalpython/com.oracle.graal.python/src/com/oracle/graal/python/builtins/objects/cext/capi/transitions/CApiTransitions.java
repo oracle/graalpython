@@ -671,7 +671,7 @@ public abstract class CApiTransitions {
                 for (int i = 0; i < size; i++) {
                     NativeMemory.writeLongArrayElement(pointer, i, referencesToBeFreed.get(i));
                 }
-                PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_BULK_DEALLOC, pointer, size);
+                PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_BULK_DEALLOC, pointer, (long) size);
                 free(pointer);
                 referencesToBeFreed.clear();
             } finally {

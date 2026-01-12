@@ -528,7 +528,7 @@ public abstract class PyProcsWrapper implements TruffleObject {
                     throw ArityException.create(1, -1, arguments.length);
                 }
                 try {
-                    return callSlotNode.execute(null, inliningTarget, getSlot(), toJavaNode.executeRaw((long) arguments[0]));
+                    return callSlotNode.execute(null, inliningTarget, getSlot(), toJavaNode.executeRaw((long) arguments[0])) ? 1 : 0;
                 } catch (Throwable t) {
                     throw checkThrowableBeforeNative(t, "InquiryWrapper", getDelegate());
                 }
@@ -569,7 +569,7 @@ public abstract class PyProcsWrapper implements TruffleObject {
             CApiTiming.enter();
             try {
                 try {
-                    return callSlotNode.execute(null, inliningTarget, getSlot(), toJavaNode.executeRaw((long) arguments[0]), toJavaNode.executeRaw((long) arguments[1]));
+                    return callSlotNode.execute(null, inliningTarget, getSlot(), toJavaNode.executeRaw((long) arguments[0]), toJavaNode.executeRaw((long) arguments[1])) ? 1 : 0;
                 } catch (Throwable t) {
                     throw checkThrowableBeforeNative(t, "SqContainsWrapper", getDelegate());
                 }

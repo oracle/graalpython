@@ -1260,7 +1260,7 @@ public abstract class ExternalFunctionNodes {
                 }
                 kwnamesTuple = PFactory.createTuple(PythonLanguage.get(this), fastcallKwnames);
             }
-            return new Object[]{self, fastcallArgs, args.length, kwnamesTuple};
+            return new Object[]{self, fastcallArgs, (long) args.length, kwnamesTuple};
         }
 
         @Override
@@ -1268,7 +1268,7 @@ public abstract class ExternalFunctionNodes {
             Object[] objects = super.cArgumentsToNative(arguments);
             assert arguments[1] instanceof Object[];
             assert arguments[1] == objects[1];
-            assert arguments[2] instanceof Integer;
+            assert arguments[2] instanceof Long;
             objects[1] = ensureArrayCreateNode().execute((Object[]) arguments[1]);
             return objects;
         }
@@ -1276,9 +1276,9 @@ public abstract class ExternalFunctionNodes {
         @Override
         protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
             assert cArguments[1] instanceof Object[];
-            assert cArguments[2] instanceof Integer;
+            assert cArguments[2] instanceof Long;
             assert cArguments[3] == PNone.NO_VALUE || cArguments[3] instanceof PTuple;
-            assert ((Object[]) cArguments[1]).length == (Integer) cArguments[2] + (cArguments[3] != PNone.NO_VALUE ? ((PTuple) cArguments[3]).getSequenceStorage().length() : 0);
+            assert ((Object[]) cArguments[1]).length == (Long) cArguments[2] + (cArguments[3] != PNone.NO_VALUE ? ((PTuple) cArguments[3]).getSequenceStorage().length() : 0);
             ensureArrayFreeNode().execute((long) nativeArguments[1]);
         }
 
@@ -1317,7 +1317,7 @@ public abstract class ExternalFunctionNodes {
                 fastcallKwnames[i] = kwargs[i].getName();
                 fastcallArgs[args.length + i] = ensurePythonObject(kwargs[i].getValue());
             }
-            return new Object[]{self, cls, fastcallArgs, args.length, PFactory.createTuple(PythonLanguage.get(this), fastcallKwnames)};
+            return new Object[]{self, cls, fastcallArgs, (long) args.length, PFactory.createTuple(PythonLanguage.get(this), fastcallKwnames)};
         }
 
         @Override
@@ -1325,7 +1325,7 @@ public abstract class ExternalFunctionNodes {
             Object[] objects = super.cArgumentsToNative(arguments);
             assert arguments[2] instanceof Object[];
             assert arguments[2] == objects[2];
-            assert arguments[3] instanceof Integer;
+            assert arguments[3] instanceof Long;
             objects[2] = ensureArrayCreateNode().execute((Object[]) arguments[2]);
             return objects;
         }
@@ -1333,9 +1333,9 @@ public abstract class ExternalFunctionNodes {
         @Override
         protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
             assert cArguments[2] instanceof Object[];
-            assert cArguments[3] instanceof Integer;
+            assert cArguments[3] instanceof Long;
             assert cArguments[4] instanceof PTuple;
-            assert ((Object[]) cArguments[2]).length == (Integer) cArguments[3] + ((PTuple) cArguments[4]).getSequenceStorage().length();
+            assert ((Object[]) cArguments[2]).length == (Long) cArguments[3] + ((PTuple) cArguments[4]).getSequenceStorage().length();
             ensureArrayFreeNode().execute((long) nativeArguments[2]);
         }
 
@@ -1363,7 +1363,7 @@ public abstract class ExternalFunctionNodes {
             for (int i = 0; i < args.length; i++) {
                 promotedArgs[i] = ensurePythonObject(args[i]);
             }
-            return new Object[]{self, promotedArgs, promotedArgs.length};
+            return new Object[]{self, promotedArgs, (long) promotedArgs.length};
         }
 
         @Override
@@ -1371,7 +1371,7 @@ public abstract class ExternalFunctionNodes {
             Object[] objects = super.cArgumentsToNative(arguments);
             assert arguments[1] instanceof Object[];
             assert arguments[1] == objects[1];
-            assert arguments[2] instanceof Integer;
+            assert arguments[2] instanceof Long;
             objects[1] = ensureArrayCreateNode().execute((Object[]) arguments[1]);
             return objects;
         }
@@ -1379,8 +1379,8 @@ public abstract class ExternalFunctionNodes {
         @Override
         protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
             assert cArguments[1] instanceof Object[];
-            assert cArguments[2] instanceof Integer;
-            assert ((Object[]) cArguments[1]).length == (int) cArguments[2];
+            assert cArguments[2] instanceof Long;
+            assert ((Object[]) cArguments[1]).length == (long) cArguments[2];
             ensureArrayFreeNode().execute((long) nativeArguments[1]);
         }
 
@@ -1563,7 +1563,7 @@ public abstract class ExternalFunctionNodes {
             Object self = readSelf(frame);
             assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
             Object arg1 = readArg1Node.execute(frame);
-            return new Object[]{self, getIndexNode.execute(self, arg1)};
+            return new Object[]{self, (long) getIndexNode.execute(self, arg1)};
         }
 
         @Override
@@ -1594,7 +1594,7 @@ public abstract class ExternalFunctionNodes {
             assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
             Object arg1 = readArg1Node.execute(frame);
             Object arg2 = ensurePythonObject(readArg2Node.execute(frame));
-            return new Object[]{self, getIndexNode.execute(self, arg1), arg2};
+            return new Object[]{self, (long) getIndexNode.execute(self, arg1), arg2};
         }
 
         @Override

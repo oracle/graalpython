@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -196,7 +196,7 @@ public class BytesBuiltins extends PythonBuiltins {
                             @Cached(inline = false) CExtNodes.PCallCapiFunction call) {
                 long dataPointer = asCharPointerNode.execute(bytes);
                 try {
-                    return toPython.execute(call.call(FUN_BYTES_SUBTYPE_NEW, toNative.execute(cls), dataPointer, bytes.length));
+                    return toPython.execute(call.call(FUN_BYTES_SUBTYPE_NEW, toNative.execute(cls), dataPointer, (long) bytes.length));
                 } finally {
                     NativeMemory.free(dataPointer);
                 }

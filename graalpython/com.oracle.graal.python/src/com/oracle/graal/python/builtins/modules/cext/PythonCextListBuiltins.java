@@ -243,12 +243,12 @@ public final class PythonCextListBuiltins {
     abstract static class PyList_Size extends CApiUnaryBuiltinNode {
 
         @Specialization
-        static int size(PList list) {
+        static long size(PList list) {
             return list.getSequenceStorage().length();
         }
 
         @Fallback
-        int fallback(Object list) {
+        long fallback(Object list) {
             throw raiseFallback(list, PythonBuiltinClassType.PList);
         }
     }

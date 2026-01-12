@@ -459,27 +459,27 @@ public final class PythonCextUnicodeBuiltins {
     @ImportStatic(PythonCextUnicodeBuiltins.class)
     abstract static class PyUnicode_FindChar extends CApi5BuiltinNode {
         @Specialization(guards = {"isString(string) || isStringSubtype(inliningTarget, string, getClassNode, isSubtypeNode)", "direction > 0"})
-        static Object find(Object string, Object c, long start, long end, @SuppressWarnings("unused") int direction,
+        static long find(Object string, Object c, long start, long end, @SuppressWarnings("unused") int direction,
                         @SuppressWarnings("unused") @Bind Node inliningTarget,
                         @Shared @Cached ChrNode chrNode,
                         @Cached FindNode findNode,
                         @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode) {
-            return findNode.execute(null, string, chrNode.execute(null, c), start, end);
+            return ((Number) findNode.execute(null, string, chrNode.execute(null, c), start, end)).longValue();
         }
 
         @Specialization(guards = {"isString(string) || isStringSubtype(inliningTarget, string, getClassNode, isSubtypeNode)", "direction <= 0"})
-        static Object find(Object string, Object c, long start, long end, @SuppressWarnings("unused") int direction,
+        static long find(Object string, Object c, long start, long end, @SuppressWarnings("unused") int direction,
                         @SuppressWarnings("unused") @Bind Node inliningTarget,
                         @Shared @Cached ChrNode chrNode,
                         @Cached RFindNode rFindNode,
                         @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode) {
-            return rFindNode.execute(null, string, chrNode.execute(null, c), start, end);
+            return ((Number) rFindNode.execute(null, string, chrNode.execute(null, c), start, end)).longValue();
         }
 
         @Specialization(guards = {"!isTruffleString(string)", "!isStringSubtype(inliningTarget, string, getClassNode, isSubtypeNode)"})
-        static Object find(Object string, @SuppressWarnings("unused") Object c, @SuppressWarnings("unused") Object start, @SuppressWarnings("unused") Object end,
+        static long find(Object string, @SuppressWarnings("unused") Object c, @SuppressWarnings("unused") Object start, @SuppressWarnings("unused") Object end,
                         @SuppressWarnings("unused") Object direction,
                         @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode,
@@ -604,7 +604,7 @@ public final class PythonCextUnicodeBuiltins {
     @ImportStatic(PythonCextUnicodeBuiltins.class)
     abstract static class PyUnicode_Tailmatch extends CApi5BuiltinNode {
         @Specialization(guards = {"isAnyString(inliningTarget, string, getClassNode, isSubtypeNode)", "isAnyString(inliningTarget, substring, getClassNode, isSubtypeNode)", "direction > 0"})
-        static int tailmatch(Object string, Object substring, long start, long end, @SuppressWarnings("unused") int direction,
+        static long tailmatch(Object string, Object substring, long start, long end, @SuppressWarnings("unused") int direction,
                         @Bind Node inliningTarget,
                         @Shared @Cached PyObjectLookupAttr lookupAttrNode,
                         @Shared @Cached PySliceNew sliceNode,
@@ -618,7 +618,7 @@ public final class PythonCextUnicodeBuiltins {
         }
 
         @Specialization(guards = {"isAnyString(inliningTarget, string, getClassNode, isSubtypeNode)", "isAnyString(inliningTarget, substring, getClassNode, isSubtypeNode)", "direction <= 0"})
-        static int tailmatch(Object string, Object substring, long start, long end, @SuppressWarnings("unused") int direction,
+        static long tailmatch(Object string, Object substring, long start, long end, @SuppressWarnings("unused") int direction,
                         @Bind Node inliningTarget,
                         @Shared @Cached PyObjectLookupAttr lookupAttrNode,
                         @Shared @Cached PySliceNew sliceNode,
@@ -633,7 +633,7 @@ public final class PythonCextUnicodeBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"!isAnyString(inliningTarget, string, getClassNode, isSubtypeNode) || !isAnyString(inliningTarget, substring, getClassNode, isSubtypeNode)"})
-        static Object find(Object string, Object substring, Object start, Object end, Object direction,
+        static long find(Object string, Object substring, Object start, Object end, Object direction,
                         @Shared @Cached GetClassNode getClassNode,
                         @Shared @Cached IsSubtypeNode isSubtypeNode,
                         @Bind Node inliningTarget) {

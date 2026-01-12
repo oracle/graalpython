@@ -174,7 +174,7 @@ public final class PythonCextTupleBuiltins {
     @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Direct)
     abstract static class PyTuple_Size extends CApiUnaryBuiltinNode {
         @Specialization
-        public static int size(Object tuple,
+        public static long size(Object tuple,
                         @Bind Node inliningTarget,
                         @Cached PyTupleSizeNode pyTupleSizeNode) {
             return pyTupleSizeNode.execute(inliningTarget, tuple);

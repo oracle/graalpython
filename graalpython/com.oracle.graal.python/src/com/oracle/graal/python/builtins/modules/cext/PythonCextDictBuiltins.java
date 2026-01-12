@@ -277,14 +277,14 @@ public final class PythonCextDictBuiltins {
     @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Direct)
     abstract static class PyDict_Size extends CApiUnaryBuiltinNode {
         @Specialization
-        static int size(PDict dict,
+        static long size(PDict dict,
                         @Bind Node inliningTarget,
                         @Cached HashingStorageLen lenNode) {
             return lenNode.execute(inliningTarget, dict.getDictStorage());
         }
 
         @Fallback
-        public int fallback(Object dict) {
+        public long fallback(Object dict) {
             throw raiseFallback(dict, PythonBuiltinClassType.PDict);
         }
     }
