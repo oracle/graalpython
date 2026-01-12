@@ -221,6 +221,26 @@ find graalpython -name '*.co' -delete
 mx punittest com.oracle.graal.python.test.compiler
 ```
 
+### CI Unittests
+
+Most of our internal unittests are also ran on Github workflows.
+The `Run CI unittests` (`.github/workflows/ci-unittests.yml`) workflow will execute automatically when you open your PR, synchronize it and mark it as ready.
+**Note**: Unittests don't run on draft PRs.
+
+By default, all gates defined in the `Run CI unittests` `jobs_to_run:` regex will run.
+You can run specific tests by manually triggering the `Generate CI Matrix from ci.jsonnet` (`.github/workflows/ci-matrix-gen.yml`) workflow and filling in the `Jobs to run` field.This field MUST be a valid python regex or be left empty to run all gates.
+
+If you need to update any tags, please use the `Run Weekly unittest retagger` (`.github/workflows/ci-unittests-retagger.yml`) workflow. This sets up the required GitHub-specific environment and ensures that internal tests are not disrupted. Here again, you may use a Python regex to retag only specific platforms.
+
+The retagger workflow will automatically open a ready-to-merge PR in your fork.
+
+You can manually check which jobs will be run with your regex by using the `.github/scripts/extract_matrix.py` script.
+You will need to have the [sjsonnet](https://github.com/databricks/sjsonnet) binary available.
+
+```bash
+python3 .github/scripts/extract_matrix.py ../sjsonnet ci.jsonnet tier{1-3} {regex} > matrix.json
+```
+
 ## Benchmarking
 
 We use the `mx` facilities for benchmarking.
