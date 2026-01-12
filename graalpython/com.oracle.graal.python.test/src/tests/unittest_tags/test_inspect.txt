@@ -184,6 +184,7 @@ test.test_inspect.test_inspect.TestPredicates.test_excluding_predicates @ darwin
 test.test_inspect.test_inspect.TestPredicates.test_get_slot_members @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_inspect.test_inspect.TestPredicates.test_isabstract @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_inspect.test_inspect.TestPredicates.test_isabstract_during_init_subclass @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_inspect.test_inspect.TestPredicates.test_isawaitable @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_inspect.test_inspect.TestPredicates.test_isclass @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_inspect.test_inspect.TestPredicates.test_iscoroutine @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_inspect.test_inspect.TestPredicates.test_isroutine @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64

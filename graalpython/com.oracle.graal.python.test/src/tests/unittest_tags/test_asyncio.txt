@@ -728,6 +728,7 @@ test.test_asyncio.test_streams.StreamTests.test_loop_is_closed_resource_warnings
 test.test_asyncio.test_streams.StreamTests.test_multiple_drain @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_streams.StreamTests.test_open_connection @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_streams.StreamTests.test_open_connection_error @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_asyncio.test_streams.StreamTests.test_open_connection_happy_eyeball_refcycles @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_streams.StreamTests.test_open_connection_no_loop_ssl @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_streams.StreamTests.test_open_unix_connection @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_streams.StreamTests.test_open_unix_connection_error @ darwin-arm64,linux-aarch64,linux-x86_64
@@ -826,6 +827,8 @@ test.test_asyncio.test_taskgroups.TestTaskGroup.test_cancel_children_on_child_er
 test.test_asyncio.test_taskgroups.TestTaskGroup.test_cancellation @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_taskgroups.TestTaskGroup.test_exception_refcycles_base_error @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_taskgroups.TestTaskGroup.test_exception_refcycles_direct @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_asyncio.test_taskgroups.TestTaskGroup.test_exception_refcycles_errors @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_asyncio.test_taskgroups.TestTaskGroup.test_exception_refcycles_parent_task @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_taskgroups.TestTaskGroup.test_exception_refcycles_propagate_cancellation_error @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_taskgroups.TestTaskGroup.test_taskgroup_01 @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_taskgroups.TestTaskGroup.test_taskgroup_02 @ darwin-arm64,linux-aarch64,linux-x86_64
@@ -851,6 +854,9 @@ test.test_asyncio.test_taskgroups.TestTaskGroup.test_taskgroup_22 @ darwin-arm64
 test.test_asyncio.test_taskgroups.TestTaskGroup.test_taskgroup_23 @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_taskgroups.TestTaskGroup.test_taskgroup_24 @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_taskgroups.TestTaskGroup.test_taskgroup_25 @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_asyncio.test_taskgroups.TestTaskGroup.test_taskgroup_already_entered @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_asyncio.test_taskgroups.TestTaskGroup.test_taskgroup_context_manager_exit_raises @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_asyncio.test_taskgroups.TestTaskGroup.test_taskgroup_double_enter @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_taskgroups.TestTaskGroup.test_taskgroup_finished @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_taskgroups.TestTaskGroup.test_taskgroup_no_create_task_after_failure @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_taskgroups.TestTaskGroup.test_taskgroup_not_entered @ darwin-arm64,linux-aarch64,linux-x86_64
@@ -1146,10 +1152,12 @@ test.test_asyncio.test_timeouts.TimeoutTests.test_repr_expired @ darwin-arm64,li
 test.test_asyncio.test_timeouts.TimeoutTests.test_repr_finished @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_timeouts.TimeoutTests.test_reschedule @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_timeouts.TimeoutTests.test_timeout_after_cancellation @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_asyncio.test_timeouts.TimeoutTests.test_timeout_already_entered @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_timeouts.TimeoutTests.test_timeout_at_basic @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_timeouts.TimeoutTests.test_timeout_at_disabled @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_timeouts.TimeoutTests.test_timeout_basic @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_timeouts.TimeoutTests.test_timeout_disabled @ darwin-arm64,linux-aarch64,linux-x86_64
+test.test_asyncio.test_timeouts.TimeoutTests.test_timeout_double_enter @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_timeouts.TimeoutTests.test_timeout_exception_cause @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_timeouts.TimeoutTests.test_timeout_expired @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_timeouts.TimeoutTests.test_timeout_expiring @ darwin-arm64,linux-aarch64,linux-x86_64
@@ -1297,11 +1305,3 @@ test.test_asyncio.test_waitfor.AsyncioWaitForTest.test_wait_for_waits_for_task_c
 test.test_asyncio.test_waitfor.WaitForShieldTests.test_none_timeout @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_waitfor.WaitForShieldTests.test_shielded_timeout @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_waitfor.WaitForShieldTests.test_zero_timeout @ darwin-arm64,linux-aarch64,linux-x86_64
-test.test_asyncio.test_streams.StreamTests.test_open_connection_happy_eyeball_refcycles @ darwin-arm64,linux-aarch64,linux-x86_64
-test.test_asyncio.test_taskgroups.TestTaskGroup.test_exception_refcycles_errors @ darwin-arm64,linux-aarch64,linux-x86_64
-test.test_asyncio.test_taskgroups.TestTaskGroup.test_exception_refcycles_parent_task @ darwin-arm64,linux-aarch64,linux-x86_64
-test.test_asyncio.test_taskgroups.TestTaskGroup.test_taskgroup_already_entered @ darwin-arm64,linux-aarch64,linux-x86_64
-test.test_asyncio.test_taskgroups.TestTaskGroup.test_taskgroup_context_manager_exit_raises @ darwin-arm64,linux-aarch64,linux-x86_64
-test.test_asyncio.test_taskgroups.TestTaskGroup.test_taskgroup_double_enter @ darwin-arm64,linux-aarch64,linux-x86_64
-test.test_asyncio.test_timeouts.TimeoutTests.test_timeout_already_entered @ darwin-arm64,linux-aarch64,linux-x86_64
-test.test_asyncio.test_timeouts.TimeoutTests.test_timeout_double_enter @ darwin-arm64,linux-aarch64,linux-x86_64

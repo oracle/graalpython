@@ -78,6 +78,7 @@ test.test_codecs.TransformCodecTest.test_uu_invalid @ darwin-arm64,linux-aarch64
 test.test_codecs.UTF16BETest.test_bug1098990_a @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_codecs.UTF16BETest.test_bug1098990_b @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_codecs.UTF16BETest.test_bug1175396 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_codecs.UTF16BETest.test_incremental_surrogatepass @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_codecs.UTF16BETest.test_mixed_readline_and_read @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_codecs.UTF16BETest.test_nonbmp @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_codecs.UTF16BETest.test_partial @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -87,6 +88,7 @@ test.test_codecs.UTF16ExTest.test_bad_args @ darwin-arm64,linux-aarch64,linux-x8
 test.test_codecs.UTF16LETest.test_bug1098990_a @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_codecs.UTF16LETest.test_bug1098990_b @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_codecs.UTF16LETest.test_bug1175396 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_codecs.UTF16LETest.test_incremental_surrogatepass @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_codecs.UTF16LETest.test_mixed_readline_and_read @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_codecs.UTF16LETest.test_nonbmp @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_codecs.UTF16LETest.test_partial @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -98,6 +100,7 @@ test.test_codecs.UTF16Test.test_bug1175396 @ darwin-arm64,linux-aarch64,linux-x8
 test.test_codecs.UTF16Test.test_bug691291 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_codecs.UTF16Test.test_errors @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_codecs.UTF16Test.test_handlers @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_codecs.UTF16Test.test_incremental_surrogatepass @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_codecs.UTF16Test.test_mixed_readline_and_read @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_codecs.UTF16Test.test_partial @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_codecs.UTF16Test.test_readline @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -106,6 +109,7 @@ test.test_codecs.UTF32BETest.test_bug1098990_a @ darwin-arm64,linux-aarch64,linu
 test.test_codecs.UTF32BETest.test_bug1098990_b @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_codecs.UTF32BETest.test_bug1175396 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_codecs.UTF32BETest.test_errors @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_codecs.UTF32BETest.test_incremental_surrogatepass @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_codecs.UTF32BETest.test_issue8941 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_codecs.UTF32BETest.test_mixed_readline_and_read @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_codecs.UTF32BETest.test_partial @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -116,6 +120,7 @@ test.test_codecs.UTF32LETest.test_bug1098990_a @ darwin-arm64,linux-aarch64,linu
 test.test_codecs.UTF32LETest.test_bug1098990_b @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_codecs.UTF32LETest.test_bug1175396 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_codecs.UTF32LETest.test_errors @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_codecs.UTF32LETest.test_incremental_surrogatepass @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_codecs.UTF32LETest.test_issue8941 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_codecs.UTF32LETest.test_mixed_readline_and_read @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_codecs.UTF32LETest.test_partial @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -128,6 +133,7 @@ test.test_codecs.UTF32Test.test_bug1098990_b @ darwin-arm64,linux-aarch64,linux-
 test.test_codecs.UTF32Test.test_bug1175396 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_codecs.UTF32Test.test_errors @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_codecs.UTF32Test.test_handlers @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_codecs.UTF32Test.test_incremental_surrogatepass @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_codecs.UTF32Test.test_issue8941 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_codecs.UTF32Test.test_mixed_readline_and_read @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_codecs.UTF32Test.test_partial @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64

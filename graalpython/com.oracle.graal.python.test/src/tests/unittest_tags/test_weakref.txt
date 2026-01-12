@@ -40,11 +40,13 @@ test.test_weakref.ReferencesTestCase.test_multiple_callbacks @ darwin-arm64,linu
 test.test_weakref.ReferencesTestCase.test_multiple_selfref_callbacks @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_weakref.ReferencesTestCase.test_newstyle_number_ops @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_weakref.ReferencesTestCase.test_ordering @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_weakref.ReferencesTestCase.test_proxy_bad_next @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_weakref.ReferencesTestCase.test_proxy_bool @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_weakref.ReferencesTestCase.test_proxy_deletion @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_weakref.ReferencesTestCase.test_proxy_div @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_weakref.ReferencesTestCase.test_proxy_index @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_weakref.ReferencesTestCase.test_proxy_iter @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_weakref.ReferencesTestCase.test_proxy_matmul @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_weakref.ReferencesTestCase.test_proxy_next @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_weakref.ReferencesTestCase.test_proxy_reversed @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_weakref.ReferencesTestCase.test_proxy_unicode @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64

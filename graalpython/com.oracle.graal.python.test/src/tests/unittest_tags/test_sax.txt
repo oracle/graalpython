@@ -54,9 +54,13 @@ test.test_sax.MakeParserTest.test_make_parser2 @ darwin-arm64,linux-aarch64,linu
 test.test_sax.MakeParserTest.test_make_parser3 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sax.MakeParserTest.test_make_parser4 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sax.MakeParserTest.test_make_parser5 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_sax.ParseTest.test_parseString_bytes @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sax.ParseTest.test_parseString_text @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_sax.ParseTest.test_parse_InputSource @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_sax.ParseTest.test_parse_bytes @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sax.ParseTest.test_parse_close_source @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sax.ParseTest.test_parse_path_object @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_sax.ParseTest.test_parse_text @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sax.PrepareInputSourceTest.test_binary_file @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sax.PrepareInputSourceTest.test_byte_stream @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sax.PrepareInputSourceTest.test_character_stream @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
