@@ -521,7 +521,11 @@
                 "--exit-success-on-failures",
             ],
         ],
-        logs+: ["main/retagger-report*.json"],
+        logs+: [
+            "report.json",
+            "retagger-report*.json",
+            "main/retagger-report*.json"
+        ],
     }),
 
     coverage_gate:: $.graalpy_gate + task_spec({
