@@ -343,7 +343,7 @@
         task_spec({
             environment+: {
                 TAGGED_UNITTEST_PARTIAL: "%d/%d" % [i, num],
-                RETAGGER_BATCH_NO: i,
+                RETAGGER_BATCH_NO: "%d" % i,
                 MX_REPORT_SUFFIX: "_batch_%d" % [i],
             },
             variations+::["batch" + i]
