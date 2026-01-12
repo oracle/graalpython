@@ -1,4 +1,4 @@
-# Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -1294,6 +1294,9 @@ class TimeDeltaTest(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "cannot convert float NaN to integer"):
             datetime.timedelta(weeks = float("nan"))
+
+    def test_total_seconds(self):
+        self.assertAlmostEqual(datetime.timedelta(days=106751992).total_seconds(), 9223372108800.0)
 
 class DateTimeTest(unittest.TestCase):
 
