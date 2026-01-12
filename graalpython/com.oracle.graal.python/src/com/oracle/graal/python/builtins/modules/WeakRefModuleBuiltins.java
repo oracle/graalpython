@@ -127,6 +127,7 @@ public final class WeakRefModuleBuiltins extends PythonBuiltins {
             case PBytesIO, // _io.BytesIO
                     PPartial // functools.partial
                     -> 48;
+            case PPattern -> 64; // _sre.Pattern
             case PStringIO -> 112; // _io.StringIO
             case PBufferedReader, // _io.BufferedReader
                     PBufferedWriter, // _io.BufferedWriter
