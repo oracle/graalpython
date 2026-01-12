@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -1339,7 +1339,14 @@ def main_worker(args):
             test_suite.run(result)
 
 
-def main_merge_tags(args):
+def main_merge_tags(args, parser):
+    if len(args.pos) == 1:
+        args.report_path = args.pos[0]
+    elif len(args.pos) == 2:
+        args.platform, args.report_path = args.pos
+    else:
+        parser.error("wrong number of arguments")
+
     with open(args.report_path) as f:
         report = json.load(f)
     status_map = {
@@ -1522,10 +1529,13 @@ def main():
     worker_parser.add_argument('--failfast', action='store_true')
 
     # merge-tags-from-report command declaration
-    merge_tags_parser = subparsers.add_parser('merge-tags-from-report', help="Merge tags from automated retagger")
-    merge_tags_parser.set_defaults(main=main_merge_tags)
+    merge_tags_parser = subparsers.add_parser(
+        'merge-tags-from-report',
+        help="Merge tags from automated retagger",
+        usage=f"\t%(prog)s [--platform PLATFORM, default: {CURRENT_PLATFORM}] report_path\n\t%(prog)s platform report_path")
+    merge_tags_parser.set_defaults(main=lambda a: main_merge_tags(a, merge_tags_parser))
     merge_tags_parser.add_argument('--platform', default=CURRENT_PLATFORM)
-    merge_tags_parser.add_argument('report_path')
+    merge_tags_parser.add_argument('pos', nargs='+', help=argparse.SUPPRESS)
 
     # run the appropriate command
 
