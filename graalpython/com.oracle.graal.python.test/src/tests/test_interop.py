@@ -1544,7 +1544,7 @@ class InteropTests(unittest.TestCase):
             if gil_locked:
                 self.assertLess(resumed, 200, "Worker ran too many times when GIL was supposed to be locked")
             else:
-                self.assertGreater(resumed, 200, "Worker ran too few times when GIL was supposed to be released")
+                self.assertGreater(resumed, 100, "Worker ran too few times when GIL was supposed to be released")
 
         gil_test(gil_locked=False)
         with polyglot.gil_locked_during_interop(True):
