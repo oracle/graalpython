@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -204,7 +204,6 @@ public abstract class TpSlot {
      * array and cannot optimize for specific signature.
      */
     public abstract static sealed class TpSlotNative extends TpSlot permits TpSlotCExtNative {
-        // TODO(NFI2) use direct calls instead of interop
         final NfiBoundFunction callable;
 
         public TpSlotNative(NfiBoundFunction callable) {
@@ -220,7 +219,7 @@ public abstract class TpSlot {
         }
 
         /**
-         * Bound callable that supports the execute interop message.
+         * The native function that implements the slot.
          */
         public final NfiBoundFunction getCallable() {
             return callable;
