@@ -466,7 +466,7 @@ public final class PythonCextUnicodeBuiltins {
                         @Cached FindNode findNode,
                         @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode) {
-            return ((Number) findNode.execute(null, string, chrNode.execute(null, c), start, end)).longValue();
+            return (Integer) findNode.execute(null, string, chrNode.execute(null, c), start, end);
         }
 
         @Specialization(guards = {"isString(string) || isStringSubtype(inliningTarget, string, getClassNode, isSubtypeNode)", "direction <= 0"})
@@ -476,7 +476,7 @@ public final class PythonCextUnicodeBuiltins {
                         @Cached RFindNode rFindNode,
                         @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode) {
-            return ((Number) rFindNode.execute(null, string, chrNode.execute(null, c), start, end)).longValue();
+            return (Integer) rFindNode.execute(null, string, chrNode.execute(null, c), start, end);
         }
 
         @Specialization(guards = {"!isTruffleString(string)", "!isStringSubtype(inliningTarget, string, getClassNode, isSubtypeNode)"})
