@@ -185,8 +185,7 @@ public final class PatternBuiltins extends PythonBuiltins {
             try {
                 var cache = new TRegexCache(inliningTarget, source, flags);
 
-                boolean mustAdvance = false;
-                Object regexObject = tRegexCompileNodeNode.execute(frame, cache, PythonMethod.Search, mustAdvance);
+                Object regexObject = tRegexCompileNodeNode.execute(frame, cache, PythonMethod.Search, false);
 
                 Object flagsObject = TRegexUtil.TRegexCompiledRegexAccessor.flags(regexObject, inliningTarget, interopReadMemberNode);
 
@@ -714,20 +713,20 @@ public final class PatternBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!binary")
         static Object doString(Node inliningTarget, @SuppressWarnings("unused") VirtualFrame frame, Object compiledRegex, Object compiledRegexMustAdvance, Object inputObj, int maxsplit,
-                        boolean binary, int groupCount,
+                        @SuppressWarnings("unused") boolean binary, int groupCount,
                         @Cached CastToTruffleStringNode cast,
                         @Cached @Exclusive SplitInnerNode2 innerNode) {
             TruffleString input = cast.castKnownString(inliningTarget, inputObj);
-            return innerNode.execute(inliningTarget, compiledRegex, compiledRegexMustAdvance, input, maxsplit, binary, groupCount);
+            return innerNode.execute(inliningTarget, compiledRegex, compiledRegexMustAdvance, input, maxsplit, false, groupCount);
         }
 
         @Specialization(guards = "binary")
         static Object doBytes(Node inliningTarget, VirtualFrame frame, Object compiledRegex, Object compiledRegexMustAdvance, Object inputObj, int maxsplit,
-                        boolean binary, int groupCount,
+                        @SuppressWarnings("unused") boolean binary, int groupCount,
                         @Cached PatternNodes.TRegexCallExec.BufferToTruffleStringNode bufferToTruffleStringNode,
                         @Cached @Exclusive SplitInnerNode2 innerNode) {
             TruffleString input = bufferToTruffleStringNode.execute(frame, inputObj);
-            return innerNode.execute(inliningTarget, compiledRegex, compiledRegexMustAdvance, input, maxsplit, binary, groupCount);
+            return innerNode.execute(inliningTarget, compiledRegex, compiledRegexMustAdvance, input, maxsplit, true, groupCount);
         }
     }
 
@@ -839,20 +838,20 @@ public final class PatternBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!binary")
         static Object doString(Node inliningTarget, @SuppressWarnings("unused") VirtualFrame frame, Object compiledRegex, Object compiledRegexMustAdvance, Object inputObj, int pos, int endpos,
-                        boolean binary, int groupCount,
+                        @SuppressWarnings("unused") boolean binary, int groupCount,
                         @Cached CastToTruffleStringNode cast,
                         @Cached @Exclusive FindAllInnerNode2 innerNode) {
             TruffleString input = cast.castKnownString(inliningTarget, inputObj);
-            return innerNode.execute(inliningTarget, compiledRegex, compiledRegexMustAdvance, input, pos, endpos, binary, groupCount);
+            return innerNode.execute(inliningTarget, compiledRegex, compiledRegexMustAdvance, input, pos, endpos, false, groupCount);
         }
 
         @Specialization(guards = "binary")
         static Object doBytes(Node inliningTarget, VirtualFrame frame, Object compiledRegex, Object compiledRegexMustAdvance, Object inputObj, int pos, int endpos,
-                        boolean binary, int groupCount,
+                        @SuppressWarnings("unused") boolean binary, int groupCount,
                         @Cached PatternNodes.TRegexCallExec.BufferToTruffleStringNode bufferToTruffleStringNode,
                         @Cached @Exclusive FindAllInnerNode2 innerNode) {
             TruffleString input = bufferToTruffleStringNode.execute(frame, inputObj);
-            return innerNode.execute(inliningTarget, compiledRegex, compiledRegexMustAdvance, input, pos, endpos, binary, groupCount);
+            return innerNode.execute(inliningTarget, compiledRegex, compiledRegexMustAdvance, input, pos, endpos, true, groupCount);
         }
     }
 
@@ -993,7 +992,7 @@ public final class PatternBuiltins extends PythonBuiltins {
             assert TS_ENCODING == TruffleString.Encoding.UTF_32 : "remove the >> 2 when switching to UTF-8";
             int stringLength = input.byteLength(TS_ENCODING) >> 2;
             TruffleStringBuilderUTF32 result = TruffleStringBuilder.createUTF32(Math.max(32, stringLength));
-            return innerNode.execute(inliningTarget, frame, pattern, compiledRegex, compiledRegexMustAdvance, replacement, input, inputObj, count, binary, isCallable, returnTuple, stringLength,
+            return innerNode.execute(inliningTarget, frame, pattern, compiledRegex, compiledRegexMustAdvance, replacement, input, inputObj, count, false, isCallable, returnTuple, stringLength,
                             result);
         }
 
@@ -1005,7 +1004,7 @@ public final class PatternBuiltins extends PythonBuiltins {
             TruffleString input = bufferToTruffleStringNode.execute(frame, inputObj);
             int stringLength = input.byteLength(TS_ENCODING_BINARY);
             TruffleStringBuilder result = TruffleStringBuilder.create(TS_ENCODING_BINARY, Math.max(32, stringLength));
-            return innerNode.execute(inliningTarget, frame, pattern, compiledRegex, compiledRegexMustAdvance, replacement, input, inputObj, count, binary, isCallable, returnTuple, stringLength,
+            return innerNode.execute(inliningTarget, frame, pattern, compiledRegex, compiledRegexMustAdvance, replacement, input, inputObj, count, true, isCallable, returnTuple, stringLength,
                             result);
         }
     }
@@ -1093,9 +1092,9 @@ public final class PatternBuiltins extends PythonBuiltins {
                         @Cached @Shared PatternNodes.RECheckInputTypeNode checkInputTypeNode,
                         @Cached @Exclusive PatternNodes.TRegexCallExec.BufferToTruffleStringNode bufferToTruffleStringNode,
                         @Cached @Exclusive SubnInnerNode3 innerNode) {
-            checkInputTypeNode.execute(frame, replacementObj, binary);
+            checkInputTypeNode.execute(frame, replacementObj, true);
             TruffleString replacement = bufferToTruffleStringNode.execute(frame, replacementObj);
-            return innerNode.execute(inliningTarget, frame, compiledRegex, compiledRegexMustAdvance, replacement, input, count, binary, returnTuple, stringLength, result);
+            return innerNode.execute(inliningTarget, frame, compiledRegex, compiledRegexMustAdvance, replacement, input, count, true, returnTuple, stringLength, result);
         }
 
         @SuppressWarnings("unused")
@@ -1105,9 +1104,9 @@ public final class PatternBuiltins extends PythonBuiltins {
                         @Cached @Shared PatternNodes.RECheckInputTypeNode checkInputTypeNode,
                         @Cached @Exclusive CastToTruffleStringNode cast,
                         @Cached @Exclusive SubnInnerNode3 innerNode) {
-            checkInputTypeNode.execute(frame, replacementObj, binary);
+            checkInputTypeNode.execute(frame, replacementObj, false);
             TruffleString replacement = cast.castKnownString(inliningTarget, replacementObj);
-            return innerNode.execute(inliningTarget, frame, compiledRegex, compiledRegexMustAdvance, replacement, input, count, binary, returnTuple, stringLength, result);
+            return innerNode.execute(inliningTarget, frame, compiledRegex, compiledRegexMustAdvance, replacement, input, count, false, returnTuple, stringLength, result);
         }
 
     }

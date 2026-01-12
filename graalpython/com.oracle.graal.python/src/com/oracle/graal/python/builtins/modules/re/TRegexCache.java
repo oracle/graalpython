@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules.re;
 
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -300,24 +299,20 @@ public final class TRegexCache {
         String encoding = isBinary() ? ENCODING_LATIN_1 : ENCODING_UTF_32;
         String options = getTRegexOptions(encoding, method, mustAdvance, locale);
         InteropLibrary lib = InteropLibrary.getUncached();
-        Object regexp;
+        Object compiledRegex;
         try {
             Source regexSource = Source.newBuilder("regex", options + '/' + pattern + '/' + flags, "re").mimeType("application/tregex").internal(true).build();
-            Object compiledRegex = context.getEnv().parseInternal(regexSource).call();
-            if (lib.isNull(compiledRegex)) {
-                regexp = PNone.NONE;
-            } else {
-                regexp = compiledRegex;
-            }
+            compiledRegex = context.getEnv().parseInternal(regexSource).call();
+            assert !lib.isNull(compiledRegex) : "This shouldn't happen";
         } catch (RuntimeException e) {
             throw handleCompilationError(node, e, lib);
         }
         if (isLocaleSensitive()) {
-            setLocaleSensitiveRegexp(method, mustAdvance, locale, regexp);
+            setLocaleSensitiveRegexp(method, mustAdvance, locale, compiledRegex);
         } else {
-            setRegexp(method, mustAdvance, regexp);
+            setRegexp(method, mustAdvance, compiledRegex);
         }
-        return regexp;
+        return compiledRegex;
     }
 
     // No BoundaryCallContext: lookups attribute on a builtin module; constructs builtin

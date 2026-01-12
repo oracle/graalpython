@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -77,7 +77,6 @@ import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
@@ -99,10 +98,9 @@ public class PatternNodes {
 
         public abstract Object execute(VirtualFrame frame, Node inliningTarget, PPattern self, Object stringObject, int pos, int endPos, PythonMethod method, boolean mustAdvance);
 
-        @Specialization(guards = {"isSingleContext()", "pattern == cachedPattern", "method == cachedMethod", "mustAdvance == cachedMustAdvance", "!cache.isLocaleSensitive()"}, limit = "1")
+        @Specialization(guards = {"isSingleContext()", "pattern == cachedPattern", "method == cachedMethod", "mustAdvance == cachedMustAdvance"}, limit = "1")
         @SuppressWarnings({"truffle-static-method", "unused"})
         public static Object getSliceCached(VirtualFrame frame, Node inliningTarget, PPattern pattern, Object stringObject, int pos, int endPos, PythonMethod method, boolean mustAdvance,
-                        @CachedLibrary(limit = "1") @Shared InteropLibrary interop,
                         @Cached(value = "pattern", weak = true) PPattern cachedPattern,
                         @Cached("method") PythonMethod cachedMethod,
                         @Cached("mustAdvance") boolean cachedMustAdvance,
@@ -133,10 +131,6 @@ public class PatternNodes {
                 endPos = length;
             }
 
-            if (interop.isNull(regexObject)) {
-                PatternBuiltins.bailoutUnsupportedRegex(pattern.cache);
-            }
-
             Object regexResult = tRegexCallExecNode.execute(frame, regexObject, stringObject, pos, endPos);
             boolean isMatch = TRegexUtil.TRegexResultAccessor.isMatch(regexResult, inliningTarget, interopReadMemberNode);
 
@@ -147,15 +141,15 @@ public class PatternNodes {
             }
         }
 
-        @Specialization(guards = {"tRegexCompileNode.execute(frame, pattern.cache, method, mustAdvance) == regexObject", "method == cachedMethod",
-                        "mustAdvance == cachedMustAdvance", "!cache.isLocaleSensitive()"}, limit = "1", replaces = "getSliceCached")
+        @Specialization(guards = {"method == cachedMethod", "mustAdvance == cachedMustAdvance",
+                        "tRegexCompileNode.execute(frame, cache, cachedMethod, cachedMustAdvance) == regexObject"
+        }, limit = "1", replaces = "getSliceCached")
         @SuppressWarnings("truffle-static-method")
         public static Object getSliceCachedRegex(VirtualFrame frame, Node inliningTarget, PPattern pattern, Object stringObject, int pos, int endPos, PythonMethod method, boolean mustAdvance,
-                        @CachedLibrary(limit = "1") @Shared InteropLibrary interop,
                         @Cached("method") PythonMethod cachedMethod,
                         @Cached("mustAdvance") @SuppressWarnings("unused") boolean cachedMustAdvance,
                         @Cached(inline = false) @Shared TRegexCompileNode tRegexCompileNode,
-                        @Cached(value = "pattern.cache", weak = true) TRegexCache cache,
+                        @Bind("pattern.cache") TRegexCache cache,
                         @Cached(value = "tRegexCompileNode.execute(frame, pattern.cache, method, mustAdvance)") Object regexObject,
                         @Cached @Shared RECheckInputTypeNode reCheckInputTypeNode,
                         @Cached @Shared PyObjectSizeNode objectSizeNode,
@@ -164,7 +158,7 @@ public class PatternNodes {
                         @Cached @Shared MatchNodes.NewNode newMatchNode,
                         @Cached @Shared InlinedConditionProfile matchProfile) {
             return getSliceCached(frame, inliningTarget, pattern, stringObject, pos, endPos, method, mustAdvance,
-                            interop, pattern, method, mustAdvance, cache, tRegexCompileNode, regexObject, reCheckInputTypeNode, objectSizeNode, tRegexCallExecNode, interopReadMemberNode, newMatchNode,
+                            pattern, method, mustAdvance, cache, tRegexCompileNode, regexObject, reCheckInputTypeNode, objectSizeNode, tRegexCallExecNode, interopReadMemberNode, newMatchNode,
                             matchProfile);
         }
 
@@ -173,7 +167,6 @@ public class PatternNodes {
         @ReportPolymorphism.Megamorphic
         public static Object getSliceDynamic(VirtualFrame frame, Node inliningTarget, PPattern pattern, Object stringObject, int pos, int endPos, PythonMethod method, boolean mustAdvance,
                         @Cached("method") PythonMethod cachedMethod,
-                        @CachedLibrary(limit = "1") @Shared InteropLibrary interop,
                         @Cached(inline = false) @Shared TRegexCompileNode tRegexCompileNode,
                         @Cached @Shared RECheckInputTypeNode reCheckInputTypeNode,
                         @Cached @Shared PyObjectSizeNode objectSizeNode,
@@ -184,7 +177,7 @@ public class PatternNodes {
             Object regexObject = tRegexCompileNode.execute(frame, pattern.cache, method, mustAdvance);
 
             return getSliceCached(frame, inliningTarget, pattern, stringObject, pos, endPos, method, mustAdvance,
-                            interop, pattern, method, mustAdvance, pattern.cache, tRegexCompileNode, regexObject, reCheckInputTypeNode, objectSizeNode, tRegexCallExecNode, interopReadMemberNode,
+                            pattern, method, mustAdvance, pattern.cache, tRegexCompileNode, regexObject, reCheckInputTypeNode, objectSizeNode, tRegexCallExecNode, interopReadMemberNode,
                             newMatchNode, matchProfile);
         }
 
