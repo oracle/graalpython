@@ -49,6 +49,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.nfi2.NativeMemory.callocPtrArray;
+import static com.oracle.graal.python.runtime.PythonContext.NATIVE_NULL;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -152,7 +153,7 @@ public final class PythonCextTupleBuiltins {
                 return promotedValue;
             }
             if (result == null) {
-                return getNativeNull(inliningTarget);
+                return NATIVE_NULL;
             }
             return result;
         }

@@ -63,6 +63,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.HASH_MISMATCH;
 import static com.oracle.graal.python.nodes.ErrorMessages.OBJ_P_HAS_NO_ATTR_S;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_KEYS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_UPDATE;
+import static com.oracle.graal.python.runtime.PythonContext.NATIVE_NULL;
 
 import java.util.logging.Level;
 
@@ -319,7 +320,7 @@ public final class PythonCextDictBuiltins {
                 Object res = getItem.execute(null, inliningTarget, dict.getDictStorage(), key);
                 if (res == null) {
                     noResultProfile.enter(inliningTarget);
-                    return getNativeNull(inliningTarget);
+                    return NATIVE_NULL;
                 }
                 Object promotedValue = promoteNode.execute(inliningTarget, res);
                 if (promotedValue != null) {
@@ -329,7 +330,7 @@ public final class PythonCextDictBuiltins {
                 return res;
             } catch (PException e) {
                 // PyDict_GetItem suppresses all exceptions for historical reasons
-                return getNativeNull(inliningTarget);
+                return NATIVE_NULL;
             }
         }
 
@@ -357,7 +358,7 @@ public final class PythonCextDictBuiltins {
             Object res = getItem.execute(null, inliningTarget, dict.getDictStorage(), key);
             if (res == null) {
                 noResultProfile.enter(inliningTarget);
-                return getNativeNull(inliningTarget);
+                return NATIVE_NULL;
             }
             Object promotedValue = promoteNode.execute(inliningTarget, res);
             if (promotedValue != null) {

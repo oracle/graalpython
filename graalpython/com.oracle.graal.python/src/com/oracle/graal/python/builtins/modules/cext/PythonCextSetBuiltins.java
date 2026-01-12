@@ -50,6 +50,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC_WAS_S_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_S_NOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.NATIVE_S_SUBTYPES_NOT_IMPLEMENTED;
+import static com.oracle.graal.python.runtime.PythonContext.NATIVE_NULL;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -162,7 +163,7 @@ public final class PythonCextSetBuiltins {
         static Object nextEntry(@SuppressWarnings("unused") Object set, @SuppressWarnings("unused") long pos,
                         @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached PyObjectSizeNode sizeNode) {
-            return getNativeNull(inliningTarget);
+            return NATIVE_NULL;
         }
 
         @Specialization(guards = {"!isPSet(anyset)", "!isPFrozenSet(anyset)", "isSetSubtype(inliningTarget, anyset, getClassNode, isSubtypeNode)"})
@@ -198,7 +199,7 @@ public final class PythonCextSetBuiltins {
             loopProfile.profileCounted(inliningTarget, pos);
             for (int i = 0; loopProfile.inject(inliningTarget, i <= pos); i++) {
                 if (!itNext.execute(inliningTarget, storage, it)) {
-                    return getNativeNull(inliningTarget);
+                    return NATIVE_NULL;
                 }
             }
             Object key = itKey.execute(inliningTarget, storage, it);

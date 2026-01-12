@@ -47,6 +47,7 @@ import static com.oracle.graal.python.nfi2.NativeMemory.free;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DATE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DATETIME;
 import static com.oracle.graal.python.nodes.StringLiterals.T_TIME;
+import static com.oracle.graal.python.runtime.PythonContext.NATIVE_NULL;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltinRegistry;
@@ -133,7 +134,7 @@ public abstract class PyDateTimeCAPIWrapper {
         long name = context.stringToNativeUtf8Bytes(TruffleString.fromJavaStringUncached(J_PYDATETIME_CAPSULE_NAME, Encoding.US_ASCII), true);
         PyCapsule capsule = PFactory.createCapsuleNativeName(context.getLanguage(), pointer, name);
         PyObjectSetAttr.executeUncached(datetimeModule, T_DATETIME_CAPI, capsule);
-        assert PyObjectGetAttr.executeUncached(datetimeModule, T_DATETIME_CAPI) != context.getNativeNull();
+        assert PyObjectGetAttr.executeUncached(datetimeModule, T_DATETIME_CAPI) != NATIVE_NULL;
         return capsule;
     }
 

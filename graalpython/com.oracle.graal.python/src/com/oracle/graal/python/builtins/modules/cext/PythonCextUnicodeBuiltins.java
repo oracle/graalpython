@@ -84,6 +84,7 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_SPACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_UTF8;
 import static com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode.castLong;
+import static com.oracle.graal.python.runtime.PythonContext.NATIVE_NULL;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.truffle.api.strings.TruffleString.Encoding.UTF_16LE;
 import static com.oracle.truffle.api.strings.TruffleString.Encoding.UTF_32LE;
@@ -318,7 +319,7 @@ public final class PythonCextUnicodeBuiltins {
                         @Bind Node inliningTarget,
                         @Cached PyUnicodeCheckExactNode unicodeCheckExactNode) {
             if (!unicodeCheckExactNode.execute(inliningTarget, str)) {
-                return getNativeNull(inliningTarget);
+                return NATIVE_NULL;
             }
 
             str.intern();
@@ -336,7 +337,7 @@ public final class PythonCextUnicodeBuiltins {
              * If it's a subclass, we don't really know what putting it in the interned dict might
              * do.
              */
-            return getNativeNull();
+            return NATIVE_NULL;
         }
     }
 
@@ -692,7 +693,7 @@ public final class PythonCextUnicodeBuiltins {
                         @SuppressWarnings("unused") @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Shared @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Shared @Cached IsSubtypeNode isSubtypeNode) {
-            return getNativeNull(inliningTarget);
+            return NATIVE_NULL;
         }
     }
 

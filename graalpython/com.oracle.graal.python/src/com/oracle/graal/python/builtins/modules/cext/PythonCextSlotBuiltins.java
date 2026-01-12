@@ -82,6 +82,7 @@ import static com.oracle.graal.python.nodes.HiddenAttr.PROMOTED_START;
 import static com.oracle.graal.python.nodes.HiddenAttr.PROMOTED_STEP;
 import static com.oracle.graal.python.nodes.HiddenAttr.PROMOTED_STOP;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
+import static com.oracle.graal.python.runtime.PythonContext.NATIVE_NULL;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -293,7 +294,7 @@ public final class PythonCextSlotBuiltins {
                         @Bind Node inliningTarget,
                         @Cached PyObjectLookupAttr lookup) {
             Object module = lookup.execute(null, inliningTarget, object, T___MODULE__);
-            return module != PNone.NO_VALUE ? module : getNativeNull();
+            return module != PNone.NO_VALUE ? module : NATIVE_NULL;
         }
     }
 
@@ -386,7 +387,7 @@ public final class PythonCextSlotBuiltins {
         @Specialization
         Object get(PBuiltinFunction object) {
             Object enclosingType = object.getEnclosingType();
-            return enclosingType != null ? enclosingType : getNativeNull();
+            return enclosingType != null ? enclosingType : NATIVE_NULL;
         }
 
         @Specialization

@@ -62,6 +62,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T_ITEMS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_KEYS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T_VALUES;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETITEM__;
+import static com.oracle.graal.python.runtime.PythonContext.NATIVE_NULL;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.BinNode;
@@ -887,7 +888,7 @@ public final class PythonCextAbstractBuiltins {
             try {
                 return nextNode.execute(null, inliningTarget, object);
             } catch (IteratorExhausted e) {
-                return getNativeNull();
+                return NATIVE_NULL;
             }
         }
     }
@@ -905,14 +906,14 @@ public final class PythonCextAbstractBuiltins {
                 try {
                     return nextNode.execute(null, inliningTarget, iter);
                 } catch (IteratorExhausted e) {
-                    return getNativeNull();
+                    return NATIVE_NULL;
                 }
             } else {
                 try {
                     return callMethodNode.execute(null, inliningTarget, iter, T_SEND, arg);
                 } catch (PException e) {
                     e.expectStopIteration(inliningTarget, isClassProfile);
-                    return getNativeNull();
+                    return NATIVE_NULL;
                 }
             }
         }

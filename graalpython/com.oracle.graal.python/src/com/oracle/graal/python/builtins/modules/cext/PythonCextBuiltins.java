@@ -91,6 +91,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T__WEAKREF;
 import static com.oracle.graal.python.nodes.ErrorMessages.INDEX_OUT_OF_RANGE;
 import static com.oracle.graal.python.nodes.ErrorMessages.NATIVE_S_SUBTYPES_NOT_IMPLEMENTED;
 import static com.oracle.graal.python.nodes.HiddenAttr.NATIVE_SLOTS;
+import static com.oracle.graal.python.runtime.PythonContext.NATIVE_NULL;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
@@ -332,18 +333,6 @@ public final class PythonCextBuiltins {
     public abstract static class CApiBuiltinNode extends PNodeWithContext {
 
         public abstract Object execute(Object[] args);
-
-        protected final PNone getNativeNull() {
-            return getContext().getNativeNull();
-        }
-
-        protected static PNone getNativeNull(@SuppressWarnings("unused") Node inliningTarget) {
-            return PNone.NO_VALUE;
-        }
-
-        protected final Object getNULL() {
-            return PNone.NO_VALUE;
-        }
 
         @TruffleBoundary(allowInlining = true)
         protected static ByteBuffer wrap(byte[] data) {
@@ -817,7 +806,7 @@ public final class PythonCextBuiltins {
                 } else if (cachedSelf.getRetDescriptor().isRawPyObjectOrPointer()) {
                     return NULLPTR;
                 } else if (cachedSelf.getRetDescriptor().isPyObjectOrPointer()) {
-                    return PythonContext.get(this).getNativeNull();
+                    return NATIVE_NULL;
                 } else if (cachedSelf.getRetDescriptor().isFloatType()) {
                     return -1.0;
                 } else if (cachedSelf.getRetDescriptor().isVoid()) {

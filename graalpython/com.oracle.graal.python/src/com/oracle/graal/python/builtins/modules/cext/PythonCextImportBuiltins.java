@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -54,6 +54,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T_LOCALS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___IMPORT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___INITIALIZING__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___SPEC__;
+import static com.oracle.graal.python.runtime.PythonContext.NATIVE_NULL;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi5BuiltinNode;
@@ -132,7 +133,7 @@ public final class PythonCextImportBuiltins {
             try {
                 m = getItem.execute(null, inliningTarget, modules, name);
             } catch (PException e) {
-                return context.getNativeNull();
+                return NATIVE_NULL;
             }
             if (m != PNone.NONE) {
                 boolean initializing = false;

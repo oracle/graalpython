@@ -220,6 +220,11 @@ import sun.misc.Unsafe;
 
 @Bind.DefaultExpression("get($node)")
 public final class PythonContext extends Python3Core {
+    /**
+     * A `PythonAbstractObject` that gets converted to native `nullptr`.
+     */
+    public static final PNone NATIVE_NULL = PNone.NO_VALUE;
+
     public static final TruffleString T_IMPLEMENTATION = tsLiteral("implementation");
     public static final boolean DEBUG_CAPI = Boolean.getBoolean("python.DebugCAPI");
     public static final Unsafe UNSAFE = PythonUtils.initUnsafe();
@@ -1256,10 +1261,6 @@ public final class PythonContext extends Python3Core {
 
     public static PythonContext get(Node node) {
         return REFERENCE.get(node);
-    }
-
-    public PNone getNativeNull() {
-        return PNone.NO_VALUE;
     }
 
     public boolean isChildContext() {

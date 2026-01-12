@@ -51,6 +51,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
 import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.runtime.PythonContext.NATIVE_NULL;
 
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
@@ -231,7 +232,7 @@ public final class PythonCextPyStateBuiltins {
         Object get(@SuppressWarnings("unused") long threadState,
                         @Cached ReadFrameNode readFrameNode) {
             PFrame pFrame = readFrameNode.getCurrentPythonFrame(null);
-            return pFrame != null ? pFrame : getNativeNull();
+            return pFrame != null ? pFrame : NATIVE_NULL;
         }
     }
 
@@ -244,11 +245,11 @@ public final class PythonCextPyStateBuiltins {
                 int i = PInt.intValueExact(mIndex);
                 Object result = getCApiContext().getModuleByIndex(i);
                 if (result == null) {
-                    return getNativeNull();
+                    return NATIVE_NULL;
                 }
                 return result;
             } catch (CannotCastException | OverflowException e) {
-                return getNativeNull();
+                return NATIVE_NULL;
             }
         }
     }

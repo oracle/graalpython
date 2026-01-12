@@ -51,6 +51,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyThreadState;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
+import static com.oracle.graal.python.runtime.PythonContext.NATIVE_NULL;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi11BuiltinNode;
@@ -145,7 +146,7 @@ public final class PythonCextCEvalBuiltins {
         Object getFrame(
                         @Cached ReadFrameNode readFrameNode) {
             PFrame pFrame = readFrameNode.getCurrentPythonFrame(null);
-            return pFrame != null ? pFrame : getNativeNull();
+            return pFrame != null ? pFrame : NATIVE_NULL;
         }
     }
 
@@ -212,7 +213,7 @@ public final class PythonCextCEvalBuiltins {
                         @Bind Node inliningTarget,
                         @Cached PyEvalGetGlobals getGlobals) {
             PythonObject globals = getGlobals.execute(null, inliningTarget);
-            return globals != null ? globals : getNativeNull();
+            return globals != null ? globals : NATIVE_NULL;
         }
     }
 }

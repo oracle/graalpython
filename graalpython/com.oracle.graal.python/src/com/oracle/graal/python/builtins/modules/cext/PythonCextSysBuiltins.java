@@ -50,6 +50,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.nodes.BuiltinNames.T_STDERR;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_STDOUT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
+import static com.oracle.graal.python.runtime.PythonContext.NATIVE_NULL;
 
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
@@ -87,7 +88,7 @@ public final class PythonCextSysBuiltins {
                 PythonModule sys = getCore().lookupBuiltinModule(T_SYS);
                 Object value = lookupNode.execute(null, inliningTarget, sys, name);
                 if (value == PNone.NO_VALUE) {
-                    return getNativeNull();
+                    return NATIVE_NULL;
                 }
                 Object promotedValue = promoteNode.execute(inliningTarget, value);
                 if (promotedValue != null) {
@@ -98,7 +99,7 @@ public final class PythonCextSysBuiltins {
             } catch (PException e) {
                 // PySys_GetObject delegates to PyDict_GetItem
                 // which suppresses all exceptions for historical reasons
-                return getNativeNull();
+                return NATIVE_NULL;
             }
         }
     }

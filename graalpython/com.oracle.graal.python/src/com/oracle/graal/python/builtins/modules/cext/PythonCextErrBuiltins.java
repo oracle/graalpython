@@ -61,6 +61,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_MODULE_CLASS;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___TRACEBACK__;
+import static com.oracle.graal.python.runtime.PythonContext.NATIVE_NULL;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -127,8 +128,8 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextErrBuiltins {
-    private static Object noneToNativeNull(Node node, Object obj) {
-        return obj instanceof PNone ? PythonContext.get(node).getNativeNull() : obj;
+    private static Object noneToNativeNull(Object obj) {
+        return obj instanceof PNone ? NATIVE_NULL : obj;
     }
 
     @CApiBuiltin(ret = Void, args = {PyObject, PyObject}, call = Ignored)
@@ -297,11 +298,11 @@ public final class PythonCextErrBuiltins {
             AbstractTruffleException currentException = getCaughtExceptionNode.executeFromNative();
             if (currentException == null) {
                 noExceptionProfile.enter(inliningTarget);
-                return getNativeNull();
+                return NATIVE_NULL;
             }
             assert currentException != PException.NO_EXCEPTION;
             Object exception = getEscapedExceptionNode.execute(inliningTarget, currentException);
-            Object traceback = noneToNativeNull(inliningTarget, getTracebackNode.execute(inliningTarget, exception));
+            Object traceback = noneToNativeNull(getTracebackNode.execute(inliningTarget, exception));
             return PFactory.createTuple(language, new Object[]{getClassNode.execute(inliningTarget, exception), exception, traceback});
         }
     }
@@ -316,7 +317,7 @@ public final class PythonCextErrBuiltins {
                         @Cached GetEscapedExceptionNode getEscapedExceptionNode) {
             AbstractTruffleException caughtException = getCaughtExceptionNode.executeFromNative();
             if (caughtException == null) {
-                return PythonContext.get(inliningTarget).getNativeNull();
+                return NATIVE_NULL;
             }
             assert caughtException != PException.NO_EXCEPTION;
             return getEscapedExceptionNode.execute(inliningTarget, caughtException);
@@ -454,7 +455,7 @@ public final class PythonCextErrBuiltins {
         Object getCause(Object exc,
                         @Bind Node inliningTarget,
                         @Cached ExceptionNodes.GetCauseNode getCauseNode) {
-            return noneToNativeNull(inliningTarget, getCauseNode.execute(inliningTarget, exc));
+            return noneToNativeNull(getCauseNode.execute(inliningTarget, exc));
         }
     }
 
@@ -464,7 +465,7 @@ public final class PythonCextErrBuiltins {
         Object setCause(Object exc,
                         @Bind Node inliningTarget,
                         @Cached ExceptionNodes.GetContextNode getContextNode) {
-            return noneToNativeNull(inliningTarget, getContextNode.execute(inliningTarget, exc));
+            return noneToNativeNull(getContextNode.execute(inliningTarget, exc));
         }
     }
 
@@ -486,7 +487,7 @@ public final class PythonCextErrBuiltins {
         Object getTraceback(Object exc,
                         @Bind Node inliningTarget,
                         @Cached ExceptionNodes.GetTracebackNode getTracebackNode) {
-            return noneToNativeNull(inliningTarget, getTracebackNode.execute(inliningTarget, exc));
+            return noneToNativeNull(getTracebackNode.execute(inliningTarget, exc));
         }
     }
 
