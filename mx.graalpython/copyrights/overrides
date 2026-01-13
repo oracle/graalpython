@@ -696,6 +696,7 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence/storage/SequenceStorage.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence/storage/SequenceStorageFactory.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence/storage/SequenceStoreException.java,zippy.copyright
+graalpython/com.oracle.graal.python/src/com/oracle/graal/python/util/XSum.java,xsum.copyright
 graalpython/python-libposix/src/fork_exec.c,python.copyright
 graalpython/python-venvlauncher/src/venvlauncher.c,python.copyright
 graalpython/lib-graalpython/modules/graalpy-config.py,python.copyright

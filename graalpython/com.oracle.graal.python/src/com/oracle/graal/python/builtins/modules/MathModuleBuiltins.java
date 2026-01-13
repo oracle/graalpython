@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -34,7 +34,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ZeroDivi
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
-import java.util.Arrays;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -91,6 +90,7 @@ import com.oracle.graal.python.nodes.util.NarrowBigIntegerNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.OverflowException;
+import com.oracle.graal.python.util.XSum;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -868,7 +868,6 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "fsum", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class FsumNode extends PythonUnaryBuiltinNode {
-
         @Specialization
         static double doIt(VirtualFrame frame, Object iterable,
                         @Bind Node inliningTarget,
@@ -877,119 +876,24 @@ public final class MathModuleBuiltins extends PythonBuiltins {
                         @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Cached InlinedLoopConditionProfile loopProfile,
                         @Cached PRaiseNode raiseNode) {
-            /*
-             * This implementation is taken from CPython. The performance is not good. Should be
-             * faster. It can be easily replace with much simpler code based on BigDecimal:
-             *
-             * BigDecimal result = BigDecimal.ZERO;
-             *
-             * in cycle just: result = result.add(BigDecimal.valueof(x); ... The current
-             * implementation is little bit faster. The testFSum in test_math.py takes in different
-             * implementations: CPython ~0.6s CurrentImpl: ~14.3s Using BigDecimal: ~15.1
-             */
             Object iterator = getIter.execute(frame, inliningTarget, iterable);
-            double x, y, t, hi, lo = 0, yr, inf_sum = 0, special_sum = 0, sum;
-            double xsave;
-            int i, j, n = 0, arayLength = 32;
-            double[] p = new double[arayLength];
+
             boolean exhausted = false;
+            var acc = new XSum.SmallAccumulator();
             while (loopProfile.profile(inliningTarget, !exhausted)) {
                 try {
                     Object next = nextNode.execute(frame, inliningTarget, iterator);
-                    x = asDoubleNode.execute(frame, inliningTarget, next);
-                    xsave = x;
-                    for (i = j = 0; j < n; j++) { /* for y in partials */
-                        y = p[j];
-                        if (Math.abs(x) < Math.abs(y)) {
-                            t = x;
-                            x = y;
-                            y = t;
-                        }
-                        hi = x + y;
-                        yr = hi - x;
-                        lo = y - yr;
-                        if (lo != 0.0) {
-                            p[i++] = lo;
-                        }
-                        x = hi;
-                    }
-
-                    n = i;
-                    if (x != 0.0) {
-                        if (!Double.isFinite(x)) {
-                            /*
-                             * a nonfinite x could arise either as a result of intermediate
-                             * overflow, or as a result of a nan or inf in the summands
-                             */
-                            if (Double.isFinite(xsave)) {
-                                throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.INTERMEDIATE_OVERFLOW_IN, "fsum");
-                            }
-                            if (Double.isInfinite(xsave)) {
-                                inf_sum += xsave;
-                            }
-                            special_sum += xsave;
-                            /* reset partials */
-                            n = 0;
-                        } else if (n >= arayLength) {
-                            arayLength += arayLength;
-                            p = Arrays.copyOf(p, arayLength);
-                        } else {
-                            p[n++] = x;
-                        }
-                    }
+                    acc.add(asDoubleNode.execute(frame, inliningTarget, next));
                 } catch (IteratorExhausted e) {
                     exhausted = true;
                 }
             }
-
-            if (special_sum != 0.0) {
-                if (Double.isNaN(inf_sum)) {
-                    throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.NEG_INF_PLUS_INF_IN);
-                } else {
-                    sum = special_sum;
-                    return sum;
-                }
+            double result = acc.round();
+            if (Double.isNaN(result)) {
+                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.NEG_INF_PLUS_INF_IN);
+            } else {
+                return result;
             }
-
-            hi = 0.0;
-            if (n > 0) {
-                hi = p[--n];
-                /*
-                 * sum_exact(ps, hi) from the top, stop when the sum becomes inexact.
-                 */
-                while (n > 0) {
-                    x = hi;
-                    y = p[--n];
-                    assert (Math.abs(y) < Math.abs(x));
-                    hi = x + y;
-                    yr = hi - x;
-                    lo = y - yr;
-                    if (lo != 0.0) {
-                        break;
-                    }
-                }
-                /*
-                 * Make half-even rounding work across multiple partials. Needed so that sum([1e-16,
-                 * 1, 1e16]) will round-up the last digit to two instead of down to zero (the 1e-16
-                 * makes the 1 slightly closer to two). With a potential 1 ULP rounding error
-                 * fixed-up, math.fsum() can guarantee commutativity.
-                 */
-                if (n > 0 && ((lo < 0.0 && p[n - 1] < 0.0) ||
-                                (lo > 0.0 && p[n - 1] > 0.0))) {
-                    y = lo * 2.0;
-                    x = hi + y;
-                    yr = x - hi;
-                    if (compareAsBigDecimal(y, yr) == 0) {
-                        hi = x;
-                    }
-                }
-            }
-            return hi;
-        }
-
-        @TruffleBoundary
-        private static int compareAsBigDecimal(double y, double yr) {
-            return BigDecimal.valueOf(y).compareTo(BigDecimal.valueOf(yr));
         }
     }
 
