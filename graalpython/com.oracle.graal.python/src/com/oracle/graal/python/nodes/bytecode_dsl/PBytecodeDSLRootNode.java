@@ -72,6 +72,7 @@ import com.oracle.graal.python.builtins.objects.asyncio.GetAwaitableNode;
 import com.oracle.graal.python.builtins.objects.asyncio.PAsyncGenWrappedValue;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageSetItem;
@@ -151,6 +152,7 @@ import com.oracle.graal.python.lib.PyObjectDelItem;
 import com.oracle.graal.python.lib.PyObjectFunctionStr;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetItem;
+import com.oracle.graal.python.lib.PyObjectGetItem.PyObjectGetItemOrNull;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectGetMethod;
 import com.oracle.graal.python.lib.PyObjectHashNode;
@@ -178,6 +180,7 @@ import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode
 import com.oracle.graal.python.nodes.argument.keywords.NonMappingException;
 import com.oracle.graal.python.nodes.argument.keywords.SameDictKeyException;
 import com.oracle.graal.python.nodes.attributes.GetFixedAttributeNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.bytecode.CopyDictWithoutKeysNode;
 import com.oracle.graal.python.nodes.bytecode.GetAIterNode;
@@ -211,7 +214,6 @@ import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadBuiltinNode;
 import com.oracle.graal.python.nodes.frame.ReadFromLocalsNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
-import com.oracle.graal.python.nodes.frame.ReadNameNode;
 import com.oracle.graal.python.nodes.frame.WriteGlobalNode;
 import com.oracle.graal.python.nodes.frame.WriteNameNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
@@ -258,6 +260,7 @@ import com.oracle.truffle.api.bytecode.ContinuationResult;
 import com.oracle.truffle.api.bytecode.ContinuationRootNode;
 import com.oracle.truffle.api.bytecode.EpilogExceptional;
 import com.oracle.truffle.api.bytecode.EpilogReturn;
+import com.oracle.truffle.api.bytecode.ForceQuickening;
 import com.oracle.truffle.api.bytecode.GenerateBytecode;
 import com.oracle.truffle.api.bytecode.Instruction;
 import com.oracle.truffle.api.bytecode.Instrumentation;
@@ -348,6 +351,7 @@ import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 @OperationProxy(SetupAnnotationsNode.class)
 @OperationProxy(GetAIterNode.class)
 @OperationProxy(GetANextNode.class)
+@OperationProxy(value = ReadGlobalOrBuiltinNode.class, name = "ReadGlobal")
 @OperationProxy(value = CopyDictWithoutKeysNode.class, name = "CopyDictWithoutKeys")
 @OperationProxy(value = PyObjectIsTrueNode.class, name = "Yes")
 @OperationProxy(value = PyObjectIsNotTrueNode.class, name = "Not")
@@ -1204,13 +1208,42 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation(storeBytecodeIndex = true)
+    @Operation(storeBytecodeIndex = false)
     @ConstantOperand(type = TruffleString.class)
+    @ImportStatic(PGuards.class)
     public static final class ReadName {
-        @Specialization
-        public static Object perform(VirtualFrame frame, TruffleString name,
-                        @Cached ReadNameNode readNode) {
-            return readNode.execute(frame, name);
+        static Object readFromLocalsFastPath(VirtualFrame frame, TruffleString attributeId, ReadAttributeFromPythonObjectNode readNode) {
+            Object specialArgument = PArguments.getSpecialArgument(frame);
+            if (specialArgument instanceof PDict dict && dict.getDictStorage() instanceof DynamicObjectStorage s) {
+                return readNode.execute(s.getStore(), attributeId, PNone.NO_VALUE);
+            }
+            return PNone.NO_VALUE;
+        }
+
+        @ForceQuickening
+        @Specialization(guards = "!isNoValue(result)", limit = "1")
+        public static Object doLocalFastPath(VirtualFrame frame, TruffleString name,
+                        @Cached ReadAttributeFromPythonObjectNode readAttrNode,
+                        @Bind("readFromLocalsFastPath(frame, name, readAttrNode)") Object result) {
+            return result;
+        }
+
+        @StoreBytecodeIndex
+        @Specialization(replaces = "doLocalFastPath")
+        public static Object doFull(VirtualFrame frame, TruffleString name,
+                        @Bind Node inliningTarget,
+                        @Cached PyObjectGetItemOrNull getLocal,
+                        @Cached ReadGlobalOrBuiltinNode readGlobalOrBuiltinNode,
+                        @Cached InlinedConditionProfile hasLocalsProfile) {
+            Object locals = PArguments.getSpecialArgument(frame);
+            Object result = null;
+            if (hasLocalsProfile.profile(inliningTarget, locals != null)) {
+                result = getLocal.execute(frame, inliningTarget, locals, name);
+            }
+            if (result == null) {
+                return readGlobalOrBuiltinNode.execute(frame, name);
+            }
+            return result;
         }
     }
 
@@ -1618,16 +1651,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind Node inliningTarget,
                         @Cached PyObjectDelItem delItemNode) {
             delItemNode.execute(frame, inliningTarget, primary, index);
-        }
-    }
-
-    @Operation(storeBytecodeIndex = true)
-    @ConstantOperand(type = TruffleString.class)
-    public static final class ReadGlobal {
-        @Specialization
-        public static Object perform(VirtualFrame frame, TruffleString name,
-                        @Cached ReadGlobalOrBuiltinNode readNode) {
-            return readNode.execute(frame, name);
         }
     }
 
@@ -2657,7 +2680,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                 value = getItemNode.execute(frame, inliningTarget, dict, name);
             } catch (PException e) {
                 e.expect(inliningTarget, KeyError, errorProfile);
-                value = readGlobal.read(frame, PArguments.getGlobals(frame), name);
+                value = readGlobal.execute(frame, name);
             }
             return value;
         }

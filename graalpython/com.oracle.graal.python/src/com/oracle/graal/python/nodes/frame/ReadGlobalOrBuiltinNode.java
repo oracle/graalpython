@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -26,52 +26,56 @@
 package com.oracle.graal.python.nodes.frame;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
+import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.lib.PyObjectGetItem;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.lib.PyObjectGetItem.PyObjectGetItemOrNull;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.ReadAttributeFromModuleNode;
-import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.bytecode.ConstantOperand;
+import com.oracle.truffle.api.bytecode.ForceQuickening;
+import com.oracle.truffle.api.bytecode.OperationProxy.Proxyable;
+import com.oracle.truffle.api.bytecode.StoreBytecodeIndex;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateUncached
 @GenerateInline(false)       // footprint reduction 48 -> 30
-public abstract class ReadGlobalOrBuiltinNode extends PNodeWithContext {
-    public final Object execute(VirtualFrame frame, TruffleString name) {
-        CompilerAsserts.partialEvaluationConstant(name);
-        return executeWithGlobals(frame, PArguments.getGlobals(frame), name);
-    }
-
-    protected abstract Object executeWithGlobals(VirtualFrame frame, Object globals, TruffleString name);
+@Proxyable(storeBytecodeIndex = false)
+@ConstantOperand(type = TruffleString.class)
+@ImportStatic(PGuards.class)
+public abstract class ReadGlobalOrBuiltinNode extends Node {
+    public abstract Object execute(VirtualFrame frame, TruffleString name);
 
     public Object read(Frame frame, Object globals, TruffleString name) {
         CompilerAsserts.partialEvaluationConstant(name);
-        return executeWithGlobals((VirtualFrame) frame, globals, name);
+        // reloading globals is not efficient, but this entry point is here just because it is used
+        // from the manual interpreter and only for the time being until the manual interpreter is
+        // removed
+        assert PArguments.getGlobals(frame) == globals;
+        return execute((VirtualFrame) frame, name);
     }
 
     @NeverDefault
@@ -83,107 +87,63 @@ public abstract class ReadGlobalOrBuiltinNode extends PNodeWithContext {
         return ReadGlobalOrBuiltinNodeGen.getUncached();
     }
 
-    @Specialization(guards = {"isSingleContext()", "globals == cachedGlobals"}, limit = "1")
-    protected static Object readGlobalCached(@SuppressWarnings("unused") PythonModule globals, TruffleString attributeId,
-                    @Bind Node inliningTarget,
-                    @Shared("readFromBuiltinsNode") @Cached ReadBuiltinNode readFromBuiltinsNode,
-                    @Exclusive @Cached InlinedBranchProfile wasReadFromModule,
-                    @Shared("readFromModule") @Cached ReadAttributeFromModuleNode readFromModuleNode,
-                    @Cached(value = "globals", weak = true) PythonModule cachedGlobals) {
-        Object result = readFromModuleNode.execute(cachedGlobals, attributeId);
-        return returnGlobalOrBuiltin(result, attributeId, readFromBuiltinsNode, inliningTarget, wasReadFromModule);
-    }
-
-    @InliningCutoff
-    @Specialization(replaces = "readGlobalCached")
-    protected static Object readGlobal(PythonModule globals, TruffleString attributeId,
-                    @Bind Node inliningTarget,
-                    @Shared("readFromBuiltinsNode") @Cached ReadBuiltinNode readFromBuiltinsNode,
-                    @Exclusive @Cached InlinedBranchProfile wasReadFromModule,
-                    @Shared("readFromModule") @Cached ReadAttributeFromModuleNode readFromModuleNode) {
-        Object result = readFromModuleNode.execute(globals, attributeId);
-        return returnGlobalOrBuiltin(result, attributeId, readFromBuiltinsNode, inliningTarget, wasReadFromModule);
-    }
-
-    static final class GlobalsDictStorageChanged extends RuntimeException {
-        private static final GlobalsDictStorageChanged INSTANCE = new GlobalsDictStorageChanged();
-        private static final long serialVersionUID = 2982918866373996561L;
-
-        GlobalsDictStorageChanged() {
-            super(null, null);
+    public static Shape getGlobalsStorageShape(VirtualFrame frame) {
+        Object obj = PArguments.getGlobals(frame);
+        if (obj instanceof PDict dict && dict.getDictStorage() instanceof DynamicObjectStorage dom) {
+            return dom.getStore().getShape();
         }
+        return null;
+    }
 
-        @SuppressWarnings("sync-override")
-        @Override
-        public Throwable fillInStackTrace() {
-            return this;
+    public static Shape getGlobalsStorageShapeIfPropMissing(VirtualFrame frame, TruffleString name) {
+        Object obj = PArguments.getGlobals(frame);
+        if (obj instanceof PDict dict && dict.getDictStorage() instanceof DynamicObjectStorage dom) {
+            Shape shape = dom.getStore().getShape();
+            if (!shape.hasProperty(name)) {
+                return shape;
+            }
         }
+        return null;
     }
 
-    @Specialization(guards = {"isSingleContext()", "globals == cachedGlobals", "isBuiltinDict(cachedGlobals)"}, limit = "1", rewriteOn = GlobalsDictStorageChanged.class)
-    protected static Object readGlobalBuiltinDictCachedUnchangedStorage(@SuppressWarnings("unused") PDict globals, TruffleString attributeId,
-                    @Bind Node inliningTarget,
-                    @Shared("readFromBuiltinsNode") @Cached ReadBuiltinNode readFromBuiltinsNode,
-                    @Exclusive @Cached InlinedBranchProfile wasReadFromModule,
-                    @SuppressWarnings("unused") @Cached(value = "globals", weak = true) PDict cachedGlobals,
-                    @Cached(value = "globals.getDictStorage()", weak = true) HashingStorage cachedStorage,
-                    @Exclusive @Cached HashingStorageGetItem getItem) {
-        if (cachedGlobals.getDictStorage() != cachedStorage) {
-            throw GlobalsDictStorageChanged.INSTANCE;
+    @ForceQuickening
+    @Specialization(guards = {"cachedGlobalsShape != null", "cachedGlobalsShape == getGlobalsStorageShape(frame)"}, //
+                    excludeForUncached = true, limit = "1")
+    public static Object readBuiltinFastPath(VirtualFrame frame, TruffleString attributeId,
+                    @Cached("getGlobalsStorageShapeIfPropMissing(frame, attributeId)") Shape cachedGlobalsShape,
+                    @Shared("readFromBuiltinsNode") @Cached ReadBuiltinNode readFromBuiltinsNode) {
+        return readFromBuiltinsNode.execute(attributeId);
+    }
+
+    public static Object readFastFromGlobalStore(VirtualFrame frame, TruffleString name, ReadAttributeFromPythonObjectNode readNode) {
+        Object obj = PArguments.getGlobals(frame);
+        if (obj instanceof PDict dict && dict.getDictStorage() instanceof DynamicObjectStorage dom) {
+            return readNode.execute(dom.getStore(), name, PNone.NO_VALUE);
         }
-        Object result = getItem.execute(inliningTarget, cachedStorage, attributeId);
-        return returnGlobalOrBuiltin(result == null ? PNone.NO_VALUE : result, attributeId, readFromBuiltinsNode, inliningTarget, wasReadFromModule);
+        return PNone.NO_VALUE;
     }
 
-    @InliningCutoff
-    @Specialization(guards = {"isSingleContext()", "globals == cachedGlobals",
-                    "isBuiltinDict(cachedGlobals)"}, replaces = "readGlobalBuiltinDictCachedUnchangedStorage", limit = "1")
-    protected static Object readGlobalBuiltinDictCached(@SuppressWarnings("unused") PDict globals, TruffleString attributeId,
+    @ForceQuickening
+    @Specialization(guards = "!isNoValue(result)", replaces = "readBuiltinFastPath", excludeForUncached = true, limit = "1")
+    public static Object readGlobalFastPath(VirtualFrame frame, TruffleString attributeId,
+                    @Cached ReadAttributeFromPythonObjectNode readNode,
+                    @Bind("readFastFromGlobalStore(frame, attributeId, readNode)") Object result) {
+        return result;
+    }
+
+    @StoreBytecodeIndex
+    @Specialization(replaces = {"readBuiltinFastPath", "readGlobalFastPath"})
+    public static Object readGlobalOrBuiltinGeneric(VirtualFrame frame, TruffleString attributeId,
                     @Bind Node inliningTarget,
                     @Shared("readFromBuiltinsNode") @Cached ReadBuiltinNode readFromBuiltinsNode,
                     @Exclusive @Cached InlinedBranchProfile wasReadFromModule,
-                    @Cached(value = "globals", weak = true) PDict cachedGlobals,
-                    @Exclusive @Cached HashingStorageGetItem getItem) {
-        Object result = getItem.execute(inliningTarget, cachedGlobals.getDictStorage(), attributeId);
-        return returnGlobalOrBuiltin(result == null ? PNone.NO_VALUE : result, attributeId, readFromBuiltinsNode, inliningTarget, wasReadFromModule);
-    }
-
-    @InliningCutoff
-    @Specialization(guards = "isBuiltinDict(globals)", replaces = {"readGlobalBuiltinDictCached", "readGlobalBuiltinDictCachedUnchangedStorage"})
-    protected static Object readGlobalBuiltinDict(@SuppressWarnings("unused") PDict globals, TruffleString attributeId,
-                    @Bind Node inliningTarget,
-                    @Shared("readFromBuiltinsNode") @Cached ReadBuiltinNode readFromBuiltinsNode,
-                    @Exclusive @Cached InlinedBranchProfile wasReadFromModule,
-                    @Bind("globals.getDictStorage()") HashingStorage storage,
-                    @Exclusive @Cached HashingStorageGetItem getItem) {
-        Object result = getItem.execute(inliningTarget, storage, attributeId);
-        return returnGlobalOrBuiltin(result == null ? PNone.NO_VALUE : result, attributeId, readFromBuiltinsNode, inliningTarget, wasReadFromModule);
-    }
-
-    @InliningCutoff
-    @Specialization
-    protected static Object readGlobalDictGeneric(VirtualFrame frame, PDict globals, TruffleString attributeId,
-                    @Bind Node inliningTarget,
-                    @Shared("readFromBuiltinsNode") @Cached ReadBuiltinNode readFromBuiltinsNode,
-                    @Exclusive @Cached InlinedBranchProfile wasReadFromModule,
-                    @Cached PyObjectGetItem getItemNode,
-                    @Cached IsBuiltinObjectProfile errorProfile) {
-        try {
-            Object result = getItemNode.execute(frame, inliningTarget, globals, attributeId);
-            return returnGlobalOrBuiltin(result, attributeId, readFromBuiltinsNode, inliningTarget, wasReadFromModule);
-        } catch (PException e) {
-            e.expect(inliningTarget, KeyError, errorProfile);
-            return returnGlobalOrBuiltin(PNone.NO_VALUE, attributeId, readFromBuiltinsNode, inliningTarget, wasReadFromModule);
+                    @Cached PyObjectGetItemOrNull getItemNode) {
+        PythonObject globalsObj = PArguments.getGlobals(frame);
+        if (!(globalsObj instanceof PDict globals)) {
+            throw raiseSystemError(inliningTarget);
         }
-    }
-
-    @Fallback
-    protected Object syserr(@SuppressWarnings("unused") VirtualFrame frame, @SuppressWarnings("unused") Object dict, @SuppressWarnings("unused") TruffleString attributeId) {
-        throw PRaiseNode.raiseStatic(this, SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
-    }
-
-    private static Object returnGlobalOrBuiltin(Object result, TruffleString attributeId, ReadBuiltinNode readFromBuiltinsNode, Node inliningTarget, InlinedBranchProfile wasReadFromModule) {
-        if (result != PNone.NO_VALUE) {
+        Object result = getItemNode.execute(frame, inliningTarget, globals, attributeId);
+        if (result != null) {
             wasReadFromModule.enter(inliningTarget);
             return result;
         } else {
@@ -191,19 +151,9 @@ public abstract class ReadGlobalOrBuiltinNode extends PNodeWithContext {
         }
     }
 
-    @GenerateUncached
-    @GenerateInline
-    @GenerateCached(false)
-    public abstract static class Lazy extends Node {
-        public final ReadGlobalOrBuiltinNode get(Node inliningTarget) {
-            return execute(inliningTarget);
-        }
-
-        public abstract ReadGlobalOrBuiltinNode execute(Node inliningTarget);
-
-        @Specialization
-        static ReadGlobalOrBuiltinNode doIt(@Cached(inline = false) ReadGlobalOrBuiltinNode node) {
-            return node;
-        }
+    @InliningCutoff
+    private static PException raiseSystemError(Node inliningTarget) {
+        CompilerDirectives.transferToInterpreter();
+        throw PRaiseNode.raiseStatic(inliningTarget, SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
     }
 }

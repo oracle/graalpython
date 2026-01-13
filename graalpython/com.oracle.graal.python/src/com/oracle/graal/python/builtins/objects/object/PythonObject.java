@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -83,11 +83,11 @@ public class PythonObject extends PythonAbstractObject {
     }
 
     @NeverDefault
-    public Object getPythonClass() {
+    public final Object getPythonClass() {
         return pythonClass;
     }
 
-    public void setPythonClass(Object pythonClass) {
+    public final void setPythonClass(Object pythonClass) {
         assert getShape().getDynamicType() == PNone.NO_VALUE;
         this.pythonClass = pythonClass;
     }

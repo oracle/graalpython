@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -68,6 +68,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Idempotent;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -78,6 +79,11 @@ import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 @GenerateUncached
 @GenerateInline(false)       // footprint reduction 36 -> 17
 public abstract class GetDictIfExistsNode extends PNodeWithContext {
+    @NeverDefault
+    public static GetDictIfExistsNode create() {
+        return GetDictIfExistsNodeGen.create();
+    }
+
     public abstract PDict execute(Object object);
 
     public abstract PDict execute(PythonObject object);
@@ -111,7 +117,7 @@ public abstract class GetDictIfExistsNode extends PNodeWithContext {
         return object instanceof PythonModule || object instanceof PythonManagedClass;
     }
 
-    protected static PDict getDictUncached(PythonObject object) {
+    public static PDict getDictUncached(PythonObject object) {
         return (PDict) HiddenAttr.ReadNode.executeUncached(object, HiddenAttr.DICT, null);
     }
 

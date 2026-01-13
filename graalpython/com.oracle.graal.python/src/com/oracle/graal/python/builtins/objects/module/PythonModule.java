@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -37,9 +37,12 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.object.GetDictIfExistsNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -61,7 +64,7 @@ public final class PythonModule extends PythonObject {
      * table reference weak in order to break possible reference cycles. This field will ever only
      * be set if the module's native definition provides a traverse function (see
      * {@code moduleobject.c: module_traverse}). The condition for this is:
-     * 
+     *
      * <pre>
      * {@code
      * if (m -> md_def && m -> md_def -> m_traverse && (m -> md_def -> m_size <= 0 || m -> md_state != NULL)) {
@@ -161,5 +164,11 @@ public final class PythonModule extends PythonObject {
 
     public Object[] getReplicatedNativeReferences() {
         return this.replicatedNativeReferences;
+    }
+
+    public PDict getDict() {
+        // PythonModule always have a dict
+        CompilerAsserts.neverPartOfCompilation();
+        return GetDictIfExistsNode.getDictUncached(this);
     }
 }
