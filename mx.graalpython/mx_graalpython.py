@@ -122,6 +122,7 @@ DISABLE_REBUILD = get_boolean_env('GRAALPYTHON_MX_DISABLE_REBUILD')
 _COLLECTING_COVERAGE = False
 
 CI = get_boolean_env("CI")
+GITHUB_CI = get_boolean_env("GITHUB_CI")
 WIN32 = sys.platform == "win32"
 BUILD_NATIVE_IMAGE_WITH_ASSERTIONS = get_boolean_env('BUILD_WITH_ASSERTIONS', CI)
 BYTECODE_DSL_INTERPRETER = get_boolean_env('BYTECODE_DSL_INTERPRETER', True)
@@ -250,8 +251,41 @@ def _is_overridden_native_image_arg(prefix):
     return any(arg.startswith(prefix) for arg in extras)
 
 
+def github_ci_build_args():
+    # Determine memory and parallelism for GitHub CI builds
+    # Use 90% of available memory up to 14GB, but at least 8GB
+    # Set cores to number of CPUs if at least 4 cores and enough memory, otherwise 1
+    total_mem = 0
+    try:
+        if mx.is_windows():
+            for m in subprocess.check_output(['wmic', 'memorychip', 'get', 'capacity'], encoding='utf-8').splitlines():
+                try:
+                    total_mem += int(m) / 1024**3
+                except ValueError:
+                    pass
+        else:
+            total_mem = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES') / 1024**3
+    except:
+        total_mem = 16.0
+
+    min_bound = 8
+    max_mem = 14*1024
+    min_mem = int(1024 * (total_mem if total_mem < min_bound else total_mem * .9))
+    os_cpu = os.cpu_count() or int(os.environ.get("NUMBER_OF_PROCESSORS", 1)) or 1
+
+    build_mem = min(min_mem, max_mem)
+    parallelism = os_cpu if os_cpu >= 4 and build_mem >= min_bound*1024 else 1
+
+    return ["-Ob",
+            f"-J-Xms{build_mem}m",
+            f"--parallelism={parallelism}"
+        ]
+
 def libpythonvm_build_args():
     build_args = bytecode_dsl_build_args()
+
+    if os.environ.get("GITHUB_CI"):
+        build_args += github_ci_build_args()
 
     if graalos := ("musl" in mx_subst.path_substitutions.substitute("<multitarget_libc_selection>")):
         build_args += ['-H:+GraalOS']
@@ -814,7 +848,11 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
         standalone_dist = 'GRAALPY_NATIVE_STANDALONE'
 
     mx_args = ['-p', SUITE.dir, *(['--env', env_file] if env_file else [])]
-    mx_args.append("--extra-image-builder-argument=-g")
+
+    if GITHUB_CI:
+        mx_args.append("--extra-image-builder-argument=-Ob")
+    else:
+        mx_args.append("--extra-image-builder-argument=-g")
 
     pgo_profile = os.environ.get("GRAALPY_PGO_PROFILE")
     if pgo_profile is not None:
@@ -1194,6 +1232,7 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
         "--python.EnableDebuggingBuiltins",
         *args,
     ]
+
     if env is None:
         env = os.environ.copy()
     env['PYTHONHASHSEED'] = '0'

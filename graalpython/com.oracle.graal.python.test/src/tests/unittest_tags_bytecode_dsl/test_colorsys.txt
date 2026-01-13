@@ -1,7 +1,0 @@
-test.test_colorsys.ColorsysTest.test_hls_nearwhite @ linux-x86_64
-test.test_colorsys.ColorsysTest.test_hls_roundtrip @ linux-x86_64
-test.test_colorsys.ColorsysTest.test_hls_values @ linux-x86_64
-test.test_colorsys.ColorsysTest.test_hsv_roundtrip @ linux-x86_64
-test.test_colorsys.ColorsysTest.test_hsv_values @ linux-x86_64
-test.test_colorsys.ColorsysTest.test_yiq_roundtrip @ linux-x86_64
-test.test_colorsys.ColorsysTest.test_yiq_values @ linux-x86_64

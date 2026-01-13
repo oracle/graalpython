@@ -1,6 +1,0 @@
-test.test_unary.UnaryOpTestCase.test_bad_types @ linux-x86_64
-test.test_unary.UnaryOpTestCase.test_invert @ linux-x86_64
-test.test_unary.UnaryOpTestCase.test_negation_of_exponentiation @ linux-x86_64
-test.test_unary.UnaryOpTestCase.test_negative @ linux-x86_64
-test.test_unary.UnaryOpTestCase.test_no_overflow @ linux-x86_64
-test.test_unary.UnaryOpTestCase.test_positive @ linux-x86_64

@@ -1,0 +1,297 @@
+name: Generate CI Matrix from ci.jsonnet
+
+on:
+  workflow_dispatch:
+    inputs:
+      jobs_to_run:
+        type: string
+        description: Job selection (Python regex)
+        required: false
+  workflow_call:
+    inputs:
+      jobs_to_run:
+        required: true
+        type: string
+      logs_retention_days:
+        required: false
+        type: number
+        default: 15
+      artifacts_retention_days:
+        required: false
+        type: number
+        default: 7
+
+jobs:
+  generate-tier1:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    env:
+      TARGET: tier1
+      JOBS: ${{ inputs.jobs_to_run }}
+    steps: &generate_matrix
+      - uses: actions/checkout@v4
+      - name: Download sjsonnet
+        run: |
+          curl -L -o sjsonnet https://github.com/databricks/sjsonnet/releases/download/0.5.7/sjsonnet-0.5.7-linux-x86_64
+          chmod +x sjsonnet
+      - name: Extract job matrix
+        id: set-matrix
+        run: |
+          python3 .github/scripts/extract_matrix.py ./sjsonnet ./ci.jsonnet ${TARGET} ${JOBS} > matrix.json
+          cat matrix.json
+          echo "matrix=$(cat matrix.json)" >> $GITHUB_OUTPUT
+
+  generate-tier2:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    env:
+      TARGET: tier2
+      JOBS: ${{ inputs.jobs_to_run }}
+    steps: *generate_matrix
+
+  generate-tier3:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    env:
+      TARGET: tier3
+      JOBS: ${{ inputs.jobs_to_run }}
+    steps: *generate_matrix
+
+  tier1:
+    needs: generate-tier1
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.generate-tier1.outputs.matrix) }}
+    steps: &buildsteps
+
+      - name: Setup env
+        shell: bash
+        if: runner.os != 'Windows'
+        run: |
+          matrix_env='${{ toJson(matrix.env) }}'
+          echo $matrix_env | jq -r 'to_entries[] | "\(.key)=\(.value)"' >> tmp.env
+          while IFS= read -r line; do
+            eval "echo \"$line\"" >> $GITHUB_ENV
+          done < tmp.env
+          rm tmp.env
+
+      - name: Setup env (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $matrix_env = '${{ toJson(matrix.env) }}'
+          $envs = $matrix_env | ConvertFrom-Json
+          foreach ($pair in $envs.PSObject.Properties) {
+            $full_value = $pair.Value -replace '%([A-Za-z0-9_]+)%', '$env:$1'
+            $value = $ExecutionContext.InvokeCommand.ExpandString($full_value)
+            "$($pair.Name)=$value" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          }
+
+      - name: Actions/Checkout
+        uses: actions/checkout@v4
+        with:
+          path: main
+
+      - name: Setup Unix paths like on buildbot CI
+        if: runner.os != 'Windows'
+        run: |
+          echo "PARENT_DIRECTORY=$(pwd)" >> $GITHUB_ENV
+      - name: Setup Windows paths like on buildbot CI
+        if: runner.os == 'Windows'
+        run: |
+          "PARENT_DIRECTORY=$PWD" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+
+      - uses: actions/setup-python@v6
+        if: ${{ matrix.python_version }}
+        with:
+          python-version: ${{ matrix.python_version }}
+      - name: Install python packages on Unix
+        if: ${{ runner.os != 'Windows' && matrix.python_packages }}
+        run: |
+          for pkg in ${{ matrix.python_packages }}; do
+              pip install "$pkg" || true
+          done
+      - name: Install python packages on Windows
+        if: ${{ runner.os == 'Windows' && matrix.python_packages }}
+        run: |
+          $packages = '${{ matrix.python_packages }}' -split ' '
+          foreach ($pkg in $packages) {
+            pip install "$pkg"
+          }
+
+      - name: Install system packages on Linux
+        if: ${{ runner.os == 'Linux' && matrix.system_packages }}
+        run: |
+          sudo apt-get -qq update
+          for pkg in ${{ matrix.system_packages }}; do
+              sudo apt-get -qq install "$pkg" || true
+          done
+      - name: Install system packages on macOS
+        if: ${{ runner.os == 'macOS' && matrix.system_packages }}
+        run: |
+          echo $PATH
+          brew update
+          for pkg in ${{ matrix.system_packages }}; do
+              brew install "$pkg" || true
+          done
+      - name: Install system packages on Windows
+        if: ${{ runner.os == 'Windows' && matrix.system_packages }}
+        run: |
+          $packages = '${{ matrix.system_packages }}' -split ' '
+          foreach ($pkg in $packages) {
+            try {
+                choco install $pkg -y
+            } catch {
+                Write-Host "Failed to install $pkg, skipping."
+                Write-Host "Error: $($_.Exception.Message)" -ForegroundColor Yellow
+            }
+          }
+
+      - name: Get mx, buildtools, and labsjdk
+        if: ${{ matrix.mx_version }}
+        shell: bash
+        run: |
+          git config --global http.timeout 600
+          git clone https://github.com/graalvm/mx
+          if [[ "${RUNNER_OS}" == "Windows" ]]; then
+            ./mx/mx.cmd fetch-jdk -A --jdk-id labsjdk-ce-latest
+          else
+            ./mx/mx fetch-jdk -A --jdk-id labsjdk-ce-latest
+          fi
+          git -C mx checkout ${{ matrix.mx_version }}
+
+      - name: Setup mx and JAVA_HOME on Unix
+        if: ${{ runner.os != 'Windows' && matrix.mx_version }}
+        run: |
+          echo "$(pwd)/mx/" >> "$GITHUB_PATH"
+          echo "$(pwd)/main/.github/scripts/" >> "$GITHUB_PATH"
+          echo "JAVA_HOME=$HOME/.mx/jdks/labsjdk-ce-latest" >> "$GITHUB_ENV"
+          echo "JVMCI_VERSION_CHECK=ignore" >> "$GITHUB_ENV"
+      - name: Setup JAVA_HOME on MacOS
+        if: ${{ runner.os == 'macOS' && matrix.mx_version }}
+        run: |
+          echo "JAVA_HOME=$HOME/.mx/jdks/labsjdk-ce-latest/Contents/Home" >> "$GITHUB_ENV"
+      - name: Setup mx and JAVA_HOME on Windows
+        if: ${{ runner.os == 'Windows' && matrix.mx_version }}
+        run: |
+          "$PWD/mx" | Out-File -FilePath "$env:GITHUB_PATH" -Append
+          "$PWD/main/.github/scripts" | Out-File -FilePath "$env:GITHUB_PATH" -Append
+          "JAVA_HOME=$HOME/.mx/jdks/labsjdk-ce-latest" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "JVMCI_VERSION_CHECK=ignore" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "$M2" | Out-File -FilePath "$env:GITHUB_PATH" -Append
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v5
+        if: ${{ matrix.require_artifact }}
+        with:
+          pattern: ${{ matrix.require_artifact[0] }}
+          merge-multiple: true
+        continue-on-error: true
+      
+      - name: Export artifact paths Linux
+        if: ${{ matrix.require_artifact }}
+        run: |
+          echo "ARTIFACT_PATHS=${{ matrix.require_artifact[1] }}/${{ matrix.require_artifact[0] }}.tar" >> "$GITHUB_ENV"
+          echo "ARTIFACT_PATH_PREFIX=${{ matrix.require_artifact[1] }}" >> "$GITHUB_ENV"
+      - name: Export artifact paths Windows
+        if: ${{ matrix.require_artifact && runner.os == 'Windows'}}
+        run: |
+          "ARTIFACT_PATHS=${{ matrix.require_artifact[1] }}/${{ matrix.require_artifact[0] }}.tar" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "ARTIFACT_PATH_PREFIX=${{ matrix.require_artifact[1] }}" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Install MSBuild
+        if: ${{ runner.os == 'Windows' }}
+        uses: microsoft/setup-msbuild@v1.0.2
+      
+      - name: Process matrix downloads
+        if: ${{ matrix.downloads_steps }}
+        run: |
+          ${{ matrix.downloads_steps }}
+
+      - name: Setup
+        working-directory: main
+        if: ${{ matrix.setup_steps }}
+        run: |
+          ${{ matrix.setup_steps }}
+
+      - name: Free resources on macOS
+        run: |
+          echo "Disabling Spotlight indexing..."
+          sudo mdutil -a -i off
+          sudo mdutil -a -d
+          sudo launchctl bootout system /System/Library/LaunchDaemons/com.apple.metadata.mds.plist
+          sudo pkill -f "mds|mds_stores|mdworker_shared|Spotlight|corespotlightd"
+
+          echo "Forcing disk cache to be purged..."
+          sudo purge
+
+          echo "Top processes sorted by memory usage:"
+          ps -emo pid,pmem,pcpu,comm | head 2>/dev/null
+          echo ""
+          memory_pressure
+          echo ""
+        if: ${{ runner.os == 'macOS' }}
+
+      - name: Run on Unix
+        working-directory: main
+        if: ${{ matrix.run_steps && runner.os != 'Windows' }}
+        run: |
+          ${{ matrix.run_steps }}
+      - name: Run on Windows
+        working-directory: main
+        if: ${{ matrix.run_steps && runner.os == 'Windows' }}
+        shell: cmd
+        run: |
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64
+          ${{ matrix.run_steps }}
+
+      - name: Tar artifacts
+        if: ${{ matrix.provide_artifact }}
+        shell: bash
+        working-directory: main
+        run: |
+          tar cf ${{ matrix.provide_artifact[0] }}.tar ${{ matrix.provide_artifact[1] }}
+      - name: Upload artifacts
+        if: ${{ matrix.provide_artifact }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: ${{ matrix.provide_artifact[0] }}
+          path: main/${{ matrix.provide_artifact[0] }}.tar
+          retention-days: ${{ inputs.artifacts_retention_days || 7 }}
+
+      - name: Upload logs
+        if: ${{ matrix.logs }}
+        uses: actions/upload-artifact@v5
+        continue-on-error: true
+        with:
+          name: ${{ format('{0}_logs', matrix.name) }}
+          path: |
+            ${{ matrix.logs }}
+          retention-days: ${{ inputs.logs_retention_days || 15 }}
+          if-no-files-found: ignore
+
+  tier2:
+    if: ${{ success() || inputs.jobs_to_run }}
+    needs: [generate-tier2, tier1]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.generate-tier2.outputs.matrix) }}
+    steps: *buildsteps
+
+  tier3:
+    if: ${{ success() || inputs.jobs_to_run }}
+    needs: [generate-tier3, tier2]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.generate-tier3.outputs.matrix) }}
+    steps: *buildsteps

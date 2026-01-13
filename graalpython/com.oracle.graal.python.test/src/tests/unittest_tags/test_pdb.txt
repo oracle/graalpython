@@ -4,7 +4,7 @@ DocTestCase.test.test_pdb.test_next_until_return_at_return_event @ darwin-arm64,
 DocTestCase.test.test_pdb.test_pdb_alias_command @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 DocTestCase.test.test_pdb.test_pdb_ambiguous_statements @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 # GR-71866
-!DocTestCase.test.test_pdb.test_pdb_basic_commands @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+!DocTestCase.test.test_pdb.test_pdb_basic_commands @ darwin-arm64,linux-x86_64,win32-AMD64
 DocTestCase.test.test_pdb.test_pdb_breakpoint_commands @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 DocTestCase.test.test_pdb.test_pdb_breakpoint_on_annotated_function_def @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 DocTestCase.test.test_pdb.test_pdb_breakpoints_preserved_across_interactive_sessions @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -17,6 +17,7 @@ DocTestCase.test.test_pdb.test_pdb_issue_43318 @ darwin-arm64,linux-aarch64,linu
 DocTestCase.test.test_pdb.test_pdb_issue_gh_101673 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 DocTestCase.test.test_pdb.test_pdb_issue_gh_103225 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 DocTestCase.test.test_pdb.test_pdb_issue_gh_65052 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+# GR-71866
 !DocTestCase.test.test_pdb.test_pdb_issue_gh_91742 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 DocTestCase.test.test_pdb.test_pdb_pp_repr_exc @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 DocTestCase.test.test_pdb.test_pdb_return_to_different_file @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -45,6 +46,7 @@ test.test_pdb.PdbTestCase.test_issue13183 @ darwin-arm64,linux-aarch64,linux-x86
 test.test_pdb.PdbTestCase.test_issue16180 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_pdb.PdbTestCase.test_issue26053 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_pdb.PdbTestCase.test_issue34266 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+# GR-71918
 !test.test_pdb.PdbTestCase.test_issue36250 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_pdb.PdbTestCase.test_issue42383 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_pdb.PdbTestCase.test_issue42384 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64

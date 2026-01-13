@@ -1,4 +1,4 @@
-test.test_capi.test_abstract.CAPITest.test_mapping_check @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_capi.test_abstract.CAPITest.test_mapping_check @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_capi.test_abstract.CAPITest.test_mapping_haskey @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_capi.test_abstract.CAPITest.test_mapping_haskeystring @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_capi.test_abstract.CAPITest.test_mapping_keys_valuesitems @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
