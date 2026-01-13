@@ -677,7 +677,7 @@ public final class PythonContext extends Python3Core {
         public abstract PythonThreadState execute(Node inliningTarget, PythonContext context);
 
         public final PythonThreadState execute(Node inliningTarget) {
-            return execute(inliningTarget, null);
+            return execute(inliningTarget, PythonContext.get(inliningTarget));
         }
 
         public final PythonThreadState executeCached(PythonContext context) {
@@ -685,7 +685,7 @@ public final class PythonContext extends Python3Core {
         }
 
         public final PythonThreadState executeCached() {
-            return executeCached(null);
+            return executeCached(PythonContext.get(this));
         }
 
         public final void setTopFrameInfoCached(PythonContext context, PFrame.Reference topframeref) {
@@ -694,23 +694,6 @@ public final class PythonContext extends Python3Core {
 
         public final void clearTopFrameInfoCached(PythonContext context) {
             executeCached(context).topframeref = null;
-        }
-
-        @Specialization(guards = {"noContext == null", "!curThreadState.isShuttingDown()"})
-        @SuppressWarnings("unused")
-        static PythonThreadState doNoShutdown(Node inliningTarget, PythonContext noContext,
-                        @Bind("getThreadState(inliningTarget)") PythonThreadState curThreadState) {
-            return curThreadState;
-        }
-
-        @Specialization(guards = {"noContext == null"}, replaces = "doNoShutdown")
-        @InliningCutoff
-        PythonThreadState doGeneric(@SuppressWarnings("unused") Node inliningTarget, PythonContext noContext) {
-            PythonThreadState curThreadState = PythonLanguage.get(inliningTarget).getThreadStateLocal().get();
-            if (curThreadState.isShuttingDown()) {
-                throw PythonContext.get(this).killThread();
-            }
-            return curThreadState;
         }
 
         @Specialization(guards = "!curThreadState.isShuttingDown()")
@@ -722,7 +705,7 @@ public final class PythonContext extends Python3Core {
 
         @Specialization(replaces = "doNoShutdownWithContext")
         @InliningCutoff
-        PythonThreadState doGenericWithContext(Node inliningTarget, PythonContext context) {
+        static PythonThreadState doGenericWithContext(Node inliningTarget, PythonContext context) {
             PythonThreadState curThreadState = context.getLanguage(inliningTarget).getThreadStateLocal().get(context.env.getContext());
             if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, curThreadState.isShuttingDown())) {
                 throw context.killThread();
@@ -731,7 +714,7 @@ public final class PythonContext extends Python3Core {
         }
 
         @NonIdempotent
-        PythonThreadState getThreadState(Node n) {
+        static PythonThreadState getThreadState(Node n) {
             return PythonLanguage.get(n).getThreadStateLocal().get();
         }
     }
