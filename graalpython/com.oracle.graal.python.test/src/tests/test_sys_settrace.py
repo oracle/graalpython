@@ -1,4 +1,4 @@
-# Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -44,6 +44,7 @@ import sys
 import signal
 from tests import util
 import builtins
+import asyncio
 
 
 def basic():
@@ -234,7 +235,7 @@ class TracingEventsUnitTest(unittest.TestCase):
         self.events.append((frame.f_lineno - self.first_line, name, event))
         return self.trace
 
-    def assert_events(self, expected_events, actual_events):
+    def assert_events(self, actual_events, expected_events):
         if expected_events != actual_events:
             self.fail('\n'+'\n'.join(difflib.ndiff([str(x) for x in actual_events], [str(x) for x in expected_events])))
 
@@ -255,8 +256,7 @@ class TracingEventsUnitTest(unittest.TestCase):
 
 class TraceTestsStmtWith(TracingEventsUnitTest):
     @util.skipUnlessBytecodeDSL("Incorrect break in with statement tracing.")
-    @util.skipIfBytecodeDSL("TODO: Breaking from within with: __exit__ sometimes won't get traced.")
-    def test_09_break_in_with(self):
+    def test_01_break_in_with(self):
         class C:
             def __enter__(self):
                 return self
@@ -269,11 +269,7 @@ class TraceTestsStmtWith(TracingEventsUnitTest):
                     break
             pass
 
-        self.first_line = func_break.__code__.co_firstlineno
-        self.events = []
-        sys.settrace(self.trace)
-        func_break()
-        sys.settrace(None)
+        self.trace_function(func_break)
 
         events = [
             (0, 'func_break', 'call'),
@@ -293,7 +289,7 @@ class TraceTestsStmtWith(TracingEventsUnitTest):
 
         self.assert_events(self.events, events)
 
-    def test_10_if_false_in_with_multiple_nested(self):
+    def test_02_if_false_in_with_multiple_nested(self):
         class C:
             def __enter__(self):
                 return self
@@ -307,11 +303,7 @@ class TraceTestsStmtWith(TracingEventsUnitTest):
                         if False:
                             pass
 
-        self.first_line = func.__code__.co_firstlineno
-        self.events = []
-        sys.settrace(self.trace)
-        func()
-        sys.settrace(None)
+        self.trace_function(func)
 
         events = [
             (0, 'func', 'call'),
@@ -346,8 +338,7 @@ class TraceTestsStmtWith(TracingEventsUnitTest):
         self.assert_events(self.events, events)
 
     @util.skipUnlessBytecodeDSL("Incorrect break in with statement tracing.")
-    @util.skipIfBytecodeDSL("TODO: Breaking from within with: __exit__ sometimes won't get traced.")
-    def test_11_break_in_with_nested(self):
+    def test_03_break_in_with_nested(self):
         class C:
             def __enter__(self):
                 return self
@@ -361,11 +352,7 @@ class TraceTestsStmtWith(TracingEventsUnitTest):
                         with C():
                             break
 
-        self.first_line = func.__code__.co_firstlineno
-        self.events = []
-        sys.settrace(self.trace)
-        func()
-        sys.settrace(None)
+        self.trace_function(func)
 
         events = [
             (0, 'func', 'call'),
@@ -401,173 +388,102 @@ class TraceTestsStmtWith(TracingEventsUnitTest):
         self.assert_events(self.events, events)
 
     @util.skipUnlessBytecodeDSL("Incorrect break in with statement tracing.")
-    @util.skipIfBytecodeDSL("TODO: Breaking from within with: __exit__ sometimes won't get traced.")
-    def test_12_reraise(self):
+    def test_04_except_in_with(self):
+        class C:
+            def __enter__(self):
+                return self
+            def __exit__(*args):
+                pass
+
         def func():
             try:
-                try:
-                    raise ValueError(13)
-                except ValueError:
-                    raise
+                with C():
+                    raise Exception()
             except Exception:
                 pass
 
-        self.first_line = func.__code__.co_firstlineno
-        self.events = []
-        sys.settrace(self.trace)
-        func()
-        sys.settrace(None)
+        self.trace_function(func)
 
         events = [
             (0, 'func', 'call'),
             (1, 'func', 'line'),
             (2, 'func', 'line'),
+            (-5, '__enter__', 'call'),
+            (-4, '__enter__', 'line'),
+            (-4, '__enter__', 'return'),
             (3, 'func', 'line'),
             (3, 'func', 'exception'),
+            (2, 'func', 'line'),
+            (-3, '__exit__', 'call'),
+            (-2, '__exit__', 'line'),
+            (-2, '__exit__', 'return'),
             (4, 'func', 'line'),
             (5, 'func', 'line'),
+            (5, 'func', 'return'),
+        ]
+
+        self.assert_events(self.events, events)
+
+    @util.skipUnlessBytecodeDSL("Incorrect break in with statement tracing.")
+    def test_05_except_in_with_nested(self):
+        class C:
+            def __enter__(self):
+                return self
+            def __exit__(*args):
+                pass
+
+        def func():
+            try:
+                with C():
+                    with C():
+                        with C():
+                            with C():
+                                raise Exception()
+            except Exception:
+                pass
+
+        self.trace_function(func)
+
+        events = [
+            (0, 'func', 'call'),
+            (1, 'func', 'line'),
+            (2, 'func', 'line'),
+            (-5, '__enter__', 'call'),
+            (-4, '__enter__', 'line'),
+            (-4, '__enter__', 'return'),
+            (3, 'func', 'line'),
+            (-5, '__enter__', 'call'),
+            (-4, '__enter__', 'line'),
+            (-4, '__enter__', 'return'),
+            (4, 'func', 'line'),
+            (-5, '__enter__', 'call'),
+            (-4, '__enter__', 'line'),
+            (-4, '__enter__', 'return'),
+            (5, 'func', 'line'),
+            (-5, '__enter__', 'call'),
+            (-4, '__enter__', 'line'),
+            (-4, '__enter__', 'return'),
             (6, 'func', 'line'),
+            (6, 'func', 'exception'),
+            (5, 'func', 'line'),
+            (-3, '__exit__', 'call'),
+            (-2, '__exit__', 'line'),
+            (-2, '__exit__', 'return'),
+            (4, 'func', 'line'),
+            (-3, '__exit__', 'call'),
+            (-2, '__exit__', 'line'),
+            (-2, '__exit__', 'return'),
+            (3, 'func', 'line'),
+            (-3, '__exit__', 'call'),
+            (-2, '__exit__', 'line'),
+            (-2, '__exit__', 'return'),
+            (2, 'func', 'line'),
+            (-3, '__exit__', 'call'),
+            (-2, '__exit__', 'line'),
+            (-2, '__exit__', 'return'),
             (7, 'func', 'line'),
-            (7, 'func', 'return'),
-        ]
-
-        self.assert_events(self.events, events)
-
-    def test_13_multiline_binop(self):
-        v1 = 1
-        v2 = 2
-        v3 = 3
-        v4 = 4
-        v5 = 5
-        v6 = 6
-
-        def func():
-            return (
-                v1
-                +
-                v2
-                +
-                v3
-                +
-                v4
-                +
-                v5
-                +
-                v6
-            )
-
-        self.first_line = func.__code__.co_firstlineno
-        self.events = []
-        sys.settrace(self.trace)
-        func()
-        sys.settrace(None)
-
-        events = [
-            (0, 'func', 'call'),
-            (2, 'func', 'line'),
-            (4, 'func', 'line'),
-            (2, 'func', 'line'),
-            (6, 'func', 'line'),
-            (2, 'func', 'line'),
             (8, 'func', 'line'),
-            (2, 'func', 'line'),
-            (10, 'func', 'line'),
-            (2, 'func', 'line'),
-            (12, 'func', 'line'),
-            (2, 'func', 'line'),
-            (1, 'func', 'line'),
-            (1, 'func', 'return'),
-        ]
-
-        self.assert_events(self.events, events)
-
-    def test_14_multiline_boolop(self):
-        b1 = False
-        b2 = False
-        b3 = False
-        b4 = False
-        b5 = False
-        b6 = True
-
-        def func():
-            return (
-                    b1
-                    or
-                    b2
-                    or
-                    b3
-                    or
-                    b4
-                    or
-                    b5
-                    or
-                    b6
-            )
-
-        self.first_line = func.__code__.co_firstlineno
-        self.events = []
-        sys.settrace(self.trace)
-        func()
-        sys.settrace(None)
-
-        events = [
-            (0, 'func', 'call'),
-            (2, 'func', 'line'),
-            (4, 'func', 'line'),
-            (2, 'func', 'line'),
-            (6, 'func', 'line'),
-            (2, 'func', 'line'),
-            (8, 'func', 'line'),
-            (2, 'func', 'line'),
-            (10, 'func', 'line'),
-            (2, 'func', 'line'),
-            (12, 'func', 'line'),
-            (1, 'func', 'line'),
-            (1, 'func', 'return'),
-        ]
-
-        self.assert_events(self.events, events)
-
-    def test_15_multiline_boolop_short(self):
-        b1 = False
-        b2 = False
-        b3 = False
-        b4 = True
-        b5 = False
-        b6 = True
-
-        def func():
-            return (
-                    b1
-                    or
-                    b2
-                    or
-                    b3
-                    or
-                    b4
-                    or
-                    b5
-                    or
-                    b6
-            )
-
-        self.first_line = func.__code__.co_firstlineno
-        self.events = []
-        sys.settrace(self.trace)
-        func()
-        sys.settrace(None)
-
-        events = [
-            (0, 'func', 'call'),
-            (2, 'func', 'line'),
-            (4, 'func', 'line'),
-            (2, 'func', 'line'),
-            (6, 'func', 'line'),
-            (2, 'func', 'line'),
-            (8, 'func', 'line'),
-            (2, 'func', 'line'),
-            (1, 'func', 'line'),
-            (1, 'func', 'return'),
+            (8, 'func', 'return'),
         ]
 
         self.assert_events(self.events, events)
@@ -730,6 +646,174 @@ class MultilineCallsTraceTest(TracingEventsUnitTest):
 
         self.assert_events(self.events, events)
 
+    def test_06_multiline_binop(self):
+        v1 = 1
+        v2 = 2
+        v3 = 3
+        v4 = 4
+        v5 = 5
+        v6 = 6
+
+        def func():
+            return (
+                    v1
+                    +
+                    v2
+                    +
+                    v3
+                    +
+                    v4
+                    +
+                    v5
+                    +
+                    v6
+            )
+
+        self.first_line = func.__code__.co_firstlineno
+        self.events = []
+        sys.settrace(self.trace)
+        func()
+        sys.settrace(None)
+
+        events = [
+            (0, 'func', 'call'),
+            (2, 'func', 'line'),
+            (4, 'func', 'line'),
+            (2, 'func', 'line'),
+            (6, 'func', 'line'),
+            (2, 'func', 'line'),
+            (8, 'func', 'line'),
+            (2, 'func', 'line'),
+            (10, 'func', 'line'),
+            (2, 'func', 'line'),
+            (12, 'func', 'line'),
+            (2, 'func', 'line'),
+            (1, 'func', 'line'),
+            (1, 'func', 'return'),
+        ]
+
+        self.assert_events(self.events, events)
+
+    def test_07_multiline_boolop(self):
+        b1 = False
+        b2 = False
+        b3 = False
+        b4 = False
+        b5 = False
+        b6 = True
+
+        def func():
+            return (
+                    b1
+                    or
+                    b2
+                    or
+                    b3
+                    or
+                    b4
+                    or
+                    b5
+                    or
+                    b6
+            )
+
+        self.first_line = func.__code__.co_firstlineno
+        self.events = []
+        sys.settrace(self.trace)
+        func()
+        sys.settrace(None)
+
+        events = [
+            (0, 'func', 'call'),
+            (2, 'func', 'line'),
+            (4, 'func', 'line'),
+            (2, 'func', 'line'),
+            (6, 'func', 'line'),
+            (2, 'func', 'line'),
+            (8, 'func', 'line'),
+            (2, 'func', 'line'),
+            (10, 'func', 'line'),
+            (2, 'func', 'line'),
+            (12, 'func', 'line'),
+            (1, 'func', 'line'),
+            (1, 'func', 'return'),
+        ]
+
+        self.assert_events(self.events, events)
+
+    def test_08_multiline_boolop_short(self):
+        b1 = False
+        b2 = False
+        b3 = False
+        b4 = True
+        b5 = False
+        b6 = True
+
+        def func():
+            return (
+                    b1
+                    or
+                    b2
+                    or
+                    b3
+                    or
+                    b4
+                    or
+                    b5
+                    or
+                    b6
+            )
+
+        self.first_line = func.__code__.co_firstlineno
+        self.events = []
+        sys.settrace(self.trace)
+        func()
+        sys.settrace(None)
+
+        events = [
+            (0, 'func', 'call'),
+            (2, 'func', 'line'),
+            (4, 'func', 'line'),
+            (2, 'func', 'line'),
+            (6, 'func', 'line'),
+            (2, 'func', 'line'),
+            (8, 'func', 'line'),
+            (2, 'func', 'line'),
+            (1, 'func', 'line'),
+            (1, 'func', 'return'),
+        ]
+
+        self.assert_events(self.events, events)
+
+class TraceTestsStmtTry(TracingEventsUnitTest):
+    @util.skipUnlessBytecodeDSL("Incorrect break in with statement tracing.")
+    def test_01_reraise(self):
+        def func():
+            try:
+                try:
+                    raise ValueError(13)
+                except ValueError:
+                    raise
+            except Exception:
+                pass
+
+        self.trace_function(func)
+
+        events = [
+            (0, 'func', 'call'),
+            (1, 'func', 'line'),
+            (2, 'func', 'line'),
+            (3, 'func', 'line'),
+            (3, 'func', 'exception'),
+            (4, 'func', 'line'),
+            (5, 'func', 'line'),
+            (6, 'func', 'line'),
+            (7, 'func', 'line'),
+            (7, 'func', 'return'),
+        ]
+
+        self.assert_events(self.events, events)
+
 class ExceptStarTraceTest(TracingEventsUnitTest):
     @util.skipUnlessBytecodeDSL("try-except* not implemented")
     def test_01_except_star_with_name(self):
@@ -799,7 +883,6 @@ class ExceptStarTraceTest(TracingEventsUnitTest):
         self.assert_events(self.events, events)
 
     @util.skipUnlessBytecodeDSL("try-except* not implemented")
-    @util.skipIfBytecodeDSL("TODO: Fix return in finally.")
     def test_03_except_star_with_finally(self):
         def func():
             try:
@@ -1165,6 +1248,47 @@ class ExceptStarTraceTest(TracingEventsUnitTest):
             (18, 'func', 'line'),
             (19, 'func', 'line'),
             (19, 'func', 'return')
+        ]
+
+        self.assert_events(self.events, events)
+
+class SingleLineMultipleStmts(TracingEventsUnitTest):
+    def test_01_if_elif_else(self):
+        def func():
+            x = 5
+            if x < 4: pass
+            elif x > 4: pass
+            else: pass
+            return
+
+        self.trace_function(func)
+
+        events = [
+            (0, 'func', 'call'),
+            (1, 'func', 'line'),
+            (2, 'func', 'line'),
+            (3, 'func', 'line'),
+            (5, 'func', 'line'),
+            (5, 'func', 'return')
+        ]
+
+        self.assert_events(self.events, events)
+
+    def test_02_if_elif_else_implicit_return(self):
+        def func():
+            x = 5
+            if x < 4: pass
+            elif x > 4: pass
+            else: pass
+
+        self.trace_function(func)
+
+        events = [
+            (0, 'func', 'call'),
+            (1, 'func', 'line'),
+            (2, 'func', 'line'),
+            (3, 'func', 'line'),
+            (3, 'func', 'return')
         ]
 
         self.assert_events(self.events, events)

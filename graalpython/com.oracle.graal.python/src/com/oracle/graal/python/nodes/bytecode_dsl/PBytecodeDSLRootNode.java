@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -507,11 +507,15 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         private final InstrumentationData previous;
         private final PBytecodeDSLRootNode rootNode;
         private int pastLine;
+        // Sometimes, we need to use pastLine value after it has been cleared. Implicit returns in
+        // combination with loops are one such scenario.
+        private int nonClearingPastLine;
 
         public InstrumentationData(PBytecodeDSLRootNode rootNode, InstrumentationData previous) {
             this.previous = previous;
             this.rootNode = rootNode;
             this.pastLine = -1;
+            this.nonClearingPastLine = -1;
         }
 
         public InstrumentationData getPrevious() {
@@ -532,6 +536,14 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
         void clearPastLine() {
             this.pastLine = -1;
+        }
+
+        int getNonClearingPastLine() {
+            return nonClearingPastLine;
+        }
+
+        void setNonClearingPastLine(int value) {
+            nonClearingPastLine = value;
         }
     }
 
@@ -675,6 +687,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             return;
         }
         instrumentationData.setPastLine(line);
+        instrumentationData.setNonClearingPastLine(line);
 
         PFrame pyFrame = ensurePyFrame(frame, location);
         if (pyFrame.getTraceLine()) {
@@ -692,6 +705,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         int pastLine = instrumentationData.getPastLine();
 
         instrumentationData.setPastLine(line);
+        instrumentationData.setNonClearingPastLine(line);
 
         PFrame pyFrame = ensurePyFrame(frame, location);
         if (pyFrame.getTraceLine()) {
@@ -720,7 +734,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         PythonThreadState threadState = getThreadState();
         Object traceFun = threadState.getTraceFun();
         if (traceFun != null) {
-            int pastLine = threadState.getInstrumentationData(this).getPastLine();
+            int pastLine = threadState.getInstrumentationData(this).getNonClearingPastLine();
             invokeTraceFunction(frame, location, traceFun, threadState, TraceEvent.RETURN, value, pastLine);
         }
         Object profileFun = threadState.getProfileFun();
@@ -3092,7 +3106,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                 Object result = callExit.execute(frame, exit, contextManager, excType, pythonException, excTraceback);
                 if (!isTrue.execute(frame, result)) {
                     if (exception instanceof PException pException) {
-                        throw pException.getExceptionForReraise(!rootNode.isInternal());
+                        PException reraisedException = pException.getExceptionForReraise(!rootNode.isInternal());
+                        reraisedException.dontTraceOnReraise();
+                        throw reraisedException;
                     } else if (exception instanceof AbstractTruffleException ate) {
                         throw ate;
                     } else {

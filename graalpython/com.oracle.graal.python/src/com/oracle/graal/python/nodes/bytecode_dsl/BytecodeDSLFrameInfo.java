@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,7 +43,6 @@ package com.oracle.graal.python.nodes.bytecode_dsl;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.nodes.bytecode.FrameInfo;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.frame.Frame;
 
 public class BytecodeDSLFrameInfo implements FrameInfo {
     @CompilationFinal PBytecodeDSLRootNode rootNode;
@@ -64,12 +63,6 @@ public class BytecodeDSLFrameInfo implements FrameInfo {
     @Override
     public int getFirstLineNumber() {
         return rootNode.getFirstLineno();
-    }
-
-    @Override
-    public Object getYieldFrom(Frame generatorFrame, int bci, int stackTop) {
-        // TODO implement
-        throw new UnsupportedOperationException("not implemented");
     }
 
     @Override

@@ -1965,9 +1965,9 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 for (int i = 0; i < numArgs - 1; i++) {
                     args[i].accept(this);
                 }
-                b.beginTraceLineWithArgument();
+                beginTraceLineChecked(b);
                 args[numArgs - 1].accept(this);
-                b.endTraceLineWithArgument(func.getSourceRange().startLine);
+                endTraceLineChecked(func, b);
             }
         }
 
@@ -5481,9 +5481,12 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                  * }
                  */
                 b.beginTryCatchOtherwise(() -> {
+                    int saveLastTracedLine = lastTracedLine;
+                    lastTracedLine = -1;
                     b.beginBlock(); // finally
                         visitSequence(node.finalBody);
                     b.endBlock();
+                    lastTracedLine = saveLastTracedLine;
                 });
 
                     emitTryExceptElse(node); // try-except-else
@@ -6111,9 +6114,12 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                  * }
                  */
                 b.beginTryCatchOtherwise(() -> {
+                    int saveLastTracedLine = lastTracedLine;
+                    lastTracedLine = -1;
                     b.beginBlock(); // finally
                         visitSequence(node.finalBody);
                     b.endBlock();
+                    lastTracedLine = saveLastTracedLine;
                 });
 
                     emitTryExceptElse(node); // try-except-else
@@ -6267,7 +6273,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             if (async) {
                 finallyHandler = () -> emitAwait(() -> {
                     b.beginBlock();
-                    emitTraceLineChecked(items[index], b);
+                    b.emitTraceLine(items[index].getSourceRange().startLine);
                     b.beginAsyncContextManagerCallExit();
                     b.emitLoadConstant(PNone.NONE);
                     b.emitLoadLocal(exit);
@@ -6278,7 +6284,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             } else {
                 finallyHandler = () -> {
                     // call __exit__
-                    emitTraceLineChecked(items[index], b);
+                    b.emitTraceLine(items[index].getSourceRange().startLine);
                     b.beginContextManagerExit();
                     b.emitLoadConstant(PNone.NONE);
                     b.emitLoadLocal(exit);
@@ -6314,6 +6320,8 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 emitSaveCurrentException(savedException);
                 emitSetCurrentException();
 
+                b.beginBlock();
+                b.emitTraceLine(items[index].getSourceRange().startLine);
                 // @formatter:off
                 b.beginAsyncContextManagerExit();
                     b.emitLoadException();
@@ -6333,11 +6341,13 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                         b.emitLoadLocal(tmp);
                     b.endBlock();
                 b.endAsyncContextManagerExit();
+                b.endBlock();
                 // @formatter:on
 
                 exitSaveExceptionBlock(prevPrevSaved);
             } else {
                 // call __exit__
+                b.emitTraceLine(items[index].getSourceRange().startLine);
                 b.beginContextManagerExit();
                 b.emitLoadException();
                 b.emitLoadLocal(exit);
