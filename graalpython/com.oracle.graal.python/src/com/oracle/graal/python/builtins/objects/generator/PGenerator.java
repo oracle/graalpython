@@ -350,7 +350,7 @@ public class PGenerator extends PythonBuiltinObject {
             }
             return getContinuationBytecodeNode().getLocalValue(0, getGeneratorFrame(), rootNode.yieldFromGeneratorIndex);
         } else {
-            return frameInfo.getYieldFrom(frame, getBci(), getBytecodeState().getCurrentRootNode().getResumeStackTop());
+            return ((BytecodeFrameInfo) frameInfo).getYieldFrom(frame, getBci(), getBytecodeState().getCurrentRootNode().getResumeStackTop());
         }
 
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -78,7 +78,6 @@ public class BytecodeFrameInfo implements FrameInfo {
         return rootNode.getFirstLineno();
     }
 
-    @Override
     public Object getYieldFrom(Frame generatorFrame, int bci, int stackTop) {
         /* Match the `yield from` bytecode pattern and get the object from stack */
         if (bci > 3 && bci < rootNode.bytecode.length && rootNode.bytecode[bci - 3] == OpCodesConstants.SEND && rootNode.bytecode[bci - 1] == OpCodesConstants.YIELD_VALUE &&
