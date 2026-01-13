@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -665,45 +665,26 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class FrexpNode extends PythonUnaryClinicBuiltinNode {
         public static double[] frexp(double value) {
-            // double can represent int without loss of data
-            int exponent = 0;
-            double mantissa = 0.0;
-
-            if (value == 0.0 || value == -0.0) {
-                return new double[]{mantissa, exponent};
+            if (value == 0.0) {
+                return new double[]{0.0, 0};
+            } else if (!Double.isFinite(value)) {
+                return new double[]{value, -1};
             }
 
-            if (Double.isNaN(value)) {
-                mantissa = Double.NaN;
-                exponent = -1;
-                return new double[]{mantissa, exponent};
+            int exponent = Math.getExponent(value);
+
+            // Handle subnormal numbers
+            if (exponent == Double.MIN_EXPONENT - 1) {
+                // Scale up into the normal range
+                double scaled = Math.scalb(value, Double.MAX_EXPONENT);
+                exponent = Math.getExponent(scaled) - Double.MAX_EXPONENT;
             }
 
-            if (Double.isInfinite(value)) {
-                mantissa = value;
-                exponent = -1;
-                return new double[]{mantissa, exponent};
-            }
+            // Adjust exponent so that 0.5 <= abs(mantissa) < 1
+            exponent += 1;
+            double mantissa = Math.scalb(value, -exponent);
 
-            boolean neg = false;
-            mantissa = value;
-
-            if (mantissa < 0) {
-                mantissa = -mantissa;
-                neg = true;
-            }
-            if (mantissa >= 1.0) {
-                while (mantissa >= 1) {
-                    ++exponent;
-                    mantissa /= 2;
-                }
-            } else if (mantissa < 0.5) {
-                while (mantissa < 0.5) {
-                    --exponent;
-                    mantissa *= 2;
-                }
-            }
-            return new double[]{neg ? -mantissa : mantissa, exponent};
+            return new double[]{mantissa, exponent};
         }
 
         @Specialization
