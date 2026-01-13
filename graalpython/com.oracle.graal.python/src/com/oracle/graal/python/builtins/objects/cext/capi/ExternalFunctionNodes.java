@@ -80,7 +80,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesF
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ReleaseNativeSequenceStorageNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CheckRawPointerFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.DefaultCheckFunctionResultNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ExternalFunctionInvokeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
@@ -801,11 +800,6 @@ public abstract class ExternalFunctionNodes {
             return node != null ? node : DefaultCheckFunctionResultNodeGen.create();
         }
 
-        static CheckFunctionResultNode getUncachedCheckResultNode(PExternalFunctionWrapper provider) {
-            CheckFunctionResultNode node = provider.getUncachedCheckFunctionResultNode();
-            return node != null ? node : DefaultCheckFunctionResultNodeGen.getUncached();
-        }
-
         @Specialization
         static Object invokeCached(VirtualFrame frame, PExternalFunctionWrapper provider, CApiTiming timing, TruffleString name, NfiBoundFunction callable, Object[] cArguments,
                         @Bind Node inliningTarget,
@@ -816,12 +810,6 @@ public abstract class ExternalFunctionNodes {
                         @Cached ExternalFunctionInvokeNode invokeNode) {
             CompilerAsserts.partialEvaluationConstant(provider);
             PythonContext ctx = PythonContext.get(inliningTarget);
-            return invoke(frame, ctx, timing, name, callable, cArguments, inliningTarget, checkResultNode, convertReturnValue, fromForeign, getThreadStateNode, invokeNode);
-        }
-
-        private static Object invoke(VirtualFrame frame, PythonContext ctx, CApiTiming timing, TruffleString name, NfiBoundFunction callable, Object[] cArguments, Node inliningTarget,
-                        CheckFunctionResultNode checkResultNode, CExtToJavaNode convertReturnValue, PForeignToPTypeNode fromForeign, GetThreadStateNode getThreadStateNode,
-                        ExternalFunctionInvokeNode invokeNode) {
             PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, ctx);
             Object result = invokeNode.execute(frame, inliningTarget, threadState, timing, name, callable, cArguments);
             result = checkResultNode.execute(threadState, name, result);
@@ -831,26 +819,9 @@ public abstract class ExternalFunctionNodes {
             return fromForeign.executeConvert(result);
         }
 
-        @GenerateCached(false)
-        private static final class ExternalFunctionWrapperInvokeNodeUncached extends ExternalFunctionWrapperInvokeNode {
-            private static final ExternalFunctionWrapperInvokeNodeUncached INSTANCE = new ExternalFunctionWrapperInvokeNodeUncached();
-
-            @Override
-            public Object execute(VirtualFrame frame, PExternalFunctionWrapper provider, CApiTiming timing, TruffleString name, NfiBoundFunction callable, Object[] cArguments) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                PythonContext ctx = PythonContext.get(null);
-                return invoke(frame, ctx, timing, name, callable, cArguments, null, getUncachedCheckResultNode(provider), provider.getUncachedConvertRetNode(), PForeignToPTypeNode.getUncached(),
-                                GetThreadStateNode.getUncached(), ExternalFunctionInvokeNodeGen.getUncached());
-            }
-        }
-
         @NeverDefault
         public static ExternalFunctionWrapperInvokeNode create() {
             return ExternalFunctionNodesFactory.ExternalFunctionWrapperInvokeNodeGen.create();
-        }
-
-        public static ExternalFunctionWrapperInvokeNode getUncached() {
-            return ExternalFunctionWrapperInvokeNodeUncached.INSTANCE;
         }
     }
 
