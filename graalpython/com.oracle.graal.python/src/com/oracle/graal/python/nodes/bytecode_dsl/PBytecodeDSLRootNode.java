@@ -285,14 +285,12 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
-import com.oracle.truffle.api.frame.FrameSlotTypeException;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
@@ -304,6 +302,8 @@ import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 
 @GenerateBytecode(//
                 languageClass = PythonLanguage.class, //
+                illegalLocalException = PException.class, //
+                illegalLocalExceptionFactory = "raiseUnboundLocalException", //
                 enableBlockScoping = false, //
                 enableYield = true, //
                 enableSerialization = true, //
@@ -3620,40 +3620,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @Specialization(guards = "!isPException(exception)")
         static void doInteropException(AbstractTruffleException exception) {
             throw exception;
-        }
-    }
-
-    /**
-     * Loads a user-defined local variable. Unlike a built-in LoadLocal, this operation raises an
-     * unbound local error if the local has not been set.
-     * <p>
-     * This operation makes use of Truffle's boxing overloads. When an operation tries to quicken
-     * this one for boxing elimination, the correct overload will be selected.
-     */
-    @Operation(storeBytecodeIndex = false)
-    @ConstantOperand(type = LocalAccessor.class)
-    @ConstantOperand(type = int.class)
-    public static final class CheckAndLoadLocal {
-        @Specialization(rewriteOn = {FrameSlotTypeException.class, UnexpectedResultException.class})
-        public static int doInt(VirtualFrame frame, LocalAccessor accessor, int index,
-                        @Bind BytecodeNode bytecodeNode) throws UnexpectedResultException {
-            return accessor.getInt(bytecodeNode, frame);
-        }
-
-        @Specialization(replaces = "doInt", rewriteOn = FrameSlotTypeException.class)
-        public static Object doObject(VirtualFrame frame, LocalAccessor accessor, int index,
-                        @Bind BytecodeNode bytecodeNode) {
-            return accessor.getObject(bytecodeNode, frame);
-        }
-
-        @StoreBytecodeIndex
-        @Specialization(replaces = "doObject")
-        public static Object doObjectOrUnbound(VirtualFrame frame, LocalAccessor accessor, int index,
-                        @Bind BytecodeNode bytecodeNode) {
-            if (accessor.isCleared(bytecodeNode, frame)) {
-                throw raiseUnbound(bytecodeNode, index);
-            }
-            return accessor.getObject(bytecodeNode, frame);
         }
     }
 
