@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -74,9 +74,9 @@ import java.util.Arrays;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
@@ -102,6 +102,7 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
@@ -371,7 +372,7 @@ public class TpSlotBinaryOp {
                         @Cached EnsurePythonObjectNode ensurePythonObjectNode,
                         @Cached(inline = false) PythonToNativeNode selfToNativeNode,
                         @Cached(inline = false) PythonToNativeNode argToNativeNode,
-                        @Exclusive @Cached ExternalFunctionInvokeNode externalInvokeNode,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached NativeToPythonInternalNode toPythonNode,
                         @Exclusive @Cached(inline = false) PyObjectCheckFunctionResultNode checkResultNode,
                         @Exclusive @Cached CoerceNativePointerToLongNode coerceNativePointerToLongNode) {
@@ -380,15 +381,13 @@ public class TpSlotBinaryOp {
             Object promotedSelf = ensurePythonObjectNode.execute(ctx, self, false);
             Object promotedArg = ensurePythonObjectNode.execute(ctx, arg, false);
             try {
-                Object result = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, op.name, slot.callable,
-                                selfToNativeNode.execute(promotedSelf), argToNativeNode.execute(promotedArg));
-                long lresult = coerceNativePointerToLongNode.execute(inliningTarget, result);
+                long lresult = ExternalFunctionInvoker.invokeBINARYFUNC(frame, C_API_TIMING, ctx.ensureNfiContext(), boundaryCallData, state, slot.callable,
+                                selfToNativeNode.executeLong(promotedSelf), argToNativeNode.executeLong(promotedArg));
                 return checkResultNode.execute(state, op.name, toPythonNode.execute(inliningTarget, lresult, true));
             } finally {
                 Reference.reachabilityFence(promotedSelf);
                 Reference.reachabilityFence(promotedArg);
             }
-
         }
 
         @SuppressWarnings("unused")

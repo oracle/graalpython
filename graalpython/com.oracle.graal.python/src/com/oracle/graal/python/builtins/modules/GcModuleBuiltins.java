@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -38,11 +38,11 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.GcModuleBuiltinsClinicProviders.GcCollectNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.modules.GcModuleBuiltinsClinicProviders.SetDebugNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckPrimitiveFunctionResultNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
@@ -63,7 +63,9 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
@@ -125,7 +127,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static long collect(VirtualFrame frame, PythonModule self, @SuppressWarnings("unused") Object level,
+        static long collect(VirtualFrame frame, PythonModule self, Object level,
                         @Bind Node inliningTarget,
                         @Cached PyObjectGetAttr getAttr,
                         @Cached PyObjectGetIter getIter,
@@ -134,7 +136,8 @@ public final class GcModuleBuiltins extends PythonBuiltins {
                         @Cached CallBinaryMethodNode call,
                         @Cached GilNode gil,
                         @Cached GetThreadStateNode getThreadStateNode,
-                        @Cached ExternalFunctionInvokeNode invokeNode,
+                        @Cached CastToJavaIntExactNode castToJavaInt,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached CheckPrimitiveFunctionResultNode checkPrimitiveFunctionResultNode) {
             Object callbacks = getAttr.execute(frame, inliningTarget, self, CALLBACKS);
             Object iter = getIter.execute(frame, inliningTarget, callbacks);
@@ -167,8 +170,9 @@ public final class GcModuleBuiltins extends PythonBuiltins {
             if (pythonContext.getCApiContext() != null && pythonContext.getLanguage(inliningTarget).getEngineOption(PythonOptions.PythonGC)) {
                 NfiBoundFunction executable = CApiContext.getNativeSymbol(inliningTarget, SYMBOL);
                 PythonThreadState threadState = getThreadStateNode.execute(inliningTarget);
-                Object result = invokeNode.call(frame, inliningTarget, threadState, C_API_TIMING, SYMBOL.getTsName(), executable, level);
-                res = checkPrimitiveFunctionResultNode.executeLong(threadState, SYMBOL.getTsName(), result);
+                long lresult = ExternalFunctionInvoker.invokeGCCOLLECT(frame, C_API_TIMING, pythonContext.ensureNfiContext(), boundaryCallData, threadState, executable,
+                                castToJavaInt.execute(inliningTarget, level));
+                res = checkPrimitiveFunctionResultNode.executeLong(threadState, SYMBOL.getTsName(), lresult);
             }
             if (phase != null) {
                 phase = STOP;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.type.slots;
 
 import static com.oracle.graal.python.builtins.objects.type.slots.BuiltinSlotWrapperSignature.J_DOLLAR_SELF;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_TP_RICHCOMPARE;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T_TP_RICHCOMPARE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
@@ -50,15 +49,14 @@ import java.lang.ref.Reference;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.type.slots.NodeFactoryUtils.WrapperNodeFactory;
@@ -70,6 +68,7 @@ import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
@@ -248,18 +247,16 @@ public abstract class TpSlotRichCompare {
                         @Cached(inline = false) PythonToNativeNode toNativeNodeA,
                         @Cached(inline = false) PythonToNativeNode toNativeNodeB,
                         @Cached EnsurePythonObjectNode ensurePythonObjectNode,
-                        @Exclusive @Cached ExternalFunctionInvokeNode externalInvokeNode,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Exclusive @Cached NativeToPythonInternalNode toPythonNode,
-                        @Exclusive @Cached(inline = false) PyObjectCheckFunctionResultNode checkResultNode,
-                        @Exclusive @Cached CoerceNativePointerToLongNode coerceNativePointerToLongNode) {
+                        @Exclusive @Cached(inline = false) PyObjectCheckFunctionResultNode checkResultNode) {
             PythonContext ctx = PythonContext.get(inliningTarget);
             PythonThreadState state = getThreadStateNode.execute(inliningTarget, ctx);
             Object promotedA = ensurePythonObjectNode.execute(ctx, a, false);
             Object promotedB = ensurePythonObjectNode.execute(ctx, b, false);
             try {
-                Object result = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T_TP_RICHCOMPARE, slot.callable,
-                                toNativeNodeA.execute(promotedA), toNativeNodeB.execute(promotedB), op.asNative());
-                long lresult = coerceNativePointerToLongNode.execute(inliningTarget, result);
+                long lresult = ExternalFunctionInvoker.invokeRICHCMPFUNC(frame, C_API_TIMING, ctx.ensureNfiContext(), boundaryCallData, state, slot.callable,
+                                toNativeNodeA.executeLong(promotedA), toNativeNodeB.executeLong(promotedB), op.asNative());
                 return checkResultNode.execute(state, T___HASH__, toPythonNode.execute(inliningTarget, lresult, true));
             } finally {
                 Reference.reachabilityFence(promotedA);

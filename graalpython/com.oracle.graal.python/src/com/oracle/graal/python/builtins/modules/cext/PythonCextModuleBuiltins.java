@@ -63,7 +63,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___FILE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___PACKAGE__;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi7BuiltinNode;
@@ -72,9 +71,9 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuil
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextMethodBuiltins.CFunctionNewExMethodNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckPrimitiveFunctionResultNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
@@ -94,6 +93,7 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
@@ -263,15 +263,13 @@ public final class PythonCextModuleBuiltins {
 
     @CApiBuiltin(ret = Int, args = {PyObject, Pointer, Pointer}, call = Ignored)
     abstract static class GraalPyPrivate_Module_Traverse extends CApiTernaryBuiltinNode {
-        private static final String J__M_TRAVERSE = "m_traverse";
-        private static final TruffleString T__M_TRAVERSE = tsLiteral(J__M_TRAVERSE);
-        private static final CApiTiming TIMING = CApiTiming.create(true, J__M_TRAVERSE);
+        private static final CApiTiming TIMING = CApiTiming.create(true, "m_traverse");
 
         @Specialization
         static int doGeneric(PythonModule self, long visitFun, long arg,
                         @Bind Node inliningTarget,
                         @Cached GetThreadStateNode getThreadStateNode,
-                        @Cached ExternalFunctionInvokeNode externalFunctionInvokeNode,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached CheckPrimitiveFunctionResultNode checkPrimitiveFunctionResultNode,
                         @Cached PythonToNativeNode toNativeNode) {
 
@@ -286,13 +284,13 @@ public final class PythonCextModuleBuiltins {
                     long mSize = readLongField(mdDef, CFields.PyModuleDef__m_size);
                     long mdState = self.getNativeModuleState();
                     if (mSize <= 0 || mdState != NULLPTR) {
-                        PythonThreadState threadState = getThreadStateNode.execute(inliningTarget);
+                        PythonContext ctx = PythonContext.get(inliningTarget);
+                        PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, ctx);
                         NfiBoundFunction traverseExecutable = ensureExecutable(mTraverse, PExternalFunctionWrapper.TRAVERSEPROC);
-                        Object res = externalFunctionInvokeNode.call(null, inliningTarget, threadState, TIMING, T__M_TRAVERSE, traverseExecutable, toNativeNode.execute(self), visitFun, arg);
-                        int ires = (int) checkPrimitiveFunctionResultNode.executeLong(threadState, StringLiterals.T_VISIT, res);
-                        if (ires != 0) {
-                            return ires;
-                        }
+                        int ires = ExternalFunctionInvoker.invokeTRAVERSEPROC(null, TIMING, ctx.ensureNfiContext(), boundaryCallData, threadState, traverseExecutable,
+                                        toNativeNode.executeLong(self), visitFun, arg);
+                        checkPrimitiveFunctionResultNode.executeLong(threadState, StringLiterals.T_VISIT, ires);
+                        return ires;
                     }
                 }
             }

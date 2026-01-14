@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,16 +48,15 @@ import java.lang.ref.Reference;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -73,13 +72,14 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.Revers
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.TpSlotReversiblePython;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -176,19 +176,17 @@ public final class TpSlotNbPower {
                         @Cached(inline = false) PythonToNativeNode vToNative,
                         @Cached(inline = false) PythonToNativeNode wToNative,
                         @Cached(inline = false) PythonToNativeNode zToNative,
-                        @Cached ExternalFunctionInvokeNode externalInvokeNode,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached NativeToPythonInternalNode toPythonNode,
-                        @Cached(inline = false) PyObjectCheckFunctionResultNode checkResultNode,
-                        @Exclusive @Cached CoerceNativePointerToLongNode coerceNativePointerToLongNode) {
+                        @Cached(inline = false) PyObjectCheckFunctionResultNode checkResultNode) {
             PythonContext ctx = PythonContext.get(inliningTarget);
             PythonContext.PythonThreadState state = getThreadStateNode.execute(inliningTarget, ctx);
             Object promotedV = ensurePythonObjectNode.execute(ctx, v, false);
             Object promotedW = ensurePythonObjectNode.execute(ctx, w, false);
             Object promotedZ = ensurePythonObjectNode.execute(ctx, z, false);
             try {
-                Object result = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T___POW__, slot.callable,
-                                vToNative.execute(promotedV), wToNative.execute(promotedW), zToNative.execute(promotedZ));
-                long lresult = coerceNativePointerToLongNode.execute(inliningTarget, result);
+                long lresult = ExternalFunctionInvoker.invokeTERNARYFUNC(frame, C_API_TIMING, ctx.ensureNfiContext(), boundaryCallData, state, slot.callable,
+                                vToNative.executeLong(promotedV), wToNative.executeLong(promotedW), zToNative.executeLong(promotedZ));
                 return checkResultNode.execute(state, T___POW__, toPythonNode.execute(inliningTarget, lresult, true));
             } finally {
                 Reference.reachabilityFence(promotedV);
@@ -269,19 +267,17 @@ public final class TpSlotNbPower {
                         @Cached(inline = false) PythonToNativeNode vToNative,
                         @Cached(inline = false) PythonToNativeNode wToNative,
                         @Cached(inline = false) PythonToNativeNode zToNative,
-                        @Cached ExternalFunctionInvokeNode externalInvokeNode,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached NativeToPythonInternalNode toPythonNode,
-                        @Cached(inline = false) PyObjectCheckFunctionResultNode checkResultNode,
-                        @Exclusive @Cached CoerceNativePointerToLongNode coerceNativePointerToLongNode) {
+                        @Cached(inline = false) PyObjectCheckFunctionResultNode checkResultNode) {
             PythonContext ctx = PythonContext.get(inliningTarget);
-            PythonContext.PythonThreadState state = getThreadStateNode.execute(inliningTarget, ctx);
+            PythonThreadState state = getThreadStateNode.execute(inliningTarget, ctx);
             Object promotedV = ensurePythonObjectNode.execute(ctx, v, false);
             Object promotedW = ensurePythonObjectNode.execute(ctx, w, false);
             Object promotedZ = ensurePythonObjectNode.execute(ctx, z, false);
             try {
-                Object result = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T___IPOW__, slot.callable,
-                                vToNative.execute(promotedV), wToNative.execute(promotedW), zToNative.execute(promotedZ));
-                long lresult = coerceNativePointerToLongNode.execute(inliningTarget, result);
+                long lresult = ExternalFunctionInvoker.invokeTERNARYFUNC(frame, C_API_TIMING, ctx.ensureNfiContext(), boundaryCallData, state, slot.callable,
+                                vToNative.executeLong(promotedV), wToNative.executeLong(promotedW), zToNative.executeLong(promotedZ));
                 return checkResultNode.execute(state, T___IPOW__, toPythonNode.execute(inliningTarget, lresult, true));
             } finally {
                 Reference.reachabilityFence(promotedV);

@@ -49,9 +49,9 @@ import java.lang.ref.Reference;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
@@ -72,6 +72,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
@@ -226,7 +227,7 @@ public abstract class TpSlotDescrGet {
                         @Cached(inline = false) PythonToNativeNode selfToNativeNode,
                         @Cached(inline = false) PythonToNativeNode objToNativeNode,
                         @Cached(inline = false) PythonToNativeNode valueToNativeNode,
-                        @Cached ExternalFunctionInvokeNode externalInvokeNode,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached NativeToPythonInternalNode toPythonNode,
                         @Cached(inline = false) PyObjectCheckFunctionResultNode checkResultNode) {
             PythonContext ctx = PythonContext.get(inliningTarget);
@@ -235,11 +236,11 @@ public abstract class TpSlotDescrGet {
             Object promotedObj = ensurePythonObjectNode.execute(ctx, obj, false);
             Object promotedValue = ensurePythonObjectNode.execute(ctx, value, false);
             try {
-                long result = (long) externalInvokeNode.call(frame, inliningTarget, threadState, C_API_TIMING, T___GET__, slot.callable, //
-                                selfToNativeNode.execute(promotedSelf), //
-                                objToNativeNode.execute(promotedObj), //
-                                valueToNativeNode.execute(promotedValue));
-                return checkResultNode.execute(threadState, T___GET__, toPythonNode.execute(inliningTarget, result, true));
+                long lresult = ExternalFunctionInvoker.invokeDESCRGETFUNC(frame, C_API_TIMING, ctx.ensureNfiContext(), boundaryCallData, threadState, slot.callable,
+                                selfToNativeNode.executeLong(promotedSelf), //
+                                objToNativeNode.executeLong(promotedObj), //
+                                valueToNativeNode.executeLong(promotedValue));
+                return checkResultNode.execute(threadState, T___GET__, toPythonNode.execute(inliningTarget, lresult, true));
             } finally {
                 Reference.reachabilityFence(promotedSelf);
                 Reference.reachabilityFence(promotedObj);

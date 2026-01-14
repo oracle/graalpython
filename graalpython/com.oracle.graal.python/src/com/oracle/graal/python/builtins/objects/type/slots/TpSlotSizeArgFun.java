@@ -48,14 +48,13 @@ import java.util.Objects;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -72,6 +71,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFunFacto
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
@@ -257,16 +257,15 @@ public class TpSlotSizeArgFun {
                         @Exclusive @Cached GetThreadStateNode getThreadStateNode,
                         @Cached EnsurePythonObjectNode ensurePythonObjectNode,
                         @Cached(inline = false) PythonToNativeNode toNativeNode,
-                        @Exclusive @Cached ExternalFunctionInvokeNode externalInvokeNode,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached NativeToPythonInternalNode toPythonNode,
-                        @Exclusive @Cached(inline = false) PyObjectCheckFunctionResultNode checkResultNode,
-                        @Exclusive @Cached CoerceNativePointerToLongNode coerceNativePointerToLongNode) {
+                        @Exclusive @Cached(inline = false) PyObjectCheckFunctionResultNode checkResultNode) {
             PythonContext ctx = PythonContext.get(inliningTarget);
             PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, ctx);
             Object promotedSelf = ensurePythonObjectNode.execute(ctx, self, false);
             try {
-                Object result = externalInvokeNode.call(frame, inliningTarget, threadState, C_API_TIMING, T___GETITEM__, slot.callable, toNativeNode.execute(promotedSelf), (long) index);
-                long lresult = coerceNativePointerToLongNode.execute(inliningTarget, result);
+                long lresult = ExternalFunctionInvoker.invokeSSIZEARGFUNC(frame, C_API_TIMING, ctx.ensureNfiContext(), boundaryCallData, threadState, slot.callable,
+                                toNativeNode.executeLong(promotedSelf), index);
                 return checkResultNode.execute(threadState, T___GETITEM__, toPythonNode.execute(inliningTarget, lresult, true));
             } finally {
                 Reference.reachabilityFence(promotedSelf);

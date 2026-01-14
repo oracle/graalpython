@@ -104,8 +104,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.Ensur
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.PythonObjectArrayCreateNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.UnicodeFromFormatNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckRawPointerFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonClassInternalNode;
@@ -1501,10 +1501,9 @@ public abstract class CExtNodes {
                         @Cached(inline = false) PythonToNativeNode toNativeNode,
                         @Cached(inline = false) NativeToPythonTransferNode asPythonObjectNode,
                         @Cached(inline = false) PCallCapiFunction callCapiFunction,
-                        @Cached(inline = false) CheckRawPointerFunctionResultNode checkFunctionResultNode) {
+                        @Cached(inline = false) PyObjectCheckFunctionResultNode checkFunctionResultNode) {
             long result = (long) callCapiFunction.call(FUN_GRAALPY_MEMORYVIEW_FROM_OBJECT, toNativeNode.executeLong(buf), flags);
-            checkFunctionResultNode.execute(PythonContext.get(callCapiFunction), FUN_GRAALPY_MEMORYVIEW_FROM_OBJECT.getTsName(), result);
-            return (PMemoryView) asPythonObjectNode.executeRaw(result);
+            return (PMemoryView) checkFunctionResultNode.execute(PythonContext.get(callCapiFunction), FUN_GRAALPY_MEMORYVIEW_FROM_OBJECT.getTsName(), asPythonObjectNode.executeRaw(result));
         }
     }
 

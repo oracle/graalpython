@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.type.slots;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___NEXT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___NEXT__;
 
 import java.lang.ref.Reference;
 
@@ -50,9 +49,9 @@ import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
@@ -70,6 +69,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
@@ -193,14 +193,15 @@ public final class TpSlotIterNext {
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached(inline = false) PythonToNativeNode toNativeNode,
                         @Cached EnsurePythonObjectNode ensurePythonObjectNode,
-                        @Cached ExternalFunctionInvokeNode externalInvokeNode,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached NativeToPythonInternalNode toPythonNode,
                         @Cached CExtCommonNodes.ReadAndClearNativeException readAndClearNativeException) {
             PythonContext ctx = PythonContext.get(inliningTarget);
             PythonThreadState state = getThreadStateNode.execute(inliningTarget, ctx);
             Object promotedSelf = ensurePythonObjectNode.execute(ctx, self, false);
             try {
-                long nativeResult = (long) externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, T___NEXT__, slot.callable, toNativeNode.executeLong(promotedSelf));
+                long nativeResult = ExternalFunctionInvoker.invokeITERNEXTFUNC(frame, C_API_TIMING, ctx.ensureNfiContext(), boundaryCallData, state, slot.callable,
+                                toNativeNode.executeLong(promotedSelf));
                 Object pythonResult = toPythonNode.execute(inliningTarget, nativeResult, true);
                 if (pythonResult == PNone.NO_VALUE) {
                     Object currentException = readAndClearNativeException.execute(inliningTarget, state);

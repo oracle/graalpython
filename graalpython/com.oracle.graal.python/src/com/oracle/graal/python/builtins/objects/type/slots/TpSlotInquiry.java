@@ -48,8 +48,8 @@ import java.lang.ref.Reference;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckInquiryResultNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
@@ -64,6 +64,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
@@ -164,14 +165,15 @@ public abstract class TpSlotInquiry {
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached(inline = false) PythonToNativeNode toNativeNode,
                         @Cached EnsurePythonObjectNode ensurePythonObjectNode,
-                        @Cached ExternalFunctionInvokeNode externalInvokeNode,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached(inline = false) CheckInquiryResultNode checkResultNode) {
             PythonContext ctx = PythonContext.get(inliningTarget);
             PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, ctx);
             Object promotedSelf = ensurePythonObjectNode.execute(ctx, self, false);
             try {
-                Object result = externalInvokeNode.call(frame, inliningTarget, threadState, C_API_TIMING, T___BOOL__, slot.callable, toNativeNode.execute(promotedSelf));
-                return checkResultNode.executeBool(threadState, T___BOOL__, result);
+                int iresult = ExternalFunctionInvoker.invokeINQUIRY(frame, C_API_TIMING, ctx.ensureNfiContext(), boundaryCallData, threadState, slot.callable,
+                                toNativeNode.executeLong(promotedSelf));
+                return checkResultNode.executeBool(threadState, T___BOOL__, iresult);
             } finally {
                 Reference.reachabilityFence(promotedSelf);
             }

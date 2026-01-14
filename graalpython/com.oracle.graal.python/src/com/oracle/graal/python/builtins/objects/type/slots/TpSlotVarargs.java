@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -54,19 +54,18 @@ import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CreateArgsTupleNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.DefaultCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.EagerTupleState;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.InitCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -94,6 +93,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNo
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
@@ -105,7 +105,6 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -311,12 +310,12 @@ public final class TpSlotVarargs {
 
     @GenerateInline(false)
     @GenerateUncached
-    abstract static class CallSlotVarargsNativeNode extends Node {
+    abstract static class CallNativeTernaryfuncNode extends Node {
 
-        abstract Object execute(VirtualFrame frame, TpSlotCExtNative slot, Object self, Object[] args, PKeyword[] keywords, TruffleString name, CheckFunctionResultNode checkResultNode);
+        abstract long execute(VirtualFrame frame, TpSlotCExtNative slot, Object self, Object[] args, PKeyword[] keywords, TruffleString name, CheckFunctionResultNode checkResultNode);
 
         @Specialization
-        static Object callNative(VirtualFrame frame, TpSlotCExtNative slot, Object self, Object[] args, PKeyword[] keywords, TruffleString name, CheckFunctionResultNode checkResultNode,
+        static long callNative(VirtualFrame frame, TpSlotCExtNative slot, Object self, Object[] args, PKeyword[] keywords, TruffleString name, CheckFunctionResultNode checkResultNode,
                         @Bind Node inliningTarget,
                         @Bind PythonContext context,
                         @Cached GetThreadStateNode getThreadStateNode,
@@ -324,7 +323,7 @@ public final class TpSlotVarargs {
                         @Cached PythonToNativeNode toNativeNode,
                         @Cached CreateArgsTupleNode createArgsTupleNode,
                         @Cached EagerTupleState eagerTupleState,
-                        @Cached ExternalFunctionInvokeNode externalInvokeNode) {
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
             PythonLanguage language = context.getLanguage(inliningTarget);
             PythonThreadState state = getThreadStateNode.execute(inliningTarget, context);
             Object promotedSelf = ensurePythonObjectNode.execute(context, self, false);
@@ -333,8 +332,8 @@ public final class TpSlotVarargs {
             Object kwargsDict = keywords.length > 0 ? PFactory.createDict(language, keywords) : NO_VALUE;
             assert EnsurePythonObjectNode.doesNotNeedPromotion(kwargsDict);
             try {
-                Object nativeResult = externalInvokeNode.call(frame, inliningTarget, state, C_API_TIMING, name, slot.callable,
-                                toNativeNode.execute(promotedSelf), toNativeNode.execute(argsTuple), toNativeNode.execute(kwargsDict));
+                long nativeResult = ExternalFunctionInvoker.invokeTERNARYFUNC(frame, C_API_TIMING, context.ensureNfiContext(), boundaryCallData, state, slot.callable,
+                                toNativeNode.executeLong(promotedSelf), toNativeNode.executeLong(argsTuple), toNativeNode.executeLong(kwargsDict));
                 eagerTupleState.report(inliningTarget, argsTuple);
                 checkResultNode.execute(state, name, nativeResult);
                 return nativeResult;
@@ -342,7 +341,6 @@ public final class TpSlotVarargs {
                 Reference.reachabilityFence(promotedSelf);
                 Reference.reachabilityFence(argsTuple);
                 Reference.reachabilityFence(kwargsDict);
-
             }
         }
     }
@@ -366,10 +364,32 @@ public final class TpSlotVarargs {
 
         @Specialization
         @InliningCutoff
-        static Object callNative(VirtualFrame frame, TpSlotCExtNative slot, Object self, Object[] args, PKeyword[] keywords,
-                        @Cached InitCheckFunctionResultNode checkResult,
-                        @Cached CallSlotVarargsNativeNode callNode) {
-            callNode.execute(frame, slot, self, args, keywords, T___INIT__, checkResult);
+        static Object callNative(VirtualFrame frame, Node inliningTarget, TpSlotCExtNative slot, Object self, Object[] args, PKeyword[] keywords,
+                        @Bind PythonContext context,
+                        @Cached GetThreadStateNode getThreadStateNode,
+                        @Cached EnsurePythonObjectNode ensurePythonObjectNode,
+                        @Cached PythonToNativeNode toNativeNode,
+                        @Cached CreateArgsTupleNode createArgsTupleNode,
+                        @Cached EagerTupleState eagerTupleState,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
+                        @Cached InitCheckFunctionResultNode checkResultNode) {
+            PythonLanguage language = context.getLanguage(inliningTarget);
+            PythonThreadState state = getThreadStateNode.execute(inliningTarget, context);
+            Object promotedSelf = ensurePythonObjectNode.execute(context, self, false);
+            PTuple argsTuple = createArgsTupleNode.execute(inliningTarget, context, args, eagerTupleState);
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(argsTuple);
+            Object kwargsDict = keywords.length > 0 ? PFactory.createDict(language, keywords) : NO_VALUE;
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(kwargsDict);
+            try {
+                int nativeResult = ExternalFunctionInvoker.invokeINITPROC(frame, C_API_TIMING, context.ensureNfiContext(), boundaryCallData, state, slot.callable,
+                                toNativeNode.executeLong(promotedSelf), toNativeNode.executeLong(argsTuple), toNativeNode.executeLong(kwargsDict));
+                eagerTupleState.report(inliningTarget, argsTuple);
+                checkResultNode.execute(state, T___INIT__, nativeResult);
+            } finally {
+                Reference.reachabilityFence(promotedSelf);
+                Reference.reachabilityFence(argsTuple);
+                Reference.reachabilityFence(kwargsDict);
+            }
             return NO_VALUE;
         }
     }
@@ -430,10 +450,9 @@ public final class TpSlotVarargs {
         static Object callNative(VirtualFrame frame, Node inliningTarget, TpSlotCExtNative slot, Object self, Object[] args, PKeyword[] keywords,
                         @Cached DefaultCheckFunctionResultNode checkResult,
                         @Cached NativeToPythonInternalNode toPythonNode,
-                        @Cached CallSlotVarargsNativeNode callNode,
-                        @Exclusive @Cached CoerceNativePointerToLongNode coerceNativePointerToLongNode) {
-            Object result = callNode.execute(frame, slot, self, args, keywords, T___NEW__, checkResult);
-            long lresult = coerceNativePointerToLongNode.execute(inliningTarget, result);
+                        @Cached CallNativeTernaryfuncNode callNode) {
+            // 'tp_new' slot's C type is actually 'newfunc' but that is compatible to 'ternaryfunc'.
+            long lresult = callNode.execute(frame, slot, self, args, keywords, T___NEW__, checkResult);
             return toPythonNode.execute(inliningTarget, lresult, true, true);
         }
     }
@@ -455,10 +474,8 @@ public final class TpSlotVarargs {
         static Object callNative(VirtualFrame frame, Node inliningTarget, TpSlotCExtNative slot, Object self, Object[] args, PKeyword[] keywords,
                         @Cached DefaultCheckFunctionResultNode checkResult,
                         @Cached NativeToPythonInternalNode toPythonNode,
-                        @Cached CallSlotVarargsNativeNode callNode,
-                        @Exclusive @Cached CoerceNativePointerToLongNode coerceNativePointerToLongNode) {
-            Object result = callNode.execute(frame, slot, self, args, keywords, T___CALL__, checkResult);
-            long lresult = coerceNativePointerToLongNode.execute(inliningTarget, result);
+                        @Cached CallNativeTernaryfuncNode callNode) {
+            long lresult = callNode.execute(frame, slot, self, args, keywords, T___CALL__, checkResult);
             return toPythonNode.execute(inliningTarget, lresult, true, true);
         }
     }

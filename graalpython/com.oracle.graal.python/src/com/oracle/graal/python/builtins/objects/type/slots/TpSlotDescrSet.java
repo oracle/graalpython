@@ -51,9 +51,9 @@ import java.lang.ref.Reference;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.InitCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
@@ -73,6 +73,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode.Dynamic;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
@@ -200,7 +201,7 @@ public abstract class TpSlotDescrSet {
                         @Cached(inline = false) PythonToNativeNode selfToNativeNode,
                         @Cached(inline = false) PythonToNativeNode objToNativeNode,
                         @Cached(inline = false) PythonToNativeNode valueToNativeNode,
-                        @Cached ExternalFunctionInvokeNode externalInvokeNode,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached(inline = false) InitCheckFunctionResultNode checkResultNode) {
             PythonContext ctx = PythonContext.get(inliningTarget);
             PythonThreadState threadState = getThreadStateNode.execute(inliningTarget);
@@ -208,11 +209,11 @@ public abstract class TpSlotDescrSet {
             Object promotedObj = ensurePythonObjectNode.execute(ctx, obj, false);
             Object promotedValue = ensurePythonObjectNode.execute(ctx, value, false);
             try {
-                Object result = externalInvokeNode.call(frame, inliningTarget, threadState, C_API_TIMING, T___SET__, slot.callable, //
-                                selfToNativeNode.execute(promotedSelf), //
-                                objToNativeNode.execute(promotedObj), //
-                                valueToNativeNode.execute(promotedValue));
-                checkResultNode.execute(threadState, T___SET__, result);
+                int iresult = ExternalFunctionInvoker.invokeDESCRSETFUNC(frame, C_API_TIMING, ctx.ensureNfiContext(), boundaryCallData, threadState, slot.callable,
+                                selfToNativeNode.executeLong(promotedSelf), //
+                                objToNativeNode.executeLong(promotedObj), //
+                                valueToNativeNode.executeLong(promotedValue));
+                checkResultNode.execute(threadState, T___SET__, iresult);
             } finally {
                 Reference.reachabilityFence(promotedSelf);
                 Reference.reachabilityFence(promotedObj);

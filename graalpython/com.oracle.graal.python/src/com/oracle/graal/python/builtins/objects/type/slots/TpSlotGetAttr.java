@@ -50,10 +50,10 @@ import java.lang.ref.Reference;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
@@ -73,6 +73,7 @@ import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.MaybeBindDescriptorNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
+import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
@@ -257,7 +258,7 @@ public class TpSlotGetAttr {
                         @Cached EnsurePythonObjectNode ensurePythonObjectNode,
                         @Cached PythonToNativeNode selfToNativeNode,
                         @Cached NativeToPythonTransferNode toPythonNode,
-                        @Cached ExternalFunctionInvokeNode externalInvokeNode,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached PyObjectCheckFunctionResultNode checkResultNode) {
             boolean isGetAttr = isGetAttrProfile.profile(inliningTarget, slots.tp_getattr() == slot);
             Object promotedSelf = ensurePythonObjectNode.execute(context, self, false);
@@ -269,11 +270,11 @@ public class TpSlotGetAttr {
                 promotedName = ensurePythonObjectNode.execute(context, name, false);
                 nameArg = nameToNativeNode.executeLong(promotedName);
             }
-            Object result;
+            long lresult;
             PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, context);
             try {
-                result = externalInvokeNode.call(frame, inliningTarget, threadState, C_API_TIMING, T___GETATTR__, slot.callable,
-                                selfToNativeNode.execute(promotedSelf), nameArg);
+                lresult = ExternalFunctionInvoker.invokeGETATTRFUNC(frame, C_API_TIMING, context.ensureNfiContext(), boundaryCallData, threadState, slot.callable,
+                                selfToNativeNode.executeLong(promotedSelf), nameArg);
             } finally {
                 Reference.reachabilityFence(promotedSelf);
                 if (isGetAttr) {
@@ -285,7 +286,7 @@ public class TpSlotGetAttr {
                     Reference.reachabilityFence(promotedName);
                 }
             }
-            return checkResultNode.execute(threadState, T___GETATTR__, toPythonNode.execute(result));
+            return checkResultNode.execute(threadState, T___GETATTR__, toPythonNode.executeRaw(lresult));
         }
     }
 
