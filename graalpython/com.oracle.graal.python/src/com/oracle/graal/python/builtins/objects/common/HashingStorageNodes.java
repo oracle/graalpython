@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -1216,12 +1216,12 @@ public class HashingStorageNodes {
             if (lenANode.execute(inliningTarget, aStorage) != lenBNode.execute(inliningTarget, bStorage)) {
                 return false;
             }
-            int index = 0;
+            int loopCount = 0;
             try {
                 HashingStorageIterator aIter = getAIter.execute(inliningTarget, aStorage);
                 while (loopProfile.profile(inliningTarget, aIterNext.execute(inliningTarget, aStorage, aIter))) {
-                    if (CompilerDirectives.hasNextTier()) {
-                        index++;
+                    if (CompilerDirectives.hasNextTier() && loopCount < Integer.MAX_VALUE) {
+                        loopCount++;
                     }
 
                     Object aKey = aIterKey.execute(inliningTarget, aStorage, aIter);
@@ -1236,8 +1236,8 @@ public class HashingStorageNodes {
                     return false;
                 }
             } finally {
-                if (index != 0) {
-                    LoopNode.reportLoopCount(inliningTarget, index);
+                if (loopCount != 0) {
+                    LoopNode.reportLoopCount(inliningTarget, loopCount);
                 }
             }
             return true;
@@ -1287,19 +1287,19 @@ public class HashingStorageNodes {
                         @Cached HashingStorageGetIterator getIter,
                         @Cached HashingStorageIteratorNext iterNext,
                         @Cached InlinedLoopConditionProfile loopProfile) {
-            int index = 0;
+            int loopCount = 0;
             Object accumulator = accumulatorIn;
             try {
                 HashingStorageIterator aIter = getIter.execute(inliningTarget, storage);
                 while (loopProfile.profile(inliningTarget, iterNext.execute(inliningTarget, storage, aIter))) {
-                    if (CompilerDirectives.hasNextTier()) {
-                        index++;
+                    if (CompilerDirectives.hasNextTier() && loopCount < Integer.MAX_VALUE) {
+                        loopCount++;
                     }
                     accumulator = callback.execute(frame, callbackInliningTarget, storage, aIter, accumulator);
                 }
             } finally {
-                if (index != 0) {
-                    LoopNode.reportLoopCount(getIter, index);
+                if (loopCount != 0) {
+                    LoopNode.reportLoopCount(getIter, loopCount);
                 }
             }
             return accumulator;

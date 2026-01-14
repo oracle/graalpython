@@ -893,11 +893,13 @@ public final class MathModuleBuiltins extends PythonBuiltins {
             assert tpIternext != null;
 
             var acc = new XSum.SmallAccumulator();
-            int nbrIter = 0;
+            int loopCount = 0;
             while (true) {
                 try {
                     Object next = nextNodeCallNext.execute(frame, inliningTarget, tpIternext, iterator);
-                    nbrIter++;
+                    if (CompilerDirectives.hasNextTier() && loopCount < Integer.MAX_VALUE) {
+                        loopCount++;
+                    }
                     acc.add(asDoubleNode.execute(frame, inliningTarget, next));
                 } catch (IteratorExhausted e) {
                     break;
@@ -905,7 +907,7 @@ public final class MathModuleBuiltins extends PythonBuiltins {
                     e.expectStopIteration(inliningTarget, nextNodeStopIterationProfile);
                     break;
                 } finally {
-                    LoopNode.reportLoopCount(inliningTarget, nbrIter);
+                    LoopNode.reportLoopCount(inliningTarget, loopCount);
                 }
             }
 

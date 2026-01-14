@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -498,19 +498,21 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached PyIterNextNode nextNode,
                         @Cached PyObjectIsTrueNode isTrueNode) {
             Object iterator = getIter.execute(frame, inliningTarget, object);
-            int nbrIter = 0;
+            int loopCount = 0;
 
             while (true) {
                 try {
                     Object next = nextNode.execute(frame, inliningTarget, iterator);
-                    nbrIter++;
+                    if (CompilerDirectives.hasNextTier() && loopCount < Integer.MAX_VALUE) {
+                        loopCount++;
+                    }
                     if (!isTrueNode.execute(frame, next)) {
                         return false;
                     }
                 } catch (IteratorExhausted e) {
                     break;
                 } finally {
-                    LoopNode.reportLoopCount(inliningTarget, nbrIter);
+                    LoopNode.reportLoopCount(inliningTarget, loopCount);
                 }
             }
 
@@ -549,19 +551,21 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached PyIterNextNode nextNode,
                         @Cached PyObjectIsTrueNode isTrueNode) {
             Object iterator = getIter.execute(frame, inliningTarget, object);
-            int nbrIter = 0;
+            int loopCount = 0;
 
             while (true) {
                 try {
                     Object next = nextNode.execute(frame, inliningTarget, iterator);
-                    nbrIter++;
+                    if (CompilerDirectives.hasNextTier() && loopCount < Integer.MAX_VALUE) {
+                        loopCount++;
+                    }
                     if (isTrueNode.execute(frame, next)) {
                         return true;
                     }
                 } catch (IteratorExhausted e) {
                     break;
                 } finally {
-                    LoopNode.reportLoopCount(inliningTarget, nbrIter);
+                    LoopNode.reportLoopCount(inliningTarget, loopCount);
                 }
             }
 
@@ -1563,11 +1567,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         currentKey = nextKey;
                         currentValue = nextValue;
                     }
-                    loopCount++;
+                    if (CompilerDirectives.hasNextTier() && loopCount < Integer.MAX_VALUE) {
+                        loopCount++;
+                    }
                 } catch (IteratorExhausted e) {
                     break;
                 } finally {
-                    LoopNode.reportLoopCount(inliningTarget, loopCount < 0 ? Integer.MAX_VALUE : loopCount);
+                    LoopNode.reportLoopCount(inliningTarget, loopCount);
                 }
             }
 

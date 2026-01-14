@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,7 +45,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_FUNCTOOLS;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_FUNCTOOLS;
 import static com.oracle.graal.python.nodes.ErrorMessages.REDUCE_EMPTY_SEQ;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_ARG_N_MUST_SUPPORT_ITERATION;
-import static com.oracle.truffle.api.nodes.LoopNode.reportLoopCount;
 
 import java.util.List;
 
@@ -75,6 +74,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
@@ -136,7 +136,7 @@ public final class FunctoolsModuleBuiltins extends PythonBuiltins {
 
             Object[] args = new Object[2];
 
-            int count = 0;
+            int loopCount = 0;
             while (true) {
                 Object op2;
                 try {
@@ -152,11 +152,11 @@ public final class FunctoolsModuleBuiltins extends PythonBuiltins {
                     args[1] = op2;
                     result = callNode.execute(frame, function, args);
                 }
-                if (CompilerDirectives.hasNextTier()) {
-                    count++;
+                if (CompilerDirectives.hasNextTier() && loopCount < Integer.MAX_VALUE) {
+                    loopCount++;
                 }
             }
-            reportLoopCount(this, count >= 0 ? count : Integer.MAX_VALUE);
+            LoopNode.reportLoopCount(this, loopCount);
 
             if (result == null) {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, REDUCE_EMPTY_SEQ);
