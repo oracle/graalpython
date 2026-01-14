@@ -253,7 +253,6 @@ GraalPyPrivate_Log(int level, const char *format, ...)
 Py_LOCAL_SYMBOL int is_builtin_type(PyTypeObject *tp);
 
 
-#define JWRAPPER_DIRECT                      1
 #define JWRAPPER_FASTCALL                    2
 #define JWRAPPER_FASTCALL_WITH_KEYWORDS      3
 #define JWRAPPER_KEYWORDS                    4
@@ -306,8 +305,6 @@ Py_LOCAL_SYMBOL int is_builtin_type(PyTypeObject *tp);
 
 
 static inline int get_method_flags_wrapper(int flags) {
-    if (flags < 0)
-        return JWRAPPER_DIRECT;
     if ((flags & (METH_FASTCALL | METH_KEYWORDS | METH_METHOD)) == (METH_FASTCALL | METH_KEYWORDS | METH_METHOD))
         return JWRAPPER_METHOD;
     if ((flags & (METH_FASTCALL | METH_KEYWORDS)) == (METH_FASTCALL | METH_KEYWORDS))

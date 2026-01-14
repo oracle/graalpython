@@ -335,7 +335,6 @@ public abstract class ExternalFunctionNodes {
      * the definition in {code capi.h}.
      */
     public enum PExternalFunctionWrapper implements NativeCExtSymbol {
-        DIRECT(1, PyObjectReturn, PyObject, PyObject), // TODO: remove?
         FASTCALL(2, PyObjectReturn, PyObject, PyObjectConstArray, Py_ssize_t),
         FASTCALL_WITH_KEYWORDS(3, PyObjectTransfer, PyObject, PyObjectConstArray, Py_ssize_t, PyObject),
         KEYWORDS(4, PyObjectReturn, PyObject, PyObject, PyObject), // METH_VARARGS |
@@ -460,7 +459,6 @@ public abstract class ExternalFunctionNodes {
                     nodeKlass = AllocFuncRootNode.class;
                     rootNodeFunction = (l -> new AllocFuncRootNode(l, name, sig));
                     break;
-                case DIRECT:
                 case DESCR_SET:
                 case LENFUNC:
                 case HASHFUNC:
