@@ -222,7 +222,7 @@ public final class TpSlotMpAssSubscript {
             try {
                 int iresult = ExternalFunctionInvoker.invokeOBJOBJARGPROC(frame, C_API_TIMING, ctx.ensureNfiContext(), boundaryCallData, threadState, slot.callable,
                                 selfToNativeNode.executeLong(promotedSelf), keyToNativeNode.executeLong(promotedKey), valueToNativeNode.executeLong(promotedValue));
-                checkResultNode.execute(threadState, T___SETITEM__, iresult);
+                checkResultNode.executeBool(threadState, T___SETITEM__, iresult);
             } finally {
                 Reference.reachabilityFence(promotedSelf);
                 Reference.reachabilityFence(promotedKey);

@@ -140,7 +140,7 @@ public class DateNodes {
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
                         @Cached CExtNodes.PCallCapiFunction callCapiFunction,
-                        @Cached ExternalFunctionNodes.DefaultCheckFunctionResultNode checkFunctionResultNode,
+                        @Cached ExternalFunctionNodes.PyObjectCheckFunctionResultNode checkFunctionResultNode,
                         @Cached CApiTransitions.PythonToNativeNode toNativeNode,
                         @Cached CApiTransitions.NativeToPythonTransferNode fromNativeNode) {
             if (!needsNativeAllocationNode.execute(inliningTarget, cls)) {
@@ -148,8 +148,7 @@ public class DateNodes {
                 return new PDate(cls, shape, year, month, day);
             } else {
                 Object nativeResult = callCapiFunction.call(NativeCAPISymbol.FUN_DATE_SUBTYPE_NEW, toNativeNode.execute(cls), year, month, day);
-                checkFunctionResultNode.execute(PythonContext.get(inliningTarget), NativeCAPISymbol.FUN_DATE_SUBTYPE_NEW.getTsName(), nativeResult);
-                return fromNativeNode.execute(nativeResult);
+                return checkFunctionResultNode.execute(PythonContext.get(inliningTarget), NativeCAPISymbol.FUN_DATE_SUBTYPE_NEW.getTsName(), fromNativeNode.execute(nativeResult));
             }
         }
     }

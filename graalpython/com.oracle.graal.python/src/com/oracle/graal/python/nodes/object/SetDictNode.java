@@ -94,8 +94,8 @@ public abstract class SetDictNode extends PNodeWithContext {
                     @Cached(inline = false) CExtNodes.PCallCapiFunction callGetDictNode,
                     @Cached(inline = false) CheckPrimitiveFunctionResultNode checkResult) {
         assert !IsTypeNode.executeUncached(object);
-        Object result = callGetDictNode.call(FUN_PY_OBJECT_GENERIC_SET_DICT, objectToNative.executeLong(object), dictToNative.executeLong(dict), NULLPTR);
-        checkResult.execute(getContext(), FUN_PY_OBJECT_GENERIC_SET_DICT.getTsName(), result);
+        int result = (int) callGetDictNode.call(FUN_PY_OBJECT_GENERIC_SET_DICT, objectToNative.executeLong(object), dictToNative.executeLong(dict), NULLPTR);
+        checkResult.executeLong(getContext().getThreadState(getLanguage()), FUN_PY_OBJECT_GENERIC_SET_DICT.getTsName(), result);
         Reference.reachabilityFence(dict);
     }
 

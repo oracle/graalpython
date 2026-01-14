@@ -213,7 +213,7 @@ public abstract class TpSlotDescrSet {
                                 selfToNativeNode.executeLong(promotedSelf), //
                                 objToNativeNode.executeLong(promotedObj), //
                                 valueToNativeNode.executeLong(promotedValue));
-                checkResultNode.execute(threadState, T___SET__, iresult);
+                checkResultNode.executeInt(threadState, T___SET__, iresult);
             } finally {
                 Reference.reachabilityFence(promotedSelf);
                 Reference.reachabilityFence(promotedObj);

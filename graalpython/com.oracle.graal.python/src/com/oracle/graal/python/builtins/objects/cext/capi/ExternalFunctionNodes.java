@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.InitResult;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.InquiryResult;
@@ -58,7 +57,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ensureExecutable;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.wrapPointer;
 import static com.oracle.graal.python.builtins.objects.object.PythonObject.MANAGED_REFCNT;
-import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nfi2.NativeMemory.free;
 import static com.oracle.graal.python.nfi2.NativeMemory.readPtrArrayElement;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
@@ -71,16 +69,14 @@ import java.util.logging.Level;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PythonObjectArrayCreateNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PythonObjectArrayFreeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CreateArgsTupleNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ExternalFunctionWrapperInvokeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.PyObjectCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ReleaseNativeSequenceStorageNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CheckRawPointerFunctionResultNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ExternalFunctionWrapperInvokeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
@@ -112,7 +108,6 @@ import com.oracle.graal.python.nfi2.Nfi;
 import com.oracle.graal.python.nfi2.NfiBoundFunction;
 import com.oracle.graal.python.nfi2.NfiDowncallSignature;
 import com.oracle.graal.python.nfi2.NfiType;
-import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -122,6 +117,7 @@ import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
+import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
@@ -130,6 +126,7 @@ import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
+import com.oracle.graal.python.runtime.PythonContextFactory.GetThreadStateNodeGen;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStorage;
@@ -142,7 +139,6 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
@@ -158,9 +154,9 @@ import com.oracle.truffle.api.dsl.InlineSupport.RequiredField;
 import com.oracle.truffle.api.dsl.InlineSupport.StateField;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
@@ -653,19 +649,11 @@ public abstract class ExternalFunctionNodes {
         }
 
         CheckFunctionResultNode createCheckFunctionResultNode() {
-            CheckFunctionResultNode node = returnValue.createCheckResultNode();
-            if (node == null && returnValue.getNFI2Type() == NfiType.RAW_POINTER) {
-                return CheckRawPointerFunctionResultNodeGen.create();
-            }
-            return node;
+            return returnValue.createCheckResultNode();
         }
 
         CheckFunctionResultNode getUncachedCheckFunctionResultNode() {
-            CheckFunctionResultNode node = returnValue.getUncachedCheckResultNode();
-            if (node == null && returnValue.getNFI2Type() == NfiType.RAW_POINTER) {
-                return CheckRawPointerFunctionResultNodeGen.getUncached();
-            }
-            return node;
+            return returnValue.getUncachedCheckResultNode();
         }
 
         CExtToJavaNode createConvertRetNode() {
@@ -2011,97 +1999,13 @@ public abstract class ExternalFunctionNodes {
     @ImportStatic(PGuards.class)
     @GenerateUncached
     @GenerateInline(false)
-    public abstract static class DefaultCheckFunctionResultNode extends CheckFunctionResultNode {
-
-        @Specialization(guards = "isNoValue(result)")
-        static Object doNoValue(PythonThreadState state, TruffleString name, @SuppressWarnings("unused") PNone result,
-                        @Bind Node inliningTarget,
-                        @Shared @Cached TransformExceptionFromNativeNode transformExceptionFromNativeNode) {
-            transformExceptionFromNativeNode.execute(inliningTarget, state, name, true, true);
-            return PNone.NO_VALUE;
-        }
-
-        @Specialization(guards = "!isNoValue(result)")
-        static Object doPythonObject(PythonThreadState state, TruffleString name, @SuppressWarnings("unused") PythonAbstractObject result,
-                        @Bind Node inliningTarget,
-                        @Shared @Cached TransformExceptionFromNativeNode transformExceptionFromNativeNode) {
-            transformExceptionFromNativeNode.execute(inliningTarget, state, name, false, true);
-            return result;
-        }
-
-        @Specialization
-        static Object doNativePointer(PythonThreadState state, TruffleString name, NativePointer result,
-                        @Bind Node inliningTarget,
-                        @Shared @Cached TransformExceptionFromNativeNode transformExceptionFromNativeNode) {
-            transformExceptionFromNativeNode.execute(inliningTarget, state, name, result.isNull(), true);
-            return result;
-        }
-
-        @Specialization
-        static int doInteger(PythonThreadState state, TruffleString name, int result,
-                        @Bind Node inliningTarget,
-                        @Shared @Cached TransformExceptionFromNativeNode transformExceptionFromNativeNode) {
-            /*
-             * If the native functions returns a primitive int, only a value '-1' indicates an
-             * error. However, '-1' may also be a valid return value. So, don't be strict.
-             */
-            transformExceptionFromNativeNode.execute(inliningTarget, state, name, result == -1, false);
-            return result;
-        }
-
-        @Specialization
-        static long doLong(PythonThreadState state, TruffleString name, long result,
-                        @Bind Node inliningTarget,
-                        @Shared @Cached TransformExceptionFromNativeNode transformExceptionFromNativeNode) {
-            /*
-             * If the native functions returns a primitive long, only a value '-1' indicates an
-             * error. However, '-1' may also be a valid return value. So, don't be strict.
-             */
-            transformExceptionFromNativeNode.execute(inliningTarget, state, name, result == -1, false);
-            return result;
-        }
-
-        /*
-         * Our fallback case, but with some cached params. PythonNativeWrapper results should be
-         * unwrapped and recursively delegated (see #doNativeWrapper) and PNone is treated
-         * specially, because we consider it as null in #doNoValue and as not null in
-         * #doPythonObject
-         */
-        @Specialization(guards = {"!isPNone(result)"})
-        static Object doForeign(PythonThreadState state, TruffleString name, Object result,
-                        @Bind Node inliningTarget,
-                        @Shared @Cached TransformExceptionFromNativeNode transformExceptionFromNativeNode,
-                        @Exclusive @CachedLibrary(limit = "3") InteropLibrary lib) {
-            transformExceptionFromNativeNode.execute(inliningTarget, state, name, lib.isNull(result), true);
-            return result;
-        }
-
-        public static DefaultCheckFunctionResultNode getUncached() {
-            return DefaultCheckFunctionResultNodeGen.getUncached();
-        }
-    }
-
-    // roughly equivalent to _Py_CheckFunctionResult in Objects/call.c, but only for functions
-    // returning raw pointers (primitive long)
-    @ImportStatic(PGuards.class)
-    @GenerateUncached
-    @GenerateInline(false)
-    public abstract static class CheckRawPointerFunctionResultNode extends CheckFunctionResultNode {
-
-        @Specialization
-        static Object doNativePointer(PythonThreadState state, TruffleString name, long result,
-                        @Bind Node inliningTarget,
-                        @Cached TransformExceptionFromNativeNode transformExceptionFromNativeNode) {
-            transformExceptionFromNativeNode.execute(inliningTarget, state, name, result == NULLPTR, true);
-            return result;
-        }
-    }
-
-    // roughly equivalent to _Py_CheckFunctionResult in Objects/call.c
-    @ImportStatic(PGuards.class)
-    @GenerateUncached
-    @GenerateInline(false)
     public abstract static class PyObjectCheckFunctionResultNode extends CheckFunctionResultNode {
+
+        @TruffleBoundary
+        public static Object executeUncached(TruffleString name, Object result) {
+            return PyObjectCheckFunctionResultNodeGen.getUncached().execute(PythonContext.get(null), name, result);
+        }
+
         @Specialization(guards = "!isForeignObject.execute(inliningTarget, result)")
         static Object doPythonObject(PythonThreadState state, TruffleString name, Object result,
                         @Bind Node inliningTarget,
@@ -2136,11 +2040,11 @@ public abstract class ExternalFunctionNodes {
     public abstract static class CheckIterNextResultNode extends CheckFunctionResultNode {
 
         @Specialization
-        static long doGeneric(PythonThreadState state, @SuppressWarnings("unused") TruffleString name, long result,
+        static Object doGeneric(PythonThreadState state, @SuppressWarnings("unused") TruffleString name, Object result,
                         @Bind Node inliningTarget,
                         @Cached CExtCommonNodes.ReadAndClearNativeException readAndClearNativeException,
                         @Cached PRaiseNode raiseNode) {
-            if (result == NULLPTR) {
+            if (result == PNone.NO_VALUE) {
                 Object currentException = readAndClearNativeException.execute(inliningTarget, state);
                 // if no exception occurred, the iterator is exhausted -> raise StopIteration
                 if (currentException == PNone.NO_VALUE) {
@@ -2169,35 +2073,16 @@ public abstract class ExternalFunctionNodes {
     @GenerateInline(false)
     @GenerateUncached
     public abstract static class InitCheckFunctionResultNode extends CheckFunctionResultNode {
+
+        public abstract PNone executeInt(PythonThreadState threadState, TruffleString name, int result);
+
         @Specialization
         @SuppressWarnings("unused")
-        static Object doInt(PythonThreadState state, TruffleString name, int result,
+        static PNone doInt(PythonThreadState state, TruffleString name, int result,
                         @Bind Node inliningTarget,
-                        @Shared @Cached TransformExceptionFromNativeNode transformExceptionFromNativeNode) {
+                        @Cached TransformExceptionFromNativeNode transformExceptionFromNativeNode) {
             transformExceptionFromNativeNode.execute(inliningTarget, state, name, result < 0, true);
             return PNone.NONE;
-        }
-
-        // Slow path
-        @Specialization(replaces = "doInt")
-        @InliningCutoff
-        static Object notNumber(PythonThreadState state, @SuppressWarnings("unused") TruffleString name, Object result,
-                        @Bind Node inliningTarget,
-                        @CachedLibrary(limit = "2") InteropLibrary lib,
-                        @Shared @Cached TransformExceptionFromNativeNode transformExceptionFromNativeNode) {
-            int ret = 0;
-            if (lib.isNumber(result)) {
-                try {
-                    ret = lib.asInt(result);
-                    if (ret >= 0) {
-                        return PNone.NONE;
-                    }
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
-                }
-            }
-            transformExceptionFromNativeNode.execute(inliningTarget, state, name, ret < 0, true);
-            return result;
         }
     }
 
@@ -2213,36 +2098,18 @@ public abstract class ExternalFunctionNodes {
      * This is the case for {@code wrap_delitem}, {@code wrap_objobjargproc},
      * {@code wrap_sq_delitem}, {@code wrap_sq_setitem}, {@code asdf}.
      */
-    @ImportStatic(PGuards.class)
     @GenerateUncached
     @GenerateInline(false)
+    @TypeSystemReference(PythonIntegerTypes.class)
     public abstract static class CheckPrimitiveFunctionResultNode extends CheckFunctionResultNode {
-        public abstract long executeLong(PythonThreadState threadState, TruffleString name, Object result);
+        public abstract long executeLong(PythonThreadState threadState, TruffleString name, long result);
 
         @Specialization
         static long doLong(PythonThreadState threadState, TruffleString name, long result,
                         @Bind Node inliningTarget,
-                        @Shared @Cached TransformExceptionFromNativeNode transformExceptionFromNativeNode) {
+                        @Cached TransformExceptionFromNativeNode transformExceptionFromNativeNode) {
             transformExceptionFromNativeNode.execute(inliningTarget, threadState, name, result == -1, false);
             return result;
-        }
-
-        @Specialization(replaces = "doLong")
-        @InliningCutoff
-        static long doGeneric(PythonThreadState threadState, TruffleString name, Object result,
-                        @Bind Node inliningTarget,
-                        @CachedLibrary(limit = "2") InteropLibrary lib,
-                        @Shared @Cached TransformExceptionFromNativeNode transformExceptionFromNativeNode) {
-            if (lib.fitsInLong(result)) {
-                try {
-                    long ret = lib.asLong(result);
-                    transformExceptionFromNativeNode.execute(inliningTarget, threadState, name, ret == -1, false);
-                    return ret;
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
-                }
-            }
-            throw CompilerDirectives.shouldNotReachHere("expected primitive function result but does not fit into Java long");
         }
     }
 
@@ -2261,30 +2128,10 @@ public abstract class ExternalFunctionNodes {
         @Specialization
         static boolean doLong(PythonThreadState threadState, TruffleString name, int result,
                         @Bind Node inliningTarget,
-                        @Shared @Cached InlinedConditionProfile resultProfile,
-                        @Shared @Cached TransformExceptionFromNativeNode transformExceptionFromNativeNode) {
+                        @Cached InlinedConditionProfile resultProfile,
+                        @Cached TransformExceptionFromNativeNode transformExceptionFromNativeNode) {
             transformExceptionFromNativeNode.execute(inliningTarget, threadState, name, result == -1, false);
             return resultProfile.profile(inliningTarget, result != 0);
-        }
-
-        @Specialization(replaces = "doLong")
-        @InliningCutoff
-        static boolean doGeneric(PythonThreadState threadState, TruffleString name, Object result,
-                        @Bind Node inliningTarget,
-                        @Shared @Cached InlinedConditionProfile resultProfile,
-                        @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Shared @Cached TransformExceptionFromNativeNode transformExceptionFromNativeNode) {
-            if (lib.fitsInInt(result)) {
-                try {
-                    int iresult = lib.asInt(result);
-                    transformExceptionFromNativeNode.execute(inliningTarget, threadState, name, iresult == -1, false);
-                    return resultProfile.profile(inliningTarget, iresult != 0);
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere();
-                }
-            }
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw PRaiseNode.raiseStatic(inliningTarget, SystemError, ErrorMessages.FUNC_DIDNT_RETURN_INT, name);
         }
     }
 }

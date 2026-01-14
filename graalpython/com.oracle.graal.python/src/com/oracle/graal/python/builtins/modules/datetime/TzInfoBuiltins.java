@@ -60,9 +60,10 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -79,7 +80,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -112,11 +112,9 @@ public final class TzInfoBuiltins extends PythonBuiltins {
             if (!needsNativeAllocationNode.execute(inliningTarget, cls)) {
                 return new PTzInfo(cls, getInstanceShape.execute(cls));
             } else {
-                PythonContext context = PythonContext.get(null);
                 CApiTransitions.PythonToNativeNode toNative = CApiTransitions.PythonToNativeNode.getUncached();
                 long nativeResult = (long) CExtNodes.PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_PY_TYPE_GENERIC_NEW, toNative.execute(cls), NULLPTR, NULLPTR);
-                ExternalFunctionNodes.DefaultCheckFunctionResultNode.getUncached().execute(context, NativeCAPISymbol.FUN_PY_TYPE_GENERIC_NEW.getTsName(), nativeResult);
-                return CApiTransitions.NativeToPythonTransferNode.executeRawUncached(nativeResult);
+                return PyObjectCheckFunctionResultNode.executeUncached(NativeCAPISymbol.FUN_PY_TYPE_GENERIC_NEW.getTsName(), NativeToPythonTransferNode.executeRawUncached(nativeResult));
             }
         }
     }

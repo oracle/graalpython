@@ -50,9 +50,10 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
@@ -64,7 +65,6 @@ import com.oracle.graal.python.lib.PyNumberMultiplyNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.util.CastToJavaBigIntegerNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -174,8 +174,7 @@ public class TimeDeltaNodes {
             } else {
                 long nativeResult = (long) CExtNodes.PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_TIMEDELTA_SUBTYPE_NEW,
                                 CApiTransitions.PythonToNativeNode.executeLongUncached(cls), daysNormalized, secondsNormalized, microsecondsNormalized);
-                ExternalFunctionNodes.DefaultCheckFunctionResultNode.getUncached().execute(PythonContext.get(null), NativeCAPISymbol.FUN_TIMEDELTA_SUBTYPE_NEW.getTsName(), nativeResult);
-                return CApiTransitions.NativeToPythonTransferNode.executeRawUncached(nativeResult);
+                return PyObjectCheckFunctionResultNode.executeUncached(NativeCAPISymbol.FUN_TIMEDELTA_SUBTYPE_NEW.getTsName(), NativeToPythonTransferNode.executeRawUncached(nativeResult));
             }
         }
 

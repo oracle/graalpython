@@ -85,6 +85,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuil
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.capsule.PyCapsule;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.PyObjectCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.FirstToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
@@ -1203,9 +1204,7 @@ public final class CApiContext extends CExtContext {
         }
         long nativeResult = (long) MODINIT_SIGNATURE.invoke(context.ensureNfiContext(), pyinitFunc);
 
-        ExternalFunctionNodesFactory.CheckRawPointerFunctionResultNodeGen.getUncached().execute(context, initFuncName, nativeResult);
-
-        Object result = NativeToPythonNode.executeUncached(nativeResult);
+        Object result = PyObjectCheckFunctionResultNodeGen.getUncached().execute(context, initFuncName, NativeToPythonNode.executeUncached(nativeResult));
         if (!(result instanceof PythonModule)) {
             // Multi-phase extension module initialization
 

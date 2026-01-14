@@ -225,7 +225,7 @@ public class DateTimeNodes {
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached TypeNodes.NeedsNativeAllocationNode needsNativeAllocationNode,
                         @Cached CExtNodes.PCallCapiFunction callCapiFunction,
-                        @Cached ExternalFunctionNodes.DefaultCheckFunctionResultNode checkFunctionResultNode,
+                        @Cached ExternalFunctionNodes.PyObjectCheckFunctionResultNode checkFunctionResultNode,
                         @Cached CApiTransitions.PythonToNativeNode toNativeNode,
                         @Cached CApiTransitions.NativeToPythonTransferNode fromNativeNode) {
             // create DateTime without thorough validation
@@ -248,8 +248,7 @@ public class DateTimeNodes {
             } else {
                 Object nativeResult = callCapiFunction.call(NativeCAPISymbol.FUN_DATETIME_SUBTYPE_NEW,
                                 toNativeNode.execute(cls), year, month, day, hour, minute, second, microsecond, toNativeNode.execute(tzInfo != null ? tzInfo : PNone.NO_VALUE), fold);
-                checkFunctionResultNode.execute(PythonContext.get(inliningTarget), NativeCAPISymbol.FUN_DATETIME_SUBTYPE_NEW.getTsName(), nativeResult);
-                return fromNativeNode.execute(nativeResult);
+                return checkFunctionResultNode.execute(PythonContext.get(inliningTarget), NativeCAPISymbol.FUN_DATETIME_SUBTYPE_NEW.getTsName(), fromNativeNode.execute(nativeResult));
             }
         }
     }
