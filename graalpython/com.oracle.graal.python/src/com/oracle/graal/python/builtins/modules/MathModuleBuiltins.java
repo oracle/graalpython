@@ -108,6 +108,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
@@ -874,18 +875,20 @@ public final class MathModuleBuiltins extends PythonBuiltins {
                         @Cached PyObjectGetIter getIter,
                         @Cached PyIterNextNode nextNode,
                         @Cached PyFloatAsDoubleNode asDoubleNode,
-                        @Cached InlinedLoopConditionProfile loopProfile,
                         @Cached PRaiseNode raiseNode) {
             Object iterator = getIter.execute(frame, inliningTarget, iterable);
 
-            boolean exhausted = false;
             var acc = new XSum.SmallAccumulator();
-            while (loopProfile.profile(inliningTarget, !exhausted)) {
+            int nbrIter = 0;
+            while (true) {
                 try {
                     Object next = nextNode.execute(frame, inliningTarget, iterator);
+                    nbrIter++;
                     acc.add(asDoubleNode.execute(frame, inliningTarget, next));
                 } catch (IteratorExhausted e) {
-                    exhausted = true;
+                    break;
+                } finally {
+                    LoopNode.reportLoopCount(inliningTarget, nbrIter);
                 }
             }
 
