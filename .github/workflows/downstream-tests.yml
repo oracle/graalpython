@@ -5,7 +5,17 @@ on:
   workflow_dispatch:
 
 jobs:
+
+  build-standalone-artifacts:
+    if: github.event.pull_request.draft == false
+    uses: ./.github/workflows/ci-matrix-gen.yml
+    with:
+      jobs_to_run: ^(?=.*python-svm-build-gate-linux-amd64).*$
+      logs_retention_days: 0
+      artifacts_retention_days: 0
+
   downstream-tests:
+    needs: build-standalone-artifacts
     strategy:
       fail-fast: false
       matrix:
@@ -25,6 +35,9 @@ jobs:
           arch: aarch64
 
     runs-on: ${{ matrix.os.id }}
+    env:
+        ARTIFACT_PATH: graalpy-native-standalone{{ matrix.os.platform }}
+        ARTIFACT_PATH_PREFIX: graalpynative
 
     steps:
     - name: Install CMake (Linux)
@@ -58,9 +71,23 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Get GraalPy EA build
+      if: ${{ matrix.os.platform == 'darwin' }}
       run: |
         tarball="$(curl -sfL https://raw.githubusercontent.com/graalvm/graal-languages-ea-builds/refs/heads/main/graalpy/versions/latest-native-${{ matrix.os.platform }}-${{ matrix.os.arch}}.url)"
         curl -sfL "$tarball" | tar xz
+
+    - name: Get GraalPy build artifact
+      if: ${{ matrix.os.platform == 'linux' }}
+      uses: actions/download-artifact@v5
+      with:
+        name: graalpy-native-standalonelinux
+        path: ${{ env.ARTIFACT_PATH_PREFIX }}
+
+    - name: Unpack GraalPy build artifact
+      if: ${{ matrix.os.platform == 'linux' }}
+      run: |
+        ./.github/scripts/unpack-artifact graalpy-native-standalonelinux
+        mv $ARTIFACT_PATH_PREFIX/main/mxbuild/linux-amd64/GRAALPY_NATIVE_STANDALONE/ graalpy-native-standalone
 
     - name: Run downstream tests for ${{ matrix.name }}
       run: python mx.graalpython/downstream_tests.py graalpy-*/bin/python ${{ matrix.name }}
