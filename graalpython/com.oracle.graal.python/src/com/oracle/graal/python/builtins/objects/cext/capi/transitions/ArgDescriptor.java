@@ -61,14 +61,6 @@ import com.oracle.graal.python.nfi2.NfiType;
 import com.oracle.graal.python.util.Supplier;
 
 enum ArgBehavior {
-    PyObjectYYY(
-                    NfiType.POINTER,
-                    PythonToNativeNode::create,
-                    NativeToPythonNode::create,
-                    NativeToPythonNode.getUncached(),
-                    PythonToNativeNewRefNode::create,
-                    NativeToPythonTransferNode::create,
-                    NativeToPythonTransferNode.getUncached()),
     PyObject(
                     NfiType.RAW_POINTER,
                     PythonToNativeNode::create,
@@ -87,7 +79,6 @@ enum ArgBehavior {
                     PythonToNativeNewRefNode::create,
                     NativeToPythonTransferNode::create,
                     NativeToPythonTransferNode.getUncached()),
-    PointerYYY(NfiType.POINTER),
     Pointer(NfiType.RAW_POINTER),
     TruffleStringPointer(NfiType.RAW_POINTER, null, CharPtrToPythonNode::create, CharPtrToPythonNode.getUncached()),
     Char8(NfiType.SINT8),
@@ -135,11 +126,9 @@ enum ArgBehavior {
 public enum ArgDescriptor {
     Void(ArgBehavior.Void, "void"),
     VoidNoReturn(ArgBehavior.Void, "void"),
-    PyObjectYYY(ArgBehavior.PyObjectYYY, "PyObject*"),
     PyObject(ArgBehavior.PyObject, "PyObject*"),
     PyObjectBorrowed(ArgBehavior.PyObjectBorrowed, "PyObject*"),
     PyObjectAsTruffleString(ArgBehavior.PyObjectAsTruffleString, "PyObject*"),
-    PyTypeObjectYYY(ArgBehavior.PyObjectYYY, "PyTypeObject*"),
     PyTypeObject(ArgBehavior.PyTypeObject, "PyTypeObject*"),
     PyTypeObjectBorrowed(ArgBehavior.PyObjectBorrowed, "PyTypeObject*"),
     PyTypeObjectTransfer(ArgBehavior.PyObject, "PyTypeObject*", true, false),
@@ -148,9 +137,8 @@ public enum ArgDescriptor {
     PyMethodObject(ArgBehavior.PyObject, "PyMethodObject*"),
     PyInstanceMethodObject(ArgBehavior.PyObject, "PyInstanceMethodObject*"),
     PyObjectTransfer(ArgBehavior.PyObject, "PyObject*", true, false),
-    PyObjectReturn(ArgBehavior.PyObjectYYY, "PyObject*", true, true),
+    PyObjectReturn(ArgBehavior.PyObject, "PyObject*", true, true),
     PyObjectRawPointer(ArgBehavior.Pointer, "PyObject*"),
-    PointerYYY(ArgBehavior.PointerYYY, "void*"),
     Pointer(ArgBehavior.Pointer, "void*"),
     Py_ssize_t(ArgBehavior.Int64, "Py_ssize_t"),
     Py_hash_t(ArgBehavior.Int64, "Py_hash_t"),
@@ -482,21 +470,21 @@ public enum ArgDescriptor {
 
     public boolean isPyObjectOrPointer() {
         return switch (behavior) {
-            case PyObject, PyObjectYYY, PyTypeObject, PyObjectBorrowed, PointerYYY, Pointer, TruffleStringPointer -> true;
+            case PyObject, PyTypeObject, PyObjectBorrowed, Pointer, TruffleStringPointer -> true;
             default -> false;
         };
     }
 
     public boolean isPointer() {
         return switch (behavior) {
-            case PointerYYY, Pointer, TruffleStringPointer -> true;
+            case Pointer, TruffleStringPointer -> true;
             default -> false;
         };
     }
 
     public boolean isPyObject() {
         return switch (behavior) {
-            case PyObject, PyObjectYYY, PyObjectBorrowed, PyTypeObject -> true;
+            case PyObject, PyObjectBorrowed, PyTypeObject -> true;
             default -> false;
         };
     }
