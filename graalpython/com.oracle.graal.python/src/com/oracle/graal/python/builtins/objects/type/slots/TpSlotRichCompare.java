@@ -42,7 +42,7 @@ package com.oracle.graal.python.builtins.objects.type.slots;
 
 import static com.oracle.graal.python.builtins.objects.type.slots.BuiltinSlotWrapperSignature.J_DOLLAR_SELF;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J_TP_RICHCOMPARE;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___HASH__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T_TP_RICHCOMPARE;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.lang.ref.Reference;
@@ -257,7 +257,7 @@ public abstract class TpSlotRichCompare {
             try {
                 long lresult = ExternalFunctionInvoker.invokeRICHCMPFUNC(frame, C_API_TIMING, ctx.ensureNfiContext(), boundaryCallData, state, slot.callable,
                                 toNativeNodeA.executeLong(promotedA), toNativeNodeB.executeLong(promotedB), op.asNative());
-                return checkResultNode.execute(state, T___HASH__, toPythonNode.execute(inliningTarget, lresult, true));
+                return checkResultNode.execute(state, T_TP_RICHCOMPARE, toPythonNode.execute(inliningTarget, lresult, true));
             } finally {
                 Reference.reachabilityFence(promotedA);
                 Reference.reachabilityFence(promotedB);
