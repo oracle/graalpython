@@ -64,7 +64,11 @@ public final class NfiBoundFunction {
         return ptr;
     }
 
-    @TruffleBoundary
+    public NfiDowncallSignature getSignature() {
+        return signature;
+    }
+
+    @TruffleBoundary(allowInlining = true)
     public Object invoke(Object... args) {
         assert signature.checkArgTypes(args);
         Object result;

@@ -51,6 +51,11 @@ public final class NfiBoundFunction {
         throw new UnsupportedOperationException();
     }
 
+    @SuppressWarnings("static-method")
+    public NfiDowncallSignature getSignature() {
+        throw new UnsupportedOperationException();
+    }
+
     @SuppressWarnings({"unused", "static-method"})
     public Object invoke(Object... args) {
         throw new UnsupportedOperationException();

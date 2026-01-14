@@ -45,11 +45,15 @@ import java.lang.foreign.Linker;
 import java.lang.foreign.MemorySegment;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
+import java.lang.ref.Reference;
+import java.util.Arrays;
+import java.util.Objects;
 
 import org.graalvm.nativeimage.DowncallDescriptor;
 import org.graalvm.nativeimage.ForeignFunctions;
 import org.graalvm.nativeimage.ImageInfo;
 
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public final class NfiDowncallSignature {
@@ -86,9 +90,22 @@ public final class NfiDowncallSignature {
         return new NfiBoundFunction(pointer, downcallMethodHandle.bindTo(MemorySegment.ofAddress(pointer)), this);
     }
 
-    @TruffleBoundary
-    public Object invoke(NfiContext context, long function, Object... args) {
-        return bind(context, function).invoke(args);
+    @TruffleBoundary(allowInlining = true)
+    public Object invoke(@SuppressWarnings("unused") NfiContext context, long function, Object... args) {
+        assert checkArgTypes(args);
+        Object result;
+        try {
+            if (ImageInfo.inImageCode()) {
+                result = ForeignFunctions.invoke(downcallDescriptor, function, args);
+            } else {
+                result = downcallMethodHandle.invokeExact(MemorySegment.ofAddress(function), args);
+            }
+        } catch (Throwable e) {
+            throw CompilerDirectives.shouldNotReachHere(e);
+        } finally {
+            Reference.reachabilityFence(args);
+        }
+        return convertResult(result);
     }
 
     boolean checkArgTypes(Object[] args) {
@@ -124,5 +141,18 @@ public final class NfiDowncallSignature {
         sb.append("): ");
         sb.append(resType);
         return sb.toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass())
+            return false;
+        NfiDowncallSignature that = (NfiDowncallSignature) o;
+        return resType == that.resType && Objects.deepEquals(argTypes, that.argTypes);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(resType, Arrays.hashCode(argTypes));
     }
 }
