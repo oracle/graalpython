@@ -19,7 +19,7 @@ partial_splits_individual_tests = true
 # Windows support is still experimental, so we exclude some unittests
 # on Windows for now. If you add unittests and cannot get them to work
 # on Windows, yet, add their files here.
-exclude_on = ['win32']
+exclude_on = ['win32', 'win32-github']
 selector = [
     "test_multiprocessing_graalpy.py", # import _winapi
     "test_pathlib.py",
@@ -34,7 +34,7 @@ selector = [
 ]
 
 [[test_rules]]
-exclude_on = ['native-image']
+exclude_on = ['native_image', 'native_image-github']
 selector = [
     "test_interop.py",
     "test_register_interop_behavior.py",
@@ -43,7 +43,7 @@ selector = [
 ]
 
 [[test_rules]]
-exclude_on = ['jvm']
+exclude_on = ['jvm', 'jvm-github']
 selector = [
     # These test would work on JVM too, but they are prohibitively slow due to a large amount of subprocesses
     "test_patched_pip.py",
