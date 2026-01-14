@@ -38,7 +38,7 @@ repos:
     language: python
     types: [text]
     files: '\.(java|py|md|c|h|sh)$'
-    exclude: '^graalpython/lib-python/.*'
+    exclude: '^graalpython/lib-python/.*|graalpython/com.oracle.graal.python.pegparser/src/com/oracle/graal/python/pegparser/Parser.java'
   - id: check-toml
     exclude: '^graalpython/lib-python/.*'
   - id: check-added-large-files
