@@ -49,6 +49,9 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNext;
 import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.PyBoolCheckNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
@@ -869,23 +872,37 @@ public final class MathModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "fsum", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class FsumNode extends PythonUnaryBuiltinNode {
+
+        /**
+         * Note: this specialization uses an inlined version of {@link PyIterNextNode} with the
+         * tp_iternext slot moved out of the loop.
+         */
         @Specialization
         static double doIt(VirtualFrame frame, Object iterable,
                         @Bind Node inliningTarget,
                         @Cached PyObjectGetIter getIter,
-                        @Cached PyIterNextNode nextNode,
+                        @Cached GetClassNode nextNodeGetClassNode,
+                        @Cached TpSlots.GetCachedTpSlotsNode nextNodeGetSlots,
+                        @Cached TpSlotIterNext.CallSlotTpIterNextNode nextNodeCallNext,
+                        @Cached IsBuiltinObjectProfile nextNodeStopIterationProfile,
                         @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Cached PRaiseNode raiseNode) {
             Object iterator = getIter.execute(frame, inliningTarget, iterable);
+
+            TpSlot tpIternext = nextNodeGetSlots.execute(inliningTarget, nextNodeGetClassNode.execute(inliningTarget, iterator)).tp_iternext();
+            assert tpIternext != null;
 
             var acc = new XSum.SmallAccumulator();
             int nbrIter = 0;
             while (true) {
                 try {
-                    Object next = nextNode.execute(frame, inliningTarget, iterator);
+                    Object next = nextNodeCallNext.execute(frame, inliningTarget, tpIternext, iterator);
                     nbrIter++;
                     acc.add(asDoubleNode.execute(frame, inliningTarget, next));
                 } catch (IteratorExhausted e) {
+                    break;
+                } catch (PException e) {
+                    e.expectStopIteration(inliningTarget, nextNodeStopIterationProfile);
                     break;
                 } finally {
                     LoopNode.reportLoopCount(inliningTarget, nbrIter);
