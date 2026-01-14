@@ -15,6 +15,7 @@ jobs:
         - pyo3
         - pydantic-core
         - jiter
+        - cython
         os:
         - id: ubuntu-latest
           platform: linux
