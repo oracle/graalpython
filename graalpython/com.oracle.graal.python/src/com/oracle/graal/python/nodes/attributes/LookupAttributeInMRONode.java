@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -71,6 +71,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
@@ -215,17 +216,23 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
         // Put a new assumption in place in case the MRO changes during the lookup
         MroSequenceStorage.FinalAttributeAssumptionPair assumptionPair = new MroSequenceStorage.FinalAttributeAssumptionPair();
         mro.putFinalAttributeAssumption(key, assumptionPair);
+        EncapsulatingNodeReference nodeRef = EncapsulatingNodeReference.getCurrent();
+        Node prev = nodeRef.set(this);
         Object result = PNone.NO_VALUE;
-        for (int i = 0; i < mro.length(); i++) {
-            PythonAbstractClass clsObj = mro.getPythonClassItemNormalized(i);
-            if (skipNonStaticBase(clsObj, skipNonStaticBases)) {
-                continue;
+        try {
+            for (int i = 0; i < mro.length(); i++) {
+                PythonAbstractClass clsObj = mro.getPythonClassItemNormalized(i);
+                if (skipNonStaticBase(clsObj, skipNonStaticBases)) {
+                    continue;
+                }
+                Object value = ReadAttributeFromObjectNode.getUncached().execute(clsObj, key);
+                if (value != PNone.NO_VALUE) {
+                    result = value;
+                    break;
+                }
             }
-            Object value = ReadAttributeFromObjectNode.getUncached().execute(clsObj, key);
-            if (value != PNone.NO_VALUE) {
-                result = value;
-                break;
-            }
+        } finally {
+            nodeRef.set(prev);
         }
         if (assumptionPair.getAssumption() == null) {
             // MRO changed during lookup. To avoid reexecuting the side-effects, return via
