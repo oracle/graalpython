@@ -175,7 +175,7 @@ def downstream_test_cython(graalpy, testdir):
     env = os.environ.copy()
     env["BACKEND"] = "c"
     env["PYTHON_VERSION"] = "graalpy"
-    env["NO_CYTHON_COMPILER"] = "1"
+    env["NO_CYTHON_COMPILE"] = "1"
     run([graalpy, '-m', 'venv', str(venv)])
     run_in_venv(venv, ["bash", "./Tools/ci-run.sh"], cwd=src, env=env)
 
