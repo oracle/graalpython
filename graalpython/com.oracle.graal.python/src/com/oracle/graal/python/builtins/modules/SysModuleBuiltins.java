@@ -126,12 +126,14 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_JAVA;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LITTLE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NEWLINE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_PREFIX;
+import static com.oracle.graal.python.nodes.StringLiterals.T_SPACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRING_SOURCE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_SURROGATEESCAPE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_VALUE_UNKNOWN;
 import static com.oracle.graal.python.nodes.StringLiterals.T_VERSION;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.toIntError;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsInternedLiteral;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -174,6 +176,8 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.exception.GetEscapedExceptionNode;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
+import com.oracle.graal.python.builtins.objects.exception.PBaseExceptionGroup;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -192,6 +196,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.lib.OsEnvironGetNode;
+import com.oracle.graal.python.lib.PyExceptionGroupInstanceCheckNode;
 import com.oracle.graal.python.lib.PyExceptionInstanceCheckNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyFloatCheckExactNode;
@@ -1250,7 +1255,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
             }
 
             if (excTb != PNone.NONE) {
-                PyTraceBackPrint.print(inliningTarget, getTbFrameNode, materializeStNode, sys, out, excTb);
+                PyTraceBackPrint.print(inliningTarget, getTbFrameNode, materializeStNode, sys, out, excTb, false, 0, null);
             }
 
             if (excType == PNone.NONE) {
@@ -1343,6 +1348,9 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         static final TruffleString T_ATTR_LINENO = tsInternedLiteral("lineno");
         static final TruffleString T_ATTR_OFFSET = tsInternedLiteral("offset");
         static final TruffleString T_ATTR_TEXT = tsInternedLiteral("text");
+
+        protected static final int INT_MAX_GROUP_WIDTH = 15;
+        protected static final int INT_MAX_GROUP_DEPTH = 10;
 
         @ValueType
         static final class SyntaxErrData {
@@ -1474,7 +1482,13 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         void printExceptionRecursive(Node inliningTarget, TracebackBuiltins.GetTracebackFrameNode getTbFrameNode, TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStNode,
-                        PythonModule sys, Object out, Object value, Set<Object> seen) {
+                                     PythonModule sys, Object out, Object value, Set<Object> seen) {
+            printExceptionRecursive(inliningTarget, getTbFrameNode, materializeStNode, sys, out, value, seen, 0, tsLiteral(""));
+        }
+
+        @TruffleBoundary
+        void printExceptionRecursive(Node inliningTarget, TracebackBuiltins.GetTracebackFrameNode getTbFrameNode, TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStNode,
+                        PythonModule sys, Object out, Object value, Set<Object> seen, int indent, TruffleString margin) {
             if (seen != null) {
                 // Exception chaining
                 add(seen, value);
@@ -1484,22 +1498,40 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
                     if (cause != PNone.NONE) {
                         if (notSeen(seen, cause)) {
-                            printExceptionRecursive(inliningTarget, getTbFrameNode, materializeStNode, sys, out, cause, seen);
+                            printExceptionRecursive(inliningTarget, getTbFrameNode, materializeStNode, sys, out, cause, seen, indent, margin);
                             fileWriteString(out, T_CAUSE_MESSAGE);
                         }
                     } else if (context != PNone.NONE && !ExceptionNodes.GetSuppressContextNode.executeUncached(value)) {
                         if (notSeen(seen, context)) {
-                            printExceptionRecursive(inliningTarget, getTbFrameNode, materializeStNode, sys, out, context, seen);
+                            printExceptionRecursive(inliningTarget, getTbFrameNode, materializeStNode, sys, out, context, seen, indent, margin);
                             fileWriteString(out, T_CONTEXT_MESSAGE);
                         }
                     }
                 }
             }
-            printException(inliningTarget, getTbFrameNode, materializeStNode, sys, out, value);
+            if (value instanceof PBaseExceptionGroup) {
+                printExceptionGroup(inliningTarget, getTbFrameNode, materializeStNode, sys, out, value, seen, indent, tsLiteral("| "));
+            }
+            else {
+                printException(inliningTarget, getTbFrameNode, materializeStNode, sys, out, value, indent, margin);
+            }
+        }
+
+        protected static TruffleString getIndent(int indent) {
+            return T_SPACE.repeatUncached(indent, TS_ENCODING);
+        }
+
+        protected static void fileWriteIndentedString(Object file, String string, int indent) {
+            fileWriteIndentedString(file, tsLiteral(string), indent);
+        }
+
+        protected static void fileWriteIndentedString(Object file, TruffleString string, int indent) {
+            fileWriteString(file, getIndent(indent));
+            fileWriteString(file, string);
         }
 
         protected void printException(Node inliningTarget, TracebackBuiltins.GetTracebackFrameNode getTbFrameNode, TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStNode,
-                        PythonModule sys, Object out, Object excValue) {
+                        PythonModule sys, Object out, Object excValue, int indent, TruffleString margin) {
             Object value = excValue;
             final Object type = getObjectClass(value);
             if (!PyExceptionInstanceCheckNode.executeUncached(value)) {
@@ -1511,7 +1543,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
             final Object tb = getExceptionTraceback(value);
             if (tb instanceof PTraceback) {
-                PyTraceBackPrint.print(inliningTarget, getTbFrameNode, materializeStNode, sys, out, tb);
+                PyTraceBackPrint.print(inliningTarget, getTbFrameNode, materializeStNode, sys, out, tb, (value instanceof PBaseExceptionGroup), indent, margin);
             }
 
             if (objectHasAttr(value, T_ATTR_PRINT_FILE_AND_LINE)) {
@@ -1529,6 +1561,8 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                     }
                 }
             }
+
+            fileWriteIndentedString(out, margin, indent);
 
             TruffleString className;
             try {
@@ -1568,6 +1602,51 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                 }
             }
 
+            fileWriteString(out, T_NEWLINE);
+        }
+
+        protected void printExceptionGroup(Node inliningTarget, TracebackBuiltins.GetTracebackFrameNode getTbFrameNode, TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStNode,
+                                           PythonModule sys, Object out, Object excValue, Set<Object> seen, int indent, TruffleString margin) {
+            Object value = excValue;
+            final Object type = getObjectClass(value);
+            if (!PyExceptionGroupInstanceCheckNode.executeUncached(value)) {
+                PyTraceBackPrint.fileWriteString(out, "TypeError: print_exception_group(): Exception group expected for value, ");
+                fileWriteString(out, getTypeName(type));
+                PyTraceBackPrint.fileWriteString(out, " found\n");
+                return;
+            }
+
+            if (indent == 0) {
+                indent = 2;
+            }
+
+            printException(inliningTarget, getTbFrameNode, materializeStNode, sys, out, excValue, indent, margin);
+
+            PBaseExceptionGroup exceptionGroup = (PBaseExceptionGroup) excValue;
+            int counter = 1;
+            for (Object exception : exceptionGroup.getExceptions()) {
+                if (counter == 1) {
+                    fileWriteIndentedString(out, "+-", indent);
+                } else {
+                    fileWriteString(out, getIndent(indent + 2));
+                }
+                if (counter <= INT_MAX_GROUP_WIDTH) {
+                    fileWriteString(out, String.format("+---------------- %d ----------------", counter));
+                    fileWriteString(out, T_NEWLINE);
+                    printExceptionRecursive(inliningTarget, getTbFrameNode, materializeStNode, sys, out, exception, seen, indent + 2, margin);
+                } else {
+                    fileWriteString(out, String.format("+---------------- ... ----------------", counter));
+                    fileWriteString(out, T_NEWLINE);
+                    fileWriteIndentedString(out, margin, indent + 2);
+                    int exceptionsRemaining = exceptionGroup.getExceptions().length - INT_MAX_GROUP_WIDTH;
+                    fileWriteString(out, String.format("and %d more exception%s", exceptionsRemaining, exceptionsRemaining > 1 ? "s" : ""));
+                    fileWriteString(out, T_NEWLINE);
+                    break;
+                }
+                counter++;
+            }
+            fileWriteString(out, getIndent(indent + 2));
+            fileWriteString(out, "+------------------------------------");
             fileWriteString(out, T_NEWLINE);
         }
 
