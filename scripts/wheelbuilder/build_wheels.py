@@ -1,4 +1,4 @@
-# Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2023, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -156,6 +156,7 @@ def build_wheels(pip):
     else:
         available_scripts = {}
     remaining_packages = 0
+    env = prepare_environment(pip)
     while remaining_packages != len(packages_to_build):
         remaining_packages = len(packages_to_build)
         for name, version in packages_to_build.copy():
@@ -165,7 +166,6 @@ def build_wheels(pip):
                 script = f"{name}.{script_ext}".lower()
             if script in available_scripts:
                 script = join(scriptdir, available_scripts[script])
-                env = prepare_environment(pip)
                 print("Building", name, version, "with", script, flush=True)
                 if sys.platform == "win32":
                     cmd = [script, version]  # Python's subprocess.py does the quoting we need
@@ -179,7 +179,7 @@ def build_wheels(pip):
                     continue
                 print(script, "did not build a wheel, we will do so now", flush=True)
             print("Building", name, version, flush=True)
-            p = subprocess.run([pip, "wheel", f"{name}=={version}"])
+            p = subprocess.run([pip, "wheel", f"{name}=={version}"], env=env)
             if p.returncode == 0:
                 packages_to_build.remove((name, version))
     if packages_to_build:
