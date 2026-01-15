@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -89,8 +89,8 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.annotations.PythonOS;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -117,6 +117,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.UnixSockAddr;
 import com.oracle.graal.python.util.FunctionWithSignature;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -339,10 +340,10 @@ public final class NFIPosixSupport extends PosixSupport {
 
         public Object call(NFIPosixSupport posix, PosixNativeFunction function, Object... args) {
             if (injectBranchProbability(SLOWPATH_PROBABILITY, posix.nfiLibrary == null)) {
-                loadLibrary(posix);
+                loadLibrary(this, posix);
             }
             if (injectBranchProbability(SLOWPATH_PROBABILITY, posix.cachedFunctions.get(function.ordinal()) == null)) {
-                loadFunction(posix, posix.nfiLibrary, function);
+                loadFunction(this, posix, posix.nfiLibrary, function);
             }
             FunctionWithSignature funObject = posix.cachedFunctions.get(function.ordinal());
             try {
@@ -386,10 +387,10 @@ public final class NFIPosixSupport extends PosixSupport {
         }
 
         @TruffleBoundary
-        private static void loadLibrary(NFIPosixSupport posix) {
+        private static void loadLibrary(Node node, NFIPosixSupport posix) {
             String path = getLibPath(posix.context);
             try {
-                posix.nfiLibrary = loadLibrary(posix, path);
+                posix.nfiLibrary = loadLibrary(node, posix, path);
             } catch (Throwable e) {
                 throw new UnsupportedOperationException(String.format("""
                                 Could not load posix support library from path '%s'. Troubleshooting:\s
@@ -400,7 +401,7 @@ public final class NFIPosixSupport extends PosixSupport {
         }
 
         @TruffleBoundary
-        private static Object loadLibrary(NFIPosixSupport posix, String path) {
+        private static Object loadLibrary(Node node, NFIPosixSupport posix, String path) {
             String backend = posix.nfiBackend.toJavaStringUncached();
             Env env = posix.context.getEnv();
 
@@ -418,19 +419,20 @@ public final class NFIPosixSupport extends PosixSupport {
                 loadSrc = Source.newBuilder(J_NFI_LANGUAGE, J_DEFAULT, J_DEFAULT).internal(true).build();
             }
 
-            return env.parseInternal(loadSrc).call();
+            CallTarget callTarget = env.parseInternal(loadSrc);
+            return node != null && node.isAdoptable() ? callTarget.call(node) : callTarget.call();
         }
 
         @TruffleBoundary
-        private static void loadFunction(NFIPosixSupport posix, Object library, PosixNativeFunction function) {
+        private static void loadFunction(Node node, NFIPosixSupport posix, Object library, PosixNativeFunction function) {
             Object unbound;
             try {
                 InteropLibrary interop = InteropLibrary.getUncached();
 
                 String sig = String.format("with %s %s", posix.nfiBackend, function.signature);
                 Source sigSrc = Source.newBuilder(J_NFI_LANGUAGE, sig, "posix-nfi-signature").internal(true).build();
-                Object signature = posix.context.getEnv().parseInternal(sigSrc).call();
-
+                CallTarget callTarget = posix.context.getEnv().parseInternal(sigSrc);
+                Object signature = node != null && node.isAdoptable() ? callTarget.call(node) : callTarget.call();
                 unbound = interop.readMember(library, function.name());
                 posix.cachedFunctions.set(function.ordinal(), new FunctionWithSignature(signature, unbound));
             } catch (UnsupportedMessageException | UnknownIdentifierException e) {
@@ -1915,6 +1917,7 @@ public final class NFIPosixSupport extends PosixSupport {
 
     @ExportMessage
     public TruffleString crypt(TruffleString word, TruffleString salt,
+                    @Bind Node inliningTarget,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode,
                     @Shared("toUtf8") @Cached TruffleString.SwitchEncodingNode switchEncodingToUtf8Node,
                     @Shared("tsCopyBytes") @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
@@ -1927,7 +1930,7 @@ public final class NFIPosixSupport extends PosixSupport {
          */
         if (injectBranchProbability(SLOWPATH_PROBABILITY, cryptLibrary == null)) {
             try {
-                cryptLibrary = InvokeNativeFunction.loadLibrary(this, PythonLanguage.getPythonOS() != PythonOS.PLATFORM_DARWIN ? "libcrypt.so" : null);
+                cryptLibrary = InvokeNativeFunction.loadLibrary(inliningTarget, this, PythonLanguage.getPythonOS() != PythonOS.PLATFORM_DARWIN ? "libcrypt.so" : null);
             } catch (Throwable e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw PRaiseNode.raiseStatic(invokeNode, PythonBuiltinClassType.SystemError, ErrorMessages.UNABLE_TO_LOAD_LIBCRYPT);
@@ -1935,7 +1938,7 @@ public final class NFIPosixSupport extends PosixSupport {
         }
         PosixNativeFunction function = PosixNativeFunction.crypt;
         if (injectBranchProbability(SLOWPATH_PROBABILITY, cachedFunctions.get(function.ordinal()) == null)) {
-            InvokeNativeFunction.loadFunction(this, cryptLibrary, function);
+            InvokeNativeFunction.loadFunction(inliningTarget, this, cryptLibrary, function);
         }
         FunctionWithSignature funObject = cachedFunctions.get(function.ordinal());
         /*
