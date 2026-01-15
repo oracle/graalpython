@@ -1,0 +1,26 @@
+diff --git a/mypyc_util.h b/mypyc_util.h
+index 115c309..d0c825f 100644
+--- a/mypyc_util.h
++++ b/mypyc_util.h
+@@ -82,7 +82,7 @@
+ 
+ static inline void CPy_INCREF_NO_IMM(PyObject *op)
+ {
+-    Py_REFCNT(op)++;
++    Py_INCREF(op);
+ }
+ 
+ static inline void CPy_DECREF_NO_IMM(PyObject *op)
+diff --git a/pythonsupport.h b/pythonsupport.h
+index 60454b6..de238b9 100644
+--- a/pythonsupport.h
++++ b/pythonsupport.h
+@@ -257,7 +257,7 @@ list_resize(PyListObject *self, Py_ssize_t newsize)
+         PyErr_NoMemory();
+         return -1;
+     }
+-    PySequence_Fast_ITEMS((PyObject*)self) = items;
++    self->ob_item = items;
+     Py_SET_SIZE(self, newsize);
+     self->allocated = new_allocated;
+     return 0;
