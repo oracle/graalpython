@@ -85,20 +85,23 @@ def extract(archive):
     if splitext(archive)[1] == ".zip":
         with zipfile.ZipFile(archive) as f:
             f.extractall()
+            return f.infolist()[0].filename.split('/', 1)[0]
     else:
         with tarfile.open(archive) as f:
             f.extractall()
+            return f.getmembers()[0].name.split('/', 1)[0]
 
 
-def create_venv():
+def create_venv(basedir):
     if sys.platform == "win32":
         exe = ".exe"
         pip = "graalpy/Scripts/pip.exe"
     else:
         exe = ""
         pip = "graalpy/bin/pip"
-    binary = next(iter(glob(f"graalpy-*/bin/graalpy{exe}")))
+    binary = os.path.join(basedir, "bin", f"graalpy{exe}")
     print("Creating venv with", binary, flush=True)
+    shutil.rmtree("graalpy", ignore_errors=True)
     subprocess.check_call([binary, "-m", "venv", "graalpy"])
     print("Installing wheel with", pip, flush=True)
     subprocess.check_call([pip, "install", "wheel"])
@@ -196,8 +199,8 @@ if __name__ == "__main__":
     outpath = f"graalpy{ext}"
 
     download(args.graalpy_url, outpath)
-    extract(outpath)
-    pip = create_venv()
+    extracted = extract(outpath)
+    pip = create_venv(extracted)
     success = build_wheels(pip)
     repair_wheels("wheelhouse")
     if not success and not args.ignore_failures:
