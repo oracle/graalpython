@@ -38,3 +38,44 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+package com.oracle.graal.python.builtins.modules.datetime;
+
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
+
+public class TzInfoNodes {
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class TzInfoCheckNode extends Node {
+        public abstract boolean execute(Node inliningTarget, Object obj);
+
+        public static boolean executeUncached(Object obj) {
+            return TzInfoNodesFactory.TzInfoCheckNodeGen.getUncached().execute(null, obj);
+        }
+
+        @Specialization
+        static boolean doManaged(@SuppressWarnings("unused") PTzInfo value) {
+            return true;
+        }
+
+        @Specialization
+        static boolean doNative(Node inliningTarget, PythonAbstractNativeObject value,
+                        @Cached BuiltinClassProfiles.IsBuiltinObjectProfile profile) {
+            return profile.profileObject(inliningTarget, value, PythonBuiltinClassType.PTzInfo);
+        }
+
+        @Fallback
+        static boolean doOther(@SuppressWarnings("unused") Object value) {
+            return false;
+        }
+    }
+}

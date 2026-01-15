@@ -1,4 +1,4 @@
-# Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -1248,6 +1248,139 @@ class TimezoneTest(unittest.TestCase):
 
 
 class TimeDeltaTest(unittest.TestCase):
+
+    def test_construction_types_field_overflow_and_rounding(self):
+        td = datetime.timedelta
+
+        # Accepts bool, int, float, subclasses and mixes
+        class IntSubclass(int): pass
+        class FloatSubclass(float): pass
+
+        self.assertEqual(td(days=True), td(days=1))
+        self.assertEqual(td(days=2.0), td(days=2))
+        self.assertEqual(td(days=IntSubclass(3)), td(days=3))
+        self.assertEqual(td(days=FloatSubclass(4.0)), td(days=4))
+        self.assertEqual(td(seconds=1.7), td(seconds=1, microseconds=700000))
+        self.assertEqual(td(microseconds=5.2), td(microseconds=5))
+        self.assertEqual(td(microseconds=1.8), td(microseconds=2))
+
+        # Overflow and normalization between fields
+        self.assertEqual(td(seconds=60), td(minutes=1))
+        self.assertEqual(td(minutes=60), td(hours=1))
+        self.assertEqual(td(hours=24), td(days=1))
+        self.assertEqual(td(milliseconds=1500), td(seconds=1, milliseconds=500))
+        self.assertEqual(td(microseconds=1000001), td(seconds=1, microseconds=1))
+
+        # Mix float/int/rounding
+        self.assertEqual(td(seconds=1.9, microseconds=1.7), td(seconds=1, microseconds=900002))
+        # Large overflow stacks
+        self.assertEqual(td(seconds=3600*25), td(days=1, hours=1))
+        self.assertEqual(td(milliseconds=24*60*60*1000), td(days=1))
+
+        # Rounding of fractional microseconds (half-to-even)
+        # .5 rounds to even
+        self.assertEqual(td(microseconds=0.5), td(microseconds=0))
+        self.assertEqual(td(microseconds=1.5), td(microseconds=2))
+        self.assertEqual(td(microseconds=2.5), td(microseconds=2))
+        self.assertEqual(td(microseconds=3.5), td(microseconds=4))
+        self.assertEqual(td(milliseconds=0.0005), td())
+        self.assertEqual(td(milliseconds=0.0015), td(microseconds=2))
+        # Negative
+        self.assertEqual(td(microseconds=-0.5), td(microseconds=0))
+        self.assertEqual(td(microseconds=-1.5), td(microseconds=-2))
+        self.assertEqual(td(microseconds=-2.5), td(microseconds=-2))
+        self.assertEqual(td(microseconds=-3.5), td(microseconds=-4))
+
+        # Rejects non-numeric types (already checked elsewhere, not repeated here)
+
+    def test_mul_div_divmod_overflow_and_rounding(self):
+        td = datetime.timedelta
+
+        # Multiplication overflow (try to exceed microsecond 32b int, expect OverflowError)
+        big = td(days=2**26)  # very big, but not yet overflow
+        with self.assertRaises(OverflowError):
+            _ = big * (2**14)
+
+        with self.assertRaises(OverflowError):
+            _ = (2**14) * big
+
+        # Negative overflow
+        with self.assertRaises(OverflowError):
+            _ = -big * (2**14)
+
+        # Division overflow (should raise on absurdly small divisor)
+        huge = td(days=999999999)
+        with self.assertRaises(OverflowError):
+            _ = huge / 1e-20
+
+        # Divmod with float divisor is not allowed (CPython raises TypeError)
+        with self.assertRaises(TypeError):
+            divmod(huge, 1e-20)
+
+        # Multiplication without overflow
+        t1 = td(days=1, microseconds=1)
+        self.assertEqual(t1 * 2, td(days=2, microseconds=2))
+        self.assertEqual(2 * t1, td(days=2, microseconds=2))
+        self.assertEqual(t1 * 0, td())
+
+        # Division: round-half-to-even per CPython
+        # Case: exactly half
+        half_even = td(microseconds=3)
+        self.assertEqual(half_even / 2, td(microseconds=2))  # 1.5 rounds to 2 (even)
+        self.assertEqual((-half_even) / 2, td(microseconds=-2))  # -1.5 rounds to -2
+
+        # Closest not half
+        self.assertEqual(td(microseconds=5) / 2, td(microseconds=2))  # 2.5 rounds to 2 (even)
+        self.assertEqual(td(microseconds=7) / 2, td(microseconds=4))  # 3.5 rounds to 4 (even)
+
+        # .__truediv__ returns float if divisor is a timedelta (duration ratio)
+        self.assertEqual(td(days=3) / td(days=2), 1.5)
+
+        # Divmod by int is not supported in CPython (raises TypeError)
+        with self.assertRaises(TypeError):
+            divmod(td(seconds=5), 2)
+        with self.assertRaises(TypeError):
+            divmod(td(microseconds=7), 2)
+
+        # Division by zero raises
+        with self.assertRaises(ZeroDivisionError):
+            _ = t1 / 0
+        with self.assertRaises(ZeroDivisionError):
+            _ = t1 // 0
+        # divmod by zero (int) is not supported at all
+        with self.assertRaises(TypeError):
+            divmod(t1, 0)
+        # divmod by zero timedelta returns ZeroDivisionError
+        with self.assertRaises(ZeroDivisionError):
+            divmod(t1, td())
+
+        # Divmod with negative int is not supported (raises TypeError)
+        with self.assertRaises(TypeError):
+            divmod(td(seconds=3), -2)
+
+        # Division by timedelta returns float, test for correct rounding
+        self.assertEqual(td(seconds=5) / td(seconds=2), 2.5)
+        self.assertEqual(td(seconds=3) / td(seconds=2), 1.5)
+        self.assertEqual(td(seconds=3) // td(seconds=2), 1.0)
+        with self.assertRaises(ZeroDivisionError):
+            _ = td(days=1) / td()
+
+        # Edge: Divmod with timedelta as divisor, remainder sign
+        d, r = divmod(td(seconds=5), td(seconds=2))
+        self.assertEqual(d, 2.0)
+        self.assertEqual(r, td(seconds=1))
+
+        d, r = divmod(td(seconds=5), td(seconds=-2))
+        self.assertEqual(d, -3.0)
+        self.assertEqual(r, td(seconds=-1))
+
+        # Additional explicit float rounding half to even
+        self.assertEqual((td(microseconds=2) / 1.33333333333).microseconds, 2)
+        self.assertEqual((td(microseconds=3) / 1.5).microseconds, 2)
+        # result field normalization: negative microseconds yields +999998 with negative total_seconds
+        self.assertEqual((td(microseconds=-3) / 1.5), td(microseconds=-2))
+        self.assertAlmostEqual((td(microseconds=-3) / 1.5).total_seconds(), -2e-6)
+
     def test_new(self):
         # parameters type validation
 
@@ -1294,6 +1427,9 @@ class TimeDeltaTest(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "cannot convert float NaN to integer"):
             datetime.timedelta(weeks = float("nan"))
+
+    def test_total_seconds(self):
+        self.assertAlmostEqual(datetime.timedelta(days=106751992).total_seconds(), 9223372108800.0)
 
 class DateTimeTest(unittest.TestCase):
 

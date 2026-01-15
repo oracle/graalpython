@@ -20,7 +20,7 @@ jobs:
           platform: linux
           arch: amd64
         - id: macos-latest
-          platform: darwin
+          platform: macos
           arch: aarch64
 
     runs-on: ${{ matrix.os.id }}
@@ -33,7 +33,7 @@ jobs:
         sudo apt-get install -y cmake
 
     - name: Install CMake (Darwin)
-      if: ${{ matrix.os.platform == 'darwin' && matrix.name == 'pybind11' }}
+      if: ${{ matrix.os.platform == 'macos' && matrix.name == 'pybind11' }}
       run: |
         if brew list cmake >/dev/null 2>&1; then
           echo "cmake already installed"
@@ -58,7 +58,7 @@ jobs:
 
     - name: Get GraalPy EA build
       run: |
-        tarball="$(curl -sfL https://raw.githubusercontent.com/graalvm/graal-languages-ea-builds/refs/heads/main/graalpy/versions/latest-native-${{ matrix.os.platform }}-${{ matrix.os.arch}}.url)"
+        tarball="$(curl -s "https://api.github.com/repos/graalvm/graalvm-ce-dev-builds/releases/latest" | jq -r --arg artifact "graalpy-community-dev-${{ matrix.os.platform }}-${{matrix.os.arch}}.tar.gz" '.assets[] | select(.name == $artifact) | .browser_download_url')"
         curl -sfL "$tarball" | tar xz
 
     - name: Run downstream tests for ${{ matrix.name }}

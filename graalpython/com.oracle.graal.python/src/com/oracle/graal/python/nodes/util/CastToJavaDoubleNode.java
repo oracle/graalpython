@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -78,6 +78,10 @@ import com.oracle.truffle.api.strings.TruffleString;
 public abstract class CastToJavaDoubleNode extends PNodeWithContext {
 
     public abstract double execute(Node inliningTarget, Object x);
+
+    public static double executeUncached(Object x) {
+        return CastToJavaDoubleNodeGen.getUncached().execute(null, x);
+    }
 
     @Specialization
     static double toDouble(double x) {

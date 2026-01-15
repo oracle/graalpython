@@ -1,4 +1,4 @@
-# Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -39,6 +39,7 @@
 
 import argparse
 import os
+import re
 import shlex
 import shutil
 import subprocess
@@ -67,7 +68,7 @@ def downstream_test(name):
 @downstream_test('hpy')
 def downstream_test_hpy(graalpy, testdir=None, args=None, env=None, check=True, timeout=None):
     if not testdir:
-        testdir = Path('upstream-tests').absolute()
+        testdir = Path('downstream-tests').absolute()
         shutil.rmtree(testdir, ignore_errors=True)
         testdir.mkdir(exist_ok=True)
     hpy_root = DIR / "graalpython" / "hpy"
@@ -151,7 +152,12 @@ def downstream_test_pydantic_core(graalpy, testdir):
     run(['git', 'clone', 'https://github.com/pydantic/pydantic-core.git', '-b', 'main'], cwd=testdir)
     src = testdir / 'pydantic-core'
     run(['uv', 'sync', '--python', graalpy, '--group', 'testing'], cwd=src)
-    run(['uv', 'pip', 'install', '-e', '.'], cwd=src)
+    run(['uv', 'build', '--python', graalpy, '--wheel', '.'], cwd=src)
+    [wheel] = (src / 'dist').glob('pydantic_core-*graalpy*.whl')
+    # uv doesn't accept wheels with devtags
+    if match := re.search('dev[0-9a-f]{6,}', wheel.name):
+        wheel = wheel.rename(wheel.parent / wheel.name.replace(match.group(), ''))
+    run(['uv', 'pip', 'install', wheel], cwd=src)
     run(['uv', 'run', 'pytest', '-v', '--tb=short'], cwd=src)
 
 
@@ -169,7 +175,7 @@ def downstream_test_jiter(graalpy, testdir):
 
 
 def run_downstream_test(python, project):
-    testdir = Path('upstream-tests').absolute()
+    testdir = Path('downstream-tests').absolute()
     shutil.rmtree(testdir, ignore_errors=True)
     testdir.mkdir(exist_ok=True)
     python = os.path.abspath(python)
@@ -177,7 +183,7 @@ def run_downstream_test(python, project):
 
 
 def main():
-    parser = argparse.ArgumentParser("Runs important upstream packages tests using their main branch")
+    parser = argparse.ArgumentParser("Runs important downstream packages tests using their main branch")
     parser.add_argument("python")
     parser.add_argument("project", choices=sorted(DOWNSTREAM_TESTS))
     args = parser.parse_args()

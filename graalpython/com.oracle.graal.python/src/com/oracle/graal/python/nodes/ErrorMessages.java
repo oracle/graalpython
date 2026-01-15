@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -1647,8 +1647,7 @@ public abstract class ErrorMessages {
     public static final TruffleString INVALID_ISOFORMAT_STRING_S = tsLiteral("Invalid isoformat string: '%s'");
     public static final TruffleString DAYS_D_MUST_HAVE_MAGNITUDE_LESS_THAN_D = tsLiteral("days=%d; must have magnitude <= %d");
     public static final TruffleString UNSUPPORTED_TYPE_FOR_TIMEDELTA_S_COMPONENT_P = tsLiteral("unsupported type for timedelta %s component: %p");
-    public static final TruffleString PYTHON_INT_TOO_LARGE_TO_CONVERT_TO_C_INT = tsLiteral("Python int too large to convert to C int");
-    public static final TruffleString INTEGER_DIVISION_OR_MODULE_BY_ZERO = tsLiteral("integer division or modulo by zero");
+    public static final TruffleString INTEGER_DIVISION_OR_MODULO_BY_ZERO = tsLiteral("integer division or modulo by zero");
     public static final TruffleString INTEGER_MODULE_BY_ZERO = tsLiteral("integer modulo by zero");
     public static final TruffleString DATE_VALUE_OUT_OF_RANGE = tsLiteral("date value out of range");
     public static final TruffleString FAILED_TO_ENCODE_LATIN1_STRING_WHEN_UNPICKLING_A_DATE_OBJECT = tsLiteral(
@@ -1682,7 +1681,7 @@ public abstract class ErrorMessages {
                     "Failed to encode latin1 string when unpickling a datetime object. pickle.load(data, encoding='latin1') is assumed");
     public static final TruffleString FAILED_TO_ENCODE_LATIN1_STRING_WHEN_UNPICKLING_A_TIME_OBJECT = tsLiteral(
                     "Failed to encode latin1 string when unpickling a time object. pickle.load(data, encoding='latin1') is assumed");
-    public static final TruffleString UNEXPECTED_RETURN_TYPE_FROM_AS_INTEGER_RATION_EXPECTED_TUPLE_GOT_P = tsLiteral("unexpected return type from as_integer_ratio(): expected tuple, got '%p'");
+    public static final TruffleString UNEXPECTED_RETURN_TYPE_FROM_AS_INTEGER_RATIO_EXPECTED_TUPLE_GOT_P = tsLiteral("unexpected return type from as_integer_ratio(): expected tuple, got '%p'");
     public static final TruffleString AS_INTEGER_RATION_MUST_RETURN_A_2_TUPLE = tsLiteral("as_integer_ratio() must return a 2-tuple");
     public static final TruffleString DIVMOD_RETURNED_NON_TUPLE_P = tsLiteral("divmod() returned non-tuple (type %.200s)");
     public static final TruffleString DIVMOD_RETURNED_A_TUPLE_OF_SIZE_D = tsLiteral("divmod() returned a tuple of size %zd");

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -79,6 +79,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.LoopNode;
 import com.oracle.truffle.api.nodes.Node;
@@ -329,7 +330,13 @@ public abstract class SortNodes {
                 }
             } else {
                 callContext.prepareCall(frame, arguments, callTarget);
-                callSortWithoutKey(array, len, callTarget, arguments);
+                EncapsulatingNodeReference nodeRef = EncapsulatingNodeReference.getCurrent();
+                Node prev = nodeRef.set(this);
+                try {
+                    callSortWithoutKey(array, len, callTarget, arguments);
+                } finally {
+                    nodeRef.set(prev);
+                }
             }
             if (reverse) {
                 reverseArray(array, len);
@@ -430,7 +437,13 @@ public abstract class SortNodes {
                     }
                 } else {
                     callContext.prepareCall(frame, arguments, callTarget);
-                    callSortWithKey(pairArray, len, callTarget, arguments);
+                    EncapsulatingNodeReference nodeRef = EncapsulatingNodeReference.getCurrent();
+                    Node prev = nodeRef.set(this);
+                    try {
+                        callSortWithKey(pairArray, len, callTarget, arguments);
+                    } finally {
+                        nodeRef.set(prev);
+                    }
                 }
             }
             for (int i = 0; i < len; i++) {

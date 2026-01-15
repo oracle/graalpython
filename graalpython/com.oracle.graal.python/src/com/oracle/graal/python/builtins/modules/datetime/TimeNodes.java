@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -185,7 +185,7 @@ public class TimeNodes {
                 throw PRaiseNode.raiseStatic(inliningTarget, ValueError, ErrorMessages.MICROSECOND_MUST_BE_IN);
             }
 
-            if (tzInfo != null && !(tzInfo instanceof PTzInfo)) {
+            if (tzInfo != null && !TzInfoNodes.TzInfoCheckNode.executeUncached(tzInfo)) {
                 throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.TZINFO_ARGUMENT_MUST_BE_NONE_OR_OF_A_TZINFO_SUBCLASS_NOT_TYPE_P, tzInfo);
             }
 
