@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -407,7 +407,7 @@ public final class DictReprBuiltin extends PythonBuiltins {
                         @Cached FormatKeyValueDictRepr formatKeyValueDictRepr) {
             Object oditems = callMethod.execute(frame, inliningTarget, dict, T_ITEMS);
             ReprState s = new ReprState(dict, sb, false);
-            int count = 0;
+            int loopCount = 0;
             try {
                 Object iter = getIter.execute(frame, inliningTarget, oditems);
                 while (true) {
@@ -417,8 +417,8 @@ public final class DictReprBuiltin extends PythonBuiltins {
                     } catch (IteratorExhausted e) {
                         break;
                     }
-                    if (CompilerDirectives.hasNextTier()) {
-                        count++;
+                    if (CompilerDirectives.hasNextTier() && loopCount < Integer.MAX_VALUE) {
+                        loopCount++;
                     }
                     assert PGuards.isPTuple(next);
                     ObjectSequenceStorage item = (ObjectSequenceStorage) ((PTuple) next).getSequenceStorage();
@@ -427,8 +427,8 @@ public final class DictReprBuiltin extends PythonBuiltins {
                     formatKeyValueDictRepr.execute(key, value, s);
                 }
             } finally {
-                if (count != 0) {
-                    LoopNode.reportLoopCount(inliningTarget, count);
+                if (loopCount != 0) {
+                    LoopNode.reportLoopCount(inliningTarget, loopCount);
                 }
             }
         }
