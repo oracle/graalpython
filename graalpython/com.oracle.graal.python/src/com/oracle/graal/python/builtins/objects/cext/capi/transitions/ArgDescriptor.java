@@ -480,10 +480,6 @@ public enum ArgDescriptor {
         return behavior.nfi2Type;
     }
 
-    public boolean isRawPyObjectOrPointer() {
-        return isPyObjectOrPointer() && behavior.nfi2Type == NfiType.RAW_POINTER;
-    }
-
     public boolean isPyObjectOrPointer() {
         return switch (behavior) {
             case PyObject, PyObjectYYY, PyTypeObject, PyObjectBorrowed, PointerYYY, Pointer, TruffleStringPointer -> true;
@@ -505,36 +501,8 @@ public enum ArgDescriptor {
         };
     }
 
-    public boolean isValidReturnType() {
-        /*
-         * We don't want to allow "bare" PyObject and force ourselves to decide between
-         * PyObjectTransfer and PyObjectBorrow
-         */
-        return behavior != ArgBehavior.PyObjectYYY || transfer;
-    }
-
     public boolean isCharPtr() {
         return this == CharPtrAsTruffleString || this == CHAR_PTR || this == ConstCharPtr || this == ConstCharPtrAsTruffleString;
-    }
-
-    public boolean isInt16Type() {
-        return getNFI2Type() == NfiType.SINT16;
-    }
-
-    public boolean isInt32Type() {
-        return getNFI2Type() == NfiType.SINT32;
-    }
-
-    public boolean isInt64Type() {
-        return getNFI2Type() == NfiType.SINT64;
-    }
-
-    public boolean isFloatType() {
-        return behavior == ArgBehavior.Float64 || behavior == ArgBehavior.Float32;
-    }
-
-    public boolean isVoid() {
-        return behavior == ArgBehavior.Void;
     }
 
     public boolean isI64() {

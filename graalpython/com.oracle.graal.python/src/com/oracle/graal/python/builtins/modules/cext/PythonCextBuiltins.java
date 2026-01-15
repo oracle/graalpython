@@ -628,8 +628,18 @@ public final class PythonCextBuiltins {
             return ret.createPythonToNativeNode();
         }
 
-        ArgDescriptor getRetDescriptor() {
-            return ret;
+        Object getErrorReturnValue() {
+            return switch (ret.getNFI2Type()) {
+                case VOID -> PNone.NO_VALUE;
+                case SINT8 -> (byte) -1;
+                case SINT16 -> (short) -1;
+                case SINT32 -> -1;
+                case SINT64 -> -1L;
+                case FLOAT -> -1.0f;
+                case DOUBLE -> -1.0;
+                case POINTER -> NATIVE_NULL;
+                case RAW_POINTER -> NULLPTR;
+            };
         }
 
         CExtToJavaNode[] createArgNodes() {
@@ -797,24 +807,7 @@ public final class PythonCextBuiltins {
                     transformExceptionToNativeNode = insert(TransformPExceptionToNativeCachedNode.create());
                 }
                 transformExceptionToNativeNode.execute(e);
-                if (cachedSelf.getRetDescriptor().isInt16Type()) {
-                    return (short) -1;
-                } else if (cachedSelf.getRetDescriptor().isInt32Type()) {
-                    return -1;
-                } else if (cachedSelf.getRetDescriptor().isInt64Type()) {
-                    return -1L;
-                } else if (cachedSelf.getRetDescriptor().isRawPyObjectOrPointer()) {
-                    return NULLPTR;
-                } else if (cachedSelf.getRetDescriptor().isPyObjectOrPointer()) {
-                    return NATIVE_NULL;
-                } else if (cachedSelf.getRetDescriptor().isFloatType()) {
-                    return -1.0;
-                } else if (cachedSelf.getRetDescriptor().isVoid()) {
-                    return PNone.NO_VALUE;
-                } else {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw CompilerDirectives.shouldNotReachHere("return type while handling PException: " + cachedSelf.getRetDescriptor() + " in " + self.name);
-                }
+                return cachedSelf.getErrorReturnValue();
             } finally {
                 gilNode.release(wasAcquired);
                 CApiTiming.exit(self.timing);
