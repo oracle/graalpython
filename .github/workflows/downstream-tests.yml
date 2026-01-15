@@ -7,7 +7,6 @@ on:
 jobs:
 
   build-standalone-artifacts:
-    if: github.event.pull_request.draft == false
     uses: ./.github/workflows/ci-matrix-gen.yml
     with:
       jobs_to_run: ^(?=.*python-svm-build-gate-linux-amd64).*$
