@@ -1349,8 +1349,8 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         static final TruffleString T_ATTR_OFFSET = tsInternedLiteral("offset");
         static final TruffleString T_ATTR_TEXT = tsInternedLiteral("text");
 
-        protected static final int INT_MAX_GROUP_WIDTH = 15;
-        protected static final int INT_MAX_GROUP_DEPTH = 10;
+        protected static final int INT_MAX_GROUP_WIDTH = 5;
+        protected static final int INT_MAX_GROUP_DEPTH = 3;
 
         @ValueType
         static final class SyntaxErrData {
@@ -1368,6 +1368,54 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                 this.offset = offset;
                 this.text = text;
                 this.err = err;
+            }
+        }
+
+        static class ExceptionPrintContext {
+            public final int indent;
+            public final TruffleString margin;
+            public final int depthMax;
+            public final int depthCurrent;
+            public final int widthMax;
+
+            ExceptionPrintContext(int indent, TruffleString margin) {
+                this.indent = indent;
+                this.margin = margin;
+                this.depthMax = INT_MAX_GROUP_DEPTH;
+                this.depthCurrent = 0;
+                this.widthMax = INT_MAX_GROUP_WIDTH;
+            }
+
+            ExceptionPrintContext(int indent, TruffleString margin, int depthMax, int depthCurrent, int widthMax) {
+                this.indent = indent;
+                this.margin = margin;
+                this.depthMax = depthMax;
+                this.depthCurrent = depthCurrent;
+                this.widthMax = widthMax;
+            }
+
+            ExceptionPrintContext(ExceptionPrintContext ctx) {
+                this.indent = ctx.indent;
+                this.margin = ctx.margin;
+                this.depthMax = ctx.depthMax;
+                this.depthCurrent = ctx.depthCurrent;
+                this.widthMax = ctx.widthMax;
+            }
+
+            public ExceptionPrintContext withIndentIncrease() {
+                return new ExceptionPrintContext(indent + 2, margin, depthMax, depthCurrent, widthMax);
+            }
+
+            public ExceptionPrintContext withIndent(int indent) {
+                return new ExceptionPrintContext(indent, margin, depthMax, depthCurrent, widthMax);
+            }
+
+            public ExceptionPrintContext withMargin(TruffleString margin) {
+                return new ExceptionPrintContext(indent, margin, depthMax, depthCurrent, widthMax);
+            }
+
+            public ExceptionPrintContext withDepthIncrease() {
+                return new ExceptionPrintContext(indent, margin, depthMax, depthCurrent + 1, widthMax);
             }
         }
 
@@ -1483,12 +1531,12 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         void printExceptionRecursive(Node inliningTarget, TracebackBuiltins.GetTracebackFrameNode getTbFrameNode, TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStNode,
                                      PythonModule sys, Object out, Object value, Set<Object> seen) {
-            printExceptionRecursive(inliningTarget, getTbFrameNode, materializeStNode, sys, out, value, seen, 0, tsLiteral(""));
+            printExceptionRecursive(inliningTarget, getTbFrameNode, materializeStNode, sys, out, value, seen, new ExceptionPrintContext(0, tsLiteral("")));
         }
 
         @TruffleBoundary
         void printExceptionRecursive(Node inliningTarget, TracebackBuiltins.GetTracebackFrameNode getTbFrameNode, TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStNode,
-                        PythonModule sys, Object out, Object value, Set<Object> seen, int indent, TruffleString margin) {
+                        PythonModule sys, Object out, Object value, Set<Object> seen, ExceptionPrintContext ctx) {
             if (seen != null) {
                 // Exception chaining
                 add(seen, value);
@@ -1498,22 +1546,22 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
                     if (cause != PNone.NONE) {
                         if (notSeen(seen, cause)) {
-                            printExceptionRecursive(inliningTarget, getTbFrameNode, materializeStNode, sys, out, cause, seen, indent, margin);
+                            printExceptionRecursive(inliningTarget, getTbFrameNode, materializeStNode, sys, out, cause, seen, ctx);
                             fileWriteString(out, T_CAUSE_MESSAGE);
                         }
                     } else if (context != PNone.NONE && !ExceptionNodes.GetSuppressContextNode.executeUncached(value)) {
                         if (notSeen(seen, context)) {
-                            printExceptionRecursive(inliningTarget, getTbFrameNode, materializeStNode, sys, out, context, seen, indent, margin);
+                            printExceptionRecursive(inliningTarget, getTbFrameNode, materializeStNode, sys, out, context, seen, ctx);
                             fileWriteString(out, T_CONTEXT_MESSAGE);
                         }
                     }
                 }
             }
             if (value instanceof PBaseExceptionGroup) {
-                printExceptionGroup(inliningTarget, getTbFrameNode, materializeStNode, sys, out, value, seen, indent, tsLiteral("| "));
+                printExceptionGroup(inliningTarget, getTbFrameNode, materializeStNode, sys, out, value, seen, ctx.withMargin(tsLiteral("| ")));
             }
             else {
-                printException(inliningTarget, getTbFrameNode, materializeStNode, sys, out, value, indent, margin);
+                printException(inliningTarget, getTbFrameNode, materializeStNode, sys, out, value, ctx);
             }
         }
 
@@ -1531,7 +1579,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         }
 
         protected void printException(Node inliningTarget, TracebackBuiltins.GetTracebackFrameNode getTbFrameNode, TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStNode,
-                        PythonModule sys, Object out, Object excValue, int indent, TruffleString margin) {
+                        PythonModule sys, Object out, Object excValue, ExceptionPrintContext ctx) {
             Object value = excValue;
             final Object type = getObjectClass(value);
             if (!PyExceptionInstanceCheckNode.executeUncached(value)) {
@@ -1543,7 +1591,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
             final Object tb = getExceptionTraceback(value);
             if (tb instanceof PTraceback) {
-                PyTraceBackPrint.print(inliningTarget, getTbFrameNode, materializeStNode, sys, out, tb, (value instanceof PBaseExceptionGroup), indent, margin);
+                PyTraceBackPrint.print(inliningTarget, getTbFrameNode, materializeStNode, sys, out, tb, (value instanceof PBaseExceptionGroup), ctx.indent, ctx.margin);
             }
 
             if (objectHasAttr(value, T_ATTR_PRINT_FILE_AND_LINE)) {
@@ -1562,7 +1610,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                 }
             }
 
-            fileWriteIndentedString(out, margin, indent);
+            fileWriteIndentedString(out, ctx.margin, ctx.indent);
 
             TruffleString className;
             try {
@@ -1606,7 +1654,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         }
 
         protected void printExceptionGroup(Node inliningTarget, TracebackBuiltins.GetTracebackFrameNode getTbFrameNode, TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStNode,
-                                           PythonModule sys, Object out, Object excValue, Set<Object> seen, int indent, TruffleString margin) {
+                                           PythonModule sys, Object out, Object excValue, Set<Object> seen, ExceptionPrintContext ctx) {
             Object value = excValue;
             final Object type = getObjectClass(value);
             if (!PyExceptionGroupInstanceCheckNode.executeUncached(value)) {
@@ -1616,37 +1664,46 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                 return;
             }
 
-            if (indent == 0) {
-                indent = 2;
+            if (ctx.depthCurrent >= ctx.depthMax) {
+                fileWriteIndentedString(out, ctx.margin, ctx.indent);
+                fileWriteString(out, String.format("... (max_group_depth is %d)", ctx.depthMax));
+                fileWriteString(out, T_NEWLINE);
+                return;
             }
 
-            printException(inliningTarget, getTbFrameNode, materializeStNode, sys, out, excValue, indent, margin);
+            if (ctx.indent == 0) {
+                ctx = ctx.withIndent(2);
+            }
+
+            ctx = ctx.withDepthIncrease();
+
+            printException(inliningTarget, getTbFrameNode, materializeStNode, sys, out, excValue, ctx);
 
             PBaseExceptionGroup exceptionGroup = (PBaseExceptionGroup) excValue;
             int counter = 1;
             for (Object exception : exceptionGroup.getExceptions()) {
                 if (counter == 1) {
-                    fileWriteIndentedString(out, "+-", indent);
+                    fileWriteIndentedString(out, "+-", ctx.indent);
                 } else {
-                    fileWriteString(out, getIndent(indent + 2));
+                    fileWriteString(out, getIndent(ctx.indent + 2));
                 }
-                if (counter <= INT_MAX_GROUP_WIDTH) {
+                if (counter <= ctx.widthMax) {
                     fileWriteString(out, String.format("+---------------- %d ----------------", counter));
                     fileWriteString(out, T_NEWLINE);
-                    printExceptionRecursive(inliningTarget, getTbFrameNode, materializeStNode, sys, out, exception, seen, indent + 2, margin);
+                    printExceptionRecursive(inliningTarget, getTbFrameNode, materializeStNode, sys, out, exception, seen, ctx.withIndentIncrease());
                 } else {
                     fileWriteString(out, String.format("+---------------- ... ----------------", counter));
                     fileWriteString(out, T_NEWLINE);
-                    fileWriteIndentedString(out, margin, indent + 2);
-                    int exceptionsRemaining = exceptionGroup.getExceptions().length - INT_MAX_GROUP_WIDTH;
+                    fileWriteIndentedString(out, ctx.margin, ctx.indent + 2);
+                    int exceptionsRemaining = exceptionGroup.getExceptions().length - ctx.widthMax;
                     fileWriteString(out, String.format("and %d more exception%s", exceptionsRemaining, exceptionsRemaining > 1 ? "s" : ""));
                     fileWriteString(out, T_NEWLINE);
                     break;
                 }
                 counter++;
             }
-            fileWriteString(out, getIndent(indent + 2));
-            fileWriteString(out, "+------------------------------------");
+            fileWriteString(out, getIndent(ctx.indent + 2));
+            fileWriteString(out, "+------------------------------------"); //TODO: this will be printed one-after-another when max depth is reached (should be skipped)
             fileWriteString(out, T_NEWLINE);
         }
 
