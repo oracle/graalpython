@@ -379,6 +379,28 @@ public class XSum {
         }
 
         /**
+         * Return true if one of the numbers were a NaN.
+         */
+        public boolean isNaNResult() {
+            return nan != 0;
+        }
+
+        /**
+         * Return true if +Inf, -Inf, or both occurred.
+         */
+        public boolean isInfiniteResult() {
+            return inf != 0;
+        }
+
+        /**
+         * Return +Inf, -Inf, or a NaN if both +Inf and -Inf occurred.
+         */
+        public double getInfiniteResult() {
+            assert isInfiniteResult();
+            return Double.longBitsToDouble(inf);
+        }
+
+        /**
          * Return the result of rounding a small accumulator. The rounding mode is to nearest, with
          * ties to even. The small accumulator may be modified by this operation (by carry
          * propagation being done), but the value it represents should not change.
@@ -393,13 +415,15 @@ public class XSum {
             // and a sum of other numbers that overflows with opposite sign,
             // since there is no real ambiguity regarding the sign in such a case.
 
-            if (nan != 0) {
-                return Double.longBitsToDouble(nan);
-            }
+            assert !isNaNResult() : "isNaNResult() must be handled before calling round()";
+            // if (nan != 0) {
+            // return Double.longBitsToDouble(nan);
+            // }
 
-            if (inf != 0) {
-                return Double.longBitsToDouble(inf);
-            }
+            assert !isInfiniteResult() : "isInfiniteResult() must be handled before calling round()";
+            // if (inf != 0) {
+            // return Double.longBitsToDouble(inf);
+            // }
 
             // If none of the numbers summed were infinite or NaN, we proceed to
             // propagate carries, as a preliminary to finding the magnitude of

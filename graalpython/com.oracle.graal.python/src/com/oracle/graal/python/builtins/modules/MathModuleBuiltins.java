@@ -888,9 +888,25 @@ public final class MathModuleBuiltins extends PythonBuiltins {
                     exhausted = true;
                 }
             }
+
+            if (acc.isNaNResult()) {
+                return Double.NaN;
+            }
+
+            if (acc.isInfiniteResult()) {
+                double result = acc.getInfiniteResult();
+                if (Double.isNaN(result)) {
+                    throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.NEG_INF_PLUS_INF_IN);
+                } else {
+                    assert Double.isInfinite(result);
+                    return result;
+                }
+            }
+
             double result = acc.round();
-            if (Double.isNaN(result)) {
-                throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.NEG_INF_PLUS_INF_IN);
+            // +Inf or -Inf if exponent has overflowed
+            if (Double.isInfinite(result)) {
+                throw raiseNode.raise(inliningTarget, OverflowError, ErrorMessages.INTERMEDIATE_OVERFLOW_IN, "fsum");
             } else {
                 return result;
             }
