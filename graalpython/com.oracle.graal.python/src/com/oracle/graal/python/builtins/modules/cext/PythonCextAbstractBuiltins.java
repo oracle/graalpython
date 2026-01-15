@@ -181,11 +181,11 @@ public final class PythonCextAbstractBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    abstract static class PyNumber_Long extends CApiUnaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Ignored)
+    abstract static class GraalPyPrivate_PyNumber_Long extends CApiUnaryBuiltinNode {
 
         @Specialization
-        static Object nlong(Object object,
+        static Object doGeneric(Object object,
                         @Bind Node inliningTarget,
                         @Cached PyNumberLongNode pyNumberLongNode) {
             return pyNumberLongNode.execute(null, inliningTarget, object);
@@ -241,18 +241,8 @@ public final class PythonCextAbstractBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    abstract static class PyNumber_Float extends CApiUnaryBuiltinNode {
-
-        @Specialization
-        static double doDoubleNativeWrapper(double object) {
-            return object;
-        }
-
-        @Specialization
-        static double doLongNativeWrapper(long object) {
-            return object;
-        }
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Ignored)
+    abstract static class GraalPyPrivate_PyNumber_Float extends CApiUnaryBuiltinNode {
 
         @Specialization
         static Object doGeneric(Object object,

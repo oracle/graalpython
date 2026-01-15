@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -67,18 +67,7 @@ public final class PythonCextFloatBuiltins {
 
     @CApiBuiltin(ret = ArgDescriptor.Double, args = {PyObject}, call = Ignored)
     abstract static class GraalPyPrivate_Float_AsDouble extends CApiUnaryBuiltinNode {
-
         @Specialization
-        static double doLongNativeWrapper(long object) {
-            return object;
-        }
-
-        @Specialization
-        static double doDoubleNativeWrapper(double object) {
-            return object;
-        }
-
-        @Specialization(guards = {"!isLong(object)", "!isDouble(object)"})
         static double doGenericErr(Object object,
                         @Bind Node inliningTarget,
                         @Cached PyFloatAsDoubleNode asDoubleNode) {

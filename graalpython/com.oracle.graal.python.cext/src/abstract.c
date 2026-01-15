@@ -1,4 +1,4 @@
-/* Copyright (c) 2024, 2025, Oracle and/or its affiliates.
+/* Copyright (c) 2024, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2024 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -1571,14 +1571,15 @@ PyNumber_AsSsize_t(PyObject *item, PyObject *err)
 }
 
 
-#if 0 // GraalPy change
 PyObject *
 PyNumber_Long(PyObject *o)
 {
+#if 0 // GraalPy change
     PyObject *result;
     PyNumberMethods *m;
     PyObject *trunc_func;
     Py_buffer view;
+#endif // GraalPy change
 
     if (o == NULL) {
         return null_error();
@@ -1587,6 +1588,12 @@ PyNumber_Long(PyObject *o)
     if (PyLong_CheckExact(o)) {
         return Py_NewRef(o);
     }
+
+    /* GraalPy change: The above case already handles boxed long values. Hence,
+       those may not reach this point. */
+    assert (!points_to_py_int_handle(o));
+    return GraalPyPrivate_PyNumber_Long(o);
+#if 0 // GraalPy change
     m = Py_TYPE(o)->tp_as_number;
     if (m && m->nb_int) { /* This should include subclasses of int */
         /* Convert using the nb_int slot, which should return something
@@ -1685,6 +1692,7 @@ PyNumber_Long(PyObject *o)
 
     return type_error("int() argument must be a string, a bytes-like object "
                       "or a real number, not '%.200s'", o);
+#endif // GraalPy change
 }
 
 PyObject *
@@ -1698,6 +1706,19 @@ PyNumber_Float(PyObject *o)
         return Py_NewRef(o);
     }
 
+    // GraalPy change
+    if (points_to_py_float_handle(o)) {
+        assert(Py_REFCNT(o) == _Py_IMMORTAL_REFCNT);
+        return o;
+    }
+    if (points_to_py_int_handle(o)) {
+        assert(Py_REFCNT(o) == _Py_IMMORTAL_REFCNT);
+        return PyFloat_FromDouble(pointer_to_int64(o));
+    }
+
+    return GraalPyPrivate_PyNumber_Float(o);
+
+#if 0 // GraalPy change
     PyNumberMethods *m = Py_TYPE(o)->tp_as_number;
     if (m && m->nb_float) { /* This should include subclasses of float */
         PyObject *res = m->nb_float(o);
@@ -1745,9 +1766,11 @@ PyNumber_Float(PyObject *o)
         return PyFloat_FromDouble(PyFloat_AS_DOUBLE(o));
     }
     return PyFloat_FromString(o);
+#endif // GraalPy change
 }
 
 
+#if 0 // GraalPy change
 PyObject *
 PyNumber_ToBase(PyObject *n, int base)
 {
