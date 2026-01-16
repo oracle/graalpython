@@ -40,6 +40,18 @@
  */
 package com.oracle.graal.python.builtins.modules.weakref;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ReferenceError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___BYTES__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REVERSED__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BYTES__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REVERSED__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETITEM__;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+
+import java.util.List;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
@@ -132,18 +144,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
-
-import java.util.List;
-
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ReferenceError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___BYTES__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REVERSED__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BYTES__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___DELITEM__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___REVERSED__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SETITEM__;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PProxyType)
 public final class ProxyTypeBuiltins extends PythonBuiltins {
@@ -311,17 +311,15 @@ public final class ProxyTypeBuiltins extends PythonBuiltins {
         }
     }
 
-    @Slot(value = Slot.SlotKind.nb_bool)
+    @Slot(value = Slot.SlotKind.nb_bool, isComplex = true)
     @GenerateUncached
     @GenerateNodeFactory
     public abstract static class BoolNode extends TpSlotInquiry.NbBoolBuiltinNode {
-
         @Specialization
-        @TruffleBoundary
-        static boolean bool(PProxyType self,
-                        @Bind Node inliningTarget) {
-            Object object = unwrap(self, inliningTarget);
-            return PyObjectIsTrueNode.executeUncached(object);
+        static boolean bool(VirtualFrame frame, PProxyType self,
+                        @Bind Node inliningTarget,
+                        @Cached PyObjectIsTrueNode isTrueNode) {
+            return isTrueNode.execute(frame, unwrap(self, inliningTarget));
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,7 +51,7 @@ public class SlotsMapping {
 
     static String getSlotBaseClass(Slot s) {
         return switch (s.value()) {
-            case nb_bool -> "TpSlotInquiry.TpSlotInquiryBuiltin";
+            case nb_bool -> "TpSlotInquiry.TpSlotInquiryBuiltin" + getSuffix(s.isComplex());
             case nb_index, nb_int, nb_float, nb_absolute, nb_positive, nb_negative, nb_invert,
                             tp_iter, tp_str, tp_repr, am_aiter, am_anext, am_await ->
                 "TpSlotUnaryFunc.TpSlotUnaryFuncBuiltin";
@@ -128,10 +128,7 @@ public class SlotsMapping {
     }
 
     static boolean supportsComplex(SlotKind s) {
-        return switch (s) {
-            case nb_bool -> false;
-            default -> true;
-        };
+        return true;
     }
 
     static boolean supportsSimple(SlotKind s) {
