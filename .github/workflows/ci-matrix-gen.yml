@@ -30,7 +30,7 @@ jobs:
       TARGET: tier1
       JOBS: ${{ inputs.jobs_to_run }}
     steps: &generate_matrix
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Download sjsonnet
         run: |
           curl -L -o sjsonnet https://github.com/databricks/sjsonnet/releases/download/0.5.7/sjsonnet-0.5.7-linux-x86_64
@@ -68,6 +68,10 @@ jobs:
       matrix:
         include: ${{ fromJson(needs.generate-tier1.outputs.matrix) }}
     steps: &buildsteps
+      - name: Process matrix downloads
+        if: ${{ matrix.downloads_steps }}
+        run: |
+          ${{ matrix.downloads_steps }}
 
       - name: Setup env
         shell: bash
@@ -92,10 +96,10 @@ jobs:
             "$($pair.Name)=$value" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           }
 
-      - name: Actions/Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           path: main
+          fetch-depth: ${{ matrix.fetch_depth }}
 
       - name: Setup Unix paths like on buildbot CI
         if: runner.os != 'Windows'
@@ -209,11 +213,6 @@ jobs:
         if: ${{ runner.os == 'Windows' }}
         uses: microsoft/setup-msbuild@v1.0.2
       
-      - name: Process matrix downloads
-        if: ${{ matrix.downloads_steps }}
-        run: |
-          ${{ matrix.downloads_steps }}
-
       - name: Setup
         working-directory: main
         if: ${{ matrix.setup_steps }}

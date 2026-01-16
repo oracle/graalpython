@@ -1,0 +1,29 @@
+{
+    "name": "GraalPy",
+    "build": { "dockerfile": "Dockerfile" },
+    "postCreateCommand": {
+        "vscodeinit": "sudo chmod a+rwx ../ && mx -y sforceimports && mx -y vscodeinit && ln -sf $PWD/../graalpython.code-workspace graalpython.code-workspace && mx -y build --target GRAALPY_JVM_STANDALONE"
+    },
+    "hostRequirements": {
+        "cpus": 2,
+        "memory": "16gb",
+        "storage": "64gb"
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "vscjava.vscode-java-pack",
+                "zoma.vscode-auto-open-workspace"
+            ],
+            "settings": {
+                "autoOpenWorkspace.enableAutoOpenIfSingleWorkspace": true,
+                "java.autobuild.enabled": false
+            }
+        },
+        "codespaces": {
+            "openFiles": [
+                "docs/contributor/CONTRIBUTING.md"
+            ]
+        }
+    }
+}

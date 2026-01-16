@@ -5,12 +5,11 @@ on:
   workflow_dispatch:
 
 jobs:
-
   build-standalone-artifacts:
-    if: github.event.pull_request.draft == false
+    if: github.event.pull_request.draft == false && success()
     uses: ./.github/workflows/ci-matrix-gen.yml
     with:
-      jobs_to_run: ^(?=.*python-svm-build).*$
+      jobs_to_run: ^(?:python-svm-build|style|style-ecj)-gate-.*$
       logs_retention_days: 0
       artifacts_retention_days: 0
 
@@ -19,4 +18,4 @@ jobs:
     needs: build-standalone-artifacts
     uses: ./.github/workflows/ci-matrix-gen.yml
     with:
-      jobs_to_run: ^(?=.*python)(?!.*(retagger|dsl|build|bench)).*$
+      jobs_to_run: ^(?!python-svm-build|style).*-gate.*$

@@ -71,7 +71,8 @@ JOB_EXCLUSION_TERMS = (
 )
 
 DOWNLOADS_LINKS = {
-    "GRADLE_JAVA_HOME": "https://download.oracle.com/java/{major_version}/latest/jdk-{major_version}_{os}-{arch_short}_bin{ext}"
+    "GRADLE_JAVA_HOME": "https://download.oracle.com/java/{major_version}/latest/jdk-{major_version}_{os}-{arch_short}_bin{ext}",
+    "ECLIPSE": "https://www.eclipse.org/downloads/download.php?file=/eclipse/downloads/drops4/R-4.26-202211231800/eclipse-SDK-4.26-linux-gtk-x86_64.tar.gz"
 }
 
 # Gitlab Runners OSS
@@ -82,11 +83,24 @@ OSS = {
     "windows-latest": ["windows", "amd64"]
 }
 
-# Override unavailable Python versions for some OS/Arch combinations
+# Override unavailable Python versions for some OS/Arch / job name combinations
 PYTHON_VERSIONS = {
     "ubuntu-24.04-arm": "3.12.8",
+    "ubuntu-latest": "3.12.8",
+    "style-gate": "3.8.12",
+    "style-ecj-gate": "3.8.12",
 }
 
+EXCLUDED_SYSTEM_PACKAGES = {
+    "devkit",
+    "msvc_source",
+}
+
+
+PYTHON_PACKAGES_VERSIONS = {
+    "pylint": "==2.4",
+    "astroid": "==2.4"
+}
 
 @dataclass
 class Artifact:
@@ -148,8 +162,10 @@ class Job:
         if "MX_PYTHON_VERSION" in self.env:
             del self.env["MX_PYTHON_VERSION"]
 
-        if self.runs_on in PYTHON_VERSIONS:
-            python_version = PYTHON_VERSIONS[self.runs_on]
+        for key, version in PYTHON_VERSIONS.items():
+            if self.runs_on == key or key in self.name:
+                python_version = version
+
         return python_version
 
     @cached_property
@@ -163,16 +179,20 @@ class Job:
                 continue
             elif k.startswith("00:") or k.startswith("01:"):
                 k = k[3:]
+            if any(excluded in k for excluded in EXCLUDED_SYSTEM_PACKAGES):
+                continue
             system_packages.append(f"'{k}'" if self.runs_on != "windows-latest" else f"{k}")
         return system_packages
 
     @cached_property
     def python_packages(self) -> list[str]:
-        python_packages = []
+        python_packages = [f"{key}{value}" for key, value in PYTHON_PACKAGES_VERSIONS.items()]
         for k, v in self.job.get("packages", {}).items():
             if k.startswith("pip:"):
-                python_packages.append(f"'{k[4:]}{v}'" if self.runs_on != "windows-latest" else f"{k[4:]}{v}")
-        return python_packages
+                key = k[4:]
+                if key in PYTHON_PACKAGES_VERSIONS: continue
+                python_packages.append(f"{key}{v}")
+        return [f"'{pkg}'" if self.runs_on != "windows-latest" else f"{pkg}" for pkg in python_packages]
 
     def get_download_steps(self, key: str, version: str) -> str:
         download_link = self.get_download_link(key, version)
@@ -186,7 +206,7 @@ class Job:
                 Add-Content $env:GITHUB_ENV "{key}=$(Resolve-Path $dirname)"
             """)
 
-        return (f"wget -q {download_link} && "
+        return (f"wget -q '{download_link}' -O {filename} && "
             f"dirname=$(tar -tzf {filename} | head -1 | cut -f1 -d '/') && "
             f"tar -xzf {filename} && "
             f'echo {key}=$(realpath "$dirname") >> $GITHUB_ENV')
@@ -201,7 +221,7 @@ class Job:
 
         vars = {
             "major_version": major_version,
-            "os":os,
+            "os": os,
             "arch": arch,
             "arch_short": arch_short,
             "ext": extension,
@@ -261,6 +281,15 @@ class Job:
             return Artifact(pattern, os.path.normpath(artifacts[0].get("dir", ".")))
         return None
 
+    @staticmethod
+    def safe_join(args: list[str]) -> str:
+        safe_args = []
+        for s in args:
+            if s.startswith("$(") and s.endswith(")"):
+                safe_args.append(s)
+            else:
+                safe_args.append(shlex.quote(s))
+        return " ".join(safe_args)
 
     @staticmethod
     def flatten_command(args: list[str | list[str]]) -> list[str]:
@@ -269,18 +298,19 @@ class Job:
             if isinstance(s, list):
                 flattened_args.append(f"$( {shlex.join(s)} )")
             else:
-                flattened_args.append(s)
+                out = re.sub(r"\$\{([A-Z0-9_]+)\}", r"$\1", s).replace("'", "")
+                flattened_args.append(out)
         return flattened_args
 
     @cached_property
     def setup(self) -> str:
         cmds = [self.flatten_command(step) for step in self.job.get("setup", [])]
-        return "\n".join(shlex.join(s) for s in cmds)
+        return "\n".join(self.safe_join(s) for s in cmds)
 
     @cached_property
     def run(self) -> str:
         cmds = [self.flatten_command(step) for step in self.job.get("run", [])]
-        return "\n".join(shlex.join(s) for s in cmds)
+        return "\n".join(self.safe_join(s) for s in cmds)
 
     @cached_property
     def logs(self) -> str:
@@ -295,6 +325,7 @@ class Job:
             "name": self.name,
             "mx_version": self.mx_version,
             "os": self.runs_on,
+            "fetch_depth": 0 if "--tags style" in self.run else 1,
             "python_version": self.python_version,
             "setup_steps": self.setup,
             "run_steps": self.run,
@@ -304,7 +335,7 @@ class Job:
             "require_artifact": [self.download_artifact.name, self.download_artifact.pattern] if self.download_artifact else None,
             "logs": self.logs.replace("../", "${{ env.PARENT_DIRECTORY }}/"),
             "env": self.env,
-            "downloads_steps": " ".join(self.downloads),
+            "downloads_steps": "\n".join(self.downloads),
         }
 
     def __str__(self):

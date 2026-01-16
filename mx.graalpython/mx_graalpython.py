@@ -1038,6 +1038,7 @@ def deploy_graalpy_extensions_to_local_maven_repo(env=None, only_projects=None):
     version = GRAAL_VERSION
     common_args = [
         '-DskipJavainterfacegen',
+        '-DskipSigtest',
         '-DskipTests',
         f'-Drevision={version}',
         f'-Dlocal.repo.url=' + pathlib.Path(local_repo_path).as_uri(),
