@@ -290,9 +290,24 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             mod.setAttribute(tsLiteral("foreign_wrapper"), PNone.NO_VALUE);
         } else {
             mod.setAttribute(tsLiteral("using_native_primitive_storage_strategy"), context.getLanguage().getEngineOption(PythonOptions.UseNativePrimitiveStorageStrategy));
+            mod.setAttribute(tsLiteral("interop_has_gil"), new InteropGilTester());
         }
         if (PythonImageBuildOptions.WITHOUT_PLATFORM_ACCESS || !context.getOption(PythonOptions.RunViaLauncher)) {
             mod.setAttribute(tsLiteral("list_files"), PNone.NO_VALUE);
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    static class InteropGilTester implements TruffleObject {
+        @ExportMessage
+        boolean isExecutable() {
+            return true;
+        }
+
+        @ExportMessage
+        Object execute(Object[] args,
+                        @Bind Node inliningTarget) {
+            return PythonContext.get(inliningTarget).ownsGil();
         }
     }
 

@@ -1,4 +1,4 @@
-# Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2023, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -85,20 +85,23 @@ def extract(archive):
     if splitext(archive)[1] == ".zip":
         with zipfile.ZipFile(archive) as f:
             f.extractall()
+            return f.infolist()[0].filename.split('/', 1)[0]
     else:
         with tarfile.open(archive) as f:
             f.extractall()
+            return f.getmembers()[0].name.split('/', 1)[0]
 
 
-def create_venv():
+def create_venv(basedir):
     if sys.platform == "win32":
         exe = ".exe"
         pip = "graalpy/Scripts/pip.exe"
     else:
         exe = ""
         pip = "graalpy/bin/pip"
-    binary = next(iter(glob(f"graalpy-*/bin/graalpy{exe}")))
+    binary = os.path.join(basedir, "bin", f"graalpy{exe}")
     print("Creating venv with", binary, flush=True)
+    shutil.rmtree("graalpy", ignore_errors=True)
     subprocess.check_call([binary, "-m", "venv", "graalpy"])
     print("Installing wheel with", pip, flush=True)
     subprocess.check_call([pip, "install", "wheel"])
@@ -153,6 +156,7 @@ def build_wheels(pip):
     else:
         available_scripts = {}
     remaining_packages = 0
+    env = prepare_environment(pip)
     while remaining_packages != len(packages_to_build):
         remaining_packages = len(packages_to_build)
         for name, version in packages_to_build.copy():
@@ -162,7 +166,6 @@ def build_wheels(pip):
                 script = f"{name}.{script_ext}".lower()
             if script in available_scripts:
                 script = join(scriptdir, available_scripts[script])
-                env = prepare_environment(pip)
                 print("Building", name, version, "with", script, flush=True)
                 if sys.platform == "win32":
                     cmd = [script, version]  # Python's subprocess.py does the quoting we need
@@ -176,7 +179,7 @@ def build_wheels(pip):
                     continue
                 print(script, "did not build a wheel, we will do so now", flush=True)
             print("Building", name, version, flush=True)
-            p = subprocess.run([pip, "wheel", f"{name}=={version}"])
+            p = subprocess.run([pip, "wheel", f"{name}=={version}"], env=env)
             if p.returncode == 0:
                 packages_to_build.remove((name, version))
     if packages_to_build:
@@ -196,8 +199,8 @@ if __name__ == "__main__":
     outpath = f"graalpy{ext}"
 
     download(args.graalpy_url, outpath)
-    extract(outpath)
-    pip = create_venv()
+    extracted = extract(outpath)
+    pip = create_venv(extracted)
     success = build_wheels(pip)
     repair_wheels("wheelhouse")
     if not success and not args.ignore_failures:
