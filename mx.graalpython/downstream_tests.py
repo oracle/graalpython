@@ -149,16 +149,18 @@ def downstream_test_pyo3(graalpy, testdir):
 
 @downstream_test('pydantic-core')
 def downstream_test_pydantic_core(graalpy, testdir):
-    run(['git', 'clone', 'https://github.com/pydantic/pydantic-core.git', '-b', 'main'], cwd=testdir)
-    src = testdir / 'pydantic-core'
-    run(['uv', 'sync', '--python', graalpy, '--group', 'testing'], cwd=src)
+    run(['git', 'clone', 'https://github.com/pydantic/pydantic.git', '-b', 'main'], cwd=testdir)
+    src = testdir / 'pydantic' / 'pydantic-core'
+    run(['uv', 'sync', '--python', graalpy, '--group', 'testing-extra'], cwd=src)
     run(['uv', 'build', '--python', graalpy, '--wheel', '.'], cwd=src)
-    [wheel] = (src / 'dist').glob('pydantic_core-*graalpy*.whl')
+    [wheel] = (src.parent / 'dist').glob('pydantic_core-*graalpy*.whl')
     # uv doesn't accept wheels with devtags
     if match := re.search('dev[0-9a-f]{6,}', wheel.name):
         wheel = wheel.rename(wheel.parent / wheel.name.replace(match.group(), ''))
     run(['uv', 'pip', 'install', wheel], cwd=src)
-    run(['uv', 'run', 'pytest', '-v', '--tb=short'], cwd=src)
+    env = os.environ.copy()
+    env['HYPOTHESIS_PROFILE'] = 'slow'
+    run(['uv', 'run', 'pytest', '-v', '--tb=short'], cwd=src, env=env)
 
 
 @downstream_test('jiter')
