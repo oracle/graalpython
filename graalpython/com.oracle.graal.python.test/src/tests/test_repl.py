@@ -111,7 +111,7 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
                     else:
                         expected = expected_preamble
                     if index >= 0 or not ignore_preamble:
-                        assert actual == expected, f'Actual:\n{actual!r}\nExpected:\n{expected!r}'
+                        assert actual.replace('\r', '') == expected, f'Actual:\n{actual!r}\nExpected:\n{expected!r}'
                     index += 1
                     whole_out += out[:-4]
                     out = out[-4:]
