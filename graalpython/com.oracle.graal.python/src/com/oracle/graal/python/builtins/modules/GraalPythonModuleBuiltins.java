@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -290,9 +290,24 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             mod.setAttribute(tsLiteral("foreign_wrapper"), PNone.NO_VALUE);
         } else {
             mod.setAttribute(tsLiteral("using_native_primitive_storage_strategy"), context.getLanguage().getEngineOption(PythonOptions.UseNativePrimitiveStorageStrategy));
+            mod.setAttribute(tsLiteral("interop_has_gil"), new InteropGilTester());
         }
         if (PythonImageBuildOptions.WITHOUT_PLATFORM_ACCESS || !context.getOption(PythonOptions.RunViaLauncher)) {
             mod.setAttribute(tsLiteral("list_files"), PNone.NO_VALUE);
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    static class InteropGilTester implements TruffleObject {
+        @ExportMessage
+        boolean isExecutable() {
+            return true;
+        }
+
+        @ExportMessage
+        Object execute(Object[] args,
+                        @Bind Node inliningTarget) {
+            return PythonContext.get(inliningTarget).ownsGil();
         }
     }
 
