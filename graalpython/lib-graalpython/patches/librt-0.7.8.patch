@@ -12,7 +12,7 @@ index 115c309..d0c825f 100644
  
  static inline void CPy_DECREF_NO_IMM(PyObject *op)
 diff --git a/pythonsupport.h b/pythonsupport.h
-index 60454b6..2f78078 100644
+index 60454b6..619cb7c 100644
 --- a/pythonsupport.h
 +++ b/pythonsupport.h
 @@ -216,6 +216,7 @@ CPyLong_AsSsize_tAndOverflow(PyObject *vv, int *overflow)
@@ -23,13 +23,7 @@ index 60454b6..2f78078 100644
  // Adapted from listobject.c in Python 3.7.0
  static int
  list_resize(PyListObject *self, Py_ssize_t newsize)
-@@ -257,11 +258,12 @@ list_resize(PyListObject *self, Py_ssize_t newsize)
-         PyErr_NoMemory();
-         return -1;
-     }
--    PySequence_Fast_ITEMS((PyObject*)self) = items;
-+    self->ob_item = items;
-     Py_SET_SIZE(self, newsize);
+@@ -262,6 +263,7 @@ list_resize(PyListObject *self, Py_ssize_t newsize)
      self->allocated = new_allocated;
      return 0;
  }
