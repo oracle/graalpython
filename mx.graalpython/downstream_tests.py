@@ -173,6 +173,16 @@ def downstream_test_jiter(graalpy, testdir):
     run_in_venv(venv, ['pytest', '-v', '--tb=short', 'crates/jiter-python/tests'], cwd=src)
     run_in_venv(venv, ['python', 'crates/jiter-python/bench.py', 'jiter', 'jiter-cache', '--fast'], cwd=src)
 
+@downstream_test('cython')
+def downstream_test_cython(graalpy, testdir):
+    run(['git', 'clone', 'https://github.com/cython/cython.git', '-b', 'master'], cwd=testdir)
+    src = testdir / 'cython'
+    venv = src / 'venv'
+    env = os.environ.copy()
+    env["PYTHON_VERSION"] = "graalpy"
+    env["BACKEND"] = "c"
+    run([graalpy, '-m', 'venv', str(venv)])
+    run_in_venv(venv, ["bash", "./Tools/ci-run.sh"], cwd=src, env=env)
 
 def run_downstream_test(python, project):
     testdir = Path('downstream-tests').absolute()
