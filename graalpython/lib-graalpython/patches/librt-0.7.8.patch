@@ -12,15 +12,19 @@ index 115c309..d0c825f 100644
  
  static inline void CPy_DECREF_NO_IMM(PyObject *op)
 diff --git a/pythonsupport.h b/pythonsupport.h
-index 60454b6..de238b9 100644
+index 60454b6..ceedd8b 100644
 --- a/pythonsupport.h
 +++ b/pythonsupport.h
-@@ -257,7 +257,7 @@ list_resize(PyListObject *self, Py_ssize_t newsize)
+@@ -257,7 +257,11 @@ list_resize(PyListObject *self, Py_ssize_t newsize)
          PyErr_NoMemory();
          return -1;
      }
 -    PySequence_Fast_ITEMS((PyObject*)self) = items;
-+    self->ob_item = items;
++    
++    for (Py_ssize_t i = Py_SIZE(self); i < newsize; i++) {
++        PyList_SetItem(self, i, items[i]);
++    }
++
      Py_SET_SIZE(self, newsize);
      self->allocated = new_allocated;
      return 0;
