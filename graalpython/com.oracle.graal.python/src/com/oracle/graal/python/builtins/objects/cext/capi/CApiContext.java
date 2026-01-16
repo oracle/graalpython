@@ -1340,6 +1340,14 @@ public final class CApiContext extends CExtContext {
         return pointer;
     }
 
+    public long registerClosure(String name, NfiUpcallSignature signature, MethodHandle methodHandle, Object key, Object delegate) {
+        CompilerAsserts.neverPartOfCompilation();
+        PythonContext context = getContext();
+        long pointer = signature.createClosure(context.ensureNfiContext(), name, methodHandle);
+        setClosurePointer(delegate, key, pointer);
+        return pointer;
+    }
+
     @TruffleBoundary
     public long getOrAllocateNativePyMethodDef(PyMethodDefHelper pyMethodDef) {
         return methodDefinitions.computeIfAbsent(pyMethodDef, PyMethodDefHelper::allocate);

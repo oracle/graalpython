@@ -71,6 +71,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyCFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.GetIndexNodeGen;
@@ -1143,6 +1144,11 @@ public abstract class CExtCommonNodes {
         @Specialization
         static long doNfiFunction(NfiBoundFunction function) {
             return function.getAddress();
+        }
+
+        @Specialization
+        static long doPyCFunctionWrapper(PyCFunctionWrapper wrapper) {
+            return wrapper.getPointer();
         }
 
         @Specialization(guards = "!isNativePointer(pointerObject)", limit = "3")

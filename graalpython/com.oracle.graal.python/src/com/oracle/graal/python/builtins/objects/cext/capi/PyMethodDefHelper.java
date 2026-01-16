@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.nfi2.NativeMemory;
+import com.oracle.graal.python.nfi2.NfiBoundFunction;
 import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -100,6 +101,7 @@ public record PyMethodDefHelper(TruffleString name, Object meth, int flags, Truf
         PKeyword[] kwDefaults = object.getKwDefaults();
         for (int i = 0; i < kwDefaults.length; i++) {
             if (ExternalFunctionNodes.KW_CALLABLE.equals(kwDefaults[i].getName())) {
+                assert kwDefaults[i].getValue() instanceof NfiBoundFunction;
                 // This can happen for slot wrapper methods of native slots
                 return kwDefaults[i].getValue();
             }
