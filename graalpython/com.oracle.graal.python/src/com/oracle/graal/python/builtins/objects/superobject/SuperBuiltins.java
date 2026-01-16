@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -105,6 +105,8 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.bytecode.BytecodeFrame;
+import com.oracle.truffle.api.bytecode.BytecodeNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -277,8 +279,9 @@ public final class SuperBuiltins extends PythonBuiltins {
                         @Shared @Cached PRaiseNode raiseNode,
                         @Shared @Cached CellBuiltins.GetRefNode getRefNode) {
             if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                PBytecodeDSLRootNode rootNode = (PBytecodeDSLRootNode) getRootNode();
-                return initFromLocalFrame(frame, inliningTarget, self, rootNode, frame, getRefNode, raiseNode);
+                BytecodeNode bytecodeNode = BytecodeNode.get(this);
+                assert bytecodeNode != null : this;
+                return initFromLocalFrame(frame, inliningTarget, self, bytecodeNode, getRefNode, raiseNode);
             } else {
                 PBytecodeRootNode rootNode = (PBytecodeRootNode) getRootNode();
                 return initFromLocalFrame(frame, inliningTarget, self, rootNode, rootNode.getLocalFrame(frame), getRefNode, raiseNode);
@@ -298,14 +301,20 @@ public final class SuperBuiltins extends PythonBuiltins {
             if (target == null) {
                 throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.NO_CURRENT_FRAME, "super()");
             }
-            MaterializedFrame locals = target.getLocals();
-            if (locals == null) {
-                throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.SUPER_NO_CLASS);
-            }
-            FrameInfo frameInfo = (FrameInfo) locals.getFrameDescriptor().getInfo();
+
             if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                return initFromLocalFrame(frame, inliningTarget, self, (PBytecodeDSLRootNode) frameInfo.getRootNode(), locals, getRefNode, raiseNode);
+                BytecodeFrame bytecodeFrame = target.getBytecodeFrame();
+                if (bytecodeFrame == null) {
+                    throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.SUPER_NO_CLASS);
+                }
+                FrameInfo frameInfo = (FrameInfo) bytecodeFrame.getFrameDescriptorInfo();
+                return initFromNonLocalFrame(frame, inliningTarget, self, (PBytecodeDSLRootNode) frameInfo.getRootNode(), bytecodeFrame, getRefNode, raiseNode);
             } else {
+                MaterializedFrame locals = target.getLocals();
+                if (locals == null) {
+                    throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.SUPER_NO_CLASS);
+                }
+                FrameInfo frameInfo = (FrameInfo) locals.getFrameDescriptor().getInfo();
                 return initFromLocalFrame(frame, inliningTarget, self, (PBytecodeRootNode) frameInfo.getRootNode(), locals, getRefNode, raiseNode);
             }
         }
@@ -328,9 +337,10 @@ public final class SuperBuiltins extends PythonBuiltins {
             return init(frame, self, cls, obj, inliningTarget, raiseNode);
         }
 
-        private PNone initFromLocalFrame(VirtualFrame frame, Node inliningTarget, SuperObject self, PBytecodeDSLRootNode rootNode, Frame localFrame, CellBuiltins.GetRefNode getRefNode,
+        private PNone initFromLocalFrame(VirtualFrame frame, Node inliningTarget, SuperObject self, BytecodeNode bytecodeNode, CellBuiltins.GetRefNode getRefNode,
                         PRaiseNode raiseNode) {
-            PCell classCell = rootNode.readClassCell(localFrame);
+            PBytecodeDSLRootNode rootNode = (PBytecodeDSLRootNode) bytecodeNode.getRootNode();
+            PCell classCell = rootNode.readClassCell(frame, bytecodeNode);
             if (!rootNode.hasSelf() || classCell == null) {
                 throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.SUPER_NO_CLASS);
             }
@@ -339,7 +349,25 @@ public final class SuperBuiltins extends PythonBuiltins {
                 // the cell is empty
                 throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.SUPER_EMPTY_CLASS);
             }
-            Object obj = rootNode.readSelf(localFrame);
+            Object obj = rootNode.readSelf(frame, bytecodeNode);
+            if (obj == null) {
+                throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.SUPER_ARG0_DELETED);
+            }
+            return init(frame, self, cls, obj, inliningTarget, raiseNode);
+        }
+
+        private PNone initFromNonLocalFrame(VirtualFrame frame, Node inliningTarget, SuperObject self, PBytecodeDSLRootNode rootNode, BytecodeFrame targetFrame, CellBuiltins.GetRefNode getRefNode,
+                        PRaiseNode raiseNode) {
+            PCell classCell = rootNode.readClassCell(targetFrame);
+            if (!rootNode.hasSelf() || classCell == null) {
+                throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.SUPER_NO_CLASS);
+            }
+            Object cls = getRefNode.execute(inliningTarget, classCell);
+            if (cls == null) {
+                // the cell is empty
+                throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.SUPER_EMPTY_CLASS);
+            }
+            Object obj = rootNode.readSelf(targetFrame);
             if (obj == null) {
                 throw raiseNode.raise(inliningTarget, RuntimeError, ErrorMessages.SUPER_ARG0_DELETED);
             }

@@ -56,9 +56,11 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.bytecode.BytecodeFrame;
 import com.oracle.truffle.api.bytecode.BytecodeNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -208,7 +210,13 @@ public abstract class MaterializeFrameNode extends Node {
 
     public static PFrame materializeGeneratorFrame(PythonLanguage language, Node location, MaterializedFrame generatorFrame, PythonObject globals, PFrame.Reference frameRef) {
         PFrame escapedFrame = PFactory.createPFrame(language, frameRef, location, false);
-        escapedFrame.setLocals(generatorFrame);
+        if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+            BytecodeNode bytecodeNode = BytecodeNode.get(location);
+            assert bytecodeNode != null : location;
+            escapedFrame.setBytecodeFrame(bytecodeNode.createMaterializedFrame(0, generatorFrame));
+        } else {
+            escapedFrame.setLocals(generatorFrame);
+        }
         escapedFrame.setGlobals(globals);
         frameRef.setPyFrame(escapedFrame);
         return escapedFrame;
@@ -293,24 +301,24 @@ public abstract class MaterializeFrameNode extends Node {
                         @Bind Node inliningTarget,
                         @Cached(inline = false) ValueProfile frameDescriptorProfile,
                         @Cached InlinedIntValueProfile slotCountProfile,
-                        @Cached InlinedBranchProfile createLocalsProfile) {
-            FrameDescriptor cachedFd = frameDescriptorProfile.profile(frameToSync.getFrameDescriptor());
-            MaterializedFrame target = pyFrame.getLocals();
-            if (pyFrame.getLocals() == null) {
-                createLocalsProfile.enter(inliningTarget);
-                target = Truffle.getRuntime().createMaterializedFrame(EMPTY_OBJECT_ARRAY, cachedFd);
-                pyFrame.setLocals(target);
-            }
-            assert cachedFd == target.getFrameDescriptor();
-            int slotCount = slotCountProfile.profile(inliningTarget, variableSlotCount(cachedFd));
-
+                        @Exclusive @Cached InlinedBranchProfile createLocalsProfile) {
             if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                CompilerAsserts.partialEvaluationConstant(location);
                 BytecodeNode bytecodeNode = BytecodeNode.get(location);
                 if (bytecodeNode != null) {
-                    bytecodeNode.copyLocalValues(0, frameToSync, target, 0, slotCount);
+                    // TODO: avoid always making a copy, if a BytecodeFrame is set, just update it
+                    BytecodeFrame copiedFrame = bytecodeNode.createCopiedFrame(0, frameToSync);
+                    pyFrame.setBytecodeFrame(copiedFrame);
                 }
             } else {
+                FrameDescriptor cachedFd = frameDescriptorProfile.profile(frameToSync.getFrameDescriptor());
+                MaterializedFrame target = pyFrame.getLocals();
+                if (pyFrame.getLocals() == null) {
+                    createLocalsProfile.enter(inliningTarget);
+                    target = Truffle.getRuntime().createMaterializedFrame(EMPTY_OBJECT_ARRAY, cachedFd);
+                    pyFrame.setLocals(target);
+                }
+                assert cachedFd == target.getFrameDescriptor();
+                int slotCount = slotCountProfile.profile(inliningTarget, variableSlotCount(cachedFd));
                 frameToSync.copyTo(0, target, 0, slotCount);
             }
         }
@@ -322,8 +330,19 @@ public abstract class MaterializeFrameNode extends Node {
         }
 
         @Specialization(guards = "isGeneratorFrame(frameToSync)")
-        static void doGenerator(PFrame pyFrame, Frame frameToSync, @SuppressWarnings("unused") Node location) {
-            pyFrame.setLocals(PGenerator.getGeneratorFrame(frameToSync));
+        static void doGenerator(PFrame pyFrame, Frame frameToSync, @SuppressWarnings("unused") Node location,
+                        @Bind Node inliningTarget,
+                        @Exclusive @Cached InlinedBranchProfile createLocalsProfile) {
+            if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
+                BytecodeNode bytecodeNode = BytecodeNode.get(location);
+                assert bytecodeNode != null : location;
+                if (pyFrame.getBytecodeFrame() == null) {
+                    createLocalsProfile.enter(inliningTarget);
+                    pyFrame.setBytecodeFrame(bytecodeNode.createMaterializedFrame(0, frameToSync.materialize()));
+                }
+            } else {
+                pyFrame.setLocals(PGenerator.getGeneratorFrame(frameToSync));
+            }
         }
 
         @Idempotent
