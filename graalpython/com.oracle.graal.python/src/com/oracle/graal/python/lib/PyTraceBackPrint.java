@@ -405,9 +405,9 @@ public abstract class PyTraceBackPrint {
                 }
             }
             if (isExceptionGroup) {
-                printIndentedHeader(out, "Exception Group Traceback (most recent call last) (Java traceback):", indent, "+ ");
+                printIndentedHeader(out, "Exception Group Traceback (most recent call last):", indent, "+ ");
             } else {
-                printIndentedHeader(out, "Traceback (most recent call last) (Java traceback):", indent, "");
+                printIndentedHeader(out, "Traceback (most recent call last):", indent, "");
             }
             printInternal(inliningTarget, getTbFrameNode, materializeStNode, out, tb, limit, indent, margin);
         } else {
