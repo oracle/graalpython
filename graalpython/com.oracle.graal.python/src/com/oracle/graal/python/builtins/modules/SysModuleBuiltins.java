@@ -1348,9 +1348,11 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         static final TruffleString T_ATTR_LINENO = tsInternedLiteral("lineno");
         static final TruffleString T_ATTR_OFFSET = tsInternedLiteral("offset");
         static final TruffleString T_ATTR_TEXT = tsInternedLiteral("text");
+        static final TruffleString T_EG_MARGIN = tsInternedLiteral("| ");
 
         protected static final int INT_MAX_GROUP_WIDTH = 5;
         protected static final int INT_MAX_GROUP_DEPTH = 3;
+        protected static final int INT_INDENT_SIZE = 2;
 
         @ValueType
         static final class SyntaxErrData {
@@ -1372,50 +1374,38 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         }
 
         static class ExceptionPrintContext {
-            public final int indent;
-            public final TruffleString margin;
-            public final int depthMax;
-            public final int depthCurrent;
-            public final int widthMax;
+            public int depthMax;
+            public int depthCurrent;
+            public int widthMax;
+            public boolean needsToEnd;
 
-            ExceptionPrintContext(int indent, TruffleString margin) {
-                this.indent = indent;
-                this.margin = margin;
+            ExceptionPrintContext() {
                 this.depthMax = INT_MAX_GROUP_DEPTH;
                 this.depthCurrent = 0;
                 this.widthMax = INT_MAX_GROUP_WIDTH;
+                this.needsToEnd = false;
             }
 
-            ExceptionPrintContext(int indent, TruffleString margin, int depthMax, int depthCurrent, int widthMax) {
-                this.indent = indent;
-                this.margin = margin;
-                this.depthMax = depthMax;
-                this.depthCurrent = depthCurrent;
-                this.widthMax = widthMax;
+            public TruffleString getMargin() {
+                if (this.depthCurrent > 0) {
+                    return T_EG_MARGIN;
+                } else {
+                    return tsLiteral("");
+                }
             }
 
-            ExceptionPrintContext(ExceptionPrintContext ctx) {
-                this.indent = ctx.indent;
-                this.margin = ctx.margin;
-                this.depthMax = ctx.depthMax;
-                this.depthCurrent = ctx.depthCurrent;
-                this.widthMax = ctx.widthMax;
+            public int getIndent() {
+                return this.depthCurrent * INT_INDENT_SIZE;
             }
 
-            public ExceptionPrintContext withIndentIncrease() {
-                return new ExceptionPrintContext(indent + 2, margin, depthMax, depthCurrent, widthMax);
+            public void increaseDepth() {
+                this.depthCurrent++;
             }
 
-            public ExceptionPrintContext withIndent(int indent) {
-                return new ExceptionPrintContext(indent, margin, depthMax, depthCurrent, widthMax);
-            }
-
-            public ExceptionPrintContext withMargin(TruffleString margin) {
-                return new ExceptionPrintContext(indent, margin, depthMax, depthCurrent, widthMax);
-            }
-
-            public ExceptionPrintContext withDepthIncrease() {
-                return new ExceptionPrintContext(indent, margin, depthMax, depthCurrent + 1, widthMax);
+            public void decreaseDepth() {
+                if (depthCurrent > 0) {
+                    this.depthCurrent--;
+                }
             }
         }
 
@@ -1531,7 +1521,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         void printExceptionRecursive(Node inliningTarget, TracebackBuiltins.GetTracebackFrameNode getTbFrameNode, TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStNode,
                                      PythonModule sys, Object out, Object value, Set<Object> seen) {
-            printExceptionRecursive(inliningTarget, getTbFrameNode, materializeStNode, sys, out, value, seen, new ExceptionPrintContext(0, tsLiteral("")));
+            printExceptionRecursive(inliningTarget, getTbFrameNode, materializeStNode, sys, out, value, seen, new ExceptionPrintContext());
         }
 
         @TruffleBoundary
@@ -1544,6 +1534,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                     Object cause = ExceptionNodes.GetCauseNode.executeUncached(value);
                     Object context = ExceptionNodes.GetContextNode.executeUncached(value);
 
+                    boolean needsToEnd = ctx.needsToEnd;
                     if (cause != PNone.NONE) {
                         if (notSeen(seen, cause)) {
                             printExceptionRecursive(inliningTarget, getTbFrameNode, materializeStNode, sys, out, cause, seen, ctx);
@@ -1555,10 +1546,11 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                             fileWriteString(out, T_CONTEXT_MESSAGE);
                         }
                     }
+                    ctx.needsToEnd = needsToEnd;
                 }
             }
             if (value instanceof PBaseExceptionGroup) {
-                printExceptionGroup(inliningTarget, getTbFrameNode, materializeStNode, sys, out, value, seen, ctx.withMargin(tsLiteral("| ")));
+                printExceptionGroup(inliningTarget, getTbFrameNode, materializeStNode, sys, out, value, seen, ctx);
             }
             else {
                 printException(inliningTarget, getTbFrameNode, materializeStNode, sys, out, value, ctx);
@@ -1586,12 +1578,11 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                 PyTraceBackPrint.fileWriteString(out, "TypeError: print_exception(): Exception expected for value, ");
                 fileWriteString(out, getTypeName(type));
                 PyTraceBackPrint.fileWriteString(out, " found\n");
-                return;
             }
 
             final Object tb = getExceptionTraceback(value);
             if (tb instanceof PTraceback) {
-                PyTraceBackPrint.print(inliningTarget, getTbFrameNode, materializeStNode, sys, out, tb, (value instanceof PBaseExceptionGroup), ctx.indent, ctx.margin);
+                PyTraceBackPrint.print(inliningTarget, getTbFrameNode, materializeStNode, sys, out, tb, (value instanceof PBaseExceptionGroup), ctx.getIndent(), ctx.getMargin());
             }
 
             if (objectHasAttr(value, T_ATTR_PRINT_FILE_AND_LINE)) {
@@ -1610,7 +1601,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                 }
             }
 
-            fileWriteIndentedString(out, ctx.margin, ctx.indent);
+            fileWriteIndentedString(out, ctx.getMargin(), ctx.getIndent());
 
             TruffleString className;
             try {
@@ -1661,50 +1652,69 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                 PyTraceBackPrint.fileWriteString(out, "TypeError: print_exception_group(): Exception group expected for value, ");
                 fileWriteString(out, getTypeName(type));
                 PyTraceBackPrint.fileWriteString(out, " found\n");
-                return;
             }
 
-            if (ctx.depthCurrent >= ctx.depthMax) {
-                fileWriteIndentedString(out, ctx.margin, ctx.indent);
+            if (ctx.depthCurrent > ctx.depthMax) {
+                fileWriteIndentedString(out, ctx.getMargin(), ctx.getIndent());
                 fileWriteString(out, String.format("... (max_group_depth is %d)", ctx.depthMax));
                 fileWriteString(out, T_NEWLINE);
                 return;
             }
 
-            if (ctx.indent == 0) {
-                ctx = ctx.withIndent(2);
-            }
+            ctx.needsToEnd = false;
 
-            ctx = ctx.withDepthIncrease();
+            if (ctx.depthCurrent == 0) {
+                ctx.increaseDepth();
+            }
 
             printException(inliningTarget, getTbFrameNode, materializeStNode, sys, out, excValue, ctx);
 
             PBaseExceptionGroup exceptionGroup = (PBaseExceptionGroup) excValue;
             int counter = 1;
+            boolean lastException = false;
             for (Object exception : exceptionGroup.getExceptions()) {
+                if (counter == exceptionGroup.getExceptions().length) {
+                    lastException = true;
+                    ctx.needsToEnd = true;
+                }
                 if (counter == 1) {
-                    fileWriteIndentedString(out, "+-", ctx.indent);
+                    fileWriteIndentedString(out, "+".concat("-".repeat(INT_INDENT_SIZE - 1)), ctx.getIndent());
                 } else {
-                    fileWriteString(out, getIndent(ctx.indent + 2));
+                    fileWriteString(out, getIndent(ctx.getIndent() + INT_INDENT_SIZE));
                 }
                 if (counter <= ctx.widthMax) {
                     fileWriteString(out, String.format("+---------------- %d ----------------", counter));
                     fileWriteString(out, T_NEWLINE);
-                    printExceptionRecursive(inliningTarget, getTbFrameNode, materializeStNode, sys, out, exception, seen, ctx.withIndentIncrease());
+                    ctx.increaseDepth();
+                    printExceptionRecursive(inliningTarget, getTbFrameNode, materializeStNode, sys, out, exception, seen, ctx);
+                    ctx.decreaseDepth();
                 } else {
-                    fileWriteString(out, String.format("+---------------- ... ----------------", counter));
+                    fileWriteString(out, "+---------------- ... ----------------");
                     fileWriteString(out, T_NEWLINE);
-                    fileWriteIndentedString(out, ctx.margin, ctx.indent + 2);
+                    fileWriteIndentedString(out, ctx.getMargin(), ctx.getIndent() + INT_INDENT_SIZE);
                     int exceptionsRemaining = exceptionGroup.getExceptions().length - ctx.widthMax;
                     fileWriteString(out, String.format("and %d more exception%s", exceptionsRemaining, exceptionsRemaining > 1 ? "s" : ""));
                     fileWriteString(out, T_NEWLINE);
+
+                    // this makes this exception in this exception group essentially last
+                    lastException = true;
+                    ctx.needsToEnd = true;
                     break;
                 }
                 counter++;
             }
-            fileWriteString(out, getIndent(ctx.indent + 2));
-            fileWriteString(out, "+------------------------------------"); //TODO: this will be printed one-after-another when max depth is reached (should be skipped)
-            fileWriteString(out, T_NEWLINE);
+
+            if (lastException && ctx.needsToEnd) {
+                fileWriteString(out, getIndent(ctx.getIndent() + INT_INDENT_SIZE));
+                fileWriteString(out, "+------------------------------------");
+                fileWriteString(out, T_NEWLINE);
+                // let only the innermost exception print the end of an exception group cascade
+                ctx.needsToEnd = false;
+            }
+
+            if (ctx.depthCurrent == 1) {
+                ctx.decreaseDepth();
+            }
         }
 
         @TruffleBoundary(allowInlining = true)
