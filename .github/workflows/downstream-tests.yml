@@ -35,8 +35,9 @@ jobs:
 
     runs-on: ${{ matrix.os.id }}
     env:
-        ARTIFACT_PATH: graalpy-native-standalone{{ matrix.os.platform }}
+        ARTIFACT_PATH: graalpy-native-standalone${{ matrix.os.platform }}
         ARTIFACT_PATH_PREFIX: graalpynative
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
     - name: Install CMake (Linux)
@@ -70,9 +71,9 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Get GraalPy EA build
-      if: ${{ matrix.os.platform == 'darwin' }}
+      if: ${{ matrix.os.platform == 'macos' }}
       run: |
-        tarball="$(curl -s "https://api.github.com/repos/graalvm/graalvm-ce-dev-builds/releases/latest" | jq -r --arg artifact "graalpy-community-dev-${{ matrix.os.platform }}-${{matrix.os.arch}}.tar.gz" '.assets[] | select(.name == $artifact) | .browser_download_url')"
+        tarball="$(curl -sH "Authorization: token $GITHUB_TOKEN" "https://api.github.com/repos/graalvm/graalvm-ce-dev-builds/releases/latest" | jq -r --arg artifact "graalpy-community-dev-${{ matrix.os.platform }}-${{matrix.os.arch}}.tar.gz" '.assets[] | select(.name == $artifact) | .browser_download_url')"
         curl -sfL "$tarball" | tar xz
 
     - name: Get GraalPy build artifact
