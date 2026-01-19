@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -133,7 +133,6 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_SURROGATEESCAPE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_VALUE_UNKNOWN;
 import static com.oracle.graal.python.nodes.StringLiterals.T_VERSION;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-import static com.oracle.graal.python.util.PythonUtils.toIntError;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsInternedLiteral;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -176,7 +175,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.exception.GetEscapedExceptionNode;
-import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.exception.PBaseExceptionGroup;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -1520,7 +1518,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         void printExceptionRecursive(Node inliningTarget, TracebackBuiltins.GetTracebackFrameNode getTbFrameNode, TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStNode,
-                                     PythonModule sys, Object out, Object value, Set<Object> seen) {
+                        PythonModule sys, Object out, Object value, Set<Object> seen) {
             printExceptionRecursive(inliningTarget, getTbFrameNode, materializeStNode, sys, out, value, seen, new ExceptionPrintContext());
         }
 
@@ -1551,8 +1549,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
             }
             if (value instanceof PBaseExceptionGroup) {
                 printExceptionGroup(inliningTarget, getTbFrameNode, materializeStNode, sys, out, value, seen, ctx);
-            }
-            else {
+            } else {
                 printException(inliningTarget, getTbFrameNode, materializeStNode, sys, out, value, ctx);
             }
         }
@@ -1645,7 +1642,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         }
 
         protected void printExceptionGroup(Node inliningTarget, TracebackBuiltins.GetTracebackFrameNode getTbFrameNode, TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStNode,
-                                           PythonModule sys, Object out, Object excValue, Set<Object> seen, ExceptionPrintContext ctx) {
+                        PythonModule sys, Object out, Object excValue, Set<Object> seen, ExceptionPrintContext ctx) {
             Object value = excValue;
             final Object type = getObjectClass(value);
             if (!PyExceptionGroupInstanceCheckNode.executeUncached(value)) {
