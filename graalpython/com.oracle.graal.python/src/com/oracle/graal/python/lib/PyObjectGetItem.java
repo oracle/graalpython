@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,10 +42,12 @@ package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___CLASS_GETITEM__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.KeyError;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetItem;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
@@ -63,6 +65,8 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassExactProfile;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
@@ -76,6 +80,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * Equivalent of CPython's {@code PyObject_GetItem}.
@@ -119,6 +124,38 @@ public abstract class PyObjectGetItem extends PNodeWithContext {
                     @Cached PyObjectGetItemGeneric genericNode) {
         TpSlots slots = getSlotsNode.execute(inliningTarget, object);
         return genericNode.execute(frame, inliningTarget, object, slots, key);
+    }
+
+    /**
+     * A version of {@link PyObjectGetItem} optimized for builtin dictionaries and
+     * {@link TruffleString} keys that suppresses the {@code KeyError} and returns {@code null} if
+     * key was not found.
+     */
+    @GenerateUncached
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class PyObjectGetItemOrNull extends PNodeWithContext {
+        public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object dict, TruffleString key);
+
+        @Specialization(guards = "isBuiltinDict(dict)")
+        static Object doPDict(VirtualFrame frame, Node inliningTarget, PDict dict, TruffleString key,
+                        @Cached HashingStorageGetItem getItem) {
+            return getItem.execute(frame, inliningTarget, dict.getDictStorage(), key);
+        }
+
+        @Fallback
+        @InliningCutoff
+        static Object doPDictGeneric(VirtualFrame frame, Node inliningTarget, Object object, TruffleString key,
+                        @Cached GetObjectSlotsNode getSlotsNode,
+                        @Cached PyObjectGetItemGeneric genericNode,
+                        @Cached IsBuiltinObjectProfile errorProfile) {
+            try {
+                return doGeneric(frame, inliningTarget, object, key, getSlotsNode, genericNode);
+            } catch (PException e) {
+                e.expect(inliningTarget, KeyError, errorProfile);
+                return null;
+            }
+        }
     }
 
     @GenerateUncached

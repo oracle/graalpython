@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -26,9 +26,11 @@
 package com.oracle.graal.python.builtins.objects.function;
 
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.Frame;
 
@@ -70,9 +72,10 @@ public final class PArguments {
         return frameArgs.length >= USER_ARGUMENTS_OFFSET && frameArgs[INDEX_CURRENT_FRAME_INFO] instanceof PFrame.Reference;
     }
 
-    public static Object[] withGlobals(PythonObject globals) {
+    public static Object[] withGlobals(PythonModule globals) {
+        CompilerAsserts.neverPartOfCompilation();
         Object[] arguments = create();
-        setGlobals(arguments, globals);
+        setGlobals(arguments, globals.getDict());
         return arguments;
     }
 

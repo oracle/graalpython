@@ -401,7 +401,7 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             Object[] arguments = PArguments.create();
             PythonModule mainModule = context.getMainModule();
             PDict mainDict = GetOrCreateDictNode.executeUncached(mainModule);
-            PArguments.setGlobals(arguments, mainModule);
+            PArguments.setGlobals(arguments, mainDict);
             PArguments.setSpecialArgument(arguments, mainDict);
             PArguments.setException(arguments, PException.NO_EXCEPTION);
             context.initializeMainModule(inputFilePath);
