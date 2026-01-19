@@ -1,0 +1,49 @@
+diff --git a/mypyc_util.h b/mypyc_util.h
+index 115c309..d0c825f 100644
+--- a/mypyc_util.h
++++ b/mypyc_util.h
+@@ -82,7 +82,7 @@
+ 
+ static inline void CPy_INCREF_NO_IMM(PyObject *op)
+ {
+-    Py_REFCNT(op)++;
++    Py_INCREF(op);
+ }
+ 
+ static inline void CPy_DECREF_NO_IMM(PyObject *op)
+diff --git a/pythonsupport.h b/pythonsupport.h
+index 60454b6..619cb7c 100644
+--- a/pythonsupport.h
++++ b/pythonsupport.h
+@@ -216,6 +216,7 @@ CPyLong_AsSsize_tAndOverflow(PyObject *vv, int *overflow)
+ 
+ #endif
+ 
++#if 0 // GraalPy change
+ // Adapted from listobject.c in Python 3.7.0
+ static int
+ list_resize(PyListObject *self, Py_ssize_t newsize)
+@@ -262,6 +263,7 @@ list_resize(PyListObject *self, Py_ssize_t newsize)
+     self->allocated = new_allocated;
+     return 0;
+ }
++# endif
+ 
+ // Changed to use PyList_SetSlice instead of the internal list_ass_slice
+ static PyObject *
+@@ -282,6 +284,7 @@ list_pop_impl(PyListObject *self, Py_ssize_t index)
+         return NULL;
+     }
+     v = PySequence_Fast_ITEMS((PyObject*)self)[index];
++    #if 0 // GraalPy change
+     if (index == Py_SIZE(self) - 1) {
+         status = list_resize(self, Py_SIZE(self) - 1);
+         if (status >= 0)
+@@ -289,6 +292,7 @@ list_pop_impl(PyListObject *self, Py_ssize_t index)
+         else
+             return NULL;
+     }
++    # endif
+     Py_INCREF(v);
+     status = PyList_SetSlice((PyObject *)self, index, index+1, (PyObject *)NULL);
+     if (status < 0) {

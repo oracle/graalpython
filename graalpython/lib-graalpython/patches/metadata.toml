@@ -1045,3 +1045,8 @@ url = 'https://github.com/piskvorky/gensim/archive/refs/tags/4.3.3.tar.gz'
 
 [[gensim.rules]]
 version = '== 4.3.3'
+
+[[librt.rules]]
+version = '== 0.7.8'
+patch = 'librt-0.7.8.patch'
+license = 'MIT'
