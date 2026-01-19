@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -416,7 +416,7 @@ public abstract class ReadFrameNode extends Node {
                 // calls that may call back into Python code. Look at the Java stack trace and check
                 // if all @TruffleBoundary methods are preceded by BoundaryCallContext.enter/exit
                 assert first || !(PGenerator.unwrapContinuationRoot(rootNode) instanceof PBytecodeDSLRootNode) || !PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER ||
-                                callNode != null : rootNode;
+                                callNode != null : String.format("root=%s, i=%d", rootNode, i);
                 first = false;
                 if (!(rootNode instanceof PRootNode pRootNode && pRootNode.setsUpCalleeContext())) {
                     // Note: any non-Python Truffle frames should have been preceded by

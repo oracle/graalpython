@@ -164,15 +164,14 @@ public class AsyncHandler {
                     }
                     Node prev = null;
                     Node location = access.getLocation();
-                    boolean locationAdoptable = location.isAdoptable();
                     EncapsulatingNodeReference encapsulatingNodeRef = EncapsulatingNodeReference.getCurrent();
-                    if (locationAdoptable) {
-                        // If the location is not adoptable, then we are in
-                        // IndirectCallContext and SimpleIndirectInvokeNode below will do
-                        // IndirectCalleeContext.enter and transfer the state from thread state to
-                        // the frame. Otherwise, we were woken-up in middle of Python frame code, we
-                        // will have to do a stack walk if caller frame is needed, but we still need
-                        // the "call" location
+                    boolean resetEncapsulatingNode = false;
+                    if (location.isAdoptable()) {
+                        // If we are woken-up in middle of Python frame code, we will have to do a
+                        // stack walk if caller frame is needed, but we still need the "call"
+                        // location for the SimpleIndirectInvokeNode below, which takes it
+                        // implicitly from the EncapsulatingNodeReference
+                        resetEncapsulatingNode = true;
                         if (location instanceof RootNode root && PBytecodeDSLRootNode.cast(root) != null) {
                             // PBytecodeDSLRootNode is not usable as a location. To resolve the BCI
                             // stored in the frame, we need the currently executing BytecodeNode,
@@ -183,13 +182,30 @@ public class AsyncHandler {
                         } else {
                             prev = encapsulatingNodeRef.set(location);
                         }
+                    } else {
+                        // If the safepoint location is not adoptable, then we are behind
+                        // TruffleBoundary or in uncached interpreter. If we are woken up in GraalPy
+                        // boundary code, it should have done BoundaryCallContext.enter/exit or
+                        // EncapsulatingNodeReference.get().set(location)
+                        Node node = encapsulatingNodeRef.get();
+                        if (node == null || !node.isAdoptable()) {
+                            // Missing BoundaryCallContext.enter/exit or
+                            // EncapsulatingNodeReference.get().set(location),
+                            // but also possibly 3rd party code that polls safepoint behind
+                            // TruffleBoundary with uncached/null location. We cannot distinguish
+                            // that, so we use the dummy node to pass our assertions during stack
+                            // walking that "call node" is never null.
+                            encapsulatingNodeRef.set(language.unavailableSafepointLocation);
+                            prev = node;
+                            resetEncapsulatingNode = true;
+                        }
                     }
                     try {
                         CallDispatchers.SimpleIndirectInvokeNode.executeUncached(context.getAsyncHandler().callTarget, args);
                     } catch (PException e) {
                         handleException(e);
                     } finally {
-                        if (locationAdoptable) {
+                        if (resetEncapsulatingNode) {
                             encapsulatingNodeRef.set(prev);
                         }
                         if (debugger != null) {
