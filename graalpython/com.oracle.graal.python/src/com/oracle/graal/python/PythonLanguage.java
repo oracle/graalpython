@@ -207,6 +207,16 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final int GRAALVM_MICRO;
     public static final String DEV_TAG;
 
+    /* Magic number used to mark pyc files */
+    public static final int MAGIC_NUMBER = 21000 + Compiler.BYTECODE_VERSION * 10;
+    public static final byte[] MAGIC_NUMBER_BYTES = new byte[4];
+
+    static {
+        PythonUtils.ARRAY_ACCESSOR_LE.putInt(PythonLanguage.MAGIC_NUMBER_BYTES, 0, PythonLanguage.MAGIC_NUMBER);
+        PythonLanguage.MAGIC_NUMBER_BYTES[2] = '\r';
+        PythonLanguage.MAGIC_NUMBER_BYTES[3] = '\n';
+    }
+
     /**
      * The version generated at build time is stored in an ASCII-compatible way. Add build time, we
      * added the ordinal value of some base character (in this case {@code '!'}) to ensure that we

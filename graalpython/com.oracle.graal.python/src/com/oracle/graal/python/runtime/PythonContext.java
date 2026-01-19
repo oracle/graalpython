@@ -613,9 +613,10 @@ public final class PythonContext extends Python3Core {
 
         public void popInstrumentationData(PBytecodeDSLRootNode rootNode) {
             assert PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER;
-            assert instrumentationData != null : rootNode;
-            assert instrumentationData.getRootNode() == rootNode : String.format("%s != %s", instrumentationData.getRootNode(), rootNode);
-            instrumentationData = instrumentationData.getPrevious();
+            if (instrumentationData != null) {
+                assert instrumentationData.getRootNode() == rootNode : String.format("%s != %s", instrumentationData.getRootNode(), rootNode);
+                instrumentationData = instrumentationData.getPrevious();
+            }
         }
 
         public Object getAsyncgenFirstIter() {

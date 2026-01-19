@@ -756,10 +756,9 @@ def _validate_hash_pyc(data, source_hash, name, exc_details):
         )
 
 
-# GraalPy change: add cache_key
-def _compile_bytecode(data, name=None, bytecode_path=None, source_path=None, cache_key=-1):
+def _compile_bytecode(data, name=None, bytecode_path=None, source_path=None):
     """Compile bytecode as found in a pyc."""
-    code = marshal.loads(data, cache_key=cache_key)
+    code = marshal.loads(data)
     if isinstance(code, _code_type):
         _bootstrap._verbose_message('code object from {!r}', bytecode_path)
         if source_path is not None:
@@ -1093,6 +1092,18 @@ class SourceLoader(_LoaderBasics):
             except OSError:
                 pass
             else:
+                if bytecode_path is not None and type(self).get_data is FileLoader.get_data:
+                    # GraalPy change: load the file in a way that we can trust for reparsing etc
+                    if code := __graalpython__.load_bytecode_file(bytecode_path, source_path, st):
+                        # From _compile_bytecode
+                        if isinstance(code, _code_type):
+                            _bootstrap._verbose_message('code object from {!r}', bytecode_path)
+                            if source_path is not None:
+                                _imp._fix_co_filename(code, source_path)
+                            return code
+                        else:
+                            raise ImportError(f'Non-code object in {bytecode_path!r}',
+                                              name=fullname, path=bytecode_path)
                 source_mtime = int(st['mtime'])
                 try:
                     data = self.get_data(bytecode_path)
@@ -1103,8 +1114,6 @@ class SourceLoader(_LoaderBasics):
                         'name': fullname,
                         'path': bytecode_path,
                     }
-                    # GraalPy change: add cache_key
-                    cache_key = 0
                     try:
                         flags = _classify_pyc(data, fullname, exc_details)
                         bytes_data = memoryview(data)[16:]
@@ -1121,7 +1130,6 @@ class SourceLoader(_LoaderBasics):
                                 )
                                 _validate_hash_pyc(data, source_hash, fullname,
                                                    exc_details)
-                                cache_key = int.from_bytes(source_hash, byteorder=sys.byteorder, signed=True)
                         else:
                             _validate_timestamp_pyc(
                                 data,
@@ -1137,8 +1145,7 @@ class SourceLoader(_LoaderBasics):
                                                     source_path)
                         return _compile_bytecode(bytes_data, name=fullname,
                                                  bytecode_path=bytecode_path,
-                                                 source_path=source_path,
-                                                 cache_key=cache_key)
+                                                 source_path=source_path)
         if source_bytes is None:
             source_bytes = self.get_data(source_path)
         code_object = self.source_to_code(source_bytes, source_path)

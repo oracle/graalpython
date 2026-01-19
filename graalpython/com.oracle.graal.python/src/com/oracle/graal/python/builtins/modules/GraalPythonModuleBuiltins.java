@@ -44,11 +44,17 @@ import static com.oracle.graal.python.PythonLanguage.GRAALVM_MAJOR;
 import static com.oracle.graal.python.PythonLanguage.GRAALVM_MICRO;
 import static com.oracle.graal.python.PythonLanguage.GRAALVM_MINOR;
 import static com.oracle.graal.python.PythonLanguage.J_GRAALPYTHON_ID;
+import static com.oracle.graal.python.PythonLanguage.MAGIC_NUMBER;
+import static com.oracle.graal.python.PythonLanguage.MAGIC_NUMBER_BYTES;
 import static com.oracle.graal.python.PythonLanguage.RELEASE_LEVEL;
 import static com.oracle.graal.python.PythonLanguage.RELEASE_LEVEL_FINAL;
 import static com.oracle.graal.python.nodes.BuiltinNames.J_EXTEND;
 import static com.oracle.graal.python.nodes.BuiltinNames.J___GRAALPYTHON__;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_FORMAT;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_MTIME;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SHA3;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_SIZE;
+import static com.oracle.graal.python.nodes.BuiltinNames.T__IMP;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___GRAALPYTHON__;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___MAIN__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___NAME__;
@@ -63,6 +69,7 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_UTF8;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ImportError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR_LE;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -128,8 +135,10 @@ import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.OsEnvironGetNode;
+import com.oracle.graal.python.lib.PyNumberLongNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetItem;
+import com.oracle.graal.python.lib.PyObjectStrAsTruffleStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -150,6 +159,9 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.ToNativePrimitiveStorageNode;
 import com.oracle.graal.python.runtime.ExecutionContext;
@@ -455,6 +467,102 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         Object[] objectArr = new Object[arr.length];
         System.arraycopy(arr, 0, objectArr, 0, arr.length);
         return objectArr;
+    }
+
+    @Builtin(name = "load_bytecode_file", minNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    abstract static class LoadBytecodeFileNode extends PythonBuiltinNode {
+
+        static final TruffleString T_CHECK_HASH_BASED_PYCS = tsLiteral("check_hash_based_pycs");
+        static final TruffleString T__BOOTSTRAP = tsLiteral("_bootstrap");
+        public static final TruffleString T__VERBOSE_MESSAGE = tsLiteral("_verbose_message");
+        public static final TruffleString MESSAGE = tsLiteral("'{} matches {}'");
+
+        @Specialization
+        static Object doit(VirtualFrame frame, Object bytecodePath, Object sourcePath, Object statResult,
+                        @Bind Node inliningTarget,
+                        @Bind PythonContext context,
+                        @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
+            Object savedState = BoundaryCallContext.enter(frame, boundaryCallData);
+            try {
+                return doLoadBytecodeFile(bytecodePath, sourcePath, statResult, inliningTarget, context);
+            } finally {
+                BoundaryCallContext.exit(frame, boundaryCallData, savedState);
+            }
+        }
+
+        @TruffleBoundary
+        private static Object doLoadBytecodeFile(Object bytecodePath, Object sourcePath, Object statResult, Node inliningTarget, PythonContext context) {
+            /*
+             * This builtin is used to load a bytecode file (.pyc) in a way that we can trust that
+             * it really comes from that file. It enables unloading serialized DSL bytecode from
+             * memory, so that it can be reparsed later from the same file. It also provides the
+             * cache key for CallTarget cache in multicontext mode.
+             */
+            try {
+                // get_data
+                TruffleString strBytecodePath = PyObjectStrAsTruffleStringNode.executeUncached(bytecodePath);
+                TruffleFile bytecodeFile = context.getEnv().getPublicTruffleFile(strBytecodePath.toJavaStringUncached());
+                byte[] bytes = bytecodeFile.readAllBytes();
+                // _classify_pyc
+                if (bytes.length < 16 || !Arrays.equals(bytes, 0, 4, MAGIC_NUMBER_BYTES, 0, 4)) {
+                    return PNone.NONE;
+                }
+                int flags = ARRAY_ACCESSOR_LE.getInt(bytes, 4);
+                if ((flags & ~0b11) != 0) {
+                    return PNone.NONE;
+                }
+                long cacheKey;
+                boolean hashBased = (flags & 0b1) != 0;
+                // Note that mtime-based validation is the default, hashing is opt-in
+                if (hashBased) {
+                    boolean checkSource = (flags & 0b10) != 0;
+                    cacheKey = ARRAY_ACCESSOR_LE.getLong(bytes, 16);
+                    String checkHashBasedPycs = "";
+                    try {
+                        checkHashBasedPycs = CastToJavaStringNode.getUncached().execute(context.lookupBuiltinModule(T__IMP).getAttribute(T_CHECK_HASH_BASED_PYCS));
+                    } catch (CannotCastException e) {
+                        // ignore
+                    }
+                    if (!checkHashBasedPycs.equals("never") && (checkSource || checkHashBasedPycs.equals("always"))) {
+                        // get_data
+                        TruffleString strSourcePath = PyObjectStrAsTruffleStringNode.executeUncached(sourcePath);
+                        TruffleFile sourceFile = context.getEnv().getPublicTruffleFile(strSourcePath.toJavaStringUncached());
+                        byte[] sourceBytes = sourceFile.readAllBytes();
+                        long sourceHash = ARRAY_ACCESSOR_LE.getLong(ImpModuleBuiltins.SourceHashNode.hashSource(MAGIC_NUMBER, sourceBytes, sourceBytes.length), 0);
+                        // _validate_hash_pyc
+                        if (cacheKey != sourceHash) {
+                            return PNone.NONE;
+                        }
+                    }
+                } else {
+                    // _validate_timestamp_pyc
+                    Object mTimeObj = PyNumberLongNode.executeUncached(PyObjectGetItem.executeUncached(statResult, T_MTIME));
+                    long mTime = CastToJavaLongLossyNode.executeUncached(mTimeObj);
+                    if (Integer.toUnsignedLong(ARRAY_ACCESSOR_LE.getInt(bytes, 8)) != mTime) {
+                        return PNone.NONE;
+                    }
+                    Object sizeObj = PyObjectGetItem.executeUncached(statResult, T_SIZE);
+                    if (sizeObj != PNone.NONE) {
+                        long size = CastToJavaLongLossyNode.executeUncached(sizeObj);
+                        if (Integer.toUnsignedLong(ARRAY_ACCESSOR_LE.getInt(bytes, 12)) != size) {
+                            return PNone.NONE;
+                        }
+                    }
+                    cacheKey = ARRAY_ACCESSOR_LE.getLong(bytes, 8);
+                }
+                if (context.getOption(PythonOptions.VerboseFlag)) {
+                    Object message = PyObjectCallMethodObjArgs.executeUncached(MESSAGE, T_FORMAT, bytecodePath, sourcePath);
+                    CallNode.executeUncached(context.lookupBuiltinModule(T__BOOTSTRAP).getAttribute(T__VERBOSE_MESSAGE), message);
+                }
+                return MarshalModuleBuiltins.fromBytecodeFile(context, bytecodeFile, bytes, 16, bytes.length - 16, cacheKey);
+            } catch (MarshalModuleBuiltins.Marshal.MarshalError me) {
+                throw PRaiseNode.raiseStatic(inliningTarget, me.type, me.message, me.arguments);
+            } catch (IOException | SecurityException | UnsupportedOperationException | IllegalArgumentException e) {
+                LOGGER.fine(() -> PythonUtils.formatJString("Failed to load bytecode file using load_bytecode_file: %s", e));
+                return PNone.NONE;
+            }
+        }
     }
 
     @Builtin(name = "read_file", minNumOfPositionalArgs = 1)
