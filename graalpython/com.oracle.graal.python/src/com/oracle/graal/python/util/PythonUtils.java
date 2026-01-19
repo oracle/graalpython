@@ -1017,6 +1017,22 @@ public final class PythonUtils {
         }
     }
 
+    /**
+     * Use this helper in PE code or behind Truffle boundary if the PE caller does not push
+     * encapsulating node (either directly or, e.g., via
+     * {@link com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext}).
+     * <p/>
+     * For boundary calls: if we know the encapsulating node was set, we can safely call directly
+     * the overload without the location parameter ({@link CallTarget#call(Object...)}).
+     * <p/>
+     * For PE calls: we may be in uncached interpreter (the {@code location} Node is not adoptable
+     * or {@code null}), in which case we must call the overload without the location parameter
+     * ({@link CallTarget#call(Object...)}), so that it uses the encapsulating node.
+     */
+    public static Object callCallTarget(CallTarget target, Node location, Object... args) {
+        return location != null && location.isAdoptable() ? target.call(location, args) : target.call(args);
+    }
+
     public static InteropLibrary getUncachedInterop(InteropLibrary existing, Object obj) {
         // TODO: have a simple LRU cache of "uncached" pointer InteropLibrary in context?
         // "accepts" should be fast and saves us the concurrent hash map lookup in getUncached

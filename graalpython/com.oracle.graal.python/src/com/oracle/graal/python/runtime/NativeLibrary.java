@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,7 +42,9 @@ package com.oracle.graal.python.runtime;
 
 import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.callCallTarget;
 
+import java.lang.invoke.VarHandle;
 import java.util.Objects;
 import java.util.logging.Level;
 
@@ -145,7 +147,6 @@ public class NativeLibrary {
     private volatile FunctionWithSignature[] cachedFunctions;
     private volatile Object cachedLibrary;
     private volatile InteropLibrary cachedLibraryInterop;
-    private volatile FunctionWithSignature dummy;
 
     public NativeLibrary(String name, int functionsCount, NFIBackend nfiBackend, String noNativeAccessHelp, boolean optional) {
         this.functionsCount = functionsCount;
@@ -155,13 +156,13 @@ public class NativeLibrary {
         this.optional = optional;
     }
 
-    private Object getCachedLibrary(PythonContext context) {
+    private Object getCachedLibrary(Node location, PythonContext context) {
         if (cachedLibrary == null) {
             // This should be a one-off thing for each context
             CompilerDirectives.transferToInterpreter();
             synchronized (this) {
                 if (cachedLibrary == null) {
-                    Object lib = loadLibrary(context);
+                    Object lib = loadLibrary(location, context);
                     if (lib != null) {
                         // order matters due to multi-threading cases.
                         cachedLibraryInterop = InteropLibrary.getUncached(lib);
@@ -173,8 +174,8 @@ public class NativeLibrary {
         return cachedLibrary;
     }
 
-    private FunctionWithSignature getCachedFunction(PythonContext context, NativeFunction function) {
-        Object lib = getCachedLibrary(context);
+    private FunctionWithSignature getCachedFunction(Node location, PythonContext context, NativeFunction function) {
+        Object lib = getCachedLibrary(location, context);
         if (cachedFunctions == null) {
             // This should be a one-off thing for each context
             CompilerDirectives.transferToInterpreter();
@@ -189,31 +190,32 @@ public class NativeLibrary {
             // This should be a one-off thing for each context
             CompilerDirectives.transferToInterpreter();
             synchronized (this) {
-                dummy = getFunction(context, lib, function);
+                FunctionWithSignature signature = getFunction(location, context, lib, function);
+                VarHandle.storeStoreFence();
                 // it is OK to overwrite cachedFunctions[functionIndex] that may have been
-                // written from another thread: no need to double check that it's still null.
+                // written from another thread: no need to double-check that it's still null.
                 // dummy is volatile, the object must be fully initialized at this point
-                cachedFunctions[functionIndex] = dummy;
+                cachedFunctions[functionIndex] = signature;
             }
         }
         return cachedFunctions[functionIndex];
     }
 
-    private FunctionWithSignature getFunction(PythonContext context, NativeFunction function) {
+    private FunctionWithSignature getFunction(Node location, PythonContext context, NativeFunction function) {
         CompilerAsserts.neverPartOfCompilation();
-        Object lib = getCachedLibrary(context);
-        return getFunction(context, lib, function);
+        Object lib = getCachedLibrary(location, context);
+        return getFunction(location, context, lib, function);
     }
 
-    private Object parseSignature(PythonContext context, String signature) {
+    private Object parseSignature(Node location, PythonContext context, String signature) {
         Source sigSource = Source.newBuilder(J_NFI_LANGUAGE, nfiBackend.withClause + signature, "python-nfi-signature").build();
-        return context.getEnv().parseInternal(sigSource).call();
+        return callCallTarget(context.getEnv().parseInternal(sigSource), location);
     }
 
-    private FunctionWithSignature getFunction(PythonContext context, Object lib, NativeFunction function) {
+    private FunctionWithSignature getFunction(Node location, PythonContext context, Object lib, NativeFunction function) {
         CompilerAsserts.neverPartOfCompilation();
         try {
-            Object signature = parseSignature(context, function.signature());
+            Object signature = parseSignature(location, context, function.signature());
             Object symbol = cachedLibraryInterop.readMember(lib, function.name());
             return new FunctionWithSignature(signature, symbol);
         } catch (UnsupportedMessageException | UnknownIdentifierException e) {
@@ -221,7 +223,7 @@ public class NativeLibrary {
         }
     }
 
-    private Object loadLibrary(PythonContext context) {
+    private Object loadLibrary(Node location, PythonContext context) {
         CompilerAsserts.neverPartOfCompilation();
         if (context.isNativeAccessAllowed()) {
             String path = getLibPath(context, name);
@@ -231,7 +233,7 @@ public class NativeLibrary {
             }
             Source loadSrc = Source.newBuilder(J_NFI_LANGUAGE, src, "load:" + name).internal(true).build();
             try {
-                return context.getEnv().parseInternal(loadSrc).call();
+                return context.getEnv().parseInternal(loadSrc).call(location);
             } catch (RuntimeException ex) {
                 Level level = optional ? Level.FINE : Level.SEVERE;
                 if (LOGGER.isLoggable(level)) {
@@ -267,10 +269,10 @@ public class NativeLibrary {
 
     protected Object callUncached(PythonContext context, NativeFunction f, Object... args) {
         CompilerAsserts.neverPartOfCompilation();
-        final Object lib = getCachedLibrary(context);
+        final Object lib = getCachedLibrary(null, context);
         if (lib != null) {
             try {
-                Object signature = parseSignature(context, f.signature());
+                Object signature = parseSignature(null, context, f.signature());
                 Object symbol = cachedLibraryInterop.readMember(lib, f.name());
                 return SignatureLibrary.getUncached().call(signature, symbol, args);
             } catch (Exception e) {
@@ -346,7 +348,7 @@ public class NativeLibrary {
         static Object doSingleContext(@SuppressWarnings("unused") NativeLibrary lib, @SuppressWarnings("unused") NativeFunction function, Object[] args,
                         @SuppressWarnings("unused") @Cached(value = "lib", weak = true) NativeLibrary cachedLib,
                         @Cached("function") NativeFunction cachedFunction,
-                        @Cached(value = "getFunction(lib, function)", weak = true) FunctionWithSignature funObj,
+                        @Cached(value = "getFunction($node, lib, function)", weak = true) FunctionWithSignature funObj,
                         @CachedLibrary("funObj.signature()") SignatureLibrary funInterop) {
             return invoke(cachedFunction, args, funObj, funInterop);
         }
@@ -357,7 +359,7 @@ public class NativeLibrary {
                         @Cached InlinedExactClassProfile functionClassProfile,
                         @CachedLibrary(limit = "1") SignatureLibrary funInterop) {
             NativeFunction function = functionClassProfile.profile(inliningTarget, functionIn);
-            FunctionWithSignature funObj = lib.getCachedFunction(PythonContext.get(funInterop), function);
+            FunctionWithSignature funObj = lib.getCachedFunction(inliningTarget, PythonContext.get(funInterop), function);
             return invoke(function, args, funObj, funInterop);
         }
 
@@ -376,8 +378,8 @@ public class NativeLibrary {
             }
         }
 
-        protected FunctionWithSignature getFunction(NativeLibrary lib, NativeFunction fun) {
-            return lib.getFunction(PythonContext.get(this), fun);
+        protected FunctionWithSignature getFunction(Node location, NativeLibrary lib, NativeFunction fun) {
+            return lib.getFunction(location, PythonContext.get(this), fun);
         }
 
         @TruffleBoundary

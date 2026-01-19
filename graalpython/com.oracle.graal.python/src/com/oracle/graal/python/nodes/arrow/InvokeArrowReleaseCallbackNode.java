@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -70,7 +70,7 @@ public abstract class InvokeArrowReleaseCallbackNode extends PNodeWithContext {
     @Specialization
     static void doIt(Node inliningTarget, long releaseCallback, long baseStructure,
                     @Bind("getContext(inliningTarget)") PythonContext ctx,
-                    @Cached(value = "createReleaseCallbackSignature(ctx)", allowUncached = true) Object callbackSignature,
+                    @Cached(value = "createReleaseCallbackSignature($node, ctx)", allowUncached = true) Object callbackSignature,
                     @CachedLibrary(limit = "1") SignatureLibrary signatureLibrary) {
         try {
             signatureLibrary.call(callbackSignature, new NativePointer(releaseCallback), baseStructure);
@@ -80,8 +80,8 @@ public abstract class InvokeArrowReleaseCallbackNode extends PNodeWithContext {
     }
 
     @NeverDefault
-    static Object createReleaseCallbackSignature(PythonContext context) {
-        return ArrowUtil.createNfiSignature("(UINT64):VOID", context);
+    static Object createReleaseCallbackSignature(Node location, PythonContext context) {
+        return ArrowUtil.createNfiSignature(location, "(UINT64):VOID", context);
     }
 
     @GenerateCached(false)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -1502,7 +1502,7 @@ public final class StringBuiltins extends PythonBuiltins {
                             @Cached TRegexUtil.InvokeGetGroupBoundariesMethodNode getEndNode,
                             @Cached TruffleString.SubstringByteIndexNode substringNode,
                             @Cached AppendNode appendNode) {
-                Object lineBreakRegex = PythonLanguage.get(inliningTarget).getCachedTRegexLineBreakRegex(PythonContext.get(inliningTarget));
+                Object lineBreakRegex = PythonLanguage.get(inliningTarget).getCachedTRegexLineBreakRegex(inliningTarget, PythonContext.get(inliningTarget));
                 CompilerAsserts.partialEvaluationConstant(lineBreakRegex);
                 PList list = PFactory.createList(PythonLanguage.get(inliningTarget));
                 int lastEnd = 0;

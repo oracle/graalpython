@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,6 +49,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 public class ArrowSupport {
@@ -67,35 +68,35 @@ public class ArrowSupport {
     private Object arrowSchemaDestructorNFIClosure;
     @CompilationFinal private long arrowSchemaDestructor;
 
-    public long getArrowSchemaDestructor() {
+    public long getArrowSchemaDestructor(Node location) {
         if (arrowSchemaDestructor == 0) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            initArrowSchemaDestructor();
+            initArrowSchemaDestructor(location);
         }
         return arrowSchemaDestructor;
     }
 
-    public long getArrowArrayDestructor() {
+    public long getArrowArrayDestructor(Node location) {
         if (arrowArrayDestructor == 0L) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            initArrowArrayDestructor();
+            initArrowArrayDestructor(location);
         }
         return arrowArrayDestructor;
     }
 
     @TruffleBoundary
-    private void initArrowArrayDestructor() {
+    private void initArrowArrayDestructor(Node location) {
         CompilerAsserts.neverPartOfCompilation();
-        var signature = ArrowUtil.createNfiSignature("(POINTER):VOID", ctx);
+        var signature = ArrowUtil.createNfiSignature(location, "(POINTER):VOID", ctx);
         var executable = new ArrowArrayCapsuleDestructor();
         this.arrowArrayDestructorNFIClosure = SignatureLibrary.getUncached().createClosure(signature, executable);
         this.arrowArrayDestructor = PythonUtils.coerceToLong(arrowArrayDestructorNFIClosure, InteropLibrary.getUncached());
     }
 
     @TruffleBoundary
-    private void initArrowSchemaDestructor() {
+    private void initArrowSchemaDestructor(Node location) {
         CompilerAsserts.neverPartOfCompilation();
-        var signature = ArrowUtil.createNfiSignature("(POINTER):VOID", ctx);
+        var signature = ArrowUtil.createNfiSignature(location, "(POINTER):VOID", ctx);
         var executable = new ArrowSchemaCapsuleDestructor();
         this.arrowSchemaDestructorNFIClosure = SignatureLibrary.getUncached().createClosure(signature, executable);
         this.arrowSchemaDestructor = PythonUtils.coerceToLong(arrowSchemaDestructorNFIClosure, InteropLibrary.getUncached());
