@@ -1350,8 +1350,8 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         static final TruffleString T_ATTR_TEXT = tsInternedLiteral("text");
         static final TruffleString T_EG_MARGIN = tsInternedLiteral("| ");
 
-        protected static final int INT_MAX_GROUP_WIDTH = 5;
-        protected static final int INT_MAX_GROUP_DEPTH = 3;
+        protected static final int INT_MAX_GROUP_WIDTH = 15;
+        protected static final int INT_MAX_GROUP_DEPTH = 10;
         protected static final int INT_INDENT_SIZE = 2;
 
         @ValueType
