@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,7 @@
  */
 ///usr/bin/env jbang "$0" "$@" ; exit $?
 //JAVA 17+
-//DEPS org.graalvm.python:jbang:${env.GRAALPY_VERSION:25.0.2}
+//DEPS org.graalvm.python:jbang:${env.GRAALPY_VERSION:25.0.3}
 // specify python packages and their versions as if used with pip
 //PIP termcolor==2.2
 

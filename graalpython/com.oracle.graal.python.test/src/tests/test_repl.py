@@ -1,4 +1,4 @@
-# Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -111,7 +111,7 @@ if (sys.platform != 'win32' and (sys.platform != 'linux' or platform.machine() !
                     else:
                         expected = expected_preamble
                     if index >= 0 or not ignore_preamble:
-                        assert actual == expected, f'Actual:\n{actual!r}\nExpected:\n{expected!r}'
+                        assert actual.replace('\r', '') == expected, f'Actual:\n{actual!r}\nExpected:\n{expected!r}'
                     index += 1
                     whole_out += out[:-4]
                     out = out[-4:]
