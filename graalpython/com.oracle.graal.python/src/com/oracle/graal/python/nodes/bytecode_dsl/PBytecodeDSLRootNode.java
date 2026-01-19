@@ -250,6 +250,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.bytecode.BytecodeConfig;
+import com.oracle.truffle.api.bytecode.BytecodeFrame;
 import com.oracle.truffle.api.bytecode.BytecodeLocation;
 import com.oracle.truffle.api.bytecode.BytecodeNode;
 import com.oracle.truffle.api.bytecode.BytecodeRootNode;
@@ -1025,24 +1026,42 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         return result;
     }
 
-    public PCell readClassCell(Frame frame) {
+    public PCell readClassCell(BytecodeFrame frame) {
         if (classcellIndex < 0) {
             return null;
         }
-        return (PCell) getBytecodeNode().getLocalValue(0, frame, classcellIndex);
+        return (PCell) frame.getLocalValue(classcellIndex);
+    }
+
+    public PCell readClassCell(VirtualFrame frame, BytecodeNode bytecodeNode) {
+        if (classcellIndex < 0) {
+            return null;
+        }
+        return (PCell) bytecodeNode.getLocalValue(0, frame, classcellIndex);
     }
 
     public boolean hasSelf() {
         return selfIndex >= 0;
     }
 
-    public Object readSelf(Frame frame) {
+    public Object readSelf(Frame frame, BytecodeNode bytecodeNode) {
         if (selfIndex < 0) {
             return null;
         } else if (selfIndex == 0) {
-            return getBytecodeNode().getLocalValue(0, frame, 0);
+            return bytecodeNode.getLocalValue(0, frame, 0);
         } else {
-            PCell selfCell = (PCell) getBytecodeNode().getLocalValue(0, frame, selfIndex);
+            PCell selfCell = (PCell) bytecodeNode.getLocalValue(0, frame, selfIndex);
+            return selfCell.getRef();
+        }
+    }
+
+    public Object readSelf(BytecodeFrame frame) {
+        if (selfIndex < 0) {
+            return null;
+        } else if (selfIndex == 0) {
+            return frame.getLocalValue(0);
+        } else {
+            PCell selfCell = (PCell) frame.getLocalValue(selfIndex);
             return selfCell.getRef();
         }
     }

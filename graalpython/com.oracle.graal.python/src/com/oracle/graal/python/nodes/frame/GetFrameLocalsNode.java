@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,10 +51,14 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.lib.PyDictGetItem;
 import com.oracle.graal.python.nodes.bytecode.FrameInfo;
+import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLFrameInfo;
+import com.oracle.graal.python.nodes.frame.GetFrameLocalsNodeGen.CopyDSLLocalsToDictNodeGen;
+import com.oracle.graal.python.nodes.frame.GetFrameLocalsNodeGen.CopyLocalsToDictNodeGen;
 import com.oracle.graal.python.runtime.CallerFlags;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.bytecode.BytecodeFrame;
 import com.oracle.truffle.api.bytecode.BytecodeNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -72,6 +76,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.api.profiles.InlinedIntValueProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -100,13 +105,12 @@ public abstract class GetFrameLocalsNode extends Node {
     @Specialization(guards = "!pyFrame.hasCustomLocals()")
     static Object doLoop(VirtualFrame frame, Node inliningTarget, PFrame pyFrame, boolean freshFrame,
                     @Cached InlinedBranchProfile create,
-                    @Cached(inline = false) CopyLocalsToDict copyLocalsToDict,
+                    @Cached(inline = false) CopyLocalsToDictBase copyLocalsToDict,
                     @Cached ReadFrameNode readFrameNode) {
         if (!freshFrame && pyFrame.needsRefresh(frame, CallerFlags.NEEDS_LOCALS)) {
             pyFrame = readFrameNode.refreshFrame(frame, pyFrame.getRef(), CallerFlags.NEEDS_LOCALS);
         }
         assert !pyFrame.outdatedCallerFlags(CallerFlags.NEEDS_LOCALS);
-        MaterializedFrame locals = pyFrame.getLocals();
         // It doesn't have custom locals, so it has to be a builtin dict or null
         PDict localsDict = (PDict) pyFrame.getLocalsDict();
         if (localsDict == null) {
@@ -114,7 +118,7 @@ public abstract class GetFrameLocalsNode extends Node {
             localsDict = PFactory.createDict(PythonLanguage.get(inliningTarget));
             pyFrame.setLocalsDict(localsDict);
         }
-        copyLocalsToDict.execute(locals, localsDict, pyFrame.getBytecodeNode());
+        copyLocalsToDict.execute(pyFrame, localsDict);
         return localsDict;
     }
 
@@ -125,14 +129,32 @@ public abstract class GetFrameLocalsNode extends Node {
         return localsDict;
     }
 
+    abstract static class CopyLocalsToDictBase extends Node {
+        public abstract void execute(PFrame frame, PDict dict);
+
+        @NeverDefault
+        static CopyLocalsToDictBase create() {
+            return PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER ? CopyDSLLocalsToDictNodeGen.create() : CopyLocalsToDictNodeGen.create();
+        }
+
+        static CopyLocalsToDictBase getUncached() {
+            return PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER ? CopyDSLLocalsToDictNodeGen.getUncached() : CopyLocalsToDictNodeGen.getUncached();
+        }
+    }
+
     @GenerateUncached
     @GenerateInline(false)       // footprint reduction 104 -> 86
-    abstract static class CopyLocalsToDict extends Node {
-        abstract void execute(MaterializedFrame locals, PDict dict, BytecodeNode bytecodeNode);
+    abstract static class CopyLocalsToDict extends CopyLocalsToDictBase {
+        @Override
+        public final void execute(PFrame frame, PDict dict) {
+            execute(frame.getLocals(), dict);
+        }
+
+        abstract void execute(MaterializedFrame locals, PDict dict);
 
         @Specialization(guards = {"cachedFd == locals.getFrameDescriptor()", "info != null", "count < 32"}, limit = "1")
         @ExplodeLoop
-        static void doCachedFd(MaterializedFrame locals, PDict dict, BytecodeNode bytecodeNode,
+        static void doCachedFd(MaterializedFrame locals, PDict dict,
                         @Bind Node inliningTarget,
                         @SuppressWarnings("unused") @Cached("locals.getFrameDescriptor()") FrameDescriptor cachedFd,
                         @Bind("getInfo(cachedFd)") FrameInfo info,
@@ -140,21 +162,13 @@ public abstract class GetFrameLocalsNode extends Node {
                         @Shared("setItem") @Cached HashingStorageSetItem setItem,
                         @Shared("delItem") @Cached HashingStorageDelItem delItem) {
             int regularVarCount = info.getRegularVariableCount();
-
-            if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                Object[] localsArray = bytecodeNode.getLocalValues(0, locals);
-                for (int i = 0; i < count; i++) {
-                    copyItem(inliningTarget, localsArray[i], info, dict, setItem, delItem, i, i >= regularVarCount);
-                }
-            } else {
-                for (int i = 0; i < count; i++) {
-                    copyItem(inliningTarget, locals.getValue(i), info, dict, setItem, delItem, i, i >= regularVarCount);
-                }
+            for (int i = 0; i < count; i++) {
+                copyItem(inliningTarget, locals.getValue(i), info, dict, setItem, delItem, i, i >= regularVarCount);
             }
         }
 
         @Specialization(replaces = "doCachedFd")
-        void doGeneric(MaterializedFrame locals, PDict dict, BytecodeNode bytecodeNode,
+        void doGeneric(MaterializedFrame locals, PDict dict,
                         @Bind Node inliningTarget,
                         @Shared("setItem") @Cached HashingStorageSetItem setItem,
                         @Shared("delItem") @Cached HashingStorageDelItem delItem) {
@@ -165,16 +179,8 @@ public abstract class GetFrameLocalsNode extends Node {
             }
             int count = info.getVariableCount();
             int regularVarCount = info.getRegularVariableCount();
-
-            if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                Object[] localsArray = bytecodeNode.getLocalValues(0, locals);
-                for (int i = 0; i < count; i++) {
-                    copyItem(inliningTarget, localsArray[i], info, dict, setItem, delItem, i, i >= regularVarCount);
-                }
-            } else {
-                for (int i = 0; i < count; i++) {
-                    copyItem(inliningTarget, locals.getValue(i), info, dict, setItem, delItem, i, i >= regularVarCount);
-                }
+            for (int i = 0; i < count; i++) {
+                copyItem(inliningTarget, locals.getValue(i), info, dict, setItem, delItem, i, i >= regularVarCount);
             }
         }
 
@@ -195,6 +201,32 @@ public abstract class GetFrameLocalsNode extends Node {
         @Idempotent
         protected static FrameInfo getInfo(FrameDescriptor fd) {
             return (FrameInfo) fd.getInfo();
+        }
+    }
+
+    @GenerateUncached
+    @GenerateInline(false)       // footprint reduction 104 -> 86
+    abstract static class CopyDSLLocalsToDict extends CopyLocalsToDictBase {
+        @Override
+        public final void execute(PFrame frame, PDict dict) {
+            execute(frame.getBytecodeFrame(), dict);
+        }
+
+        abstract void execute(BytecodeFrame locals, PDict dict);
+
+        @Specialization
+        void doIt(BytecodeFrame locals, PDict dict,
+                        @Bind Node inliningTarget,
+                        @Cached InlinedIntValueProfile varCountProfile,
+                        @Cached InlinedIntValueProfile regularVarCountProfile,
+                        @Cached HashingStorageSetItem setItem,
+                        @Cached HashingStorageDelItem delItem) {
+            BytecodeDSLFrameInfo info = (BytecodeDSLFrameInfo) locals.getFrameDescriptorInfo();
+            int regularVarCount = regularVarCountProfile.profile(inliningTarget, info.getRegularVariableCount());
+            int varCount = varCountProfile.profile(inliningTarget, info.getVariableCount());
+            for (int i = 0; i < varCount; i++) {
+                CopyLocalsToDict.copyItem(inliningTarget, locals.getLocalValue(i), info, dict, setItem, delItem, i, i >= regularVarCount);
+            }
         }
     }
 
