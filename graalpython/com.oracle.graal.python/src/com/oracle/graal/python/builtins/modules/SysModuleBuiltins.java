@@ -1575,6 +1575,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                 PyTraceBackPrint.fileWriteString(out, "TypeError: print_exception(): Exception expected for value, ");
                 fileWriteString(out, getTypeName(type));
                 PyTraceBackPrint.fileWriteString(out, " found\n");
+                return;
             }
 
             final Object tb = getExceptionTraceback(value);
