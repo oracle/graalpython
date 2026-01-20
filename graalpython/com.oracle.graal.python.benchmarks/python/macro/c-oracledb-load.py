@@ -1,4 +1,4 @@
-# Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -63,6 +63,9 @@
 # Install:
 #   python -m pip install oracledb pyarrow sqlalchemy pandas
 # Requires python-oracledb 3.4+
+
+
+ensure_packages(oracledb=="3.4.1", pandas=="2.2.3", pyarrow=="20.0.0", sqlalchemy=="2.0.45")
 
 import csv
 from datetime import datetime
@@ -320,8 +323,10 @@ def pya(connection, tab):
 
 # -----------------------------------------------------------------------------
 
+BLOCK_SIZE = 0
+CONNECTION = None
 
-def generate_csv():
+def __setup__(*args):
     # blog_create.py
     #
     # christopher.jones@oracle.com, 2025
@@ -330,6 +335,7 @@ def generate_csv():
     import csv
     import sys
     from datetime import datetime
+
 
     num_records = BATCH_SIZE
     data = [
@@ -348,47 +354,49 @@ def generate_csv():
 
     print(f"Created {FILE_NAME} with {num_records} records")
 
+    global BLOCK_SIZE, CONNECTION
+    BLOCK_SIZE = len(max(open(FILE_NAME, 'r'), key=len)) * BATCH_SIZE
+    CONNECTION = oracledb.connect(user=USERNAME, password=PASSWORD, dsn=CONNECTSTRING)
 
-if __name__ == "__main__":
-    # generate_csv()
 
-    print("\nCompare end-to-end times for reading a "
-          "CSV file (number, date, string) in chunks and inserting into the Database")
-
-    # Used for a rough conversion from BATCH_SIZE to a byte size needed by the
-    # PyArrow CSV reader
-    row_len = len(max(open(FILE_NAME, 'r'), key=len))
-    BLOCK_SIZE = row_len * BATCH_SIZE
-
-    connection = oracledb.connect(user=USERNAME, password=PASSWORD, dsn=CONNECTSTRING)
-
+def __benchmark__(num=1):
+    assert num == 1
     t1 = "mytabpya"
-    createtab(connection, t1)
-    pya(connection, t1)
-    checkrowcount(connection, t1)
+    createtab(CONNECTION, t1)
+    pya(CONNECTION, t1)
+    checkrowcount(CONNECTION, t1)
 
     t2 = "mytabdpl"
-    # createtab(connection, t2)
-    # dpl(connection, t2)
-    # checkrowcount(connection, t2)
+    # createtab(CONNECTION, t2)
+    # dpl(CONNECTION, t2)
+    # checkrowcount(CONNECTION, t2)
 
     t3 = "mytabpyaem"
-    # createtab(connection, t3)
-    # pyaem(connection, t3)
-    # checkrowcount(connection, t3)
+    # createtab(CONNECTION, t3)
+    # pyaem(CONNECTION, t3)
+    # checkrowcount(CONNECTION, t3)
 
     t4 = "mytabem"
-    # createtab(connection, t4)
-    # em(connection, t4)
-    # checkrowcount(connection, t4)
+    # createtab(CONNECTION, t4)
+    # em(CONNECTION, t4)
+    # checkrowcount(CONNECTION, t4)
 
     t5 = "mytabpd"
-    # createtab(connection, t5)
+    # createtab(CONNECTION, t5)
     # pd(t5)
-    # checkrowcount(connection, t5)
+    # checkrowcount(CONNECTION, t5)
 
     # Check all the tables are the same
-    #compare(connection, t1, t2); compare(connection, t2, t3); compare(connection, t3, t4); compare(connection, t4, t5)
+    #compare(CONNECTION, t1, t2); compare(CONNECTION, t2, t3); compare(CONNECTION, t3, t4); compare(CONNECTION, t4, t5)
 
-    # clean up
-    droptabs(connection, [t1, t2, t3, t4, t5])
+
+def __cleanup__(*args):
+    droptabs(CONNECTION, [t1, t2, t3, t4, t5])
+
+
+if __name__ == "__main__":
+    __setup__()
+    print("\nCompare end-to-end times for reading a "
+          "CSV file (number, date, string) in chunks and inserting into the Database")
+    __benchmark__(1)
+    __cleanup__()

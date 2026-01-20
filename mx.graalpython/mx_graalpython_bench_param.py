@@ -294,6 +294,8 @@ MESO_BENCHMARKS_SMALL = {
 
 MACRO_BENCHMARKS = {
     'gcbench': ITER_10 + ['10'],
+    'c-pydantic-validate': ITER_10 + ['200000'],
+    'c-pymupdf-parse': ITER_10 + ['1'],
 }
 
 

@@ -206,6 +206,22 @@ def detect_warmup(values, cp_threshold=0.03, stability_slope_grade=0.01):
         return -1
 
 
+def ensure_packages(**package_specs):
+    import sys, os
+
+    rootdir = os.path.dirname(__file__)
+    while os.path.basename(rootdir) != 'graalpython':
+        rootdir = os.path.dirname(rootdir)
+
+    sys.path.append(os.path.join(
+        rootdir,
+        "com.oracle.graal.python.test",
+        "src",
+    ))
+    from tests import ensure_packages
+    ensure_packages(**package_specs)
+
+
 def ccompile(name, code):
     import sys, os
 
@@ -287,6 +303,7 @@ class BenchRunner(object):
             with _io.FileIO(bench_file, "r") as f:
                 bench_module.__file__ = bench_file
                 bench_module.ccompile = ccompile
+                bench_module.ensure_packages = ensure_packages
                 exec(compile(f.readall(), bench_file, "exec"), bench_module.__dict__)
                 return bench_module
 

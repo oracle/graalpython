@@ -800,7 +800,7 @@ class PythonBenchmarkSuite(PythonBaseBenchmarkSuite):
     @classmethod
     def get_benchmark_suites(cls, benchmarks):
         assert isinstance(benchmarks, dict), "benchmarks must be a dict: {suite: [path, {bench: args, ... }], ...}"
-        return [cls(suite_name, suite_info[0], suite_info[1])
+        return [cls(suite_name, *suite_info)
                 for suite_name, suite_info in benchmarks.items()]
 
 
