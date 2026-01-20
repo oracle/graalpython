@@ -122,6 +122,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
     public abstract Object[] execute(Node inliningTarget, Object callableOrName, Object[] userArguments, PKeyword[] keywords, Signature signature, Object self, Object classObject,
                     Object[] defaults, PKeyword[] kwdefaults, boolean methodcall);
 
+    @TruffleBoundary
     public static Object[] executeUncached(Object callableOrName, Object[] userArguments, PKeyword[] keywords, Signature signature, Object self, Object classObject,
                     Object[] defaults, PKeyword[] kwdefaults, boolean methodcall) {
         return CreateArgumentsNodeGen.getUncached().execute(null, callableOrName, userArguments, keywords, signature, self, classObject, defaults, kwdefaults, methodcall);

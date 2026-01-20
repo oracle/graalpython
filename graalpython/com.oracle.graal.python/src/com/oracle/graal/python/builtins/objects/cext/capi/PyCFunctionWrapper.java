@@ -51,7 +51,7 @@ import java.lang.invoke.MethodType;
 import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
@@ -204,7 +204,7 @@ public abstract class PyCFunctionWrapper {
             try (var gil = GilNode.uncachedAcquire()) {
                 CApiTiming.enter();
                 try {
-                    Object jArg0 = NativeToPythonNode.executeRawUncached(arg0);
+                    Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
                     Object[] pArgs = CreateArgumentsNode.executeUncached(self.callTargetName, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS, self.signature, jArg0, null,
                                     self.defaults, PKeyword.EMPTY_KEYWORDS, false);
                     Object result = SimpleIndirectInvokeNode.executeUncached(self.callTarget, pArgs);
@@ -237,8 +237,8 @@ public abstract class PyCFunctionWrapper {
             try (var gil = GilNode.uncachedAcquire()) {
                 CApiTiming.enter();
                 try {
-                    Object jArg0 = NativeToPythonNode.executeRawUncached(arg0);
-                    Object jArg1 = NativeToPythonNode.executeRawUncached(arg1);
+                    Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
+                    Object jArg1 = NativeToPythonInternalNode.executeUncached(arg1, false);
                     Object[] pArgs = CreateArgumentsNode.executeUncached(self.callTargetName, new Object[]{jArg1}, PKeyword.EMPTY_KEYWORDS, self.signature, jArg0, null,
                                     self.defaults, PKeyword.EMPTY_KEYWORDS, false);
                     Object result = SimpleIndirectInvokeNode.executeUncached(self.callTarget, pArgs);
@@ -271,8 +271,8 @@ public abstract class PyCFunctionWrapper {
             try (var gil = GilNode.uncachedAcquire()) {
                 CApiTiming.enter();
                 try {
-                    Object receiver = NativeToPythonNode.executeRawUncached(arg0);
-                    Object starArgs = NativeToPythonNode.executeRawUncached(arg1);
+                    Object receiver = NativeToPythonInternalNode.executeUncached(arg0, false);
+                    Object starArgs = NativeToPythonInternalNode.executeUncached(arg1, false);
                     Object[] starArgsArray = ExecutePositionalStarargsNode.executeUncached(starArgs);
                     Object[] pArgs = CreateArgumentsNode.executeUncached(self.callTargetName, starArgsArray, PKeyword.EMPTY_KEYWORDS, self.signature, receiver, null,
                                     self.defaults, PKeyword.EMPTY_KEYWORDS, false);
@@ -306,9 +306,9 @@ public abstract class PyCFunctionWrapper {
             try (var gil = GilNode.uncachedAcquire()) {
                 CApiTiming.enter();
                 try {
-                    Object receiver = NativeToPythonNode.executeRawUncached(arg0);
-                    Object starArgs = NativeToPythonNode.executeRawUncached(arg1);
-                    Object kwArgs = NativeToPythonNode.executeRawUncached(arg2);
+                    Object receiver = NativeToPythonInternalNode.executeUncached(arg0, false);
+                    Object starArgs = NativeToPythonInternalNode.executeUncached(arg1, false);
+                    Object kwArgs = NativeToPythonInternalNode.executeUncached(arg2, false);
                     Object[] starArgsArray = ExecutePositionalStarargsNode.executeUncached(starArgs);
                     PKeyword[] kwArgsArray = ExpandKeywordStarargsNode.getUncached().execute(null, kwArgs);
                     Object[] pArgs = CreateArgumentsNode.executeUncached(self.callTargetName, starArgsArray, kwArgsArray, self.signature, receiver, null,

@@ -60,6 +60,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.util.ArrayBuilder;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -79,6 +80,7 @@ import com.oracle.truffle.api.nodes.Node;
 public abstract class ExecutePositionalStarargsNode extends Node {
     public abstract Object[] executeWith(Frame frame, Object starargs);
 
+    @TruffleBoundary
     public static Object[] executeUncached(Object starargs) {
         return getUncached().executeWith(null, starargs);
     }

@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -63,6 +64,7 @@ public abstract class ExpandKeywordStarargsNode extends PNodeWithContext {
         return execute(null, this, starargs);
     }
 
+    @TruffleBoundary
     public static PKeyword[] executeUncached(Object starargs) {
         return getUncached().execute(null, null, starargs);
     }
