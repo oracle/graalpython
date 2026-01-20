@@ -1050,10 +1050,10 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                     .build();
     @CompilationFinal private Object cachedTRegexLineBreakRegex;
 
-    public Object getCachedTRegexLineBreakRegex(PythonContext context) {
+    public Object getCachedTRegexLineBreakRegex(Node location, PythonContext context) {
         if (cachedTRegexLineBreakRegex == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            cachedTRegexLineBreakRegex = context.getEnv().parseInternal(LINEBREAK_REGEX_SOURCE).call();
+            cachedTRegexLineBreakRegex = context.getEnv().parseInternal(LINEBREAK_REGEX_SOURCE).call(location);
         }
         return cachedTRegexLineBreakRegex;
     }

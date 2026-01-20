@@ -68,6 +68,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_BYTE_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.callCallTarget;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
@@ -82,8 +83,8 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.PolyglotModuleBuiltinsClinicProviders.RegisterInteropTypeNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.modules.PolyglotModuleBuiltinsClinicProviders.EnterForeignCriticalRegionNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.modules.PolyglotModuleBuiltinsClinicProviders.RegisterInteropTypeNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
@@ -287,7 +288,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
                 if (mimeType != null) {
                     builder = builder.mimeType(mimeType);
                 }
-                Object result = env.parsePublic(builder.build()).call();
+                Object result = callCallTarget(env.parsePublic(builder.build()), this);
                 return PForeignToPTypeNode.getUncached().executeConvert(result);
             } catch (AbstractTruffleException e) {
                 throw e;

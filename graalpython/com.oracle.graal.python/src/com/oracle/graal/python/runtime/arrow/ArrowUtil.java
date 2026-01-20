@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,15 +40,17 @@
  */
 package com.oracle.graal.python.runtime.arrow;
 
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.truffle.api.source.Source;
-
 import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
+import static com.oracle.graal.python.util.PythonUtils.callCallTarget;
+
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.source.Source;
 
 public class ArrowUtil {
 
-    public static Object createNfiSignature(String methodSignature, PythonContext ctx) {
+    public static Object createNfiSignature(Node location, String methodSignature, PythonContext ctx) {
         Source sigSource = Source.newBuilder(J_NFI_LANGUAGE, methodSignature, "python-nfi-signature").build();
-        return ctx.getEnv().parseInternal(sigSource).call();
+        return callCallTarget(ctx.getEnv().parseInternal(sigSource), location);
     }
 }

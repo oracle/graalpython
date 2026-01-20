@@ -23967,7 +23967,7 @@ public final class Parser extends AbstractParser {
         return (result != null) == match;
     }
 
-
+    
     @Override
     protected SSTNode runParser(InputType inputType) {
         SSTNode result = null;

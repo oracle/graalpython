@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,25 +41,31 @@
 package com.oracle.graal.python.builtins.objects.type.slots;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.J___BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BOOL__;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckInquiryResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ExternalFunctionInvokeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.type.slots.PythonDispatchers.UnaryPythonSlotDispatcherNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltinBase;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPythonSingle;
-import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotSimpleBuiltinBase;
 import com.oracle.graal.python.lib.PyBoolCheckNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -74,16 +80,44 @@ public abstract class TpSlotInquiry {
     private TpSlotInquiry() {
     }
 
-    public abstract static class TpSlotInquiryBuiltin<T extends InquiryBuiltinNode> extends TpSlotSimpleBuiltinBase<T> {
+    public abstract static sealed class TpSlotInquiryBuiltin<T extends InquiryBuiltinNode> extends
+                    TpSlotBuiltinBase<T> permits TpSlotInquiryBuiltinSimple, TpSlotInquiryBuiltinComplex {
+        static final BuiltinSlotWrapperSignature SIGNATURE = BuiltinSlotWrapperSignature.UNARY;
+
         protected TpSlotInquiryBuiltin(NodeFactory<T> nodeFactory) {
-            super(nodeFactory, BuiltinSlotWrapperSignature.UNARY, PExternalFunctionWrapper.INQUIRY);
+            super(nodeFactory, SIGNATURE, PExternalFunctionWrapper.INQUIRY);
         }
 
         final InquiryBuiltinNode createSlotNode() {
             return createNode();
         }
+    }
+
+    public abstract static non-sealed class TpSlotInquiryBuiltinSimple<T extends InquiryBuiltinNode> extends TpSlotInquiryBuiltin<T> {
+        protected TpSlotInquiryBuiltinSimple(NodeFactory<T> nodeFactory) {
+            super(nodeFactory);
+        }
 
         protected abstract boolean executeUncached(Object self);
+
+        @Override
+        public final void initialize(PythonLanguage language) {
+            // nop
+        }
+    }
+
+    public abstract static non-sealed class TpSlotInquiryBuiltinComplex<T extends InquiryBuiltinNode> extends TpSlotInquiryBuiltin<T> {
+        private final int callTargetIndex = TpSlotBuiltinCallTargetRegistry.getNextCallTargetIndex();
+
+        protected TpSlotInquiryBuiltinComplex(NodeFactory<T> nodeFactory) {
+            super(nodeFactory);
+        }
+
+        @Override
+        public final void initialize(PythonLanguage language) {
+            RootCallTarget callTarget = createSlotCallTarget(language, SIGNATURE, getNodeFactory(), J___BOOL__);
+            language.setBuiltinSlotCallTarget(callTargetIndex, callTarget);
+        }
     }
 
     @GenerateInline(value = false, inherit = true)
@@ -116,13 +150,6 @@ public abstract class TpSlotInquiry {
             return slotNode.executeBool(frame, self);
         }
 
-        @Specialization(replaces = "callCachedBuiltin")
-        static boolean callGenericSimpleBuiltin(TpSlotInquiryBuiltin slot, Object self) {
-            // All nb_bool builtins are known to be simple enough to not require PE for good
-            // performance, so we call them uncached
-            return slot.executeUncached(self);
-        }
-
         @Specialization
         static boolean callPython(VirtualFrame frame, TpSlotPythonSingle slot, Object self,
                         @Cached(inline = false) CallNbBoolPythonNode callSlotNode) {
@@ -139,6 +166,23 @@ public abstract class TpSlotInquiry {
             PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, ctx);
             Object result = externalInvokeNode.call(frame, inliningTarget, threadState, C_API_TIMING, T___BOOL__, slot.callable, toNativeNode.execute(self));
             return checkResultNode.executeBool(threadState, T___BOOL__, result);
+        }
+
+        @Specialization(replaces = "callCachedBuiltin")
+        static boolean callGenericSimpleBuiltin(TpSlotInquiryBuiltinSimple<?> slot, Object self) {
+            // Most nb_bool builtins are known to be simple enough to not require PE for good
+            // performance, so we call them uncached
+            return slot.executeUncached(self);
+        }
+
+        @Specialization(replaces = "callCachedBuiltin")
+        @InliningCutoff
+        static boolean callGenericComplexBuiltin(VirtualFrame frame, Node inliningTarget, TpSlotInquiryBuiltinComplex<?> slot, Object self,
+                        @Cached CallDispatchers.SimpleIndirectInvokeNode invoke) {
+            Object[] arguments = PArguments.create(1);
+            PArguments.setArgument(arguments, 0, self);
+            RootCallTarget callTarget = PythonLanguage.get(inliningTarget).getBuiltinSlotCallTarget(slot.callTargetIndex);
+            return (boolean) invoke.execute(frame, inliningTarget, callTarget, arguments);
         }
     }
 

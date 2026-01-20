@@ -40,6 +40,17 @@
  */
 package com.oracle.graal.python.builtins.modules.re;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.callCallTarget;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Objects;
+
+import org.graalvm.collections.EconomicMap;
+
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -57,15 +68,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.api.strings.TruffleString;
-import org.graalvm.collections.EconomicMap;
-
-import java.nio.charset.StandardCharsets;
-import java.util.Objects;
-
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 public final class TRegexCache {
 
@@ -302,7 +304,7 @@ public final class TRegexCache {
         Object compiledRegex;
         try {
             Source regexSource = Source.newBuilder("regex", options + '/' + pattern + '/' + flags, "re").mimeType("application/tregex").internal(true).build();
-            compiledRegex = context.getEnv().parseInternal(regexSource).call();
+            compiledRegex = callCallTarget(context.getEnv().parseInternal(regexSource), node);
             assert !lib.isNull(compiledRegex) : "This shouldn't happen";
         } catch (RuntimeException e) {
             throw handleCompilationError(node, e, lib);

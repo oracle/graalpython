@@ -79,6 +79,7 @@ import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR;
 import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR_BE;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_LONG_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.callCallTarget;
 import static com.oracle.truffle.api.CompilerDirectives.SLOWPATH_PROBABILITY;
 import static com.oracle.truffle.api.CompilerDirectives.injectBranchProbability;
 import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
@@ -117,7 +118,6 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.UnixSockAddr;
 import com.oracle.graal.python.util.FunctionWithSignature;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -419,8 +419,7 @@ public final class NFIPosixSupport extends PosixSupport {
                 loadSrc = Source.newBuilder(J_NFI_LANGUAGE, J_DEFAULT, J_DEFAULT).internal(true).build();
             }
 
-            CallTarget callTarget = env.parseInternal(loadSrc);
-            return node != null && node.isAdoptable() ? callTarget.call(node) : callTarget.call();
+            return callCallTarget(env.parseInternal(loadSrc), node);
         }
 
         @TruffleBoundary
@@ -431,8 +430,7 @@ public final class NFIPosixSupport extends PosixSupport {
 
                 String sig = String.format("with %s %s", posix.nfiBackend, function.signature);
                 Source sigSrc = Source.newBuilder(J_NFI_LANGUAGE, sig, "posix-nfi-signature").internal(true).build();
-                CallTarget callTarget = posix.context.getEnv().parseInternal(sigSrc);
-                Object signature = node != null && node.isAdoptable() ? callTarget.call(node) : callTarget.call();
+                Object signature = PythonUtils.callCallTarget(posix.context.getEnv().parseInternal(sigSrc), node);
                 unbound = interop.readMember(library, function.name());
                 posix.cachedFunctions.set(function.ordinal(), new FunctionWithSignature(signature, unbound));
             } catch (UnsupportedMessageException | UnknownIdentifierException e) {
