@@ -504,8 +504,10 @@ def update_tags(test_file: 'TestFile', results: list[TestResult], tag_platform: 
     tag_by_id = {}
     for tag in current:
         if untag_missing and tag.test_id not in status_by_id:
+            print(f"[DEBUG] untag missing {tag}")
             tag = tag.without_key(tag_platform)
         if tag:
+            print(f"[DEBUG] register {tag}")
             tag_by_id[tag.test_id] = tag
 
     for test_id, status in status_by_id.items():
@@ -547,6 +549,7 @@ def write_tags(test_file: 'TestFile', tags: typing.Iterable['Tag']):
         return
     with open(tag_file, 'w') as f:
         for tag in sorted(tags, key=lambda t: t.test_id.test_name):
+            print(f"[DEBUG] writing tag: {tag}")
             f.write(f'{tag}\n')
 
 
@@ -1219,6 +1222,7 @@ class Tag:
         return Tag(test_id, frozenset({key}), is_exclusion=False)
 
     def with_key(self, key: str) -> 'Tag':
+        print(f"[DEBUG] adding key {key} to {self}")
         return Tag(self.test_id, self.keys | {key}, is_exclusion=self.is_exclusion)
 
     def without_key(self, key: str) -> 'Tag | None':
@@ -1277,6 +1281,7 @@ def read_tags(test_file: TestFile, allow_exclusions=False) -> list[Tag]:
                     is_exclusion=is_exclusion,
                     comment=comment,
                 )
+                print(f"[DEBUG] read tag: {tag} with keys {tag.keys}")
                 if not is_exclusion or allow_exclusions:
                     tags.append(tag)
                 comment = None
@@ -1365,6 +1370,7 @@ def main_merge_tags(args, parser):
     by_file = defaultdict(list)
     for result in all_results:
         by_file[result.test_id.test_file].append(result)
+        print(f"[DEBUG] result for {result.test_id} with status {result.status}")
     for test_file, results in by_file.items():
         test_file = configure_test_file(test_file)
         update_tags(
@@ -1373,7 +1379,7 @@ def main_merge_tags(args, parser):
             tag_platform=args.platform,
             untag_failed=False,
             untag_skipped=True,
-            untag_missing=True,
+            untag_missing=not GITHUB_CI,
         )
 
 
