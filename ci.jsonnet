@@ -256,9 +256,9 @@
         "python-coverage-truffle": cov_truffle + platform_spec(no_jobs) + platform_spec({
             "linux:amd64:jdk21"          : weekly    + t("20:00:00"),
         }),
-        "corp-compliance-watchdog": watchdog + platform_spec(no_jobs) + platform_spec({
-            "linux:amd64:jdk-latest"     : tier1,
-        }),
+        // "corp-compliance-watchdog": watchdog + platform_spec(no_jobs) + platform_spec({
+        //     "linux:amd64:jdk-latest"     : tier1,
+        // }),
         "bisect-benchmark": bisect_bench_task + platform_spec(no_jobs) + platform_spec({
             # Compiler and SVM no longer support building with anything but the
             # latest JDK. This makes the bisect job prone to failure when
