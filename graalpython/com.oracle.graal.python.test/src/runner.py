@@ -1371,7 +1371,7 @@ def main_merge_tags(args, parser):
             test_file,
             results,
             tag_platform=args.platform,
-            untag_failed=os.environ.get("GITHUB_CI") is not None,
+            untag_failed=False,
             untag_skipped=True,
             untag_missing=True,
         )

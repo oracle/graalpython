@@ -1,0 +1,17 @@
+test.test_multiprocessing_fork.test_misc.ChallengeResponseTest.test_challengeresponse @ linux-aarch64-github,linux-x86_64-github
+test.test_multiprocessing_fork.test_misc.MiscTestCase.test__all__ @ linux-aarch64-github,linux-x86_64-github
+test.test_multiprocessing_fork.test_misc.OtherTest.test_answer_challenge_auth_failure @ linux-aarch64-github,linux-x86_64-github
+test.test_multiprocessing_fork.test_misc.OtherTest.test_deliver_challenge_auth_failure @ linux-aarch64-github,linux-x86_64-github
+test.test_multiprocessing_fork.test_misc.SemLockTests.test_semlock_subclass @ linux-aarch64-github,linux-x86_64-github
+test.test_multiprocessing_fork.test_misc.TestInvalidFamily.test_invalid_family @ linux-aarch64-github,linux-x86_64-github
+test.test_multiprocessing_fork.test_misc.TestInvalidHandle.test_invalid_handles @ linux-aarch64-github,linux-x86_64-github
+test.test_multiprocessing_fork.test_misc.TestPoolNotLeakOnFailure.test_release_unused_processes @ linux-aarch64-github,linux-x86_64-github
+test.test_multiprocessing_fork.test_misc.TestResourceTracker.test_resource_tracker @ linux-aarch64-github,linux-x86_64-github
+test.test_multiprocessing_fork.test_misc.TestResourceTracker.test_too_long_name_resource @ linux-aarch64-github,linux-x86_64-github
+test.test_multiprocessing_fork.test_misc.TestSimpleQueue.test_close @ linux-aarch64-github,linux-x86_64-github
+test.test_multiprocessing_fork.test_misc.TestSimpleQueue.test_empty_exceptions @ linux-aarch64-github,linux-x86_64-github
+test.test_multiprocessing_fork.test_misc.TestStartMethod.test_get_all @ linux-aarch64-github,linux-x86_64-github
+test.test_multiprocessing_fork.test_misc.TestStdinBadfiledescriptor.test_flushing @ linux-aarch64-github,linux-x86_64-github
+test.test_multiprocessing_fork.test_misc.TestWait.test_neg_timeout @ linux-aarch64-github,linux-x86_64-github
+test.test_multiprocessing_fork.test_misc.TestWait.test_wait_timeout @ linux-aarch64-github,linux-x86_64-github
+test.test_multiprocessing_fork.test_misc._TestImportStar.test_import @ linux-aarch64-github,linux-x86_64-github

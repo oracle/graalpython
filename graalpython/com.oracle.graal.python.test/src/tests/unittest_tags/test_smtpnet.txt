@@ -1,0 +1,5 @@
+test.test_smtpnet.SmtpSSLTest.test_connect @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
+test.test_smtpnet.SmtpSSLTest.test_connect_default_port @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
+test.test_smtpnet.SmtpSSLTest.test_connect_using_sslcontext @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
+test.test_smtpnet.SmtpSSLTest.test_connect_using_sslcontext_verified @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
+test.test_smtpnet.SmtpTest.test_connect_starttls @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
