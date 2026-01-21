@@ -49,14 +49,13 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_LBRACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LPAREN;
 import static com.oracle.graal.python.nodes.StringLiterals.T_RBRACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_RPAREN;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -111,6 +110,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PSet, PythonBuiltinClassType.PFrozenSet})
 public final class BaseSetBuiltins extends PythonBuiltins {
@@ -124,7 +124,7 @@ public final class BaseSetBuiltins extends PythonBuiltins {
     @Slot(value = SlotKind.tp_repr, isComplex = true)
     @GenerateNodeFactory
     abstract static class BaseReprNode extends PythonUnaryBuiltinNode {
-        private static void fillItems(VirtualFrame frame, Node inliningTarget, HashingStorage storage, TruffleStringBuilder sb, PyObjectReprAsTruffleStringNode repr,
+        private static void fillItems(VirtualFrame frame, Node inliningTarget, HashingStorage storage, TruffleStringBuilderUTF32 sb, PyObjectReprAsTruffleStringNode repr,
                         HashingStorageGetIterator getIter, HashingStorageIteratorNext iterNext, HashingStorageIteratorKey iterKey,
                         TruffleStringBuilder.AppendStringNode appendStringNode) {
             boolean first = true;
@@ -153,7 +153,7 @@ public final class BaseSetBuiltins extends PythonBuiltins {
                         @Cached HashingStorageIteratorKey iteratorKey,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
-            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+            TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32();
             Object clazz = getClassNode.execute(inliningTarget, self);
             PythonContext ctxt = PythonContext.get(getNameNode);
             int len = lenNode.execute(inliningTarget, self.getDictStorage());

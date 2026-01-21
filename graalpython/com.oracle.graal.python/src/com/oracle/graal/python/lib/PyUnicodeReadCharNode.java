@@ -73,7 +73,7 @@ public abstract class PyUnicodeReadCharNode extends PNodeWithContext {
     static int doGeneric(Node inliningTarget, Object type, long lindex,
                     @Cached CastToTruffleStringNode castToStringNode,
                     @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                    @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                    @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
                     @Cached PRaiseNode raiseNode) {
         try {
             TruffleString s = castToStringNode.execute(inliningTarget, type);
@@ -82,7 +82,7 @@ public abstract class PyUnicodeReadCharNode extends PNodeWithContext {
             if (index < 0 || index >= codePointLengthNode.execute(s, TS_ENCODING)) {
                 throw raiseNode.raise(inliningTarget, IndexError, ErrorMessages.STRING_INDEX_OUT_OF_RANGE);
             }
-            return codePointAtIndexNode.execute(s, index, TS_ENCODING);
+            return codePointAtIndexNode.execute(s, index);
         } catch (CannotCastException e) {
             throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
         } catch (OverflowException e) {

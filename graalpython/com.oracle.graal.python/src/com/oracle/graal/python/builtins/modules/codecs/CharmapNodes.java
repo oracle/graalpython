@@ -98,8 +98,8 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.api.strings.TruffleString.ErrorHandling;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 
 public final class CharmapNodes {
 
@@ -118,7 +118,7 @@ public final class CharmapNodes {
         @Specialization
         static Object doIt(VirtualFrame frame, Node inliningTarget, TruffleString map,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
                         @Cached(inline = false) HashingStorageSetItem setItemNode,
                         @Cached PRaiseNode raiseNode) {
             int len = Math.min(codePointLengthNode.execute(map, TS_ENCODING), 256);
@@ -132,11 +132,11 @@ public final class CharmapNodes {
 
             Arrays.fill(level1, (byte) 0xFF);
             Arrays.fill(level2, (byte) 0xFF);
-            if (codePointAtIndexNode.execute(map, 0, TS_ENCODING, ErrorHandling.BEST_EFFORT) != 0) {
+            if (codePointAtIndexNode.execute(map, 0) != 0) {
                 return doDict(frame, inliningTarget, map, len, codePointAtIndexNode, setItemNode);
             }
             for (int i = 1; i < len; ++i) {
-                int cp = codePointAtIndexNode.execute(map, i, TS_ENCODING, ErrorHandling.BEST_EFFORT);
+                int cp = codePointAtIndexNode.execute(map, i);
                 if (cp == 0 || cp > 0xFFFF) {
                     return doDict(frame, inliningTarget, map, len, codePointAtIndexNode, setItemNode);
                 }
@@ -161,7 +161,7 @@ public final class CharmapNodes {
             Arrays.fill(level23, 0, l3Start, (byte) 0xFF);
             count3 = 0;
             for (int i = 1; i < len; ++i) {
-                int cp = codePointAtIndexNode.execute(map, i, TS_ENCODING, ErrorHandling.BEST_EFFORT);
+                int cp = codePointAtIndexNode.execute(map, i);
                 if (cp == 0xFFFE) {
                     continue;
                 }
@@ -178,10 +178,11 @@ public final class CharmapNodes {
             return PFactory.createEncodingMap(PythonLanguage.get(inliningTarget), count2, count3, level1, level23);
         }
 
-        private static Object doDict(VirtualFrame frame, Node inliningTarget, TruffleString map, int len, TruffleString.CodePointAtIndexNode codePointAtIndexNode, HashingStorageSetItem setItemNode) {
+        private static Object doDict(VirtualFrame frame, Node inliningTarget, TruffleString map, int len, TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
+                        HashingStorageSetItem setItemNode) {
             HashingStorage store = PDict.createNewStorage(len);
             for (int i = 0; i < len; ++i) {
-                int cp = codePointAtIndexNode.execute(map, i, TS_ENCODING, ErrorHandling.BEST_EFFORT);
+                int cp = codePointAtIndexNode.execute(map, i);
                 store = setItemNode.execute(frame, inliningTarget, store, cp, i);
             }
             return PFactory.createDict(PythonLanguage.get(inliningTarget), store);
@@ -204,7 +205,7 @@ public final class CharmapNodes {
         @Fallback
         static byte[] doGenericMapping(VirtualFrame frame, Node inliningTarget, TruffleString src, TruffleString errors, Object mapping,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
                         @Cached CharmapEncodeOutputNode charmapEncodeOutputNode,
                         @Cached CharmapEncodingErrorNode charmapEncodingErrorNode) {
             int len = codePointLengthNode.execute(src, TS_ENCODING);
@@ -215,7 +216,7 @@ public final class CharmapNodes {
             int inPos = 0;
             ErrorHandlerCache cache = new ErrorHandlerCache();
             while (inPos < len) {
-                int cp = codePointAtIndexNode.execute(src, inPos, TS_ENCODING, ErrorHandling.BEST_EFFORT);
+                int cp = codePointAtIndexNode.execute(src, inPos);
                 boolean x = charmapEncodeOutputNode.execute(frame, inliningTarget, cp, mapping, builder);
                 if (!x) {
                     inPos = charmapEncodingErrorNode.execute(frame, inliningTarget, cache, src, inPos, len, errors, mapping, builder);
@@ -237,7 +238,7 @@ public final class CharmapNodes {
         static int doIt(VirtualFrame frame, Node inliningTarget, ErrorHandlerCache cache, TruffleString src, int pos, int len, TruffleString errors, Object mapping, ByteArrayBuilder builder,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
                         @Cached CharmapEncodeLookupNode charmapEncodeLookupNode,
                         @Cached GetErrorHandlerNode getErrorHandlerNode,
                         @Cached CallEncodingErrorHandlerNode callEncodingErrorHandlerNode,
@@ -246,7 +247,7 @@ public final class CharmapNodes {
                         @Cached RaiseEncodeException raiseEncodeException) {
             int errEnd = pos;
             while (errEnd < len) {
-                int cp = codePointAtIndexNode.execute(src, errEnd, TS_ENCODING, ErrorHandling.BEST_EFFORT);
+                int cp = codePointAtIndexNode.execute(src, errEnd);
                 if (mapping instanceof PEncodingMap map) {
                     if (encodingMapLookup(cp, map) != -1) {
                         break;
@@ -270,7 +271,7 @@ public final class CharmapNodes {
             TruffleString replacement = castToTruffleStringNode.execute(inliningTarget, result.replacement);
             int repLen = codePointLengthNode.execute(replacement, TS_ENCODING);
             for (int i = 0; i < repLen; ++i) {
-                int cp = codePointAtIndexNode.execute(replacement, i, TS_ENCODING, ErrorHandling.BEST_EFFORT);
+                int cp = codePointAtIndexNode.execute(replacement, i);
                 if (!charmapEncodeOutputNode.execute(frame, inliningTarget, cp, mapping, builder)) {
                     raiseEncodeException.execute(frame, inliningTarget, cache, T_CHARMAP, src, pos, errEnd, CHARACTER_MAPS_TO_UNDEFINED);
                 }
@@ -391,7 +392,7 @@ public final class CharmapNodes {
                         @SuppressWarnings("unused") @Cached @Exclusive PyUnicodeCheckExactNode isBuiltinString,
                         @Cached @Exclusive CastToTruffleStringNode castToTruffleStringNode,
                         @Cached @Shared TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached @Shared TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Cached @Shared TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
                         @Cached @Shared TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
                         @Cached @Shared TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached @Shared TruffleStringBuilder.ToStringNode toStringNode,
@@ -405,7 +406,7 @@ public final class CharmapNodes {
             int pos = 0;
             TruffleString mapping = castToTruffleStringNode.execute(inliningTarget, mappingObj);
             int mappingLen = codePointLengthNode.execute(mapping, TS_ENCODING);
-            TruffleStringBuilder tsb = TruffleStringBuilder.create(TS_ENCODING);
+            TruffleStringBuilderUTF32 tsb = TruffleStringBuilder.createUTF32();
             int errorStartPos;
             int srcLen;
             do {
@@ -420,7 +421,7 @@ public final class CharmapNodes {
                             errorStartPos = pos;
                             break;
                         }
-                        int cp = codePointAtIndexNode.execute(mapping, index, TS_ENCODING);
+                        int cp = codePointAtIndexNode.execute(mapping, index);
                         if (cp == UNDEFINED_MAPPING) {
                             errorStartPos = pos;
                             break;
@@ -455,7 +456,7 @@ public final class CharmapNodes {
                         @Cached PyUnicodeCheckNode pyUnicodeCheckNode,
                         @Cached @Exclusive CastToTruffleStringNode castToTruffleStringNode,
                         @Cached @Shared TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached @Shared TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Cached @Shared TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
                         @Cached @Shared TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
                         @Cached @Shared TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached @Shared TruffleStringBuilder.ToStringNode toStringNode,
@@ -471,7 +472,7 @@ public final class CharmapNodes {
             ErrorHandlerCache cache = new ErrorHandlerCache();
             Object srcObj = data;
             int pos = 0;
-            TruffleStringBuilder tsb = TruffleStringBuilder.create(TS_ENCODING);
+            TruffleStringBuilderUTF32 tsb = TruffleStringBuilder.createUTF32();
             int errorStartPos;
             int srcLen;
             do {
@@ -508,7 +509,7 @@ public final class CharmapNodes {
                         } else if (strValuesProfile.profile(inliningTarget, pyUnicodeCheckNode.execute(inliningTarget, item))) {
                             TruffleString ts = castToTruffleStringNode.execute(inliningTarget, item);
                             if (codePointLengthNode.execute(ts, TS_ENCODING) == 1) {
-                                int cp = codePointAtIndexNode.execute(ts, 0, TS_ENCODING, ErrorHandling.BEST_EFFORT);
+                                int cp = codePointAtIndexNode.execute(ts, 0);
                                 if (cp == UNDEFINED_MAPPING) {
                                     errorStartPos = pos;
                                     break;

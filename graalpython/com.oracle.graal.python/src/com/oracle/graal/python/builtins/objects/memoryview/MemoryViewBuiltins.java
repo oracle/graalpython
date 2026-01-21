@@ -662,7 +662,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
         static PMemoryView cast(PMemoryView self, TruffleString formatString, @SuppressWarnings("unused") PNone none,
                         @Bind Node inliningTarget,
                         @Shared @Cached TruffleString.CodePointLengthNode lengthNode,
-                        @Shared @Cached TruffleString.CodePointAtIndexNode atIndexNode,
+                        @Shared @Cached TruffleString.CodePointAtIndexUTF32Node atIndexNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             self.checkReleased(inliningTarget, raiseNode);
             return doCast(inliningTarget, self, formatString, 1, null, PythonContext.get(inliningTarget), lengthNode, atIndexNode, raiseNode);
@@ -675,7 +675,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Shared @Cached TruffleString.CodePointLengthNode lengthNode,
-                        @Shared @Cached TruffleString.CodePointAtIndexNode atIndexNode,
+                        @Shared @Cached TruffleString.CodePointAtIndexUTF32Node atIndexNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             self.checkReleased(inliningTarget, raiseNode);
             SequenceStorage storage = getSequenceStorageNode.execute(inliningTarget, shapeObj);
@@ -698,7 +698,7 @@ public final class MemoryViewBuiltins extends PythonBuiltins {
         }
 
         private static PMemoryView doCast(Node inliningTarget, PMemoryView self, TruffleString formatString, int ndim, int[] shape, PythonContext context, TruffleString.CodePointLengthNode lengthNode,
-                        TruffleString.CodePointAtIndexNode atIndexNode, PRaiseNode raiseNode) {
+                        TruffleString.CodePointAtIndexUTF32Node atIndexNode, PRaiseNode raiseNode) {
             if (!self.isCContiguous()) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.MEMORYVIEW_CASTS_RESTRICTED_TO_C_CONTIGUOUS);
             }

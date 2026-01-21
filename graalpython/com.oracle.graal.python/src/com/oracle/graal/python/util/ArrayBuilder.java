@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -60,6 +60,10 @@ public final class ArrayBuilder<T> {
         this.data = new Object[capacity];
     }
 
+    public boolean isEmpty() {
+        return size == 0;
+    }
+
     public void add(Object item) {
         if (size == data.length) {
             try {
@@ -76,6 +80,18 @@ public final class ArrayBuilder<T> {
     public T get(int index) {
         assert index >= 0 && index < size;
         return (T) data[index];
+    }
+
+    @SuppressWarnings("unchecked")
+    public T pop() {
+        assert size > 0;
+        return (T) data[--size];
+    }
+
+    @SuppressWarnings("unchecked")
+    public T peek() {
+        assert size > 0;
+        return (T) data[size - 1];
     }
 
     @SuppressWarnings("unchecked")

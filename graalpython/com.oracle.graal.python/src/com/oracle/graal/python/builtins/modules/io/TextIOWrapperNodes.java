@@ -118,19 +118,20 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 
 public abstract class TextIOWrapperNodes {
 
     public static final TruffleString T_CODECS_OPEN = tsLiteral("codecs.open()");
 
     protected static void validateNewline(TruffleString str, Node inliningTarget, PRaiseNode raise, TruffleString.CodePointLengthNode codePointLengthNode,
-                    TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+                    TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode) {
         int len = codePointLengthNode.execute(str, TS_ENCODING);
-        int c = len == 0 ? '\0' : codePointAtIndexNode.execute(str, 0, TS_ENCODING);
+        int c = len == 0 ? '\0' : codePointAtIndexNode.execute(str, 0);
         if (c != '\0' &&
                         !(c == '\n' && len == 1) &&
                         !(c == '\r' && len == 1) &&
-                        !(c == '\r' && len == 2 && codePointAtIndexNode.execute(str, 1, TS_ENCODING) == '\n')) {
+                        !(c == '\r' && len == 2 && codePointAtIndexNode.execute(str, 1) == '\n')) {
             throw raise.raise(inliningTarget, ValueError, ILLEGAL_NEWLINE_VALUE_S, str);
         }
     }
@@ -329,12 +330,12 @@ public abstract class TextIOWrapperNodes {
                         @Shared @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached TruffleString.IndexOfStringNode indexOfStringNode,
                         @Shared @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
-                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+                        @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode) {
             int len = codePointLengthNode.execute(line, TS_ENCODING);
             TruffleString readNl = self.getReadNewline();
             int nlLen = codePointLengthNode.execute(readNl, TS_ENCODING);
             if (nlLen == 1) {
-                int cp = codePointAtIndexNode.execute(readNl, 0, TS_ENCODING);
+                int cp = codePointAtIndexNode.execute(readNl, 0);
                 int pos = indexOfCodePointNode.execute(line, cp, start, len, TS_ENCODING);
                 if (pos >= 0) {
                     return pos - start + 1;
@@ -346,7 +347,7 @@ public abstract class TextIOWrapperNodes {
             if (pos >= 0) {
                 return pos - start + nlLen;
             }
-            int firstCp = codePointAtIndexNode.execute(readNl, 0, TS_ENCODING);
+            int firstCp = codePointAtIndexNode.execute(readNl, 0);
             int i = len - (nlLen - 1);
             if (i < start) {
                 i = start;
@@ -382,7 +383,7 @@ public abstract class TextIOWrapperNodes {
             int chunked = 0;
             int start, endpos, offsetToBuffer;
             TruffleString line = null;
-            TruffleStringBuilder chunks = null;
+            TruffleStringBuilderUTF32 chunks = null;
             TruffleString remaining = null;
             int[] consumed = new int[1];
 
@@ -446,7 +447,7 @@ public abstract class TextIOWrapperNodes {
                 if (endpos > start) {
                     /* No line ending seen yet - put aside current data */
                     if (chunks == null) {
-                        chunks = TruffleStringBuilder.create(TS_ENCODING);
+                        chunks = TruffleStringBuilder.createUTF32();
                     }
                     TruffleString s = substringNode.execute(line, start, endpos - start, TS_ENCODING, true);
                     appendStringNode.execute(chunks, s);
@@ -474,7 +475,7 @@ public abstract class TextIOWrapperNodes {
             }
             if (remaining != null) {
                 if (chunks == null) {
-                    chunks = TruffleStringBuilder.create(TS_ENCODING);
+                    chunks = TruffleStringBuilder.createUTF32();
                 }
                 appendStringNode.execute(chunks, remaining);
             }
@@ -817,7 +818,7 @@ public abstract class TextIOWrapperNodes {
                         @Cached PyObjectLookupAttr lookup,
                         @Cached PyObjectIsTrueNode isTrueNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
                         @Cached TruffleString.IndexOfCodePointNode indexOfCodePointNode,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached(inline = false) WarningsModuleBuiltins.WarnNode warnNode,

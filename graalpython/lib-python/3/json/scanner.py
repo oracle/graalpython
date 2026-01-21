@@ -8,6 +8,18 @@ except ImportError:
 
 __all__ = ['make_scanner']
 
+# graalpy change: moved here from decoder.py
+NaN = float('nan')
+PosInf = float('inf')
+NegInf = float('-inf')
+
+# graalpy change: moved here from decoder.py
+_CONSTANTS = {
+    '-Infinity': NegInf,
+    'Infinity': PosInf,
+    'NaN': NaN,
+}
+
 NUMBER_RE = re.compile(
     r'(-?(?:0|[1-9][0-9]*))(\.[0-9]+)?([eE][-+]?[0-9]+)?',
     (re.VERBOSE | re.MULTILINE | re.DOTALL))
@@ -18,9 +30,10 @@ def py_make_scanner(context):
     parse_string = context.parse_string
     match_number = NUMBER_RE.match
     strict = context.strict
-    parse_float = context.parse_float
-    parse_int = context.parse_int
-    parse_constant = context.parse_constant
+    # graalpy change: allow the parser functions to be None for better performance in JSONScannerBuiltins
+    parse_float = context.parse_float or float
+    parse_int = context.parse_int or int
+    parse_constant = context.parse_constant or _CONSTANTS.__getitem__
     object_hook = context.object_hook
     object_pairs_hook = context.object_pairs_hook
     memo = context.memo

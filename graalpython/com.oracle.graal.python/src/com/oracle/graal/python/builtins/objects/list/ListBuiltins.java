@@ -45,11 +45,11 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.annotations.HashNotImplemented;
 import com.oracle.graal.python.annotations.Slot;
 import com.oracle.graal.python.annotations.Slot.SlotKind;
 import com.oracle.graal.python.annotations.Slot.SlotSignature;
-import com.oracle.graal.python.annotations.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -136,6 +136,7 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 import com.oracle.truffle.api.strings.TruffleStringIterator;
 
 /**
@@ -216,7 +217,7 @@ public final class ListBuiltins extends PythonBuiltins {
                 return T_ELLIPSIS_IN_BRACKETS;
             }
             try {
-                TruffleStringBuilder buf = TruffleStringBuilder.create(TS_ENCODING);
+                TruffleStringBuilderUTF32 buf = TruffleStringBuilder.createUTF32();
                 appendStringNode.execute(buf, T_LBRACKET);
                 boolean initial = true;
                 for (int index = 0; index < length; index++) {

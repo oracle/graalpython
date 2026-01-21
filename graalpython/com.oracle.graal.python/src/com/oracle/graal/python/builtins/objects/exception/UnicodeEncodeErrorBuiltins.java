@@ -132,7 +132,7 @@ public final class UnicodeEncodeErrorBuiltins extends PythonBuiltins {
                         @Cached CastToTruffleStringNode toTruffleStringNode,
                         @Cached PyObjectStrAsTruffleStringNode strNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
                         @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             if (self.getExceptionAttributes() == null) {
                 // Not properly initialized.
@@ -147,7 +147,7 @@ public final class UnicodeEncodeErrorBuiltins extends PythonBuiltins {
             final TruffleString encoding = strNode.execute(frame, inliningTarget, attrNode.get(self, IDX_ENCODING, UNICODE_ERROR_ATTR_FACTORY));
             final TruffleString reason = strNode.execute(frame, inliningTarget, attrNode.get(self, IDX_REASON, UNICODE_ERROR_ATTR_FACTORY));
             if (start < codePointLengthNode.execute(object, TS_ENCODING) && end == start + 1) {
-                final int badChar = codePointAtIndexNode.execute(object, start, TS_ENCODING);
+                final int badChar = codePointAtIndexNode.execute(object, start);
                 String badCharStr;
                 if (badChar <= 0xFF) {
                     badCharStr = PythonUtils.formatJString("\\x%02x", badChar);

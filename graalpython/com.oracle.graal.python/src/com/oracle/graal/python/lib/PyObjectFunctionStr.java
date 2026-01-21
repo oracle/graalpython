@@ -52,6 +52,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 
 /**
  * Obtains a string representation of a function for error reporting. Equivalent of CPython's
@@ -79,7 +80,7 @@ public abstract class PyObjectFunctionStr {
         if (!(module instanceof PNone)) {
             TruffleString moduleStr = asStr.execute(null, null, module);
             if (!T_BUILTINS.equalsUncached(moduleStr, TS_ENCODING)) {
-                TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+                TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32();
                 sb.appendStringUncached(moduleStr);
                 sb.appendCodePointUncached('.');
                 sb.appendStringUncached(qualnameStr);
@@ -88,7 +89,7 @@ public abstract class PyObjectFunctionStr {
                 return sb.toStringUncached();
             }
         }
-        TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+        TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32();
         sb.appendStringUncached(qualnameStr);
         sb.appendCodePointUncached('(');
         sb.appendCodePointUncached(')');

@@ -135,6 +135,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PStringIO)
 public final class StringIOBuiltins extends PythonBuiltins {
@@ -225,7 +226,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
             self.realize();
         }
 
-        TruffleStringBuilder sb = self.getBuf();
+        TruffleStringBuilderUTF32 sb = self.getBuf();
         self.invalidateBufCache();
         if (self.getPos() > self.getStringSize()) {
             /*
@@ -244,7 +245,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
             // Without that API, we have to create a new builder and replace the old one with it
             TruffleString currentBuf = toStringNode.execute(sb, true);
             TruffleString left = substringNode.execute(currentBuf, 0, self.getPos(), TS_ENCODING, true);
-            sb = TruffleStringBuilder.create(TS_ENCODING, self.getPos() + decodedLen);
+            sb = TruffleStringBuilder.createUTF32(self.getPos() + decodedLen);
             self.setBuf(sb);
             appendStringNode.execute(sb, left);
             appendStringNode.execute(sb, decoded);
@@ -295,7 +296,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
                         @Cached IncrementalNewlineDecoderBuiltins.InitNode initNode,
                         @Cached StringReplaceNode replaceNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
                         @Cached TruffleString.SubstringNode substringNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode,
@@ -322,7 +323,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
             if (newline != null) {
                 self.setReadNewline(newline);
             }
-            self.setReadUniversal(newline == null || newline.isEmpty() || codePointAtIndexNode.execute(newline, 0, TS_ENCODING) == '\0');
+            self.setReadUniversal(newline == null || newline.isEmpty() || codePointAtIndexNode.execute(newline, 0) == '\0');
             self.setReadTranslate(newline == null);
             /*-
                 If newline == "", we don't translate anything.
@@ -330,7 +331,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
                 (for newline == None, TextIOWrapper translates to os.linesep, but it
                 is pointless for StringIO)
             */
-            if (newline != null && !newline.isEmpty() && codePointAtIndexNode.execute(newline, 0, TS_ENCODING) == '\r') {
+            if (newline != null && !newline.isEmpty() && codePointAtIndexNode.execute(newline, 0) == '\r') {
                 self.setWriteNewline(self.getReadNewline());
             }
 
@@ -476,7 +477,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
                         @Shared @Cached TruffleStringBuilder.AppendStringNode appendStringNode) {
             self.realize();
             TruffleString currentBuf = toStringNode.execute(self.getBuf(), true);
-            TruffleStringBuilder newBuf = TruffleStringBuilder.create(TS_ENCODING, size);
+            TruffleStringBuilderUTF32 newBuf = TruffleStringBuilder.createUTF32(size);
             appendStringNode.execute(newBuf, substringNode.execute(currentBuf, 0, size, TS_ENCODING, true));
             self.setBuf(newBuf);
             self.setStringsize(size);
@@ -690,7 +691,7 @@ public final class StringIOBuiltins extends PythonBuiltins {
             TruffleString buf = toString.execute(inliningTarget, array[0]);
             int bufsize = codePointLengthNode.execute(buf, TS_ENCODING);
             self.setRealized();
-            TruffleStringBuilder newBuf = TruffleStringBuilder.create(TS_ENCODING, bufsize);
+            TruffleStringBuilderUTF32 newBuf = TruffleStringBuilder.createUTF32(bufsize);
             appendStringNode.execute(newBuf, buf);
             self.setBuf(newBuf);
             self.setStringsize(bufsize);

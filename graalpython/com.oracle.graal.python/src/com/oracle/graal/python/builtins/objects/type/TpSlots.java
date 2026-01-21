@@ -1463,10 +1463,10 @@ public record TpSlots(TpSlot nb_bool, //
         return klassSlots;
     }
 
-    public static boolean canBeSpecialMethod(TruffleString name, TruffleString.CodePointLengthNode codePointLengthNode, TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
+    public static boolean canBeSpecialMethod(TruffleString name, TruffleString.CodePointLengthNode codePointLengthNode, TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode) {
         int len = codePointLengthNode.execute(name, TS_ENCODING);
-        return len > 5 && codePointAtIndexNode.execute(name, len - 2, TS_ENCODING) == '_' && codePointAtIndexNode.execute(name, len - 1, TS_ENCODING) == '_' &&
-                        codePointAtIndexNode.execute(name, 1, TS_ENCODING) == '_' && codePointAtIndexNode.execute(name, 0, TS_ENCODING) == '_';
+        return len > 5 && codePointAtIndexNode.execute(name, len - 2) == '_' && codePointAtIndexNode.execute(name, len - 1) == '_' &&
+                        codePointAtIndexNode.execute(name, 1) == '_' && codePointAtIndexNode.execute(name, 0) == '_';
     }
 
     public static boolean isSpecialMethod(TruffleString name) {

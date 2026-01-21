@@ -139,8 +139,8 @@ public final class BinasciiModuleBuiltins extends PythonBuiltins {
 
             @ExportMessage
             byte readByte(int byteOffset,
-                            @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode) {
-                int ch = codePointAtIndexNode.execute(str, byteOffset, TS_ENCODING);
+                            @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode) {
+                int ch = codePointAtIndexNode.execute(str, byteOffset);
                 assert 0 <= ch && ch < 128;    // guaranteed because str is ASCII
                 return (byte) ch;
             }

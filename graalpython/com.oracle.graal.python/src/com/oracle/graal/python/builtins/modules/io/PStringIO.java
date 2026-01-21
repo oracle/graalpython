@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules.io;
 
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -50,6 +48,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 
 public final class PStringIO extends PTextIOBase {
 
@@ -63,8 +62,8 @@ public final class PStringIO extends PTextIOBase {
     private boolean closed;
 
     private TruffleString cachedString;
-    private TruffleStringBuilder buf;
-    private TruffleStringBuilder sb;
+    private TruffleStringBuilderUTF32 buf;
+    private TruffleStringBuilderUTF32 sb;
     private int pos;
     private int stringSize;
 
@@ -73,11 +72,11 @@ public final class PStringIO extends PTextIOBase {
         buf = null;
     }
 
-    public TruffleStringBuilder getBuf() {
+    public TruffleStringBuilderUTF32 getBuf() {
         return buf;
     }
 
-    public void setBuf(TruffleStringBuilder buf) {
+    public void setBuf(TruffleStringBuilderUTF32 buf) {
         this.buf = buf;
         cachedString = null;
     }
@@ -129,7 +128,7 @@ public final class PStringIO extends PTextIOBase {
 
     public void setAccumulating() {
         assert stringSize == 0 && !isAccumulating();
-        sb = TruffleStringBuilder.create(TS_ENCODING);
+        sb = TruffleStringBuilder.createUTF32();
         cachedString = null;
     }
 
@@ -140,7 +139,7 @@ public final class PStringIO extends PTextIOBase {
 
     public void setRealized() {
         sb = null;
-        buf = TruffleStringBuilder.create(TS_ENCODING);
+        buf = TruffleStringBuilder.createUTF32();
     }
 
     public TruffleString makeIntermediate(TruffleStringBuilder.ToStringNode toStringNode) {
@@ -151,7 +150,7 @@ public final class PStringIO extends PTextIOBase {
     @Override
     public void clearAll() {
         super.clearAll();
-        buf = TruffleStringBuilder.create(TS_ENCODING);
+        buf = TruffleStringBuilder.createUTF32();
         sb = null;
         cachedString = null;
         setWriteNewline(null);

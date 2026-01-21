@@ -47,7 +47,6 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_LPAREN;
 import static com.oracle.graal.python.nodes.StringLiterals.T_RPAREN;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_TRUFFLESTRING_ARRAY;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -98,6 +97,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 
 @CoreFunctions(extendClasses = {
                 PythonBuiltinClassType.PStatResult,
@@ -199,7 +199,7 @@ public final class StructSequenceBuiltins extends PythonBuiltins {
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
             Object type = getClassNode.execute(inliningTarget, self);
-            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+            TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32();
             appendStringNode.execute(sb, getQName.execute(frame, type));
             appendStringNode.execute(sb, T_LPAREN);
             SequenceStorage tupleStore = self.getSequenceStorage();

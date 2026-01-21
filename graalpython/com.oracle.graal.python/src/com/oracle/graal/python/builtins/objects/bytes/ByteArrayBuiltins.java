@@ -35,7 +35,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.T___INIT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.util.List;
@@ -123,6 +122,7 @@ import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PByteArray)
 @HashNotImplemented
@@ -405,7 +405,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
             SequenceStorage store = self.getSequenceStorage();
             byte[] bytes = getBytes.execute(inliningTarget, store);
             int len = store.length();
-            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+            TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32();
             TruffleString typeName = getNameNode.execute(inliningTarget, getClassNode.execute(inliningTarget, self));
             appendStringNode.execute(sb, typeName);
             appendCodePointNode.execute(sb, '(', 1, true);
@@ -788,7 +788,7 @@ public final class ByteArrayBuiltins extends PythonBuiltins {
 
     static Object commonReduce(int proto, byte[] bytes, int len, Object clazz, Object dict,
                     PythonLanguage language, TruffleStringBuilder.AppendCodePointNode appendCodePointNode, TruffleStringBuilder.ToStringNode toStringNode) {
-        TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+        TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32();
         BytesUtils.repr(sb, bytes, len, appendCodePointNode);
         TruffleString str = toStringNode.execute(sb);
         Object contents;

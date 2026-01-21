@@ -34,6 +34,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 
 public final class BytesUtils {
 
@@ -314,7 +315,7 @@ public final class BytesUtils {
         return quote;
     }
 
-    public static void reprLoop(TruffleStringBuilder sb, byte[] bytes, int len, TruffleStringBuilder.AppendCodePointNode appendCodePointNode) {
+    public static void reprLoop(TruffleStringBuilderUTF32 sb, byte[] bytes, int len, TruffleStringBuilder.AppendCodePointNode appendCodePointNode) {
         char quote = figureOutQuote(bytes, len);
         appendCodePointNode.execute(sb, 'b', 1, true);
         appendCodePointNode.execute(sb, quote, 1, true);
@@ -325,7 +326,7 @@ public final class BytesUtils {
     }
 
     @TruffleBoundary
-    private static void byteRepr(TruffleStringBuilder sb, byte b, boolean isSingleQuote, TruffleStringBuilder.AppendCodePointNode appendCodePointNode) {
+    private static void byteRepr(TruffleStringBuilderUTF32 sb, byte b, boolean isSingleQuote, TruffleStringBuilder.AppendCodePointNode appendCodePointNode) {
         if (b == '\t') {
             appendCodePointNode.execute(sb, '\\', 1, true);
             appendCodePointNode.execute(sb, 't', 1, true);
@@ -354,7 +355,7 @@ public final class BytesUtils {
         }
     }
 
-    public static void repr(TruffleStringBuilder sb, byte[] bytes, int len, TruffleStringBuilder.AppendCodePointNode appendCodePointNode) {
+    public static void repr(TruffleStringBuilderUTF32 sb, byte[] bytes, int len, TruffleStringBuilder.AppendCodePointNode appendCodePointNode) {
         for (int i = 0; i < len; i++) {
             byteRepr(sb, bytes[i], true, appendCodePointNode);
         }
@@ -367,7 +368,7 @@ public final class BytesUtils {
             len = bytes.length;
         }
 
-        TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+        TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32();
         sb.appendCodePointUncached('b');
         sb.appendCodePointUncached('\'');
         repr(sb, bytes, len, TruffleStringBuilder.AppendCodePointNode.getUncached());

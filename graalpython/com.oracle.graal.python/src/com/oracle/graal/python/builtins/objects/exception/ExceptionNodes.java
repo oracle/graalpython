@@ -83,6 +83,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 
 public final class ExceptionNodes {
     private static Object nullToNone(Object obj) {
@@ -447,7 +448,7 @@ public final class ExceptionNodes {
 
         @TruffleBoundary
         private static TruffleString concat(TruffleString a, TruffleString b) {
-            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+            TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32();
             sb.appendStringUncached(a);
             sb.appendStringUncached(T_COLON_SPACE);
             sb.appendStringUncached(b);

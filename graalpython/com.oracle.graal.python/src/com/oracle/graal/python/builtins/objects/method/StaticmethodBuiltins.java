@@ -79,6 +79,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PStaticmethod})
 public final class StaticmethodBuiltins extends PythonBuiltins {
@@ -169,7 +170,7 @@ public final class StaticmethodBuiltins extends PythonBuiltins {
                         @Cached TruffleStringBuilder.AppendStringNode append,
                         @Cached TruffleStringBuilder.ToStringNode toString) {
             TruffleString callableRepr = repr.execute(frame, inliningTarget, self.getCallable());
-            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING, PREFIX_LEN + callableRepr.byteLength(TS_ENCODING) + SUFFIX_LEN);
+            TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32(PREFIX_LEN + callableRepr.byteLength(TS_ENCODING) + SUFFIX_LEN);
             append.execute(sb, PREFIX);
             append.execute(sb, callableRepr);
             append.execute(sb, SUFFIX);

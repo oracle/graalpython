@@ -134,6 +134,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PGenericAlias)
 public final class GenericAliasBuiltins extends PythonBuiltins {
@@ -242,7 +243,7 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         static Object reprBoundary(PGenericAlias self) {
-            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+            TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32();
             if (self.isStarred()) {
                 sb.appendCodePointUncached('*');
             }
@@ -270,7 +271,7 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
         }
 
         // Equivalent of ga_repr_item in CPython
-        private static void reprItem(TruffleStringBuilder sb, Object obj) {
+        private static void reprItem(TruffleStringBuilderUTF32 sb, Object obj) {
             if (obj == PEllipsis.INSTANCE) {
                 sb.appendStringUncached(StringLiterals.T_ELLIPSIS);
                 return;
@@ -278,7 +279,7 @@ public final class GenericAliasBuiltins extends PythonBuiltins {
             GenericTypeNodes.reprItem(sb, obj);
         }
 
-        private static void reprItemsList(TruffleStringBuilder sb, PList list) {
+        private static void reprItemsList(TruffleStringBuilderUTF32 sb, PList list) {
             sb.appendCodePointUncached('[');
             SequenceStorage storage = list.getSequenceStorage();
             for (int i = 0; i < storage.length(); i++) {

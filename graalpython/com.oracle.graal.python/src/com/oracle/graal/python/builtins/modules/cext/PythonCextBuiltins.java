@@ -1165,7 +1165,7 @@ public final class PythonCextBuiltins {
                         @CachedLibrary(limit = "2") InteropLibrary lib,
                         @Cached CastToJavaIntExactNode castToIntNode,
                         @Cached TruffleString.CodePointLengthNode lengthNode,
-                        @Cached TruffleString.CodePointAtIndexNode atIndexNode,
+                        @Cached TruffleString.CodePointAtIndexUTF32Node atIndexNode,
                         @Bind PythonLanguage language) {
             int ndim = castToIntNode.execute(inliningTarget, ndimObj);
             int itemsize = castToIntNode.execute(inliningTarget, itemsizeObj);

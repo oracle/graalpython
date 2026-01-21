@@ -1416,7 +1416,7 @@ public class PPickler extends PythonBuiltinObject {
             if (pickler.isBin()) {
                 writeUnicodeBinary(frame, pickler, obj);
             } else {
-                byte[] encoded = PickleUtils.rawUnicodeEscape(asStringStrict(obj), ensureTsCodePointLengthNode(), ensureTsCodePointAtIndexNode());
+                byte[] encoded = PickleUtils.rawUnicodeEscape(asStringStrict(obj), ensureTsCodePointLengthNode(), ensureTsCodePointAtIndexUTF32Node());
                 write(pickler, PickleUtils.OPCODE_UNICODE);
                 write(pickler, encoded);
                 writeASCII(pickler, T_NEWLINE);

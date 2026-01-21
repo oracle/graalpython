@@ -92,6 +92,7 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedIntValueProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 
 @GenerateUncached
 @GenerateInline
@@ -630,7 +631,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
         @TruffleBoundary
         private static TruffleString joinArgNames(TruffleString[] missingNames, int missingCnt) {
-            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+            TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32();
             sb.appendStringUncached(missingNames[0]);
             if (missingCnt == 2) {
                 sb.appendStringUncached(toTruffleStringUncached("' and '"));

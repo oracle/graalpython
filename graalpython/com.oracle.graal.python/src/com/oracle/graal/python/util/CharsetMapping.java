@@ -69,6 +69,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 import com.oracle.truffle.api.strings.TruffleStringIterator;
 
 /**
@@ -160,7 +161,7 @@ public class CharsetMapping {
                         @Cached TruffleStringIterator.NextNode nextNode,
                         @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
-            TruffleStringBuilder str = TruffleStringBuilder.create(TS_ENCODING, encoding.byteLength(TS_ENCODING));
+            TruffleStringBuilderUTF32 str = TruffleStringBuilder.createUTF32(encoding.byteLength(TS_ENCODING));
             boolean lastCharInvalid = false;
             TruffleStringIterator it = createCodePointIteratorNode.execute(encoding, TS_ENCODING);
             while (it.hasNext()) {

@@ -91,7 +91,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 
 public abstract class GenericTypeNodes {
 
@@ -106,7 +106,7 @@ public abstract class GenericTypeNodes {
         return SequenceStorageNodes.GetItemScalarNode.executeUncached(storage, i);
     }
 
-    static void reprItem(TruffleStringBuilder sb, Object obj) {
+    static void reprItem(TruffleStringBuilderUTF32 sb, Object obj) {
         PyObjectLookupAttr lookup = PyObjectLookupAttr.getUncached();
         PyObjectStrAsTruffleStringNode str = PyObjectStrAsTruffleStringNode.getUncached();
         Object origin = lookup.execute(null, null, obj, T___ORIGIN__);

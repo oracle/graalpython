@@ -165,6 +165,7 @@ import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 
 public abstract class ObjectNodes {
 
@@ -768,7 +769,7 @@ public abstract class ObjectNodes {
             if (equalNode.execute(moduleName, BuiltinNames.T_BUILTINS, TS_ENCODING)) {
                 return qualName;
             }
-            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+            TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32();
             appendStringNode.execute(sb, moduleName);
             appendStringNode.execute(sb, T_DOT);
             appendStringNode.execute(sb, qualName);

@@ -12,11 +12,6 @@ __all__ = ['JSONDecoder', 'JSONDecodeError']
 
 FLAGS = re.VERBOSE | re.MULTILINE | re.DOTALL
 
-NaN = float('nan')
-PosInf = float('inf')
-NegInf = float('-inf')
-
-
 class JSONDecodeError(ValueError):
     """Subclass of ValueError with the following additional properties:
 
@@ -41,13 +36,6 @@ class JSONDecodeError(ValueError):
 
     def __reduce__(self):
         return self.__class__, (self.msg, self.doc, self.pos)
-
-
-_CONSTANTS = {
-    '-Infinity': NegInf,
-    'Infinity': PosInf,
-    'NaN': NaN,
-}
 
 
 HEXDIGITS = re.compile(r'[0-9A-Fa-f]{4}', FLAGS)
@@ -318,9 +306,12 @@ class JSONDecoder(object):
         including ``'\\t'`` (tab), ``'\\n'``, ``'\\r'`` and ``'\\0'``.
         """
         self.object_hook = object_hook
-        self.parse_float = parse_float or float
-        self.parse_int = parse_int or int
-        self.parse_constant = parse_constant or _CONSTANTS.__getitem__
+        # graalpy change: don't use "float()" as default for parse_float, unnecessary overhead
+        self.parse_float = parse_float
+        # graalpy change: don't use "int()" as default for parse_int, unnecessary overhead
+        self.parse_int = parse_int
+        # graalpy change: don't use _CONSTANTS.__getitem__ as default for parse_constant, unnecessary overhead
+        self.parse_constant = parse_constant 
         self.strict = strict
         self.object_pairs_hook = object_pairs_hook
         self.parse_object = JSONObject

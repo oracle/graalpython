@@ -99,6 +99,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 import com.oracle.truffle.api.strings.TruffleStringIterator;
 
 public abstract class StringNodes {
@@ -394,7 +395,7 @@ public abstract class StringNodes {
             if (arg.isEmpty()) {
                 return T_EMPTY_STRING;
             }
-            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+            TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32();
             TruffleStringIterator it = createCodePointIteratorNode.execute(arg, TS_ENCODING);
             assert it.hasNext();
             appendCodePointNode.execute(sb, nextNode.execute(it, TS_ENCODING), 1, true);
@@ -438,7 +439,7 @@ public abstract class StringNodes {
                 if (isSingleItemProfile.profile(inliningTarget, len == 1)) {
                     return castToStringNode.execute(inliningTarget, item);
                 }
-                TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+                TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32();
                 appendStringNode.execute(sb, castToStringNode.execute(inliningTarget, item));
 
                 for (i = 1; i < len; i++) {
@@ -472,7 +473,7 @@ public abstract class StringNodes {
                 throw raise.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CAN_ONLY_JOIN_ITERABLE);
             }
             try {
-                TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+                TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32();
                 Object next;
                 try {
                     next = nextNode.execute(frame, inliningTarget, iterator);
@@ -514,15 +515,15 @@ public abstract class StringNodes {
     @GenerateInline(false)       // footprint reduction 36 -> 17
     public abstract static class SpliceNode extends PNodeWithContext {
 
-        public abstract void execute(TruffleStringBuilder sb, Object translated);
+        public abstract void execute(TruffleStringBuilderUTF32 sb, Object translated);
 
         @Specialization(guards = "isNone(none)")
         @SuppressWarnings("unused")
-        static void doNone(TruffleStringBuilder sb, PNone none) {
+        static void doNone(TruffleStringBuilderUTF32 sb, PNone none) {
         }
 
         @Specialization
-        static void doInt(TruffleStringBuilder sb, int translated,
+        static void doInt(TruffleStringBuilderUTF32 sb, int translated,
                         @Bind Node inliningTarget,
                         @Shared("raise") @Cached PRaiseNode raise,
                         @Shared @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode) {
@@ -534,7 +535,7 @@ public abstract class StringNodes {
         }
 
         @Specialization
-        static void doLong(TruffleStringBuilder sb, long translated,
+        static void doLong(TruffleStringBuilderUTF32 sb, long translated,
                         @Bind Node inliningTarget,
                         @Shared("raise") @Cached PRaiseNode raise,
                         @Shared @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode) {
@@ -546,7 +547,7 @@ public abstract class StringNodes {
         }
 
         @Specialization
-        static void doPInt(TruffleStringBuilder sb, PInt translated,
+        static void doPInt(TruffleStringBuilderUTF32 sb, PInt translated,
                         @Bind Node inliningTarget,
                         @Shared("raise") @Cached PRaiseNode raise,
                         @Shared @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode) {
@@ -558,13 +559,13 @@ public abstract class StringNodes {
         }
 
         @Specialization
-        static void doString(TruffleStringBuilder sb, TruffleString translated,
+        static void doString(TruffleStringBuilderUTF32 sb, TruffleString translated,
                         @Shared @Cached TruffleStringBuilder.AppendStringNode appendStringNode) {
             appendStringNode.execute(sb, translated);
         }
 
         @Specialization(guards = {"!isInteger(translated)", "!isPInt(translated)", "!isNone(translated)"})
-        static void doObject(TruffleStringBuilder sb, Object translated,
+        static void doObject(TruffleStringBuilderUTF32 sb, Object translated,
                         @Bind Node inliningTarget,
                         @Exclusive @Cached PRaiseNode raise,
                         @Cached CastToTruffleStringNode castToStringNode,
@@ -662,7 +663,7 @@ public abstract class StringNodes {
                 }
                 int selfLen = self.byteLength(TS_ENCODING);
                 int selfCpLen = codePointLengthNode.execute(self, TS_ENCODING);
-                TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING, selfLen + with.byteLength(TS_ENCODING) * Math.min(maxCount, selfCpLen + 1));
+                TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32(selfLen + with.byteLength(TS_ENCODING) * Math.min(maxCount, selfCpLen + 1));
                 int replacements = 0;
                 TruffleStringIterator it = createCodePointIteratorNode.execute(self, TS_ENCODING);
                 int i = 0;
@@ -688,7 +689,7 @@ public abstract class StringNodes {
                 if (idx < 0) {
                     return self;
                 } else {
-                    TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+                    TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32();
                     int start = 0;
                     int replacements = 0;
                     do {
@@ -731,7 +732,7 @@ public abstract class StringNodes {
             boolean hasDoubleQuote = indexOfCodePointNode.execute(self, '"', 0, selfLen, TS_ENCODING) >= 0;
             boolean useDoubleQuotes = hasSingleQuote && !hasDoubleQuote;
 
-            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING, tsbCapacity(selfLen + 2));
+            TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32(tsbCapacity(selfLen + 2));
             TruffleStringIterator it = createCodePointIteratorNode.execute(self, TS_ENCODING);
             byte[] buffer = new byte[12];
             appendCodePointNode.execute(sb, useDoubleQuotes ? '"' : '\'', 1, true);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,11 +41,11 @@
 package com.oracle.graal.python.builtins.modules.csv;
 
 import static com.oracle.graal.python.builtins.modules.csv.CSVReader.ReaderState.START_RECORD;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 
 public final class CSVReader extends PythonBuiltinObject {
 
@@ -64,7 +64,7 @@ public final class CSVReader extends PythonBuiltinObject {
     final Object inputIter; /* iterate over this for input lines */
     final CSVDialect dialect; /* parsing dialect */
     ReaderState state; /* current CSV parse state */
-    TruffleStringBuilder field; /* temporary buffer */
+    TruffleStringBuilderUTF32 field; /* temporary buffer */
     boolean numericField; /* treat field as numeric */
     int lineNum; /* Source-file line number */
     long fieldLimit; /* Cached copy of CSVModuleBuiltins.fieldLimit */
@@ -77,7 +77,7 @@ public final class CSVReader extends PythonBuiltinObject {
     }
 
     void parseReset() {
-        this.field = TruffleStringBuilder.create(TS_ENCODING);
+        this.field = TruffleStringBuilder.createUTF32();
         this.state = START_RECORD;
         this.numericField = false;
     }

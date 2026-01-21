@@ -102,7 +102,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                         @Exclusive @Cached IsSubtypeNode isSubtypeNode,
                         @Exclusive @Cached ArrayBuiltins.ByteSwapNode byteSwapNode,
                         @Exclusive @Cached TruffleString.CodePointLengthNode lengthNode,
-                        @Exclusive @Cached TruffleString.CodePointAtIndexNode atIndexNode,
+                        @Exclusive @Cached TruffleString.CodePointAtIndexUTF32Node atIndexNode,
                         @Exclusive @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             BufferFormat format = BufferFormat.forArray(typeCode, lengthNode, atIndexNode);
@@ -124,7 +124,7 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
                         @Exclusive @Cached IsSubtypeNode isSubtypeNode,
                         @Exclusive @Cached ArrayBuiltins.ByteSwapNode byteSwapNode,
                         @Exclusive @Cached TruffleString.CodePointLengthNode lengthNode,
-                        @Exclusive @Cached TruffleString.CodePointAtIndexNode atIndexNode,
+                        @Exclusive @Cached TruffleString.CodePointAtIndexUTF32Node atIndexNode,
                         @Exclusive @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             BufferFormat format = BufferFormat.forArray(typeCode, lengthNode, atIndexNode);

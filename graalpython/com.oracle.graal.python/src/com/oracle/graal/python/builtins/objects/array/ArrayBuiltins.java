@@ -162,6 +162,7 @@ import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 import com.oracle.truffle.api.strings.TruffleStringIterator;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PArray)
@@ -366,7 +367,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                 @Specialization
                 static BufferFormat get(Node inliningTarget, TruffleString typeCode,
                                 @Cached TruffleString.CodePointLengthNode lengthNode,
-                                @Cached TruffleString.CodePointAtIndexNode atIndexNode,
+                                @Cached TruffleString.CodePointAtIndexUTF32Node atIndexNode,
                                 @Cached PRaiseNode raise,
                                 @Cached(value = "createIdentityProfile()", inline = false) ValueProfile valueProfile) {
                     if (lengthNode.execute(typeCode, TS_ENCODING) != 1) {
@@ -617,7 +618,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
                         @Cached ArrayNodes.GetValueNode getValueNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode) {
-            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+            TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32();
             appendStringNode.execute(sb, T_ARRAY);
             appendStringNode.execute(sb, T_LPAREN);
             appendStringNode.execute(sb, T_SINGLE_QUOTE);
@@ -1397,7 +1398,7 @@ public final class ArrayBuiltins extends PythonBuiltins {
             if (formatProfile.profile(inliningTarget, self.getFormat() != BufferFormat.UNICODE)) {
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.MAY_ONLY_BE_CALLED_ON_UNICODE_TYPE_ARRAYS);
             }
-            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+            TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32();
             int length = self.getLength();
             for (int i = 0; i < length; i++) {
                 appendStringNode.execute(sb, (TruffleString) getValueNode.execute(inliningTarget, self, i));

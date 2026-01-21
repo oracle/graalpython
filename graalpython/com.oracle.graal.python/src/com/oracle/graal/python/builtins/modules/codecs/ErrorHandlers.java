@@ -113,8 +113,8 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.CodeRange;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
-import com.oracle.truffle.api.strings.TruffleString.ErrorHandling;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 
 /**
  * Implementation of default error handlers and internal helper nodes for calling error handlers.
@@ -363,7 +363,7 @@ public final class ErrorHandlers {
                         @Cached PyUnicodeEncodeOrTranslateErrorGetObjectNode getObjectNode,
                         @Cached PyUnicodeEncodeOrTranslateErrorGetStartNode getStartNode,
                         @Cached PyUnicodeEncodeOrTranslateErrorGetEndNode getEndNode,
-                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             TruffleString src = getObjectNode.execute(inliningTarget, exception);
@@ -371,12 +371,12 @@ public final class ErrorHandlers {
             int end = getEndNode.execute(inliningTarget, exception);
             int replacementLength = 0;
             for (int i = start; i < end; ++i) {
-                replacementLength += getXmlCharRefReplacementLength(codePointAtIndexNode.execute(src, i, TS_ENCODING, ErrorHandling.BEST_EFFORT));
+                replacementLength += getXmlCharRefReplacementLength(codePointAtIndexNode.execute(src, i));
             }
             byte[] replacement = new byte[replacementLength];
             int pos = 0;
             for (int i = start; i < end; ++i) {
-                pos = appendXmlCharRefReplacement(replacement, pos, codePointAtIndexNode.execute(src, i, TS_ENCODING, ErrorHandling.BEST_EFFORT));
+                pos = appendXmlCharRefReplacement(replacement, pos, codePointAtIndexNode.execute(src, i));
             }
             TruffleString resultAscii = fromByteArrayNode.execute(replacement, Encoding.US_ASCII, false);
             return PFactory.createTuple(language, new Object[]{switchEncodingNode.execute(resultAscii, TS_ENCODING), end});
@@ -436,7 +436,7 @@ public final class ErrorHandlers {
                         @Cached PyUnicodeEncodeOrTranslateErrorGetObjectNode getObjectNode,
                         @Cached PyUnicodeEncodeOrTranslateErrorGetStartNode getStartNode,
                         @Cached PyUnicodeEncodeOrTranslateErrorGetEndNode getEndNode,
-                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
                         @Cached @Shared TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Cached @Shared TruffleString.SwitchEncodingNode switchEncodingNode) {
             int start = getStartNode.execute(inliningTarget, exception);
@@ -447,7 +447,7 @@ public final class ErrorHandlers {
             }
             int len = 0;
             for (int i = start; i < end; ++i) {
-                int cp = codePointAtIndexNode.execute(src, i, TS_ENCODING, ErrorHandling.BEST_EFFORT);
+                int cp = codePointAtIndexNode.execute(src, i);
                 if (cp >= 0x10000) {
                     len += 1 + 1 + 8;       // \\UNNNNNNNN
                 } else if (cp >= 0x100) {
@@ -459,7 +459,7 @@ public final class ErrorHandlers {
             byte[] replacement = new byte[len];
             int pos = 0;
             for (int i = start; i < end; i++) {
-                int cp = codePointAtIndexNode.execute(src, i, TS_ENCODING, ErrorHandling.BEST_EFFORT);
+                int cp = codePointAtIndexNode.execute(src, i);
                 pos = BytesUtils.unicodeNonAsciiEscape(cp, pos, replacement, true);
             }
             TruffleString resultAscii = fromByteArrayNode.execute(replacement, Encoding.US_ASCII, false);
@@ -486,7 +486,7 @@ public final class ErrorHandlers {
                         @Cached PyUnicodeEncodeOrTranslateErrorGetObjectNode getObjectNode,
                         @Cached PyUnicodeEncodeOrTranslateErrorGetStartNode getStartNode,
                         @Cached PyUnicodeEncodeOrTranslateErrorGetEndNode getEndNode,
-                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
                         @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
@@ -499,10 +499,10 @@ public final class ErrorHandlers {
             if (start >= end) {
                 return PFactory.createTuple(language, new Object[]{T_EMPTY_STRING, start});
             }
-            TruffleStringBuilder tsb = TruffleStringBuilder.create(TS_ENCODING);
+            TruffleStringBuilderUTF32 tsb = TruffleStringBuilder.createUTF32();
             byte[] buf = new byte[1 + 1 + 8];  // \UNNNNNNNN
             for (int i = start; i < end; ++i) {
-                int cp = codePointAtIndexNode.execute(src, i, TS_ENCODING, ErrorHandling.BEST_EFFORT);
+                int cp = codePointAtIndexNode.execute(src, i);
                 String name = getUnicodeName(cp);
                 if (name != null) {
                     appendCodePointNode.execute(tsb, '\\');
@@ -540,7 +540,7 @@ public final class ErrorHandlers {
                         @Cached PyUnicodeEncodeOrTranslateErrorGetEndNode getEndNode,
                         @Cached PyUnicodeEncodeErrorGetEncodingNode getEncodingNode,
                         @Exclusive @Cached GetStandardEncodingNode getStandardEncodingNode,
-                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             int start = getStartNode.execute(inliningTarget, exception);
             int end = getEndNode.execute(inliningTarget, exception);
@@ -556,7 +556,7 @@ public final class ErrorHandlers {
             byte[] result = new byte[encoding.byteLength * (end - start)];
             int pos = 0;
             for (int i = start; i < end; ++i) {
-                int cp = codePointAtIndexNode.execute(src, i, TS_ENCODING, ErrorHandling.BEST_EFFORT);
+                int cp = codePointAtIndexNode.execute(src, i);
                 if (!isSurrogate(cp)) {
                     throw raiseNode.raiseExceptionObject(inliningTarget, exception);
                 }
@@ -674,7 +674,7 @@ public final class ErrorHandlers {
                         @Cached PyUnicodeEncodeOrTranslateErrorGetObjectNode getObjectNode,
                         @Cached PyUnicodeEncodeOrTranslateErrorGetStartNode getStartNode,
                         @Cached PyUnicodeEncodeOrTranslateErrorGetEndNode getEndNode,
-                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
                         @Exclusive @Cached PRaiseNode raiseNode) {
             int start = getStartNode.execute(inliningTarget, exception);
             int end = getEndNode.execute(inliningTarget, exception);
@@ -685,7 +685,7 @@ public final class ErrorHandlers {
             byte[] result = new byte[end - start];
             int pos = 0;
             for (int i = start; i < end; ++i) {
-                int cp = codePointAtIndexNode.execute(src, i, TS_ENCODING, ErrorHandling.BEST_EFFORT);
+                int cp = codePointAtIndexNode.execute(src, i);
                 if (cp < 0xdc80 || cp > 0xdcff) {
                     throw raiseNode.raiseExceptionObject(inliningTarget, exception);
                 }
@@ -712,7 +712,7 @@ public final class ErrorHandlers {
             int end = getEndNode.execute(inliningTarget, exception);
             Object object = getObjectNode.execute(inliningTarget, exception);
             Object srcBuf = acquireLib.acquireReadonly(object, frame, callData);
-            TruffleStringBuilder tsb = TruffleStringBuilder.create(TS_ENCODING);
+            TruffleStringBuilderUTF32 tsb = TruffleStringBuilder.createUTF32();
             try {
                 byte[] src = accessLib.getInternalOrCopiedByteArray(srcBuf);
                 int consumed = 0;

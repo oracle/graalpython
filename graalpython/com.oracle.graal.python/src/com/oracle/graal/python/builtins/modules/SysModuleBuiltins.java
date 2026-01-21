@@ -1740,7 +1740,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                         @Cached BuiltinFunctions.IsInstanceNode isInstanceNode,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
                         @Cached TruffleString.LastIndexOfCodePointNode lastIndexOfCodePointNode,
                         @Cached TruffleString.SubstringNode substringNode) {
             TruffleString hookName = OsEnvironGetNode.lookup(frame, boundaryCallData, T_PYTHONBREAKPOINT);
@@ -1749,7 +1749,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
             }
 
             int hookNameLen = codePointLengthNode.execute(hookName, TS_ENCODING);
-            if (hookNameLen == 1 && codePointAtIndexNode.execute(hookName, 0, TS_ENCODING) == '0') {
+            if (hookNameLen == 1 && codePointAtIndexNode.execute(hookName, 0) == '0') {
                 // The breakpoint is explicitly no-op'd.
                 return PNone.NONE;
             }

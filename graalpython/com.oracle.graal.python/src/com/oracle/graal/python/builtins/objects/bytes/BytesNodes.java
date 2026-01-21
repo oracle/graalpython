@@ -130,6 +130,7 @@ import com.oracle.truffle.api.strings.InternalByteArray;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
+import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 import com.oracle.truffle.api.strings.TruffleStringIterator;
 
 public abstract class BytesNodes {
@@ -1182,7 +1183,7 @@ public abstract class BytesNodes {
             SequenceStorage store = getBytesStorage.execute(inliningTarget, self);
             byte[] bytes = getBytes.execute(inliningTarget, store);
             int len = store.length();
-            TruffleStringBuilder sb = TruffleStringBuilder.create(TS_ENCODING);
+            TruffleStringBuilderUTF32 sb = TruffleStringBuilder.createUTF32();
             BytesUtils.reprLoop(sb, bytes, len, appendCodePointNode);
             return toStringNode.execute(sb);
         }

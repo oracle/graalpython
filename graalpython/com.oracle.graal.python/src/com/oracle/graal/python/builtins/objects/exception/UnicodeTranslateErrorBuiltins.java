@@ -125,7 +125,7 @@ public final class UnicodeTranslateErrorBuiltins extends PythonBuiltins {
                         @Cached BaseExceptionAttrNode attrNode,
                         @Cached CastToTruffleStringNode toStringNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                        @Cached TruffleString.CodePointAtIndexNode codePointAtIndexNode,
+                        @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
                         @Cached PyObjectStrAsTruffleStringNode strNode,
                         @Cached SimpleTruffleStringFormatNode simpleTruffleStringFormatNode) {
             if (self.getExceptionAttributes() == null) {
@@ -140,7 +140,7 @@ public final class UnicodeTranslateErrorBuiltins extends PythonBuiltins {
             final int end = attrNode.getInt(self, IDX_END, UNICODE_ERROR_ATTR_FACTORY);
             final TruffleString reason = strNode.execute(frame, inliningTarget, attrNode.get(self, IDX_REASON, UNICODE_ERROR_ATTR_FACTORY));
             if (start < codePointLengthNode.execute(object, TS_ENCODING) && end == start + 1) {
-                final int badChar = codePointAtIndexNode.execute(object, start, TS_ENCODING);
+                final int badChar = codePointAtIndexNode.execute(object, start);
                 String badCharStr;
                 if (badChar <= 0xFF) {
                     badCharStr = PythonUtils.formatJString("\\x%02x", badChar);
