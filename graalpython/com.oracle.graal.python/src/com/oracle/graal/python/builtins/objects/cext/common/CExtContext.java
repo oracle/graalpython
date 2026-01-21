@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -132,8 +132,12 @@ public abstract class CExtContext {
         return (flags & METH_STATIC) != 0;
     }
 
+    public static boolean isMethClass(int flags) {
+        return (flags & METH_CLASS) != 0;
+    }
+
     public static boolean isClassOrStaticMethod(int flags) {
-        return flags > 0 && (flags & (METH_CLASS | METH_STATIC)) != 0;
+        return isMethClass(flags) || isMethStatic(flags);
     }
 
     @TruffleBoundary

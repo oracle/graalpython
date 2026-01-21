@@ -104,7 +104,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.Ensur
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.PythonObjectArrayCreateNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.UnicodeFromFormatNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
@@ -1435,6 +1434,7 @@ public abstract class CExtNodes {
     }
 
     /**
+     * TODO(fa): overlaps with {@link com.oracle.graal.python.builtins.modules.cext.PythonCextModuleBuiltins#GraalPyPrivate_Module_AddFunctions(long, long)}.
      * <pre>
      *     struct PyMethodDef {
      *         const char * ml_name;
@@ -1462,8 +1462,8 @@ public abstract class CExtNodes {
         long mlMethObj = readStructArrayPtrField(methodDefPtr, element, PyMethodDef__ml_meth);
         // CPy-style methods
         // TODO(fa) support static and class methods
-        PExternalFunctionWrapper sig = PExternalFunctionWrapper.fromMethodFlags(flags);
-        RootCallTarget callTarget = PExternalFunctionWrapper.getOrCreateCallTarget(sig, language, methodName, CExtContext.isMethStatic(flags));
+        MethodDescriptorWrapper sig = MethodDescriptorWrapper.fromMethodFlags(flags);
+        RootCallTarget callTarget = MethodDescriptorWrapper.getOrCreateCallTarget(language, sig, methodName, CExtContext.isMethStatic(flags));
         NfiBoundFunction fun = ensureExecutable(mlMethObj, sig);
         PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(fun);
         PBuiltinFunction function = PFactory.createBuiltinFunction(language, methodName, null, PythonUtils.EMPTY_OBJECT_ARRAY, kwDefaults, flags, callTarget);
@@ -1471,7 +1471,7 @@ public abstract class CExtNodes {
 
         // write doc string; we need to directly write to the storage otherwise it is disallowed
         // writing to builtin types.
-        WriteAttributeToPythonObjectNode.getUncached().execute(function, SpecialAttributeNames.T___DOC__, methodDoc);
+        WriteAttributeToPythonObjectNode.executeUncached(function, SpecialAttributeNames.T___DOC__, methodDoc);
 
         return function;
     }

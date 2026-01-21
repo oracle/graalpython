@@ -93,6 +93,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyMemoryViewWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.AllocateNativeObjectStubNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.FirstToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativePtrToPythonNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonClassInternalNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonClassNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonInternalNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitionsFactory.NativeToPythonNodeGen;
@@ -1570,22 +1571,21 @@ public abstract class CApiTransitions {
 
     @GenerateUncached
     @GenerateInline(false)
-    @ImportStatic(NativeMemory.class)
     public abstract static class CharPtrToPythonNode extends CExtToJavaNode {
 
         public abstract Object execute(long pointer);
 
-        @Specialization(guards = "pointer == NULLPTR")
-        static Object doNull(@SuppressWarnings("unused") long pointer) {
-            // this specialization is not a shortcut; it actually returns a different object
-            return PNone.NO_VALUE;
-        }
-
-        @Specialization(guards = "pointer != NULLPTR")
-        static Object doPointer(long pointer,
+        @Specialization
+        static Object doGeneric(long pointer,
+                        @Bind Node inliningTarget,
+                        @Cached InlinedConditionProfile nullProfile,
                         @Cached FromCharPointerNode fromCharPointerNode) {
-            log(pointer);
             assert !HandlePointerConverter.pointsToPyHandleSpace(pointer);
+            if (nullProfile.profile(inliningTarget, pointer == NULLPTR)) {
+                // this specialization is not a shortcut; it actually returns a different object
+                return PNone.NO_VALUE;
+            }
+            log(pointer);
             return logResult(fromCharPointerNode.execute(pointer));
         }
 
@@ -2343,6 +2343,11 @@ public abstract class CApiTransitions {
     @GenerateInline
     @GenerateCached(false)
     public abstract static class NativeToPythonClassInternalNode extends Node {
+
+        @TruffleBoundary
+        public static Object executeUncached(long value) {
+            return NativeToPythonClassInternalNodeGen.getUncached().execute(null, value);
+        }
 
         public abstract Object execute(Node inliningTarget, long value);
 

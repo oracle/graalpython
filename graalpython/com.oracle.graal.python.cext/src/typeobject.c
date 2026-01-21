@@ -6718,7 +6718,6 @@ type_add_method(PyTypeObject *type, PyMethodDef *meth)
            meth->ml_name,
            meth->ml_meth,
            meth->ml_flags,
-           get_method_flags_wrapper(meth->ml_flags),
            meth->ml_doc);
 }
 

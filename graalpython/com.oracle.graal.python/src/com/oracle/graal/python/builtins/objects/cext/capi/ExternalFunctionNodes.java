@@ -49,12 +49,10 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PrimitiveResult32;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PrimitiveResult64;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectConstArray;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectReturn;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyTypeObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
-import static com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ensureExecutable;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.wrapPointer;
 import static com.oracle.graal.python.builtins.objects.object.PythonObject.MANAGED_REFCNT;
 import static com.oracle.graal.python.nfi2.NativeMemory.free;
@@ -81,6 +79,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescrip
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonReturnNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
@@ -89,7 +88,6 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Conv
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetIndexNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionFromNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ConvertPIntToPrimitiveNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
@@ -99,7 +97,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
@@ -335,58 +333,70 @@ public abstract class ExternalFunctionNodes {
      * the definition in {code capi.h}.
      */
     public enum PExternalFunctionWrapper implements NativeCExtSymbol {
-        FASTCALL(2, PyObjectReturn, PyObject, PyObjectConstArray, Py_ssize_t),
-        FASTCALL_WITH_KEYWORDS(3, PyObjectTransfer, PyObject, PyObjectConstArray, Py_ssize_t, PyObject),
-        KEYWORDS(4, PyObjectReturn, PyObject, PyObject, PyObject), // METH_VARARGS |
-                                                                   // METH_KEYWORDS
-        VARARGS(5, PyObjectReturn, PyObject, PyObject),            // METH_VARARGS
-        NOARGS(6, PyObjectReturn, PyObject, PyObject),             // METH_NOARGS
-        O(7, PyObjectReturn, PyObject, PyObject),                  // METH_O
-        // METH_FASTCALL | METH_KEYWORDS | METH_METHOD:
-        METHOD(8, PyObjectReturn, PyObject, PyTypeObject, PyObjectConstArray, Py_ssize_t, PyObject),
-        ALLOC(10, PyObjectTransfer, PyTypeObject, Py_ssize_t),
-        GETATTR(11, PyObjectReturn, PyObject, CharPtrAsTruffleString),
-        SETATTR(12, InitResult, PyObject, CharPtrAsTruffleString, PyObject),
-        RICHCMP(13, PyObjectReturn, PyObject, PyObject, Int),
-        SETITEM(14, InitResult, PyObject, Py_ssize_t, PyObject),
-        UNARYFUNC(15, PyObjectReturn, PyObject),
-        BINARYFUNC(16, PyObjectReturn, PyObject, PyObject),
-        BINARYFUNC_L(17, PyObjectReturn, PyObject, PyObject),
-        BINARYFUNC_R(18, PyObjectReturn, PyObject, PyObject),
-        TERNARYFUNC(19, PyObjectReturn, PyObject, PyObject, PyObject),
-        TERNARYFUNC_R(20, PyObjectReturn, PyObject, PyObject, PyObject),
-        LT(21, PyObjectReturn, PyObject, PyObject, Int),
-        LE(22, PyObjectReturn, PyObject, PyObject, Int),
-        EQ(23, PyObjectReturn, PyObject, PyObject, Int),
-        NE(24, PyObjectReturn, PyObject, PyObject, Int),
-        GT(25, PyObjectReturn, PyObject, PyObject, Int),
-        GE(26, PyObjectReturn, PyObject, PyObject, Int),
-        ITERNEXT(27, IterResult, PyObject),
-        INQUIRY(28, InquiryResult, PyObject),
-        DELITEM(29, defaults(1), Int, PyObject, Py_ssize_t, PyObject),
-        GETITEM(30, PyObjectReturn, PyObject, Py_ssize_t),
-        GETTER(31, PyObjectReturn, PyObject, Pointer),
-        SETTER(32, InitResult, PyObject, PyObject, Pointer),
-        INITPROC(33, InitResult, PyObject, PyObject, PyObject),
-        HASHFUNC(34, PrimitiveResult64, PyObject),
-        CALL(35, PyObjectReturn, PyObject, PyObject, PyObject),
-        SETATTRO(36, InitResult, PyObject, PyObject, PyObject),
-        DESCR_GET(37, defaults(1), PyObjectTransfer, PyObject, PyObject, PyObject),
-        DESCR_SET(38, InitResult, PyObject, PyObject, PyObject),
-        LENFUNC(39, PrimitiveResult64, PyObject),
-        OBJOBJPROC(40, InquiryResult, PyObject, PyObject),
-        OBJOBJARGPROC(41, PrimitiveResult32, PyObject, PyObject, PyObject),
-        NEW(42, PyObjectReturn, PyObject, PyObject, PyObject),
-        MP_DELITEM(43, PrimitiveResult32, PyObject, PyObject, PyObject),
-        TP_STR(44, PyObjectReturn, PyObject),
-        TP_REPR(45, PyObjectReturn, PyObject),
-        DESCR_DELETE(46, InitResult, PyObject, PyObject, PyObject), // the last one is
-                                                                    // always NULL
-        DELATTRO(47, InitResult, PyObject, PyObject, PyObject), // the last one is always
-                                                                // NULL
-        SSIZE_ARG(48, PyObjectReturn, PyObject, Py_ssize_t),
-        VISITPROC(49, Int, PyObject, Pointer),
-        TRAVERSEPROC(50, Int, PyObject, Pointer, Pointer);
+        ALLOC(PyObjectTransfer, PyTypeObject, Py_ssize_t),
+        GETATTR(PyObjectReturn, PyObject, CharPtrAsTruffleString),
+        SETATTR(InitResult, PyObject, CharPtrAsTruffleString, PyObject),
+        RICHCMP(PyObjectReturn, PyObject, PyObject, Int),
+        SETITEM(InitResult, PyObject, Py_ssize_t, PyObject),
+
+        // wrap_unaryfunc
+        UNARYFUNC(PyObjectReturn, PyObject),
+
+        // wrap_binaryfunc
+        BINARYFUNC(PyObjectReturn, PyObject, PyObject),
+        // wrap_binaryfunc_l
+        BINARYFUNC_L(PyObjectReturn, PyObject, PyObject),
+        // wrap_binaryfunc_r
+        BINARYFUNC_R(PyObjectReturn, PyObject, PyObject),
+        // wrap_ternaryfunc
+        TERNARYFUNC(PyObjectReturn, PyObject, PyObject, PyObject),
+        // wrap_ternaryfunc_r
+        TERNARYFUNC_R(PyObjectReturn, PyObject, PyObject, PyObject),
+        LT(PyObjectReturn, PyObject, PyObject, Int),
+        LE(PyObjectReturn, PyObject, PyObject, Int),
+        EQ(PyObjectReturn, PyObject, PyObject, Int),
+        NE(PyObjectReturn, PyObject, PyObject, Int),
+        GT(PyObjectReturn, PyObject, PyObject, Int),
+        GE(PyObjectReturn, PyObject, PyObject, Int),
+        ITERNEXT(IterResult, PyObject),
+        INQUIRY(InquiryResult, PyObject),
+        DELITEM(defaults(1), Int, PyObject, Py_ssize_t, PyObject),
+        GETITEM(PyObjectReturn, PyObject, Py_ssize_t),
+        GETTER(PyObjectReturn, PyObject, Pointer),
+        SETTER(InitResult, PyObject, PyObject, Pointer),
+        // wrap_initproc
+        INITPROC(InitResult, PyObject, PyObject, PyObject),
+        // wrap_hashfunc
+        HASHFUNC(PrimitiveResult64, PyObject),
+        // wrap_call
+        CALL(PyObjectReturn, PyObject, PyObject, PyObject),
+
+        // wrap_setattr
+        SETATTRO(InitResult, PyObject, PyObject, PyObject),
+        DESCR_GET(defaults(1), PyObjectTransfer, PyObject, PyObject, PyObject),
+
+        // wrap_descrsetfunc
+        DESCR_SET(InitResult, PyObject, PyObject, PyObject),
+
+        // wrap_lenfunc
+        LENFUNC(PrimitiveResult64, PyObject),
+
+        // wrap_objobjproc
+        OBJOBJPROC(InquiryResult, PyObject, PyObject),
+
+        // wrap_objobjargproc
+        OBJOBJARGPROC(PrimitiveResult32, PyObject, PyObject, PyObject),
+        NEW(PyObjectReturn, PyObject, PyObject, PyObject),
+        MP_DELITEM(PrimitiveResult32, PyObject, PyObject, PyObject),
+        TP_STR(PyObjectReturn, PyObject),
+        TP_REPR(PyObjectReturn, PyObject),
+        DESCR_DELETE(InitResult, PyObject, PyObject, PyObject), // the last one is
+                                                                // always NULL
+        DELATTRO(InitResult, PyObject, PyObject, PyObject), // the last one is always
+                                                            // NULL
+        SSIZE_ARG(PyObjectReturn, PyObject, Py_ssize_t),
+        VISITPROC(Int, PyObject, Pointer),
+        TRAVERSEPROC(Int, PyObject, Pointer, Pointer);
 
         private static int defaults(int x) {
             return x;
@@ -400,8 +410,7 @@ public abstract class ExternalFunctionNodes {
         public final ArgDescriptor[] arguments;
         public final int numDefaults;
 
-        PExternalFunctionWrapper(int value, int numDefaults, ArgDescriptor returnValue, ArgDescriptor... arguments) {
-            this.value = value;
+        PExternalFunctionWrapper(int numDefaults, ArgDescriptor returnValue, ArgDescriptor... arguments) {
             this.returnValue = returnValue;
             this.arguments = arguments;
 
@@ -413,44 +422,12 @@ public abstract class ExternalFunctionNodes {
             this.numDefaults = numDefaults;
         }
 
-        PExternalFunctionWrapper(int value, ArgDescriptor returnValue, ArgDescriptor... arguments) {
-            this(value, 0, returnValue, arguments);
-        }
-
-        private final int value;
-
-        static {
-            for (var e : VALUES) {
-                assert BY_ID[e.value] == null;
-                BY_ID[e.value] = e;
-            }
-        }
-
-        static PExternalFunctionWrapper fromValue(int value) {
-            return value >= 0 && value < BY_ID.length ? BY_ID[value] : null;
-        }
-
-        static PExternalFunctionWrapper fromMethodFlags(int flags) {
-            if (CExtContext.isMethNoArgs(flags)) {
-                return NOARGS;
-            } else if (CExtContext.isMethO(flags)) {
-                return O;
-            } else if (CExtContext.isMethVarargsWithKeywords(flags)) {
-                return KEYWORDS;
-            } else if (CExtContext.isMethVarargs(flags)) {
-                return VARARGS;
-            } else if (CExtContext.isMethMethod(flags)) {
-                return METHOD;
-            } else if (CExtContext.isMethFastcallWithKeywords(flags)) {
-                return FASTCALL_WITH_KEYWORDS;
-            } else if (CExtContext.isMethFastcall(flags)) {
-                return FASTCALL;
-            }
-            throw CompilerDirectives.shouldNotReachHere("illegal method flags");
+        PExternalFunctionWrapper(ArgDescriptor returnValue, ArgDescriptor... arguments) {
+            this(0, returnValue, arguments);
         }
 
         @TruffleBoundary
-        static RootCallTarget getOrCreateCallTarget(PExternalFunctionWrapper sig, PythonLanguage language, TruffleString name, boolean isStatic) {
+        static RootCallTarget getOrCreateCallTarget(PExternalFunctionWrapper sig, PythonLanguage language, TruffleString name) {
             Class<? extends PRootNode> nodeKlass;
             Function<PythonLanguage, RootNode> rootNodeFunction;
             switch (sig) {
@@ -459,57 +436,62 @@ public abstract class ExternalFunctionNodes {
                     nodeKlass = AllocFuncRootNode.class;
                     rootNodeFunction = (l -> new AllocFuncRootNode(l, name, sig));
                     break;
+                case TP_REPR:
+                case TP_STR:
+                case UNARYFUNC:
+                    // TP_ITER
+                    // AM_AWAIT
+                    // AM_AITER
+                    // AM_ANEXT
+                    // NB_NEGATIVE
+                    // NB_POSITIVE
+                    // NB_ABSOLUTE
+                    // NB_INVERT
+                    // NB_INT
+                    // NB_FLOAT
+                    // NB_INDEX
+                    nodeKlass = MethUnaryFunc.class;
+                    rootNodeFunction = l -> MethUnaryFunc.create(language, name, sig);
+                    break;
                 case DESCR_SET:
+                    nodeKlass = MethDescrSetRoot.class;
+                    rootNodeFunction = l -> new MethDescrSetRoot(language, name, sig);
+                    break;
                 case LENFUNC:
                 case HASHFUNC:
-                case SETATTRO:
+                    /*
+                     * wrap_lenfunc, wrap_hashfunc; they are equivalent and only differ in the
+                     * return type (Py_ssize_t vs. Py_hash_t; both map to Java long)
+                     */
+                    nodeKlass = MethLenfuncRoot.class;
+                    rootNodeFunction = l -> new MethLenfuncRoot(language, name, sig);
+                    break;
                 case OBJOBJPROC:
+                    nodeKlass = MethObjObjProcRoot.class;
+                    rootNodeFunction = l -> new MethObjObjProcRoot(language, name, sig);
+                    break;
                 case OBJOBJARGPROC:
-                case UNARYFUNC:
+                    nodeKlass = MethObjObjArgProcRoot.class;
+                    rootNodeFunction = l -> new MethObjObjArgProcRoot(language, name, sig);
+                    break;
                 case BINARYFUNC:
                 case BINARYFUNC_L:
-                case TP_STR:
-                case TP_REPR:
-                    nodeKlass = MethDirectRoot.class;
-                    rootNodeFunction = l -> MethDirectRoot.create(language, name, sig);
+                    // wrap_binaryfunc and wrap_binaryfunc_l are exactly the same
+                    nodeKlass = MethUnaryFunc.class;
+                    rootNodeFunction = l -> new MethBinaryRoot(language, name, sig);
                     break;
                 case CALL:
                 case INITPROC:
-                case KEYWORDS:
-                    nodeKlass = MethKeywordsRoot.class;
-                    rootNodeFunction = l -> new MethKeywordsRoot(l, name, isStatic, sig);
+                    nodeKlass = MethInitRoot.class;
+                    rootNodeFunction = l -> new MethInitRoot(l, name, sig);
                     break;
                 case NEW:
                     nodeKlass = MethNewRoot.class;
-                    rootNodeFunction = l -> new MethNewRoot(l, name, isStatic, sig);
-                    break;
-                case VARARGS:
-                    nodeKlass = MethVarargsRoot.class;
-                    rootNodeFunction = (l -> new MethVarargsRoot(l, name, isStatic, sig));
+                    rootNodeFunction = l -> new MethNewRoot(l, name, sig);
                     break;
                 case INQUIRY:
                     nodeKlass = MethInquiryRoot.class;
-                    rootNodeFunction = (l -> new MethInquiryRoot(l, name, isStatic, sig));
-                    break;
-                case NOARGS:
-                    nodeKlass = MethNoargsRoot.class;
-                    rootNodeFunction = (l -> new MethNoargsRoot(l, name, isStatic, sig));
-                    break;
-                case O:
-                    nodeKlass = MethORoot.class;
-                    rootNodeFunction = (l -> new MethORoot(l, name, isStatic, sig));
-                    break;
-                case FASTCALL:
-                    nodeKlass = MethFastcallRoot.class;
-                    rootNodeFunction = (l -> new MethFastcallRoot(l, name, isStatic, sig));
-                    break;
-                case FASTCALL_WITH_KEYWORDS:
-                    nodeKlass = MethFastcallWithKeywordsRoot.class;
-                    rootNodeFunction = (l -> new MethFastcallWithKeywordsRoot(l, name, isStatic, sig));
-                    break;
-                case METHOD:
-                    nodeKlass = MethMethodRoot.class;
-                    rootNodeFunction = (l -> new MethMethodRoot(l, name, isStatic, sig));
+                    rootNodeFunction = (l -> new MethInquiryRoot(l, name, sig));
                     break;
                 case GETATTR:
                     nodeKlass = GetAttrFuncRootNode.class;
@@ -518,6 +500,10 @@ public abstract class ExternalFunctionNodes {
                 case SETATTR:
                     nodeKlass = SetAttrFuncRootNode.class;
                     rootNodeFunction = (l -> new SetAttrFuncRootNode(l, name, sig));
+                    break;
+                case SETATTRO:
+                    nodeKlass = SetAttrOFuncRootNode.class;
+                    rootNodeFunction = (l -> new SetAttrOFuncRootNode(l, name, sig));
                     break;
                 case DESCR_GET:
                     nodeKlass = DescrGetRootNode.class;
@@ -545,16 +531,16 @@ public abstract class ExternalFunctionNodes {
                     rootNodeFunction = (l -> new GetItemRootNode(l, name, sig));
                     break;
                 case BINARYFUNC_R:
-                    nodeKlass = MethReverseRootNode.class;
-                    rootNodeFunction = (l -> new MethReverseRootNode(l, name, sig));
+                    nodeKlass = MethBinaryFuncRRoot.class;
+                    rootNodeFunction = (l -> new MethBinaryFuncRRoot(l, name, sig));
                     break;
                 case TERNARYFUNC:
-                    nodeKlass = MethPowRootNode.class;
-                    rootNodeFunction = (l -> new MethPowRootNode(l, name, sig));
+                    nodeKlass = MethTernaryFuncRoot.class;
+                    rootNodeFunction = (l -> new MethTernaryFuncRoot(l, name, sig));
                     break;
                 case TERNARYFUNC_R:
-                    nodeKlass = MethRPowRootNode.class;
-                    rootNodeFunction = (l -> new MethRPowRootNode(l, name, sig));
+                    nodeKlass = MethTernaryFuncRRoot.class;
+                    rootNodeFunction = (l -> new MethTernaryFuncRRoot(l, name, sig));
                     break;
                 case GT:
                 case GE:
@@ -563,8 +549,7 @@ public abstract class ExternalFunctionNodes {
                 case EQ:
                 case NE:
                     nodeKlass = MethRichcmpOpRootNode.class;
-                    int op = getCompareOpCode(sig);
-                    rootNodeFunction = (l -> new MethRichcmpOpRootNode(l, name, sig, op));
+                    rootNodeFunction = (l -> new MethRichcmpOpRootNode(l, name, sig, getCompareOpCode(sig)));
                     break;
                 case ITERNEXT:
                     nodeKlass = IterNextFuncRootNode.class;
@@ -585,38 +570,30 @@ public abstract class ExternalFunctionNodes {
                 default:
                     throw CompilerDirectives.shouldNotReachHere();
             }
-            return language.createCachedExternalFunWrapperCallTarget(rootNodeFunction, nodeKlass, sig, name, true, isStatic);
-        }
-
-        public static PythonObject createWrapperFunction(TruffleString name, long callable, Object enclosingType, int flags, int sig,
-                        PythonLanguage language) {
-            PExternalFunctionWrapper wrapper = PExternalFunctionWrapper.fromValue(sig);
-            NfiBoundFunction boundCallable = ensureExecutable(callable, wrapper);
-            return createWrapperFunction(name, boundCallable, enclosingType, flags, wrapper, language);
+            return language.createCachedExternalFunWrapperCallTarget(rootNodeFunction, nodeKlass, sig, name, true, false);
         }
 
         /**
-         * Creates a built-in function for a specific signature. This built-in function also does
-         * appropriate argument and result conversion and calls the provided callable.
+         * Similar to Python API function {@code PyDescr_NewWrapper}, creates a built-in function of
+         * type {@link PythonBuiltinClassType#WrapperDescriptor} (usually for a slot). This built-in
+         * function also does appropriate argument and result conversion and calls the provided
+         * native function.
          *
-         * @param language The Python language object.
-         * @param sig The wrapper/signature ID as defined in {@link PExternalFunctionWrapper}.
          * @param name The name of the method.
          * @param callable A reference denoting executable code. Currently, there are two
          *            representations for that: a native function pointer or a
          *            {@link RootCallTarget}
          * @param enclosingType The type the function belongs to (needed for checking of
          *            {@code self}).
+         * @param sig The wrapper/signature ID as defined in {@link PExternalFunctionWrapper}.
+         * @param language The Python language object.
          * @return A {@link PBuiltinFunction} implementing the semantics of the specified slot
          *         wrapper.
          */
         @TruffleBoundary
-        public static PythonObject createWrapperFunction(TruffleString name, NfiBoundFunction callable, Object enclosingType, int flags, PExternalFunctionWrapper sig, PythonLanguage language) {
-            LOGGER.finer(() -> PythonUtils.formatJString("ExternalFunctions.createWrapperFunction(%s, %s)", name, callable));
-            if (flags < 0) {
-                flags = 0;
-            }
-            RootCallTarget callTarget = getOrCreateCallTarget(sig, language, name, CExtContext.isMethStatic(flags));
+        public static PythonBuiltinObject createDescrWrapperFunction(TruffleString name, NfiBoundFunction callable, Object enclosingType, PExternalFunctionWrapper sig, PythonLanguage language) {
+            LOGGER.finer(() -> PythonUtils.formatJString("ExternalFunctions.createDescrWrapperFunction(%s, %s)", name, callable));
+            RootCallTarget callTarget = getOrCreateCallTarget(sig, language, name);
 
             // ensure that 'callable' is executable via InteropLibrary
             PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(callable);
@@ -626,11 +603,10 @@ public abstract class ExternalFunctionNodes {
             Object[] defaults = PBuiltinFunction.generateDefaults(sig.numDefaults);
 
             Object type = enclosingType == PNone.NO_VALUE ? null : enclosingType;
-            return switch (sig) {
-                case NOARGS, O, VARARGS, KEYWORDS, FASTCALL, FASTCALL_WITH_KEYWORDS, METHOD -> PFactory.createBuiltinFunction(language, name, type, defaults, kwDefaults, flags, callTarget);
-                case NEW -> PFactory.createNewWrapper(language, type, defaults, kwDefaults, callTarget, slot);
-                default -> PFactory.createWrapperDescriptor(language, name, type, defaults, kwDefaults, flags, callTarget, slot, sig);
-            };
+            if (sig == NEW) {
+                return PFactory.createNewWrapper(language, type, defaults, kwDefaults, callTarget, slot);
+            }
+            return PFactory.createWrapperDescriptor(language, name, type, defaults, kwDefaults, 0, callTarget, slot, sig);
         }
 
         private static int getCompareOpCode(PExternalFunctionWrapper sig) {
@@ -698,35 +674,6 @@ public abstract class ExternalFunctionNodes {
         return new Signature(-1, takesVarKeywordArgs, varArgIndex, parameters, KEYWORDS_HIDDEN_CALLABLE_AND_CLOSURE, checkEnclosingType, T_EMPTY_STRING, hidden);
     }
 
-    static final class MethDirectRoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = createSignature(true, 0, null, false, true);
-
-        private MethDirectRoot(PythonLanguage lang, TruffleString name, PExternalFunctionWrapper provider) {
-            super(lang, name, true, provider);
-        }
-
-        @Override
-        protected Object[] prepareCArguments(VirtualFrame frame) {
-            // return a copy of the args array since it will be modified
-            Object[] varargs = (Object[]) PArguments.getArgument(frame, SIGNATURE.varArgsPArgumentsIndex());
-            Object[] result = new Object[varargs.length];
-            for (int i = 0; i < result.length; i++) {
-                result[i] = ensurePythonObject(varargs[i]);
-            }
-            return result;
-        }
-
-        @Override
-        public Signature getSignature() {
-            return SIGNATURE;
-        }
-
-        @TruffleBoundary
-        public static MethDirectRoot create(PythonLanguage lang, TruffleString name, PExternalFunctionWrapper provider) {
-            return new MethDirectRoot(lang, name, provider);
-        }
-    }
-
     @GenerateInline(false)
     public abstract static class ExternalFunctionWrapperInvokeNode extends PNodeWithContext {
 
@@ -766,7 +713,7 @@ public abstract class ExternalFunctionNodes {
         }
     }
 
-    public abstract static class MethodDescriptorRoot extends PRootNode {
+    public abstract static class WrapperBaseRoot extends PRootNode {
         @Child private CalleeContext calleeContext = CalleeContext.create();
         @Child private CheckFunctionResultNode checkResultNode;
         @Child private ExternalFunctionWrapperInvokeNode externalInvokeNode;
@@ -781,19 +728,17 @@ public abstract class ExternalFunctionNodes {
 
         private final TruffleString name;
         private final CApiTiming timing;
-        private final PExternalFunctionWrapper wrapper;
 
-        MethodDescriptorRoot(PythonLanguage language, TruffleString name, boolean isStatic, PExternalFunctionWrapper wrapper) {
+        WrapperBaseRoot(PythonLanguage language, TruffleString name, boolean isStatic, CExtToJavaNode convertReturnValue, CheckFunctionResultNode checkFunctionResultNode,
+                        CExtToNativeNode[] convertArgs) {
             super(language);
             CompilerAsserts.neverPartOfCompilation();
-            this.wrapper = wrapper;
             this.name = name;
             this.timing = CApiTiming.create(true, name);
             this.externalInvokeNode = ExternalFunctionWrapperInvokeNodeGen.create();
-            CheckFunctionResultNode checkFunctionResultNode = wrapper.createCheckFunctionResultNode();
             this.checkResultNode = checkFunctionResultNode != null ? checkFunctionResultNode : PyObjectCheckFunctionResultNodeGen.create();
-            this.convertArgs = wrapper.createConvertArgNodes();
-            this.convertReturnValue = wrapper.createConvertRetNode();
+            this.convertArgs = convertArgs;
+            this.convertReturnValue = convertReturnValue;
             if (!isStatic) {
                 readSelfNode = ReadIndexedArgumentNode.create(0);
             }
@@ -931,6 +876,29 @@ public abstract class ExternalFunctionNodes {
         }
     }
 
+    /**
+     * Base class for all native {@link PythonBuiltinClassType#PBuiltinFunction} (CPython type
+     * {@code PyMethodDescr_Type}) functions.
+     */
+    public abstract static class MethodDescriptorRoot extends WrapperBaseRoot {
+
+        MethodDescriptorRoot(PythonLanguage language, TruffleString name, boolean isStatic, MethodDescriptorWrapper wrapper) {
+            super(language, name, isStatic, NativeToPythonReturnNode.create(), null, PExternalFunctionWrapper.createConvertArgNodes(wrapper.arguments));
+            assert wrapper.returnValue == PyObjectReturn;
+        }
+    }
+
+    /**
+     * Base class for all native {@link PythonBuiltinClassType#WrapperDescriptor} (CPython type
+     * {@code PyWrapperDescr_Type}) functions. Those are used for the slot wrapper functions of C
+     * function type {@code wrapperfunc}.
+     */
+    public abstract static class WrapperDescriptorRoot extends WrapperBaseRoot {
+        WrapperDescriptorRoot(PythonLanguage language, TruffleString name, boolean isStatic, PExternalFunctionWrapper wrapper) {
+            super(language, name, isStatic, wrapper.createConvertRetNode(), wrapper.createCheckFunctionResultNode(), wrapper.createConvertArgNodes());
+        }
+    }
+
     public static class MethKeywordsRoot extends MethodDescriptorRoot {
         private static final Signature SIGNATURE = createSignature(true, 1, tsArray("self"), true, true);
         @Child protected ReadVarArgsNode readVarargsNode;
@@ -940,7 +908,7 @@ public abstract class ExternalFunctionNodes {
 
         protected boolean seenNativeArgsTupleStorage;
 
-        public MethKeywordsRoot(PythonLanguage language, TruffleString name, boolean isStatic, PExternalFunctionWrapper provider) {
+        public MethKeywordsRoot(PythonLanguage language, TruffleString name, boolean isStatic, MethodDescriptorWrapper provider) {
             super(language, name, isStatic, provider);
             this.readVarargsNode = ReadVarArgsNode.create(SIGNATURE.varArgsPArgumentsIndex());
             this.readKwargsNode = ReadVarKeywordsNode.create(SIGNATURE.varKeywordsPArgumentsIndex());
@@ -987,7 +955,7 @@ public abstract class ExternalFunctionNodes {
 
         private boolean seenNativeArgsTupleStorage;
 
-        public MethVarargsRoot(PythonLanguage language, TruffleString name, boolean isStatic, PExternalFunctionWrapper provider) {
+        public MethVarargsRoot(PythonLanguage language, TruffleString name, boolean isStatic, MethodDescriptorWrapper provider) {
             super(language, name, isStatic, provider);
             this.readVarargsNode = ReadVarArgsNode.create(SIGNATURE.varArgsPArgumentsIndex());
             this.createArgsTupleNode = CreateArgsTupleNodeGen.create();
@@ -1065,10 +1033,67 @@ public abstract class ExternalFunctionNodes {
         }
     }
 
-    public static final class MethNewRoot extends MethKeywordsRoot {
+    static final class MethUnaryFunc extends WrapperDescriptorRoot {
+        private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self"), true, false);
 
-        public MethNewRoot(PythonLanguage language, TruffleString name, boolean isStatic, PExternalFunctionWrapper provider) {
+        private MethUnaryFunc(PythonLanguage lang, TruffleString name, PExternalFunctionWrapper provider) {
+            super(lang, name, false, provider);
+        }
+
+        @Override
+        protected Object[] prepareCArguments(VirtualFrame frame) {
+            Object self = readSelf(frame);
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
+            return new Object[]{self};
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE;
+        }
+
+        @TruffleBoundary
+        public static MethUnaryFunc create(PythonLanguage lang, TruffleString name, PExternalFunctionWrapper provider) {
+            return new MethUnaryFunc(lang, name, provider);
+        }
+    }
+
+    abstract static class MethNewOrInitRoot extends WrapperDescriptorRoot {
+        private static final Signature SIGNATURE = MethKeywordsRoot.SIGNATURE;
+        @Child ReadVarArgsNode readVarargsNode;
+        @Child ReadVarKeywordsNode readKwargsNode;
+        @Child CreateArgsTupleNode createArgsTupleNode;
+        @Child ReleaseNativeSequenceStorageNode freeNode;
+
+        @CompilationFinal boolean seenNativeArgsTupleStorage;
+
+        public MethNewOrInitRoot(PythonLanguage language, TruffleString name, boolean isStatic, PExternalFunctionWrapper provider) {
             super(language, name, isStatic, provider);
+            this.readVarargsNode = ReadVarArgsNode.create(SIGNATURE.varArgsPArgumentsIndex());
+            this.readKwargsNode = ReadVarKeywordsNode.create(SIGNATURE.varKeywordsPArgumentsIndex());
+            this.createArgsTupleNode = CreateArgsTupleNodeGen.create();
+            this.freeNode = ReleaseNativeSequenceStorageNodeGen.create();
+        }
+
+        @Override
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments, Object[] nativeArguments) {
+            boolean freed = MethVarargsRoot.releaseArgsTuple(cArguments[1], freeNode, seenNativeArgsTupleStorage);
+            if (!seenNativeArgsTupleStorage && freed) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                seenNativeArgsTupleStorage = true;
+            }
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE;
+        }
+    }
+
+    static final class MethNewRoot extends MethNewOrInitRoot {
+
+        public MethNewRoot(PythonLanguage language, TruffleString name, PExternalFunctionWrapper provider) {
+            super(language, name, false, provider);
         }
 
         @Override
@@ -1093,11 +1118,36 @@ public abstract class ExternalFunctionNodes {
         }
     }
 
-    public static final class MethInquiryRoot extends MethodDescriptorRoot {
+    static final class MethInitRoot extends MethNewOrInitRoot {
+
+        public MethInitRoot(PythonLanguage language, TruffleString name, PExternalFunctionWrapper provider) {
+            super(language, name, false, provider);
+        }
+
+        @Override
+        protected Object[] prepareCArguments(VirtualFrame frame) {
+            Object self = readSelf(frame);
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
+
+            Object[] args = readVarargsNode.execute(frame);
+            PTuple argsTuple = createArgsTupleNode.execute(PythonContext.get(this), args, seenNativeArgsTupleStorage);
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(argsTuple);
+
+            PKeyword[] kwargs = readKwargsNode.execute(frame);
+            PythonLanguage language = getLanguage(PythonLanguage.class);
+            Object kwargsDict = kwargs.length > 0 ? PFactory.createDict(language, kwargs) : PNone.NO_VALUE;
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(kwargsDict);
+
+            return new Object[]{self, argsTuple, kwargsDict};
+        }
+
+    }
+
+    public static final class MethInquiryRoot extends WrapperDescriptorRoot {
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self"), true, false);
 
-        public MethInquiryRoot(PythonLanguage language, TruffleString name, boolean isStatic, PExternalFunctionWrapper provider) {
-            super(language, name, isStatic, provider);
+        public MethInquiryRoot(PythonLanguage language, TruffleString name, PExternalFunctionWrapper provider) {
+            super(language, name, false, provider);
         }
 
         @Override
@@ -1116,7 +1166,7 @@ public abstract class ExternalFunctionNodes {
     public static final class MethNoargsRoot extends MethodDescriptorRoot {
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self"), true, true);
 
-        public MethNoargsRoot(PythonLanguage language, TruffleString name, boolean isStatic, PExternalFunctionWrapper provider) {
+        public MethNoargsRoot(PythonLanguage language, TruffleString name, boolean isStatic, MethodDescriptorWrapper provider) {
             super(language, name, isStatic, provider);
         }
 
@@ -1137,7 +1187,7 @@ public abstract class ExternalFunctionNodes {
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "arg"), true, true);
         @Child private ReadIndexedArgumentNode readArgNode;
 
-        public MethORoot(PythonLanguage language, TruffleString name, boolean isStatic, PExternalFunctionWrapper provider) {
+        public MethORoot(PythonLanguage language, TruffleString name, boolean isStatic, MethodDescriptorWrapper provider) {
             super(language, name, isStatic, provider);
             this.readArgNode = ReadIndexedArgumentNode.create(1);
         }
@@ -1161,7 +1211,7 @@ public abstract class ExternalFunctionNodes {
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
 
-        public MethFastcallWithKeywordsRoot(PythonLanguage language, TruffleString name, boolean isStatic, PExternalFunctionWrapper provider) {
+        public MethFastcallWithKeywordsRoot(PythonLanguage language, TruffleString name, boolean isStatic, MethodDescriptorWrapper provider) {
             super(language, name, isStatic, provider);
             this.readVarargsNode = ReadVarArgsNode.create(SIGNATURE.varArgsPArgumentsIndex());
             this.readKwargsNode = ReadVarKeywordsNode.create(SIGNATURE.varKeywordsPArgumentsIndex());
@@ -1221,7 +1271,7 @@ public abstract class ExternalFunctionNodes {
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
 
-        public MethMethodRoot(PythonLanguage language, TruffleString name, boolean isStatic, PExternalFunctionWrapper provider) {
+        public MethMethodRoot(PythonLanguage language, TruffleString name, boolean isStatic, MethodDescriptorWrapper provider) {
             super(language, name, isStatic, provider);
             this.readClsNode = ReadIndexedArgumentNode.create(1);
             this.readVarargsNode = ReadVarArgsNode.create(SIGNATURE.varArgsPArgumentsIndex());
@@ -1276,7 +1326,7 @@ public abstract class ExternalFunctionNodes {
         private static final Signature SIGNATURE = createSignature(false, 1, tsArray("self"), true, true);
         @Child private ReadVarArgsNode readVarargsNode;
 
-        public MethFastcallRoot(PythonLanguage language, TruffleString name, boolean isStatic, PExternalFunctionWrapper provider) {
+        public MethFastcallRoot(PythonLanguage language, TruffleString name, boolean isStatic, MethodDescriptorWrapper provider) {
             super(language, name, isStatic, provider);
             this.readVarargsNode = ReadVarArgsNode.create(SIGNATURE.varArgsPArgumentsIndex());
         }
@@ -1320,7 +1370,7 @@ public abstract class ExternalFunctionNodes {
     /**
      * Wrapper root node for C function type {@code allocfunc} and {@code ssizeargfunc}.
      */
-    static class AllocFuncRootNode extends MethodDescriptorRoot {
+    static class AllocFuncRootNode extends WrapperDescriptorRoot {
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "nitems"), true, false);
         @Child private ReadIndexedArgumentNode readArgNode;
         @Child private ConvertPIntToPrimitiveNode asSsizeTNode;
@@ -1352,7 +1402,7 @@ public abstract class ExternalFunctionNodes {
     /**
      * Wrapper root node for a get attribute function (C type {@code getattrfunc}).
      */
-    static final class GetAttrFuncRootNode extends MethodDescriptorRoot {
+    static final class GetAttrFuncRootNode extends WrapperDescriptorRoot {
         private static final TruffleLogger LOGGER = CApiContext.getLogger(GetAttrFuncRootNode.class);
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "key"), true, false);
         @Child private ReadIndexedArgumentNode readArgNode;
@@ -1390,7 +1440,7 @@ public abstract class ExternalFunctionNodes {
     /**
      * Wrapper root node for a set attribute function (C type {@code setattrfunc}).
      */
-    static final class SetAttrFuncRootNode extends MethodDescriptorRoot {
+    static final class SetAttrFuncRootNode extends WrapperDescriptorRoot {
         private static final TruffleLogger LOGGER = CApiContext.getLogger(SetAttrFuncRootNode.class);
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "key", "value"), true, false);
         @Child private ReadIndexedArgumentNode readArg1Node;
@@ -1436,9 +1486,38 @@ public abstract class ExternalFunctionNodes {
     }
 
     /**
+     * Wrapper root node for a set attribute function (C type {@code setattrofunc}).
+     */
+    static final class SetAttrOFuncRootNode extends WrapperDescriptorRoot {
+        private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "name", "value"), true, false);
+        @Child private ReadIndexedArgumentNode readNameNode;
+        @Child private ReadIndexedArgumentNode readValueNode;
+
+        SetAttrOFuncRootNode(PythonLanguage language, TruffleString name, PExternalFunctionWrapper provider) {
+            super(language, name, false, provider);
+            this.readNameNode = ReadIndexedArgumentNode.create(1);
+            this.readValueNode = ReadIndexedArgumentNode.create(2);
+        }
+
+        @Override
+        protected Object[] prepareCArguments(VirtualFrame frame) {
+            Object self = readSelf(frame);
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
+            Object name = ensurePythonObject(readNameNode.execute(frame));
+            Object value = ensurePythonObject(readValueNode.execute(frame));
+            return new Object[]{self, name, value};
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE;
+        }
+    }
+
+    /**
      * Wrapper root node for a rich compare function (C type {@code richcmpfunc}).
      */
-    static final class RichCmpFuncRootNode extends MethodDescriptorRoot {
+    static final class RichCmpFuncRootNode extends WrapperDescriptorRoot {
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "other", "op"), true, false);
         @Child private ReadIndexedArgumentNode readArg1Node;
         @Child private ReadIndexedArgumentNode readArg2Node;
@@ -1474,7 +1553,7 @@ public abstract class ExternalFunctionNodes {
      * Implements semantics of {@code typeobject.c: wrap_sq_item}.
      */
     // TODO: can we remove this???
-    static final class GetItemRootNode extends MethodDescriptorRoot {
+    static final class GetItemRootNode extends WrapperDescriptorRoot {
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "i"), true, false);
         @Child private ReadIndexedArgumentNode readArg1Node;
         @Child private GetIndexNode getIndexNode;
@@ -1502,7 +1581,7 @@ public abstract class ExternalFunctionNodes {
     /**
      * Implements semantics of {@code typeobject.c: wrap_sq_setitem}.
      */
-    static final class SetItemRootNode extends MethodDescriptorRoot {
+    static final class SetItemRootNode extends WrapperDescriptorRoot {
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "i", "value"), true, false);
         @Child private ReadIndexedArgumentNode readArg1Node;
         @Child private ReadIndexedArgumentNode readArg2Node;
@@ -1533,7 +1612,7 @@ public abstract class ExternalFunctionNodes {
     /**
      * Implements semantics of {@code typeobject.c:wrap_descr_get}
      */
-    public static final class DescrGetRootNode extends MethodDescriptorRoot {
+    public static final class DescrGetRootNode extends WrapperDescriptorRoot {
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "obj", "type"), true, false);
         @Child private ReadIndexedArgumentNode readObj;
         @Child private ReadIndexedArgumentNode readType;
@@ -1562,7 +1641,7 @@ public abstract class ExternalFunctionNodes {
     /**
      * Implements semantics of {@code typeobject.c:wrap_descr_delete}
      */
-    public static final class DescrDeleteRootNode extends MethodDescriptorRoot {
+    public static final class DescrDeleteRootNode extends WrapperDescriptorRoot {
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "obj"), true, false);
         @Child private ReadIndexedArgumentNode readObj;
 
@@ -1588,7 +1667,7 @@ public abstract class ExternalFunctionNodes {
     /**
      * Implements semantics of {@code typeobject.c:wrap_delattr}
      */
-    public static final class DelAttrRootNode extends MethodDescriptorRoot {
+    public static final class DelAttrRootNode extends WrapperDescriptorRoot {
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "obj"), true, false);
         @Child private ReadIndexedArgumentNode readObj;
 
@@ -1616,7 +1695,7 @@ public abstract class ExternalFunctionNodes {
      * Implement mapping of {@code __delitem__} to {@code mp_ass_subscript}. It handles adding the
      * NULL 3rd argument.
      */
-    static final class MpDelItemRootNode extends MethodDescriptorRoot {
+    static final class MpDelItemRootNode extends WrapperDescriptorRoot {
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "i"), true, false);
         @Child private ReadIndexedArgumentNode readArg1Node;
 
@@ -1642,20 +1721,18 @@ public abstract class ExternalFunctionNodes {
     /**
      * Wrapper root node for reverse binary operations.
      */
-    static final class MethReverseRootNode extends MethodDescriptorRoot {
+    static final class MethBinaryFuncRRoot extends WrapperDescriptorRoot {
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "obj"), true, false);
-        @Child private ReadIndexedArgumentNode readArg0Node;
         @Child private ReadIndexedArgumentNode readArg1Node;
 
-        MethReverseRootNode(PythonLanguage language, TruffleString name, PExternalFunctionWrapper provider) {
+        MethBinaryFuncRRoot(PythonLanguage language, TruffleString name, PExternalFunctionWrapper provider) {
             super(language, name, false, provider);
-            this.readArg0Node = ReadIndexedArgumentNode.create(0);
             this.readArg1Node = ReadIndexedArgumentNode.create(1);
         }
 
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
-            Object arg0 = ensurePythonObject(readArg0Node.execute(frame));
+            Object arg0 = ensurePythonObject(readSelf(frame));
             Object arg1 = ensurePythonObject(readArg1Node.execute(frame));
             return new Object[]{arg1, arg0};
         }
@@ -1669,14 +1746,14 @@ public abstract class ExternalFunctionNodes {
     /**
      * Wrapper root node for native power function (with an optional third argument).
      */
-    static class MethPowRootNode extends MethodDescriptorRoot {
+    static class MethTernaryFuncRoot extends WrapperDescriptorRoot {
         private static final Signature SIGNATURE = createSignature(false, 0, tsArray("args"), false, false);
 
         @Child private ReadVarArgsNode readVarargsNode;
 
         private final ConditionProfile profile;
 
-        MethPowRootNode(PythonLanguage language, TruffleString name, PExternalFunctionWrapper provider) {
+        MethTernaryFuncRoot(PythonLanguage language, TruffleString name, PExternalFunctionWrapper provider) {
             super(language, name, false, provider);
             this.readVarargsNode = ReadVarArgsNode.create(SIGNATURE.varArgsPArgumentsIndex());
             this.profile = ConditionProfile.create();
@@ -1705,9 +1782,9 @@ public abstract class ExternalFunctionNodes {
     /**
      * Wrapper root node for native reverse power function (with an optional third argument).
      */
-    static final class MethRPowRootNode extends MethPowRootNode {
+    static final class MethTernaryFuncRRoot extends MethTernaryFuncRoot {
 
-        MethRPowRootNode(PythonLanguage language, TruffleString name, PExternalFunctionWrapper provider) {
+        MethTernaryFuncRRoot(PythonLanguage language, TruffleString name, PExternalFunctionWrapper provider) {
             super(language, name, provider);
         }
 
@@ -1720,7 +1797,7 @@ public abstract class ExternalFunctionNodes {
     /**
      * Wrapper root node for native power function (with an optional third argument).
      */
-    static final class MethRichcmpOpRootNode extends MethodDescriptorRoot {
+    static final class MethRichcmpOpRootNode extends WrapperDescriptorRoot {
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "other"), true, false);
         @Child private ReadIndexedArgumentNode readArgNode;
 
@@ -1749,7 +1826,7 @@ public abstract class ExternalFunctionNodes {
     /**
      * Wrapper root node for C function type {@code iternextfunc}.
      */
-    static class IterNextFuncRootNode extends MethodDescriptorRoot {
+    static class IterNextFuncRootNode extends WrapperDescriptorRoot {
 
         IterNextFuncRootNode(PythonLanguage language, TruffleString name, PExternalFunctionWrapper provider) {
             super(language, name, false, provider);
@@ -1767,7 +1844,7 @@ public abstract class ExternalFunctionNodes {
         }
     }
 
-    abstract static class GetSetRootNode extends MethodDescriptorRoot {
+    abstract static class GetSetRootNode extends WrapperDescriptorRoot {
 
         @Child private ReadIndexedArgumentNode readClosureNode;
 
@@ -1841,6 +1918,126 @@ public abstract class ExternalFunctionNodes {
                 readArgNode = insert(ReadIndexedArgumentNode.create(1));
             }
             return readArgNode;
+        }
+    }
+
+    public static final class MethLenfuncRoot extends WrapperDescriptorRoot {
+        private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self"), true, false);
+
+        public MethLenfuncRoot(PythonLanguage language, TruffleString name, PExternalFunctionWrapper provider) {
+            super(language, name, false, provider);
+        }
+
+        @Override
+        protected Object[] prepareCArguments(VirtualFrame frame) {
+            Object self = readSelf(frame);
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
+            return new Object[]{self};
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE;
+        }
+    }
+
+    static final class MethObjObjProcRoot extends WrapperDescriptorRoot {
+        private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "value"), true, false);
+
+        @Child private ReadIndexedArgumentNode readValueNode;
+
+        private MethObjObjProcRoot(PythonLanguage lang, TruffleString name, PExternalFunctionWrapper provider) {
+            super(lang, name, false, provider);
+            this.readValueNode = ReadIndexedArgumentNode.create(1);
+        }
+
+        @Override
+        protected Object[] prepareCArguments(VirtualFrame frame) {
+            Object self = readSelf(frame);
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
+            Object value = ensurePythonObject(readValueNode.execute(frame));
+            return new Object[]{self, value};
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE;
+        }
+    }
+
+    static final class MethObjObjArgProcRoot extends WrapperDescriptorRoot {
+        private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "key", "value"), true, false);
+
+        @Child private ReadIndexedArgumentNode readKeyNode;
+        @Child private ReadIndexedArgumentNode readValueNode;
+
+        private MethObjObjArgProcRoot(PythonLanguage lang, TruffleString name, PExternalFunctionWrapper provider) {
+            super(lang, name, false, provider);
+            this.readKeyNode = ReadIndexedArgumentNode.create(1);
+            this.readValueNode = ReadIndexedArgumentNode.create(2);
+        }
+
+        @Override
+        protected Object[] prepareCArguments(VirtualFrame frame) {
+            Object self = readSelf(frame);
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
+            Object key = ensurePythonObject(readKeyNode.execute(frame));
+            Object value = ensurePythonObject(readValueNode.execute(frame));
+            return new Object[]{self, key, value};
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE;
+        }
+    }
+
+    static final class MethBinaryRoot extends WrapperDescriptorRoot {
+        private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "name"), true, false);
+
+        @Child private ReadIndexedArgumentNode readNameNode;
+
+        private MethBinaryRoot(PythonLanguage lang, TruffleString name, PExternalFunctionWrapper provider) {
+            super(lang, name, false, provider);
+            this.readNameNode = ReadIndexedArgumentNode.create(1);
+        }
+
+        @Override
+        protected Object[] prepareCArguments(VirtualFrame frame) {
+            Object self = readSelf(frame);
+            assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
+            Object name = ensurePythonObject(readNameNode.execute(frame));
+            return new Object[]{self, name};
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE;
+        }
+    }
+
+    static final class MethDescrSetRoot extends WrapperDescriptorRoot {
+        private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "instance", "value"), true, false);
+        @Child private ReadIndexedArgumentNode readInstanceNode;
+        @Child private ReadIndexedArgumentNode readValueNode;
+
+        MethDescrSetRoot(PythonLanguage language, TruffleString name, PExternalFunctionWrapper provider) {
+            super(language, name, false, provider);
+            this.readInstanceNode = ReadIndexedArgumentNode.create(1);
+            this.readValueNode = ReadIndexedArgumentNode.create(2);
+        }
+
+        @Override
+        protected Object[] prepareCArguments(VirtualFrame frame) {
+            Object self = ensurePythonObject(readSelf(frame));
+            Object instance = ensurePythonObject(readInstanceNode.execute(frame));
+            Object value = ensurePythonObject(readValueNode.execute(frame));
+            return new Object[]{self, instance, value};
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE;
         }
     }
 

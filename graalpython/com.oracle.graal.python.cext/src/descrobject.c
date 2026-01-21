@@ -41,12 +41,10 @@
 #include "capi.h"
 
 PyObject* PyDescr_NewClassMethod(PyTypeObject *type, PyMethodDef *method) {
-    int flags = method->ml_flags;
     return GraalPyPrivate_Descr_NewClassMethod(method,
                     method->ml_name,
                     method->ml_doc,
-                    flags,
-                    get_method_flags_wrapper(flags),
+                    method->ml_flags,
                     method->ml_meth,
                     type);
 }

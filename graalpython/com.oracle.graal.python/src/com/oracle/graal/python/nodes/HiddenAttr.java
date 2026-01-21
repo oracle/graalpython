@@ -59,6 +59,7 @@ import com.oracle.graal.python.nodes.HiddenAttrFactory.ReadNodeGen;
 import com.oracle.graal.python.nodes.HiddenAttrFactory.WriteLongNodeGen;
 import com.oracle.graal.python.nodes.HiddenAttrFactory.WriteNodeGen;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -267,6 +268,7 @@ public final class HiddenAttr {
             execute(this, self, attr, value);
         }
 
+        @TruffleBoundary
         public static void executeUncached(PythonAbstractObject self, HiddenAttr attr, long value) {
             WriteLongNodeGen.getUncached().execute(null, self, attr, value);
         }

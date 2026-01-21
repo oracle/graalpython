@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, 2025, Oracle and/or its affiliates.
+/* Copyright (c) 2022, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -519,19 +519,11 @@ int
 PyModule_AddFunctions(PyObject *m, PyMethodDef *functions)
 {
     // GraalPy change: different implementation
-    if (!functions) {
+    if (!PyModule_Check(m)) {
+        PyErr_BadArgument();
         return -1;
     }
-    for (PyMethodDef* def = functions; def->ml_name != NULL; def++) {
-        GraalPyPrivate_Module_AddFunctionToModule(def,
-                       m,
-                       def->ml_name,
-                       def->ml_meth,
-                       def->ml_flags,
-                       get_method_flags_wrapper(def->ml_flags),
-					   def->ml_doc);
-    }
-    return 0;
+    return GraalPyPrivate_Module_AddFunctions(m, functions);
 }
 
 #if 0 // GraalPy change
