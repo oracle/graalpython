@@ -256,7 +256,8 @@ public final class PythonCextModuleBuiltins {
     }
 
     /**
-     * TODO(fa): overlaps with {@link com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes#createLegacyMethod}
+     * TODO(fa): overlaps with
+     * {@link com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes#createLegacyMethod}
      */
     @CApiBuiltin(ret = Int, args = {PyObject, PyMethodDef}, call = Ignored)
     public static int GraalPyPrivate_Module_AddFunctions(long moduleRaw, long functions) {

@@ -1434,7 +1434,9 @@ public abstract class CExtNodes {
     }
 
     /**
-     * TODO(fa): overlaps with {@link com.oracle.graal.python.builtins.modules.cext.PythonCextModuleBuiltins#GraalPyPrivate_Module_AddFunctions(long, long)}.
+     * TODO(fa): overlaps with
+     * {@link com.oracle.graal.python.builtins.modules.cext.PythonCextModuleBuiltins#GraalPyPrivate_Module_AddFunctions(long, long)}.
+     * 
      * <pre>
      *     struct PyMethodDef {
      *         const char * ml_name;

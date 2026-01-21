@@ -145,8 +145,9 @@ public final class NfiDowncallSignature {
 
     @Override
     public boolean equals(Object o) {
-        if (o == null || getClass() != o.getClass())
+        if (o == null || getClass() != o.getClass()) {
             return false;
+        }
         NfiDowncallSignature that = (NfiDowncallSignature) o;
         return resType == that.resType && Objects.deepEquals(argTypes, that.argTypes);
     }
