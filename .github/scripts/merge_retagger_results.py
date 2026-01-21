@@ -51,9 +51,6 @@ import glob
 import argparse
 from dataclasses import dataclass
 
-# status we want to focus on
-EXPORT_STATUS = ["FAILED"]
-
 @dataclass
 class Test:
     name:       str
@@ -67,7 +64,7 @@ def read_report(path: str) -> list[Test]:
         data = json.load(f)
         for result in data:
             name, status, duration = result["name"], result["status"], result["duration"]
-            if status in EXPORT_STATUS: tests.append(Test(f"{name}", status, duration))
+            tests.append(Test(f"{name}", status, duration))
 
     return tests
 
@@ -79,7 +76,7 @@ def merge_tests(report: list[Test], merged: dict[str, dict]):
 def export_reports(merged: dict[str, dict], outfile: str):
     with open(outfile, "w") as f:
         json.dump(list(merged.values()), f)
-    print(f"=== Exported {len(merged)} ({EXPORT_STATUS}) tests to {f.name} ===")
+    print(f"=== Exported {len(merged)} tests to {f.name} ===")
 
 def merge_reports(reports: list[str], outfile: str):
     merged_reports = {}

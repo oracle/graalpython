@@ -1,2 +1,2 @@
-test.test_uu.UUTest.test_missingbegin @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_uu.UUTest.test_no_directory_traversal @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_uu.UUTest.test_missingbegin @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_uu.UUTest.test_no_directory_traversal @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

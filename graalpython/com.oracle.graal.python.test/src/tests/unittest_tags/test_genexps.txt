@@ -1,1 +1,1 @@
-DocTestCase.test.test_genexps.__test__.doctests @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64,win32-AMD64-github
+DocTestCase.test.test_genexps.__test__.doctests @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

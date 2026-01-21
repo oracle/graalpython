@@ -1,7 +1,7 @@
-test.test_abstract_numbers.TestNumbers.test_complex @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_abstract_numbers.TestNumbers.test_float @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_abstract_numbers.TestNumbers.test_int @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_abstract_numbers.TestNumbersDefaultMethods.test_complex @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_abstract_numbers.TestNumbersDefaultMethods.test_integral @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_abstract_numbers.TestNumbersDefaultMethods.test_rational @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_abstract_numbers.TestNumbersDefaultMethods.test_real @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_abstract_numbers.TestNumbers.test_complex @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
+test.test_abstract_numbers.TestNumbers.test_float @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
+test.test_abstract_numbers.TestNumbers.test_int @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
+test.test_abstract_numbers.TestNumbersDefaultMethods.test_complex @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
+test.test_abstract_numbers.TestNumbersDefaultMethods.test_integral @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
+test.test_abstract_numbers.TestNumbersDefaultMethods.test_rational @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
+test.test_abstract_numbers.TestNumbersDefaultMethods.test_real @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64

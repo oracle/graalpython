@@ -1,5 +1,5 @@
-test.test_codecmaps_tw.TestBIG5Map.test_errorhandle @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_codecmaps_tw.TestBIG5Map.test_mapping_file @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_codecmaps_tw.TestBIG5Map.test_mapping_supplemental @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_codecmaps_tw.TestCP950Map.test_errorhandle @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_codecmaps_tw.TestCP950Map.test_mapping_supplemental @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_codecmaps_tw.TestBIG5Map.test_errorhandle @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_codecmaps_tw.TestBIG5Map.test_mapping_file @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_codecmaps_tw.TestBIG5Map.test_mapping_supplemental @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_codecmaps_tw.TestCP950Map.test_errorhandle @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_codecmaps_tw.TestCP950Map.test_mapping_supplemental @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

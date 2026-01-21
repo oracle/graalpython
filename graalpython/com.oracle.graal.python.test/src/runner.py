@@ -1373,7 +1373,7 @@ def main_merge_tags(args, parser):
             tag_platform=args.platform,
             untag_failed=False,
             untag_skipped=True,
-            untag_missing=not GITHUB_CI,
+            untag_missing=True,
         )
 
 

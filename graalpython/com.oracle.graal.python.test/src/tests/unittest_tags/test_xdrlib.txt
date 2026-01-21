@@ -1,6 +1,6 @@
-test.test_xdrlib.ConversionErrorTest.test_double @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_xdrlib.ConversionErrorTest.test_float @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_xdrlib.ConversionErrorTest.test_pack_int @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_xdrlib.ConversionErrorTest.test_pack_uint @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_xdrlib.ConversionErrorTest.test_uhyper @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_xdrlib.XDRTest.test_xdr @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_xdrlib.ConversionErrorTest.test_double @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_xdrlib.ConversionErrorTest.test_float @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_xdrlib.ConversionErrorTest.test_pack_int @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_xdrlib.ConversionErrorTest.test_pack_uint @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_xdrlib.ConversionErrorTest.test_uhyper @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_xdrlib.XDRTest.test_xdr @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
