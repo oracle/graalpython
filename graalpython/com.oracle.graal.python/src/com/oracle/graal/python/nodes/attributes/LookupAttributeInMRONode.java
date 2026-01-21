@@ -248,7 +248,7 @@ public abstract class LookupAttributeInMRONode extends PNodeWithContext {
                     assumptions = "cachedAttrInMROInfo.getAssumption()")
     static Object lookupConstantMROCached(Object klass,
                     @Bind Node inliningTarget,
-                    @Cached("klass") Object cachedKlass,
+                    @Cached(value = "klass", weak = true) Object cachedKlass,
                     @Cached IsSameTypeNode isSameTypeNode,
                     @Cached("findAttrAndAssumptionInMRO(cachedKlass)") MroSequenceStorage.FinalAttributeAssumptionPair cachedAttrInMROInfo) {
         return cachedAttrInMROInfo.getValue();

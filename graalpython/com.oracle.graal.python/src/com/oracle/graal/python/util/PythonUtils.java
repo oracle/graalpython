@@ -838,6 +838,10 @@ public final class PythonUtils {
         return cls;
     }
 
+    public static boolean isPrimitive(Object value) {
+        return value instanceof Integer || value instanceof Long || value instanceof Boolean || value instanceof Double;
+    }
+
     public static final class NodeCounterWithLimit implements NodeVisitor {
         private int count;
         private final int limit;

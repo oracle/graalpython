@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -54,6 +54,7 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.NonIdempotent;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
+import com.oracle.truffle.api.utilities.TruffleWeakReference;
 
 public final class MroSequenceStorage extends ArrayBasedSequenceStorage {
 
@@ -71,7 +72,8 @@ public final class MroSequenceStorage extends ArrayBasedSequenceStorage {
 
     public static final class FinalAttributeAssumptionPair {
         @CompilationFinal private Assumption assumption;
-        @CompilationFinal private Object value;
+        @CompilationFinal private TruffleWeakReference<Object> value;
+        private Object valueStrongReference;
 
         public FinalAttributeAssumptionPair() {
             this.assumption = Truffle.getRuntime().createAssumption("attribute in MRO final");
@@ -87,11 +89,16 @@ public final class MroSequenceStorage extends ArrayBasedSequenceStorage {
 
         @NonIdempotent
         public Object getValue() {
-            return value;
+            return value.get();
         }
 
         public void setValue(Object value) {
-            this.value = value;
+            if (PythonUtils.isPrimitive(value)) {
+                // DynamicObjectStorage does not store the boxes object, but the raw primitive
+                // value, so we must protect the boxed object from GC ourselves
+                valueStrongReference = value;
+            }
+            this.value = new TruffleWeakReference<>(value);
         }
 
         @NonIdempotent
