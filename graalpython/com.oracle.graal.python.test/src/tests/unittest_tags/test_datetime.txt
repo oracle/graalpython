@@ -706,7 +706,7 @@ test.datetimetester.TestTimeDelta_Fast.test_basic_attributes @ darwin-arm64,darw
 test.datetimetester.TestTimeDelta_Fast.test_bool @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.datetimetester.TestTimeDelta_Fast.test_carries @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.datetimetester.TestTimeDelta_Fast.test_compare @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
-test.datetimetester.TestTimeDelta_Fast.test_computations @ linux-aarch64-github,linux-x86_64-github
+test.datetimetester.TestTimeDelta_Fast.test_computations @ linux-aarch64-github,linux-x86_64-github,win32-AMD64
 test.datetimetester.TestTimeDelta_Fast.test_constructor @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.datetimetester.TestTimeDelta_Fast.test_disallowed_computations @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.datetimetester.TestTimeDelta_Fast.test_disallowed_special @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
