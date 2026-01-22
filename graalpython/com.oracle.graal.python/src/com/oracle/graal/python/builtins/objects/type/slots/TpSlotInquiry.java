@@ -89,7 +89,7 @@ public abstract class TpSlotInquiry {
         static final BuiltinSlotWrapperSignature SIGNATURE = BuiltinSlotWrapperSignature.UNARY;
 
         protected TpSlotInquiryBuiltin(NodeFactory<T> nodeFactory) {
-            super(nodeFactory, SIGNATURE, PExternalFunctionWrapper.INQUIRY);
+            super(nodeFactory, SIGNATURE, PExternalFunctionWrapper.INQUIRYPRED);
         }
 
         final InquiryBuiltinNode createSlotNode() {

@@ -117,9 +117,9 @@ public class TpSlotSizeArgFun {
         @Override
         public PBuiltinFunction createBuiltin(Python3Core core, Object type, TruffleString tsName, PExternalFunctionWrapper wrapper) {
             return switch (wrapper) {
-                case GETITEM -> createBuiltin(core, type, tsName, BuiltinSlotWrapperSignature.BINARY, wrapper,
+                case SQ_ITEM -> createBuiltin(core, type, tsName, BuiltinSlotWrapperSignature.BINARY, wrapper,
                                 WrapperNodeFactory.wrap(getNodeFactory(), WrapSqItemBuiltinNode.class, WrapSqItemBuiltinNodeGen::create));
-                case SSIZE_ARG -> createBuiltin(core, type, tsName, BuiltinSlotWrapperSignature.BINARY, wrapper,
+                case INDEXARGFUNC -> createBuiltin(core, type, tsName, BuiltinSlotWrapperSignature.BINARY, wrapper,
                                 WrapperNodeFactory.wrap(getNodeFactory(), WrapIndexArgFuncBuiltinNode.class,
                                                 WrapIndexArgFuncBuiltinNodeGen::create));
                 default ->

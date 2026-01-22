@@ -41,7 +41,7 @@
 
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CHAR_PTR;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.InquiryResult;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
@@ -54,6 +54,9 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 
 import com.oracle.graal.python.annotations.CApiExternalFunctionSignatures;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
+import com.oracle.graal.python.nfi2.Nfi;
+import com.oracle.graal.python.nfi2.NfiDowncallSignature;
+import com.oracle.graal.python.nfi2.NfiType;
 
 /**
  * Enum of well-known function and slot signatures. The integer values must stay in sync with the
@@ -95,11 +98,11 @@ public enum ExternalFunctionSignature {
     // typedef void (*destructor)(PyObject *);
     DESTRUCTOR(Void, PyObject),
     // typedef PyObject *(*getattrfunc)(PyObject *, char *);
-    GETATTRFUNC(PyObjectReturn, PyObject, CHAR_PTR),
+    GETATTRFUNC(PyObjectReturn, PyObject, CharPtrAsTruffleString),
     // typedef PyObject *(*getattrofunc)(PyObject *, PyObject *);
     GETATTROFUNC(PyObjectReturn, PyObject, PyObject),
     // typedef int (*setattrfunc)(PyObject *, char *, PyObject *);
-    SETATTRFUNC(Int, PyObject, CHAR_PTR, PyObject),
+    SETATTRFUNC(Int, PyObject, CharPtrAsTruffleString, PyObject),
     // typedef int (*setattrofunc)(PyObject *, PyObject *, PyObject *);
     SETATTROFUNC(Int, PyObject, PyObject, PyObject),
     // typedef PyObject *(*reprfunc)(PyObject *);
@@ -120,17 +123,26 @@ public enum ExternalFunctionSignature {
     INITPROC(Int, PyObject, PyObject, PyObject),
     // typedef PyObject *(*newfunc)(PyTypeObject *, PyObject *, PyObject *);
     NEWFUNC(PyObjectReturn, PyTypeObject, PyObject, PyObject),
-    // typedef PyObject *(*allocfunc)(PyTypeObject *, Py_ssize_t);
-    ALLOCFUNC(PyObjectReturn, PyTypeObject, Py_ssize_t),
+
+    // typedef PyObject *(*getter)(PyObject *, void *);
+    GETTER(PyObjectReturn, PyObject, Pointer),
+    // typedef int (*setter)(PyObject *, PyObject *, void *);
+    SETTER(Int, PyObject, PyObject, Pointer),
 
     // TODO(fa): should be an implicit signature
     GCCOLLECT(Py_ssize_t, Int);
 
+    public final NfiDowncallSignature nfiSignature;
     public final ArgDescriptor returnValue;
     public final ArgDescriptor[] arguments;
 
     ExternalFunctionSignature(ArgDescriptor returnValue, ArgDescriptor... arguments) {
         this.returnValue = returnValue;
         this.arguments = arguments;
+        NfiType[] nfiTypes = new NfiType[arguments.length];
+        for (int i = 0; i < nfiTypes.length; i++) {
+            nfiTypes[i] = arguments[i].getNFI2Type();
+        }
+        this.nfiSignature = Nfi.createDowncallSignature(returnValue.getNFI2Type(), nfiTypes);
     }
 }

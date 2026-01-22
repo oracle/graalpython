@@ -469,7 +469,7 @@ public record TpSlots(TpSlot nb_bool, //
                         TpSlotInquiryBuiltin.class,
                         TpSlotGroup.AS_NUMBER,
                         CFields.PyNumberMethods__nb_bool,
-                        PExternalFunctionWrapper.INQUIRY,
+                        PExternalFunctionWrapper.INQUIRYPRED,
                         InquiryWrapper::new),
         NB_INDEX(
                         TpSlots::nb_index,
@@ -765,7 +765,7 @@ public record TpSlots(TpSlot nb_bool, //
                         TpSlotSizeArgFunBuiltin.class,
                         TpSlotGroup.AS_SEQUENCE,
                         CFields.PySequenceMethods__sq_item,
-                        PExternalFunctionWrapper.GETITEM,
+                        PExternalFunctionWrapper.SQ_ITEM,
                         SsizeargfuncSlotWrapper::new),
         SQ_ASS_ITEM(
                         TpSlots::sq_ass_item,
@@ -773,7 +773,7 @@ public record TpSlots(TpSlot nb_bool, //
                         TpSlotSqAssItemBuiltin.class,
                         TpSlotGroup.AS_SEQUENCE,
                         CFields.PySequenceMethods__sq_ass_item,
-                        PExternalFunctionWrapper.SETITEM,
+                        PExternalFunctionWrapper.SQ_SETITEM,
                         SsizeobjargprocWrapper::new),
         SQ_REPEAT(
                         TpSlots::sq_repeat,
@@ -781,7 +781,7 @@ public record TpSlots(TpSlot nb_bool, //
                         TpSlotSizeArgFunBuiltin.class,
                         TpSlotGroup.AS_SEQUENCE,
                         CFields.PySequenceMethods__sq_repeat,
-                        PExternalFunctionWrapper.SSIZE_ARG,
+                        PExternalFunctionWrapper.INDEXARGFUNC,
                         SsizeargfuncSlotWrapper::new),
         SQ_INPLACE_CONCAT(
                         TpSlots::sq_inplace_concat,
@@ -797,7 +797,7 @@ public record TpSlots(TpSlot nb_bool, //
                         TpSlotSizeArgFunBuiltin.class,
                         TpSlotGroup.AS_SEQUENCE,
                         CFields.PySequenceMethods__sq_inplace_repeat,
-                        PExternalFunctionWrapper.SSIZE_ARG,
+                        PExternalFunctionWrapper.INDEXARGFUNC,
                         SsizeargfuncSlotWrapper::new),
         SQ_CONTAINS(
                         TpSlots::sq_contains,
@@ -933,7 +933,7 @@ public record TpSlots(TpSlot nb_bool, //
                         TpSlotVarargsBuiltin.class,
                         TpSlotGroup.NO_GROUP,
                         CFields.PyTypeObject__tp_init,
-                        PExternalFunctionWrapper.INITPROC,
+                        PExternalFunctionWrapper.INIT,
                         InitWrapper::new),
         TP_NEW(
                         TpSlots::tp_new,
@@ -1153,7 +1153,7 @@ public record TpSlots(TpSlot nb_bool, //
         addSlotDef(s, TpSlotMeta.TP_ITERNEXT, TpSlotDef.withSimpleFunction(T___NEXT__, PExternalFunctionWrapper.ITERNEXT));
         addSlotDef(s, TpSlotMeta.TP_STR, TpSlotDef.withSimpleFunction(T___STR__, PExternalFunctionWrapper.UNARYFUNC));
         addSlotDef(s, TpSlotMeta.TP_REPR, TpSlotDef.withSimpleFunction(T___REPR__, PExternalFunctionWrapper.UNARYFUNC));
-        addSlotDef(s, TpSlotMeta.TP_INIT, TpSlotDef.withSimpleFunction(T___INIT__, PExternalFunctionWrapper.INITPROC));
+        addSlotDef(s, TpSlotMeta.TP_INIT, TpSlotDef.withSimpleFunction(T___INIT__, PExternalFunctionWrapper.INIT));
         addSlotDef(s, TpSlotMeta.TP_NEW, TpSlotDef.withSimpleFunction(T___NEW__, PExternalFunctionWrapper.NEW));
         addSlotDef(s, TpSlotMeta.TP_CALL, TpSlotDef.withSimpleFunction(T___CALL__, PExternalFunctionWrapper.CALL));
         addSlotDef(s, TpSlotMeta.NB_ADD,
@@ -1211,7 +1211,7 @@ public record TpSlots(TpSlot nb_bool, //
         addSlotDef(s, TpSlotMeta.NB_INPLACE_TRUE_DIVIDE, TpSlotDef.withSimpleFunction(T___ITRUEDIV__, PExternalFunctionWrapper.BINARYFUNC));
         addSlotDef(s, TpSlotMeta.NB_INPLACE_MATRIX_MULTIPLY, TpSlotDef.withSimpleFunction(T___IMATMUL__, PExternalFunctionWrapper.BINARYFUNC));
         addSlotDef(s, TpSlotMeta.NB_INPLACE_POWER, TpSlotDef.withSimpleFunction(T___IPOW__, PExternalFunctionWrapper.TERNARYFUNC));
-        addSlotDef(s, TpSlotMeta.NB_BOOL, TpSlotDef.withSimpleFunction(T___BOOL__, PExternalFunctionWrapper.INQUIRY));
+        addSlotDef(s, TpSlotMeta.NB_BOOL, TpSlotDef.withSimpleFunction(T___BOOL__, PExternalFunctionWrapper.INQUIRYPRED));
         addSlotDef(s, TpSlotMeta.NB_INDEX, TpSlotDef.withSimpleFunction(T___INDEX__, PExternalFunctionWrapper.UNARYFUNC));
         addSlotDef(s, TpSlotMeta.NB_INT, TpSlotDef.withSimpleFunction(T___INT__, PExternalFunctionWrapper.UNARYFUNC));
         addSlotDef(s, TpSlotMeta.NB_FLOAT, TpSlotDef.withSimpleFunction(T___FLOAT__, PExternalFunctionWrapper.UNARYFUNC));
@@ -1231,14 +1231,14 @@ public record TpSlots(TpSlot nb_bool, //
         // see test_sq_repeat_mul_without_rmul_inheritance
         addSlotDef(s, TpSlotMeta.SQ_CONCAT, TpSlotDef.withNoFunction(T___ADD__, PExternalFunctionWrapper.BINARYFUNC));
         addSlotDef(s, TpSlotMeta.SQ_REPEAT,
-                        TpSlotDef.withNoFunction(T___MUL__, PExternalFunctionWrapper.SSIZE_ARG),
-                        TpSlotDef.withNoFunction(T___RMUL__, PExternalFunctionWrapper.SSIZE_ARG));
-        addSlotDef(s, TpSlotMeta.SQ_ITEM, TpSlotDef.withSimpleFunction(T___GETITEM__, PExternalFunctionWrapper.GETITEM));
+                        TpSlotDef.withNoFunction(T___MUL__, PExternalFunctionWrapper.INDEXARGFUNC),
+                        TpSlotDef.withNoFunction(T___RMUL__, PExternalFunctionWrapper.INDEXARGFUNC));
+        addSlotDef(s, TpSlotMeta.SQ_ITEM, TpSlotDef.withSimpleFunction(T___GETITEM__, PExternalFunctionWrapper.SQ_ITEM));
         addSlotDef(s, TpSlotMeta.SQ_ASS_ITEM,
-                        TpSlotDef.create(T___SETITEM__, TpSlotSqAssItemPython::create, PExternalFunctionWrapper.SETITEM),
-                        TpSlotDef.create(T___DELITEM__, TpSlotSqAssItemPython::create, PExternalFunctionWrapper.DELITEM));
+                        TpSlotDef.create(T___SETITEM__, TpSlotSqAssItemPython::create, PExternalFunctionWrapper.SQ_SETITEM),
+                        TpSlotDef.create(T___DELITEM__, TpSlotSqAssItemPython::create, PExternalFunctionWrapper.SQ_DELITEM));
         addSlotDef(s, TpSlotMeta.SQ_INPLACE_CONCAT, TpSlotDef.withNoFunction(T___IADD__, PExternalFunctionWrapper.BINARYFUNC));
-        addSlotDef(s, TpSlotMeta.SQ_INPLACE_REPEAT, TpSlotDef.withNoFunction(T___IMUL__, PExternalFunctionWrapper.SSIZE_ARG));
+        addSlotDef(s, TpSlotMeta.SQ_INPLACE_REPEAT, TpSlotDef.withNoFunction(T___IMUL__, PExternalFunctionWrapper.INDEXARGFUNC));
         addSlotDef(s, TpSlotMeta.SQ_CONTAINS, TpSlotDef.withSimpleFunction(T___CONTAINS__, PExternalFunctionWrapper.OBJOBJPROC));
         addSlotDef(s, TpSlotMeta.AM_AWAIT, TpSlotDef.withSimpleFunction(T___AWAIT__, PExternalFunctionWrapper.UNARYFUNC));
         addSlotDef(s, TpSlotMeta.AM_ANEXT, TpSlotDef.withSimpleFunction(T___ANEXT__, PExternalFunctionWrapper.UNARYFUNC));

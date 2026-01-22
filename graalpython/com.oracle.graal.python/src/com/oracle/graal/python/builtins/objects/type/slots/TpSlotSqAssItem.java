@@ -124,9 +124,9 @@ public final class TpSlotSqAssItem {
         @Override
         public PBuiltinFunction createBuiltin(Python3Core core, Object type, TruffleString tsName, PExternalFunctionWrapper wrapper) {
             return switch (wrapper) {
-                case SETITEM -> createBuiltin(core, type, T___SETITEM__, SET_SIGNATURE, wrapper,
+                case SQ_SETITEM -> createBuiltin(core, type, T___SETITEM__, SET_SIGNATURE, wrapper,
                                 WrapperNodeFactory.wrap(getNodeFactory(), WrapSqSetItemBuiltinNode.class, WrapSqSetItemBuiltinNodeGen::create));
-                case DELITEM -> createBuiltin(core, type, T___DELITEM__, BuiltinSlotWrapperSignature.BINARY, wrapper,
+                case SQ_DELITEM -> createBuiltin(core, type, T___DELITEM__, BuiltinSlotWrapperSignature.BINARY, wrapper,
                                 WrapperNodeFactory.wrap(getNodeFactory(), WrapSqDelItemBuiltinNode.class, WrapSqDelItemBuiltinNodeGen::create));
                 default ->
                     throw new IllegalStateException(Objects.toString(wrapper));

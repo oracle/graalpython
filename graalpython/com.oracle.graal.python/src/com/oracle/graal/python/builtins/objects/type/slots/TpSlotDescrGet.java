@@ -67,7 +67,6 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPythonSingle;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGetFactory.CallSlotDescrGetNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -76,6 +75,7 @@ import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
@@ -164,14 +164,10 @@ public abstract class TpSlotDescrGet {
             this.wrapped = wrapped;
         }
 
-        private static Object normalizeNone(ConditionProfile profile, Object o) {
-            return profile.profile(PGuards.isNone(o)) ? PNone.NO_VALUE : o;
-        }
-
         @Override
         public Object execute(VirtualFrame frame, Object self, Object objIn, Object typeIn) {
-            Object obj = normalizeNone(objIsNoneProfile, objIn);
-            Object type = normalizeNone(typeIsNoneProfile, typeIn);
+            Object obj = PythonUtils.normalizeNone(objIsNoneProfile, objIn);
+            Object type = PythonUtils.normalizeNone(typeIsNoneProfile, typeIn);
             if (obj == PNone.NO_VALUE && type == PNone.NO_VALUE) {
                 errorProfile.enter();
                 throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.TypeError, ErrorMessages.GET_NONE_NONE_IS_INVALID);

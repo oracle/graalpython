@@ -79,7 +79,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoke
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.PRaiseNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckPrimitiveFunctionResultNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionSignature;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonNode;
@@ -317,7 +317,7 @@ public final class PythonCextModuleBuiltins {
                     if (mSize <= 0 || mdState != NULLPTR) {
                         PythonContext ctx = PythonContext.get(inliningTarget);
                         PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, ctx);
-                        NfiBoundFunction traverseExecutable = ensureExecutable(mTraverse, PExternalFunctionWrapper.TRAVERSEPROC);
+                        NfiBoundFunction traverseExecutable = ensureExecutable(mTraverse, "m_traverse", ExternalFunctionSignature.TRAVERSEPROC.nfiSignature);
                         int ires = ExternalFunctionInvoker.invokeTRAVERSEPROC(null, TIMING, ctx.ensureNfiContext(), boundaryCallData, threadState, traverseExecutable,
                                         toNativeNode.executeLong(self), visitFun, arg);
                         checkPrimitiveFunctionResultNode.executeLong(threadState, StringLiterals.T_VISIT, ires);

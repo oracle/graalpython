@@ -73,6 +73,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
@@ -842,6 +843,10 @@ public final class PythonUtils {
 
     public static boolean isPrimitive(Object value) {
         return value instanceof Integer || value instanceof Long || value instanceof Boolean || value instanceof Double;
+    }
+
+    public static Object normalizeNone(ConditionProfile profile, Object o) {
+        return profile.profile(PGuards.isNone(o)) ? PNone.NO_VALUE : o;
     }
 
     public static final class NodeCounterWithLimit implements NodeVisitor {
