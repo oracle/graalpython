@@ -78,6 +78,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
@@ -239,6 +240,11 @@ public abstract class TpSlotDescrSet {
         }
 
         public abstract void execute(VirtualFrame frame, Node inliningTarget, TpSlot slot, Object self, Object obj, Object value);
+
+        @TruffleBoundary
+        public static void executeUncached(TpSlot slot, Object self, Object obj, Object value) {
+            CallSlotDescrSetNodeGen.getUncached().execute(null, null, slot, self, obj, value);
+        }
 
         public final void executeCached(VirtualFrame frame, TpSlot slot, Object self, Object obj, Object value) {
             execute(frame, this, slot, self, obj, value);

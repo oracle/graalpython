@@ -57,7 +57,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.TpSlotWrapper;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.TpSlotMeta;
@@ -118,7 +117,7 @@ public abstract class TpSlot {
         if (slot.slotWrapper == null) {
             slot.slotWrapper = slotMeta.createNativeWrapper(slot);
         }
-        return CStructAccess.ensurePointerUncached(slot.slotWrapper);
+        return slot.slotWrapper.getPointer();
     }
 
     /**
@@ -162,7 +161,7 @@ public abstract class TpSlot {
          * Represents native callable that delegates to this slot. Should be {@link TpSlotWrapper}
          * most of the time, but we allow overriding those wrappers with native implementation.
          */
-        private Object slotWrapper;
+        private TpSlotWrapper slotWrapper;
     }
 
     /**

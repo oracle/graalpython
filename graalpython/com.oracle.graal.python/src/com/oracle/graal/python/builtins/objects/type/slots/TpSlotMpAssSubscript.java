@@ -66,6 +66,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltinB
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotManaged;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPython;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotMpAssSubscriptFactory.CallSlotMpAssSubscriptNodeGen;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -76,6 +77,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
@@ -182,6 +184,11 @@ public final class TpSlotMpAssSubscript {
     @GenerateUncached
     public abstract static class CallSlotMpAssSubscriptNode extends Node {
         public abstract void execute(VirtualFrame frame, Node inliningTarget, TpSlot slot, Object self, Object key, Object value);
+
+        @TruffleBoundary
+        public static void executeUncached(TpSlot slot, Object self, Object key, Object value) {
+            CallSlotMpAssSubscriptNodeGen.getUncached().execute(null, null, slot, self, key, value);
+        }
 
         @Specialization
         static void callManagedSlot(VirtualFrame frame, Node inliningTarget, TpSlotManaged slot, Object self, Object key, Object value,

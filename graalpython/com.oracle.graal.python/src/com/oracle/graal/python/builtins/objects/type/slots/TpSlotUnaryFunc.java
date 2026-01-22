@@ -57,12 +57,14 @@ import com.oracle.graal.python.builtins.objects.type.slots.PythonDispatchers.Una
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltinBase;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotCExtNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPythonSingle;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotUnaryFuncFactory.CallSlotUnaryNodeGen;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
@@ -108,6 +110,11 @@ public final class TpSlotUnaryFunc {
         private static final CApiTiming C_API_TIMING = CApiTiming.create(true, "unaryfunc");
 
         public abstract Object execute(VirtualFrame frame, Node inliningTarget, TpSlot slot, Object self);
+
+        @TruffleBoundary
+        public static Object executeUncached(TpSlot slot, Object self) {
+            return CallSlotUnaryNodeGen.getUncached().execute(null, null, slot, self);
+        }
 
         @Specialization(guards = "cachedSlot == slot", limit = "3")
         static Object callCachedBuiltin(VirtualFrame frame, @SuppressWarnings("unused") TpSlotUnaryFuncBuiltin<?> slot, Object self,

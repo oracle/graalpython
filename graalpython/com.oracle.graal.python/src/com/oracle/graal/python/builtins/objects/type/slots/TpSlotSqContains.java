@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotCExtNati
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPythonSingle;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.TpSlotBinaryFuncBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.CheckInquiryResultNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContainsFactory.CallSlotSqContainsNodeGen;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -68,6 +69,7 @@ import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
@@ -111,6 +113,11 @@ public final class TpSlotSqContains {
         private static final CApiTiming C_API_TIMING = CApiTiming.create(true, "sq_contains");
 
         public abstract boolean execute(VirtualFrame frame, Node inliningTarget, TpSlot slot, Object self, Object arg);
+
+        @TruffleBoundary
+        public static boolean executeUncached(TpSlot slot, Object self, Object arg) {
+            return CallSlotSqContainsNodeGen.getUncached().execute(null, null, slot, self, arg);
+        }
 
         @Specialization(guards = "cachedSlot == slot", limit = "3")
         static boolean callCachedBuiltin(VirtualFrame frame, @SuppressWarnings("unused") TpSlotSqContainsBuiltin<?> slot, Object self, Object arg,

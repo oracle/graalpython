@@ -56,8 +56,6 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
 import java.lang.invoke.VarHandle;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -133,7 +131,6 @@ import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonSystemThreadTask;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.SuppressFBWarnings;
-import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -146,14 +143,12 @@ import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.CodeRange;
 
@@ -1274,69 +1269,6 @@ public final class CApiContext extends CExtContext {
         callableClosureByExecutable.put(executable, info);
         callableClosures.put(pointer, info);
         LOGGER.finer(() -> PythonUtils.formatJString("new NFI closure: (%s, %s) -> %d 0x%x", executable.getClass().getSimpleName(), delegate, pointer, pointer));
-    }
-
-    // TODO(NFI2) provide direct static methods for the closures and get rid of this wrapper and
-    // RootNode
-    static Object executeWrapper(CallTarget callTarget, Object executable, Object[] args) {
-        return callTarget.call(executable, args);
-    }
-
-    static final class ExecuteClosureWrapperRootNode extends RootNode {
-
-        @Child InteropLibrary interopLib;
-        final NfiUpcallSignature signature;
-
-        ExecuteClosureWrapperRootNode(NfiUpcallSignature signature) {
-            super(PythonLanguage.get(null));
-            this.signature = signature;
-        }
-
-        @Override
-        public Object execute(VirtualFrame frame) {
-            if (interopLib == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                interopLib = insert(InteropLibrary.getFactory().createDispatched(3));
-            }
-            try {
-                Object[] frameArgs = frame.getArguments();
-                Object receiver = frameArgs[0];
-                Object[] args = (Object[]) frameArgs[1];
-                for (int i = 0; i < args.length; i++) {
-                    assert signature.getArgTypes()[i] != NfiType.POINTER;
-                }
-                Object result = interopLib.execute(receiver, args);
-                return signature.getReturnType().convertToNative(result);
-            } catch (Throwable e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
-        }
-    }
-
-    static final MethodHandle handle_executeWrapper;
-
-    static {
-        MethodType callType = MethodType.methodType(Object.class, CallTarget.class, Object.class, Object[].class);
-        try {
-            handle_executeWrapper = MethodHandles.lookup().findStatic(CApiContext.class, "executeWrapper", callType);
-        } catch (NoSuchMethodException | IllegalAccessException ex) {
-            throw CompilerDirectives.shouldNotReachHere(ex);
-        }
-    }
-
-    // TODO(NFI2) remove
-    private static final MethodType UPCALL_METHOD_TYPE = MethodType.methodType(Object.class, Object[].class);
-
-    public long registerClosure(String name, NfiUpcallSignature signature, Object executable, Object delegate) {
-        CompilerAsserts.neverPartOfCompilation();
-        PythonContext context = getContext();
-        // TODO(NFI2) migrate the callers to have direct upcalls to static methods
-        MethodHandle methodHandle = handle_executeWrapper.bindTo(new ExecuteClosureWrapperRootNode(signature).getCallTarget()).bindTo(executable);
-
-        methodHandle = methodHandle.asType(UPCALL_METHOD_TYPE).asVarargsCollector(Object[].class);
-        long pointer = signature.createClosure(context.ensureNfiContext(), name, methodHandle);
-        setClosurePointer(delegate, executable, pointer);
-        return pointer;
     }
 
     public long registerClosure(String name, NfiUpcallSignature signature, MethodHandle methodHandle, Object key, Object delegate) {

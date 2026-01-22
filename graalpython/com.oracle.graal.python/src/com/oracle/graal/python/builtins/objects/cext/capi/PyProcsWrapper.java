@@ -42,20 +42,26 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.checkThrowableBeforeNative;
 import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.nfi2.NfiType.RAW_POINTER;
+import static com.oracle.graal.python.nfi2.NfiType.SINT32;
+import static com.oracle.graal.python.nfi2.NfiType.SINT64;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
+
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformPExceptionToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
-import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNode;
+import com.oracle.graal.python.builtins.objects.type.TpSlots.GetTpSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotManaged;
@@ -84,7 +90,6 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.CallSlo
 import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nfi2.Nfi;
-import com.oracle.graal.python.nfi2.NfiType;
 import com.oracle.graal.python.nfi2.NfiUpcallSignature;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -94,157 +99,148 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
-import com.oracle.truffle.api.dsl.Bind;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.GenerateCached;
-import com.oracle.truffle.api.dsl.GenerateInline;
-import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.ArityException;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
-import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedBranchProfile;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 
-@ExportLibrary(InteropLibrary.class)
-public abstract class PyProcsWrapper implements TruffleObject {
+public abstract class PyProcsWrapper {
 
-    protected final CApiTiming timing;
-    private final Object delegate;
-    private long nativePointer = PythonObject.UNINITIALIZED;
+    private static final NfiUpcallSignature SIGNATURE_P_P = Nfi.createUpcallSignature(RAW_POINTER, RAW_POINTER);
+    private static final NfiUpcallSignature SIGNATURE_P_PP = Nfi.createUpcallSignature(RAW_POINTER, RAW_POINTER, RAW_POINTER);
+    private static final NfiUpcallSignature SIGNATURE_P_PPP = Nfi.createUpcallSignature(RAW_POINTER, RAW_POINTER, RAW_POINTER, RAW_POINTER);
+    private static final NfiUpcallSignature SIGNATURE_P_PPI = Nfi.createUpcallSignature(RAW_POINTER, RAW_POINTER, RAW_POINTER, SINT32);
+    private static final NfiUpcallSignature SIGNATURE_P_PL = Nfi.createUpcallSignature(RAW_POINTER, RAW_POINTER, SINT64);
+    private static final NfiUpcallSignature SIGNATURE_I_P = Nfi.createUpcallSignature(SINT32, RAW_POINTER);
+    private static final NfiUpcallSignature SIGNATURE_I_PP = Nfi.createUpcallSignature(SINT32, RAW_POINTER, RAW_POINTER);
+    private static final NfiUpcallSignature SIGNATURE_I_PPP = Nfi.createUpcallSignature(SINT32, RAW_POINTER, RAW_POINTER, RAW_POINTER);
+    private static final NfiUpcallSignature SIGNATURE_I_PLP = Nfi.createUpcallSignature(SINT32, RAW_POINTER, SINT64, RAW_POINTER);
+    private static final NfiUpcallSignature SIGNATURE_L_P = Nfi.createUpcallSignature(SINT64, RAW_POINTER);
 
-    public PyProcsWrapper(Object delegate) {
-        this.timing = CApiTiming.create(false, delegate);
-        this.delegate = delegate;
+    private static final MethodHandle HANDLE_GET_ATTR;
+    private static final MethodHandle HANDLE_BINARY_SLOT_FUNC;
+    private static final MethodHandle HANDLE_BINARY_OP_SLOT_FUNC;
+    private static final MethodHandle HANDLE_UNARY_FUNC;
+    private static final MethodHandle HANDLE_ITER_NEXT;
+    private static final MethodHandle HANDLE_INQUIRY;
+    private static final MethodHandle HANDLE_SQ_CONTAINS;
+    private static final MethodHandle HANDLE_OBJ_OBJ_ARG;
+    private static final MethodHandle HANDLE_SET_ATTR;
+    private static final MethodHandle HANDLE_DESCR_SET_FUNCTION;
+    private static final MethodHandle HANDLE_INIT;
+    private static final MethodHandle HANDLE_NEW;
+    private static final MethodHandle HANDLE_CALL;
+    private static final MethodHandle HANDLE_NB_POWER;
+    private static final MethodHandle HANDLE_NB_IN_PLACE_POWER;
+    private static final MethodHandle HANDLE_RICHCMP_FUNCTION;
+    private static final MethodHandle HANDLE_SSIZEARGFUNC_SLOT;
+    private static final MethodHandle HANDLE_SSIZEOBJARGPROC;
+    private static final MethodHandle HANDLE_LENFUNC;
+    private static final MethodHandle HANDLE_HASHFUNC;
+    private static final MethodHandle HANDLE_DESCR_GET_FUNCTION;
+
+    static {
+        try {
+            HANDLE_GET_ATTR = MethodHandles.lookup().findStatic(GetAttrWrapper.class, "executeGetAttr", MethodType.methodType(long.class, GetAttrWrapper.class, long.class, long.class));
+            HANDLE_BINARY_SLOT_FUNC = MethodHandles.lookup().findStatic(BinarySlotFuncWrapper.class, "executeBinarySlot",
+                            MethodType.methodType(long.class, BinarySlotFuncWrapper.class, long.class, long.class));
+            HANDLE_BINARY_OP_SLOT_FUNC = MethodHandles.lookup().findStatic(BinaryOpSlotFuncWrapper.class, "executeBinaryOpSlot",
+                            MethodType.methodType(long.class, BinaryOpSlotFuncWrapper.class, long.class, long.class));
+            HANDLE_UNARY_FUNC = MethodHandles.lookup().findStatic(UnaryFuncWrapper.class, "executeUnary", MethodType.methodType(long.class, UnaryFuncWrapper.class, long.class));
+            HANDLE_ITER_NEXT = MethodHandles.lookup().findStatic(IterNextWrapper.class, "executeIterNext", MethodType.methodType(long.class, IterNextWrapper.class, long.class));
+            HANDLE_INQUIRY = MethodHandles.lookup().findStatic(InquiryWrapper.class, "executeInquiry", MethodType.methodType(int.class, InquiryWrapper.class, long.class));
+            HANDLE_SQ_CONTAINS = MethodHandles.lookup().findStatic(SqContainsWrapper.class, "executeSqContains", MethodType.methodType(int.class, SqContainsWrapper.class, long.class, long.class));
+            HANDLE_OBJ_OBJ_ARG = MethodHandles.lookup().findStatic(ObjobjargWrapper.class, "executeObjobjarg",
+                            MethodType.methodType(int.class, ObjobjargWrapper.class, long.class, long.class, long.class));
+            HANDLE_SET_ATTR = MethodHandles.lookup().findStatic(SetAttrWrapper.class, "executeSetAttr",
+                            MethodType.methodType(int.class, SetAttrWrapper.class, long.class, long.class, long.class));
+            HANDLE_DESCR_SET_FUNCTION = MethodHandles.lookup().findStatic(DescrSetFunctionWrapper.class, "executeDescrSetFunction",
+                            MethodType.methodType(int.class, DescrSetFunctionWrapper.class, long.class, long.class, long.class));
+            HANDLE_INIT = MethodHandles.lookup().findStatic(InitWrapper.class, "executeInit", MethodType.methodType(int.class, InitWrapper.class, long.class, long.class, long.class));
+            HANDLE_NEW = MethodHandles.lookup().findStatic(NewWrapper.class, "executeNew", MethodType.methodType(long.class, NewWrapper.class, long.class, long.class, long.class));
+            HANDLE_CALL = MethodHandles.lookup().findStatic(CallWrapper.class, "executeCall", MethodType.methodType(long.class, CallWrapper.class, long.class, long.class, long.class));
+            HANDLE_NB_POWER = MethodHandles.lookup().findStatic(NbPowerWrapper.class, "executeNbPower", MethodType.methodType(long.class, NbPowerWrapper.class, long.class, long.class, long.class));
+            HANDLE_NB_IN_PLACE_POWER = MethodHandles.lookup().findStatic(NbInPlacePowerWrapper.class, "executeNbInPlacePower",
+                            MethodType.methodType(long.class, NbInPlacePowerWrapper.class, long.class, long.class, long.class));
+            HANDLE_RICHCMP_FUNCTION = MethodHandles.lookup().findStatic(RichcmpFunctionWrapper.class, "executeRichcmpFunction",
+                            MethodType.methodType(long.class, RichcmpFunctionWrapper.class, long.class, long.class, int.class));
+            HANDLE_SSIZEARGFUNC_SLOT = MethodHandles.lookup().findStatic(SsizeargfuncSlotWrapper.class, "executeSsizeargfuncSlot",
+                            MethodType.methodType(long.class, SsizeargfuncSlotWrapper.class, long.class, long.class));
+            HANDLE_SSIZEOBJARGPROC = MethodHandles.lookup().findStatic(SsizeobjargprocWrapper.class, "executeSsizeobjargproc",
+                            MethodType.methodType(int.class, SsizeobjargprocWrapper.class, long.class, long.class, long.class));
+            HANDLE_LENFUNC = MethodHandles.lookup().findStatic(LenfuncWrapper.class, "executeLenfunc", MethodType.methodType(long.class, LenfuncWrapper.class, long.class));
+            HANDLE_HASHFUNC = MethodHandles.lookup().findStatic(HashfuncWrapper.class, "executeHashfunc", MethodType.methodType(long.class, HashfuncWrapper.class, long.class));
+            HANDLE_DESCR_GET_FUNCTION = MethodHandles.lookup().findStatic(DescrGetFunctionWrapper.class, "executeDescrGetFunction",
+                            MethodType.methodType(long.class, DescrGetFunctionWrapper.class, long.class, long.class, long.class));
+        } catch (NoSuchMethodException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    public final Object getDelegate() {
+    protected final CApiTiming timing;
+    private final TpSlotManaged delegate;
+    private final long nativePointer;
+
+    @SuppressWarnings("this-escape")
+    PyProcsWrapper(TpSlotManaged delegate, NfiUpcallSignature upcallSignature, MethodHandle methodHandle) {
+        this.timing = CApiTiming.create(false, delegate);
+        this.delegate = delegate;
+
+        CApiContext cApiContext = PythonContext.get(null).getCApiContext();
+        long pointer = cApiContext.registerClosure(getClass().getSimpleName(), upcallSignature, methodHandle.bindTo(this), this, delegate);
+        if (PythonLanguage.get(null).isSingleContext()) {
+            nativePointer = pointer;
+        } else {
+            nativePointer = NULLPTR;
+        }
+    }
+
+    public final TpSlotManaged getDelegate() {
         return delegate;
     }
 
-    public final long getNativePointer() {
-        return nativePointer;
-    }
-
-    public final void setNativePointer(long nativePointer) {
-        // we should set the pointer just once
-        assert this.nativePointer == PythonObject.UNINITIALIZED || this.nativePointer == nativePointer || nativePointer == PythonObject.UNINITIALIZED;
-        this.nativePointer = nativePointer;
-    }
-
-    @ExportMessage
-    protected boolean isExecutable() {
-        return true;
-    }
-
-    @ExportMessage
-    @SuppressWarnings({"unused", "static-method"})
-    protected Object execute(Object[] arguments) throws UnsupportedTypeException, ArityException, UnsupportedMessageException {
-        throw CompilerDirectives.shouldNotReachHere("abstract class");
-    }
-
-    @ExportMessage
-    protected boolean isPointer(
-                    @Bind Node inliningTarget) {
-        if (PythonLanguage.get(inliningTarget).isSingleContext()) {
-            return nativePointer != PythonObject.UNINITIALIZED;
-        }
-        return getClosurePointerMultiContext() != -1;
-    }
-
-    @ExportMessage
-    protected long asPointer(
-                    @Bind Node inliningTarget) throws UnsupportedMessageException {
-        if (PythonLanguage.get(inliningTarget).isSingleContext()) {
+    @TruffleBoundary
+    public final long getPointer() {
+        if (nativePointer != NULLPTR) {
+            assert PythonLanguage.get(null).isSingleContext();
             return nativePointer;
         }
-        long pointer = getClosurePointerMultiContext();
-        if (pointer == -1) {
-            throw UnsupportedMessageException.create();
-        }
-        return pointer;
-    }
-
-    @TruffleBoundary
-    private long getClosurePointerMultiContext() {
         return PythonContext.get(null).getCApiContext().getClosurePointer(this);
     }
 
-    protected abstract NfiUpcallSignature getSignature();
-
-    @ExportMessage
-    @TruffleBoundary
-    protected void toNative() {
-        if (!isPointer(null)) {
-            CApiContext cApiContext = PythonContext.get(null).getCApiContext();
-            long pointer = cApiContext.registerClosure(getClass().getSimpleName(), getSignature(), this, getDelegate());
-            if (PythonLanguage.get(null).isSingleContext()) {
-                setNativePointer(pointer);
-            }
-        }
-    }
-
     public abstract static class TpSlotWrapper extends PyProcsWrapper {
-        public TpSlotWrapper(TpSlotManaged delegate) {
-            super(delegate);
+
+        TpSlotWrapper(TpSlotManaged delegate, NfiUpcallSignature upcallSignature, MethodHandle methodHandle) {
+            super(delegate, upcallSignature, methodHandle);
         }
 
         public final TpSlotManaged getSlot() {
-            return (TpSlotManaged) getDelegate();
+            return getDelegate();
         }
 
         public abstract TpSlotWrapper cloneWith(TpSlotManaged slot);
     }
 
-    @ExportLibrary(InteropLibrary.class)
     public static final class GetAttrWrapper extends TpSlotWrapper {
         public GetAttrWrapper(TpSlotManaged delegate) {
-            super(delegate);
+            super(delegate, SIGNATURE_P_PP, HANDLE_GET_ATTR);
         }
 
-        @ExportMessage
-        Object execute(Object[] arguments,
-                        @Bind Node inliningTarget,
-                        @Cached PythonToNativeNewRefNode toNativeNode,
-                        @Cached CallManagedSlotGetAttrNode callGetAttr,
-                        @Cached NativeToPythonNode toJavaNode,
-                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
-                        @Exclusive @Cached GilNode gil) throws ArityException {
-            boolean mustRelease = gil.acquire();
-            CApiTiming.enter();
-            try {
-                if (arguments.length < 2) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw ArityException.create(2, -1, arguments.length);
-                }
+        @SuppressWarnings("try")
+        private static long executeGetAttr(GetAttrWrapper self, long arg0, long arg1) {
+            try (var gil = GilNode.uncachedAcquire()) {
+                CApiTiming.enter();
                 try {
-                    return toNativeNode.executeLong(callGetAttr.execute(null, inliningTarget, getSlot(), toJavaNode.executeRaw((long) arguments[0]), toJavaNode.executeRaw((long) arguments[1])));
+                    Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
+                    Object jArg1 = NativeToPythonInternalNode.executeUncached(arg1, false);
+                    Object result = CallManagedSlotGetAttrNode.executeUncached(self.getDelegate(), jArg0, jArg1);
+                    return PythonToNativeNewRefNode.executeLongUncached(result);
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "GetAttrWrapper", getDelegate());
+                    throw checkThrowableBeforeNative(t, "GetAttrWrapper", self.getDelegate());
                 }
             } catch (PException e) {
-                transformExceptionToNativeNode.execute(inliningTarget, e);
+                TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
                 return NULLPTR;
             } finally {
-                CApiTiming.exit(timing);
-                gil.release(mustRelease);
+                CApiTiming.exit(self.timing);
             }
-        }
-
-        @Override
-        protected NfiUpcallSignature getSignature() {
-            return Nfi.createUpcallSignature(NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER);
         }
 
         @Override
@@ -253,41 +249,29 @@ public abstract class PyProcsWrapper implements TruffleObject {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
     public static final class BinarySlotFuncWrapper extends TpSlotWrapper {
 
         public BinarySlotFuncWrapper(TpSlotManaged delegate) {
-            super(delegate);
+            super(delegate, SIGNATURE_P_PP, HANDLE_BINARY_SLOT_FUNC);
         }
 
-        @ExportMessage
-        Object execute(Object[] arguments,
-                        @Bind Node inliningTarget,
-                        @Cached PythonToNativeNewRefNode toNativeNode,
-                        @Cached CallSlotBinaryFuncNode callSlotNode,
-                        @Cached NativeToPythonNode selfToJavaNode,
-                        @Cached NativeToPythonNode argTtoJavaNode,
-                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
-                        @Exclusive @Cached GilNode gil) throws ArityException {
-            boolean mustRelease = gil.acquire();
-            CApiTiming.enter();
-            try {
-                if (arguments.length != 2) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw ArityException.create(2, 2, arguments.length);
-                }
+        @SuppressWarnings("try")
+        private static long executeBinarySlot(BinarySlotFuncWrapper self, long arg0, long arg1) {
+            try (var gil = GilNode.uncachedAcquire()) {
+                CApiTiming.enter();
                 try {
-                    return toNativeNode.executeLong(
-                                    callSlotNode.execute(null, inliningTarget, getSlot(), selfToJavaNode.executeRaw((long) arguments[0]), argTtoJavaNode.executeRaw((long) arguments[1])));
+                    Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
+                    Object jArg1 = NativeToPythonInternalNode.executeUncached(arg1, false);
+                    Object result = CallSlotBinaryFuncNode.executeUncached(self.getDelegate(), jArg0, jArg1);
+                    return PythonToNativeNewRefNode.executeLongUncached(result);
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "BinaryFuncWrapper", getDelegate());
+                    throw checkThrowableBeforeNative(t, "BinarySlotFuncWrapper", self.getDelegate());
                 }
             } catch (PException e) {
-                transformExceptionToNativeNode.execute(inliningTarget, e);
+                TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
                 return NULLPTR;
             } finally {
-                CApiTiming.exit(timing);
-                gil.release(mustRelease);
+                CApiTiming.exit(self.timing);
             }
         }
 
@@ -295,19 +279,13 @@ public abstract class PyProcsWrapper implements TruffleObject {
         public TpSlotWrapper cloneWith(TpSlotManaged slot) {
             return new BinarySlotFuncWrapper(slot);
         }
-
-        @Override
-        protected NfiUpcallSignature getSignature() {
-            return Nfi.createUpcallSignature(NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER);
-        }
     }
 
-    @ExportLibrary(InteropLibrary.class)
     public static final class BinaryOpSlotFuncWrapper extends TpSlotWrapper {
         private final ReversibleSlot binaryOp;
 
         public BinaryOpSlotFuncWrapper(TpSlotManaged delegate, ReversibleSlot binaryOp) {
-            super(delegate);
+            super(delegate, SIGNATURE_P_PP, HANDLE_BINARY_OP_SLOT_FUNC);
             this.binaryOp = binaryOp;
         }
 
@@ -363,43 +341,27 @@ public abstract class PyProcsWrapper implements TruffleObject {
             return new BinaryOpSlotFuncWrapper(delegate, ReversibleSlot.NB_MATRIX_MULTIPLY);
         }
 
-        @ExportMessage
-        Object execute(Object[] arguments,
-                        @Bind Node inliningTarget,
-                        @Cached PythonToNativeNewRefNode toNativeNode,
-                        @Cached CallSlotBinaryOpNode callSlotNode,
-                        @Cached NativeToPythonNode selfToJavaNode,
-                        @Cached NativeToPythonNode argTtoJavaNode,
-                        @Cached GetClassNode getSelfClassNode,
-                        @Cached GetClassNode getOtherClassNode,
-                        @Cached IsSameTypeNode isSameTypeNode,
-                        @Cached GetCachedTpSlotsNode getOtherSlots,
-                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
-                        @Exclusive @Cached GilNode gil) throws ArityException {
-            boolean mustRelease = gil.acquire();
-            CApiTiming.enter();
-            try {
-                if (arguments.length != 2) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw ArityException.create(2, 2, arguments.length);
-                }
+        @SuppressWarnings("try")
+        private static long executeBinaryOpSlot(BinaryOpSlotFuncWrapper self, long arg0, long arg1) {
+            try (var gil = GilNode.uncachedAcquire()) {
+                CApiTiming.enter();
                 try {
-                    Object self = selfToJavaNode.executeRaw((long) arguments[0]);
-                    Object other = argTtoJavaNode.executeRaw((long) arguments[1]);
-                    Object otherType = getOtherClassNode.execute(inliningTarget, other);
-                    Object selfType = getSelfClassNode.execute(inliningTarget, self);
-                    TpSlot otherSlot = binaryOp.getSlotValue(getOtherSlots.execute(inliningTarget, otherType));
-                    boolean sameTypes = isSameTypeNode.execute(inliningTarget, selfType, otherType);
-                    return toNativeNode.executeLong(callSlotNode.execute(null, inliningTarget, getSlot(), self, selfType, other, otherSlot, otherType, sameTypes, binaryOp));
+                    Object receiver = NativeToPythonInternalNode.executeUncached(arg0, false);
+                    Object other = NativeToPythonInternalNode.executeUncached(arg1, false);
+                    Object otherType = GetClassNode.executeUncached(other);
+                    Object receiverType = GetClassNode.executeUncached(receiver);
+                    TpSlot otherSlot = self.binaryOp.getSlotValue(GetTpSlotsNode.executeUncached(otherType));
+                    boolean sameTypes = IsSameTypeNode.executeUncached(receiverType, otherType);
+                    Object result = CallSlotBinaryOpNode.executeUncached(self.getDelegate(), receiver, receiverType, other, otherSlot, otherType, sameTypes, self.binaryOp);
+                    return PythonToNativeNewRefNode.executeLongUncached(result);
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "BinaryFuncWrapper", getDelegate());
+                    throw checkThrowableBeforeNative(t, "BinaryOpSlotFuncWrapper", self.getDelegate());
                 }
             } catch (PException e) {
-                transformExceptionToNativeNode.execute(inliningTarget, e);
+                TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
                 return NULLPTR;
             } finally {
-                CApiTiming.exit(timing);
-                gil.release(mustRelease);
+                CApiTiming.exit(self.timing);
             }
         }
 
@@ -407,143 +369,96 @@ public abstract class PyProcsWrapper implements TruffleObject {
         public TpSlotWrapper cloneWith(TpSlotManaged slot) {
             return new BinaryOpSlotFuncWrapper(slot, binaryOp);
         }
-
-        @Override
-        protected NfiUpcallSignature getSignature() {
-            return Nfi.createUpcallSignature(NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER);
-        }
     }
 
-    @ExportLibrary(InteropLibrary.class)
     public static final class UnaryFuncWrapper extends TpSlotWrapper {
 
         public UnaryFuncWrapper(TpSlotManaged delegate) {
-            super(delegate);
+            super(delegate, SIGNATURE_P_P, HANDLE_UNARY_FUNC);
+        }
+
+        @SuppressWarnings("try")
+        private static long executeUnary(UnaryFuncWrapper self, long arg0) {
+            try (var gil = GilNode.uncachedAcquire()) {
+                CApiTiming.enter();
+                try {
+                    Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
+                    Object result = CallSlotUnaryNode.executeUncached(self.getDelegate(), jArg0);
+                    return PythonToNativeNewRefNode.executeLongUncached(result);
+                } catch (Throwable t) {
+                    throw checkThrowableBeforeNative(t, "UnaryFuncWrapper", self.getDelegate());
+                }
+            } catch (PException e) {
+                TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
+                return NULLPTR;
+            } finally {
+                CApiTiming.exit(self.timing);
+            }
         }
 
         @Override
         public TpSlotWrapper cloneWith(TpSlotManaged slot) {
             return new UnaryFuncWrapper(slot);
         }
-
-        @ExportMessage
-        Object execute(Object[] arguments,
-                        @Bind Node inliningTarget,
-                        @Cached PythonToNativeNewRefNode toNativeNode,
-                        @Cached CallSlotUnaryNode callNode,
-                        @Cached NativeToPythonNode toJavaNode,
-                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
-                        @Exclusive @Cached GilNode gil) throws ArityException {
-            boolean mustRelease = gil.acquire();
-            CApiTiming.enter();
-            try {
-                try {
-                    Object result = callNode.execute(null, inliningTarget, getSlot(), toJavaNode.executeRaw((long) arguments[0]));
-                    return toNativeNode.executeLong(result);
-                } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "UnaryFuncWrapper", getDelegate());
-                }
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(inliningTarget, e);
-                return NULLPTR;
-            } finally {
-                CApiTiming.exit(timing);
-                gil.release(mustRelease);
-            }
-        }
-
-        @Override
-        protected NfiUpcallSignature getSignature() {
-            return Nfi.createUpcallSignature(NfiType.RAW_POINTER, NfiType.RAW_POINTER);
-        }
     }
 
-    @ExportLibrary(InteropLibrary.class)
     public static final class IterNextWrapper extends TpSlotWrapper {
 
         public IterNextWrapper(TpSlotManaged delegate) {
-            super(delegate);
+            super(delegate, SIGNATURE_P_P, HANDLE_ITER_NEXT);
+        }
+
+        @SuppressWarnings("try")
+        private static long executeIterNext(IterNextWrapper self, long arg0) {
+            try (var gil = GilNode.uncachedAcquire()) {
+                CApiTiming.enter();
+                try {
+                    Object result;
+                    try {
+                        Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
+                        result = CallSlotTpIterNextNode.executeUncached(self.getDelegate(), jArg0);
+                    } catch (IteratorExhausted e) {
+                        return NULLPTR;
+                    }
+                    return PythonToNativeNewRefNode.executeLongUncached(result);
+                } catch (Throwable t) {
+                    throw checkThrowableBeforeNative(t, "IterNextWrapper", self.getDelegate());
+                }
+            } catch (PException e) {
+                TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
+                return NULLPTR;
+            } finally {
+                CApiTiming.exit(self.timing);
+            }
         }
 
         @Override
         public TpSlotWrapper cloneWith(TpSlotManaged slot) {
             return new IterNextWrapper(slot);
         }
-
-        @ExportMessage
-        Object execute(Object[] arguments,
-                        @Bind Node inliningTarget,
-                        @Cached PythonToNativeNewRefNode toNativeNode,
-                        @Cached CallSlotTpIterNextNode callNextNode,
-                        @Cached NativeToPythonNode toJavaNode,
-                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
-                        @Exclusive @Cached GilNode gil) throws ArityException {
-            boolean mustRelease = gil.acquire();
-            CApiTiming.enter();
-            try {
-                try {
-                    Object result;
-                    try {
-                        result = callNextNode.execute(null, inliningTarget, getSlot(), toJavaNode.executeRaw((long) arguments[0]));
-                    } catch (IteratorExhausted e) {
-                        return NULLPTR;
-                    }
-                    return toNativeNode.executeLong(result);
-                } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "UnaryFuncWrapper", getDelegate());
-                }
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(inliningTarget, e);
-                return NULLPTR;
-            } finally {
-                CApiTiming.exit(timing);
-                gil.release(mustRelease);
-            }
-        }
-
-        @Override
-        protected NfiUpcallSignature getSignature() {
-            return Nfi.createUpcallSignature(NfiType.RAW_POINTER, NfiType.RAW_POINTER);
-        }
     }
 
-    @ExportLibrary(InteropLibrary.class)
     public static final class InquiryWrapper extends TpSlotWrapper {
         public InquiryWrapper(TpSlotManaged delegate) {
-            super(delegate);
+            super(delegate, SIGNATURE_I_P, HANDLE_INQUIRY);
         }
 
-        @ExportMessage
-        Object execute(Object[] arguments,
-                        @Bind Node inliningTarget,
-                        @Cached CallSlotNbBoolNode callSlotNode,
-                        @Cached NativeToPythonNode toJavaNode,
-                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
-                        @Exclusive @Cached GilNode gil) throws ArityException {
-            boolean mustRelease = gil.acquire();
-            CApiTiming.enter();
-            try {
-                if (arguments.length < 1) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw ArityException.create(1, -1, arguments.length);
-                }
+        @SuppressWarnings("try")
+        private static int executeInquiry(InquiryWrapper self, long arg0) {
+            try (var gil = GilNode.uncachedAcquire()) {
+                CApiTiming.enter();
                 try {
-                    return callSlotNode.execute(null, inliningTarget, getSlot(), toJavaNode.executeRaw((long) arguments[0])) ? 1 : 0;
+                    Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
+                    return CallSlotNbBoolNode.executeUncached(self.getDelegate(), jArg0) ? 1 : 0;
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "InquiryWrapper", getDelegate());
+                    throw checkThrowableBeforeNative(t, "InquiryWrapper", self.getDelegate());
                 }
             } catch (PException e) {
-                transformExceptionToNativeNode.execute(inliningTarget, e);
+                TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
                 return -1;
             } finally {
-                CApiTiming.exit(timing);
-                gil.release(mustRelease);
+                CApiTiming.exit(self.timing);
             }
-        }
-
-        @Override
-        protected NfiUpcallSignature getSignature() {
-            return Nfi.createUpcallSignature(NfiType.SINT32, NfiType.RAW_POINTER);
         }
 
         @Override
@@ -552,39 +467,28 @@ public abstract class PyProcsWrapper implements TruffleObject {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
     public static final class SqContainsWrapper extends TpSlotWrapper {
         public SqContainsWrapper(TpSlotManaged delegate) {
-            super(delegate);
+            super(delegate, SIGNATURE_I_PP, HANDLE_SQ_CONTAINS);
         }
 
-        @ExportMessage
-        Object execute(Object[] arguments,
-                        @Bind Node inliningTarget,
-                        @Cached CallSlotSqContainsNode callSlotNode,
-                        @Cached NativeToPythonNode toJavaNode,
-                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
-                        @Exclusive @Cached GilNode gil) {
-            boolean mustRelease = gil.acquire();
-            CApiTiming.enter();
-            try {
+        @SuppressWarnings("try")
+        private static int executeSqContains(SqContainsWrapper self, long arg0, long arg1) {
+            try (var gil = GilNode.uncachedAcquire()) {
+                CApiTiming.enter();
                 try {
-                    return callSlotNode.execute(null, inliningTarget, getSlot(), toJavaNode.executeRaw((long) arguments[0]), toJavaNode.executeRaw((long) arguments[1])) ? 1 : 0;
+                    Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
+                    Object jArg1 = NativeToPythonInternalNode.executeUncached(arg1, false);
+                    return CallSlotSqContainsNode.executeUncached(self.getDelegate(), jArg0, jArg1) ? 1 : 0;
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "SqContainsWrapper", getDelegate());
+                    throw checkThrowableBeforeNative(t, "SqContainsWrapper", self.getDelegate());
                 }
             } catch (PException e) {
-                transformExceptionToNativeNode.execute(inliningTarget, e);
+                TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
                 return -1;
             } finally {
-                CApiTiming.exit(timing);
-                gil.release(mustRelease);
+                CApiTiming.exit(self.timing);
             }
-        }
-
-        @Override
-        protected NfiUpcallSignature getSignature() {
-            return Nfi.createUpcallSignature(NfiType.SINT32, NfiType.RAW_POINTER, NfiType.RAW_POINTER);
         }
 
         @Override
@@ -593,142 +497,95 @@ public abstract class PyProcsWrapper implements TruffleObject {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
     public static final class ObjobjargWrapper extends TpSlotWrapper {
 
         public ObjobjargWrapper(TpSlotManaged delegate) {
-            super(delegate);
+            super(delegate, SIGNATURE_I_PPP, HANDLE_OBJ_OBJ_ARG);
+        }
+
+        @SuppressWarnings("try")
+        private static int executeObjobjarg(ObjobjargWrapper self, long arg0, long arg1, long arg2) {
+            try (var gil = GilNode.uncachedAcquire()) {
+                CApiTiming.enter();
+                try {
+                    Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
+                    Object jArg1 = NativeToPythonInternalNode.executeUncached(arg1, false);
+                    Object jArg2 = NativeToPythonInternalNode.executeUncached(arg2, false);
+                    CallSlotMpAssSubscriptNode.executeUncached(self.getDelegate(), jArg0, jArg1, jArg2);
+                    return 0;
+                } catch (Throwable t) {
+                    throw checkThrowableBeforeNative(t, "ObjobjargWrapper", self.getDelegate());
+                }
+            } catch (PException e) {
+                TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
+                return -1;
+            } finally {
+                CApiTiming.exit(self.timing);
+            }
         }
 
         @Override
         public TpSlotWrapper cloneWith(TpSlotManaged slot) {
             return new ObjobjargWrapper(slot);
         }
-
-        @ExportMessage
-        int execute(Object[] arguments,
-                        @Bind Node inliningTarget,
-                        @Cached CallSlotMpAssSubscriptNode callNode,
-                        @Cached NativeToPythonNode toJavaNode,
-                        @Cached InlinedConditionProfile arityProfile,
-                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
-                        @Exclusive @Cached GilNode gil) throws ArityException {
-            boolean mustRelease = gil.acquire();
-            CApiTiming.enter();
-            try {
-                if (arityProfile.profile(inliningTarget, arguments.length != 3)) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw ArityException.create(3, 3, arguments.length);
-                }
-                try {
-                    callNode.execute(null, inliningTarget, getSlot(), toJavaNode.executeRaw((long) arguments[0]), toJavaNode.executeRaw((long) arguments[1]),
-                                    toJavaNode.executeRaw((long) arguments[2]));
-                    return 0;
-                } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "ObjobjargWrapper", getDelegate());
-                }
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(inliningTarget, e);
-                return -1;
-            } finally {
-                CApiTiming.exit(timing);
-                gil.release(mustRelease);
-            }
-        }
-
-        @Override
-        protected NfiUpcallSignature getSignature() {
-            return Nfi.createUpcallSignature(NfiType.SINT32, NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER);
-        }
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    public static final class SetattrWrapper extends TpSlotWrapper {
-        public SetattrWrapper(TpSlotManaged delegate) {
-            super(delegate);
+    public static final class SetAttrWrapper extends TpSlotWrapper {
+        public SetAttrWrapper(TpSlotManaged delegate) {
+            super(delegate, SIGNATURE_I_PPP, HANDLE_SET_ATTR);
         }
 
-        @ExportMessage
-        int execute(Object[] arguments,
-                        @Bind Node inliningTarget,
-                        @Cached CallManagedSlotSetAttrNode callSlotNode,
-                        @Cached NativeToPythonNode toJavaNode,
-                        @Cached InlinedConditionProfile arityProfile,
-                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
-                        @Exclusive @Cached GilNode gil) throws ArityException {
-            boolean mustRelease = gil.acquire();
-            CApiTiming.enter();
-            try {
-                if (arityProfile.profile(inliningTarget, arguments.length < 3)) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw ArityException.create(3, -1, arguments.length);
-                }
+        @SuppressWarnings("try")
+        private static int executeSetAttr(SetAttrWrapper self, long arg0, long arg1, long arg2) {
+            try (var gil = GilNode.uncachedAcquire()) {
+                CApiTiming.enter();
                 try {
-                    callSlotNode.execute(null, inliningTarget, getSlot(), toJavaNode.executeRaw((long) arguments[0]), toJavaNode.executeRaw((long) arguments[1]),
-                                    toJavaNode.executeRaw((long) arguments[2]));
+                    Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
+                    Object jArg1 = NativeToPythonInternalNode.executeUncached(arg1, false);
+                    Object jArg2 = NativeToPythonInternalNode.executeUncached(arg2, false);
+                    CallManagedSlotSetAttrNode.executeUncached(self.getDelegate(), jArg0, jArg1, jArg2);
                     return 0;
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "SetattrWrapper", getDelegate());
+                    throw checkThrowableBeforeNative(t, "SetAttrWrapper", self.getDelegate());
                 }
             } catch (PException e) {
-                transformExceptionToNativeNode.execute(inliningTarget, e);
+                TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
                 return -1;
             } finally {
-                CApiTiming.exit(timing);
-                gil.release(mustRelease);
+                CApiTiming.exit(self.timing);
             }
-        }
-
-        @Override
-        protected NfiUpcallSignature getSignature() {
-            return Nfi.createUpcallSignature(NfiType.SINT32, NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER);
         }
 
         @Override
         public TpSlotWrapper cloneWith(TpSlotManaged slot) {
-            return new SetattrWrapper(slot);
+            return new SetAttrWrapper(slot);
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
     public static final class DescrSetFunctionWrapper extends TpSlotWrapper {
         public DescrSetFunctionWrapper(TpSlotManaged delegate) {
-            super(delegate);
+            super(delegate, SIGNATURE_I_PPP, HANDLE_DESCR_SET_FUNCTION);
         }
 
-        @ExportMessage
-        int execute(Object[] arguments,
-                        @Bind Node inliningTarget,
-                        @Cached CallSlotDescrSet callSetNode,
-                        @Cached NativeToPythonNode toJavaNode,
-                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
-                        @Exclusive @Cached GilNode gil) throws ArityException {
-            boolean mustRelease = gil.acquire();
-            CApiTiming.enter();
-            try {
-                if (arguments.length < 3) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw ArityException.create(3, -1, arguments.length);
-                }
+        @SuppressWarnings("try")
+        private static int executeDescrSetFunction(DescrSetFunctionWrapper self, long arg0, long arg1, long arg2) {
+            try (var gil = GilNode.uncachedAcquire()) {
+                CApiTiming.enter();
                 try {
-                    callSetNode.execute(null, inliningTarget, getSlot(), toJavaNode.executeRaw((long) arguments[0]), toJavaNode.executeRaw((long) arguments[1]),
-                                    toJavaNode.executeRaw((long) arguments[2]));
+                    Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
+                    Object jArg1 = NativeToPythonInternalNode.executeUncached(arg1, false);
+                    Object jArg2 = NativeToPythonInternalNode.executeUncached(arg2, false);
+                    CallSlotDescrSet.executeUncached(self.getDelegate(), jArg0, jArg1, jArg2);
                     return 0;
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "SetAttrWrapper", getDelegate());
+                    throw checkThrowableBeforeNative(t, "DescrSetFunctionWrapper", self.getDelegate());
                 }
             } catch (PException e) {
-                transformExceptionToNativeNode.execute(inliningTarget, e);
+                TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
                 return -1;
             } finally {
-                CApiTiming.exit(timing);
-                gil.release(mustRelease);
+                CApiTiming.exit(self.timing);
             }
-        }
-
-        @Override
-        protected NfiUpcallSignature getSignature() {
-            return Nfi.createUpcallSignature(NfiType.SINT32, NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER);
         }
 
         @Override
@@ -737,372 +594,255 @@ public abstract class PyProcsWrapper implements TruffleObject {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
     public static final class InitWrapper extends TpSlotWrapper {
 
         public InitWrapper(TpSlotManaged delegate) {
-            super(delegate);
+            super(delegate, SIGNATURE_I_PPP, HANDLE_INIT);
+        }
+
+        @SuppressWarnings("try")
+        private static int executeInit(InitWrapper self, long arg0, long arg1, long arg2) {
+            try (var gil = GilNode.uncachedAcquire()) {
+                CApiTiming.enter();
+                try {
+                    // convert args
+                    Object receiver = NativeToPythonInternalNode.executeUncached(arg0, false);
+                    Object starArgs = NativeToPythonInternalNode.executeUncached(arg1, false);
+                    Object kwArgs = NativeToPythonInternalNode.executeUncached(arg2, false);
+
+                    Object[] starArgsArray = ExecutePositionalStarargsNode.executeUncached(starArgs);
+                    PKeyword[] kwArgsArray = ExpandKeywordStarargsNode.executeUncached(kwArgs);
+                    CallSlotTpInitNode.executeUncached(self.getDelegate(), receiver, starArgsArray, kwArgsArray);
+                    return 0;
+                } catch (Throwable t) {
+                    throw checkThrowableBeforeNative(t, "InitWrapper", self.getDelegate());
+                }
+            } catch (PException e) {
+                TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
+                return -1;
+            } finally {
+                CApiTiming.exit(self.timing);
+            }
         }
 
         @Override
         public TpSlotWrapper cloneWith(TpSlotManaged slot) {
             return new InitWrapper(slot);
         }
-
-        @ExportMessage
-        int execute(Object[] arguments,
-                        @Bind Node inliningTarget,
-                        @Cached ExecutePositionalStarargsNode posStarargsNode,
-                        @Cached ExpandKeywordStarargsNode expandKwargsNode,
-                        @Cached CallSlotTpInitNode callSlot,
-                        @Cached NativeToPythonNode toJavaNode,
-                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GilNode gil) {
-            boolean mustRelease = gil.acquire();
-            CApiTiming.enter();
-            try {
-                try {
-                    // convert args
-                    Object receiver = toJavaNode.executeRaw((long) arguments[0]);
-                    Object starArgs = toJavaNode.executeRaw((long) arguments[1]);
-                    Object kwArgs = toJavaNode.executeRaw((long) arguments[2]);
-
-                    Object[] starArgsArray = posStarargsNode.executeWith(null, starArgs);
-                    PKeyword[] kwArgsArray = expandKwargsNode.execute(inliningTarget, kwArgs);
-                    callSlot.execute(null, inliningTarget, getSlot(), receiver, starArgsArray, kwArgsArray);
-                    return 0;
-                } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "InitWrapper", getDelegate());
-                }
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(inliningTarget, e);
-                return -1;
-            } finally {
-                CApiTiming.exit(timing);
-                gil.release(mustRelease);
-            }
-        }
-
-        @Override
-        protected NfiUpcallSignature getSignature() {
-            return Nfi.createUpcallSignature(NfiType.SINT32, NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER);
-        }
     }
 
-    @ExportLibrary(InteropLibrary.class)
     public static final class NewWrapper extends TpSlotWrapper {
 
         public NewWrapper(TpSlotManaged delegate) {
-            super(delegate);
+            super(delegate, SIGNATURE_P_PPP, HANDLE_NEW);
+        }
+
+        @SuppressWarnings("try")
+        private static long executeNew(NewWrapper self, long arg0, long arg1, long arg2) {
+            try (var gil = GilNode.uncachedAcquire()) {
+                try {
+                    // convert args
+                    Object receiver = NativeToPythonInternalNode.executeUncached(arg0, false);
+                    Object starArgs = NativeToPythonInternalNode.executeUncached(arg1, false);
+                    Object kwArgs = NativeToPythonInternalNode.executeUncached(arg2, false);
+
+                    Object[] pArgs;
+                    if (starArgs != PNone.NO_VALUE) {
+                        pArgs = ExecutePositionalStarargsNode.executeUncached(starArgs);
+                    } else {
+                        pArgs = EMPTY_OBJECT_ARRAY;
+                    }
+                    PKeyword[] kwArgsArray = ExpandKeywordStarargsNode.executeUncached(kwArgs);
+
+                    Object result = CallSlotTpNewNode.executeUncached(self.getDelegate(), receiver, pArgs, kwArgsArray);
+                    return PythonToNativeNewRefNode.executeLongUncached(result);
+                } catch (Throwable t) {
+                    throw checkThrowableBeforeNative(t, "NewWrapper", self.getDelegate());
+                }
+            } catch (PException e) {
+                TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
+                return NULLPTR;
+            }
         }
 
         @Override
         public TpSlotWrapper cloneWith(TpSlotManaged slot) {
             return new NewWrapper(slot);
         }
-
-        @ExportMessage
-        Object execute(Object[] arguments,
-                        @Bind Node inliningTarget,
-                        @Cached NativeToPythonNode toJavaNode,
-                        @Cached PythonToNativeNewRefNode toNativeNode,
-                        @Cached CallSlotTpNewNode callNew,
-                        @Cached ExecutePositionalStarargsNode posStarargsNode,
-                        @Cached ExpandKeywordStarargsNode expandKwargsNode,
-                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GilNode gil) throws ArityException {
-            boolean mustRelease = gil.acquire();
-            try {
-                try {
-                    // convert args
-                    Object receiver = toJavaNode.executeRaw((long) arguments[0]);
-                    Object starArgs = toJavaNode.executeRaw((long) arguments[1]);
-                    Object kwArgs = toJavaNode.executeRaw((long) arguments[2]);
-
-                    Object[] pArgs;
-                    if (starArgs != PNone.NO_VALUE) {
-                        pArgs = posStarargsNode.executeWith(null, starArgs);
-                    } else {
-                        pArgs = EMPTY_OBJECT_ARRAY;
-                    }
-                    PKeyword[] kwArgsArray = expandKwargsNode.execute(inliningTarget, kwArgs);
-
-                    Object result = callNew.execute(null, inliningTarget, getSlot(), receiver, pArgs, kwArgsArray);
-                    return toNativeNode.executeLong(result);
-                } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "NewWrapper", getDelegate());
-                }
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(inliningTarget, e);
-                return NULLPTR;
-            } finally {
-                gil.release(mustRelease);
-            }
-        }
-
-        @Override
-        protected NfiUpcallSignature getSignature() {
-            return Nfi.createUpcallSignature(NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER);
-        }
     }
 
-    @ExportLibrary(InteropLibrary.class)
     public static final class CallWrapper extends TpSlotWrapper {
 
         public CallWrapper(TpSlotManaged delegate) {
-            super(delegate);
+            super(delegate, SIGNATURE_P_PPP, HANDLE_CALL);
+        }
+
+        @SuppressWarnings("try")
+        private static long executeCall(CallWrapper self, long arg0, long arg1, long arg2) {
+            try (var gil = GilNode.uncachedAcquire()) {
+                CApiTiming.enter();
+                try {
+                    // convert args
+                    Object receiver = NativeToPythonInternalNode.executeUncached(arg0, false);
+                    Object starArgs = NativeToPythonInternalNode.executeUncached(arg1, false);
+                    Object kwArgs = NativeToPythonInternalNode.executeUncached(arg2, false);
+
+                    Object[] starArgsArray = ExecutePositionalStarargsNode.executeUncached(starArgs);
+                    PKeyword[] kwArgsArray = ExpandKeywordStarargsNode.executeUncached(kwArgs);
+                    Object result = CallSlotTpCallNode.executeUncached(self.getDelegate(), receiver, starArgsArray, kwArgsArray);
+                    return PythonToNativeNewRefNode.executeLongUncached(result);
+                } catch (Throwable t) {
+                    throw checkThrowableBeforeNative(t, "CallWrapper", self.getDelegate());
+                }
+            } catch (PException e) {
+                TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
+                return NULLPTR;
+            } finally {
+                CApiTiming.exit(self.timing);
+            }
         }
 
         @Override
         public TpSlotWrapper cloneWith(TpSlotManaged slot) {
             return new CallWrapper(slot);
         }
-
-        @ExportMessage
-        Object execute(Object[] arguments,
-                        @Bind Node inliningTarget,
-                        @Cached ExecutePositionalStarargsNode posStarargsNode,
-                        @Cached ExpandKeywordStarargsNode expandKwargsNode,
-                        @Cached CallSlotTpCallNode callNode,
-                        @Cached NativeToPythonNode toJavaNode,
-                        @Cached PythonToNativeNewRefNode toNativeNode,
-                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GilNode gil) {
-            boolean mustRelease = gil.acquire();
-            CApiTiming.enter();
-            try {
-                try {
-                    // convert args
-                    Object receiver = toJavaNode.executeRaw((long) arguments[0]);
-                    Object starArgs = toJavaNode.executeRaw((long) arguments[1]);
-                    Object kwArgs = toJavaNode.executeRaw((long) arguments[2]);
-
-                    Object[] starArgsArray = posStarargsNode.executeWith(null, starArgs);
-                    PKeyword[] kwArgsArray = expandKwargsNode.execute(inliningTarget, kwArgs);
-                    Object result = callNode.execute(null, inliningTarget, getSlot(), receiver, starArgsArray, kwArgsArray);
-                    return toNativeNode.executeLong(result);
-                } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "CallWrapper", getDelegate());
-                }
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(inliningTarget, e);
-                return NULLPTR;
-            } finally {
-                CApiTiming.exit(timing);
-                gil.release(mustRelease);
-            }
-        }
-
-        @Override
-        protected NfiUpcallSignature getSignature() {
-            return Nfi.createUpcallSignature(NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER);
-        }
     }
 
-    @ExportLibrary(InteropLibrary.class)
     public static final class NbPowerWrapper extends TpSlotWrapper {
 
         public NbPowerWrapper(TpSlotManaged delegate) {
-            super(delegate);
+            super(delegate, SIGNATURE_P_PPP, HANDLE_NB_POWER);
+        }
+
+        @SuppressWarnings("try")
+        private static long executeNbPower(NbPowerWrapper self, long arg0, long arg1, long arg2) {
+            try (var gil = GilNode.uncachedAcquire()) {
+                CApiTiming.enter();
+                try {
+                    // convert args
+                    Object v = NativeToPythonInternalNode.executeUncached(arg0, false);
+                    Object w = NativeToPythonInternalNode.executeUncached(arg1, false);
+                    Object z = NativeToPythonInternalNode.executeUncached(arg2, false);
+                    Object vType = GetClassNode.executeUncached(v);
+                    Object wType = GetClassNode.executeUncached(w);
+                    TpSlots wSlots = GetTpSlotsNode.executeUncached(wType);
+                    boolean sameTypes = IsSameTypeNode.executeUncached(vType, wType);
+                    Object result = CallSlotNbPowerNode.executeUncached(self.getDelegate(), v, vType, w, wSlots.nb_power(), wType, z, sameTypes);
+                    return PythonToNativeNewRefNode.executeLongUncached(result);
+                } catch (Throwable t) {
+                    throw checkThrowableBeforeNative(t, "NbPowerWrapper", self.getDelegate());
+                }
+            } catch (PException e) {
+                TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
+                return NULLPTR;
+            } finally {
+                CApiTiming.exit(self.timing);
+            }
         }
 
         @Override
         public TpSlotWrapper cloneWith(TpSlotManaged slot) {
             return new NbPowerWrapper(slot);
         }
-
-        @ExportMessage
-        static Object execute(NbPowerWrapper self, Object[] arguments,
-                        @Bind Node inliningTarget,
-                        @Cached NativeToPythonNode toJavaNode,
-                        @Cached PythonToNativeNewRefNode toNativeNode,
-                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GetClassNode vGetClassNode,
-                        @Cached GetClassNode wGetClassNode,
-                        @Cached IsSameTypeNode isSameTypeNode,
-                        @Cached GetCachedTpSlotsNode wGetSlots,
-                        @Cached CallSlotNbPowerNode callSlot,
-                        @Cached GilNode gil) {
-            boolean mustRelease = gil.acquire();
-            CApiTiming.enter();
-            try {
-                try {
-                    // convert args
-                    Object v = toJavaNode.executeRaw((long) arguments[0]);
-                    Object w = toJavaNode.executeRaw((long) arguments[1]);
-                    Object z = toJavaNode.executeRaw((long) arguments[2]);
-                    Object vType = vGetClassNode.execute(inliningTarget, v);
-                    Object wType = wGetClassNode.execute(inliningTarget, w);
-                    TpSlots wSlots = wGetSlots.execute(inliningTarget, wType);
-                    boolean sameTypes = isSameTypeNode.execute(inliningTarget, vType, wType);
-                    Object result = callSlot.execute(null, inliningTarget, self.getSlot(), v, vType, w, wSlots.nb_power(), wType, z, sameTypes);
-                    return toNativeNode.executeLong(result);
-                } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "NbPowerWrapper", self.getDelegate());
-                }
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(inliningTarget, e);
-                return NULLPTR;
-            } finally {
-                CApiTiming.exit(self.timing);
-                gil.release(mustRelease);
-            }
-        }
-
-        @Override
-        protected NfiUpcallSignature getSignature() {
-            return Nfi.createUpcallSignature(NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER);
-        }
     }
 
-    @ExportLibrary(InteropLibrary.class)
     public static final class NbInPlacePowerWrapper extends TpSlotWrapper {
 
         public NbInPlacePowerWrapper(TpSlotManaged delegate) {
-            super(delegate);
+            super(delegate, SIGNATURE_P_PPP, HANDLE_NB_IN_PLACE_POWER);
+        }
+
+        @SuppressWarnings("try")
+        private static long executeNbInPlacePower(NbInPlacePowerWrapper self, long arg0, long arg1, long arg2) {
+            try (var gil = GilNode.uncachedAcquire()) {
+                CApiTiming.enter();
+                try {
+                    // convert args
+                    Object v = NativeToPythonInternalNode.executeUncached(arg0, false);
+                    Object w = NativeToPythonInternalNode.executeUncached(arg1, false);
+                    Object z = NativeToPythonInternalNode.executeUncached(arg2, false);
+                    Object result = CallSlotNbInPlacePowerNode.executeUncached(self.getDelegate(), v, w, z);
+                    return PythonToNativeNewRefNode.executeLongUncached(result);
+                } catch (Throwable t) {
+                    throw checkThrowableBeforeNative(t, "NbInPlacePowerWrapper", self.getDelegate());
+                }
+            } catch (PException e) {
+                TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
+                return NULLPTR;
+            } finally {
+                CApiTiming.exit(self.timing);
+            }
         }
 
         @Override
         public TpSlotWrapper cloneWith(TpSlotManaged slot) {
             return new NbInPlacePowerWrapper(slot);
         }
-
-        @ExportMessage
-        static Object execute(NbInPlacePowerWrapper self, Object[] arguments,
-                        @Bind Node inliningTarget,
-                        @Cached NativeToPythonNode toJavaNode,
-                        @Cached PythonToNativeNewRefNode toNativeNode,
-                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached CallSlotNbInPlacePowerNode callSlot,
-                        @Cached GilNode gil) {
-            boolean mustRelease = gil.acquire();
-            CApiTiming.enter();
-            try {
-                try {
-                    // convert args
-                    Object v = toJavaNode.executeRaw((long) arguments[0]);
-                    Object w = toJavaNode.executeRaw((long) arguments[1]);
-                    Object z = toJavaNode.executeRaw((long) arguments[2]);
-                    Object result = callSlot.execute(null, inliningTarget, self.getSlot(), v, w, z);
-                    return toNativeNode.executeLong(result);
-                } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "NbInPlacePowerWrapper", self.getDelegate());
-                }
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(inliningTarget, e);
-                return NULLPTR;
-            } finally {
-                CApiTiming.exit(self.timing);
-                gil.release(mustRelease);
-            }
-        }
-
-        @Override
-        protected NfiUpcallSignature getSignature() {
-            return Nfi.createUpcallSignature(NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER);
-        }
     }
 
-    @ExportLibrary(InteropLibrary.class)
     public static final class RichcmpFunctionWrapper extends TpSlotWrapper {
 
         public RichcmpFunctionWrapper(TpSlotManaged delegate) {
-            super(delegate);
+            super(delegate, SIGNATURE_P_PPI, HANDLE_RICHCMP_FUNCTION);
+        }
+
+        @SuppressWarnings("try")
+        private static long executeRichcmpFunction(RichcmpFunctionWrapper self, long arg0, long arg1, int arg2) {
+            try (var gil = GilNode.uncachedAcquire()) {
+                CApiTiming.enter();
+                try {
+                    // convert args
+                    Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
+                    Object jArg1 = NativeToPythonInternalNode.executeUncached(arg1, false);
+                    RichCmpOp op = RichCmpOp.fromNative(arg2);
+                    Object result = CallSlotRichCmpNode.executeUncached(self.getDelegate(), jArg0, jArg1, op);
+                    return PythonToNativeNewRefNode.executeLongUncached(result);
+                } catch (Throwable t) {
+                    throw checkThrowableBeforeNative(t, "RichcmpFunctionWrapper", self.getDelegate());
+                }
+            } catch (PException e) {
+                TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
+                return NULLPTR;
+            } finally {
+                CApiTiming.exit(self.timing);
+            }
         }
 
         @Override
         public TpSlotWrapper cloneWith(TpSlotManaged slot) {
             return new RichcmpFunctionWrapper(slot);
         }
-
-        @ExportMessage
-        Object execute(Object[] arguments,
-                        @Bind Node inliningTarget,
-                        @Cached NativeToPythonNode toJavaNode,
-                        @Cached CallSlotRichCmpNode callNode,
-                        @Cached PythonToNativeNewRefNode toNativeNode,
-                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
-                        @CachedLibrary(limit = "1") InteropLibrary opInterop,
-                        @Exclusive @Cached GilNode gil) throws ArityException {
-            boolean mustRelease = gil.acquire();
-            CApiTiming.enter();
-            try {
-                if (arguments.length != 3) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw ArityException.create(3, 3, arguments.length);
-                }
-                try {
-                    // convert args
-                    Object arg0 = toJavaNode.executeRaw((long) arguments[0]);
-                    Object arg1 = toJavaNode.executeRaw((long) arguments[1]);
-                    RichCmpOp op = RichCmpOp.fromNative(opInterop.asInt(arguments[2]));
-                    Object result = callNode.execute(null, inliningTarget, getSlot(), arg0, arg1, op);
-                    return toNativeNode.executeLong(result);
-                } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "RichcmpFunctionWrapper", getDelegate());
-                }
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(inliningTarget, e);
-                return NULLPTR;
-            } finally {
-                CApiTiming.exit(timing);
-                gil.release(mustRelease);
-            }
-        }
-
-        @Override
-        protected NfiUpcallSignature getSignature() {
-            return Nfi.createUpcallSignature(NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.SINT32);
-        }
     }
 
-    @ExportLibrary(InteropLibrary.class)
     public static final class SsizeargfuncSlotWrapper extends TpSlotWrapper {
 
         public SsizeargfuncSlotWrapper(TpSlotManaged delegate) {
-            super(delegate);
+            super(delegate, SIGNATURE_P_PL, HANDLE_SSIZEARGFUNC_SLOT);
+        }
+
+        @SuppressWarnings("try")
+        private static long executeSsizeargfuncSlot(SsizeargfuncSlotWrapper self, long arg0, long arg1) {
+            try (var gil = GilNode.uncachedAcquire()) {
+                CApiTiming.enter();
+                try {
+                    Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
+                    int index = ssizeAsIntUncached(arg1);
+                    Object result = CallSlotSizeArgFun.executeUncached(self.getDelegate(), jArg0, index);
+                    return PythonToNativeNewRefNode.executeLongUncached(result);
+                } catch (Throwable t) {
+                    throw checkThrowableBeforeNative(t, "SsizeargfuncWrapper", self.getDelegate());
+                }
+            } catch (PException e) {
+                TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
+                return NULLPTR;
+            } finally {
+                CApiTiming.exit(self.timing);
+            }
         }
 
         @Override
         public TpSlotWrapper cloneWith(TpSlotManaged slot) {
             return new SsizeargfuncSlotWrapper(slot);
-        }
-
-        @ExportMessage
-        Object execute(Object[] arguments,
-                        @Bind Node inliningTarget,
-                        @Cached PythonToNativeNewRefNode toNativeNode,
-                        @Cached CallSlotSizeArgFun callSlotNode,
-                        @Cached SsizeAsIntNode asIntNode,
-                        @Cached NativeToPythonNode toJavaNode,
-                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
-                        @Exclusive @Cached GilNode gil) throws ArityException {
-            boolean mustRelease = gil.acquire();
-            CApiTiming.enter();
-            try {
-                if (arguments.length != 2) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw ArityException.create(2, 2, arguments.length);
-                }
-                assert arguments[1] instanceof Number;
-                try {
-                    Object result = callSlotNode.execute(null, inliningTarget, getSlot(), toJavaNode.executeRaw((long) arguments[0]), asIntNode.execute(inliningTarget, arguments[1]));
-                    return toNativeNode.executeLong(result);
-                } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "SsizeargfuncWrapper", getDelegate());
-                }
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(inliningTarget, e);
-                return NULLPTR;
-            } finally {
-                CApiTiming.exit(timing);
-                gil.release(mustRelease);
-            }
-        }
-
-        @Override
-        protected NfiUpcallSignature getSignature() {
-            return Nfi.createUpcallSignature(NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.SINT64);
         }
     }
 
@@ -1111,123 +851,68 @@ public abstract class PyProcsWrapper implements TruffleObject {
      * possible situation that someone passes larger number to us. In long term, we should migrate
      * indices/length to use longs.
      */
-    @GenerateInline
-    @GenerateCached(false)
-    @GenerateUncached
-    abstract static class SsizeAsIntNode extends Node {
-        public abstract int execute(Node inliningTarget, Object value);
-
-        @Specialization
-        static int doI(int i) {
-            return i;
+    @TruffleBoundary
+    private static int ssizeAsIntUncached(long l) {
+        if (PInt.isIntRange(l)) {
+            return (int) l;
         }
-
-        @Specialization
-        static int doL(Node inliningTarget, long l,
-                        @Cached InlinedBranchProfile errorBranch) {
-            if (PInt.isIntRange(l)) {
-                return (int) l;
-            }
-            errorBranch.enter(inliningTarget);
-            throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.IndexError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, l);
-        }
-
-        @Fallback
-        @InliningCutoff
-        static int doOthers(Object value) {
-            throw CompilerDirectives.shouldNotReachHere("Unexpected value passed to upcall as Py_ssize_t");
-        }
+        throw PRaiseNode.raiseStatic(null, PythonBuiltinClassType.IndexError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, l);
     }
 
-    @ExportLibrary(InteropLibrary.class)
     public static final class SsizeobjargprocWrapper extends TpSlotWrapper {
 
         public SsizeobjargprocWrapper(TpSlotManaged slot) {
-            super(slot);
+            super(slot, SIGNATURE_I_PLP, HANDLE_SSIZEOBJARGPROC);
+        }
+
+        @SuppressWarnings("try")
+        private static int executeSsizeobjargproc(SsizeobjargprocWrapper self, long arg0, long arg1, long arg2) {
+            try (var gil = GilNode.uncachedAcquire()) {
+                CApiTiming.enter();
+                try {
+                    Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
+                    int key = ssizeAsIntUncached(arg1);
+                    Object jArg2 = NativeToPythonInternalNode.executeUncached(arg2, false);
+                    CallSlotSqAssItemNode.executeUncached(self.getDelegate(), jArg0, key, jArg2);
+                    return 0;
+                } catch (Throwable t) {
+                    throw checkThrowableBeforeNative(t, "SsizeobjargprocWrapper", self.getDelegate());
+                }
+            } catch (PException e) {
+                TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
+                return -1;
+            } finally {
+                CApiTiming.exit(self.timing);
+            }
         }
 
         @Override
         public TpSlotWrapper cloneWith(TpSlotManaged slot) {
             return new SsizeobjargprocWrapper(slot);
         }
-
-        @ExportMessage
-        int execute(Object[] arguments,
-                        @Bind Node inliningTarget,
-                        @Cached CallSlotSqAssItemNode executeNode,
-                        @Cached NativeToPythonNode toJavaNode,
-                        @Cached SsizeAsIntNode asIntNode,
-                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
-                        @Exclusive @Cached GilNode gil) throws ArityException {
-            boolean mustRelease = gil.acquire();
-            CApiTiming.enter();
-            try {
-                if (arguments.length != 3) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw ArityException.create(3, 3, arguments.length);
-                }
-                assert arguments[1] instanceof Number;
-                try {
-                    Object self = toJavaNode.executeRaw((long) arguments[0]);
-                    int key = asIntNode.execute(inliningTarget, arguments[1]);
-                    Object value = toJavaNode.executeRaw((long) arguments[2]);
-                    executeNode.execute(null, inliningTarget, getSlot(), self, key, value);
-                    return 0;
-                } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "SsizeobjargprocWrapper", getDelegate());
-                }
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(inliningTarget, e);
-                return -1;
-            } finally {
-                CApiTiming.exit(timing);
-                gil.release(mustRelease);
-            }
-        }
-
-        @Override
-        protected NfiUpcallSignature getSignature() {
-            return Nfi.createUpcallSignature(NfiType.SINT32, NfiType.RAW_POINTER, NfiType.SINT64, NfiType.RAW_POINTER);
-        }
     }
 
-    @ExportLibrary(InteropLibrary.class)
     public static final class LenfuncWrapper extends TpSlotWrapper {
         public LenfuncWrapper(TpSlotManaged managedSlot) {
-            super(managedSlot);
+            super(managedSlot, SIGNATURE_L_P, HANDLE_LENFUNC);
         }
 
-        @ExportMessage
-        long execute(Object[] arguments,
-                        @Bind Node inliningTarget,
-                        @Cached CallSlotLenNode callSlotNode,
-                        @Cached NativeToPythonNode toJavaNode,
-                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
-                        @Cached GilNode gil) throws ArityException {
-            boolean mustRelease = gil.acquire();
-            CApiTiming.enter();
-            try {
-                if (arguments.length < 1) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw ArityException.create(1, -1, arguments.length);
-                }
+        @SuppressWarnings("try")
+        private static long executeLenfunc(LenfuncWrapper self, long arg0) {
+            try (var gil = GilNode.uncachedAcquire()) {
+                CApiTiming.enter();
                 try {
-                    return callSlotNode.execute(null, inliningTarget, getSlot(), toJavaNode.executeRaw((long) arguments[0]));
+                    Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
+                    return CallSlotLenNode.executeUncached(self.getDelegate(), jArg0);
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "LenfuncWrapper", getDelegate());
+                    throw checkThrowableBeforeNative(t, "LenfuncWrapper", self.getDelegate());
                 }
             } catch (PException e) {
-                transformExceptionToNativeNode.execute(inliningTarget, e);
+                TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
                 return -1;
             } finally {
-                CApiTiming.exit(timing);
-                gil.release(mustRelease);
+                CApiTiming.exit(self.timing);
             }
-        }
-
-        @Override
-        protected NfiUpcallSignature getSignature() {
-            return Nfi.createUpcallSignature(NfiType.SINT64, NfiType.RAW_POINTER);
         }
 
         @Override
@@ -1236,48 +921,28 @@ public abstract class PyProcsWrapper implements TruffleObject {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
     public static final class HashfuncWrapper extends TpSlotWrapper {
 
         public HashfuncWrapper(TpSlotManaged delegate) {
-            super(delegate);
+            super(delegate, SIGNATURE_L_P, HANDLE_HASHFUNC);
         }
 
-        @ExportMessage
-        long execute(Object[] arguments,
-                        @Bind Node inliningTarget,
-                        @Cached CallSlotHashFunNode callSlotNode,
-                        @Cached NativeToPythonNode toJavaNode,
-                        @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
-                        @Exclusive @Cached GilNode gil) throws ArityException {
-            boolean mustRelease = gil.acquire();
-            CApiTiming.enter();
-            try {
-                /*
-                 * Accept a second argumenthere, since these functions are sometimes called using
-                 * METH_O with a "NULL" value.
-                 */
-                if (arguments.length > 2) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw ArityException.create(1, 2, arguments.length);
-                }
+        @SuppressWarnings("try")
+        private static long executeHashfunc(HashfuncWrapper self, long arg0) {
+            try (var gil = GilNode.uncachedAcquire()) {
+                CApiTiming.enter();
                 try {
-                    return callSlotNode.execute(null, inliningTarget, getSlot(), toJavaNode.executeRaw((long) arguments[0]));
+                    Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
+                    return CallSlotHashFunNode.executeUncached(self.getDelegate(), jArg0);
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "HashfuncWrapper", getDelegate());
+                    throw checkThrowableBeforeNative(t, "HashfuncWrapper", self.getDelegate());
                 }
             } catch (PException e) {
-                transformExceptionToNativeNode.execute(inliningTarget, e);
+                TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
                 return -1;
             } finally {
-                CApiTiming.exit(timing);
-                gil.release(mustRelease);
+                CApiTiming.exit(self.timing);
             }
-        }
-
-        @Override
-        protected NfiUpcallSignature getSignature() {
-            return Nfi.createUpcallSignature(NfiType.SINT64, NfiType.RAW_POINTER);
         }
 
         @Override
@@ -1286,61 +951,31 @@ public abstract class PyProcsWrapper implements TruffleObject {
         }
     }
 
-    @ExportLibrary(InteropLibrary.class)
     public static final class DescrGetFunctionWrapper extends TpSlotWrapper {
         public DescrGetFunctionWrapper(TpSlotManaged delegate) {
-            super(delegate);
+            super(delegate, SIGNATURE_P_PPP, HANDLE_DESCR_GET_FUNCTION);
         }
 
-        @ExportMessage(name = "execute")
-        static class Execute {
-
-            @Specialization(guards = "arguments.length == 3")
-            static Object call(DescrGetFunctionWrapper self, Object[] arguments,
-                            @Bind Node inliningTarget,
-                            @Cached CallSlotDescrGet callGetNode,
-                            @Cached NativeToPythonNode toJavaNode,
-                            @Cached PythonToNativeNewRefNode toNativeNode,
-                            @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode,
-                            @Exclusive @Cached GilNode gil) {
-                boolean mustRelease = gil.acquire();
+        @SuppressWarnings("try")
+        private static long executeDescrGetFunction(DescrGetFunctionWrapper self, long arg0, long arg1, long arg2) {
+            try (var gil = GilNode.uncachedAcquire()) {
                 CApiTiming.enter();
                 try {
-                    try {
-                        if (arguments.length < 3) {
-                            CompilerDirectives.transferToInterpreterAndInvalidate();
-                            throw ArityException.create(3, -1, arguments.length);
-                        }
-
-                        // convert args
-                        Object receiver = toJavaNode.executeRaw((long) arguments[0]);
-                        Object obj = toJavaNode.executeRaw((long) arguments[1]);
-                        Object cls = toJavaNode.executeRaw((long) arguments[2]);
-
-                        Object result = callGetNode.execute(null, inliningTarget, self.getSlot(), receiver, obj, cls);
-                        return toNativeNode.executeLong(result);
-                    } catch (Throwable t) {
-                        throw checkThrowableBeforeNative(t, "DescrGetFunctionWrapper", self.getDelegate());
-                    }
-                } catch (PException e) {
-                    transformExceptionToNativeNode.execute(inliningTarget, e);
-                    return NULLPTR;
-                } finally {
-                    CApiTiming.exit(self.timing);
-                    gil.release(mustRelease);
+                    // convert args
+                    Object receiver = NativeToPythonInternalNode.executeUncached(arg0, false);
+                    Object obj = NativeToPythonInternalNode.executeUncached(arg1, false);
+                    Object cls = NativeToPythonInternalNode.executeUncached(arg2, false);
+                    Object result = CallSlotDescrGet.executeUncached(self.getSlot(), receiver, obj, cls);
+                    return PythonToNativeNewRefNode.executeLongUncached(result);
+                } catch (Throwable t) {
+                    throw checkThrowableBeforeNative(t, "DescrGetFunctionWrapper", self.getDelegate());
                 }
+            } catch (PException e) {
+                TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
+                return NULLPTR;
+            } finally {
+                CApiTiming.exit(self.timing);
             }
-
-            @Specialization(guards = "arguments.length != 3")
-            static Object error(@SuppressWarnings("unused") DescrGetFunctionWrapper self, Object[] arguments) throws ArityException {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw ArityException.create(3, 3, arguments.length);
-            }
-        }
-
-        @Override
-        protected NfiUpcallSignature getSignature() {
-            return Nfi.createUpcallSignature(NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER, NfiType.RAW_POINTER);
         }
 
         @Override

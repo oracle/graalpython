@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.PythonDispatchers.Una
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltinBase;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotCExtNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPythonSingle;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLenFactory.CallSlotLenNodeGen;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -73,6 +74,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
@@ -153,6 +155,11 @@ public abstract class TpSlotLen {
         private static final CApiTiming C_API_TIMING = CApiTiming.create(true, "sq_mp_len");
 
         public abstract int execute(VirtualFrame frame, Node inliningTarget, TpSlot slot, Object self);
+
+        @TruffleBoundary
+        public static int executeUncached(TpSlot slot, Object self) {
+            return CallSlotLenNodeGen.getUncached().execute(null, null, slot, self);
+        }
 
         @Specialization(guards = "cachedSlot == slot", limit = "3")
         static int callCachedBuiltin(VirtualFrame frame, @SuppressWarnings("unused") TpSlotLenBuiltin<?> slot, Object self,

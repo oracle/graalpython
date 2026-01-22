@@ -63,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.NodeFactoryUtils.Wrap
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotCExtNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPythonSingle;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotIterNextFactory.CallSlotTpIterNextNodeGen;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotUnaryFunc.CallSlotUnaryPythonNode;
 import com.oracle.graal.python.lib.IteratorExhausted;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -74,6 +75,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
@@ -174,6 +176,11 @@ public final class TpSlotIterNext {
         private static final CApiTiming C_API_TIMING = CApiTiming.create(true, "iternext");
 
         public abstract Object execute(VirtualFrame frame, Node inliningTarget, TpSlot slot, Object self);
+
+        @TruffleBoundary
+        public static Object executeUncached(TpSlot slot, Object self) {
+            return CallSlotTpIterNextNodeGen.getUncached().execute(null, null, slot, self);
+        }
 
         @Specialization(guards = "cachedSlot == slot", limit = "3")
         static Object callCachedBuiltin(VirtualFrame frame, @SuppressWarnings("unused") TpSlotIterNextBuiltin<?> slot, Object self,

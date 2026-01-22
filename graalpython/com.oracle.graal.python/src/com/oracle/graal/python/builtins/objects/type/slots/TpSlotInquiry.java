@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.PythonDispatchers.Una
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltinBase;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPythonSingle;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiryFactory.CallSlotNbBoolNodeGen;
 import com.oracle.graal.python.lib.PyBoolCheckNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -68,6 +69,7 @@ import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
@@ -148,6 +150,11 @@ public abstract class TpSlotInquiry {
         private static final CApiTiming C_API_TIMING = CApiTiming.create(true, "nb_bool");
 
         public abstract boolean execute(VirtualFrame frame, Node inliningTarget, TpSlot slot, Object self);
+
+        @TruffleBoundary
+        public static boolean executeUncached(TpSlot slot, Object self) {
+            return CallSlotNbBoolNodeGen.getUncached().execute(null, null, slot, self);
+        }
 
         @Specialization(guards = "slot == cachedSlot", limit = "3")
         static boolean callCachedBuiltin(VirtualFrame frame, @SuppressWarnings("unused") TpSlotInquiryBuiltin slot, Object self,

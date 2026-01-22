@@ -59,12 +59,14 @@ import com.oracle.graal.python.builtins.objects.type.slots.PythonDispatchers.Bin
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltinBase;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotCExtNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPythonSingle;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFuncFactory.CallSlotBinaryFuncNodeGen;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
@@ -130,6 +132,11 @@ public class TpSlotBinaryFunc {
         private static final CApiTiming C_API_TIMING = CApiTiming.create(true, "binaryfunc");
 
         public abstract Object execute(VirtualFrame frame, Node inliningTarget, TpSlot slot, Object self, Object arg);
+
+        @TruffleBoundary
+        public static Object executeUncached(TpSlot slot, Object self, Object arg) {
+            return CallSlotBinaryFuncNodeGen.getUncached().execute(null, null, slot, self, arg);
+        }
 
         @Specialization(guards = "cachedSlot == slot", limit = "3")
         static Object callCachedBuiltin(VirtualFrame frame, @SuppressWarnings("unused") TpSlotBinaryFuncBuiltin<?> slot, Object self, Object arg,

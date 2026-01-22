@@ -65,6 +65,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotCExtNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPythonSingle;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotLen.CallSlotLenNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFunFactory.CallSlotSizeArgFunNodeGen;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFunFactory.FixNegativeIndexNodeGen;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFunFactory.WrapIndexArgFuncBuiltinNodeGen;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSizeArgFunFactory.WrapSqItemBuiltinNodeGen;
@@ -76,6 +77,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
@@ -238,6 +240,11 @@ public class TpSlotSizeArgFun {
         private static final CApiTiming C_API_TIMING = CApiTiming.create(true, "ssizeargfun");
 
         public abstract Object execute(VirtualFrame frame, Node inliningTarget, TpSlot slot, Object self, int index);
+
+        @TruffleBoundary
+        public static Object executeUncached(TpSlot slot, Object self, int index) {
+            return CallSlotSizeArgFunNodeGen.getUncached().execute(null, null, slot, self, index);
+        }
 
         @Specialization(guards = "cachedSlot == slot", limit = "3")
         static Object callCachedBuiltin(VirtualFrame frame, @SuppressWarnings("unused") TpSlotSizeArgFunBuiltin<?> slot, Object self, int index,

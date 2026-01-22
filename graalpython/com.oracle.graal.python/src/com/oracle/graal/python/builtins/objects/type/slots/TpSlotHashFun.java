@@ -76,6 +76,7 @@ import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
@@ -155,6 +156,11 @@ public abstract class TpSlotHashFun {
         private static final CApiTiming C_API_TIMING = CApiTiming.create(true, "tp_hash");
 
         public abstract long execute(VirtualFrame frame, Node inliningTarget, TpSlot slot, Object self);
+
+        @TruffleBoundary
+        public static long executeUncached(TpSlot slot, Object self) {
+            return CallSlotHashFunNodeGen.getUncached().execute(null, null, slot, self);
+        }
 
         @Specialization(guards = "cachedSlot == slot", limit = "3")
         static long callCachedBuiltin(VirtualFrame frame, @SuppressWarnings("unused") TpSlotHashBuiltin<?> slot, Object self,

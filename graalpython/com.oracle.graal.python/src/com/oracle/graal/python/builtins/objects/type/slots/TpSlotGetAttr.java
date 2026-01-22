@@ -66,6 +66,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltinB
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotManaged;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPython;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttrFactory.CallManagedSlotGetAttrNodeGen;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode.Dynamic;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
@@ -79,6 +80,7 @@ import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLogger;
@@ -299,6 +301,11 @@ public class TpSlotGetAttr {
         public abstract Object execute(VirtualFrame frame, Node inliningTarget, TpSlotManaged slot, Object self, Object name);
 
         public abstract Object execute(VirtualFrame frame, Node inliningTarget, TpSlotManaged slot, Object self, TruffleString name);
+
+        @TruffleBoundary
+        public static Object executeUncached(TpSlotManaged slot, Object self, Object name) {
+            return CallManagedSlotGetAttrNodeGen.getUncached().execute(null, null, slot, self, name);
+        }
 
         @Specialization(guards = "slot == cachedSlot", limit = "3")
         static Object callCachedBuiltin(VirtualFrame frame, @SuppressWarnings("unused") TpSlotGetAttrBuiltin slot, Object self, TruffleString name,

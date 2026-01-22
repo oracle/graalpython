@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.PythonDispatchers.Bin
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltinBase;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotCExtNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPython;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotRichCompareFactory.CallSlotRichCmpNodeGen;
 import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -211,6 +212,11 @@ public abstract class TpSlotRichCompare {
         private static final CApiTiming C_API_TIMING = CApiTiming.create(true, J_TP_RICHCOMPARE);
 
         public abstract Object execute(VirtualFrame frame, Node inliningTarget, TpSlot slot, Object a, Object b, RichCmpOp op);
+
+        @TruffleBoundary
+        public static Object executeUncached(TpSlot slot, Object a, Object b, RichCmpOp op) {
+            return CallSlotRichCmpNodeGen.getUncached().execute(null, null, slot, a, b, op);
+        }
 
         @Specialization(guards = "cachedSlot == slot", limit = "3")
         static Object callCachedBuiltin(VirtualFrame frame, @SuppressWarnings("unused") TpSlotRichCmpBuiltin<?> slot, Object a, Object b, RichCmpOp op,

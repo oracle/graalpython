@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.type;
 
 import static com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ensureExecutable;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointerUncached;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readPtrField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
 import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
@@ -161,7 +160,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.NbPower
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.NewWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.ObjobjargWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.RichcmpFunctionWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.SetattrWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.SetAttrWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.SqContainsWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.SsizeargfuncSlotWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.SsizeobjargprocWrapper;
@@ -886,7 +885,7 @@ public record TpSlots(TpSlot nb_bool, //
                         TpSlotGroup.NO_GROUP,
                         CFields.PyTypeObject__tp_setattro,
                         PExternalFunctionWrapper.SETATTRO,
-                        SetattrWrapper::new),
+                        SetAttrWrapper::new),
         TP_SETATTR(
                         TpSlots::tp_setattr,
                         null,
@@ -1319,7 +1318,7 @@ public record TpSlots(TpSlot nb_bool, //
                         // processed slot field, because user could have assigned some incompatible
                         // existing slot value into the slots field we're reading here
                         TpSlotWrapper newWrapper = existingSlotWrapper.cloneWith(newPythonSlot);
-                        toNative(pythonClass.getPtr(), def, ensurePointerUncached(newWrapper));
+                        toNative(pythonClass.getPtr(), def, newWrapper.getPointer());
                         // we need to continue with the new closure pointer
                         fieldPtr = def.readFromNative(pythonClass);
                     }

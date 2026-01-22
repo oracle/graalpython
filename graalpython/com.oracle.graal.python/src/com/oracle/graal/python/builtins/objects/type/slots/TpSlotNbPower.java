@@ -48,10 +48,10 @@ import java.lang.ref.Reference;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
@@ -70,12 +70,15 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPythonSi
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.CallReversiblePythonSlotNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.ReversibleSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOp.TpSlotReversiblePython;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotNbPowerFactory.CallSlotNbInPlacePowerNodeGen;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotNbPowerFactory.CallSlotNbPowerNodeGen;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
@@ -150,6 +153,11 @@ public final class TpSlotNbPower {
 
         public abstract Object execute(VirtualFrame frame, Node inliningTarget, TpSlot slot,
                         Object v, Object vType, Object w, TpSlot wSlot, Object wType, Object z, boolean sameTypes);
+
+        @TruffleBoundary
+        public static Object executeUncached(TpSlot slot, Object v, Object vType, Object w, TpSlot wSlot, Object wType, Object z, boolean sameTypes) {
+            return CallSlotNbPowerNodeGen.getUncached().execute(null, null, slot, v, vType, w, wSlot, wType, z, sameTypes);
+        }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "cachedSlot == slot", limit = "3")
@@ -250,6 +258,11 @@ public final class TpSlotNbPower {
         private static final CApiTiming C_API_TIMING = CApiTiming.create(true, "ternaryfunc");
 
         public abstract Object execute(VirtualFrame frame, Node inliningTarget, TpSlot slot, Object v, Object w, Object z);
+
+        @TruffleBoundary
+        public static Object executeUncached(TpSlot slot, Object v, Object w, Object z) {
+            return CallSlotNbInPlacePowerNodeGen.getUncached().execute(null, null, slot, v, w, z);
+        }
 
         // There are no builtin implementations
 

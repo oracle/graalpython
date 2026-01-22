@@ -213,7 +213,7 @@ public abstract class PyCFunctionWrapper {
                     throw checkThrowableBeforeNative(t, self.toString(), "");
                 }
             } catch (PException e) {
-                TransformExceptionToNativeNode.executeUncached(e);
+                TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
                 return NULLPTR;
             } finally {
                 CApiTiming.exit(self.timing);
@@ -247,7 +247,7 @@ public abstract class PyCFunctionWrapper {
                     throw checkThrowableBeforeNative(t, self.toString(), "");
                 }
             } catch (PException e) {
-                TransformExceptionToNativeNode.executeUncached(e);
+                TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
                 return NULLPTR;
             } finally {
                 CApiTiming.exit(self.timing);
@@ -282,7 +282,7 @@ public abstract class PyCFunctionWrapper {
                     throw checkThrowableBeforeNative(t, self.toString(), "");
                 }
             } catch (PException e) {
-                TransformExceptionToNativeNode.executeUncached(e);
+                TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
                 return NULLPTR;
             } finally {
                 CApiTiming.exit(self.timing);
@@ -319,7 +319,7 @@ public abstract class PyCFunctionWrapper {
                     throw checkThrowableBeforeNative(t, self.toString(), "");
                 }
             } catch (PException e) {
-                TransformExceptionToNativeNode.executeUncached(e);
+                TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
                 return NULLPTR;
             } finally {
                 CApiTiming.exit(self.timing);

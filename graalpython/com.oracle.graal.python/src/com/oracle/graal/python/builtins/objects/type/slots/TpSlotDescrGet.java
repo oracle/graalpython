@@ -197,6 +197,11 @@ public abstract class TpSlotDescrGet {
             return execute(frame, this, slot, self, obj, type);
         }
 
+        @TruffleBoundary
+        public static Object executeUncached(TpSlot slot, Object self, Object obj, Object type) {
+            return CallSlotDescrGetNodeGen.getUncached().execute(null, null, slot, self, obj, type);
+        }
+
         @NeverDefault
         public static CallSlotDescrGet create() {
             return CallSlotDescrGetNodeGen.create();

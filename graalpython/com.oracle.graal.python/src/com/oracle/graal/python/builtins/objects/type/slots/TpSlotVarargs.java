@@ -78,6 +78,9 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotCExtNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPythonSingle;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSlotDescrGet;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargsFactory.CallSlotTpCallNodeGen;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargsFactory.CallSlotTpInitNodeGen;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargsFactory.CallSlotTpNewNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -100,6 +103,7 @@ import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
@@ -353,6 +357,11 @@ public final class TpSlotVarargs {
     @ReportPolymorphism
     public abstract static class CallSlotTpInitNode extends CallVarargsTpSlotBaseNode {
 
+        @TruffleBoundary
+        public static Object executeUncached(TpSlot slot, Object self, Object[] args, PKeyword[] keywords) {
+            return CallSlotTpInitNodeGen.getUncached().execute(null, null, slot, self, args, keywords);
+        }
+
         @Specialization
         static Object callPython(VirtualFrame frame, Node inliningTarget, TpSlotPythonSingle slot, Object self, Object[] args, PKeyword[] keywords,
                         @Cached CallSlotVarargsPythonNode callNode,
@@ -439,6 +448,11 @@ public final class TpSlotVarargs {
     @ReportPolymorphism
     public abstract static class CallSlotTpNewNode extends CallVarargsTpSlotBaseNode {
 
+        @TruffleBoundary
+        public static Object executeUncached(TpSlot slot, Object self, Object[] args, PKeyword[] keywords) {
+            return CallSlotTpNewNodeGen.getUncached().execute(null, null, slot, self, args, keywords);
+        }
+
         @Specialization
         static Object callPython(VirtualFrame frame, Node inliningTarget, TpSlotPythonSingle slot, Object self, Object[] args, PKeyword[] keywords,
                         @Cached BindNewMethodNode bindNew,
@@ -461,6 +475,11 @@ public final class TpSlotVarargs {
     @GenerateUncached
     @ReportPolymorphism
     public abstract static class CallSlotTpCallNode extends CallVarargsTpSlotBaseNode {
+
+        @TruffleBoundary
+        public static Object executeUncached(TpSlot slot, Object self, Object[] args, PKeyword[] keywords) {
+            return CallSlotTpCallNodeGen.getUncached().execute(null, null, slot, self, args, keywords);
+        }
 
         @Specialization
         static Object callPython(VirtualFrame frame, Node inliningTarget, TpSlotPythonSingle slot, Object self, Object[] args, PKeyword[] keywords,

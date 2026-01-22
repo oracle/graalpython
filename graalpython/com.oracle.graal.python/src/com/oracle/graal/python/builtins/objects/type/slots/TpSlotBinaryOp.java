@@ -95,6 +95,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotCExtNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPython;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.TpSlotBinaryFuncBuiltin;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryOpFactory.CallSlotBinaryOpNodeGen;
 import com.oracle.graal.python.lib.PyObjectRichCompareBool;
 import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.PGuards;
@@ -106,6 +107,7 @@ import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
@@ -348,6 +350,11 @@ public class TpSlotBinaryOp {
 
         public abstract Object execute(VirtualFrame frame, Node inliningTarget, TpSlot slot, Object self, Object selfType, Object other, TpSlot otherSlot, Object otherType, boolean sameTypes,
                         ReversibleSlot op);
+
+        @TruffleBoundary
+        public static Object executeUncached(TpSlot slot, Object self, Object selfType, Object other, TpSlot otherSlot, Object otherType, boolean sameTypes, ReversibleSlot op) {
+            return CallSlotBinaryOpNodeGen.getUncached().execute(null, null, slot, self, selfType, other, otherSlot, otherType, sameTypes, op);
+        }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "cachedSlot == slot", limit = "3")
