@@ -38,12 +38,344 @@
 # SOFTWARE.
 
 import unittest
-import test.support
+import subprocess
+import sys
+import textwrap
 
 
 class ExceptStarPrintTest(unittest.TestCase):
-    def test_01(self):
-        with test.support.captured_output("stderr") as stderr:
-            eg = ExceptionGroup("eg", [ValueError(1), TypeError(2)])
-            self.assertEqual()
-            assert stderr.getvalue() == "xffgh"
+    def test_01_eg_simple(self):
+        script = textwrap.dedent("""
+            raise ExceptionGroup("eg", [
+                    ValueError(1),
+                    TypeError(2)
+                ])
+        """)
+        p = subprocess.run([sys.executable, "-c", script], capture_output=True)
+        expected = [b'  + Exception Group Traceback (most recent call last):',
+                    b'  |   File "<string>", line 2, in <module>',
+                    b'  | ExceptionGroup: eg (2 sub-exceptions)',
+                    b'  +-+---------------- 1 ----------------',
+                    b'    | ValueError: 1',
+                    b'    +---------------- 2 ----------------',
+                    b'    | TypeError: 2',
+                    b'    +------------------------------------']
+        self.assertEqual(p.stderr.splitlines(), expected)
+
+    def test_02_eg_nested(self):
+        script = textwrap.dedent("""
+            raise ExceptionGroup("EG", [
+                TypeError("1"),
+                ExceptionGroup("2", [
+                    IndexError("2.1"),
+                    ValueError("2.2"),
+                    ExceptionGroup("2.3", [
+                        IndexError("2.3.1"),
+                        ExceptionGroup("2.3.2", [
+                            TypeError("2.3.2.1"),
+                            IndexError("2.3.2.2"),
+                            ExceptionGroup("2.3.2.3", [
+                                ImportError("2.3.2.3.1"),
+                                ValueError("2.3.2.3.2")
+                            ])
+                        ]),
+                        IndexError("2.3.3"),
+                        IndexError("2.3.4"),
+                        IndexError("2.3.5"),
+                        IndexError("2.3.6"),
+                    ]),
+                    ExceptionGroup("2.4", [
+                        IndexError("2.4.1"),
+                        ExceptionGroup("2.4.2", [
+                            TypeError("2.4.2.1"),
+                            IndexError("2.4.2.2"),
+                            ExceptionGroup("2.4.3", [
+                                ImportError("2.4.3.1"),
+                                ValueError("2.4.3.2")
+                            ])
+                        ])
+                    ])
+                ]),
+                ValueError("3"),
+                ValueError("4"),
+                ValueError("5"),
+            ])
+        """)
+        p = subprocess.run([sys.executable, "-c", script], capture_output=True)
+        expected = [b'  + Exception Group Traceback (most recent call last):',
+                    b'  |   File "<string>", line 2, in <module>',
+                    b'  | ExceptionGroup: EG (5 sub-exceptions)',
+                    b'  +-+---------------- 1 ----------------',
+                    b'    | TypeError: 1',
+                    b'    +---------------- 2 ----------------',
+                    b'    | ExceptionGroup: 2 (4 sub-exceptions)',
+                    b'    +-+---------------- 1 ----------------',
+                    b'      | IndexError: 2.1',
+                    b'      +---------------- 2 ----------------',
+                    b'      | ValueError: 2.2',
+                    b'      +---------------- 3 ----------------',
+                    b'      | ExceptionGroup: 2.3 (6 sub-exceptions)',
+                    b'      +-+---------------- 1 ----------------',
+                    b'        | IndexError: 2.3.1',
+                    b'        +---------------- 2 ----------------',
+                    b'        | ExceptionGroup: 2.3.2 (3 sub-exceptions)',
+                    b'        +-+---------------- 1 ----------------',
+                    b'          | TypeError: 2.3.2.1',
+                    b'          +---------------- 2 ----------------',
+                    b'          | IndexError: 2.3.2.2',
+                    b'          +---------------- 3 ----------------',
+                    b'          | ExceptionGroup: 2.3.2.3 (2 sub-exceptions)',
+                    b'          +-+---------------- 1 ----------------',
+                    b'            | ImportError: 2.3.2.3.1',
+                    b'            +---------------- 2 ----------------',
+                    b'            | ValueError: 2.3.2.3.2',
+                    b'            +------------------------------------',
+                    b'        +---------------- 3 ----------------',
+                    b'        | IndexError: 2.3.3',
+                    b'        +---------------- 4 ----------------',
+                    b'        | IndexError: 2.3.4',
+                    b'        +---------------- 5 ----------------',
+                    b'        | IndexError: 2.3.5',
+                    b'        +---------------- 6 ----------------',
+                    b'        | IndexError: 2.3.6',
+                    b'        +------------------------------------',
+                    b'      +---------------- 4 ----------------',
+                    b'      | ExceptionGroup: 2.4 (2 sub-exceptions)',
+                    b'      +-+---------------- 1 ----------------',
+                    b'        | IndexError: 2.4.1',
+                    b'        +---------------- 2 ----------------',
+                    b'        | ExceptionGroup: 2.4.2 (3 sub-exceptions)',
+                    b'        +-+---------------- 1 ----------------',
+                    b'          | TypeError: 2.4.2.1',
+                    b'          +---------------- 2 ----------------',
+                    b'          | IndexError: 2.4.2.2',
+                    b'          +---------------- 3 ----------------',
+                    b'          | ExceptionGroup: 2.4.3 (2 sub-exceptions)',
+                    b'          +-+---------------- 1 ----------------',
+                    b'            | ImportError: 2.4.3.1',
+                    b'            +---------------- 2 ----------------',
+                    b'            | ValueError: 2.4.3.2',
+                    b'            +------------------------------------',
+                    b'    +---------------- 3 ----------------',
+                    b'    | ValueError: 3',
+                    b'    +---------------- 4 ----------------',
+                    b'    | ValueError: 4',
+                    b'    +---------------- 5 ----------------',
+                    b'    | ValueError: 5',
+                    b'    +------------------------------------']
+        self.maxDiff = None
+        self.assertEqual(p.stderr.splitlines(), expected)
+
+    def test_03_eg_nested_truncated(self):
+        script = textwrap.dedent("""
+            raise ExceptionGroup("EG", [
+                TypeError("1"),
+                ExceptionGroup("2", [
+                    IndexError("2.1"),
+                    ValueError("2.2"),
+                    ExceptionGroup("2.3", [
+                        IndexError("2.3.1"),
+                        ExceptionGroup("2.3.2", [
+                            TypeError("2.3.2.1"),
+                            IndexError("2.3.2.2"),
+                            ExceptionGroup("2.3.2.3", [
+                                ExceptionGroup("2.3.2.3.1", [
+                                    ExceptionGroup("2.3.2.3.1.1", [
+                                        ExceptionGroup("2.3.2.3.1.1.1", [
+                                            ExceptionGroup("2.3.2.3.1.1.1.1", [
+                                                ExceptionGroup("2.3.2.3.1.1.1.1.1", [
+                                                    ExceptionGroup("2.3.2.3.1.1.1.1.1.1", [
+                                                        ExceptionGroup("2.3.2.3.1.1.1.1.1.1.1", [
+                                                            ExceptionGroup("2.3.2.3.1.1.1.1.1.1.1.1", [
+                                                                ExceptionGroup("2.3.2.3.1.1.1.1.1.1.1.1.1", [
+                                                                    IndexError(1)
+                                                                ]),
+                                                            ]),
+                                                        ]),
+                                                    ]),
+                                                    ImportError("2.3.2.3.1.1.1.1.1.2"),
+                                                    IndexError("2.3.2.3.1.1.1.1.1.3"),
+                                                ]),
+                                            ]),
+                                        ]),
+                                    ]),
+                                ]),
+                                ImportError("2.3.2.3.1"),
+                                ValueError("2.3.2.3.2")
+                            ])
+                        ]),
+                        IndexError("2.3.3"),
+                        IndexError("2.3.4"),
+                        IndexError("2.3.5"),
+                        IndexError("2.3.6"),
+                        IndexError("2.3.7"),
+                        IndexError("2.3.8"),
+                        IndexError("2.3.9"),
+                        IndexError("2.3.10"),
+                        IndexError("2.3.11"),
+                        IndexError("2.3.12"),
+                        IndexError("2.3.13"),
+                        IndexError("2.3.14"),
+                        IndexError("2.3.15"),
+                        IndexError("2.3.16"),
+                        IndexError("2.3.17"),
+                        IndexError("2.3.18"),
+                    ]),
+                    ExceptionGroup("2.4", [
+                        IndexError("2.4.1"),
+                        ExceptionGroup("2.4.2", [
+                            TypeError("2.4.2.1"),
+                            IndexError("2.4.2.2"),
+                            ExceptionGroup("2.4.3", [
+                                ImportError("2.4.3.1"),
+                                ValueError("2.4.3.2")
+                            ])
+                        ])
+                    ])
+                ]),
+                ValueError("3"),
+                ValueError("4"),
+                ValueError("5"),
+                ValueError("6"),
+                ValueError("7"),
+                ValueError("8"),
+                ValueError("9"),
+                ValueError("10"),
+                ValueError("11"),
+                ValueError("12"),
+                ValueError("13"),
+                ValueError("14"),
+                ValueError("15"),
+                ValueError("16"),
+                ValueError("17"),
+                ValueError("18"),
+                ValueError("19"),
+                ValueError("20"),
+                ValueError("21"),
+                ValueError("22"),
+                ValueError("23"),
+            ])
+        """)
+        p = subprocess.run([sys.executable, "-c", script], capture_output=True)
+        expected = [b'  + Exception Group Traceback (most recent call last):',
+                    b'  |   File "<string>", line 2, in <module>',
+                    b'  | ExceptionGroup: EG (23 sub-exceptions)',
+                    b'  +-+---------------- 1 ----------------',
+                    b'    | TypeError: 1',
+                    b'    +---------------- 2 ----------------',
+                    b'    | ExceptionGroup: 2 (4 sub-exceptions)',
+                    b'    +-+---------------- 1 ----------------',
+                    b'      | IndexError: 2.1',
+                    b'      +---------------- 2 ----------------',
+                    b'      | ValueError: 2.2',
+                    b'      +---------------- 3 ----------------',
+                    b'      | ExceptionGroup: 2.3 (18 sub-exceptions)',
+                    b'      +-+---------------- 1 ----------------',
+                    b'        | IndexError: 2.3.1',
+                    b'        +---------------- 2 ----------------',
+                    b'        | ExceptionGroup: 2.3.2 (3 sub-exceptions)',
+                    b'        +-+---------------- 1 ----------------',
+                    b'          | TypeError: 2.3.2.1',
+                    b'          +---------------- 2 ----------------',
+                    b'          | IndexError: 2.3.2.2',
+                    b'          +---------------- 3 ----------------',
+                    b'          | ExceptionGroup: 2.3.2.3 (3 sub-exceptions)',
+                    b'          +-+---------------- 1 ----------------',
+                    b'            | ExceptionGroup: 2.3.2.3.1 (1 sub-exception)',
+                    b'            +-+---------------- 1 ----------------',
+                    b'              | ExceptionGroup: 2.3.2.3.1.1 (1 sub-exception)',
+                    b'              +-+---------------- 1 ----------------',
+                    b'                | ExceptionGroup: 2.3.2.3.1.1.1 (1 sub-exception)',
+                    b'                +-+---------------- 1 ----------------',
+                    b'                  | ExceptionGroup: 2.3.2.3.1.1.1.1 (1 sub-exception)',
+                    b'                  +-+---------------- 1 ----------------',
+                    b'                    | ExceptionGroup: 2.3.2.3.1.1.1.1.1 (3 sub-exceptions)',
+                    b'                    +-+---------------- 1 ----------------',
+                    b'                      | ... (max_group_depth is 10)',
+                    b'                      +---------------- 2 ----------------',
+                    b'                      | ImportError: 2.3.2.3.1.1.1.1.1.2',
+                    b'                      +---------------- 3 ----------------',
+                    b'                      | IndexError: 2.3.2.3.1.1.1.1.1.3',
+                    b'                      +------------------------------------',
+                    b'            +---------------- 2 ----------------',
+                    b'            | ImportError: 2.3.2.3.1',
+                    b'            +---------------- 3 ----------------',
+                    b'            | ValueError: 2.3.2.3.2',
+                    b'            +------------------------------------',
+                    b'        +---------------- 3 ----------------',
+                    b'        | IndexError: 2.3.3',
+                    b'        +---------------- 4 ----------------',
+                    b'        | IndexError: 2.3.4',
+                    b'        +---------------- 5 ----------------',
+                    b'        | IndexError: 2.3.5',
+                    b'        +---------------- 6 ----------------',
+                    b'        | IndexError: 2.3.6',
+                    b'        +---------------- 7 ----------------',
+                    b'        | IndexError: 2.3.7',
+                    b'        +---------------- 8 ----------------',
+                    b'        | IndexError: 2.3.8',
+                    b'        +---------------- 9 ----------------',
+                    b'        | IndexError: 2.3.9',
+                    b'        +---------------- 10 ----------------',
+                    b'        | IndexError: 2.3.10',
+                    b'        +---------------- 11 ----------------',
+                    b'        | IndexError: 2.3.11',
+                    b'        +---------------- 12 ----------------',
+                    b'        | IndexError: 2.3.12',
+                    b'        +---------------- 13 ----------------',
+                    b'        | IndexError: 2.3.13',
+                    b'        +---------------- 14 ----------------',
+                    b'        | IndexError: 2.3.14',
+                    b'        +---------------- 15 ----------------',
+                    b'        | IndexError: 2.3.15',
+                    b'        +---------------- ... ----------------',
+                    b'        | and 3 more exceptions',
+                    b'        +------------------------------------',
+                    b'      +---------------- 4 ----------------',
+                    b'      | ExceptionGroup: 2.4 (2 sub-exceptions)',
+                    b'      +-+---------------- 1 ----------------',
+                    b'        | IndexError: 2.4.1',
+                    b'        +---------------- 2 ----------------',
+                    b'        | ExceptionGroup: 2.4.2 (3 sub-exceptions)',
+                    b'        +-+---------------- 1 ----------------',
+                    b'          | TypeError: 2.4.2.1',
+                    b'          +---------------- 2 ----------------',
+                    b'          | IndexError: 2.4.2.2',
+                    b'          +---------------- 3 ----------------',
+                    b'          | ExceptionGroup: 2.4.3 (2 sub-exceptions)',
+                    b'          +-+---------------- 1 ----------------',
+                    b'            | ImportError: 2.4.3.1',
+                    b'            +---------------- 2 ----------------',
+                    b'            | ValueError: 2.4.3.2',
+                    b'            +------------------------------------',
+                    b'    +---------------- 3 ----------------',
+                    b'    | ValueError: 3',
+                    b'    +---------------- 4 ----------------',
+                    b'    | ValueError: 4',
+                    b'    +---------------- 5 ----------------',
+                    b'    | ValueError: 5',
+                    b'    +---------------- 6 ----------------',
+                    b'    | ValueError: 6',
+                    b'    +---------------- 7 ----------------',
+                    b'    | ValueError: 7',
+                    b'    +---------------- 8 ----------------',
+                    b'    | ValueError: 8',
+                    b'    +---------------- 9 ----------------',
+                    b'    | ValueError: 9',
+                    b'    +---------------- 10 ----------------',
+                    b'    | ValueError: 10',
+                    b'    +---------------- 11 ----------------',
+                    b'    | ValueError: 11',
+                    b'    +---------------- 12 ----------------',
+                    b'    | ValueError: 12',
+                    b'    +---------------- 13 ----------------',
+                    b'    | ValueError: 13',
+                    b'    +---------------- 14 ----------------',
+                    b'    | ValueError: 14',
+                    b'    +---------------- 15 ----------------',
+                    b'    | ValueError: 15',
+                    b'    +---------------- ... ----------------',
+                    b'    | and 8 more exceptions',
+                    b'    +------------------------------------']
+        self.maxDiff = None
+        self.assertEqual(p.stderr.splitlines(), expected)
