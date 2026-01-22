@@ -41,6 +41,7 @@
 package com.oracle.graal.python.nodes.bytecode_dsl;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.GeneratorExit;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NameError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
@@ -1272,8 +1273,13 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @Specialization(guards = "hasLocals(frame)")
         public static void performLocals(VirtualFrame frame, TruffleString name,
                         @Bind Node inliningTarget,
-                        @Cached PyObjectDelItem deleteNode) {
-            deleteNode.execute(frame, inliningTarget, PArguments.getSpecialArgument(frame), name);
+                        @Cached PyObjectDelItem deleteNode,
+                        @Cached PRaiseNode raiseNode) {
+            try {
+                deleteNode.execute(frame, inliningTarget, PArguments.getSpecialArgument(frame), name);
+            } catch (PException e) {
+                throw raiseNode.raise(inliningTarget, NameError, ErrorMessages.NAME_NOT_DEFINED, name);
+            }
         }
 
         @Specialization(guards = "!hasLocals(frame)")

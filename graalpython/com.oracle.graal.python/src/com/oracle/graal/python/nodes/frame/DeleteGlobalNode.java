@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,11 +40,16 @@
  */
 package com.oracle.graal.python.nodes.frame;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyObjectDelItem;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.object.BuiltinClassProfiles;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -76,15 +81,29 @@ public abstract class DeleteGlobalNode extends PNodeWithContext {
     static void deleteDictCached(VirtualFrame frame, @SuppressWarnings("unused") PDict globals, TruffleString attributeId,
                     @Bind Node inliningTarget,
                     @Cached(value = "globals", weak = true) PDict cachedGlobals,
-                    @Shared("delItem") @Cached PyObjectDelItem deleteNode) {
-        deleteNode.execute(frame, inliningTarget, cachedGlobals, attributeId);
+                    @Shared("delItem") @Cached PyObjectDelItem deleteNode,
+                    @Shared @Cached BuiltinClassProfiles.IsBuiltinObjectProfile exceptionProfile,
+                    @Shared @Cached PRaiseNode raiseNode) {
+        try {
+            deleteNode.execute(frame, inliningTarget, cachedGlobals, attributeId);
+        } catch (PException e) {
+            exceptionProfile.profileException(inliningTarget, e, PythonBuiltinClassType.KeyError);
+            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.NameError, ErrorMessages.NAME_NOT_DEFINED, attributeId);
+        }
     }
 
     @Specialization(replaces = "deleteDictCached")
     static void deleteDict(VirtualFrame frame, PDict globals, TruffleString attributeId,
                     @Bind Node inliningTarget,
-                    @Shared("delItem") @Cached PyObjectDelItem deleteNode) {
-        deleteNode.execute(frame, inliningTarget, globals, attributeId);
+                    @Shared("delItem") @Cached PyObjectDelItem deleteNode,
+                    @Shared @Cached BuiltinClassProfiles.IsBuiltinObjectProfile exceptionProfile,
+                    @Shared @Cached PRaiseNode raiseNode) {
+        try {
+            deleteNode.execute(frame, inliningTarget, globals, attributeId);
+        } catch (PException e) {
+            exceptionProfile.profileException(inliningTarget, e, PythonBuiltinClassType.KeyError);
+            throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.NameError, ErrorMessages.NAME_NOT_DEFINED, attributeId);
+        }
     }
 
     @Specialization(guards = {"isSingleContext()", "globals == cachedGlobals"}, limit = "1")
