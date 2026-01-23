@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -168,6 +168,7 @@ import com.oracle.graal.python.builtins.objects.exception.BaseExceptionBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.BaseExceptionGroupBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.ImportErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.KeyErrorBuiltins;
+import com.oracle.graal.python.builtins.objects.exception.NameErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.OsErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.StopIterationBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.SyntaxErrorBuiltins;
@@ -756,7 +757,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     IndexError("IndexError", LookupError, newBuilder().publishInModule(J_BUILTINS).basetype().addDict()),
     KeyError("KeyError", LookupError, newBuilder().publishInModule(J_BUILTINS).basetype().addDict().slots(KeyErrorBuiltins.SLOTS)),
     MemoryError("MemoryError", Exception, newBuilder().publishInModule(J_BUILTINS).basetype().addDict()),
-    NameError("NameError", Exception, newBuilder().publishInModule(J_BUILTINS).basetype().addDict()),
+    NameError("NameError", Exception, newBuilder().publishInModule(J_BUILTINS).basetype().addDict().slots(NameErrorBuiltins.SLOTS)),
     UnboundLocalError("UnboundLocalError", NameError, newBuilder().publishInModule(J_BUILTINS).basetype().addDict()),
     OSError("OSError", Exception, newBuilder().publishInModule(J_BUILTINS).basetype().addDict().slots(OsErrorBuiltins.SLOTS)),
     BlockingIOError("BlockingIOError", OSError, newBuilder().publishInModule(J_BUILTINS).basetype().addDict()),

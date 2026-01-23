@@ -37,6 +37,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+from tests import util
 
 def assert_raises(err, fn, *args, **kwargs):
     raised = False
@@ -947,12 +948,14 @@ def test_free_var_with_nonlocals():
     assert c.co_cellvars == tuple()
 
 
+@util.skipUnlessBytecodeDSL("name atttribute not populated in manual interpreter")
 def test_name_errors():
     def assert_raises_name_error(name, fn, *args, **kwargs):
         try:
             fn(*args, **kwargs)
         except NameError as e:
             assert str(e) == f"name '{name}' is not defined"
+            assert e.name == name
 
     assert_raises_name_error('foo', exec, 'foo')
     assert_raises_name_error('foo', exec, 'foo', {})
