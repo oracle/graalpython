@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -181,7 +181,8 @@ abstract class MergedObjectTypeModuleGetAttributeInnerNode extends PNodeWithCont
                 }
             }
 
-            throw raiseNode.raiseAttributeError(inliningTarget, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
+            TruffleString errorMessage = cachedSlot != TypeBuiltins.SLOTS.tp_getattro() ? ErrorMessages.OBJ_P_HAS_NO_ATTR_S : ErrorMessages.TYPE_N_HAS_NO_ATTR;
+            throw raiseNode.raiseAttributeError(inliningTarget, errorMessage, object, key);
         } catch (PException e) {
             // Extra behavior for module.__getattribute__
             if (cachedSlot == ModuleBuiltins.SLOTS.tp_getattro()) {

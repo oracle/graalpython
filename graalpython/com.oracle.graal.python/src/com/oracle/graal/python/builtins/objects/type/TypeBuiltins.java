@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -589,7 +589,7 @@ public final class TypeBuiltins extends PythonBuiltins {
                 }
             }
 
-            throw raiseNode.raiseAttributeError(inliningTarget, ErrorMessages.OBJ_N_HAS_NO_ATTR_S, object, key);
+            throw raiseNode.raiseAttributeError(inliningTarget, ErrorMessages.TYPE_N_HAS_NO_ATTR, object, key);
         }
 
         private Object readAttributeOfClass(Object object, TruffleString key) {

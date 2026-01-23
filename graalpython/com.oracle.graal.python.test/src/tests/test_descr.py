@@ -1,4 +1,4 @@
-# Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -77,3 +77,30 @@ def test___hash___in___slots__():
     o = ObjWithHashSlot()
     o.__hash__ = lambda: 1
     assert hash(o) == 1
+
+
+def test_attribute_error_message():
+    obj = object()
+
+    try:
+        obj.foo
+    except AttributeError as e:
+        assert e.obj == obj
+        assert e.name == "foo"
+        assert str(e) == "'object' object has no attribute 'foo'"
+
+    try:
+        obj.foo = 1
+    except AttributeError as e:
+        # Note: as of 3.12, CPython doesn't set obj and name
+        assert str(e) == "'object' object has no attribute 'foo'"
+
+    class MyClass:
+        pass
+
+    try:
+        MyClass.foo
+    except AttributeError as e:
+        assert e.obj == MyClass
+        assert e.name == "foo"
+        assert str(e) == "type object 'MyClass' has no attribute 'foo'"
