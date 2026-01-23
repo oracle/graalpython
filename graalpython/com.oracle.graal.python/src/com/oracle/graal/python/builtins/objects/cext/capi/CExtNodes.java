@@ -1523,7 +1523,7 @@ public abstract class CExtNodes {
         }
 
         public static boolean doesNotNeedPromotion(Object object) {
-            return EnsurePythonObjectNodeGen.getUncached().execute(PythonContext.get(null), object, true) == object;
+            return EnsurePythonObjectNodeGen.getUncached().execute(PythonContext.get(null), object, false) == object;
         }
 
         public static Object executeUncached(PythonContext context, Object object, boolean promoteBoxable) {

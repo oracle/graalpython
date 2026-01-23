@@ -80,6 +80,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.SetterRoot;
 import com.oracle.graal.python.builtins.objects.cext.capi.MethodDescriptorWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.WrapperDescriptorRootNodesGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonNode;
@@ -398,13 +399,13 @@ public final class PythonCextTypeBuiltins {
 
         @TruffleBoundary
         private static RootCallTarget getterCallTarget(TruffleString name, PythonLanguage lang) {
-            Function<PythonLanguage, RootNode> rootNodeFunction = l -> new GetterRoot(l, name, PExternalFunctionWrapper.GETTER);
+            Function<PythonLanguage, RootNode> rootNodeFunction = l -> WrapperDescriptorRootNodesGen.create(l, name, PExternalFunctionWrapper.GETTER);
             return lang.createCachedExternalFunWrapperCallTarget(rootNodeFunction, GetterRoot.class, PExternalFunctionWrapper.GETTER, name, true, false);
         }
 
         @TruffleBoundary
         private static RootCallTarget setterCallTarget(TruffleString name, PythonLanguage lang) {
-            Function<PythonLanguage, RootNode> rootNodeFunction = l -> new SetterRoot(l, name, PExternalFunctionWrapper.SETTER);
+            Function<PythonLanguage, RootNode> rootNodeFunction = l -> WrapperDescriptorRootNodesGen.create(l, name, PExternalFunctionWrapper.SETTER);
             return lang.createCachedExternalFunWrapperCallTarget(rootNodeFunction, SetterRoot.class, PExternalFunctionWrapper.SETTER, name, true, false);
         }
     }

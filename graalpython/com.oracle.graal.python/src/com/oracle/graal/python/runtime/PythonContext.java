@@ -202,6 +202,7 @@ import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NonIdempotent;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
@@ -669,6 +670,11 @@ public final class PythonContext extends Python3Core {
     @GenerateUncached
     @GenerateInline(inlineByDefault = true)
     public abstract static class GetThreadStateNode extends Node {
+
+        @NeverDefault
+        public static GetThreadStateNode create() {
+            return GetThreadStateNodeGen.create();
+        }
 
         public static GetThreadStateNode getUncached() {
             return GetThreadStateNodeGen.getUncached();

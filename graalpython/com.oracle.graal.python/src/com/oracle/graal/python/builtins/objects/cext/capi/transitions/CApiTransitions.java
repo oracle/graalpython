@@ -2156,6 +2156,8 @@ public abstract class CApiTransitions {
     @GenerateInline(false)
     public abstract static class NativeToPythonReturnNode extends CExtToJavaNode {
 
+        public abstract Object executeRaw(long pointer);
+
         @TruffleBoundary
         public static Object executeUncached(long pointer) {
             return NativeToPythonReturnNodeGen.getUncached().execute(pointer);

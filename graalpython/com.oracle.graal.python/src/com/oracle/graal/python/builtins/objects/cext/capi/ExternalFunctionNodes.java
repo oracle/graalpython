@@ -521,18 +521,6 @@ public abstract class ExternalFunctionNodes {
             return PFactory.createWrapperDescriptor(language, name, type, defaults, kwDefaults, 0, callTarget, slot, sig);
         }
 
-        CheckFunctionResultNode createCheckFunctionResultNode() {
-            return signature.returnValue.createCheckResultNode();
-        }
-
-        CExtToJavaNode createConvertRetNode() {
-            return signature.returnValue.createNativeToPythonNode();
-        }
-
-        CExtToNativeNode[] createConvertArgNodes() {
-            return createConvertArgNodes(signature.arguments);
-        }
-
         public static CExtToNativeNode[] createConvertArgNodes(ArgDescriptor[] descriptors) {
             CExtToNativeNode[] result = new CExtToNativeNode[descriptors.length];
             for (int i = 0; i < descriptors.length; i++) {

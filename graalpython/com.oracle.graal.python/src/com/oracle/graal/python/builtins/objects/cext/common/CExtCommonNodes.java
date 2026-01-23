@@ -377,6 +377,7 @@ public abstract class CExtCommonNodes {
 
         public abstract void execute(Node inliningTarget, Object pythonException);
 
+        @TruffleBoundary
         public static void executeUncached(Object pythonException) {
             CExtCommonNodesFactory.TransformExceptionToNativeNodeGen.getUncached().execute(null, pythonException);
         }
@@ -466,6 +467,11 @@ public abstract class CExtCommonNodes {
     @GenerateInline
     @GenerateCached(false)
     public abstract static class TransformExceptionFromNativeNode extends Node {
+
+        @TruffleBoundary
+        public static void executeUncached(PythonThreadState threadState, TruffleString name, boolean indicatesError, boolean strict) {
+            TransformExceptionFromNativeNode.getUncached().execute(null, threadState, name, indicatesError, strict);
+        }
 
         /**
          * Checks the current exception state with respect to flag {@code indicatesError} (and
