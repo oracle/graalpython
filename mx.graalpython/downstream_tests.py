@@ -184,6 +184,12 @@ def downstream_test_cython(graalpy, testdir):
     env["PYTHON_VERSION"] = "graalpy"
     env["BACKEND"] = "c"
     run([graalpy, '-m', 'venv', str(venv)])
+    if os.environ.get('CI', '').lower() not in ('1', 'true'):
+        run(['sed', '-i', r's/^\s*sudo/#&/', 'Tools/ci-run.sh'], cwd=src)
+        try:
+            run([graalpy, '--version', '--experimental-options', '--engine.Compilation=false'])
+        except subprocess.CalledProcessError:
+            run(['sed', '-i', r's/--engine.Compilation=false//g', 'Tools/ci-run.sh'], cwd=src)
     run_in_venv(venv, ["bash", "./Tools/ci-run.sh"], cwd=src, env=env)
 
 def run_downstream_test(python, project):
