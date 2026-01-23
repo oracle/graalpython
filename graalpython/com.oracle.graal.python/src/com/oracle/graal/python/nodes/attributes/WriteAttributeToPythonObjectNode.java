@@ -56,8 +56,9 @@ import com.oracle.truffle.api.strings.TruffleString;
 /**
  * Writes attribute directly to the underlying {@link DynamicObject} regardless of whether the
  * object has dict, also bypasses any other additional logic in {@link WriteAttributeToObjectNode}.
- * This node does not provide any functionality on top of {@link DynamicObject.PutNode}, its purpose
- * is to provide an abstraction in preparation for the transition from {@link DynamicObject} to
+ * This node does not provide any functionality on top of
+ * {@link com.oracle.truffle.api.object.DynamicObject.PutNode}, its purpose is to provide an
+ * abstraction in preparation for the transition from {@link DynamicObject} to
  * {@link com.oracle.graal.python.builtins.objects.common.ObjectHashMap}.
  */
 @ImportStatic(PythonOptions.class)
