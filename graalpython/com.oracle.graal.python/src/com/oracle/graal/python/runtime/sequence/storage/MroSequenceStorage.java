@@ -94,7 +94,7 @@ public final class MroSequenceStorage extends ArrayBasedSequenceStorage {
 
         public void setValue(Object value) {
             if (PythonUtils.isPrimitive(value)) {
-                // DynamicObjectStorage does not store the boxes object, but the raw primitive
+                // DynamicObjectStorage does not store the boxed object, but the raw primitive
                 // value, so we must protect the boxed object from GC ourselves
                 valueStrongReference = value;
             }
