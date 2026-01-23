@@ -382,7 +382,7 @@ public abstract class PyTraceBackPrint {
     }
 
     public static void print(Node inliningTarget, TracebackBuiltins.GetTracebackFrameNode getTbFrameNode, TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStNode, PythonModule sys,
-                    Object out, Object tbObj, boolean isExceptionGroup, int indent, TruffleString margin) {
+                             Object out, Object tbObj, boolean isExceptionGroup, boolean printMarginControl, int indent, TruffleString margin) {
         // Although we should be behind TB, we need cached nodes, because they may do stack walking
         // and for that they must be connected to the currently executing root. In practice, it's
         // not strictly necessary, because they will never request the current frame, but in order
@@ -405,9 +405,17 @@ public abstract class PyTraceBackPrint {
                 }
             }
             if (isExceptionGroup) {
-                printIndentedHeader(out, "Exception Group Traceback (most recent call last):", indent, "+ ");
+                if (printMarginControl) {
+                    printIndentedHeader(out, "Exception Group Traceback (most recent call last):", indent, margin.toString());
+                } else {
+                    printIndentedHeader(out, "Exception Group Traceback (most recent call last):", indent, "+ ");
+                }
             } else {
-                printIndentedHeader(out, "Traceback (most recent call last):", indent, "");
+                if (printMarginControl) {
+                    printIndentedHeader(out, "Traceback (most recent call last):", indent, "");
+                } else {
+                    printIndentedHeader(out, "Traceback (most recent call last):", indent, margin.toString());
+                }
             }
             printInternal(inliningTarget, getTbFrameNode, materializeStNode, out, tb, limit, indent, margin);
         } else {

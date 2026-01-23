@@ -1253,7 +1253,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
             }
 
             if (excTb != PNone.NONE) {
-                PyTraceBackPrint.print(inliningTarget, getTbFrameNode, materializeStNode, sys, out, excTb, false, 0, null);
+                PyTraceBackPrint.print(inliningTarget, getTbFrameNode, materializeStNode, sys, out, excTb, false, false, 0, null);
             }
 
             if (excType == PNone.NONE) {
@@ -1580,7 +1580,11 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
             final Object tb = getExceptionTraceback(value);
             if (tb instanceof PTraceback) {
-                PyTraceBackPrint.print(inliningTarget, getTbFrameNode, materializeStNode, sys, out, tb, (value instanceof PBaseExceptionGroup), ctx.getIndent(), ctx.getMargin());
+                if (value instanceof PBaseExceptionGroup pbeg) {
+                    PyTraceBackPrint.print(inliningTarget, getTbFrameNode, materializeStNode, sys, out, tb, true, ctx.depthCurrent > 1, ctx.getIndent(), ctx.getMargin());
+                } else {
+                    PyTraceBackPrint.print(inliningTarget, getTbFrameNode, materializeStNode, sys, out, tb, false, ctx.depthCurrent == 0, ctx.getIndent(), ctx.getMargin());
+                }
             }
 
             if (objectHasAttr(value, T_ATTR_PRINT_FILE_AND_LINE)) {

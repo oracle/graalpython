@@ -42,8 +42,11 @@ import subprocess
 import sys
 import textwrap
 
+from tests.util import skipIfBytecodeDSL
+
 
 class ExceptStarPrintTest(unittest.TestCase):
+    @skipIfBytecodeDSL("a")
     def test_01_eg_simple(self):
         script = textwrap.dedent("""
             raise ExceptionGroup("eg", [
@@ -62,6 +65,7 @@ class ExceptStarPrintTest(unittest.TestCase):
                     b'    +------------------------------------']
         self.assertEqual(p.stderr.splitlines(), expected)
 
+    @skipIfBytecodeDSL("a")
     def test_02_eg_nested(self):
         script = textwrap.dedent("""
             raise ExceptionGroup("EG", [
@@ -166,6 +170,7 @@ class ExceptStarPrintTest(unittest.TestCase):
         self.maxDiff = None
         self.assertEqual(p.stderr.splitlines(), expected)
 
+    @skipIfBytecodeDSL("a")
     def test_03_eg_nested_truncated(self):
         script = textwrap.dedent("""
             raise ExceptionGroup("EG", [
@@ -377,5 +382,179 @@ class ExceptStarPrintTest(unittest.TestCase):
                     b'    +---------------- ... ----------------',
                     b'    | and 8 more exceptions',
                     b'    +------------------------------------']
+        self.maxDiff = None
+        self.assertEqual(p.stderr.splitlines(), expected)
+
+    @skipIfBytecodeDSL("a")
+    def test_04_eg_cause(self):
+        script = textwrap.dedent("""
+            EG = ExceptionGroup
+            try:
+                raise EG("eg1", [ValueError(1), TypeError(2)])
+            except Exception as e:
+                raise EG("eg2", [ValueError(3), TypeError(4)]) from e
+        """)
+
+        p = subprocess.run([sys.executable, "-c", script], capture_output=True)
+
+        expected = [b'  + Exception Group Traceback (most recent call last):',
+                    b'  |   File "<string>", line 4, in <module>',
+                    b'  | ExceptionGroup: eg1 (2 sub-exceptions)',
+                    b'  +-+---------------- 1 ----------------',
+                    b'    | ValueError: 1',
+                    b'    +---------------- 2 ----------------',
+                    b'    | TypeError: 2',
+                    b'    +------------------------------------',
+                    b'',
+                    b'The above exception was the direct cause of the following exception:',
+                    b'',
+                    b'  + Exception Group Traceback (most recent call last):',
+                    b'  |   File "<string>", line 6, in <module>',
+                    b'  | ExceptionGroup: eg2 (2 sub-exceptions)',
+                    b'  +-+---------------- 1 ----------------',
+                    b'    | ValueError: 3',
+                    b'    +---------------- 2 ----------------',
+                    b'    | TypeError: 4',
+                    b'    +------------------------------------']
+
+        self.maxDiff = None
+        self.assertEqual(p.stderr.splitlines(), expected)
+
+    @skipIfBytecodeDSL("a")
+    def test_05_eg_context_with_context(self):
+        script = textwrap.dedent("""
+            EG = ExceptionGroup
+            try:
+                try:
+                    raise EG("eg1", [ValueError(1), TypeError(2)])
+                except EG:
+                    raise EG("eg2", [ValueError(3), TypeError(4)])
+            except EG:
+                raise ImportError(5)
+        """)
+
+        p = subprocess.run([sys.executable, "-c", script], capture_output=True)
+
+        expected = [b'  + Exception Group Traceback (most recent call last):',
+                    b'  |   File "<string>", line 5, in <module>',
+                    b'  | ExceptionGroup: eg1 (2 sub-exceptions)',
+                    b'  +-+---------------- 1 ----------------',
+                    b'    | ValueError: 1',
+                    b'    +---------------- 2 ----------------',
+                    b'    | TypeError: 2',
+                    b'    +------------------------------------',
+                    b'',
+                    b'During handling of the above exception, another exception occurred:',
+                    b'',
+                    b'  + Exception Group Traceback (most recent call last):',
+                    b'  |   File "<string>", line 7, in <module>',
+                    b'  | ExceptionGroup: eg2 (2 sub-exceptions)',
+                    b'  +-+---------------- 1 ----------------',
+                    b'    | ValueError: 3',
+                    b'    +---------------- 2 ----------------',
+                    b'    | TypeError: 4',
+                    b'    +------------------------------------',
+                    b'',
+                    b'During handling of the above exception, another exception occurred:',
+                    b'',
+                    b'Traceback (most recent call last):',
+                    b'  File "<string>", line 9, in <module>',
+                    b'ImportError: 5',]
+
+        self.maxDiff = None
+        self.assertEqual(p.stderr.splitlines(), expected)
+
+    @skipIfBytecodeDSL("a")
+    def test_06_eg_nested_with_context(self):
+        script = textwrap.dedent("""
+            EG = ExceptionGroup
+            VE = ValueError
+            TE = TypeError
+            try:
+                try:
+                    raise EG("nested", [TE(2), TE(3)])
+                except Exception as e:
+                    exc = e
+                raise EG("eg", [VE(1), exc, VE(4)])
+            except EG:
+                raise EG("top", [VE(5)])
+        """)
+
+        p = subprocess.run([sys.executable, "-c", script], capture_output=True)
+
+        expected = [b'  + Exception Group Traceback (most recent call last):',
+                    b'  |   File "<string>", line 10, in <module>',
+                    b'  | ExceptionGroup: eg (3 sub-exceptions)',
+                    b'  +-+---------------- 1 ----------------',
+                    b'    | ValueError: 1',
+                    b'    +---------------- 2 ----------------',
+                    b'    | Exception Group Traceback (most recent call last):',
+                    b'    |   File "<string>", line 7, in <module>',
+                    b'    | ExceptionGroup: nested (2 sub-exceptions)',
+                    b'    +-+---------------- 1 ----------------',
+                    b'      | TypeError: 2',
+                    b'      +---------------- 2 ----------------',
+                    b'      | TypeError: 3',
+                    b'      +------------------------------------',
+                    b'    +---------------- 3 ----------------',
+                    b'    | ValueError: 4',
+                    b'    +------------------------------------',
+                    b'',
+                    b'During handling of the above exception, another exception occurred:',
+                    b'',
+                    b'  + Exception Group Traceback (most recent call last):',
+                    b'  |   File "<string>", line 12, in <module>',
+                    b'  | ExceptionGroup: top (1 sub-exception)',
+                    b'  +-+---------------- 1 ----------------',
+                    b'    | ValueError: 5',
+                    b'    +------------------------------------',]
+
+        self.maxDiff = None
+        self.assertEqual(p.stderr.splitlines(), expected)
+
+    def test_07_eg_with_notes(self):
+        script = textwrap.dedent("""
+            try:
+                excs = []
+                for msg in ['bad value', 'terrible value']:
+                    try:
+                        raise ValueError(msg)
+                    except ValueError as e:
+                        e.add_note(f'the {msg}')
+                        excs.append(e)
+                raise ExceptionGroup("nested", excs)
+            except ExceptionGroup as e:
+                e.add_note(('>> Multi line note\\n'
+                            '>> Because I am such\\n'
+                            '>> an important exception.\\n'
+                            '>> empty lines work too\\n'
+                            '\\n'
+                            '(that was an empty line)'))
+                raise
+        """)
+
+        p = subprocess.run([sys.executable, "-c", script], capture_output=True)
+
+        expected = [b'  + Exception Group Traceback (most recent call last):',
+                    b'  |   File "<string>", line 10, in <module>',
+                    b'  | ExceptionGroup: nested (2 sub-exceptions)',
+                    b'  | >> Multi line note',
+                    b'  | >> Because I am such',
+                    b'  | >> an important exception.',
+                    b'  | >> empty lines work too',
+                    b'  | ',
+                    b'  | (that was an empty line)',
+                    b'  +-+---------------- 1 ----------------',
+                    b'    | Traceback (most recent call last):',
+                    b'    |   File "<string>", line 6, in <module>',
+                    b'    | ValueError: bad value',
+                    b'    | the bad value',
+                    b'    +---------------- 2 ----------------',
+                    b'    | Traceback (most recent call last):',
+                    b'    |   File "<string>", line 6, in <module>',
+                    b'    | ValueError: terrible value',
+                    b'    | the terrible value',
+                    b'    +------------------------------------',]
+
         self.maxDiff = None
         self.assertEqual(p.stderr.splitlines(), expected)
