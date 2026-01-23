@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,7 +51,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.object.GetDictFromGlobalsNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -87,13 +86,12 @@ public abstract class PyImportImport extends Node {
                     @Cached(inline = false) CallNode callNode,
                     @Cached(inline = false) AbstractImportNode.PyImportImportModuleLevelObject importModuleLevelObject,
                     @Cached PyEvalGetGlobals getGlobals,
-                    @Cached(inline = false) GetDictFromGlobalsNode getDictFromGlobals,
                     @Bind PythonLanguage language) {
         // Get the builtins from current globals
         Object globals = getGlobals.execute(frame, inliningTarget);
         Object builtins;
         if (noGlobalsProfile.profile(inliningTarget, globals != null)) {
-            builtins = getItemNode.execute(frame, inliningTarget, getDictFromGlobals.execute(inliningTarget, globals), T___BUILTINS__);
+            builtins = getItemNode.execute(frame, inliningTarget, globals, T___BUILTINS__);
         } else {
             // No globals -- use standard builtins, and fake globals
             builtins = importModuleLevelObject.execute(frame, PythonContext.get(inliningTarget), T_BUILTINS, null, null, 0);

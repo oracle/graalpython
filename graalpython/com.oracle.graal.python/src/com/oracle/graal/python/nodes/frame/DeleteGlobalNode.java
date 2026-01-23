@@ -42,9 +42,7 @@ package com.oracle.graal.python.nodes.frame;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyObjectDelItem;
-import com.oracle.graal.python.lib.PyObjectSetAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -104,20 +102,5 @@ public abstract class DeleteGlobalNode extends PNodeWithContext {
             exceptionProfile.profileException(inliningTarget, e, PythonBuiltinClassType.KeyError);
             throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.NameError, ErrorMessages.NAME_NOT_DEFINED, attributeId);
         }
-    }
-
-    @Specialization(guards = {"isSingleContext()", "globals == cachedGlobals"}, limit = "1")
-    static void deleteModuleCached(VirtualFrame frame, @SuppressWarnings("unused") PythonModule globals, TruffleString attributeId,
-                    @Bind Node inliningTarget,
-                    @Cached(value = "globals", weak = true) PythonModule cachedGlobals,
-                    @Shared @Cached PyObjectSetAttr setAttr) {
-        setAttr.delete(frame, inliningTarget, cachedGlobals, attributeId);
-    }
-
-    @Specialization(replaces = "deleteModuleCached")
-    static void deleteModule(VirtualFrame frame, PythonModule globals, TruffleString attributeId,
-                    @Bind Node inliningTarget,
-                    @Shared @Cached PyObjectSetAttr setAttr) {
-        setAttr.delete(frame, inliningTarget, globals, attributeId);
     }
 }
