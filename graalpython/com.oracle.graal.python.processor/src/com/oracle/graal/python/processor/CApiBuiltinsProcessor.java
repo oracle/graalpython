@@ -779,7 +779,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
 
         for (var builtin : javaBuiltins) {
             String argString = Arrays.stream(builtin.arguments).map(b -> "ArgDescriptor." + b).collect(Collectors.joining(", "));
-            lines.add("    public static final CApiBuiltinExecutable " + builtin.name + " = new CApiBuiltinExecutable(\"" + builtin.name + "\", CApiCallPath." + builtin.call + ", ArgDescriptor." +
+            lines.add("    public static final CApiBuiltinExecutable " + builtin.name + " = new CApiBuiltinExecutable(\"" + builtin.name + "\", ArgDescriptor." +
                             builtin.returnType + ", new ArgDescriptor[]{" + argString + "}, " + builtin.acquireGil + ", " + builtin.id + ");");
         }
         lines.add("");

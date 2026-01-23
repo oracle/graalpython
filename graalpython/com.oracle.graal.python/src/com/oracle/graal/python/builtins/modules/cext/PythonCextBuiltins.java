@@ -589,14 +589,12 @@ public final class PythonCextBuiltins {
         private final ArgDescriptor ret;
         private final ArgDescriptor[] args;
         private final boolean acquireGil;
-        private final CApiCallPath call;
         private final String name;
         private final int id;
 
-        public CApiBuiltinExecutable(String name, CApiCallPath call, ArgDescriptor ret, ArgDescriptor[] args, boolean acquireGil, int id) {
+        public CApiBuiltinExecutable(String name, ArgDescriptor ret, ArgDescriptor[] args, boolean acquireGil, int id) {
             this.timing = CApiTiming.create(false, name);
             this.name = name;
-            this.call = call;
             this.ret = ret;
             this.args = args;
             this.acquireGil = acquireGil;
@@ -608,19 +606,13 @@ public final class PythonCextBuiltins {
             RootCallTarget ct = lang.getCapiCallTarget(id);
             if (ct == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                NfiType[] argTypes = new NfiType[args.length];
                 for (int i = 0; i < args.length; i++) {
-                    argTypes[i] = args[i].getNFI2Type();
+                    assert args[i].getNFI2Type() != NfiType.POINTER;
                 }
-                NfiUpcallSignature signature = Nfi.createUpcallSignature(ret.getNFI2Type(), argTypes);
-                ct = new ExecuteCApiBuiltinRootNode(this, signature).getCallTarget();
+                ct = new ExecuteCApiBuiltinRootNode(this, ret.getNFI2Type()).getCallTarget();
                 lang.setCapiCallTarget(id, ct);
             }
             return ct;
-        }
-
-        public CApiCallPath call() {
-            return call;
         }
 
         public String name() {
@@ -658,11 +650,6 @@ public final class PythonCextBuiltins {
             return node;
         }
 
-        public CApiBuiltinNode getUncachedNode() {
-            // TODO: how to set "node.ret"?
-            throw CompilerDirectives.shouldNotReachHere("not supported - uncached for " + name);
-        }
-
         @ExportMessage
         @TruffleBoundary
         boolean isPointer() {
@@ -691,8 +678,9 @@ public final class PythonCextBuiltins {
             PythonContext context = PythonContext.get(null);
             long pointer = context.getCApiContext().getClosurePointer(this);
             if (pointer == -1) {
+                NfiUpcallSignature signature = Nfi.createUpcallSignature(ret.getNFI2Type(), Arrays.stream(args).map(ArgDescriptor::getNFI2Type).toArray(NfiType[]::new));
                 try {
-                    pointer = ((ExecuteCApiBuiltinRootNode) getCallTarget().getRootNode()).signature.createClosure(context.ensureNfiContext(), name, PythonCextBuiltinRegistry.getMethodHandle(id));
+                    pointer = signature.createClosure(context.ensureNfiContext(), name, PythonCextBuiltinRegistry.getMethodHandle(id));
                     context.getCApiContext().setClosurePointer(null, this, pointer);
                     LOGGER.finer(CApiBuiltinExecutable.class.getSimpleName() + " toNative: " + id + " / " + name() + " -> " + pointer);
                 } catch (Throwable t) {
@@ -729,13 +717,13 @@ public final class PythonCextBuiltins {
     static final class ExecuteCApiBuiltinRootNode extends RootNode {
 
         final CApiBuiltinExecutable self;
-        final NfiUpcallSignature signature;
+        final NfiType returnValue;
         @Child ExecuteCApiBuiltinNode executeBuiltinNode;
 
-        ExecuteCApiBuiltinRootNode(CApiBuiltinExecutable self, NfiUpcallSignature signature) {
+        ExecuteCApiBuiltinRootNode(CApiBuiltinExecutable self, NfiType nfiType) {
             super(PythonLanguage.get(null));
             this.self = self;
-            this.signature = signature;
+            this.returnValue = nfiType;
         }
 
         @Override
@@ -747,7 +735,7 @@ public final class PythonCextBuiltins {
             try {
                 Object[] args = frame.getArguments();
                 Object result = executeBuiltinNode.execute(args);
-                return signature.getReturnType().convertToNative(result);
+                return returnValue.convertToNative(result);
             } catch (Throwable e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
