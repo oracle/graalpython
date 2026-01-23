@@ -104,7 +104,7 @@ def downstream_test_hpy(graalpy, testdir=None, args=None, env=None, check=True, 
 
 @downstream_test('pybind11')
 def downstream_test_pybind11(graalpy, testdir):
-    run(['git', 'clone', 'https://github.com/pybind/pybind11.git'], cwd=testdir)
+    run(['git', 'clone', 'https://github.com/pybind/pybind11.git', '--depth', '1'], cwd=testdir)
     src = testdir / 'pybind11'
     venv = src / 'venv'
     run([graalpy, '-m', 'venv', str(venv)])
@@ -120,7 +120,7 @@ def downstream_test_pybind11(graalpy, testdir):
 
 @downstream_test('virtualenv')
 def downstream_test_virtualenv(graalpy, testdir):
-    run(['git', 'clone', 'https://github.com/pypa/virtualenv.git', '-b', 'main'], cwd=testdir)
+    run(['git', 'clone', 'https://github.com/pypa/virtualenv.git', '-b', 'main', '--depth', '1'], cwd=testdir)
     src = testdir / 'virtualenv'
     venv = src / 'venv'
     run([graalpy, '-m', 'venv', str(venv)])
@@ -139,7 +139,7 @@ def downstream_test_virtualenv(graalpy, testdir):
 
 @downstream_test('pyo3')
 def downstream_test_pyo3(graalpy, testdir):
-    run(['git', 'clone', 'https://github.com/PyO3/pyo3.git', '-b', 'main'], cwd=testdir)
+    run(['git', 'clone', 'https://github.com/PyO3/pyo3.git', '-b', 'main', '--depth', '1'], cwd=testdir)
     src = testdir / 'pyo3'
     venv = src / 'venv'
     run([graalpy, '-m', 'venv', str(venv)])
@@ -149,9 +149,9 @@ def downstream_test_pyo3(graalpy, testdir):
 
 @downstream_test('pydantic-core')
 def downstream_test_pydantic_core(graalpy, testdir):
-    run(['git', 'clone', 'https://github.com/pydantic/pydantic.git', '-b', 'main'], cwd=testdir)
+    run(['git', 'clone', 'https://github.com/pydantic/pydantic.git', '-b', 'main', '--depth', '1'], cwd=testdir)
     src = testdir / 'pydantic' / 'pydantic-core'
-    run(['uv', 'sync', '--python', graalpy, '--group', 'testing-extra'], cwd=src)
+    run(['uv', 'sync', '--python', graalpy, '--group', 'testing-extra', '--no-install-project'], cwd=src)
     run(['uv', 'build', '--python', graalpy, '--wheel', '.'], cwd=src)
     [wheel] = (src.parent / 'dist').glob('pydantic_core-*graalpy*.whl')
     # uv doesn't accept wheels with devtags
@@ -160,12 +160,12 @@ def downstream_test_pydantic_core(graalpy, testdir):
     run(['uv', 'pip', 'install', wheel], cwd=src)
     env = os.environ.copy()
     env['HYPOTHESIS_PROFILE'] = 'slow'
-    run(['uv', 'run', 'pytest', '-v', '--tb=short'], cwd=src, env=env)
+    run(['uv', 'run', '--no-sync', 'pytest', '-v', '--tb=short'], cwd=src, env=env)
 
 
 @downstream_test('jiter')
 def downstream_test_jiter(graalpy, testdir):
-    run(['git', 'clone', 'https://github.com/pydantic/jiter.git', '-b', 'main'], cwd=testdir)
+    run(['git', 'clone', 'https://github.com/pydantic/jiter.git', '-b', 'main', '--depth', '1'], cwd=testdir)
     src = testdir / 'jiter'
     venv = src / 'venv'
     run([graalpy, '-m', 'venv', str(venv)])
@@ -177,7 +177,7 @@ def downstream_test_jiter(graalpy, testdir):
 
 @downstream_test('cython')
 def downstream_test_cython(graalpy, testdir):
-    run(['git', 'clone', 'https://github.com/cython/cython.git', '-b', 'master'], cwd=testdir)
+    run(['git', 'clone', 'https://github.com/cython/cython.git', '-b', 'master', '--depth', '1'], cwd=testdir)
     src = testdir / 'cython'
     venv = src / 'venv'
     env = os.environ.copy()
