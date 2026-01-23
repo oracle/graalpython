@@ -281,9 +281,10 @@ public class TimeDeltaNodes {
             return value;
         }
 
-        @Specialization
-        static PTimeDelta doNative(PythonAbstractNativeObject nativeDelta,
+        @Specialization(guards = "checkNode.execute(inliningTarget, nativeDelta)", limit = "1")
+        static PTimeDelta doNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject nativeDelta,
                         @Bind PythonLanguage language,
+                        @SuppressWarnings("unused") @Cached TimeDeltaCheckNode checkNode,
                         @Cached CStructAccess.ReadI32Node readIntNode) {
             int days = getDays(nativeDelta, readIntNode);
             int seconds = getSeconds(nativeDelta, readIntNode);
@@ -303,6 +304,12 @@ public class TimeDeltaNodes {
 
         static int getMicroseconds(PythonAbstractNativeObject self, CStructAccess.ReadI32Node readNode) {
             return readNode.readFromObj(self, CFields.PyDateTime_Delta__microseconds);
+        }
+
+        @Fallback
+        static PTimeDelta error(Object obj,
+                        @Bind Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.S_EXPECTED_GOT_P, "timedelta", obj);
         }
     }
 }
