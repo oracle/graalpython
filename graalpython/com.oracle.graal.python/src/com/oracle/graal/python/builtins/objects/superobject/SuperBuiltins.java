@@ -148,8 +148,8 @@ public final class SuperBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isSingleContext()", "self == cachedSelf"}, assumptions = {"cachedSelf.getNeverReinitializedAssumption()"}, limit = "1")
         static Object cached(@NeverDefault @SuppressWarnings("unused") SuperObject self,
-                        @SuppressWarnings("unused") @Cached("self") SuperObject cachedSelf,
-                        @Cached(value = "self.getType()") Object type) {
+                        @SuppressWarnings("unused") @Cached(value = "self", weak = true) SuperObject cachedSelf,
+                        @Cached(value = "self.getType()", weak = true) Object type) {
             return type;
         }
 
@@ -167,8 +167,8 @@ public final class SuperBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isSingleContext()", "self == cachedSelf"}, assumptions = {"cachedSelf.getNeverReinitializedAssumption()"}, limit = "1")
         static Object cached(@NeverDefault @SuppressWarnings("unused") SuperObject self,
-                        @SuppressWarnings("unused") @Cached("self") SuperObject cachedSelf,
-                        @Cached(value = "self.getObjectType()") Object type) {
+                        @SuppressWarnings("unused") @Cached(value = "self", weak = true) SuperObject cachedSelf,
+                        @Cached(value = "self.getObjectType()", weak = true) Object type) {
             return type;
         }
 
@@ -190,8 +190,8 @@ public final class SuperBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isSingleContext()", "self == cachedSelf"}, assumptions = {"cachedSelf.getNeverReinitializedAssumption()"}, limit = "1")
         static Object cached(@NeverDefault @SuppressWarnings("unused") SuperObject self,
-                        @SuppressWarnings("unused") @Cached("self") SuperObject cachedSelf,
-                        @Cached(value = "self.getObject()") Object object) {
+                        @SuppressWarnings("unused") @Cached(value = "self", weak = true) SuperObject cachedSelf,
+                        @Cached(value = "self.getObject()", weak = true) Object object) {
             return object;
         }
 
