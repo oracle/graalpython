@@ -97,7 +97,7 @@ In order to distribute the resulting application for other systems, follow these
     - Include the GraalPy support and the [GraalVM Polyglot API](https://www.graalvm.org/sdk/javadoc/org/graalvm/polyglot/package-summary.html) in the `dependencies` section:
         ```bash
         implementation("org.graalvm.polyglot:polyglot:25.0.2")
-        implementation("org.graalvm.polyglot:python:25.0.2")
+        implementation("org.graalvm.python:python-embedding:25.0.2")
         ```
 
 3. Finally, replace the code in the file named _App.java_ as follows for a small Python embedding:
@@ -105,10 +105,11 @@ In order to distribute the resulting application for other systems, follow these
     package interop;
 
     import org.graalvm.polyglot.*;
+    import org.graalvm.python.embedding.GraalPyResources;
 
     class App {
         public static void main(String[] args) {
-            try (var context = Context.create()) {
+            try (var context = GraalPyResources.createContext()) {
                 System.out.println(context.eval("python", "'Hello Python!'").asString());
             }
         }
@@ -157,7 +158,7 @@ In order to distribute the resulting application for other systems, follow these
       class App {
       ...
       public static void main(String[] args) {
-          try (Context context = GraalPyResources.createContext()) {
+          try (Context context = GraalPyResources.contextBuilder().build()) {
               String src = """
               from termcolor import colored
               colored_text = colored("hello java", "red", attrs=["reverse", "blink"])
