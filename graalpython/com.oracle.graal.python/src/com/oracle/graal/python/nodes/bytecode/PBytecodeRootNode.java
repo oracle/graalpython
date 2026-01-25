@@ -3309,7 +3309,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
                 pyFrame.setLocalTraceFun(null);
             }
         } catch (Throwable e) {
-            threadState.setTraceFun(null, getLanguage());
+            threadState.setTraceFun(null, null, getLanguage());
             throw e;
         } finally {
             if (line != -1) {
@@ -3377,7 +3377,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
             Object realResult = result == PNone.NONE ? null : result;
             pyFrame.setLocalTraceFun(realResult);
         } catch (Throwable e) {
-            threadState.setProfileFun(null, getLanguage());
+            threadState.setProfileFun(null, null, getLanguage());
             throw e;
         } finally {
             threadState.profilingStop();

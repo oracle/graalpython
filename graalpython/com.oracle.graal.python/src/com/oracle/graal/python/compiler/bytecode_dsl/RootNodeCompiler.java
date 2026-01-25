@@ -265,6 +265,8 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
     private BytecodeLocal currentSaveExceptionLocal;
     private BytecodeLocal prevSaveExceptionLocal;
 
+    private BytecodeLocal instrumentationDataLocal;
+
     public RootNodeCompiler(BytecodeDSLCompilerContext ctx, RootNodeCompiler parent, SSTNode rootNode, EnumSet<FutureFeature> futureFeatures) {
         this(ctx, parent, null, rootNode, rootNode, futureFeatures);
     }
@@ -458,12 +460,10 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                         sourceRange.endColumn,
                         classcellIndex,
                         selfIndex,
+                        yieldFromGenerator != null ? yieldFromGenerator.getLocalIndex() : -1,
+                        instrumentationDataLocal.getLocalIndex(),
                         new BytecodeSupplier(nodes));
         rootNode.setMetadata(codeUnit, ctx.errorCallback);
-        if (codeUnit.isCoroutine() || codeUnit.isAsyncGenerator() || scope.isGeneratorWithYieldFrom()) {
-            rootNode.yieldFromGeneratorIndex = yieldFromGenerator.getLocalIndex();
-        }
-
         return new BytecodeDSLCompilerResult(rootNode, codeUnit);
     }
 
@@ -1413,10 +1413,18 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             savedExLocal = currentSaveExceptionLocal;
         }
 
-        statementCompiler.b.beginResumeYield(generatorExceptionStateLocal, savedExLocal);
+        statementCompiler.b.beginResumeYield();
+        statementCompiler.b.beginResumeInstrumentedYield();
+        statementCompiler.b.beginPreResumeYield(generatorExceptionStateLocal, savedExLocal);
+
         statementCompiler.b.beginYieldValue();
+        statementCompiler.b.beginTraceYieldValue();
         yieldValueProducer.accept(statementCompiler);
+        statementCompiler.b.endTraceYieldValue();
         statementCompiler.b.endYieldValue();
+
+        statementCompiler.b.endPreResumeYield();
+        statementCompiler.b.endResumeInstrumentedYield();
         statementCompiler.b.endResumeYield();
     }
 
@@ -1696,6 +1704,11 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         if (scope.isGeneratorWithYieldFrom() || scope.isCoroutine()) {
             yieldFromGenerator = b.createLocal();
         }
+
+        // We always create this local, but it is used only by TRACE_AND_PROFILE_CONFIG
+        // configuration
+        instrumentationDataLocal = b.createLocal();
+        b.emitEnterInstrumentedRoot();
     }
 
     private void copyArguments(ArgumentsTy args, Builder b) {

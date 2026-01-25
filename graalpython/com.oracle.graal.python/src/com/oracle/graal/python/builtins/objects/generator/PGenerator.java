@@ -345,10 +345,10 @@ public class PGenerator extends PythonBuiltinObject {
 
         if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
             PBytecodeDSLRootNode rootNode = getBytecodeDSLState().rootNode;
-            if (rootNode.yieldFromGeneratorIndex == -1 || !getBytecodeDSLState().isStarted) {
+            if (!rootNode.hasYieldFromGenerator() || !getBytecodeDSLState().isStarted) {
                 return null;
             }
-            return getContinuationBytecodeNode().getLocalValue(0, getGeneratorFrame(), rootNode.yieldFromGeneratorIndex);
+            return rootNode.readYieldFromGenerator(getContinuationBytecodeNode(), getGeneratorFrame());
         } else {
             return ((BytecodeFrameInfo) frameInfo).getYieldFrom(frame, getBci(), getBytecodeState().getCurrentRootNode().getResumeStackTop());
         }
