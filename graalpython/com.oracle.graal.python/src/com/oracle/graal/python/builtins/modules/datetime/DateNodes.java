@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules.datetime;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.modules.datetime.DatetimeModuleBuiltins.MAX_YEAR;
 import static com.oracle.graal.python.builtins.modules.datetime.DatetimeModuleBuiltins.MIN_YEAR;
@@ -199,9 +200,10 @@ public class DateNodes {
             return obj;
         }
 
-        @Specialization
-        static PDate asManagedNative(PythonAbstractNativeObject obj,
+        @Specialization(guards = "checkNode.execute(inliningTarget, obj)", limit = "1")
+        static PDate asManagedNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject obj,
                         @Bind PythonLanguage language,
+                        @SuppressWarnings("unused") @Cached DateCheckNode checkNode,
                         @Cached CStructAccess.ReadByteNode readByteNode) {
             int year = getYear(obj, readByteNode);
             int month = getMonth(obj, readByteNode);
@@ -222,6 +224,12 @@ public class DateNodes {
 
         static int getDay(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
             return readNode.readFromObjUnsigned(self, CFields.PyDateTime_Date__data, 3);
+        }
+
+        @Fallback
+        static PDate error(Object obj,
+                        @Bind Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.S_EXPECTED_GOT_P, "date", obj);
         }
     }
 

@@ -1277,8 +1277,13 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @Specialization(guards = "hasLocals(frame)")
         public static void performLocals(VirtualFrame frame, TruffleString name,
                         @Bind Node inliningTarget,
-                        @Cached PyObjectDelItem deleteNode) {
-            deleteNode.execute(frame, inliningTarget, PArguments.getSpecialArgument(frame), name);
+                        @Cached PyObjectDelItem deleteNode,
+                        @Cached PRaiseNode raiseNode) {
+            try {
+                deleteNode.execute(frame, inliningTarget, PArguments.getSpecialArgument(frame), name);
+            } catch (PException e) {
+                throw raiseNode.raiseNameError(inliningTarget, name);
+            }
         }
 
         @Specialization(guards = "!hasLocals(frame)")

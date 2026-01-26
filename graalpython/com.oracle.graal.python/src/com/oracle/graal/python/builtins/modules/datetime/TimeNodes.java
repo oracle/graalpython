@@ -245,9 +245,10 @@ public class TimeNodes {
             return value;
         }
 
-        @Specialization
-        static PTime doNative(PythonAbstractNativeObject nativeTime,
+        @Specialization(guards = "checkNode.execute(inliningTarget, nativeTime)", limit = "1")
+        static PTime doNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject nativeTime,
                         @Bind PythonLanguage language,
+                        @SuppressWarnings("unused") @Cached TimeCheckNode checkNode,
                         @Cached CStructAccess.ReadByteNode readByteNode,
                         @Cached CStructAccess.ReadObjectNode readObjectNode) {
             int hour = getHour(nativeTime, readByteNode);
@@ -294,6 +295,12 @@ public class TimeNodes {
 
         static int getFold(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
             return readNode.readFromObjUnsigned(self, CFields.PyDateTime_Time__fold);
+        }
+
+        @Fallback
+        static PTime error(Object obj,
+                        @Bind Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.S_EXPECTED_GOT_P, "time", obj);
         }
     }
 

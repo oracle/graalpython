@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -72,7 +72,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromPythonObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.object.GetDictFromGlobalsNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNodeFactory.ImportNameNodeGen;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
@@ -196,20 +195,13 @@ public abstract class AbstractImportNode extends PNodeWithContext {
                         @Cached InlinedConditionProfile importFuncProfile,
                         @Cached PConstructAndRaiseNode.Lazy raiseNode,
                         @Cached CallNode importCallNode,
-                        @Cached GetDictFromGlobalsNode getDictNode,
                         @Cached PyImportImportModuleLevelObject importModuleLevel) {
             Object importFunc = readAttrNode.execute(builtins, T___IMPORT__, null);
             if (importFunc == null) {
                 throw raiseNode.get(inliningTarget).raiseImportError(frame, IMPORT_NOT_FOUND);
             }
             if (importFuncProfile.profile(inliningTarget, context.importFunc() != importFunc)) {
-                Object globalsArg;
-                if (globals instanceof PNone) {
-                    globalsArg = globals;
-                } else {
-                    globalsArg = getDictNode.execute(inliningTarget, globals);
-                }
-                return importCallNode.execute(frame, importFunc, name, globalsArg, PNone.NONE, PFactory.createTuple(PythonLanguage.get(inliningTarget), fromList), level);
+                return importCallNode.execute(frame, importFunc, name, globals, PNone.NONE, PFactory.createTuple(PythonLanguage.get(inliningTarget), fromList), level);
             }
             return importModuleLevel.execute(frame, context, name, globals, fromList, level);
         }
@@ -474,10 +466,9 @@ public abstract class AbstractImportNode extends PNodeWithContext {
         abstract TruffleString execute(Frame frame, TruffleString name, Object globals, int level);
 
         @Specialization
-        TruffleString resolveName(VirtualFrame frame, TruffleString name, Object globals, int level,
+        TruffleString resolveName(VirtualFrame frame, TruffleString name, PDict globals, int level,
                         @Bind Node inliningTarget,
                         @Cached PConstructAndRaiseNode constructAndRaiseNode,
-                        @Cached GetDictFromGlobalsNode getDictNode,
                         @Cached PyDictGetItem getPackageOrNameNode,
                         @Cached PyDictGetItem getSpecNode,
                         @Cached PyObjectGetAttr getParent,
@@ -489,9 +480,8 @@ public abstract class AbstractImportNode extends PNodeWithContext {
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.ToStringNode toStringNode,
                         @Cached(value = "singleByte()", uncached = "uncachedByte()", dimensions = 1) byte[] branchStates) {
-            PDict globalsDict = getDictNode.execute(inliningTarget, globals);
-            Object pkg = getPackageOrNameNode.execute(frame, inliningTarget, globalsDict, SpecialAttributeNames.T___PACKAGE__);
-            Object spec = getSpecNode.execute(frame, inliningTarget, globalsDict, SpecialAttributeNames.T___SPEC__);
+            Object pkg = getPackageOrNameNode.execute(frame, inliningTarget, globals, SpecialAttributeNames.T___PACKAGE__);
+            Object spec = getSpecNode.execute(frame, inliningTarget, globals, SpecialAttributeNames.T___SPEC__);
             TruffleString pkgString;
             if (pkg == PNone.NONE) {
                 pkg = null;
@@ -548,7 +538,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
 
                 // (tfel): we use the byte field to cut off this branch unless needed, and for
                 // footprint when use the same node for __package__, __name__, and __path__ lookup
-                pkg = getPackageOrNameNode.execute(frame, inliningTarget, globalsDict, SpecialAttributeNames.T___NAME__);
+                pkg = getPackageOrNameNode.execute(frame, inliningTarget, globals, SpecialAttributeNames.T___NAME__);
                 if (pkg == null) {
                     if ((branchStates[0] & GOT_NO_NAME) == 0) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -565,7 +555,7 @@ public abstract class AbstractImportNode extends PNodeWithContext {
                     }
                     throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.TypeError, ErrorMessages.NAME_MUST_BE_A_STRING);
                 }
-                Object path = getPackageOrNameNode.execute(frame, inliningTarget, globalsDict, SpecialAttributeNames.T___PATH__);
+                Object path = getPackageOrNameNode.execute(frame, inliningTarget, globals, SpecialAttributeNames.T___PATH__);
                 if (path == null) {
                     int dotIdx = indexOfCodePointNode.execute(pkgString, '.', 0, codePointLengthNode.execute(pkgString, TS_ENCODING), TS_ENCODING);
                     if (dotIdx < 0) {

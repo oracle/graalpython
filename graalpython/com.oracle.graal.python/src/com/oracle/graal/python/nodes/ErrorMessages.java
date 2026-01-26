@@ -337,7 +337,7 @@ public abstract class ErrorMessages {
     public static final TruffleString FORMATED_S_TOO_LONG = tsLiteral("formatted %s is too long (precision too large?)");
     public static final TruffleString FUNC_CONSTRUCTION_NOT_SUPPORTED = tsLiteral("function construction not supported for (%p, %p, %p, %p, %p, %p)");
     public static final TruffleString FUNC_TAKES_EXACTLY_D_ARGS = tsLiteral("function takes exaclty %d arguments (%d given)");
-    public static final TruffleString S_TAKES_EXACTLY_D_ARGS = tsLiteral("%s takes exaclty %d arguments (%d given)");
+    public static final TruffleString S_TAKES_EXACTLY_D_ARGS = tsLiteral("%s takes exactly %d arguments (%d given)");
     public static final TruffleString S_TAKES_VARARGS = tsLiteral("%s takes varargs");
     public static final TruffleString S_DOES_NOT_TAKE_VARARGS = tsLiteral("%s does not take varargs");
     public static final TruffleString GCD_FOR_NATIVE_NOT_SUPPORTED = tsLiteral("gcd for native objects is not yet supported on GraalPy");
@@ -355,7 +355,7 @@ public abstract class ErrorMessages {
     public static final TruffleString GOT_UNEXPECTED_KEYWORD_ARG = tsLiteral("%s() got an unexpected keyword argument '%s'");
     public static final TruffleString HANDLER_MUST_BE_CALLABLE = tsLiteral("handler must be callable");
     public static final TruffleString HAS_NO_ATTR = tsLiteral("%p has no attribute '%s'");
-    public static final TruffleString TYPE_N_HAS_NO_ATTR = tsLiteral("type object %s has no attribute '%s'");
+    public static final TruffleString TYPE_N_HAS_NO_ATTR = tsLiteral("type object '%N' has no attribute '%s'");
     public static final TruffleString P_HAS_NO_ATTRS_S_TO_ASSIGN = tsLiteral("'%p' object has no attributes (assign to .%s)");
     public static final TruffleString P_HAS_NO_ATTRS_S_TO_DELETE = tsLiteral("'%p' object has no attributes (del .%s)");
     public static final TruffleString P_HAS_RO_ATTRS_S_TO_ASSIGN = tsLiteral("'%p' object has only read-only attributes (assign to .%s)");

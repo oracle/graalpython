@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -113,7 +113,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.GetDictFromGlobalsNode;
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -215,7 +214,6 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
         @Child PyObjectIsTrueNode isTrueNode;
         @Child IsSubClassNode isSubClassNode;
         @Child GetOrCreateDictNode getDictNode;
-        @Child GetDictFromGlobalsNode getDictFromGlobalsNode;
         @Child ReadFrameNode readFrameNode;
         @Child PyObjectLookupAttr lookupAttrNode;
         @Child PyObjectCallMethodObjArgs callMethodNode;
@@ -396,15 +394,6 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                 getDictNode = insert(GetOrCreateDictNode.create());
             }
             return getDictNode.executeCached(getContext().lookupBuiltinModule(T_SYS));
-        }
-
-        private PDict getGlobalsDict(Object globals) {
-            if (getDictFromGlobalsNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                reportPolymorphicSpecialize();
-                getDictFromGlobalsNode = insert(GetDictFromGlobalsNode.create());
-            }
-            return getDictFromGlobalsNode.executeCached(globals);
         }
 
         private PFrame getCallerFrame(VirtualFrame frame, int stackLevel, TruffleString[] skipFilePrefixes) {
@@ -891,7 +880,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                 filename[0] = T_SYS;
                 lineno[0] = 1;
             } else {
-                globals = getGlobalsDict(f.getGlobals());
+                globals = (PDict) f.getGlobals();
                 lineno[0] = f.getLine();
                 RootCallTarget ct = f.getTarget();
                 if (ct != null) {

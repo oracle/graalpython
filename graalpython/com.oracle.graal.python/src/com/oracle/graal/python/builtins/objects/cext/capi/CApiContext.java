@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,7 +44,6 @@ import static com.oracle.graal.python.PythonLanguage.CONTEXT_INSENSITIVE_SINGLET
 import static com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper.PythonAbstractObjectNativeWrapper.IMMORTAL_REFCNT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.pollReferenceQueue;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___FILE__;
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___LIBRARY__;
 import static com.oracle.graal.python.nodes.StringLiterals.J_NFI_LANGUAGE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_DASH;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
@@ -1211,7 +1210,6 @@ public final class CApiContext extends CExtContext {
             // see: 'import.c: _PyImport_FixupExtensionObject'
             PythonModule module = (PythonModule) result;
             module.setAttribute(T___FILE__, spec.path);
-            module.setAttribute(T___LIBRARY__, sharedLibrary);
             addLoadedExtensionLibrary(sharedLibrary);
 
             // add to 'sys.modules'

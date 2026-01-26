@@ -358,7 +358,6 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                         @Cached ResumeGeneratorNode resumeGeneratorNode,
                         @Cached ExceptionNodes.GetTracebackNode getTracebackNode,
                         @Cached ExceptionNodes.SetTracebackNode setTracebackNode,
-                        @Cached ExceptionNodes.SetContextNode setContextNode,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode,
                         @Cached PRaiseNode raiseNode) {
             boolean hasTb = hasTbProfile.profile(inliningTarget, !(tb instanceof PNone));
@@ -379,8 +378,6 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                 setTracebackNode.execute(inliningTarget, instance, tb);
             }
             PythonLanguage language = PythonLanguage.get(inliningTarget);
-            setContextNode.execute(inliningTarget, instance, PNone.NONE); // Will be filled when
-                                                                          // caught
             if (self.isCoroutine() && self.isFinished()) {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.RuntimeError, ErrorMessages.CANNOT_REUSE_CORO);
             }

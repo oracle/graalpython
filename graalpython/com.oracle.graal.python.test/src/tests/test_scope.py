@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,6 +37,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+from tests import util
 
 def assert_raises(err, fn, *args, **kwargs):
     raised = False
@@ -945,3 +946,30 @@ def test_free_var_with_nonlocals():
     c = fnc.__code__
     assert c.co_freevars == ('var',)
     assert c.co_cellvars == tuple()
+
+
+@util.skipUnlessBytecodeDSL("name atttribute not populated in manual interpreter")
+def test_name_errors():
+    def assert_raises_name_error(name, fn, *args, **kwargs):
+        try:
+            fn(*args, **kwargs)
+        except NameError as e:
+            assert str(e) == f"name '{name}' is not defined"
+            assert e.name == name
+
+    assert_raises_name_error('foo', exec, 'foo')
+    assert_raises_name_error('foo', exec, 'foo', {})
+    assert_raises_name_error('foo', exec, 'del foo')
+    assert_raises_name_error('foo', exec, 'del foo', {})
+
+    def load_global():
+        global xxx
+        xxx
+
+    assert_raises_name_error('xxx', load_global)
+
+    def delete_global():
+        global yyy
+        del yyy
+
+    assert_raises_name_error('yyy', delete_global)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -102,9 +102,6 @@ import com.oracle.graal.python.builtins.modules.QueueModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.RandomModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ReadlineModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ResourceModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.re.MatchBuiltins;
-import com.oracle.graal.python.builtins.modules.re.PatternBuiltins;
-import com.oracle.graal.python.builtins.modules.re.SREModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SSLModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SelectModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SignalModuleBuiltins;
@@ -204,6 +201,9 @@ import com.oracle.graal.python.builtins.modules.pickle.PicklerBuiltins;
 import com.oracle.graal.python.builtins.modules.pickle.PicklerMemoProxyBuiltins;
 import com.oracle.graal.python.builtins.modules.pickle.UnpicklerBuiltins;
 import com.oracle.graal.python.builtins.modules.pickle.UnpicklerMemoProxyBuiltins;
+import com.oracle.graal.python.builtins.modules.re.MatchBuiltins;
+import com.oracle.graal.python.builtins.modules.re.PatternBuiltins;
+import com.oracle.graal.python.builtins.modules.re.SREModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.re.SREScannerBuiltins;
 import com.oracle.graal.python.builtins.modules.weakref.ProxyTypeBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZLibModuleBuiltins;
@@ -247,6 +247,7 @@ import com.oracle.graal.python.builtins.objects.exception.BaseExceptionBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.BaseExceptionGroupBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.ImportErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.KeyErrorBuiltins;
+import com.oracle.graal.python.builtins.objects.exception.NameErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.OsErrorBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.StopIterationBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.SyntaxErrorBuiltins;
@@ -583,6 +584,7 @@ public abstract class Python3Core {
                         new com.oracle.graal.python.builtins.objects.types.UnionTypeBuiltins(),
                         // exceptions
                         new AttributeErrorBuiltins(),
+                        new NameErrorBuiltins(),
                         new SystemExitBuiltins(),
                         new ImportErrorBuiltins(),
                         new StopIterationBuiltins(),

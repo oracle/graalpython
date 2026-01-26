@@ -104,7 +104,7 @@ def downstream_test_hpy(graalpy, testdir=None, args=None, env=None, check=True, 
 
 @downstream_test('pybind11')
 def downstream_test_pybind11(graalpy, testdir):
-    run(['git', 'clone', 'https://github.com/pybind/pybind11.git'], cwd=testdir)
+    run(['git', 'clone', 'https://github.com/pybind/pybind11.git', '--depth', '1'], cwd=testdir)
     src = testdir / 'pybind11'
     venv = src / 'venv'
     run([graalpy, '-m', 'venv', str(venv)])
@@ -120,7 +120,7 @@ def downstream_test_pybind11(graalpy, testdir):
 
 @downstream_test('virtualenv')
 def downstream_test_virtualenv(graalpy, testdir):
-    run(['git', 'clone', 'https://github.com/pypa/virtualenv.git', '-b', 'main'], cwd=testdir)
+    run(['git', 'clone', 'https://github.com/pypa/virtualenv.git', '-b', 'main', '--depth', '1'], cwd=testdir)
     src = testdir / 'virtualenv'
     venv = src / 'venv'
     run([graalpy, '-m', 'venv', str(venv)])
@@ -130,6 +130,15 @@ def downstream_test_virtualenv(graalpy, testdir):
     # Need to avoid pulling in graalpy seeder
     env['PIP_GRAALPY_DISABLE_PATCHING'] = '1'
     run_in_venv(venv, ['pip', 'install', f'{src}[test]'], env=env)
+    # Allow newer CPython for building zipapp, we don't have 3.11 in the CI anymore
+    run(
+        [
+            'sed', '-i',
+            's/version in range(11, 6, -1)/version in range(14, 6, -1)/',
+            'tests/integration/test_zipapp.py',
+        ],
+        cwd=src,
+    )
     # Don't activate the venv, it interferes with the test
     run([
         str(venv / 'bin' / 'pytest'), '-v', '--tb=short', 'tests',
@@ -139,7 +148,7 @@ def downstream_test_virtualenv(graalpy, testdir):
 
 @downstream_test('pyo3')
 def downstream_test_pyo3(graalpy, testdir):
-    run(['git', 'clone', 'https://github.com/PyO3/pyo3.git', '-b', 'main'], cwd=testdir)
+    run(['git', 'clone', 'https://github.com/PyO3/pyo3.git', '-b', 'main', '--depth', '1'], cwd=testdir)
     src = testdir / 'pyo3'
     venv = src / 'venv'
     run([graalpy, '-m', 'venv', str(venv)])
@@ -149,9 +158,9 @@ def downstream_test_pyo3(graalpy, testdir):
 
 @downstream_test('pydantic-core')
 def downstream_test_pydantic_core(graalpy, testdir):
-    run(['git', 'clone', 'https://github.com/pydantic/pydantic.git', '-b', 'main'], cwd=testdir)
+    run(['git', 'clone', 'https://github.com/pydantic/pydantic.git', '-b', 'main', '--depth', '1'], cwd=testdir)
     src = testdir / 'pydantic' / 'pydantic-core'
-    run(['uv', 'sync', '--python', graalpy, '--group', 'testing-extra'], cwd=src)
+    run(['uv', 'sync', '--python', graalpy, '--group', 'testing-extra', '--no-install-project'], cwd=src)
     run(['uv', 'build', '--python', graalpy, '--wheel', '.'], cwd=src)
     [wheel] = (src.parent / 'dist').glob('pydantic_core-*graalpy*.whl')
     # uv doesn't accept wheels with devtags
@@ -160,12 +169,12 @@ def downstream_test_pydantic_core(graalpy, testdir):
     run(['uv', 'pip', 'install', wheel], cwd=src)
     env = os.environ.copy()
     env['HYPOTHESIS_PROFILE'] = 'slow'
-    run(['uv', 'run', 'pytest', '-v', '--tb=short'], cwd=src, env=env)
+    run(['uv', 'run', '--no-sync', 'pytest', '-v', '--tb=short'], cwd=src, env=env)
 
 
 @downstream_test('jiter')
 def downstream_test_jiter(graalpy, testdir):
-    run(['git', 'clone', 'https://github.com/pydantic/jiter.git', '-b', 'main'], cwd=testdir)
+    run(['git', 'clone', 'https://github.com/pydantic/jiter.git', '-b', 'main', '--depth', '1'], cwd=testdir)
     src = testdir / 'jiter'
     venv = src / 'venv'
     run([graalpy, '-m', 'venv', str(venv)])
@@ -175,16 +184,24 @@ def downstream_test_jiter(graalpy, testdir):
     run_in_venv(venv, ['pytest', '-v', '--tb=short', 'crates/jiter-python/tests'], cwd=src)
     run_in_venv(venv, ['python', 'crates/jiter-python/bench.py', 'jiter', 'jiter-cache', '--fast'], cwd=src)
 
+
 @downstream_test('cython')
 def downstream_test_cython(graalpy, testdir):
-    run(['git', 'clone', 'https://github.com/cython/cython.git', '-b', 'master'], cwd=testdir)
+    run(['git', 'clone', 'https://github.com/cython/cython.git', '-b', 'master', '--depth', '1'], cwd=testdir)
     src = testdir / 'cython'
     venv = src / 'venv'
     env = os.environ.copy()
     env["PYTHON_VERSION"] = "graalpy"
     env["BACKEND"] = "c"
     run([graalpy, '-m', 'venv', str(venv)])
+    if os.environ.get('CI', '').lower() not in ('1', 'true'):
+        run(['sed', '-i', r's/^\s*sudo/#&/', 'Tools/ci-run.sh'], cwd=src)
+        try:
+            run([graalpy, '--version', '--experimental-options', '--engine.Compilation=false'])
+        except subprocess.CalledProcessError:
+            run(['sed', '-i', r's/--engine.Compilation=false//g', 'Tools/ci-run.sh'], cwd=src)
     run_in_venv(venv, ["bash", "./Tools/ci-run.sh"], cwd=src, env=env)
+
 
 def run_downstream_test(python, project):
     testdir = Path('downstream-tests').absolute()

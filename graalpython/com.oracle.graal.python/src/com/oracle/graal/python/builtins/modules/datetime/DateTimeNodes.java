@@ -308,9 +308,10 @@ public class DateTimeNodes {
             return obj;
         }
 
-        @Specialization
-        static PDateTime asManagedNative(PythonAbstractNativeObject obj,
+        @Specialization(guards = "checkNode.execute(inliningTarget, obj)", limit = "1")
+        static PDateTime asManagedNative(@SuppressWarnings("unused") Node inliningTarget, PythonAbstractNativeObject obj,
                         @Bind PythonLanguage language,
+                        @SuppressWarnings("unused") @Cached DateTimeCheckNode checkNode,
                         @Cached CStructAccess.ReadByteNode readByteNode,
                         @Cached CStructAccess.ReadObjectNode readObjectNode) {
             int year = getYear(obj, readByteNode);
@@ -327,6 +328,12 @@ public class DateTimeNodes {
 
             PythonBuiltinClassType cls = PythonBuiltinClassType.PDateTime;
             return new PDateTime(cls, cls.getInstanceShape(language), year, month, day, hour, minute, second, microsecond, tzInfo, fold);
+        }
+
+        @Fallback
+        static PDateTime error(Object obj,
+                        @Bind Node inliningTarget) {
+            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.S_EXPECTED_GOT_P, "datetime", obj);
         }
 
         static int getYear(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
