@@ -534,10 +534,10 @@
                                             $.overlay_imports.BUILDBOT_COMMIT_SERVICE + '?repoName=graal&target=weekly&before-ts=${MAIN_COMMIT_TS}']],
             ["git", "clone", $.overlay_imports.GRAAL_ENTERPRISE_GIT, "../graal-enterprise"],
             ['git', '-C', '../graal', 'checkout', '${GRAAL_COMMIT}'],
+            // NOTE: this will checkout older graalpy. We need to live with that to ensure consistency with graal
             ['mx', '-p', '../graal/vm', '--dynamicimports', 'graalpython', 'sforceimports'],
             // NOTE: jvm-only, so not need to handle substratevm-enterprise-gcs
             ['mx', '-p', '../graal-enterprise/vm-enterprise', 'checkout-downstream', 'vm', 'vm-enterprise'],
-            ['git', 'checkout', '${MAIN_REVISION}'],
         ],
         run: [
             ['mx', 'python-coverage'] + self.coverage_args,
