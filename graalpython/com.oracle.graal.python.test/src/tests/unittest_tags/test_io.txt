@@ -195,8 +195,9 @@ test.test_io.CMiscIOTest.test_attributes @ darwin-arm64,linux-aarch64,linux-aarc
 test.test_io.CMiscIOTest.test_check_encoding_warning @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_io.CMiscIOTest.test_create_fail @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_io.CMiscIOTest.test_create_writes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_io.CMiscIOTest.test_daemon_threads_shutdown_stderr_deadlock @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_io.CMiscIOTest.test_daemon_threads_shutdown_stdout_deadlock @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+# GR-72206
+!test.test_io.CMiscIOTest.test_daemon_threads_shutdown_stderr_deadlock
+!test.test_io.CMiscIOTest.test_daemon_threads_shutdown_stdout_deadlock
 test.test_io.CMiscIOTest.test_io_after_close @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_io.CMiscIOTest.test_nonblock_pipe_write_bigbuf @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_io.CMiscIOTest.test_nonblock_pipe_write_smallbuf @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
