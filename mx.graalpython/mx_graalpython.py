@@ -872,6 +872,7 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
             mx_args.append(f"--extra-image-builder-argument=-H:+ProfilingLCOV")
     elif BUILD_NATIVE_IMAGE_WITH_ASSERTIONS:
         mx_args.append("--extra-image-builder-argument=-ea")
+        mx_args.append("--extra-image-builder-argument=-J-ea")
 
     if mx_gate.get_jacoco_agent_args() or (build and not DISABLE_REBUILD):
         mx_build_args = mx_args + bytecode_dsl_build_args(prefix="--extra-image-builder-argument=")
