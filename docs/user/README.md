@@ -4,12 +4,22 @@ You can use GraalPy with GraalVM JDK, Oracle JDK, or OpenJDK.
 To add GraalPy to your Java application, use Maven or Gradle as shown below.
 For other build systems (like Ant, Make, CMake, etc.), manual configuration may be required.
 
+## Version Compatibility
+
+The following table shows which Python versions are supported by each GraalPy release:
+
+| GraalPy Version | Python Version | GraalVM Platform                                                |
+| --------------- | -------------- | --------------------------------------------------------------- |
+| 25.x            | Python 3.12.8  | Oracle GraalVM 25.x, GraalVM Community Edition 25.x             |
+| 23.x            | Python 3.10.8  | Oracle GraalVM for JDK 21.x, Oracle GraalVM for JDK 17.x        |
+| 22.x            | Python 3.8.5   | GraalVM Enterprise Edition 21.3.x                               |
+
 ### Platform support
 
 GraalPy is mostly written in Java and Python, but the Python package ecosystem is rich in native packages that need platform specific support via native libraries that expose platform-specific APIs.
 Our main operating system is Oracle Linux, the CPU architectures we focus on are AMD64 and ARM, and the main JDK we test is Oracle GraalVM.
 Windows and macOS with GraalVM JDK are less well tested, and outside of those combinations we target only basic test coverage.
-See [below](Test-Tiers.md) for a detailed breakdown.
+See [test tiers](Test-Tiers.md) for a detailed breakdown.
 
 ## Maven
 
