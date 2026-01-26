@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -136,11 +136,10 @@ public abstract class WriteAttributeToObjectNode extends PNodeWithContext {
                     @SuppressWarnings("unused") @Shared("getDict") @Cached GetDictIfExistsNode getDict,
                     @Exclusive @Cached InlinedBranchProfile updateFlags,
                     @Cached DynamicObject.PutNode putNode,
-                    @Cached DynamicObject.GetShapeFlagsNode getShapeFlagsNode,
                     @Cached DynamicObject.SetShapeFlagsNode setShapeFlagsNode) {
         if (value == PNone.NO_VALUE) {
             updateFlags.enter(inliningTarget);
-            klass.addShapeFlag(HAS_NO_VALUE_PROPERTIES, getShapeFlagsNode, setShapeFlagsNode);
+            setShapeFlagsNode.executeAdd(klass, HAS_NO_VALUE_PROPERTIES);
         }
         return writeToDynamicStorageManagedClass(klass, key, value, putNode);
     }
