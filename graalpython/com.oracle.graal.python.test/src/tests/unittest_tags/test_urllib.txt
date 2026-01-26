@@ -75,8 +75,8 @@ test.test_urllib.urlopen_HttpTests.test_cafile_and_context @ darwin-arm64,linux-
 test.test_urllib.urlopen_HttpTests.test_empty_socket @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_urllib.urlopen_HttpTests.test_file_notexists @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_urllib.urlopen_HttpTests.test_ftp_cache_pruning @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_urllib.urlopen_HttpTests.test_ftp_nohost @ linux-aarch64-github,linux-x86_64-github
-test.test_urllib.urlopen_HttpTests.test_ftp_nonexisting @ linux-aarch64-github,linux-x86_64-github
+test.test_urllib.urlopen_HttpTests.test_ftp_nohost @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
+test.test_urllib.urlopen_HttpTests.test_ftp_nonexisting @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
 test.test_urllib.urlopen_HttpTests.test_invalid_redirect @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_urllib.urlopen_HttpTests.test_missing_localfile @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_urllib.urlopen_HttpTests.test_read_0_9 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -85,8 +85,8 @@ test.test_urllib.urlopen_HttpTests.test_read_1_1 @ darwin-arm64,linux-aarch64,li
 test.test_urllib.urlopen_HttpTests.test_read_bogus @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_urllib.urlopen_HttpTests.test_redirect_limit_independent @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_urllib.urlopen_HttpTests.test_url_fragment @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_urllib.urlopen_HttpTests.test_url_host_with_control_char_rejected @ linux-aarch64-github,linux-x86_64-github
-test.test_urllib.urlopen_HttpTests.test_url_host_with_newline_header_injection_rejected @ linux-aarch64-github,linux-x86_64-github
+test.test_urllib.urlopen_HttpTests.test_url_host_with_control_char_rejected @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
+test.test_urllib.urlopen_HttpTests.test_url_host_with_newline_header_injection_rejected @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
 test.test_urllib.urlopen_HttpTests.test_url_path_with_control_char_rejected @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_urllib.urlopen_HttpTests.test_url_path_with_newline_header_injection_rejected @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_urllib.urlopen_HttpTests.test_userpass_inurl @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
