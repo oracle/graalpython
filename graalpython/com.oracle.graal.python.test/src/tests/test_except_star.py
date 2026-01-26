@@ -46,7 +46,6 @@ from tests.util import skipIfBytecodeDSL
 
 
 class ExceptStarPrintTest(unittest.TestCase):
-    @skipIfBytecodeDSL("a")
     def test_01_eg_simple(self):
         script = textwrap.dedent("""
             raise ExceptionGroup("eg", [
@@ -65,7 +64,6 @@ class ExceptStarPrintTest(unittest.TestCase):
                     b'    +------------------------------------']
         self.assertEqual(p.stderr.splitlines(), expected)
 
-    @skipIfBytecodeDSL("a")
     def test_02_eg_nested(self):
         script = textwrap.dedent("""
             raise ExceptionGroup("EG", [
@@ -170,7 +168,6 @@ class ExceptStarPrintTest(unittest.TestCase):
         self.maxDiff = None
         self.assertEqual(p.stderr.splitlines(), expected)
 
-    @skipIfBytecodeDSL("a")
     def test_03_eg_nested_truncated(self):
         script = textwrap.dedent("""
             raise ExceptionGroup("EG", [
@@ -385,7 +382,6 @@ class ExceptStarPrintTest(unittest.TestCase):
         self.maxDiff = None
         self.assertEqual(p.stderr.splitlines(), expected)
 
-    @skipIfBytecodeDSL("a")
     def test_04_eg_cause(self):
         script = textwrap.dedent("""
             EG = ExceptionGroup
@@ -420,7 +416,6 @@ class ExceptStarPrintTest(unittest.TestCase):
         self.maxDiff = None
         self.assertEqual(p.stderr.splitlines(), expected)
 
-    @skipIfBytecodeDSL("a")
     def test_05_eg_context_with_context(self):
         script = textwrap.dedent("""
             EG = ExceptionGroup
@@ -464,7 +459,6 @@ class ExceptStarPrintTest(unittest.TestCase):
         self.maxDiff = None
         self.assertEqual(p.stderr.splitlines(), expected)
 
-    @skipIfBytecodeDSL("a")
     def test_06_eg_nested_with_context(self):
         script = textwrap.dedent("""
             EG = ExceptionGroup
@@ -554,6 +548,58 @@ class ExceptStarPrintTest(unittest.TestCase):
                     b'    |   File "<string>", line 6, in <module>',
                     b'    | ValueError: terrible value',
                     b'    | the terrible value',
+                    b'    +------------------------------------',]
+
+        self.maxDiff = None
+        self.assertEqual(p.stderr.splitlines(), expected)
+
+    def test_08_eg_with_multiple_notes(self):
+        script = textwrap.dedent("""
+            try:
+                excs = []
+                for msg in ['bad value', 'terrible value']:
+                    try:
+                        raise ValueError(msg)
+                    except ValueError as e:
+                        e.add_note(f'the {msg}')
+                        e.add_note(f'Goodbye {msg}')
+                        excs.append(e)
+                raise ExceptionGroup("nested", excs)
+            except ExceptionGroup as e:
+                e.add_note(('>> Multi line note\\n'
+                            '>> Because I am such\\n'
+                            '>> an important exception.\\n'
+                            '>> empty lines work too\\n'
+                            '\\n'
+                            '(that was an empty line)'))
+                e.add_note('Goodbye!')
+                raise
+        """)
+
+        p = subprocess.run([sys.executable, "-c", script], capture_output=True)
+
+        expected = [b'  + Exception Group Traceback (most recent call last):',
+                    b'  |   File "<string>", line 11, in <module>',
+                    b'  | ExceptionGroup: nested (2 sub-exceptions)',
+                    b'  | >> Multi line note',
+                    b'  | >> Because I am such',
+                    b'  | >> an important exception.',
+                    b'  | >> empty lines work too',
+                    b'  | ',
+                    b'  | (that was an empty line)',
+                    b'  | Goodbye!',
+                    b'  +-+---------------- 1 ----------------',
+                    b'    | Traceback (most recent call last):',
+                    b'    |   File "<string>", line 6, in <module>',
+                    b'    | ValueError: bad value',
+                    b'    | the bad value',
+                    b'    | Goodbye bad value',
+                    b'    +---------------- 2 ----------------',
+                    b'    | Traceback (most recent call last):',
+                    b'    |   File "<string>", line 6, in <module>',
+                    b'    | ValueError: terrible value',
+                    b'    | the terrible value',
+                    b'    | Goodbye terrible value',
                     b'    +------------------------------------',]
 
         self.maxDiff = None
