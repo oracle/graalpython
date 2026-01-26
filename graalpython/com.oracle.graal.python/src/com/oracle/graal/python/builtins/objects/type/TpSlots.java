@@ -143,29 +143,28 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.BinaryOpSlotFuncWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.BinarySlotFuncWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.CallWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.DescrGetFunctionWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.DescrSetFunctionWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.GetAttrWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.HashfuncWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.InitWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.InquiryWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.IterNextWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.LenfuncWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.NbInPlacePowerWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.NbPowerWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.NewWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.ObjobjargWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.RichcmpFunctionWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.SetAttrWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.SqContainsWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.SsizeargfuncSlotWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.SsizeobjargprocWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.TpSlotWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.UnaryFuncWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.BinaryOpSlotFuncWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.BinarySlotFuncWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.CallWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.DescrGetFunctionWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.DescrSetFunctionWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.GetAttrWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.HashfuncWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.InitWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.InquiryWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.IterNextWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.LenfuncWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.NbInPlacePowerWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.NbPowerWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.NewWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.ObjobjargWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.RichcmpFunctionWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.SetAttrWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.SqContainsWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.SsizeargfuncSlotWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.SsizeobjargprocWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.UnaryFuncWrapper;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -276,8 +275,8 @@ import com.oracle.truffle.api.strings.TruffleString;
  *      - When Python class goes to native (in ToNativeTypeNode) we convert the slots to native in
  *          {@link TpSlot#toNative(TpSlotMeta, TpSlot, long)}
  *          - TpSlotNative slots are unwrapped
- *          - For managed slots we create corresponding {@link PyProcsWrapper}
- *              - when {@link PyProcsWrapper} goes to native, it registers itself in a map in context, so
+ *          - For managed slots we create corresponding {@link TpSlotWrapper}
+ *              - when {@link TpSlotWrapper} goes to native, it registers itself in a map in context, so
  *              that when it comes back from native in {@link #fromNative(PythonAbstractNativeObject, PythonContext)}
  *              we can recognize it and use the managed TpSlot object.
  *

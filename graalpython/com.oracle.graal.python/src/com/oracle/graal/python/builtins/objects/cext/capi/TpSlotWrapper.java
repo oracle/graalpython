@@ -101,7 +101,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
-public abstract class PyProcsWrapper {
+public abstract class TpSlotWrapper {
 
     private static final NfiUpcallSignature SIGNATURE_P_P = Nfi.createUpcallSignature(RAW_POINTER, RAW_POINTER);
     private static final NfiUpcallSignature SIGNATURE_P_PP = Nfi.createUpcallSignature(RAW_POINTER, RAW_POINTER, RAW_POINTER);
@@ -175,16 +175,16 @@ public abstract class PyProcsWrapper {
     }
 
     protected final CApiTiming timing;
-    private final TpSlotManaged delegate;
+    private final TpSlotManaged slot;
     private final long nativePointer;
 
     @SuppressWarnings("this-escape")
-    PyProcsWrapper(TpSlotManaged delegate, NfiUpcallSignature upcallSignature, MethodHandle methodHandle) {
-        this.timing = CApiTiming.create(false, delegate);
-        this.delegate = delegate;
+    TpSlotWrapper(TpSlotManaged slot, NfiUpcallSignature upcallSignature, MethodHandle methodHandle) {
+        this.timing = CApiTiming.create(false, slot);
+        this.slot = slot;
 
         CApiContext cApiContext = PythonContext.get(null).getCApiContext();
-        long pointer = cApiContext.registerClosure(getClass().getSimpleName(), upcallSignature, methodHandle.bindTo(this), this, delegate);
+        long pointer = cApiContext.registerClosure(getClass().getSimpleName(), upcallSignature, methodHandle.bindTo(this), this, slot);
         if (PythonLanguage.get(null).isSingleContext()) {
             nativePointer = pointer;
         } else {
@@ -192,8 +192,8 @@ public abstract class PyProcsWrapper {
         }
     }
 
-    public final TpSlotManaged getDelegate() {
-        return delegate;
+    public final TpSlotManaged getSlot() {
+        return slot;
     }
 
     @TruffleBoundary
@@ -205,22 +205,11 @@ public abstract class PyProcsWrapper {
         return PythonContext.get(null).getCApiContext().getClosurePointer(this);
     }
 
-    public abstract static class TpSlotWrapper extends PyProcsWrapper {
-
-        TpSlotWrapper(TpSlotManaged delegate, NfiUpcallSignature upcallSignature, MethodHandle methodHandle) {
-            super(delegate, upcallSignature, methodHandle);
-        }
-
-        public final TpSlotManaged getSlot() {
-            return getDelegate();
-        }
-
-        public abstract TpSlotWrapper cloneWith(TpSlotManaged slot);
-    }
+    public abstract TpSlotWrapper cloneWith(TpSlotManaged slot);
 
     public static final class GetAttrWrapper extends TpSlotWrapper {
-        public GetAttrWrapper(TpSlotManaged delegate) {
-            super(delegate, SIGNATURE_P_PP, HANDLE_GET_ATTR);
+        public GetAttrWrapper(TpSlotManaged slot) {
+            super(slot, SIGNATURE_P_PP, HANDLE_GET_ATTR);
         }
 
         @SuppressWarnings("try")
@@ -230,10 +219,10 @@ public abstract class PyProcsWrapper {
                 try {
                     Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
                     Object jArg1 = NativeToPythonInternalNode.executeUncached(arg1, false);
-                    Object result = CallManagedSlotGetAttrNode.executeUncached(self.getDelegate(), jArg0, jArg1);
+                    Object result = CallManagedSlotGetAttrNode.executeUncached(self.getSlot(), jArg0, jArg1);
                     return PythonToNativeNewRefNode.executeLongUncached(result);
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "GetAttrWrapper", self.getDelegate());
+                    throw checkThrowableBeforeNative(t, "GetAttrWrapper", self.getSlot());
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
@@ -251,8 +240,8 @@ public abstract class PyProcsWrapper {
 
     public static final class BinarySlotFuncWrapper extends TpSlotWrapper {
 
-        public BinarySlotFuncWrapper(TpSlotManaged delegate) {
-            super(delegate, SIGNATURE_P_PP, HANDLE_BINARY_SLOT_FUNC);
+        public BinarySlotFuncWrapper(TpSlotManaged slot) {
+            super(slot, SIGNATURE_P_PP, HANDLE_BINARY_SLOT_FUNC);
         }
 
         @SuppressWarnings("try")
@@ -262,10 +251,10 @@ public abstract class PyProcsWrapper {
                 try {
                     Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
                     Object jArg1 = NativeToPythonInternalNode.executeUncached(arg1, false);
-                    Object result = CallSlotBinaryFuncNode.executeUncached(self.getDelegate(), jArg0, jArg1);
+                    Object result = CallSlotBinaryFuncNode.executeUncached(self.getSlot(), jArg0, jArg1);
                     return PythonToNativeNewRefNode.executeLongUncached(result);
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "BinarySlotFuncWrapper", self.getDelegate());
+                    throw checkThrowableBeforeNative(t, "BinarySlotFuncWrapper", self.getSlot());
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
@@ -284,61 +273,61 @@ public abstract class PyProcsWrapper {
     public static final class BinaryOpSlotFuncWrapper extends TpSlotWrapper {
         private final ReversibleSlot binaryOp;
 
-        public BinaryOpSlotFuncWrapper(TpSlotManaged delegate, ReversibleSlot binaryOp) {
-            super(delegate, SIGNATURE_P_PP, HANDLE_BINARY_OP_SLOT_FUNC);
+        public BinaryOpSlotFuncWrapper(TpSlotManaged slot, ReversibleSlot binaryOp) {
+            super(slot, SIGNATURE_P_PP, HANDLE_BINARY_OP_SLOT_FUNC);
             this.binaryOp = binaryOp;
         }
 
-        public static BinaryOpSlotFuncWrapper createAdd(TpSlotManaged delegate) {
-            return new BinaryOpSlotFuncWrapper(delegate, ReversibleSlot.NB_ADD);
+        public static BinaryOpSlotFuncWrapper createAdd(TpSlotManaged slot) {
+            return new BinaryOpSlotFuncWrapper(slot, ReversibleSlot.NB_ADD);
         }
 
-        public static BinaryOpSlotFuncWrapper createSubtract(TpSlotManaged delegate) {
-            return new BinaryOpSlotFuncWrapper(delegate, ReversibleSlot.NB_SUBTRACT);
+        public static BinaryOpSlotFuncWrapper createSubtract(TpSlotManaged slot) {
+            return new BinaryOpSlotFuncWrapper(slot, ReversibleSlot.NB_SUBTRACT);
         }
 
-        public static BinaryOpSlotFuncWrapper createMultiply(TpSlotManaged delegate) {
-            return new BinaryOpSlotFuncWrapper(delegate, ReversibleSlot.NB_MULTIPLY);
+        public static BinaryOpSlotFuncWrapper createMultiply(TpSlotManaged slot) {
+            return new BinaryOpSlotFuncWrapper(slot, ReversibleSlot.NB_MULTIPLY);
         }
 
-        public static BinaryOpSlotFuncWrapper createRemainder(TpSlotManaged delegate) {
-            return new BinaryOpSlotFuncWrapper(delegate, ReversibleSlot.NB_REMAINDER);
+        public static BinaryOpSlotFuncWrapper createRemainder(TpSlotManaged slot) {
+            return new BinaryOpSlotFuncWrapper(slot, ReversibleSlot.NB_REMAINDER);
         }
 
-        public static BinaryOpSlotFuncWrapper createLShift(TpSlotManaged delegate) {
-            return new BinaryOpSlotFuncWrapper(delegate, ReversibleSlot.NB_LSHIFT);
+        public static BinaryOpSlotFuncWrapper createLShift(TpSlotManaged slot) {
+            return new BinaryOpSlotFuncWrapper(slot, ReversibleSlot.NB_LSHIFT);
         }
 
-        public static BinaryOpSlotFuncWrapper createRShift(TpSlotManaged delegate) {
-            return new BinaryOpSlotFuncWrapper(delegate, ReversibleSlot.NB_RSHIFT);
+        public static BinaryOpSlotFuncWrapper createRShift(TpSlotManaged slot) {
+            return new BinaryOpSlotFuncWrapper(slot, ReversibleSlot.NB_RSHIFT);
         }
 
-        public static BinaryOpSlotFuncWrapper createAnd(TpSlotManaged delegate) {
-            return new BinaryOpSlotFuncWrapper(delegate, ReversibleSlot.NB_AND);
+        public static BinaryOpSlotFuncWrapper createAnd(TpSlotManaged slot) {
+            return new BinaryOpSlotFuncWrapper(slot, ReversibleSlot.NB_AND);
         }
 
-        public static BinaryOpSlotFuncWrapper createXor(TpSlotManaged delegate) {
-            return new BinaryOpSlotFuncWrapper(delegate, ReversibleSlot.NB_XOR);
+        public static BinaryOpSlotFuncWrapper createXor(TpSlotManaged slot) {
+            return new BinaryOpSlotFuncWrapper(slot, ReversibleSlot.NB_XOR);
         }
 
-        public static BinaryOpSlotFuncWrapper createOr(TpSlotManaged delegate) {
-            return new BinaryOpSlotFuncWrapper(delegate, ReversibleSlot.NB_OR);
+        public static BinaryOpSlotFuncWrapper createOr(TpSlotManaged slot) {
+            return new BinaryOpSlotFuncWrapper(slot, ReversibleSlot.NB_OR);
         }
 
-        public static BinaryOpSlotFuncWrapper createFloorDivide(TpSlotManaged delegate) {
-            return new BinaryOpSlotFuncWrapper(delegate, ReversibleSlot.NB_FLOOR_DIVIDE);
+        public static BinaryOpSlotFuncWrapper createFloorDivide(TpSlotManaged slot) {
+            return new BinaryOpSlotFuncWrapper(slot, ReversibleSlot.NB_FLOOR_DIVIDE);
         }
 
-        public static BinaryOpSlotFuncWrapper createTrueDivide(TpSlotManaged delegate) {
-            return new BinaryOpSlotFuncWrapper(delegate, ReversibleSlot.NB_TRUE_DIVIDE);
+        public static BinaryOpSlotFuncWrapper createTrueDivide(TpSlotManaged slot) {
+            return new BinaryOpSlotFuncWrapper(slot, ReversibleSlot.NB_TRUE_DIVIDE);
         }
 
-        public static BinaryOpSlotFuncWrapper createDivMod(TpSlotManaged delegate) {
-            return new BinaryOpSlotFuncWrapper(delegate, ReversibleSlot.NB_DIVMOD);
+        public static BinaryOpSlotFuncWrapper createDivMod(TpSlotManaged slot) {
+            return new BinaryOpSlotFuncWrapper(slot, ReversibleSlot.NB_DIVMOD);
         }
 
-        public static BinaryOpSlotFuncWrapper createMatrixMultiply(TpSlotManaged delegate) {
-            return new BinaryOpSlotFuncWrapper(delegate, ReversibleSlot.NB_MATRIX_MULTIPLY);
+        public static BinaryOpSlotFuncWrapper createMatrixMultiply(TpSlotManaged slot) {
+            return new BinaryOpSlotFuncWrapper(slot, ReversibleSlot.NB_MATRIX_MULTIPLY);
         }
 
         @SuppressWarnings("try")
@@ -352,10 +341,10 @@ public abstract class PyProcsWrapper {
                     Object receiverType = GetClassNode.executeUncached(receiver);
                     TpSlot otherSlot = self.binaryOp.getSlotValue(GetTpSlotsNode.executeUncached(otherType));
                     boolean sameTypes = IsSameTypeNode.executeUncached(receiverType, otherType);
-                    Object result = CallSlotBinaryOpNode.executeUncached(self.getDelegate(), receiver, receiverType, other, otherSlot, otherType, sameTypes, self.binaryOp);
+                    Object result = CallSlotBinaryOpNode.executeUncached(self.getSlot(), receiver, receiverType, other, otherSlot, otherType, sameTypes, self.binaryOp);
                     return PythonToNativeNewRefNode.executeLongUncached(result);
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "BinaryOpSlotFuncWrapper", self.getDelegate());
+                    throw checkThrowableBeforeNative(t, "BinaryOpSlotFuncWrapper", self.getSlot());
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
@@ -373,8 +362,8 @@ public abstract class PyProcsWrapper {
 
     public static final class UnaryFuncWrapper extends TpSlotWrapper {
 
-        public UnaryFuncWrapper(TpSlotManaged delegate) {
-            super(delegate, SIGNATURE_P_P, HANDLE_UNARY_FUNC);
+        public UnaryFuncWrapper(TpSlotManaged slot) {
+            super(slot, SIGNATURE_P_P, HANDLE_UNARY_FUNC);
         }
 
         @SuppressWarnings("try")
@@ -383,10 +372,10 @@ public abstract class PyProcsWrapper {
                 CApiTiming.enter();
                 try {
                     Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
-                    Object result = CallSlotUnaryNode.executeUncached(self.getDelegate(), jArg0);
+                    Object result = CallSlotUnaryNode.executeUncached(self.getSlot(), jArg0);
                     return PythonToNativeNewRefNode.executeLongUncached(result);
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "UnaryFuncWrapper", self.getDelegate());
+                    throw checkThrowableBeforeNative(t, "UnaryFuncWrapper", self.getSlot());
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
@@ -404,8 +393,8 @@ public abstract class PyProcsWrapper {
 
     public static final class IterNextWrapper extends TpSlotWrapper {
 
-        public IterNextWrapper(TpSlotManaged delegate) {
-            super(delegate, SIGNATURE_P_P, HANDLE_ITER_NEXT);
+        public IterNextWrapper(TpSlotManaged slot) {
+            super(slot, SIGNATURE_P_P, HANDLE_ITER_NEXT);
         }
 
         @SuppressWarnings("try")
@@ -416,13 +405,13 @@ public abstract class PyProcsWrapper {
                     Object result;
                     try {
                         Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
-                        result = CallSlotTpIterNextNode.executeUncached(self.getDelegate(), jArg0);
+                        result = CallSlotTpIterNextNode.executeUncached(self.getSlot(), jArg0);
                     } catch (IteratorExhausted e) {
                         return NULLPTR;
                     }
                     return PythonToNativeNewRefNode.executeLongUncached(result);
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "IterNextWrapper", self.getDelegate());
+                    throw checkThrowableBeforeNative(t, "IterNextWrapper", self.getSlot());
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
@@ -439,8 +428,8 @@ public abstract class PyProcsWrapper {
     }
 
     public static final class InquiryWrapper extends TpSlotWrapper {
-        public InquiryWrapper(TpSlotManaged delegate) {
-            super(delegate, SIGNATURE_I_P, HANDLE_INQUIRY);
+        public InquiryWrapper(TpSlotManaged slot) {
+            super(slot, SIGNATURE_I_P, HANDLE_INQUIRY);
         }
 
         @SuppressWarnings("try")
@@ -449,9 +438,9 @@ public abstract class PyProcsWrapper {
                 CApiTiming.enter();
                 try {
                     Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
-                    return CallSlotNbBoolNode.executeUncached(self.getDelegate(), jArg0) ? 1 : 0;
+                    return CallSlotNbBoolNode.executeUncached(self.getSlot(), jArg0) ? 1 : 0;
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "InquiryWrapper", self.getDelegate());
+                    throw checkThrowableBeforeNative(t, "InquiryWrapper", self.getSlot());
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
@@ -468,8 +457,8 @@ public abstract class PyProcsWrapper {
     }
 
     public static final class SqContainsWrapper extends TpSlotWrapper {
-        public SqContainsWrapper(TpSlotManaged delegate) {
-            super(delegate, SIGNATURE_I_PP, HANDLE_SQ_CONTAINS);
+        public SqContainsWrapper(TpSlotManaged slot) {
+            super(slot, SIGNATURE_I_PP, HANDLE_SQ_CONTAINS);
         }
 
         @SuppressWarnings("try")
@@ -479,9 +468,9 @@ public abstract class PyProcsWrapper {
                 try {
                     Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
                     Object jArg1 = NativeToPythonInternalNode.executeUncached(arg1, false);
-                    return CallSlotSqContainsNode.executeUncached(self.getDelegate(), jArg0, jArg1) ? 1 : 0;
+                    return CallSlotSqContainsNode.executeUncached(self.getSlot(), jArg0, jArg1) ? 1 : 0;
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "SqContainsWrapper", self.getDelegate());
+                    throw checkThrowableBeforeNative(t, "SqContainsWrapper", self.getSlot());
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
@@ -499,8 +488,8 @@ public abstract class PyProcsWrapper {
 
     public static final class ObjobjargWrapper extends TpSlotWrapper {
 
-        public ObjobjargWrapper(TpSlotManaged delegate) {
-            super(delegate, SIGNATURE_I_PPP, HANDLE_OBJ_OBJ_ARG);
+        public ObjobjargWrapper(TpSlotManaged slot) {
+            super(slot, SIGNATURE_I_PPP, HANDLE_OBJ_OBJ_ARG);
         }
 
         @SuppressWarnings("try")
@@ -511,10 +500,10 @@ public abstract class PyProcsWrapper {
                     Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
                     Object jArg1 = NativeToPythonInternalNode.executeUncached(arg1, false);
                     Object jArg2 = NativeToPythonInternalNode.executeUncached(arg2, false);
-                    CallSlotMpAssSubscriptNode.executeUncached(self.getDelegate(), jArg0, jArg1, jArg2);
+                    CallSlotMpAssSubscriptNode.executeUncached(self.getSlot(), jArg0, jArg1, jArg2);
                     return 0;
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "ObjobjargWrapper", self.getDelegate());
+                    throw checkThrowableBeforeNative(t, "ObjobjargWrapper", self.getSlot());
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
@@ -531,8 +520,8 @@ public abstract class PyProcsWrapper {
     }
 
     public static final class SetAttrWrapper extends TpSlotWrapper {
-        public SetAttrWrapper(TpSlotManaged delegate) {
-            super(delegate, SIGNATURE_I_PPP, HANDLE_SET_ATTR);
+        public SetAttrWrapper(TpSlotManaged slot) {
+            super(slot, SIGNATURE_I_PPP, HANDLE_SET_ATTR);
         }
 
         @SuppressWarnings("try")
@@ -543,10 +532,10 @@ public abstract class PyProcsWrapper {
                     Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
                     Object jArg1 = NativeToPythonInternalNode.executeUncached(arg1, false);
                     Object jArg2 = NativeToPythonInternalNode.executeUncached(arg2, false);
-                    CallManagedSlotSetAttrNode.executeUncached(self.getDelegate(), jArg0, jArg1, jArg2);
+                    CallManagedSlotSetAttrNode.executeUncached(self.getSlot(), jArg0, jArg1, jArg2);
                     return 0;
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "SetAttrWrapper", self.getDelegate());
+                    throw checkThrowableBeforeNative(t, "SetAttrWrapper", self.getSlot());
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
@@ -563,8 +552,8 @@ public abstract class PyProcsWrapper {
     }
 
     public static final class DescrSetFunctionWrapper extends TpSlotWrapper {
-        public DescrSetFunctionWrapper(TpSlotManaged delegate) {
-            super(delegate, SIGNATURE_I_PPP, HANDLE_DESCR_SET_FUNCTION);
+        public DescrSetFunctionWrapper(TpSlotManaged slot) {
+            super(slot, SIGNATURE_I_PPP, HANDLE_DESCR_SET_FUNCTION);
         }
 
         @SuppressWarnings("try")
@@ -575,10 +564,10 @@ public abstract class PyProcsWrapper {
                     Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
                     Object jArg1 = NativeToPythonInternalNode.executeUncached(arg1, false);
                     Object jArg2 = NativeToPythonInternalNode.executeUncached(arg2, false);
-                    CallSlotDescrSet.executeUncached(self.getDelegate(), jArg0, jArg1, jArg2);
+                    CallSlotDescrSet.executeUncached(self.getSlot(), jArg0, jArg1, jArg2);
                     return 0;
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "DescrSetFunctionWrapper", self.getDelegate());
+                    throw checkThrowableBeforeNative(t, "DescrSetFunctionWrapper", self.getSlot());
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
@@ -596,8 +585,8 @@ public abstract class PyProcsWrapper {
 
     public static final class InitWrapper extends TpSlotWrapper {
 
-        public InitWrapper(TpSlotManaged delegate) {
-            super(delegate, SIGNATURE_I_PPP, HANDLE_INIT);
+        public InitWrapper(TpSlotManaged slot) {
+            super(slot, SIGNATURE_I_PPP, HANDLE_INIT);
         }
 
         @SuppressWarnings("try")
@@ -612,10 +601,10 @@ public abstract class PyProcsWrapper {
 
                     Object[] starArgsArray = ExecutePositionalStarargsNode.executeUncached(starArgs);
                     PKeyword[] kwArgsArray = ExpandKeywordStarargsNode.executeUncached(kwArgs);
-                    CallSlotTpInitNode.executeUncached(self.getDelegate(), receiver, starArgsArray, kwArgsArray);
+                    CallSlotTpInitNode.executeUncached(self.getSlot(), receiver, starArgsArray, kwArgsArray);
                     return 0;
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "InitWrapper", self.getDelegate());
+                    throw checkThrowableBeforeNative(t, "InitWrapper", self.getSlot());
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
@@ -633,8 +622,8 @@ public abstract class PyProcsWrapper {
 
     public static final class NewWrapper extends TpSlotWrapper {
 
-        public NewWrapper(TpSlotManaged delegate) {
-            super(delegate, SIGNATURE_P_PPP, HANDLE_NEW);
+        public NewWrapper(TpSlotManaged slot) {
+            super(slot, SIGNATURE_P_PPP, HANDLE_NEW);
         }
 
         @SuppressWarnings("try")
@@ -654,10 +643,10 @@ public abstract class PyProcsWrapper {
                     }
                     PKeyword[] kwArgsArray = ExpandKeywordStarargsNode.executeUncached(kwArgs);
 
-                    Object result = CallSlotTpNewNode.executeUncached(self.getDelegate(), receiver, pArgs, kwArgsArray);
+                    Object result = CallSlotTpNewNode.executeUncached(self.getSlot(), receiver, pArgs, kwArgsArray);
                     return PythonToNativeNewRefNode.executeLongUncached(result);
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "NewWrapper", self.getDelegate());
+                    throw checkThrowableBeforeNative(t, "NewWrapper", self.getSlot());
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
@@ -673,8 +662,8 @@ public abstract class PyProcsWrapper {
 
     public static final class CallWrapper extends TpSlotWrapper {
 
-        public CallWrapper(TpSlotManaged delegate) {
-            super(delegate, SIGNATURE_P_PPP, HANDLE_CALL);
+        public CallWrapper(TpSlotManaged slot) {
+            super(slot, SIGNATURE_P_PPP, HANDLE_CALL);
         }
 
         @SuppressWarnings("try")
@@ -689,10 +678,10 @@ public abstract class PyProcsWrapper {
 
                     Object[] starArgsArray = ExecutePositionalStarargsNode.executeUncached(starArgs);
                     PKeyword[] kwArgsArray = ExpandKeywordStarargsNode.executeUncached(kwArgs);
-                    Object result = CallSlotTpCallNode.executeUncached(self.getDelegate(), receiver, starArgsArray, kwArgsArray);
+                    Object result = CallSlotTpCallNode.executeUncached(self.getSlot(), receiver, starArgsArray, kwArgsArray);
                     return PythonToNativeNewRefNode.executeLongUncached(result);
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "CallWrapper", self.getDelegate());
+                    throw checkThrowableBeforeNative(t, "CallWrapper", self.getSlot());
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
@@ -710,8 +699,8 @@ public abstract class PyProcsWrapper {
 
     public static final class NbPowerWrapper extends TpSlotWrapper {
 
-        public NbPowerWrapper(TpSlotManaged delegate) {
-            super(delegate, SIGNATURE_P_PPP, HANDLE_NB_POWER);
+        public NbPowerWrapper(TpSlotManaged slot) {
+            super(slot, SIGNATURE_P_PPP, HANDLE_NB_POWER);
         }
 
         @SuppressWarnings("try")
@@ -727,10 +716,10 @@ public abstract class PyProcsWrapper {
                     Object wType = GetClassNode.executeUncached(w);
                     TpSlots wSlots = GetTpSlotsNode.executeUncached(wType);
                     boolean sameTypes = IsSameTypeNode.executeUncached(vType, wType);
-                    Object result = CallSlotNbPowerNode.executeUncached(self.getDelegate(), v, vType, w, wSlots.nb_power(), wType, z, sameTypes);
+                    Object result = CallSlotNbPowerNode.executeUncached(self.getSlot(), v, vType, w, wSlots.nb_power(), wType, z, sameTypes);
                     return PythonToNativeNewRefNode.executeLongUncached(result);
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "NbPowerWrapper", self.getDelegate());
+                    throw checkThrowableBeforeNative(t, "NbPowerWrapper", self.getSlot());
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
@@ -748,8 +737,8 @@ public abstract class PyProcsWrapper {
 
     public static final class NbInPlacePowerWrapper extends TpSlotWrapper {
 
-        public NbInPlacePowerWrapper(TpSlotManaged delegate) {
-            super(delegate, SIGNATURE_P_PPP, HANDLE_NB_IN_PLACE_POWER);
+        public NbInPlacePowerWrapper(TpSlotManaged slot) {
+            super(slot, SIGNATURE_P_PPP, HANDLE_NB_IN_PLACE_POWER);
         }
 
         @SuppressWarnings("try")
@@ -761,10 +750,10 @@ public abstract class PyProcsWrapper {
                     Object v = NativeToPythonInternalNode.executeUncached(arg0, false);
                     Object w = NativeToPythonInternalNode.executeUncached(arg1, false);
                     Object z = NativeToPythonInternalNode.executeUncached(arg2, false);
-                    Object result = CallSlotNbInPlacePowerNode.executeUncached(self.getDelegate(), v, w, z);
+                    Object result = CallSlotNbInPlacePowerNode.executeUncached(self.getSlot(), v, w, z);
                     return PythonToNativeNewRefNode.executeLongUncached(result);
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "NbInPlacePowerWrapper", self.getDelegate());
+                    throw checkThrowableBeforeNative(t, "NbInPlacePowerWrapper", self.getSlot());
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
@@ -782,8 +771,8 @@ public abstract class PyProcsWrapper {
 
     public static final class RichcmpFunctionWrapper extends TpSlotWrapper {
 
-        public RichcmpFunctionWrapper(TpSlotManaged delegate) {
-            super(delegate, SIGNATURE_P_PPI, HANDLE_RICHCMP_FUNCTION);
+        public RichcmpFunctionWrapper(TpSlotManaged slot) {
+            super(slot, SIGNATURE_P_PPI, HANDLE_RICHCMP_FUNCTION);
         }
 
         @SuppressWarnings("try")
@@ -795,10 +784,10 @@ public abstract class PyProcsWrapper {
                     Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
                     Object jArg1 = NativeToPythonInternalNode.executeUncached(arg1, false);
                     RichCmpOp op = RichCmpOp.fromNative(arg2);
-                    Object result = CallSlotRichCmpNode.executeUncached(self.getDelegate(), jArg0, jArg1, op);
+                    Object result = CallSlotRichCmpNode.executeUncached(self.getSlot(), jArg0, jArg1, op);
                     return PythonToNativeNewRefNode.executeLongUncached(result);
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "RichcmpFunctionWrapper", self.getDelegate());
+                    throw checkThrowableBeforeNative(t, "RichcmpFunctionWrapper", self.getSlot());
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
@@ -816,8 +805,8 @@ public abstract class PyProcsWrapper {
 
     public static final class SsizeargfuncSlotWrapper extends TpSlotWrapper {
 
-        public SsizeargfuncSlotWrapper(TpSlotManaged delegate) {
-            super(delegate, SIGNATURE_P_PL, HANDLE_SSIZEARGFUNC_SLOT);
+        public SsizeargfuncSlotWrapper(TpSlotManaged slot) {
+            super(slot, SIGNATURE_P_PL, HANDLE_SSIZEARGFUNC_SLOT);
         }
 
         @SuppressWarnings("try")
@@ -827,10 +816,10 @@ public abstract class PyProcsWrapper {
                 try {
                     Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
                     int index = ssizeAsIntUncached(arg1);
-                    Object result = CallSlotSizeArgFun.executeUncached(self.getDelegate(), jArg0, index);
+                    Object result = CallSlotSizeArgFun.executeUncached(self.getSlot(), jArg0, index);
                     return PythonToNativeNewRefNode.executeLongUncached(result);
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "SsizeargfuncWrapper", self.getDelegate());
+                    throw checkThrowableBeforeNative(t, "SsizeargfuncWrapper", self.getSlot());
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
@@ -873,10 +862,10 @@ public abstract class PyProcsWrapper {
                     Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
                     int key = ssizeAsIntUncached(arg1);
                     Object jArg2 = NativeToPythonInternalNode.executeUncached(arg2, false);
-                    CallSlotSqAssItemNode.executeUncached(self.getDelegate(), jArg0, key, jArg2);
+                    CallSlotSqAssItemNode.executeUncached(self.getSlot(), jArg0, key, jArg2);
                     return 0;
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "SsizeobjargprocWrapper", self.getDelegate());
+                    throw checkThrowableBeforeNative(t, "SsizeobjargprocWrapper", self.getSlot());
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
@@ -903,9 +892,9 @@ public abstract class PyProcsWrapper {
                 CApiTiming.enter();
                 try {
                     Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
-                    return CallSlotLenNode.executeUncached(self.getDelegate(), jArg0);
+                    return CallSlotLenNode.executeUncached(self.getSlot(), jArg0);
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "LenfuncWrapper", self.getDelegate());
+                    throw checkThrowableBeforeNative(t, "LenfuncWrapper", self.getSlot());
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
@@ -923,8 +912,8 @@ public abstract class PyProcsWrapper {
 
     public static final class HashfuncWrapper extends TpSlotWrapper {
 
-        public HashfuncWrapper(TpSlotManaged delegate) {
-            super(delegate, SIGNATURE_L_P, HANDLE_HASHFUNC);
+        public HashfuncWrapper(TpSlotManaged slot) {
+            super(slot, SIGNATURE_L_P, HANDLE_HASHFUNC);
         }
 
         @SuppressWarnings("try")
@@ -933,9 +922,9 @@ public abstract class PyProcsWrapper {
                 CApiTiming.enter();
                 try {
                     Object jArg0 = NativeToPythonInternalNode.executeUncached(arg0, false);
-                    return CallSlotHashFunNode.executeUncached(self.getDelegate(), jArg0);
+                    return CallSlotHashFunNode.executeUncached(self.getSlot(), jArg0);
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "HashfuncWrapper", self.getDelegate());
+                    throw checkThrowableBeforeNative(t, "HashfuncWrapper", self.getSlot());
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
@@ -952,8 +941,8 @@ public abstract class PyProcsWrapper {
     }
 
     public static final class DescrGetFunctionWrapper extends TpSlotWrapper {
-        public DescrGetFunctionWrapper(TpSlotManaged delegate) {
-            super(delegate, SIGNATURE_P_PPP, HANDLE_DESCR_GET_FUNCTION);
+        public DescrGetFunctionWrapper(TpSlotManaged slot) {
+            super(slot, SIGNATURE_P_PPP, HANDLE_DESCR_GET_FUNCTION);
         }
 
         @SuppressWarnings("try")
@@ -968,7 +957,7 @@ public abstract class PyProcsWrapper {
                     Object result = CallSlotDescrGet.executeUncached(self.getSlot(), receiver, obj, cls);
                     return PythonToNativeNewRefNode.executeLongUncached(result);
                 } catch (Throwable t) {
-                    throw checkThrowableBeforeNative(t, "DescrGetFunctionWrapper", self.getDelegate());
+                    throw checkThrowableBeforeNative(t, "DescrGetFunctionWrapper", self.getSlot());
                 }
             } catch (PException e) {
                 TransformExceptionToNativeNode.executeUncached(e.getEscapedException());
@@ -983,4 +972,5 @@ public abstract class PyProcsWrapper {
             return new DescrGetFunctionWrapper(slot);
         }
     }
+
 }

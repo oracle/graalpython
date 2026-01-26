@@ -52,7 +52,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyProcsWrapper.TpSlotWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.TpSlotMeta;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPythonSingle;
 import com.oracle.graal.python.runtime.GilNode;

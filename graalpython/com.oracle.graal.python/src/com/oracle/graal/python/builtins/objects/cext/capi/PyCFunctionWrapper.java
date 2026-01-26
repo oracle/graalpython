@@ -75,13 +75,13 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 /**
  * A wrapper class for managed functions such that they can be called with native function pointers
- * (like C type {@code PyCFunction}). This is very similar to {@link PyProcsWrapper} but the main
+ * (like C type {@code PyCFunction}). This is very similar to {@link TpSlotWrapper} but the main
  * difference is that this wrapper does not keep a reference to the function object but only to the
  * {@link RootCallTarget}
  * <p>
  * Since in C, function pointers are expected to valid the whole time, NFI closure must be kept
- * alive as long as the context lives. Referencing a function object like {@link PyProcsWrapper}
- * does may therefore cause significant memory leaks.
+ * alive as long as the context lives. Referencing a function object like {@link TpSlotWrapper} does
+ * may therefore cause significant memory leaks.
  * </p>
  */
 public abstract class PyCFunctionWrapper {
