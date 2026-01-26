@@ -102,7 +102,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.ModuleSpec
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsCharPointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.EnsurePythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.PythonObjectArrayCreateNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.UnicodeFromFormatNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
@@ -148,7 +147,6 @@ import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
-import com.oracle.graal.python.nfi2.NativeMemory;
 import com.oracle.graal.python.nfi2.Nfi;
 import com.oracle.graal.python.nfi2.NfiBoundFunction;
 import com.oracle.graal.python.nfi2.NfiDowncallSignature;
@@ -1518,14 +1516,17 @@ public abstract class CExtNodes {
     @ImportStatic({PGuards.class, CApiContext.class, PythonToNativeInternalNode.class})
     public abstract static class EnsurePythonObjectNode extends Node {
 
+        @TruffleBoundary
         public static PythonAbstractObject executeUncached(PythonContext context, Object object) {
             return (PythonAbstractObject) EnsurePythonObjectNodeGen.getUncached().execute(context, object, true);
         }
 
+        @TruffleBoundary
         public static boolean doesNotNeedPromotion(Object object) {
             return EnsurePythonObjectNodeGen.getUncached().execute(PythonContext.get(null), object, false) == object;
         }
 
+        @TruffleBoundary
         public static Object executeUncached(PythonContext context, Object object, boolean promoteBoxable) {
             return EnsurePythonObjectNodeGen.getUncached().execute(context, object, promoteBoxable);
         }
@@ -1575,65 +1576,6 @@ public abstract class CExtNodes {
         @NeverDefault
         public static EnsurePythonObjectNode getUncached() {
             return EnsurePythonObjectNodeGen.getUncached();
-        }
-    }
-
-    /**
-     * Transforms an {@code Object[]} containing Python objects to a native {@code PyObject *arr[]}.
-     * This will not create new {@code PyObject *} references (i.e. refcount is not increased).
-     */
-    @GenerateInline(false)
-    public abstract static class PythonObjectArrayCreateNode extends Node {
-
-        public abstract long execute(Object[] data);
-
-        /**
-         * Copies a Java {@code Object[]} to a native {@code PyObject *arr[]}. For this, the native
-         * memory is allocated off-heap using {@code Unsafe}.
-         */
-        @Specialization
-        static long doGeneric(Object[] data,
-                        @Bind Node inliningTarget,
-                        @Cached PythonToNativeInternalNode toNativeNode) {
-            if (data.length == 0) {
-                return NULLPTR;
-            }
-            assert PythonContext.get(inliningTarget).isNativeAccessAllowed();
-            long ptr = NativeMemory.malloc((long) data.length * NativeMemory.POINTER_SIZE);
-            for (int i = 0; i < data.length; i++) {
-                NativeMemory.writePtrArrayElement(ptr, i, toNativeNode.execute(inliningTarget, data[i], false));
-            }
-            return ptr;
-        }
-
-        @NeverDefault
-        public static PythonObjectArrayCreateNode create() {
-            return PythonObjectArrayCreateNodeGen.create();
-        }
-    }
-
-    public static final class PythonObjectArrayFreeNode extends Node {
-
-        public void execute(long pointer) {
-            if (pointer == NULLPTR) {
-                return;
-            }
-
-            /*
-             * TODO we currently don't implement immediate releases of native objects.
-             *
-             * If we ever do and we incref items we put in the wrappers array, we need to be careful
-             * with native objects. They would need to be decref'd here and the commented out code
-             * below doesn't do this.
-             */
-
-            assert PythonContext.get(this).isNativeAccessAllowed();
-            NativeMemory.free(pointer);
-        }
-
-        @NeverDefault
-        public static PythonObjectArrayFreeNode create() {
-            return new PythonObjectArrayFreeNode();
         }
     }
 }

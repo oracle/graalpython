@@ -64,6 +64,19 @@ import com.oracle.graal.python.nfi2.NfiType;
  */
 @CApiExternalFunctionSignatures
 public enum ExternalFunctionSignature {
+    // typedef PyObject *(*PyCFunction)(PyObject *, PyObject *);
+    PYCFUNCTION(PyObjectReturn, PyObject, PyObject),
+    // typedef PyObject *(*PyCFunctionWithKeywords)(PyObject *, PyObject *, PyObject *);
+    PYCFUNCTION_WITH_KEYWORDS(PyObjectReturn, PyObject, PyObject, PyObject),
+    // typedef PyObject *(*_PyCFunctionFast) (PyObject *, PyObject *const *, Py_ssize_t);
+    PYCFUNCTION_FAST(PyObjectReturn, PyObject, Pointer, Py_ssize_t),
+    // typedef PyObject *(*_PyCFunctionFastWithKeywords) (PyObject *, PyObject *const *, Py_ssize_t,
+    // PyObject *);
+    PYCFUNCTION_FAST_WITH_KEYWORDS(PyObjectReturn, PyObject, Pointer, Py_ssize_t, PyObject),
+    // typedef PyObject *(*PyCMethod)(PyObject *, PyTypeObject *, PyObject *const *, size_t,
+    // PyObject *);
+    PYCMETHOD(PyObjectReturn, PyObject, PyTypeObject, Pointer, Py_ssize_t, PyObject),
+
     // typedef PyObject * (*unaryfunc)(PyObject *);
     UNARYFUNC(PyObjectReturn, PyObject),
     // typedef PyObject * (*binaryfunc)(PyObject *, PyObject *);

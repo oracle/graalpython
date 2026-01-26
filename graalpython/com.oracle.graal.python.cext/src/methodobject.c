@@ -45,8 +45,6 @@
 /* undefine macro trampoline to PyCMethod_New */
 #undef PyCFunction_NewEx
 
-typedef PyObject *(*PyCFunction)(PyObject *, PyObject *);
-
 PyObject *PyCFunction_New(PyMethodDef *ml, PyObject *self) {
     return PyCFunction_NewEx(ml, self, NULL);
 }
