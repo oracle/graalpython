@@ -64,6 +64,9 @@ import static com.oracle.graal.python.util.PythonUtils.codePointsToTruffleString
 import static com.oracle.graal.python.util.PythonUtils.toInternedTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -77,6 +80,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
@@ -141,6 +145,7 @@ import com.oracle.graal.python.pegparser.sst.TypeParamTy.TypeVarTuple;
 import com.oracle.graal.python.pegparser.sst.UnaryOpTy;
 import com.oracle.graal.python.pegparser.sst.WithItemTy;
 import com.oracle.graal.python.pegparser.tokenizer.SourceRange;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.bytecode.BytecodeConfig;
@@ -148,7 +153,9 @@ import com.oracle.truffle.api.bytecode.BytecodeLabel;
 import com.oracle.truffle.api.bytecode.BytecodeLocal;
 import com.oracle.truffle.api.bytecode.BytecodeParser;
 import com.oracle.truffle.api.bytecode.BytecodeRootNodes;
+import com.oracle.truffle.api.bytecode.serialization.BytecodeSerializer;
 import com.oracle.truffle.api.instrumentation.StandardTags.StatementTag;
+import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -451,14 +458,38 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                         sourceRange.endColumn,
                         classcellIndex,
                         selfIndex,
-                        null,
-                        nodes);
+                        new BytecodeSupplier(nodes));
         rootNode.setMetadata(codeUnit, ctx.errorCallback);
         if (codeUnit.isCoroutine() || codeUnit.isAsyncGenerator() || scope.isGeneratorWithYieldFrom()) {
             rootNode.yieldFromGeneratorIndex = yieldFromGenerator.getLocalIndex();
         }
 
         return new BytecodeDSLCompilerResult(rootNode, codeUnit);
+    }
+
+    static class BytecodeSupplier extends BytecodeDSLCodeUnit.BytecodeSupplier {
+        private final BytecodeRootNodes<PBytecodeDSLRootNode> nodes;
+
+        BytecodeSupplier(BytecodeRootNodes<PBytecodeDSLRootNode> nodes) {
+            this.nodes = nodes;
+        }
+
+        @Override
+        public PBytecodeDSLRootNode createRootNode(PythonContext context, Source source) {
+            return nodes.getNode(0);
+        }
+
+        @Override
+        public byte[] createSerializedBytecode(PythonContext context) {
+            try {
+                BytecodeSerializer serializer = new MarshalModuleBuiltins.PBytecodeDSLSerializer(context);
+                ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+                nodes.serialize(new DataOutputStream(bytes), serializer);
+                return bytes.toByteArray();
+            } catch (IOException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
     }
 
     private static class ArgumentInfo {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,100 +40,53 @@
  */
 package com.oracle.graal.python.nodes.bytecode_dsl;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-
-import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins.PBytecodeDSLSerializer;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.bytecode.BytecodeRootNodes;
-import com.oracle.truffle.api.bytecode.serialization.BytecodeSerializer;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class BytecodeDSLCodeUnit extends CodeUnit {
-    /*
-     * A {@link BytecodeDSLCodeUnit} is a context-independent representation of a root node. It
-     * contains the bytes produced from Bytecode DSL serialization.
-     *
-     * Since it is expensive to serialize every root node, we perform serialization lazily using the
-     * {@link BytecodeNodes} produced during parsing.
-     *
-     * When this code unit is directly instantiated via unmarshaling, there is no {@link
-     * BytecodeNodes}; instead, we store the serialized bytes directly.
-     */
-    private volatile byte[] serialized;
-    private final BytecodeRootNodes<PBytecodeDSLRootNode> nodes;
     public final int classcellIndex;
     public final int selfIndex;
+    private final BytecodeSupplier supplier;
 
     public BytecodeDSLCodeUnit(TruffleString name, TruffleString qualname, int argCount, int kwOnlyArgCount, int positionalOnlyArgCount, int flags, TruffleString[] names, TruffleString[] varnames,
                     TruffleString[] cellvars, TruffleString[] freevars, int[] cell2arg, Object[] constants, int startLine, int startColumn, int endLine, int endColumn,
-                    int classcellIndex, int selfIndex, byte[] serialized, BytecodeRootNodes<PBytecodeDSLRootNode> nodes) {
+                    int classcellIndex, int selfIndex, BytecodeSupplier supplier) {
         super(name, qualname, argCount, kwOnlyArgCount, positionalOnlyArgCount, flags, names, varnames, cellvars, freevars, cell2arg, constants, startLine, startColumn, endLine, endColumn);
-        // Only one of these fields should be set. The other gets computed dynamically.
-        assert nodes == null || nodes.count() == 1;
-        assert serialized == null ^ nodes == null;
-        this.serialized = serialized;
-        this.nodes = nodes;
         this.classcellIndex = classcellIndex;
         this.selfIndex = selfIndex;
+        this.supplier = supplier;
+    }
+
+    public abstract static class BytecodeSupplier {
+        public abstract PBytecodeDSLRootNode createRootNode(PythonContext context, Source source);
+
+        public abstract byte[] createSerializedBytecode(PythonContext context);
     }
 
     public BytecodeDSLCodeUnit withFlags(int flags) {
         return new BytecodeDSLCodeUnit(name, qualname, argCount, kwOnlyArgCount, positionalOnlyArgCount, flags,
                         names, varnames, cellvars, freevars, cell2arg, constants,
-                        startLine, startColumn, endLine, endColumn, classcellIndex, selfIndex, serialized, nodes);
+                        startLine, startColumn, endLine, endColumn, classcellIndex, selfIndex, supplier);
     }
 
     @TruffleBoundary
     public PBytecodeDSLRootNode createRootNode(PythonContext context, Source source) {
-        if (nodes != null) {
-            return nodes.getNode(0);
-        }
         // We must not cache deserialized root, because the code unit may be shared by multiple
         // engines. The caller is responsible for ensuring the caching of the resulting root node if
         // necessary
-        byte[] toDeserialize = getSerialized(context);
-        BytecodeRootNodes<PBytecodeDSLRootNode> deserialized = MarshalModuleBuiltins.deserializeBytecodeNodes(context, source, toDeserialize);
-        assert deserialized.count() == 1;
-        PBytecodeDSLRootNode result = deserialized.getNode(0);
-        result.setMetadata(this, null);
-        return result;
+        PBytecodeDSLRootNode rootNode = supplier.createRootNode(context, source);
+        rootNode.setMetadata(this, null);
+        return rootNode;
     }
 
     public byte[] getSerialized(PythonContext context) {
         CompilerAsserts.neverPartOfCompilation();
-        byte[] result = serialized;
-        if (result == null) {
-            synchronized (this) {
-                result = serialized;
-                if (result == null) {
-                    result = serialized = computeSerialized(context);
-                }
-            }
-        }
-        return result;
-    }
-
-    @SuppressWarnings("unchecked")
-    @TruffleBoundary
-    private byte[] computeSerialized(PythonContext context) {
-        try {
-            assert PythonContext.get(null) == context;
-            BytecodeSerializer serializer = new PBytecodeDSLSerializer();
-            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-            nodes.serialize(new DataOutputStream(bytes), serializer);
-            return bytes.toByteArray();
-        } catch (IOException e) {
-            throw CompilerDirectives.shouldNotReachHere(e);
-        }
+        return supplier.createSerializedBytecode(context);
     }
 
     public TruffleString getDocstring() {
@@ -146,15 +99,11 @@ public final class BytecodeDSLCodeUnit extends CodeUnit {
 
     @Override
     protected void dumpBytecode(StringBuilder sb, boolean optimized, RootNode rootNode) {
-        if (nodes == null) {
-            if (rootNode instanceof PBytecodeDSLRootNode dslRoot) {
-                sb.append(dslRoot.dump());
-                sb.append('\n');
-            }
-            sb.append("bytecode not available\n");
+        if (rootNode instanceof PBytecodeDSLRootNode dslRoot) {
+            sb.append(dslRoot.dump());
+            sb.append('\n');
         } else {
-            sb.append(nodes.getNode(0).dump());
-            sb.append('\n'); // dump does not print newline at the end
+            sb.append("bytecode not available\n");
         }
     }
 }

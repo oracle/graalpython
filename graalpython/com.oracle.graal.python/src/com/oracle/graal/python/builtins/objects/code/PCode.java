@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -88,6 +88,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.SourceSection;
@@ -531,10 +532,10 @@ public final class PCode extends PythonBuiltinObject {
         return varnames;
     }
 
-    public byte[] getCodestring() {
+    public byte[] getCodestring(Node node) {
         RootNode rootNode = getRootNode();
         if (rootNode instanceof PRootNode) {
-            return ((PRootNode) rootNode).getCode();
+            return ((PRootNode) rootNode).getCode(node);
         } else {
             return PythonUtils.EMPTY_BYTE_ARRAY;
         }
@@ -734,12 +735,8 @@ public final class PCode extends PythonBuiltinObject {
         return fName;
     }
 
-    public PBytes co_code(PythonLanguage language) {
-        return createBytes(this.getCodestring(), language);
-    }
-
-    public PBytes co_lnotab(PythonLanguage language) {
-        return createBytes(this.getLinetable(), language);
+    public PBytes co_code(PythonLanguage language, Node node) {
+        return createBytes(this.getCodestring(node), language);
     }
 
     public PTuple co_consts(PythonLanguage language) {

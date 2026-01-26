@@ -411,6 +411,11 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Print warnings when using experimental features at runtime.", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> WarnExperimentalFeatures = new OptionKey<>(true);
 
+    @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = """
+                    By default GraalPy only keeps a transformed form of bytecode in memory and may need to reread bytecode files when a different form of bytecode is requested, \
+                    such as when settrace instrumentation is enabled. This option avoids rereading bytecode files by keeping the original bytecode form in memory""") //
+    public static final OptionKey<Boolean> KeepBytecodeInMemory = new OptionKey<>(false);
+
     public static final OptionDescriptors DESCRIPTORS = new PythonOptionsOptionDescriptors();
 
     @CompilationFinal(dimensions = 1) private static final OptionKey<?>[] ENGINE_OPTION_KEYS;

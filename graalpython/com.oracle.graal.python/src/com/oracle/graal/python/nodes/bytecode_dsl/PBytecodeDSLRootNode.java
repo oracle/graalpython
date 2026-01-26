@@ -567,7 +567,12 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
      * Reparses with instrumentations for settrace and setprofile enabled.
      */
     public final void ensureTraceAndProfileEnabled() {
-        getRootNodes().update(TRACE_AND_PROFILE_CONFIG);
+        try {
+            getRootNodes().update(TRACE_AND_PROFILE_CONFIG);
+        } catch (MarshalModuleBuiltins.ReparseError e) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw PRaiseNode.raiseStatic(getBytecodeNode(), SystemError, ErrorMessages.FAILED_TO_REPARSE_BYTECODE_FILE);
+        }
     }
 
     private TracingNodes getTracingNodes(BytecodeNode location) {
@@ -1010,8 +1015,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Override
-    protected byte[] extractCode() {
-        return MarshalModuleBuiltins.serializeCodeUnit(null, PythonContext.get(this), co);
+    protected byte[] extractCode(Node node) {
+        return MarshalModuleBuiltins.serializeCodeUnit(node, PythonContext.get(node), co);
     }
 
     private static Object checkUnboundCell(PCell cell, int index, BytecodeNode bytecodeNode) {

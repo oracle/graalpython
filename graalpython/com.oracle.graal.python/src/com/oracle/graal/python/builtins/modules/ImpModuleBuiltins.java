@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -92,7 +92,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.compiler.CodeUnit;
-import com.oracle.graal.python.compiler.Compiler;
 import com.oracle.graal.python.lib.PyMemoryViewFromObject;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -129,7 +128,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -238,14 +236,6 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "get_magic")
     @GenerateNodeFactory
     public abstract static class GetMagic extends PythonBuiltinNode {
-        static final int MAGIC_NUMBER = 21000 + Compiler.BYTECODE_VERSION * 10;
-        static final byte[] MAGIC_NUMBER_BYTES = new byte[4];
-        static {
-            ByteArraySupport.littleEndian().putInt(MAGIC_NUMBER_BYTES, 0, MAGIC_NUMBER);
-            MAGIC_NUMBER_BYTES[2] = '\r';
-            MAGIC_NUMBER_BYTES[3] = '\n';
-        }
-
         @Specialization(guards = "isSingleContext()")
         PBytes runCachedSingleContext(
                         @Cached(value = "getMagicNumberPBytes()", weak = true) PBytes magicBytes) {
@@ -255,11 +245,11 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         @Specialization(replaces = "runCachedSingleContext")
         PBytes run(
                         @Bind PythonLanguage language) {
-            return PFactory.createBytes(language, MAGIC_NUMBER_BYTES);
+            return PFactory.createBytes(language, PythonLanguage.MAGIC_NUMBER_BYTES);
         }
 
         protected PBytes getMagicNumberPBytes() {
-            return PFactory.createBytes(PythonLanguage.get(this), MAGIC_NUMBER_BYTES);
+            return PFactory.createBytes(PythonLanguage.get(this), PythonLanguage.MAGIC_NUMBER_BYTES);
         }
     }
 
