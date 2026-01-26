@@ -36,9 +36,9 @@ test.test_zipfile._path.test_path.TestPath.test_open_missing_directory @ darwin-
 test.test_zipfile._path.test_path.TestPath.test_open_write @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile._path.test_path.TestPath.test_parent @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile._path.test_path.TestPath.test_pathlike_construction @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
-test.test_zipfile._path.test_path.TestPath.test_pickle @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 # Times out on Windows in CI
 !test.test_zipfile._path.test_path.TestPath.test_pickle @ win32-AMD64,win32-AMD64-github
+test.test_zipfile._path.test_path.TestPath.test_pickle @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_zipfile._path.test_path.TestPath.test_read @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile._path.test_path.TestPath.test_read_does_not_close @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile._path.test_path.TestPath.test_relative_to @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -263,7 +263,7 @@ test.test_zipfile.test_core.StoredTestsWithRandomBinaryFiles.test_open @ darwin-
 test.test_zipfile.test_core.StoredTestsWithRandomBinaryFiles.test_random_open @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile.test_core.StoredTestsWithRandomBinaryFiles.test_read @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile.test_core.StoredTestsWithSourceFile.test_absolute_arcnames @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_zipfile.test_core.StoredTestsWithSourceFile.test_add_file_after_2107 @ darwin-arm64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_zipfile.test_core.StoredTestsWithSourceFile.test_add_file_after_2107 @ darwin-arm64,linux-aarch64-github,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile.test_core.StoredTestsWithSourceFile.test_add_file_before_1980 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile.test_core.StoredTestsWithSourceFile.test_append_to_concatenated_zip_file @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile.test_core.StoredTestsWithSourceFile.test_append_to_non_zip_file @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

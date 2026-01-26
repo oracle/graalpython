@@ -68,8 +68,8 @@ test.test_compile.TestSpecifics.test_unary_minus @ darwin-arm64,linux-aarch64,li
 !test.test_compile.TestStackSizeStability.test_for_else @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_compile.TestStackSizeStability.test_if @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
 !test.test_compile.TestStackSizeStability.test_if @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_compile.TestStackSizeStability.test_if_else @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
 !test.test_compile.TestStackSizeStability.test_if_else @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestStackSizeStability.test_if_else @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
 !test.test_compile.TestStackSizeStability.test_return_inside_async_with_block @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 !test.test_compile.TestStackSizeStability.test_return_inside_except_block @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 !test.test_compile.TestStackSizeStability.test_return_inside_finally_block @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
@@ -82,6 +82,6 @@ test.test_compile.TestStackSizeStability.test_if_else @ linux-aarch64-github,lin
 !test.test_compile.TestStackSizeStability.test_try_except_star_finally @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 !test.test_compile.TestStackSizeStability.test_try_except_star_qualified @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 !test.test_compile.TestStackSizeStability.test_try_finally @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_compile.TestStackSizeStability.test_while_else @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
 !test.test_compile.TestStackSizeStability.test_while_else @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_compile.TestStackSizeStability.test_while_else @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
 !test.test_compile.TestStackSizeStability.test_with @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64

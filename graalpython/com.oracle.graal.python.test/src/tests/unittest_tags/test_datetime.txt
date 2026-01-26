@@ -1896,8 +1896,8 @@ test.datetimetester.ZoneInfoTest[America/North_Dakota/New_Salem]_Pure.test_gaps 
 test.datetimetester.ZoneInfoTest[America/North_Dakota/New_Salem]_Pure.test_system_transitions @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.datetimetester.ZoneInfoTest[America/Nuuk]_Fast.test_folds @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.datetimetester.ZoneInfoTest[America/Nuuk]_Fast.test_gaps @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-!test.datetimetester.ZoneInfoTest[America/Nuuk]_Fast.test_system_transitions @ darwin-x86_64,linux-aarch64,linux-x86_64
 test.datetimetester.ZoneInfoTest[America/Nuuk]_Fast.test_system_transitions @ linux-aarch64-github,linux-x86_64-github
+!test.datetimetester.ZoneInfoTest[America/Nuuk]_Fast.test_system_transitions @ darwin-x86_64,linux-aarch64,linux-x86_64
 test.datetimetester.ZoneInfoTest[America/Nuuk]_Pure.test_folds @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.datetimetester.ZoneInfoTest[America/Nuuk]_Pure.test_gaps @ darwin-arm64,darwin-x86_64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.datetimetester.ZoneInfoTest[America/Nuuk]_Pure.test_system_transitions @ linux-aarch64-github,linux-x86_64-github
