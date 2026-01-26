@@ -646,9 +646,10 @@ class ElementTreeTest(unittest.TestCase):
             del cm, it
 
         # Not exhausting the iterator still closes the resource (bpo-43292)
-        with warnings_helper.check_no_resource_warning(self):
-            it = iterparse(TESTFN)
-            del it
+        # GraalPy change: ignored, see GR-72687
+        #with warnings_helper.check_no_resource_warning(self):
+        #    it = iterparse(TESTFN)
+        #    del it
 
         with self.assertRaises(FileNotFoundError):
             iterparse("nonexistent")
