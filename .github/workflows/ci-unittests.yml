@@ -31,15 +31,17 @@ jobs:
             const GRAALVMBOT_LOGIN = "graalvmbot"
             var payload = context.payload
             if (!payload || !payload.number) return ;
-            
-            var author = payload.pull_request.user
-            var assignees = payload.pull_request.assignees
 
+            var pr = payload.pull_request
+            if (!pr || pr.state !== "closed") return ;
+
+            var author = pr.user
+            var assignees = pr.assignees
             if (!author || author.login !== GRAALVMBOT_LOGIN) return ;
             if (!assignees || assignees.length != 1) return ;
 
             github.rest.issues.createComment({
-              issue_number: payload.number,
+              issue_number: pr.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: `@${assignees[0].login} - One or more CI jobs failed`
