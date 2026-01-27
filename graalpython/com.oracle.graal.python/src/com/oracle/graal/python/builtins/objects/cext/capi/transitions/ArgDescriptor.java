@@ -278,7 +278,7 @@ public enum ArgDescriptor {
     PYPRECONFIG_PTR("PyPreConfig*"),
     PYSTATUS("PyStatus"),
     PYUNICODE_KIND("enum PyUnicode_Kind"),
-    PYWEAKREFERENCE_PTR(ArgBehavior.PyObject, "PyWeakReference*"),
+    PYWEAKREFERENCE_PTR(ArgBehavior.Pointer, "PyWeakReference*"),
     PYWIDESTRINGLIST_PTR("PyWideStringList*"),
     PyDict_WatchCallback(ArgBehavior.Pointer, "PyDict_WatchCallback"),
     PyFunction_WatchCallback(ArgBehavior.Pointer, "PyFunction_WatchCallback"),

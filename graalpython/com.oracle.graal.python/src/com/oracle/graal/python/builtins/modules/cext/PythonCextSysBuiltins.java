@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.modules.cext;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
@@ -52,12 +53,11 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T_STDOUT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
 import static com.oracle.graal.python.runtime.PythonContext.NATIVE_NULL;
 
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PromoteBorrowedValue;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.UnicodeFromFormatNode;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
@@ -116,33 +116,20 @@ public final class PythonCextSysBuiltins {
         return file;
     }
 
-    @CApiBuiltin(ret = Int, args = {Int, ConstCharPtrAsTruffleString}, call = Ignored)
-    abstract static class GraalPyPrivate_Sys_WriteStd extends CApiBinaryBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        static Object doGeneric(int fd, TruffleString msg) {
-            try {
-                PyObjectCallMethodObjArgs.executeUncached(selectOut(fd), T_WRITE, msg);
-                return 0;
-            } catch (PException e) {
-                return -1;
-            }
-        }
+    @CApiBuiltin(ret = Int, args = {Int, ConstCharPtr}, call = Ignored, acquireGil = false)
+    @TruffleBoundary
+    public static int GraalPyPrivate_Sys_WriteStd(int fd, long msgPtr) {
+        TruffleString msg = FromCharPointerNode.executeUncached(msgPtr, false);
+        PyObjectCallMethodObjArgs.executeUncached(selectOut(fd), T_WRITE, msg);
+        return 0;
     }
 
-    @CApiBuiltin(ret = Int, args = {Int, ConstCharPtrAsTruffleString, VA_LIST_PTR}, call = Ignored)
-    abstract static class GraalPyPrivate_Sys_FormatStd extends CApiTernaryBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        static Object doGeneric(int fd, TruffleString format, long vaList) {
-            try {
-                Object msg = UnicodeFromFormatNode.executeUncached(format, vaList);
-                PyObjectCallMethodObjArgs.executeUncached(selectOut(fd), T_WRITE, msg);
-                return 0;
-            } catch (PException e) {
-                // do not propagate any exception to native
-                return -1;
-            }
-        }
+    @CApiBuiltin(ret = Int, args = {Int, ConstCharPtr, VA_LIST_PTR}, call = Ignored, acquireGil = false)
+    @TruffleBoundary
+    public static int GraalPyPrivate_Sys_FormatStd(int fd, long formatPtr, long vaList) {
+        TruffleString format = FromCharPointerNode.executeUncached(formatPtr, false);
+        Object msg = UnicodeFromFormatNode.executeUncached(format, vaList);
+        PyObjectCallMethodObjArgs.executeUncached(selectOut(fd), T_WRITE, msg);
+        return 0;
     }
 }

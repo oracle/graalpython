@@ -184,7 +184,7 @@ public final class CApiContext extends CExtContext {
     private final ConcurrentWeakSet<PString> pstringInterningCache = new ConcurrentWeakSet<>();
     private final ArrayList<Object> modulesByIndex = new ArrayList<>(0);
 
-    public final HashMap<Long, PLock> locks = new HashMap<>();
+    public final ConcurrentHashMap<Long, PLock> locks = new ConcurrentHashMap<>();
     public final AtomicLong lockId = new AtomicLong();
 
     /**
@@ -425,6 +425,10 @@ public final class CApiContext extends CExtContext {
             }
         }
         return -1;
+    }
+
+    public long getNonePtr() {
+        return getSingletonNativeWrapper(PNone.NONE);
     }
 
     public long getSingletonNativeWrapper(PythonAbstractObject obj) {

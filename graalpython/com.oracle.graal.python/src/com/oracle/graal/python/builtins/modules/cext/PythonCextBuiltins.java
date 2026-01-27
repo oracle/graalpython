@@ -329,6 +329,11 @@ public final class PythonCextBuiltins {
         throw PRaiseNode.raiseStatic(null, SystemError, ErrorMessages.INTERNAL_EXCEPTION_OCCURED);
     }
 
+    static PException badInternalCall(String where, String argName) {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        throw PRaiseNode.raiseStatic(null, SystemError, ErrorMessages.S_S_BAD_ARG_TO_INTERNAL_FUNC, where, argName);
+    }
+
     public abstract static class CApiBuiltinNode extends PNodeWithContext {
 
         public abstract Object execute(Object[] args);
@@ -357,9 +362,12 @@ public final class PythonCextBuiltins {
             return getContext().getCApiContext();
         }
 
+        protected static CApiContext getStaticCApiContext() {
+            return PythonContext.get(null).getCApiContext();
+        }
+
         protected final PException badInternalCall(String argName) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw PRaiseNode.raiseStatic(this, SystemError, ErrorMessages.S_S_BAD_ARG_TO_INTERNAL_FUNC, getName(), argName);
+            throw PythonCextBuiltins.badInternalCall(getName(), argName);
         }
 
         @NonIdempotent

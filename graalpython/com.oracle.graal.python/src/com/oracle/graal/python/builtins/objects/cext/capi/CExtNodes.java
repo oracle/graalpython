@@ -196,6 +196,7 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
@@ -862,6 +863,15 @@ public abstract class CExtNodes {
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                         @Shared("transformExceptionToNativeNode") @Cached TransformPExceptionToNativeNode transformExceptionToNativeNode) {
             raiseNative(inliningTarget, errType, format, arguments, raiseNode, transformExceptionToNativeNode);
+            return errorValue;
+        }
+
+        public static <T> T raiseStatic(T errorValue, PythonBuiltinClassType errType, TruffleString format, Object... arguments) {
+            try {
+                throw PRaiseNode.raiseStatic(EncapsulatingNodeReference.getCurrent().get(), errType, format, arguments);
+            } catch (PException p) {
+                TransformPExceptionToNativeNode.executeUncached(p);
+            }
             return errorValue;
         }
 

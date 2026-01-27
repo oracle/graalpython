@@ -324,6 +324,11 @@ public abstract class ExternalFunctionNodes {
             assert promoted == object || PythonToNativeInternalNode.isImmortal(ctx, promoted);
             return toNative.executeLong(promoted);
         }
+
+        public static long executeUncached(Object object) {
+            Object promoted = EnsurePythonObjectNode.executeUncached(PythonContext.get(null), object, false);
+            return PythonToNativeNode.executeLongUncached(promoted);
+        }
     }
 
     @GenerateUncached
