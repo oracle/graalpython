@@ -75,7 +75,6 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -88,9 +87,9 @@ import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
-import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.lib.PyTZInfoCheckNode;
 import com.oracle.graal.python.lib.PyTimeCheckNode;
+import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.lib.RichCmpOp;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -495,9 +494,8 @@ public final class TimeBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static int getHour(PythonAbstractNativeObject self,
-                        @Cached CStructAccess.ReadByteNode readNode) {
-            return TimeNodes.FromNative.getHour(self, readNode);
+        static int getHour(PythonAbstractNativeObject self) {
+            return TimeNodes.FromNative.getHour(self);
         }
 
         @Specialization
@@ -518,9 +516,8 @@ public final class TimeBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static int getMinute(PythonAbstractNativeObject self,
-                        @Cached CStructAccess.ReadByteNode readNode) {
-            return TimeNodes.FromNative.getMinute(self, readNode);
+        static int getMinute(PythonAbstractNativeObject self) {
+            return TimeNodes.FromNative.getMinute(self);
         }
 
         @Specialization
@@ -541,9 +538,8 @@ public final class TimeBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static int getSecond(PythonAbstractNativeObject self,
-                        @Cached CStructAccess.ReadByteNode readNode) {
-            return TimeNodes.FromNative.getSecond(self, readNode);
+        static int getSecond(PythonAbstractNativeObject self) {
+            return TimeNodes.FromNative.getSecond(self);
         }
 
         @Specialization
@@ -564,9 +560,8 @@ public final class TimeBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static int getMicrosecond(PythonAbstractNativeObject self,
-                        @Cached CStructAccess.ReadByteNode readNode) {
-            return TimeNodes.FromNative.getMicrosecond(self, readNode);
+        static int getMicrosecond(PythonAbstractNativeObject self) {
+            return TimeNodes.FromNative.getMicrosecond(self);
         }
 
         @Specialization
@@ -600,9 +595,8 @@ public final class TimeBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static int getFold(PythonAbstractNativeObject self,
-                        @Cached CStructAccess.ReadByteNode readNode) {
-            return TimeNodes.FromNative.getFold(self, readNode);
+        static int getFold(PythonAbstractNativeObject self) {
+            return TimeNodes.FromNative.getFold(self);
         }
 
         @Specialization

@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.modules.datetime;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___GETINITARGS__;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -113,9 +114,9 @@ public final class TzInfoBuiltins extends PythonBuiltins {
             } else {
                 PythonContext context = PythonContext.get(null);
                 CApiTransitions.PythonToNativeNode toNative = CApiTransitions.PythonToNativeNode.getUncached();
-                Object nativeResult = CExtNodes.PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_PY_TYPE_GENERIC_NEW, toNative.execute(cls), context.getNativeNull(), context.getNativeNull());
+                long nativeResult = (long) CExtNodes.PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_PY_TYPE_GENERIC_NEW, toNative.execute(cls), NULLPTR, NULLPTR);
                 ExternalFunctionNodes.DefaultCheckFunctionResultNode.getUncached().execute(context, NativeCAPISymbol.FUN_PY_TYPE_GENERIC_NEW.getTsName(), nativeResult);
-                return CApiTransitions.NativeToPythonTransferNode.executeUncached(nativeResult);
+                return CApiTransitions.NativeToPythonTransferNode.executeRawUncached(nativeResult);
             }
         }
     }

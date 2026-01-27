@@ -101,7 +101,7 @@ public final class PythonCextArrayBuiltins {
             if (array.getBytesLength() > 0) {
                 return ensureNativeStorageNode.execute(inliningTarget, array).getPtr();
             } else {
-                return getNativeNull(inliningTarget);
+                return NULLPTR;
             }
         }
     }

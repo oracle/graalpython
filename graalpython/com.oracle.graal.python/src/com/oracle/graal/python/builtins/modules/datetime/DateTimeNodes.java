@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.modules.datetime.DatetimeModuleBuiltins.MAX_YEAR;
 import static com.oracle.graal.python.builtins.modules.datetime.DatetimeModuleBuiltins.MIN_YEAR;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readByteField;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.time.YearMonth;
@@ -61,6 +62,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyTZInfoCheckNode;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
+import com.oracle.graal.python.nfi2.NativeMemory;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -291,42 +293,49 @@ public class DateTimeNodes {
     }
 
     public static final class FromNative {
-        static int getYear(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
-            int b0 = readNode.readFromObjUnsigned(self, CFields.PyDateTime_DateTime__data, 0);
-            int b1 = readNode.readFromObjUnsigned(self, CFields.PyDateTime_DateTime__data, 1);
+        static int getYear(PythonAbstractNativeObject self) {
+            long ptr = CStructAccess.getFieldPtr(self.getPtr(), CFields.PyDateTime_DateTime__data);
+            int b0 = NativeMemory.readByteArrayElement(ptr, 0) & 0xFF;
+            int b1 = NativeMemory.readByteArrayElement(ptr, 1) & 0xFF;
             return (b0 << 8) | b1;
         }
 
-        static int getMonth(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
-            return readNode.readFromObjUnsigned(self, CFields.PyDateTime_DateTime__data, 2);
+        static int getMonth(PythonAbstractNativeObject self) {
+            long ptr = CStructAccess.getFieldPtr(self.getPtr(), CFields.PyDateTime_DateTime__data);
+            return NativeMemory.readByteArrayElement(ptr, 2) & 0xFF;
         }
 
-        static int getDay(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
-            return readNode.readFromObjUnsigned(self, CFields.PyDateTime_DateTime__data, 3);
+        static int getDay(PythonAbstractNativeObject self) {
+            long ptr = CStructAccess.getFieldPtr(self.getPtr(), CFields.PyDateTime_DateTime__data);
+            return NativeMemory.readByteArrayElement(ptr, 3) & 0xFF;
         }
 
-        static int getHour(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
-            return readNode.readFromObjUnsigned(self, CFields.PyDateTime_DateTime__data, 4);
+        static int getHour(PythonAbstractNativeObject self) {
+            long ptr = CStructAccess.getFieldPtr(self.getPtr(), CFields.PyDateTime_DateTime__data);
+            return NativeMemory.readByteArrayElement(ptr, 4) & 0xFF;
         }
 
-        static int getMinute(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
-            return readNode.readFromObjUnsigned(self, CFields.PyDateTime_DateTime__data, 5);
+        static int getMinute(PythonAbstractNativeObject self) {
+            long ptr = CStructAccess.getFieldPtr(self.getPtr(), CFields.PyDateTime_DateTime__data);
+            return NativeMemory.readByteArrayElement(ptr, 5) & 0xFF;
         }
 
-        static int getSecond(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
-            return readNode.readFromObjUnsigned(self, CFields.PyDateTime_DateTime__data, 6);
+        static int getSecond(PythonAbstractNativeObject self) {
+            long ptr = CStructAccess.getFieldPtr(self.getPtr(), CFields.PyDateTime_DateTime__data);
+            return NativeMemory.readByteArrayElement(ptr, 6) & 0xFF;
         }
 
-        static int getMicrosecond(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
-            int b3 = readNode.readFromObjUnsigned(self, CFields.PyDateTime_DateTime__data, 7);
-            int b4 = readNode.readFromObjUnsigned(self, CFields.PyDateTime_DateTime__data, 8);
-            int b5 = readNode.readFromObjUnsigned(self, CFields.PyDateTime_DateTime__data, 9);
+        static int getMicrosecond(PythonAbstractNativeObject self) {
+            long ptr = CStructAccess.getFieldPtr(self.getPtr(), CFields.PyDateTime_DateTime__data);
+            int b3 = NativeMemory.readByteArrayElement(ptr, 7) & 0xFF;
+            int b4 = NativeMemory.readByteArrayElement(ptr, 8) & 0xFF;
+            int b5 = NativeMemory.readByteArrayElement(ptr, 9) & 0xFF;
             return (b3 << 16) | (b4 << 8) | b5;
         }
 
-        static Object getTzInfo(PythonAbstractNativeObject obj, CStructAccess.ReadByteNode readByteNode, CStructAccess.ReadObjectNode readObjectNode) {
+        static Object getTzInfo(PythonAbstractNativeObject obj, CStructAccess.ReadObjectNode readObjectNode) {
             Object tzInfo = null;
-            if (readByteNode.readFromObj(obj, CFields.PyDateTime_DateTime__hastzinfo) != 0) {
+            if (readByteField(obj.getPtr(), CFields.PyDateTime_DateTime__hastzinfo) != 0) {
                 Object tzinfoObj = readObjectNode.readFromObj(obj, CFields.PyDateTime_DateTime__tzinfo);
                 if (tzinfoObj != PNone.NO_VALUE) {
                     tzInfo = tzinfoObj;
@@ -335,8 +344,8 @@ public class DateTimeNodes {
             return tzInfo;
         }
 
-        static int getFold(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
-            return readNode.readFromObjUnsigned(self, CFields.PyDateTime_DateTime__fold);
+        static int getFold(PythonAbstractNativeObject self) {
+            return readByteField(self.getPtr(), CFields.PyDateTime_DateTime__fold);
         }
     }
 
@@ -358,9 +367,8 @@ public class DateTimeNodes {
 
         @Specialization
         static Object getTzInfo(PythonAbstractNativeObject self,
-                        @Cached CStructAccess.ReadByteNode readByteNode,
                         @Cached CStructAccess.ReadObjectNode readObjectNode) {
-            return FromNative.getTzInfo(self, readByteNode, readObjectNode);
+            return FromNative.getTzInfo(self, readObjectNode);
         }
 
         @Specialization

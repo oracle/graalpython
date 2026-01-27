@@ -89,7 +89,6 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -463,9 +462,8 @@ public final class DateBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static int getYear(PythonAbstractNativeObject self,
-                        @Cached CStructAccess.ReadByteNode readNode) {
-            return DateNodes.FromNative.getYear(self, readNode);
+        static int getYear(PythonAbstractNativeObject self) {
+            return DateNodes.FromNative.getYear(self);
         }
 
         @Specialization
@@ -486,9 +484,8 @@ public final class DateBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static int getMonth(PythonAbstractNativeObject self,
-                        @Cached CStructAccess.ReadByteNode readNode) {
-            return DateNodes.FromNative.getMonth(self, readNode);
+        static int getMonth(PythonAbstractNativeObject self) {
+            return DateNodes.FromNative.getMonth(self);
         }
 
         @Specialization
@@ -509,9 +506,8 @@ public final class DateBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static int getDay(PythonAbstractNativeObject self,
-                        @Cached CStructAccess.ReadByteNode readNode) {
-            return DateNodes.FromNative.getDay(self, readNode);
+        static int getDay(PythonAbstractNativeObject self) {
+            return DateNodes.FromNative.getDay(self);
         }
 
         @Specialization

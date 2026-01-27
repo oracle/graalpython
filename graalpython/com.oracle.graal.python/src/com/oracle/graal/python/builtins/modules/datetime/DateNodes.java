@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
+import com.oracle.graal.python.nfi2.NativeMemory;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -182,18 +183,21 @@ public class DateNodes {
     }
 
     public static final class FromNative {
-        static int getYear(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
-            int b0 = readNode.readFromObjUnsigned(self, CFields.PyDateTime_Date__data, 0);
-            int b1 = readNode.readFromObjUnsigned(self, CFields.PyDateTime_Date__data, 1);
+        static int getYear(PythonAbstractNativeObject self) {
+            long ptr = CStructAccess.getFieldPtr(self.getPtr(), CFields.PyDateTime_Date__data);
+            int b0 = NativeMemory.readByteArrayElement(ptr, 0) & 0xFF;
+            int b1 = NativeMemory.readByteArrayElement(ptr, 1) & 0xFF;
             return b0 << 8 | b1;
         }
 
-        static int getMonth(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
-            return readNode.readFromObjUnsigned(self, CFields.PyDateTime_Date__data, 2);
+        static int getMonth(PythonAbstractNativeObject self) {
+            long ptr = CStructAccess.getFieldPtr(self.getPtr(), CFields.PyDateTime_Date__data);
+            return NativeMemory.readByteArrayElement(ptr, 2) & 0xFF;
         }
 
-        static int getDay(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
-            return readNode.readFromObjUnsigned(self, CFields.PyDateTime_Date__data, 3);
+        static int getDay(PythonAbstractNativeObject self) {
+            long ptr = CStructAccess.getFieldPtr(self.getPtr(), CFields.PyDateTime_Date__data);
+            return NativeMemory.readByteArrayElement(ptr, 3) & 0xFF;
         }
     }
 

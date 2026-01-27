@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, 2025, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -9,6 +9,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.modules.json.JSONScannerBuiltins.RECURSION_LIMIT;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyFloatObject__ob_fval;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readDoubleField;
 import static com.oracle.graal.python.nodes.PGuards.isDouble;
 import static com.oracle.graal.python.nodes.PGuards.isInteger;
 import static com.oracle.graal.python.nodes.PGuards.isPFloat;
@@ -32,7 +33,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.json.JSONEncoderBuiltinsClinicProviders.MakeEncoderClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageGetIterator;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageIterator;
@@ -443,7 +443,6 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
                             @Cached GetClassNode getClassNode,
                             @Cached IsSubtypeNode isSubtypeNode,
                             @Cached CastToTruffleStringNode.ReadNativeStringNode readNativeStringNode,
-                            @Cached CStructAccess.ReadDoubleNode readNativeDoubleNode,
                             @Cached CastToTruffleStringNode castToTruffleStringNode,
                             @Cached StringNodes.StringMaterializeNode stringMaterializeNode,
                             @Cached TruffleString.ByteIndexOfCodePointSetNode byteIndexOfCodePointSetNode1,
@@ -514,7 +513,7 @@ public final class JSONEncoderBuiltins extends PythonBuiltins {
                     doubleValue = ((PFloat) obj).asDouble();
                     isDouble = true;
                 } else if (obj instanceof PythonAbstractNativeObject nativeObj && isSubtypeNode.execute(getClassNode.execute(inliningTarget, nativeObj), PythonBuiltinClassType.PFloat)) {
-                    doubleValue = readNativeDoubleNode.readFromObj(nativeObj, PyFloatObject__ob_fval);
+                    doubleValue = readDoubleField(nativeObj.getPtr(), PyFloatObject__ob_fval);
                     isDouble = true;
                 } else {
                     doubleValue = 0;

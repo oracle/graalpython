@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.modules.datetime;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readByteField;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -56,8 +57,9 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetInstanceShape;
-import com.oracle.graal.python.lib.PyTZInfoCheckNode;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
+import com.oracle.graal.python.lib.PyTZInfoCheckNode;
+import com.oracle.graal.python.nfi2.NativeMemory;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -158,10 +160,10 @@ public class TimeNodes {
                 return new PTime(cls, shape, hour, minute, second, microsecond, tzInfo, fold);
             } else {
                 CApiTransitions.PythonToNativeNode toNative = CApiTransitions.PythonToNativeNode.getUncached();
-                Object nativeResult = CExtNodes.PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_TIME_SUBTYPE_NEW,
-                                toNative.execute(cls), hour, minute, second, microsecond, toNative.execute(tzInfo != null ? tzInfo : PNone.NO_VALUE), fold);
+                long nativeResult = (long) CExtNodes.PCallCapiFunction.callUncached(NativeCAPISymbol.FUN_TIME_SUBTYPE_NEW,
+                                toNative.executeLong(cls), hour, minute, second, microsecond, toNative.executeLong(tzInfo != null ? tzInfo : PNone.NO_VALUE), fold);
                 ExternalFunctionNodes.DefaultCheckFunctionResultNode.getUncached().execute(PythonContext.get(null), NativeCAPISymbol.FUN_TIME_SUBTYPE_NEW.getTsName(), nativeResult);
-                return CApiTransitions.NativeToPythonTransferNode.executeUncached(nativeResult);
+                return CApiTransitions.NativeToPythonTransferNode.executeRawUncached(nativeResult);
             }
         }
 
@@ -229,28 +231,32 @@ public class TimeNodes {
     }
 
     public static final class FromNative {
-        static int getHour(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
-            return readNode.readFromObjUnsigned(self, CFields.PyDateTime_Time__data, 0);
+        static int getHour(PythonAbstractNativeObject self) {
+            long ptr = CStructAccess.getFieldPtr(self.getPtr(), CFields.PyDateTime_Time__data);
+            return NativeMemory.readByteArrayElement(ptr, 0) & 0xFF;
         }
 
-        static int getMinute(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
-            return readNode.readFromObjUnsigned(self, CFields.PyDateTime_Time__data, 1);
+        static int getMinute(PythonAbstractNativeObject self) {
+            long ptr = CStructAccess.getFieldPtr(self.getPtr(), CFields.PyDateTime_Time__data);
+            return NativeMemory.readByteArrayElement(ptr, 1) & 0xFF;
         }
 
-        static int getSecond(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
-            return readNode.readFromObjUnsigned(self, CFields.PyDateTime_Time__data, 2);
+        static int getSecond(PythonAbstractNativeObject self) {
+            long ptr = CStructAccess.getFieldPtr(self.getPtr(), CFields.PyDateTime_Time__data);
+            return NativeMemory.readByteArrayElement(ptr, 2) & 0xFF;
         }
 
-        static int getMicrosecond(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
-            int b3 = readNode.readFromObjUnsigned(self, CFields.PyDateTime_Time__data, 3);
-            int b4 = readNode.readFromObjUnsigned(self, CFields.PyDateTime_Time__data, 4);
-            int b5 = readNode.readFromObjUnsigned(self, CFields.PyDateTime_Time__data, 5);
+        static int getMicrosecond(PythonAbstractNativeObject self) {
+            long ptr = CStructAccess.getFieldPtr(self.getPtr(), CFields.PyDateTime_Time__data);
+            int b3 = NativeMemory.readByteArrayElement(ptr, 3) & 0xFF;
+            int b4 = NativeMemory.readByteArrayElement(ptr, 4) & 0xFF;
+            int b5 = NativeMemory.readByteArrayElement(ptr, 5) & 0xFF;
             return (b3 << 16) | (b4 << 8) | b5;
         }
 
-        static Object getTzInfo(PythonAbstractNativeObject nativeTime, CStructAccess.ReadByteNode readByteNode, CStructAccess.ReadObjectNode readObjectNode) {
+        static Object getTzInfo(PythonAbstractNativeObject nativeTime, CStructAccess.ReadObjectNode readObjectNode) {
             Object tzinfo = null;
-            if (readByteNode.readFromObj(nativeTime, CFields.PyDateTime_Time__hastzinfo) != 0) {
+            if (readByteField(nativeTime.getPtr(), CFields.PyDateTime_Time__hastzinfo) != 0) {
                 Object tzinfoObj = readObjectNode.readFromObj(nativeTime, CFields.PyDateTime_Time__tzinfo);
                 if (tzinfoObj != PNone.NO_VALUE) {
                     tzinfo = tzinfoObj;
@@ -259,8 +265,8 @@ public class TimeNodes {
             return tzinfo;
         }
 
-        static int getFold(PythonAbstractNativeObject self, CStructAccess.ReadByteNode readNode) {
-            return readNode.readFromObjUnsigned(self, CFields.PyDateTime_Time__fold);
+        static int getFold(PythonAbstractNativeObject self) {
+            return readByteField(self.getPtr(), CFields.PyDateTime_Time__fold) & 0xFF;
         }
     }
 
@@ -282,9 +288,8 @@ public class TimeNodes {
 
         @Specialization
         static Object getTzInfo(PythonAbstractNativeObject self,
-                        @Cached CStructAccess.ReadByteNode readByteNode,
                         @Cached CStructAccess.ReadObjectNode readObjectNode) {
-            return FromNative.getTzInfo(self, readByteNode, readObjectNode);
+            return FromNative.getTzInfo(self, readObjectNode);
         }
 
         @Specialization
