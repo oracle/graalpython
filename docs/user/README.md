@@ -17,9 +17,9 @@ The following table shows which Python versions are supported by each GraalPy re
 ### Platform support
 
 GraalPy is mostly written in Java and Python, but the Python package ecosystem is rich in native packages that need platform specific support via native libraries that expose platform-specific APIs.
-Our main operating system is Oracle Linux, the CPU architectures we focus on are AMD64 and ARM, and the main JDK we test is Oracle GraalVM.
-Windows and macOS with GraalVM JDK are less well tested, and outside of those combinations we target only basic test coverage.
-See [test tiers](Test-Tiers.md) for a detailed breakdown.
+The main operating system is Oracle Linux, the CPU architectures are AMD64 and ARM, and the primary JDK is Oracle GraalVM.
+**Linux is recommended for getting started with GraalPy.** Windows and macOS with GraalVM JDK are less well tested, and outside of those combinations only basic test coverage is provided. As macOS and other platforms are not prioritized, some GraalPy features may not work on these platforms.
+See [below](Test-Tiers.md) for a detailed breakdown.
 
 ## Maven
 
