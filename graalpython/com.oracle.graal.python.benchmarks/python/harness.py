@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -41,7 +41,7 @@ from time import time
 
 try:
     # https://docs.python.org/3/library/time.html#time.monotonic
-    # The reference point of the returned value is undefined, 
+    # The reference point of the returned value is undefined,
     # so that **only the difference between the results of two calls is valid**.
     from time import monotonic_ns
     _module_start_time = monotonic_ns()
@@ -143,6 +143,8 @@ def avg(values):
 
 def norm(values):
     _max, _min  = max(values), min(values)
+    if _max == _min:
+        return zeros(len(values))
     return [float(v - _min) / (_max - _min) * 100.0 for v in values]
 
 
@@ -487,7 +489,7 @@ def run_benchmark(args):
         else:
             bench_args.append(arg)
         i += 1
-        
+
     if startup and self_measurement:
         raise RuntimeError("It is not allowed to use the startup argument when self_measurement is enabled")
 
