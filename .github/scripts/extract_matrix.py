@@ -77,6 +77,7 @@ DOWNLOADS_LINKS = {
 
 # Github Runners OSS
 OSS = {
+    "macos-latest": ["darwin", "aarch64"],
     "ubuntu-latest": ["linux", "amd64"],
     "ubuntu-24.04-arm": ["linux", "aarch64"],
     "windows-latest": ["windows", "amd64"]
