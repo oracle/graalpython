@@ -28,6 +28,7 @@ jobs:
         with:
           script: |
             var payload = context.payload
+            if (!payload || !payload.number) return ;
             console.log(payload)
             console.log(payload.user)
             github.rest.issues.createComment({
