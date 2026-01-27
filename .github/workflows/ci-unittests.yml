@@ -5,35 +5,42 @@ on:
   workflow_dispatch:
 
 jobs:
-  # build-standalone-artifacts:
-  #   if: github.event.pull_request.draft == false && success()
-  #   uses: ./.github/workflows/ci-matrix-gen.yml
-  #   with:
-  #     jobs_to_run: ^(?:python-svm-build|style|style-ecj)-gate-.*$
-  #     logs_retention_days: 0
-  #     artifacts_retention_days: 0
+  build-standalone-artifacts:
+    if: github.event.pull_request.draft == false && success()
+    uses: ./.github/workflows/ci-matrix-gen.yml
+    with:
+      jobs_to_run: ^(?:python-svm-build|style|style-ecj)-gate-.*$
+      logs_retention_days: 0
+      artifacts_retention_days: 0
 
-  # run-tests:
-  #   if: success()
-  #   needs: build-standalone-artifacts
-  #   uses: ./.github/workflows/ci-matrix-gen.yml
-  #   with:
-  #     jobs_to_run: ^(?!python-svm-build|style).*-gate.*$
+  run-tests:
+    if: success()
+    needs: build-standalone-artifacts
+    uses: ./.github/workflows/ci-matrix-gen.yml
+    with:
+      jobs_to_run: ^(?!python-svm-build|style).*-gate.*$
 
   post-run:
-    # needs: run-tests
+    if: failure()
+    needs: run-tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/github-script@v8
         with:
           script: |
+            const GRAALVMBOT_LOGIN = "graalvmbot"
             var payload = context.payload
             if (!payload || !payload.number) return ;
-            console.log(payload)
-            console.log(payload.user)
+            
+            var author = payload.pull_request.user
+            var assignees = payload.pull_request.assignees
+
+            if (!author || author.login !== GRAALVMBOT_LOGIN) return ;
+            if (!assignees || assignees.length != 1) return ;
+
             github.rest.issues.createComment({
               issue_number: payload.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `@Ariouz - One or more CI jobs failed`
+              body: `@{assignees[0].login} - One or more CI jobs failed`
             })
