@@ -5,17 +5,34 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-standalone-artifacts:
-    if: github.event.pull_request.draft == false && success()
-    uses: ./.github/workflows/ci-matrix-gen.yml
-    with:
-      jobs_to_run: ^(?:python-svm-build|style|style-ecj)-gate-.*$
-      logs_retention_days: 0
-      artifacts_retention_days: 0
+  # build-standalone-artifacts:
+  #   if: github.event.pull_request.draft == false && success()
+  #   uses: ./.github/workflows/ci-matrix-gen.yml
+  #   with:
+  #     jobs_to_run: ^(?:python-svm-build|style|style-ecj)-gate-.*$
+  #     logs_retention_days: 0
+  #     artifacts_retention_days: 0
 
-  run-tests:
-    if: github.event.pull_request.draft == false && success()
-    needs: build-standalone-artifacts
-    uses: ./.github/workflows/ci-matrix-gen.yml
-    with:
-      jobs_to_run: ^(?!python-svm-build|style).*-gate.*$
+  # run-tests:
+  #   if: success()
+  #   needs: build-standalone-artifacts
+  #   uses: ./.github/workflows/ci-matrix-gen.yml
+  #   with:
+  #     jobs_to_run: ^(?!python-svm-build|style).*-gate.*$
+
+  post-run:
+    # needs: run-tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v8
+        with:
+          script: |
+            var payload = context.payload
+            console.log(payload)
+            console.log(payload.user)
+            github.rest.issues.createComment({
+              issue_number: payload.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `@Ariouz - One or more CI jobs failed`
+            })

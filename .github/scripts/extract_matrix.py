@@ -75,9 +75,8 @@ DOWNLOADS_LINKS = {
     "ECLIPSE": "https://www.eclipse.org/downloads/download.php?file=/eclipse/downloads/drops4/R-4.26-202211231800/eclipse-SDK-4.26-linux-gtk-x86_64.tar.gz"
 }
 
-# Gitlab Runners OSS
+# Github Runners OSS
 OSS = {
-    "macos-latest": ["darwin", "aarch64"],
     "ubuntu-latest": ["linux", "amd64"],
     "ubuntu-24.04-arm": ["linux", "aarch64"],
     "windows-latest": ["windows", "amd64"]
