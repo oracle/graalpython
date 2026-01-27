@@ -184,10 +184,6 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         return !initializer.matches("ArgBehavior\\.PyObject[,)]") || initializer.contains("true");
     }
 
-    private boolean isVoid(VariableElement obj) {
-        return getFieldInitializer(obj).contains("ArgBehavior.Void");
-    }
-
     private static String name(Element obj) {
         return obj.getSimpleName().toString();
     }
@@ -198,49 +194,62 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         public final VariableElement[] arguments;
         public final VariableElement returnType;
         public final boolean acquireGil;
+        public final boolean canRaise;
         public final String call;
         public final String factory;
         public int id;
 
-        public CApiBuiltinDesc(Element origin, String name, VariableElement returnType, VariableElement[] arguments, boolean acquireGil, String call, String factory) {
+        public CApiBuiltinDesc(Element origin, String name, VariableElement returnType, VariableElement[] arguments, boolean acquireGil, boolean canRaise, String call, String factory) {
             this.origin = origin;
             this.name = name;
             this.returnType = returnType;
             this.arguments = arguments;
             this.acquireGil = acquireGil;
+            this.canRaise = canRaise;
             this.call = call;
             this.factory = factory;
         }
     }
 
-    private static String capiTypeToJavaPrimitiveType(VariableElement element) {
-        switch (element.toString()) {
-            case "Void":
-            case "VoidNoReturn":
-                return "void";
-            case "Int":
-            case "ConstInt":
-            case "_PY_ERROR_HANDLER":
-            case "PY_GIL_STATE_STATE":
-            case "PySendResult":
-            case "PY_UCS4":
-            case "UNSIGNED_INT":
-            case "InquiryResult":
-            case "InitResult":
-            case "PrimitiveResult32":
-                return "int";
-            case "Float":
-                return "float";
-            case "Double":
-                return "double";
-            case "CHAR":
-                return "byte";
-            default:
-                return "long";
+    private String capiTypeToLogicalType(VariableElement element) {
+        var init = getFieldInitializer(element);
+        if (init.contains("Void")) {
+            return "void";
+        } else if (init.contains("Float64")) {
+            return "double";
+        } else if (init.contains("Float32")) {
+            return "float";
+        } else if (init.contains("Int32")) {
+            return "int";
+        } else if (init.contains("Char16")) {
+            return "short";
+        } else if (init.contains("Char8")) {
+            return "byte";
+        } else if (init.contains("PyObject") || init.contains("Pointer")) {
+            return "pointer";
+        } else {
+            return "long";
         }
     }
 
-    private static String capiTypeToForeignPrimitiveType(VariableElement element) {
+    private boolean isVoid(VariableElement element) {
+        return capiTypeToLogicalType(element).equals("void");
+    }
+
+    private String capiTypeToErrorValue(VariableElement element) {
+        if (capiTypeToLogicalType(element).equals("pointer")) {
+            return "0";
+        } else {
+            return "-1";
+        }
+    }
+
+    private String capiTypeToJavaPrimitiveType(VariableElement element) {
+        var type = capiTypeToLogicalType(element);
+        return type.equals("pointer") ? "long" : type;
+    }
+
+    private String capiTypeToForeignPrimitiveType(VariableElement element) {
         String type = capiTypeToJavaPrimitiveType(element);
         return type.equals("void") ? "void" : ("j" + type);
     }
@@ -422,11 +431,16 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                     }
                     var ret = findValue(builtin, "ret", VariableElement.class);
                     boolean acquireGil = findValue(builtin, "acquireGil", Boolean.class);
+                    boolean canRaise = findValue(builtin, "canRaise", Boolean.class);
+                    if (acquireGil && !canRaise) {
+                        processingEnv.getMessager().printError(String.format("Invalid @CApiBuiltin %s: if acquireGil is true, canRaise must be true as well (a safepoint action may run)", name, ret));
+                        continue;
+                    }
                     String call = name(findValue(builtin, "call", VariableElement.class));
                     // boolean inlined = findValue(builtin, "inlined", Boolean.class);
                     VariableElement[] args = findValues(builtin, "args", VariableElement.class).toArray(new VariableElement[0]);
                     if (element instanceof TypeElement te && te.getQualifiedName().toString().equals("com.oracle.graal.python.builtins.objects.cext.capi.CApiFunction.Dummy")) {
-                        additionalBuiltins.add(new CApiBuiltinDesc(element, builtinName, ret, args, acquireGil, call, null));
+                        additionalBuiltins.add(new CApiBuiltinDesc(element, builtinName, ret, args, acquireGil, canRaise, call, null));
                     } else {
                         if (!isValidReturnType(ret)) {
                             processingEnv.getMessager().printError(
@@ -457,7 +471,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                         } else {
                             verifyStaticMethod((ExecutableElement) element, builtin);
                         }
-                        javaBuiltins.add(new CApiBuiltinDesc(element, name, ret, args, acquireGil, call, genName));
+                        javaBuiltins.add(new CApiBuiltinDesc(element, name, ret, args, acquireGil, canRaise, call, genName));
                     }
                 }
             }
@@ -735,25 +749,33 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
     private void generateBuiltinRegistry(List<CApiBuiltinDesc> javaBuiltins) throws IOException {
         ArrayList<String> lines = new ArrayList<>();
 
-        lines.add("// @formatter:off");
-        lines.add("// Checkstyle: stop");
-        lines.add("// Generated by annotation processor: " + getClass().getName());
-        lines.add("package %s".formatted("com.oracle.graal.python.builtins.modules.cext;"));
-        lines.add("");
-        lines.add("import java.lang.invoke.MethodHandle;");
-        lines.add("import java.lang.invoke.MethodHandles;");
-        lines.add("import java.lang.invoke.MethodType;");
-        lines.add("");
-        lines.add("import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltinExecutable;");
-        lines.add("import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltinNode;");
-        lines.add("import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath;");
-        lines.add("import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;");
-        lines.add("");
-        lines.add("public final class PythonCextBuiltinRegistry {");
-        lines.add("");
-        lines.add("    private PythonCextBuiltinRegistry() {");
-        lines.add("        // no instances");
-        lines.add("    }");
+        // language=java
+        lines.add("""
+                        // @formatter:off
+                        // Checkstyle: stop
+                        // Generated by annotation processor: CApiBuiltinsProcessor
+                        package com.oracle.graal.python.builtins.modules.cext;
+
+                        import java.lang.invoke.MethodHandle;
+                        import java.lang.invoke.MethodHandles;
+                        import java.lang.invoke.MethodType;
+
+                        import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins;
+                        import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltinExecutable;
+                        import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltinNode;
+                        import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath;
+                        import com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor;
+                        import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins;
+                        import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformPExceptionToNativeNode;
+                        import com.oracle.graal.python.runtime.GilNode;
+                        import com.oracle.graal.python.runtime.exception.PException;
+
+                        public final class PythonCextBuiltinRegistry {
+
+                            private PythonCextBuiltinRegistry() {
+                                // no instances
+                            }
+                        """);
 
         for (var builtin : javaBuiltins) {
             String argString = Arrays.stream(builtin.arguments).map(b -> "ArgDescriptor." + b).collect(Collectors.joining(", "));
@@ -794,7 +816,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             String argString = Arrays.stream(builtin.arguments).map(b -> capiTypeToJavaPrimitiveType(b) + ".class").collect(Collectors.joining(", "));
             String classString;
             String methodString;
-            if (builtin.origin instanceof TypeElement) {
+            if (builtin.origin instanceof TypeElement || builtin.canRaise) {
                 classString = "PythonCextBuiltinRegistry";
                 methodString = "\"upcall_" + builtin.name + "\"";
             } else {
@@ -821,11 +843,15 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         lines.add("    }");
 
         for (var builtin : javaBuiltins) {
-            if (builtin.origin instanceof ExecutableElement) {
+            if (builtin.origin instanceof ExecutableElement && !builtin.canRaise) {
+                // will be called directly
                 continue;
             }
             lines.add("");
             String argString = IntStream.range(0, builtin.arguments.length).mapToObj(i -> capiTypeToJavaPrimitiveType(builtin.arguments[i]) + " " + argName(i)).collect(Collectors.joining(", "));
+            if (!(builtin.origin instanceof TypeElement) && builtin.acquireGil) {
+                lines.add("    @SuppressWarnings(\"try\")");
+            }
             lines.add("    public static " + capiTypeToJavaPrimitiveType(builtin.returnType) + " upcall_" + builtin.name + "(" + argString + ") {");
             String paramString = IntStream.range(0, builtin.arguments.length).mapToObj(i -> argName(i)).collect(Collectors.joining(", "));
             String retString = capiTypeToJavaPrimitiveType(builtin.returnType);
@@ -837,8 +863,23 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             if (builtin.origin instanceof TypeElement) {
                 lines.add("        " + retString + builtin.name + ".getCallTarget().call(" + paramString + ");");
             } else {
-                lines.add("        " + retString + ((TypeElement) builtin.origin.getEnclosingElement()).getQualifiedName().toString() + "." + builtin.origin.getSimpleName().toString() + "(" +
+                if (!retString.isEmpty()) {
+                    retString = "return ";
+                }
+                assert builtin.canRaise;
+                lines.add("        try {");
+                lines.add("            try " + (builtin.acquireGil ? "(GilNode.UncachedAcquire gil = GilNode.uncachedAcquire()) " : "") + "{");
+                lines.add("                " + retString + ((TypeElement) builtin.origin.getEnclosingElement()).getQualifiedName().toString() + "." + builtin.origin.getSimpleName().toString() + "(" +
                                 paramString + ");");
+                lines.add("            } catch (Throwable t) {");
+                lines.add("                throw PythonCextBuiltins.checkThrowableBeforeNative(t, \"CApiBuiltin\", \"" + builtin.name + "\");");
+                lines.add("            }");
+                lines.add("        } catch (PException pe) {");
+                lines.add("            TransformPExceptionToNativeNode.executeUncached(pe);");
+                if (!retString.isEmpty()) {
+                    lines.add("            return " + capiTypeToErrorValue(builtin.returnType) + ";");
+                }
+                lines.add("        }");
             }
             lines.add("    }");
         }
@@ -866,10 +907,11 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         var origins = allBuiltins.stream().map((jb) -> jb.origin).toArray(Element[]::new);
         var file = processingEnv.getFiler().createSourceFile("com.oracle.graal.python.builtins.modules.cext.PythonCApiAssertions", origins);
         try (var w = file.openWriter()) {
+            // language=java
             w.append("""
                             // @formatter:off
                             // Checkstyle: stop
-                            package %s;
+                            package com.oracle.graal.python.builtins.modules.cext;
 
                             import java.util.TreeSet;
                             import com.oracle.graal.python.nfi2.NfiLibrary;
@@ -898,7 +940,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                                     return messages.isEmpty();
                                 }
                             }
-                            """.formatted("com.oracle.graal.python.builtins.modules.cext", String.join(System.lineSeparator(), lines)));
+                            """.formatted(String.join(System.lineSeparator(), lines)));
         }
     }
 
@@ -1433,7 +1475,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
 
                     /*
                      * TODO: Reliably determine the expected type for the actual parameter.
-                     * 
+                     *
                      * This is about the required type for the actual parameter for the call of
                      * `ExternalFunctionInvoker.invoke*`. The required parameter type should be
                      * inferred from the formal parameter type of the invoke method. Since those

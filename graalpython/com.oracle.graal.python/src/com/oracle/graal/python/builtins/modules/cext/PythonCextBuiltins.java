@@ -905,6 +905,13 @@ public final class PythonCextBuiltins {
         boolean acquireGil() default true;
 
         /**
+         * Whether this builtin may raise any kind of exception. Most do, but some can never raise,
+         * in which case we can omit a lot of code in the catch block and thus maybe produce better
+         * code.
+         */
+        boolean canRaise() default true;
+
+        /**
          * @see CApiCallPath
          */
         CApiCallPath call();

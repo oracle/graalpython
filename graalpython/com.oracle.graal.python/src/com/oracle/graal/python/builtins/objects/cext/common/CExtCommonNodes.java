@@ -396,6 +396,10 @@ public abstract class CExtCommonNodes {
     public abstract static class TransformPExceptionToNativeNode extends Node {
         public abstract void execute(Node inliningTarget, PException e);
 
+        public static void executeUncached(PException ex) {
+            CExtCommonNodesFactory.TransformPExceptionToNativeNodeGen.getUncached().execute(null, ex);
+        }
+
         @Specialization
         static void setCurrentException(Node inliningTarget, PException ex,
                         @Cached TransformExceptionToNativeNode transformNode) {
