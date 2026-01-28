@@ -1221,8 +1221,11 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
         parallel = 4 if paths is None else 1
 
     if sys.platform == 'win32':
-        # Windows machines don't seem to have much memory
-        parallel = min(parallel, 2)
+        if CI:
+            # Windows machines don't seem to have much memory
+            parallel = min(parallel, 2)
+        if GITHUB_CI:
+            parallel = 0
 
     parallelism = str(min(os.cpu_count() or 1, parallel))
 
