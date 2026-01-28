@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -130,7 +130,7 @@ public final class PythonResource implements InternalResource {
                 throw new IOException("Extracting native resources failed for " +
                                 osArch.toString() +
                                 ". This means that GraalPy cannot use native extensions and some built-in features that rely on native code will be unavailable. " +
-                                "Currently supported platforms are linux/amd64, linux/aarch64, macos/amd64, macos/aarch64, and windows/amd64. " +
+                                "Currently supported platforms are linux/amd64, linux/aarch64, macos/aarch64, and windows/amd64. " +
                                 "If you are running on one of these platforms and are receiving this error, that indicates a bug in this build of GraalPy. " +
                                 "If you are running on a different platform and want to keep going with this unsupported configuration, you can specify the system property \"" +
                                 ResourcesFilter.EXCLUDE_PROP +

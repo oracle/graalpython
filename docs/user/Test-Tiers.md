@@ -41,7 +41,6 @@ Pure Python code runs reliably on GraalPy with recent JDKs when JIT compilation 
 
 | Platform                        | Notes                                        |
 |---------------------------------|----------------------------------------------|
-| amd64-macos-darwin-graal-latest | macOS on Intel CPUs running Big Sur or newer. |
 | amd64-windows-msvc-graal-latest | Windows 11, Windows Server 2025, or newer.   |
 | amd64-linux-glibc-oracle-21     | JDK 21 is tested without JIT compilation.    |
 | aarch64-linux-glibc-oracle-21   | JDK 21 is tested without JIT compilation.    |

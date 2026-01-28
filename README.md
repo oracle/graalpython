@@ -69,7 +69,7 @@ Refer to our [embedding documentation](https://www.graalvm.org/latest/reference-
 * Gradle
   ```kotlin
   implementation("org.graalvm.polyglot:polyglot:25.0.2")
-  implementation("org.graalvm.polyglot:python:25.0.2")
+  implementation("org.graalvm.python:python-embedding:25.0.2")
   ```
 
 </details>
@@ -115,7 +115,7 @@ Thanks to our integration with GraalVM Native Image, we can deploy Python applic
 
   Alternatively, you can download a compressed GraalPy installation file from [GitHub releases](https://github.com/oracle/graalpython/releases).
 
-  1. Find the download that matches the pattern _graalpy-XX.Y.Z-macos-amd64.tar.gz_ or _graalpy-XX.Y.Z-macos-aarch64.tar.gz_ (depending on your platform) and download.
+  1. Find the download that matches the pattern _graalpy-XX.Y.Z-macos-aarch64.tar.gz_ and download.
   2. Remove the quarantine attribute.
       ```bash
       sudo xattr -r -d com.apple.quarantine /path/to/graalpy
@@ -124,7 +124,7 @@ Thanks to our integration with GraalVM Native Image, we can deploy Python applic
       ```bash
       sudo xattr -r -d com.apple.quarantine ~/.pyenv/versions/graalpy-25.0.2
       ```
-  3. Uncompress the file and update your `PATH` environment variable to include to the _graalpy-XX.Y.Z-macos-amd64/bin_ (or _graalpy-XX.Y.Z-macos-aarch64/bin_) directory.
+  3. Uncompress the file and update your `PATH` environment variable to include to the _graalpy-XX.Y.Z-macos-aarch64/bin_ directory.
 
 * Windows
 
@@ -174,7 +174,7 @@ To run Jython scripts, you need to use a GraalPy distribution running on the JVM
 
 * macOS
 
-  1. Find and download a compressed GraalPy installation file from [GitHub releases](https://github.com/oracle/graalpython/releases) that matches the pattern  _graalpy-jvm-XX.Y.Z-macos-amd64.tar.gz_ or _graalpy-jvm-XX.Y.Z-macos-aarch64.tar.gz_ (depending on your platform) and download.
+  1. Find and download a compressed GraalPy installation file from [GitHub releases](https://github.com/oracle/graalpython/releases) that matches the pattern _graalpy-jvm-XX.Y.Z-macos-aarch64.tar.gz_ and download.
   2. Remove the quarantine attribute.
       ```bash
       sudo xattr -r -d com.apple.quarantine /path/to/graalpy
@@ -183,7 +183,7 @@ To run Jython scripts, you need to use a GraalPy distribution running on the JVM
       ```bash
       sudo xattr -r -d com.apple.quarantine ~/.pyenv/versions/graalpy-25.0.2
       ```
-  3. Uncompress the file and update your `PATH` environment variable to include to the _graalpy-jvm-XX.Y.Z-macos-amd64/bin_ (or _graalpy-jvm-XX.Y.Z-macos-aarch64/bin_) directory.
+  3. Uncompress the file and update your `PATH` environment variable to include to the _graalpy-jvm-XX.Y.Z-macos-aarch64/bin_ directory.
   4. Run your scripts with `graalpy --python.EmulateJython`.
 
 * Windows
@@ -222,7 +222,7 @@ Consult the [security guide](./SECURITY.md) for our responsible security vulnera
 
 ## License
 
-This GraalVM implementation of Python is Copyright (c) 2017, 2024 Oracle and/or its affiliates and is made available to you under the terms the Universal Permissive License v 1.0 as shown at [https://oss.oracle.com/licenses/upl/](https://oss.oracle.com/licenses/upl/).
+This GraalVM implementation of Python is Copyright (c) 2017, 2026 Oracle and/or its affiliates and is made available to you under the terms the Universal Permissive License v 1.0 as shown at [https://oss.oracle.com/licenses/upl/](https://oss.oracle.com/licenses/upl/).
 This implementation is in part derived from and contains additional code from 3rd parties, the copyrights and licensing of which is detailed in the [LICENSE](./LICENSE.txt) and [THIRD_PARTY_LICENSE](THIRD_PARTY_LICENSE.txt) files.
 
 [badge-slack]: https://img.shields.io/badge/Slack-join-active?logo=slack

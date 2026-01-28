@@ -146,7 +146,7 @@ layout: base
           </div>
               {%- highlight groovy -%}
 implementation("org.graalvm.polyglot:polyglot:{{ site.language_version }}")
-implementation("org.graalvm.polyglot:python:{{ site.language_version }}")
+implementation("org.graalvm.python:python-embedding:{{ site.language_version }}")
               {%- endhighlight -%}
             </div>
             <div class="example-logo-box">
@@ -163,8 +163,9 @@ implementation("org.graalvm.polyglot:python:{{ site.language_version }}")
           </div>
               {%- highlight java -%}
 import org.graalvm.polyglot.Context;
+import org.graalvm.python.embedding.GraalPyResources;
 
-try (Context context = Context.create()) {
+try (Context context = GraalPyResources.contextBuilder().build()) {
     context.eval("python", "print('Hello from GraalPy!')");
 }
               {%- endhighlight -%}
