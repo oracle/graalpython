@@ -54,7 +54,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckInquiryResultNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.CheckInquiryResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
@@ -222,7 +222,7 @@ public final class TpSlotMpAssSubscript {
             try {
                 int iresult = ExternalFunctionInvoker.invokeOBJOBJARGPROC(frame, C_API_TIMING, ctx.ensureNfiContext(), boundaryCallData, threadState, slot.callable,
                                 selfToNativeNode.executeLong(promotedSelf), keyToNativeNode.executeLong(promotedKey), valueToNativeNode.executeLong(promotedValue));
-                checkResultNode.executeBool(threadState, T___SETITEM__, iresult);
+                checkResultNode.executeBool(inliningTarget, threadState, T___SETITEM__, iresult);
             } finally {
                 Reference.reachabilityFence(promotedSelf);
                 Reference.reachabilityFence(promotedKey);

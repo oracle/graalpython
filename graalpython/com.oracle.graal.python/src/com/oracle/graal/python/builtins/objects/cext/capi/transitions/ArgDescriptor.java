@@ -352,7 +352,6 @@ public enum ArgDescriptor {
     atexit_datacallbackfunc(ArgBehavior.Pointer, "atexit_datacallbackfunc"),
 
     IterResult(ArgBehavior.PyObject, "void*", true, true),
-    InquiryResult(ArgBehavior.Int32, "int"),
     InitResult(ArgBehavior.Int32, "int"),
     PrimitiveResult32(ArgBehavior.Int32, "int"),
     PrimitiveResult64(ArgBehavior.Int64, "long");

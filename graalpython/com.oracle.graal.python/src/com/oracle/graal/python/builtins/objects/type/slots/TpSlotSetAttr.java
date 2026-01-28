@@ -57,7 +57,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckInquiryResultNode;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotInquiry.CheckInquiryResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
@@ -305,7 +305,7 @@ public class TpSlotSetAttr {
                 }
                 Reference.reachabilityFence(promotedValue);
             }
-            checkResultNode.executeBool(threadState, T___SETATTR__, iresult);
+            checkResultNode.executeBool(inliningTarget, threadState, T___SETATTR__, iresult);
         }
     }
 

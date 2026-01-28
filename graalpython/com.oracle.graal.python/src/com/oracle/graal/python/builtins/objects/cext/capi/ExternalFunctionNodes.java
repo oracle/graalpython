@@ -119,10 +119,10 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Conv
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetIndexNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ReadAndClearNativeException;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionFromNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ConvertPIntToPrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ConvertPIntToPrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.StorageToNativeNode;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -2449,25 +2449,4 @@ public abstract class ExternalFunctionNodes {
         }
     }
 
-    /**
-     * Tests if the primitive result of the called function is {@code -1} and if an error occurred.
-     * In this case, the error is re-raised. Otherwise, it converts the result to a Boolean. This is
-     * equivalent to the result processing part in {@code Object/typeobject.c: wrap_inquirypred} and
-     * {@code Object/typeobject.c: wrap_objobjproc}.
-     */
-    @GenerateInline(false)
-    @GenerateUncached
-    public abstract static class CheckInquiryResultNode extends CheckFunctionResultNode {
-
-        public abstract boolean executeBool(PythonThreadState threadState, TruffleString name, int result);
-
-        @Specialization
-        static boolean doLong(PythonThreadState threadState, TruffleString name, int result,
-                        @Bind Node inliningTarget,
-                        @Cached InlinedConditionProfile resultProfile,
-                        @Cached TransformExceptionFromNativeNode transformExceptionFromNativeNode) {
-            transformExceptionFromNativeNode.execute(inliningTarget, threadState, name, result == -1, false);
-            return resultProfile.profile(inliningTarget, result != 0);
-        }
-    }
 }

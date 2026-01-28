@@ -42,7 +42,6 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.CharPtrAsTruffleString;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.InquiryResult;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Pointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PrimitiveResult64;
@@ -84,7 +83,7 @@ public enum ExternalFunctionSignature {
     // typedef PyObject * (*ternaryfunc)(PyObject *, PyObject *, PyObject *);
     TERNARYFUNC(PyObjectReturn, PyObject, PyObject, PyObject),
     // typedef int (*inquiry)(PyObject *);
-    INQUIRY(InquiryResult, PyObject),
+    INQUIRY(Int, PyObject),
     // typedef Py_ssize_t (*lenfunc)(PyObject *);
     LENFUNC(PrimitiveResult64, PyObject),
     // typedef PyObject *(*ssizeargfunc)(PyObject *, Py_ssize_t);
