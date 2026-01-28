@@ -335,7 +335,7 @@ class EnvBuilder:
             if not os.path.islink(path):
                 os.chmod(path, 0o755)
             # Truffle change: we add 'graalpy' to the list
-            for suffix in ('python', 'python3', f'python3.{sys.version_info[1]}', 'graalpy'):
+            for suffix in ('python', 'python3', f'python3.{sys.version_info[1]}', 'graalpy', 'graalpy-config'):
                 path = os.path.join(binpath, suffix)
                 if not os.path.exists(path):
                     # Issue 18807: make copies if

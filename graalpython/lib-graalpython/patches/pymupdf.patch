@@ -1,87 +1,3 @@
-diff --git a/graalpy-config b/graalpy-config
-new file mode 100755
-index 00000000..1f69f726
---- /dev/null
-+++ b/graalpy-config
-@@ -0,0 +1,78 @@
-+#!/bin/sh
-+
-+# Adapted from CPython but deferring to GraalPy
-+
-+exit_with_usage ()
-+{
-+    echo "Usage: $0 --prefix|--exec-prefix|--includes|--libs|--cflags|--ldflags|--extension-suffix|--help|--abiflags|--configdir|--embed"
-+    exit $1
-+}
-+
-+if [ "$1" = "" ] ; then
-+    exit_with_usage 1
-+fi
-+
-+# Returns the actual prefix where this script was installed to.
-+EXE=$(cd $(dirname "$0") && pwd -P)
-+if which readlink >/dev/null 2>&1 ; then
-+    if readlink -f "$RESULT" >/dev/null 2>&1; then
-+        EXE=$(readlink -f "$RESULT")
-+    fi
-+fi
-+EXE=$EXE/graalpy
-+
-+if ! test -x "$EXE" ; then
-+    EXE=graalpy
-+fi
-+
-+# Scan for --help or unknown argument.
-+for ARG in $*
-+do
-+    case $ARG in
-+        --help)
-+            exit_with_usage 0
-+        ;;
-+        --embed)
-+            echo "graalpy-config does not print embedding flags"
-+            exit 1
-+        ;;
-+        --prefix|--exec-prefix|--includes|--libs|--cflags|--ldflags|--extension-suffix|--abiflags|--configdir)
-+        ;;
-+        *)
-+            exit_with_usage 1
-+        ;;
-+    esac
-+done
-+
-+for ARG in "$@"
-+do
-+    case "$ARG" in
-+        --prefix)
-+            $EXE -c "print(__import__('sysconfig').get_config_var('prefix'))"
-+        ;;
-+        --exec-prefix)
-+            $EXE -c "print(__import__('sysconfig').get_config_var('exec_prefix'))"
-+        ;;
-+        --includes)
-+            $EXE -c "from sysconfig import get_path; print('-I'+get_path('include'), '-I'+get_path('platinclude'))"
-+        ;;
-+        --cflags)
-+            $EXE -c "import sysconfig as s; print('-I' + s.get_path('include'), '-I' + s.get_path('platinclude'), s.get_config_var('CFLAGS').replace('NDEBUG', 'DEBUG'), s.get_config_var('OPT').replace('NDEBUG', 'DEBUG'))"
-+        ;;
-+        --libs)
-+            $EXE -c "import sysconfig as s; print('-L' + s.get_config_var('LIBDIR'))"
-+        ;;
-+        --ldflags)
-+            $EXE -c "import sysconfig as s; print('-L' + s.get_config_var('LIBDIR'))"
-+        ;;
-+        --extension-suffix)
-+            $EXE -c "import sysconfig as s; print(s.get_config_var('EXT_SUFFIX'))"
-+        ;;
-+        --abiflags)
-+            $EXE -c "import sysconfig as s; print(s.get_config_var('ABIFLAGS'))"
-+        ;;
-+        --configdir)
-+            echo ""
-+        ;;
-+esac
-+done
 diff --git a/setup.py b/setup.py
 index 5fba2c97..3fe63b07 100755
 --- a/setup.py
@@ -98,12 +14,12 @@ index 5fba2c97..3fe63b07 100755
 +    def build_wheel(wheel_directory, config_settings=None, metadata_directory=None):
 +        wheel_directory = Path(wheel_directory).absolute()
 +        sdir = Path(__file__).absolute().parent
-+        cpythonname = os.environ.get("CPYTHON_EXE", "python3.11")
++        cpythonname = os.environ.get("CPYTHON_EXE", "python3.12")
 +        cpython = shutil.which(cpythonname) or cpythonname
 +        if not os.path.exists(cpython):
 +            raise RuntimeError(f"{cpythonname} must be available on the PATH for cross-compilation")
 +        env = os.environ.copy()
-+        env["PIPCL_PYTHON_CONFIG"] = str(sdir / "graalpy-config")
++        env["PIPCL_PYTHON_CONFIG"] = str(Path(sys.executable).parent / "graalpy-config")
 +        env["PYMUPDF_SETUP_PY_LIMITED_API"] = "1"
 +        subprocess.run(
 +            [cpython, "setup.py", "bdist_wheel"],
