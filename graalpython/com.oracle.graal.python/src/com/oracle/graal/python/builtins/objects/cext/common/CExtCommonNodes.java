@@ -355,16 +355,6 @@ public abstract class CExtCommonNodes {
         }
     }
 
-    public abstract static class CheckFunctionResultNode extends PNodeWithContext {
-
-        public final Object execute(PythonContext context, TruffleString name, Object result) {
-            PythonLanguage language = context.getLanguage(this);
-            return execute(context.getThreadState(language), name, result);
-        }
-
-        public abstract Object execute(PythonThreadState threadState, TruffleString name, Object result);
-    }
-
     /**
      * Use this node to transform an exception to native if a Python exception was thrown during an
      * upcall and before returning to native code. This node will reify the exception appropriately

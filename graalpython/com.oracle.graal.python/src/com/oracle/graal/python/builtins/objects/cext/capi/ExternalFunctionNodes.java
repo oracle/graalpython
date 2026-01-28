@@ -114,7 +114,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonReturnNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetIndexNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ReadAndClearNativeException;
@@ -2335,7 +2334,14 @@ public abstract class ExternalFunctionNodes {
     @ImportStatic(PGuards.class)
     @GenerateUncached
     @GenerateInline(false)
-    public abstract static class PyObjectCheckFunctionResultNode extends CheckFunctionResultNode {
+    public abstract static class PyObjectCheckFunctionResultNode extends Node {
+
+        public final Object execute(PythonContext context, TruffleString name, Object result) {
+            PythonLanguage language = context.getLanguage(this);
+            return execute(context.getThreadState(language), name, result);
+        }
+
+        public abstract Object execute(PythonThreadState threadState, TruffleString name, Object result);
 
         @TruffleBoundary
         public static Object executeUncached(TruffleString name, Object result) {
