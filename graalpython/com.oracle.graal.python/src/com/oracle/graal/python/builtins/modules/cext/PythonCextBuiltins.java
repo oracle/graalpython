@@ -367,6 +367,7 @@ public final class PythonCextBuiltins {
         }
 
         protected final PException badInternalCall(String argName) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw PythonCextBuiltins.badInternalCall(getName(), argName);
         }
 

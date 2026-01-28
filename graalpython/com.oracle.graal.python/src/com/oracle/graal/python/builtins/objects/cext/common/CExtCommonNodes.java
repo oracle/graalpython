@@ -396,6 +396,7 @@ public abstract class CExtCommonNodes {
     public abstract static class TransformPExceptionToNativeNode extends Node {
         public abstract void execute(Node inliningTarget, PException e);
 
+        @TruffleBoundary(allowInlining = true)
         public static void executeUncached(PException ex) {
             CExtCommonNodesFactory.TransformPExceptionToNativeNodeGen.getUncached().execute(null, ex);
         }

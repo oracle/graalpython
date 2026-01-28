@@ -325,6 +325,7 @@ public abstract class ExternalFunctionNodes {
             return toNative.executeLong(promoted);
         }
 
+        @TruffleBoundary(allowInlining = true)
         public static long executeUncached(Object object) {
             Object promoted = EnsurePythonObjectNode.executeUncached(PythonContext.get(null), object, false);
             return PythonToNativeNode.executeLongUncached(promoted);
