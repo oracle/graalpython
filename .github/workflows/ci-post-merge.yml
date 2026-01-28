@@ -10,7 +10,7 @@ jobs:
       - uses: actions/github-script@v8
         with:
           script: |
-            const GRAALVMBOT_LOGIN = "Ariouz";
+            const GRAALVMBOT_LOGIN = "graalvmbot";
             const pr = context.payload.pull_request;
             if (!pr || !pr.number || pr.state !== "closed") return;
 
