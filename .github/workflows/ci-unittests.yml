@@ -19,30 +19,3 @@ jobs:
     uses: ./.github/workflows/ci-matrix-gen.yml
     with:
       jobs_to_run: ^(?!python-svm-build|style).*-gate.*$
-
-  post-run:
-    if: failure()
-    needs: run-tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/github-script@v8
-        with:
-          script: |
-            const GRAALVMBOT_LOGIN = "graalvmbot"
-            var payload = context.payload
-            if (!payload || !payload.number) return ;
-
-            var pr = payload.pull_request
-            if (!pr || pr.state !== "closed") return ;
-
-            var author = pr.user
-            var assignees = pr.assignees
-            if (!author || author.login !== GRAALVMBOT_LOGIN) return ;
-            if (!assignees || assignees.length != 1) return ;
-
-            github.rest.issues.createComment({
-              issue_number: pr.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `@${assignees[0].login} - One or more CI jobs failed`
-            })

@@ -1,0 +1,49 @@
+name: Post Merge Actions
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  check-ci-and-notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v8
+        with:
+          script: |
+            const GRAALVMBOT_LOGIN = "Ariouz";
+            const pr = context.payload.pull_request;
+            if (!pr || !pr.number || pr.state !== "closed") return;
+
+            const author = pr.user;
+            const assignees = pr.assignees || [];
+            if (!author || author.login !== GRAALVMBOT_LOGIN) return;
+            if (assignees.length !== 1) return;
+
+            const sha = pr.head.sha;
+
+            const runsResp = await github.rest.actions.listWorkflowRunsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head_sha: sha,
+              event: "pull_request",
+              per_page: 10
+            });
+
+            const failedRun = runsResp.data.workflow_runs.find(run =>
+              run.head_sha === sha &&
+              run.status === "completed" &&
+              run.conclusion !== "success"
+            );
+
+            if (!failedRun) {
+              console.log("No failed CI workflow found for the PR.");
+              return;
+            }
+
+            await github.rest.issues.createComment({
+              issue_number: pr.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `@${assignees[0].login} - One or more CI jobs failed - [details](${failedRun.html_url}))`
+            });
+            console.log("CI failed, assignee notified.")
