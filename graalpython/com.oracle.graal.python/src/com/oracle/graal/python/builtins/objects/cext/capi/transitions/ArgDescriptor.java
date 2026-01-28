@@ -351,7 +351,6 @@ public enum ArgDescriptor {
     xid_newobjectfunc(ArgBehavior.Pointer, "xid_newobjectfunc"),
     atexit_datacallbackfunc(ArgBehavior.Pointer, "atexit_datacallbackfunc"),
 
-    IterResult(ArgBehavior.PyObject, "void*", true, true),
     InitResult(ArgBehavior.Int32, "int"),
     PrimitiveResult32(ArgBehavior.Int32, "int"),
     PrimitiveResult64(ArgBehavior.Int64, "long");

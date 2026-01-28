@@ -119,10 +119,10 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Conv
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetIndexNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ReadAndClearNativeException;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionFromNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ConvertPIntToPrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ConvertPIntToPrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.StorageToNativeNode;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -1921,7 +1921,8 @@ public abstract class ExternalFunctionNodes {
         protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction) {
             Object self = readSelf(frame);
             long lresult = invokeExternalFunction(frame, boundFunction, self);
-            return checkIterNextResultNode.execute(PythonContext.get(this), name, ensureNativeToPythonReturnNode().executeRaw(lresult));
+            PythonContext context = PythonContext.get(this);
+            return checkIterNextResultNode.execute(context.getThreadState(context.getLanguage()), ensureNativeToPythonReturnNode().executeRaw(lresult));
         }
 
         @Override
@@ -2372,11 +2373,12 @@ public abstract class ExternalFunctionNodes {
      * Equivalent of the result processing part in {@code Objects/typeobject.c: wrap_next}.
      */
     @GenerateInline(false)
-    @GenerateUncached
-    public abstract static class CheckIterNextResultNode extends CheckFunctionResultNode {
+    abstract static class CheckIterNextResultNode extends Node {
+
+        abstract Object execute(PythonThreadState state, Object result);
 
         @Specialization
-        static Object doGeneric(PythonThreadState state, @SuppressWarnings("unused") TruffleString name, Object result,
+        static Object doGeneric(PythonThreadState state, Object result,
                         @Bind Node inliningTarget,
                         @Cached ReadAndClearNativeException readAndClearNativeException,
                         @Cached PRaiseNode raiseNode) {
