@@ -57,6 +57,6 @@ Pure Python code runs reliably on GraalPy with recent JDKs when JIT compilation 
 
 | Platform                        | Notes                                         |
 | ------------------------------- | ----------------------------------------------|
-| amd64-linux-musl-graal-latest   | Ensures GraalPy can be built for and used on MUSL LibC platforms such as Alpine Linux. |
+| amd64-linux-musl-graal-latest   | Ensures GraalPy can be built for and used on musl libc platforms such as Alpine Linux. |
 | amd64-linux-glibc-j9-17         | Ensures that non-Oracle JVMs work for pure Python code without JIT. |
 | ppc64le-linux-glibc-oracle-17   | Ensures that other architectures (ppc64le, s390x, risc-v) work for pure Python code without JIT. |
