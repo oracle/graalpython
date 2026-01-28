@@ -144,7 +144,6 @@ import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
-import com.oracle.graal.python.nodes.truffle.PythonIntegerTypes;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
@@ -169,6 +168,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -177,7 +177,6 @@ import com.oracle.truffle.api.dsl.InlineSupport.RequiredField;
 import com.oracle.truffle.api.dsl.InlineSupport.StateField;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -2408,14 +2407,13 @@ public abstract class ExternalFunctionNodes {
      * {@code wrap_sq_delitem}, {@code wrap_sq_setitem}, {@code asdf}.
      */
     @GenerateUncached
-    @GenerateInline(false)
-    @TypeSystemReference(PythonIntegerTypes.class)
-    public abstract static class CheckPrimitiveFunctionResultNode extends CheckFunctionResultNode {
-        public abstract long executeLong(PythonThreadState threadState, TruffleString name, long result);
+    @GenerateInline
+    @GenerateCached(false)
+    public abstract static class CheckPrimitiveFunctionResultNode extends Node {
+        public abstract long executeLong(Node inliningTarget, PythonThreadState threadState, TruffleString name, long result);
 
         @Specialization
-        static long doLong(PythonThreadState threadState, TruffleString name, long result,
-                        @Bind Node inliningTarget,
+        static long doLong(Node inliningTarget, PythonThreadState threadState, TruffleString name, long result,
                         @Cached TransformExceptionFromNativeNode transformExceptionFromNativeNode) {
             transformExceptionFromNativeNode.execute(inliningTarget, threadState, name, result == -1, false);
             return result;

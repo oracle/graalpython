@@ -175,14 +175,14 @@ public abstract class TpSlotHashFun {
                         @Cached(inline = false) PythonToNativeNode toNativeNode,
                         @Cached EnsurePythonObjectNode ensurePythonObjectNode,
                         @Cached("createFor($node)") BoundaryCallData boundaryCallData,
-                        @Exclusive @Cached(inline = false) CheckPrimitiveFunctionResultNode checkResultNode) {
+                        @Exclusive @Cached CheckPrimitiveFunctionResultNode checkResultNode) {
             PythonContext ctx = PythonContext.get(inliningTarget);
             PythonThreadState state = getThreadStateNode.execute(inliningTarget, ctx);
             Object promotedSelf = ensurePythonObjectNode.execute(ctx, self, false);
             try {
                 long lresult = ExternalFunctionInvoker.invokeHASHFUNC(frame, C_API_TIMING, ctx.ensureNfiContext(), boundaryCallData, state, slot.callable,
                                 toNativeNode.executeLong(promotedSelf));
-                return checkResultNode.executeLong(state, T___HASH__, lresult);
+                return checkResultNode.executeLong(inliningTarget, state, T___HASH__, lresult);
             } finally {
                 Reference.reachabilityFence(promotedSelf);
             }

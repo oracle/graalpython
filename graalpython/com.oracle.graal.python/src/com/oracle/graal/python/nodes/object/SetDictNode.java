@@ -48,13 +48,13 @@ import java.lang.ref.Reference;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CheckPrimitiveFunctionResultNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.nodes.HiddenAttr;
-import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -67,7 +67,7 @@ import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 @GenerateUncached
 @GenerateInline
 @GenerateCached(false)
-public abstract class SetDictNode extends PNodeWithContext {
+public abstract class SetDictNode extends Node {
     public abstract void execute(Node inliningTarget, Object object, PDict dict);
 
     public static void executeUncached(Object object, PDict dict) {
@@ -88,14 +88,16 @@ public abstract class SetDictNode extends PNodeWithContext {
     }
 
     @Specialization
-    void doNativeObject(PythonAbstractNativeObject object, PDict dict,
-                    @Cached(inline = false) PythonToNativeNode objectToNative,
-                    @Cached(inline = false) PythonToNativeNode dictToNative,
+    static void doNativeObject(Node inliningTarget, PythonAbstractNativeObject object, PDict dict,
+                    @Cached PythonToNativeInternalNode objectToNative,
+                    @Cached PythonToNativeInternalNode dictToNative,
                     @Cached(inline = false) CExtNodes.PCallCapiFunction callGetDictNode,
-                    @Cached(inline = false) CheckPrimitiveFunctionResultNode checkResult) {
+                    @Cached CheckPrimitiveFunctionResultNode checkResult) {
         assert !IsTypeNode.executeUncached(object);
-        int result = (int) callGetDictNode.call(FUN_PY_OBJECT_GENERIC_SET_DICT, objectToNative.executeLong(object), dictToNative.executeLong(dict), NULLPTR);
-        checkResult.executeLong(getContext().getThreadState(getLanguage()), FUN_PY_OBJECT_GENERIC_SET_DICT.getTsName(), result);
+        int result = (int) callGetDictNode.call(FUN_PY_OBJECT_GENERIC_SET_DICT,
+                        objectToNative.execute(inliningTarget, object, false), dictToNative.execute(inliningTarget, dict, false), NULLPTR);
+        PythonContext context = PythonContext.get(inliningTarget);
+        checkResult.executeLong(inliningTarget, context.getThreadState(context.getLanguage()), FUN_PY_OBJECT_GENERIC_SET_DICT.getTsName(), result);
         Reference.reachabilityFence(dict);
     }
 

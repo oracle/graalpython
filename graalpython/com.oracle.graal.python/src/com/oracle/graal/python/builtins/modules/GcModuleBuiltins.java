@@ -172,7 +172,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
                 PythonThreadState threadState = getThreadStateNode.execute(inliningTarget);
                 long lresult = ExternalFunctionInvoker.invokeGCCOLLECT(frame, C_API_TIMING, pythonContext.ensureNfiContext(), boundaryCallData, threadState, executable,
                                 castToJavaInt.execute(inliningTarget, level));
-                res = checkPrimitiveFunctionResultNode.executeLong(threadState, SYMBOL.getTsName(), lresult);
+                res = checkPrimitiveFunctionResultNode.executeLong(inliningTarget, threadState, SYMBOL.getTsName(), lresult);
             }
             if (phase != null) {
                 phase = STOP;

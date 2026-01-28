@@ -320,7 +320,7 @@ public final class PythonCextModuleBuiltins {
                         NfiBoundFunction traverseExecutable = ensureExecutable(mTraverse, "m_traverse", ExternalFunctionSignature.TRAVERSEPROC.nfiSignature);
                         int ires = ExternalFunctionInvoker.invokeTRAVERSEPROC(null, TIMING, ctx.ensureNfiContext(), boundaryCallData, threadState, traverseExecutable,
                                         toNativeNode.executeLong(self), visitFun, arg);
-                        checkPrimitiveFunctionResultNode.executeLong(threadState, StringLiterals.T_VISIT, ires);
+                        checkPrimitiveFunctionResultNode.executeLong(inliningTarget, threadState, StringLiterals.T_VISIT, ires);
                         return ires;
                     }
                 }

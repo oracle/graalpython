@@ -174,14 +174,14 @@ public abstract class TpSlotLen {
                         @Cached(inline = false) PythonToNativeNode toNativeNode,
                         @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Exclusive @Cached PRaiseNode raiseNode,
-                        @Exclusive @Cached(inline = false) CheckPrimitiveFunctionResultNode checkResultNode) {
+                        @Exclusive @Cached CheckPrimitiveFunctionResultNode checkResultNode) {
             PythonContext ctx = PythonContext.get(inliningTarget);
             PythonThreadState state = getThreadStateNode.execute(inliningTarget, ctx);
             Object promotedSelf = ensurePythonObjectNode.execute(ctx, self, false);
             try {
                 long lresult = ExternalFunctionInvoker.invokeLENFUNC(frame, C_API_TIMING, ctx.ensureNfiContext(), boundaryCallData, state, slot.callable,
                                 toNativeNode.executeLong(promotedSelf));
-                long l = checkResultNode.executeLong(state, T___LEN__, lresult);
+                long l = checkResultNode.executeLong(inliningTarget, state, T___LEN__, lresult);
                 if (!PInt.isIntRange(l)) {
                     raiseOverflow(inliningTarget, raiseNode, l);
                 }
