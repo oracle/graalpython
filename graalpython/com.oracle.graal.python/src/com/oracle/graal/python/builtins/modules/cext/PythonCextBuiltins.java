@@ -771,7 +771,6 @@ public final class PythonCextBuiltins {
         }
 
         ExecuteCApiBuiltinNode(CApiBuiltinExecutable cachedSelf) {
-            assert cachedSelf.ret.createCheckResultNode() == null : "primitive result check types are only intended for ExternalFunctionInvokeNode";
             this.cachedSelf = cachedSelf;
             this.retNode = cachedSelf.createRetNode();
             this.argNodes = cachedSelf.createArgNodes();

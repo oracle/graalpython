@@ -43,10 +43,6 @@ package com.oracle.graal.python.builtins.objects.cext.capi.transitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.FromLongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToNativeBorrowedNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ToPythonStringNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CheckInquiryResultNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CheckIterNextResultNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CheckPrimitiveFunctionResultNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.InitCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonClassNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
@@ -54,7 +50,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonTransferNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.nfi2.NfiType;
@@ -356,26 +351,22 @@ public enum ArgDescriptor {
     xid_newobjectfunc(ArgBehavior.Pointer, "xid_newobjectfunc"),
     atexit_datacallbackfunc(ArgBehavior.Pointer, "atexit_datacallbackfunc"),
 
-    IterResult(ArgBehavior.PyObject, "void*", CheckIterNextResultNodeGen::create, CheckIterNextResultNodeGen.getUncached(), true),
-    InquiryResult(ArgBehavior.Int32, "int", CheckInquiryResultNodeGen::create, CheckInquiryResultNodeGen.getUncached()),
-    InitResult(ArgBehavior.Int32, "int", InitCheckFunctionResultNodeGen::create, InitCheckFunctionResultNodeGen.getUncached()),
-    PrimitiveResult32(ArgBehavior.Int32, "int", CheckPrimitiveFunctionResultNodeGen::create, CheckPrimitiveFunctionResultNodeGen.getUncached()),
-    PrimitiveResult64(ArgBehavior.Int64, "long", CheckPrimitiveFunctionResultNodeGen::create, CheckPrimitiveFunctionResultNodeGen.getUncached());
+    IterResult(ArgBehavior.PyObject, "void*", true, true),
+    InquiryResult(ArgBehavior.Int32, "int"),
+    InitResult(ArgBehavior.Int32, "int"),
+    PrimitiveResult32(ArgBehavior.Int32, "int"),
+    PrimitiveResult64(ArgBehavior.Int64, "long");
 
     private final String cSignature;
     private final ArgBehavior behavior;
     private final boolean transfer;
     private final boolean release;
-    private final Supplier<CheckFunctionResultNode> checkResult;
-    private final CheckFunctionResultNode uncachedCheckResult;
 
     ArgDescriptor(String cSignature) {
         this.behavior = ArgBehavior.Unknown;
         this.cSignature = cSignature;
         this.transfer = false;
         this.release = false;
-        this.checkResult = null;
-        this.uncachedCheckResult = null;
     }
 
     ArgDescriptor(ArgBehavior behavior, String cSignature) {
@@ -383,8 +374,6 @@ public enum ArgDescriptor {
         this.cSignature = cSignature;
         this.transfer = false;
         this.release = false;
-        this.checkResult = null;
-        this.uncachedCheckResult = null;
     }
 
     ArgDescriptor(ArgBehavior behavior, String cSignature, boolean transfer, boolean release) {
@@ -392,26 +381,6 @@ public enum ArgDescriptor {
         this.cSignature = cSignature;
         this.transfer = transfer;
         this.release = release;
-        this.checkResult = null;
-        this.uncachedCheckResult = null;
-    }
-
-    ArgDescriptor(ArgBehavior behavior, String cSignature, Supplier<CheckFunctionResultNode> checkResult, CheckFunctionResultNode uncachedCheckResult) {
-        this.behavior = behavior;
-        this.cSignature = cSignature;
-        this.checkResult = checkResult;
-        this.uncachedCheckResult = uncachedCheckResult;
-        this.transfer = false;
-        this.release = false;
-    }
-
-    ArgDescriptor(ArgBehavior behavior, String cSignature, Supplier<CheckFunctionResultNode> checkResult, CheckFunctionResultNode uncachedCheckResult, boolean transfer) {
-        this.behavior = behavior;
-        this.cSignature = cSignature;
-        this.checkResult = checkResult;
-        this.uncachedCheckResult = uncachedCheckResult;
-        this.transfer = transfer;
-        this.release = false;
     }
 
     public static CExtToJavaNode[] createNativeToPython(ArgDescriptor[] args) {
@@ -452,16 +421,6 @@ public enum ArgDescriptor {
         CExtToJavaNode node = transfer ? behavior.uncachedNativeToPythonTransfer : behavior.uncachedNativeToPython;
         assert !(transfer && node == null);
         return node;
-    }
-
-    public CheckFunctionResultNode createCheckResultNode() {
-        assert behavior != ArgBehavior.Unknown : "undefined behavior in " + this;
-        return checkResult == null ? null : checkResult.get();
-    }
-
-    public CheckFunctionResultNode getUncachedCheckResultNode() {
-        assert behavior != ArgBehavior.Unknown : "undefined behavior in " + this;
-        return uncachedCheckResult;
     }
 
     public NfiType getNFI2Type() {
