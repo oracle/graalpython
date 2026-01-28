@@ -2779,11 +2779,13 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     @Operation(storeBytecodeIndex = true)
+    @ConstantOperand(type = boolean.class)
     @ConstantOperand(type = LocalAccessor.class)
     public static final class KwargsMerge {
         @Specialization
         public static PDict doMerge(VirtualFrame frame,
-                        LocalAccessor callee,
+                        boolean clearCalleeLocal,
+                        LocalAccessor calleeTemporaryLocal,
                         PDict dict,
                         Object toMerge,
                         @Bind PBytecodeDSLRootNode rootNode,
@@ -2797,12 +2799,15 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                 dict.setDictStorage(resultStorage);
             } catch (SameDictKeyException e) {
                 throw raise.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.S_GOT_MULTIPLE_VALUES_FOR_KEYWORD_ARG,
-                                PyObjectFunctionStr.execute(frame, boundaryCallData, callee.getObject(bytecodeNode, frame)),
+                                PyObjectFunctionStr.execute(frame, boundaryCallData, calleeTemporaryLocal.getObject(bytecodeNode, frame)),
                                 e.getKey());
             } catch (NonMappingException e) {
                 throw raise.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.ARG_AFTER_MUST_BE_MAPPING,
-                                PyObjectFunctionStr.execute(frame, boundaryCallData, callee.getObject(bytecodeNode, frame)),
+                                PyObjectFunctionStr.execute(frame, boundaryCallData, calleeTemporaryLocal.getObject(bytecodeNode, frame)),
                                 toMerge);
+            }
+            if (clearCalleeLocal) {
+                calleeTemporaryLocal.clear(bytecodeNode, frame);
             }
             return dict;
         }
@@ -3672,6 +3677,18 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @Specialization(guards = "!isPException(exception)")
         static void doInteropException(AbstractTruffleException exception) {
             throw exception;
+        }
+    }
+
+    @Operation(storeBytecodeIndex = false)
+    @ConstantOperand(type = LocalAccessor.class)
+    public static final class LoadAndClearTempLocal {
+        @Specialization
+        public static Object doObject(VirtualFrame frame, LocalAccessor accessor,
+                        @Bind BytecodeNode bytecodeNode) {
+            Object result = accessor.getObject(bytecodeNode, frame);
+            accessor.clear(bytecodeNode, frame);
+            return result;
         }
     }
 

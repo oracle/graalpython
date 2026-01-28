@@ -830,7 +830,11 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
         if is_bytecode_dsl_interpreter != BYTECODE_DSL_INTERPRETER:
             requested = "Bytecode DSL" if BYTECODE_DSL_INTERPRETER else "Manual"
             actual = "Bytecode DSL" if is_bytecode_dsl_interpreter else "Manual"
-            mx.abort(f"GRAALPY_HOME is not compatible with requested interpreter kind ({requested=}, {actual=})")
+            mx.abort(f"GRAALPY_HOME is not compatible with requested interpreter kind ({requested=}, {actual=})\n"
+                     f"Used launcher: {launcher}\n"
+                     f"Found Python home: {python_home}\n"
+                     f"GRAALPY_HOME env variable: {os.environ.get('GRAALPY_HOME', None)}\n"
+                     f"Raw output:\n\n{out}\n\n")
 
         return python_home
 
@@ -868,6 +872,7 @@ def graalpy_standalone_home(standalone_type, enterprise=False, dev=False, build=
             mx_args.append(f"--extra-image-builder-argument=-H:+ProfilingLCOV")
     elif BUILD_NATIVE_IMAGE_WITH_ASSERTIONS:
         mx_args.append("--extra-image-builder-argument=-ea")
+        mx_args.append("--extra-image-builder-argument=-J-ea")
 
     if mx_gate.get_jacoco_agent_args() or (build and not DISABLE_REBUILD):
         mx_build_args = mx_args + bytecode_dsl_build_args(prefix="--extra-image-builder-argument=")

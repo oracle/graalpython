@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2025, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -635,3 +635,139 @@ def test_generator_frame_in_generator_up_stack():
         assert False
     except StopIteration:
         pass
+
+# ------
+# send/throw lookup raises StopIteration:
+
+original_ex = None
+class BaseTestGenerator:
+    def __iter__(self):
+        return self
+    def __next__(self):
+        return 1
+
+class NormalTestGenerator(BaseTestGenerator):
+    def send(self, value):
+        raise StopIteration(f"Stop from send method, {value=}")
+
+    def throw(self, value):
+        raise StopIteration(f"Stop from throw method, {value=}")
+
+class StopOnLookupGenerator(BaseTestGenerator):
+    class StopIterationDescr:
+        def __init__(self, value):
+            self.value = value
+        def __get__(self, obj, owner=None):
+            global original_ex
+            original_ex = StopIteration(self.value)
+            raise original_ex
+    send = StopIterationDescr("Stop from send lookup")
+    throw = StopIterationDescr("Stop from throw lookup")
+
+def delegator(it, expected_ex_repr=None):
+    try:
+        return (yield from it)
+    except Exception as e:
+        if not expected_ex_repr:
+            assert False, f"unexpected exception: {e}"
+        assert repr(e) == expected_ex_repr, f"'{e}' != '{expected_ex_repr}'"
+        raise e
+
+def test_raise_in_lookup():
+    global original_ex
+    original_ex = None
+    it = StopOnLookupGenerator()
+    g = delegator(it)
+    next(g)
+    try:
+        g.send("SENT_VALUE1")
+    except StopIteration as e:
+        assert e.value == "Stop from send lookup", e.value
+        assert e != original_ex
+
+def test_normal_generator():
+    global original_ex
+    original_ex = None
+    it = NormalTestGenerator()
+    g = delegator(it)
+    next(g)
+    try:
+        g.send("SENT_VALUE2")
+    except StopIteration as e:
+        assert e.value == "Stop from send method, value='SENT_VALUE2'", e.value
+        assert e != original_ex
+
+@util.skipUnlessBytecodeDSL()
+def test_raise_stop_iter_in_throw_generator():
+    global original_ex
+    original_ex = None
+    it = NormalTestGenerator()
+    g = delegator(it)
+    next(g)
+    try:
+        g.throw(AttributeError())
+    except StopIteration as e:
+        assert e.value == "Stop from throw method, value=AttributeError()", e.value
+        assert e != original_ex
+
+
+class RaiseInThrowGenerator(BaseTestGenerator):
+    def throw(self, value):
+        global original_ex
+        original_ex = NameError()
+        raise original_ex
+
+
+@util.skipUnlessBytecodeDSL()
+def test_raise_ex_in_throw_generator():
+    global original_ex
+    original_ex = None
+    it = RaiseInThrowGenerator()
+    g = delegator(it, 'NameError()')
+    next(g)
+    try:
+        g.throw(AttributeError())
+    except NameError as e:
+        assert e == original_ex
+
+# The following 2 tests look like CPyton bug or UB:
+#
+# In GraalPy the `throw` lookup is performed in `delegator`, so the error from
+# the lookup is raised there and the gets handled in the `except` block in `delegator`.
+#
+# In CPython the throw lookup is already performed in this function, or more
+# precisely in the `throw` called from this function, bypassing the `delegator`,
+# and any exception raised during the lookup surfaces here and not in `delegator`
+if sys.implementation.name != 'graalpy':
+    def test_raise_stop_iter_in_throw_lookup():
+        global original_ex
+        original_ex = None
+        it = StopOnLookupGenerator()
+        g = delegator(it)
+        next(g)
+        try:
+            g.throw(AttributeError())
+        except StopIteration as e:
+            assert e.value == "Stop from throw lookup", e.value
+            assert e == original_ex
+
+    class GenericErrorInThrowGenerator(BaseTestGenerator):
+        class NameErrorDescr:
+            def __init__(self, value):
+                self.value = value
+            def __get__(self, obj, owner=None):
+                global original_ex
+                original_ex = NameError(self.value)
+                raise original_ex
+        throw = NameErrorDescr("Stop from throw lookup")
+
+    def test_raise_generic_ex_in_throw_lookup():
+        global original_ex
+        original_ex = None
+        it = GenericErrorInThrowGenerator()
+        g = delegator(it)
+        next(g)
+        try:
+            g.throw(AttributeError())
+        except NameError as e:
+            assert e == original_ex
