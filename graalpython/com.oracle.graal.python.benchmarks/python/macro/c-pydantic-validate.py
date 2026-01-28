@@ -37,7 +37,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-ensure_packages(pydantic=="2.12.5")
+ensure_packages(pydantic="2.12.5")
 from pydantic import BaseModel, ValidationError
 
 

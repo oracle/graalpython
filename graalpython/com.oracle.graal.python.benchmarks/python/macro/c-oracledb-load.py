@@ -65,7 +65,7 @@
 # Requires python-oracledb 3.4+
 
 
-ensure_packages(oracledb=="3.4.1", pandas=="2.2.3", pyarrow=="20.0.0", sqlalchemy=="2.0.45")
+ensure_packages(oracledb="3.4.1", pandas="2.2.3", pyarrow="20.0.0", sqlalchemy="2.0.45")
 
 import csv
 from datetime import datetime
