@@ -44,6 +44,6 @@ jobs:
               issue_number: pr.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `@${assignees[0].login} - One or more CI jobs failed - [details](${failedRun.html_url}))`
+              body: `@${assignees[0].login} - One or more CI jobs failed - [View details](${failedRun.html_url})`
             });
             console.log("CI failed, assignee notified.")
