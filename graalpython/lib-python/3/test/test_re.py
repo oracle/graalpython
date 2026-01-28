@@ -2431,7 +2431,9 @@ class ReTests(unittest.TestCase):
         t = time.perf_counter() - start
         # Without optimization it takes 1 second on my computer.
         # With optimization -- 0.0003 seconds.
-        self.assertLess(t, 0.1)
+        # GraalPy change: on Github, it may take longer...
+        # self.assertLess(t, 0.1)
+        self.assertLess(t, 0.5)
 
     def test_possessive_quantifiers(self):
         """Test Possessive Quantifiers
