@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -101,6 +101,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T___BREAKPOINTHOOK__;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___DISPLAYHOOK__;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___EXCEPTHOOK__;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___GRAALPYTHON__;
+import static com.oracle.graal.python.nodes.BuiltinNames.T___NOTES__;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___STDERR__;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___STDIN__;
 import static com.oracle.graal.python.nodes.BuiltinNames.T___STDOUT__;
@@ -115,6 +116,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.WARN_IGNORE_UNIMPORTAB
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___MODULE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___SIZEOF__;
+import static com.oracle.graal.python.nodes.StringLiterals.J_NEWLINE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_BACKSLASHREPLACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_BASE_PREFIX;
 import static com.oracle.graal.python.nodes.StringLiterals.T_BIG;
@@ -126,6 +128,7 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_JAVA;
 import static com.oracle.graal.python.nodes.StringLiterals.T_LITTLE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NEWLINE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_PREFIX;
+import static com.oracle.graal.python.nodes.StringLiterals.T_SPACE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRING_SOURCE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_SURROGATEESCAPE;
@@ -174,10 +177,12 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.Hashi
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.exception.GetEscapedExceptionNode;
+import com.oracle.graal.python.builtins.objects.exception.PBaseExceptionGroup;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.namespace.PSimpleNamespace;
@@ -192,6 +197,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.lib.OsEnvironGetNode;
+import com.oracle.graal.python.lib.PyExceptionGroupInstanceCheckNode;
 import com.oracle.graal.python.lib.PyExceptionInstanceCheckNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyFloatCheckExactNode;
@@ -1250,7 +1256,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
             }
 
             if (excTb != PNone.NONE) {
-                PyTraceBackPrint.print(inliningTarget, getTbFrameNode, materializeStNode, sys, out, excTb);
+                PyTraceBackPrint.print(inliningTarget, getTbFrameNode, materializeStNode, sys, out, excTb, false, false, 0, null);
             }
 
             if (excType == PNone.NONE) {
@@ -1343,6 +1349,11 @@ public final class SysModuleBuiltins extends PythonBuiltins {
         static final TruffleString T_ATTR_LINENO = tsInternedLiteral("lineno");
         static final TruffleString T_ATTR_OFFSET = tsInternedLiteral("offset");
         static final TruffleString T_ATTR_TEXT = tsInternedLiteral("text");
+        static final TruffleString T_EG_MARGIN = tsInternedLiteral("| ");
+
+        protected static final int INT_MAX_GROUP_WIDTH = 15;
+        protected static final int INT_MAX_GROUP_DEPTH = 10;
+        protected static final int INT_INDENT_SIZE = 2;
 
         @ValueType
         static final class SyntaxErrData {
@@ -1360,6 +1371,42 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                 this.offset = offset;
                 this.text = text;
                 this.err = err;
+            }
+        }
+
+        static class ExceptionPrintContext {
+            public int depthMax;
+            public int depthCurrent;
+            public int widthMax;
+            public boolean needsToEnd;
+
+            ExceptionPrintContext() {
+                this.depthMax = INT_MAX_GROUP_DEPTH;
+                this.depthCurrent = 0;
+                this.widthMax = INT_MAX_GROUP_WIDTH;
+                this.needsToEnd = false;
+            }
+
+            public TruffleString getMargin() {
+                if (this.depthCurrent > 0) {
+                    return T_EG_MARGIN;
+                } else {
+                    return tsLiteral("");
+                }
+            }
+
+            public int getIndent() {
+                return this.depthCurrent * INT_INDENT_SIZE;
+            }
+
+            public void increaseDepth() {
+                this.depthCurrent++;
+            }
+
+            public void decreaseDepth() {
+                if (depthCurrent > 0) {
+                    this.depthCurrent--;
+                }
             }
         }
 
@@ -1474,7 +1521,13 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         void printExceptionRecursive(Node inliningTarget, TracebackBuiltins.GetTracebackFrameNode getTbFrameNode, TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStNode,
-                        PythonModule sys, Object out, Object value, Set<Object> seen) {
+                        PythonModule sys, Object out, Object value, Set<Object> seen, IteratorNodes.ToArrayNode toArrayNode) {
+            printExceptionRecursive(inliningTarget, getTbFrameNode, materializeStNode, sys, out, value, seen, new ExceptionPrintContext(), toArrayNode);
+        }
+
+        @TruffleBoundary
+        void printExceptionRecursive(Node inliningTarget, TracebackBuiltins.GetTracebackFrameNode getTbFrameNode, TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStNode,
+                        PythonModule sys, Object out, Object value, Set<Object> seen, ExceptionPrintContext ctx, IteratorNodes.ToArrayNode toArrayNode) {
             if (seen != null) {
                 // Exception chaining
                 add(seen, value);
@@ -1482,24 +1535,43 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                     Object cause = ExceptionNodes.GetCauseNode.executeUncached(value);
                     Object context = ExceptionNodes.GetContextNode.executeUncached(value);
 
+                    boolean needsToEnd = ctx.needsToEnd;
                     if (cause != PNone.NONE) {
                         if (notSeen(seen, cause)) {
-                            printExceptionRecursive(inliningTarget, getTbFrameNode, materializeStNode, sys, out, cause, seen);
+                            printExceptionRecursive(inliningTarget, getTbFrameNode, materializeStNode, sys, out, cause, seen, ctx, toArrayNode);
                             fileWriteString(out, T_CAUSE_MESSAGE);
                         }
                     } else if (context != PNone.NONE && !ExceptionNodes.GetSuppressContextNode.executeUncached(value)) {
                         if (notSeen(seen, context)) {
-                            printExceptionRecursive(inliningTarget, getTbFrameNode, materializeStNode, sys, out, context, seen);
+                            printExceptionRecursive(inliningTarget, getTbFrameNode, materializeStNode, sys, out, context, seen, ctx, toArrayNode);
                             fileWriteString(out, T_CONTEXT_MESSAGE);
                         }
                     }
+                    ctx.needsToEnd = needsToEnd;
                 }
             }
-            printException(inliningTarget, getTbFrameNode, materializeStNode, sys, out, value);
+            if (value instanceof PBaseExceptionGroup) {
+                printExceptionGroup(inliningTarget, getTbFrameNode, materializeStNode, sys, out, value, seen, ctx, toArrayNode);
+            } else {
+                printException(inliningTarget, getTbFrameNode, materializeStNode, sys, out, value, ctx, toArrayNode);
+            }
+        }
+
+        protected static TruffleString getIndent(int indent) {
+            return T_SPACE.repeatUncached(indent, TS_ENCODING);
+        }
+
+        protected static void fileWriteIndentedString(Object file, String string, int indent) {
+            fileWriteIndentedString(file, tsLiteral(string), indent);
+        }
+
+        protected static void fileWriteIndentedString(Object file, TruffleString string, int indent) {
+            fileWriteString(file, getIndent(indent));
+            fileWriteString(file, string);
         }
 
         protected void printException(Node inliningTarget, TracebackBuiltins.GetTracebackFrameNode getTbFrameNode, TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStNode,
-                        PythonModule sys, Object out, Object excValue) {
+                        PythonModule sys, Object out, Object excValue, ExceptionPrintContext ctx, IteratorNodes.ToArrayNode toArrayNode) {
             Object value = excValue;
             final Object type = getObjectClass(value);
             if (!PyExceptionInstanceCheckNode.executeUncached(value)) {
@@ -1511,7 +1583,11 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
             final Object tb = getExceptionTraceback(value);
             if (tb instanceof PTraceback) {
-                PyTraceBackPrint.print(inliningTarget, getTbFrameNode, materializeStNode, sys, out, tb);
+                if (value instanceof PBaseExceptionGroup pbeg) {
+                    PyTraceBackPrint.print(inliningTarget, getTbFrameNode, materializeStNode, sys, out, tb, true, ctx.depthCurrent > 1, ctx.getIndent(), ctx.getMargin());
+                } else {
+                    PyTraceBackPrint.print(inliningTarget, getTbFrameNode, materializeStNode, sys, out, tb, false, ctx.depthCurrent == 0, ctx.getIndent(), ctx.getMargin());
+                }
             }
 
             if (objectHasAttr(value, T_ATTR_PRINT_FILE_AND_LINE)) {
@@ -1529,6 +1605,8 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                     }
                 }
             }
+
+            fileWriteIndentedString(out, ctx.getMargin(), ctx.getIndent());
 
             TruffleString className;
             try {
@@ -1569,6 +1647,104 @@ public final class SysModuleBuiltins extends PythonBuiltins {
             }
 
             fileWriteString(out, T_NEWLINE);
+
+            if (objectHasAttr(value, T___NOTES__)) {
+                // print notes
+                Object notes = objectLookupAttr(value, T___NOTES__);
+                if (notes instanceof PList noteList) {
+                    Object[] arr = toArrayNode.execute(null, noteList);
+                    for (Object oStr : arr) {
+                        if (oStr instanceof TruffleString note) {
+                            String n = note.toString();
+                            if (n.contains(J_NEWLINE)) {
+                                String[] lines = n.split(J_NEWLINE);
+                                for (String line : lines) {
+                                    fileWriteIndentedString(out, ctx.getMargin(), ctx.getIndent());
+                                    fileWriteString(out, line);
+                                    fileWriteString(out, T_NEWLINE);
+                                }
+                            } else {
+                                fileWriteIndentedString(out, ctx.getMargin(), ctx.getIndent());
+                                fileWriteString(out, note);
+                                fileWriteString(out, T_NEWLINE);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        protected void printExceptionGroup(Node inliningTarget, TracebackBuiltins.GetTracebackFrameNode getTbFrameNode, TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStNode,
+                        PythonModule sys, Object out, Object excValue, Set<Object> seen, ExceptionPrintContext ctx, IteratorNodes.ToArrayNode toArrayNode) {
+            Object value = excValue;
+            final Object type = getObjectClass(value);
+            if (!PyExceptionGroupInstanceCheckNode.executeUncached(value)) {
+                PyTraceBackPrint.fileWriteString(out, "TypeError: print_exception_group(): Exception group expected for value, ");
+                fileWriteString(out, getTypeName(type));
+                PyTraceBackPrint.fileWriteString(out, " found\n");
+            }
+
+            if (ctx.depthCurrent > ctx.depthMax) {
+                fileWriteIndentedString(out, ctx.getMargin(), ctx.getIndent());
+                fileWriteString(out, String.format("... (max_group_depth is %d)", ctx.depthMax));
+                fileWriteString(out, T_NEWLINE);
+                return;
+            }
+
+            ctx.needsToEnd = false;
+
+            if (ctx.depthCurrent == 0) {
+                ctx.increaseDepth();
+            }
+
+            printException(inliningTarget, getTbFrameNode, materializeStNode, sys, out, excValue, ctx, toArrayNode);
+
+            PBaseExceptionGroup exceptionGroup = (PBaseExceptionGroup) excValue;
+            int counter = 1;
+            boolean lastException = false;
+            for (Object exception : exceptionGroup.getExceptions()) {
+                if (counter == exceptionGroup.getExceptions().length) {
+                    lastException = true;
+                    ctx.needsToEnd = true;
+                }
+                if (counter == 1) {
+                    fileWriteIndentedString(out, "+".concat("-".repeat(INT_INDENT_SIZE - 1)), ctx.getIndent());
+                } else {
+                    fileWriteString(out, getIndent(ctx.getIndent() + INT_INDENT_SIZE));
+                }
+                if (counter <= ctx.widthMax) {
+                    fileWriteString(out, String.format("+---------------- %d ----------------", counter));
+                    fileWriteString(out, T_NEWLINE);
+                    ctx.increaseDepth();
+                    printExceptionRecursive(inliningTarget, getTbFrameNode, materializeStNode, sys, out, exception, seen, ctx, toArrayNode);
+                    ctx.decreaseDepth();
+                } else {
+                    fileWriteString(out, "+---------------- ... ----------------");
+                    fileWriteString(out, T_NEWLINE);
+                    fileWriteIndentedString(out, ctx.getMargin(), ctx.getIndent() + INT_INDENT_SIZE);
+                    int exceptionsRemaining = exceptionGroup.getExceptions().length - ctx.widthMax;
+                    fileWriteString(out, String.format("and %d more exception%s", exceptionsRemaining, exceptionsRemaining > 1 ? "s" : ""));
+                    fileWriteString(out, T_NEWLINE);
+
+                    // this makes this exception in this exception group essentially last
+                    lastException = true;
+                    ctx.needsToEnd = true;
+                    break;
+                }
+                counter++;
+            }
+
+            if (lastException && ctx.needsToEnd) {
+                fileWriteString(out, getIndent(ctx.getIndent() + INT_INDENT_SIZE));
+                fileWriteString(out, "+------------------------------------");
+                fileWriteString(out, T_NEWLINE);
+                // let only the innermost exception print the end of an exception group cascade
+                ctx.needsToEnd = false;
+            }
+
+            if (ctx.depthCurrent == 1) {
+                ctx.decreaseDepth();
+            }
         }
 
         @TruffleBoundary(allowInlining = true)
@@ -1609,10 +1785,11 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Shared @Cached TracebackBuiltins.GetTracebackFrameNode getTbFrameNode,
                         @Shared @Cached TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStNode,
-                        @Shared @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
+                        @Shared @Cached("createFor($node)") BoundaryCallData boundaryCallData,
+                        @Shared @Cached IteratorNodes.ToArrayNode toArrayNode) {
             Object saved = BoundaryCallContext.enter(frame, boundaryCallData);
             try {
-                doHookWithTbImpl(inliningTarget, getTbFrameNode, materializeStNode, sys, value, traceBack);
+                doHookWithTbImpl(inliningTarget, getTbFrameNode, materializeStNode, sys, value, traceBack, toArrayNode);
             } finally {
                 BoundaryCallContext.exit(frame, boundaryCallData, saved);
             }
@@ -1621,10 +1798,10 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private void doHookWithTbImpl(Node inliningTarget, TracebackBuiltins.GetTracebackFrameNode getTbFrameNode, TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStNode,
-                        PythonModule sys, Object value, PTraceback traceBack) {
+                        PythonModule sys, Object value, PTraceback traceBack, IteratorNodes.ToArrayNode toArrayNode) {
             setExceptionTraceback(value, traceBack);
             Object stdErr = objectLookupAttr(sys, T_STDERR);
-            printExceptionRecursive(inliningTarget, getTbFrameNode, materializeStNode, sys, stdErr, value, createSet());
+            printExceptionRecursive(inliningTarget, getTbFrameNode, materializeStNode, sys, stdErr, value, createSet(), toArrayNode);
             fileFlush(stdErr);
         }
 
@@ -1633,10 +1810,11 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Shared @Cached TracebackBuiltins.GetTracebackFrameNode getTbFrameNode,
                         @Shared @Cached TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStNode,
-                        @Shared @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
+                        @Shared @Cached("createFor($node)") BoundaryCallData boundaryCallData,
+                        @Shared @Cached IteratorNodes.ToArrayNode toArrayNode) {
             Object saved = BoundaryCallContext.enter(frame, boundaryCallData);
             try {
-                doHookWithoutTbImpl(inliningTarget, getTbFrameNode, materializeStNode, sys, value);
+                doHookWithoutTbImpl(inliningTarget, getTbFrameNode, materializeStNode, sys, value, toArrayNode);
             } finally {
                 BoundaryCallContext.exit(frame, boundaryCallData, saved);
             }
@@ -1645,9 +1823,9 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private void doHookWithoutTbImpl(Node inliningTarget, TracebackBuiltins.GetTracebackFrameNode getTbFrameNode, TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStNode,
-                        PythonModule sys, Object value) {
+                        PythonModule sys, Object value, IteratorNodes.ToArrayNode toArrayNode) {
             Object stdErr = objectLookupAttr(sys, T_STDERR);
-            printExceptionRecursive(inliningTarget, getTbFrameNode, materializeStNode, sys, stdErr, value, createSet());
+            printExceptionRecursive(inliningTarget, getTbFrameNode, materializeStNode, sys, stdErr, value, createSet(), toArrayNode);
             fileFlush(stdErr);
         }
     }
