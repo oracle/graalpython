@@ -2399,35 +2399,6 @@ public abstract class ExternalFunctionNodes {
      * Processes the function result with CPython semantics:
      *
      * <pre>
-     *     if (func(self, args, kwds) < 0)
-     *         return NULL;
-     *     Py_RETURN_NONE;
-     * </pre>
-     *
-     * This is the case for {@code wrap_init}, {@code wrap_descr_delete}, {@code wrap_descr_set},
-     * {@code wrap_delattr}, {@code wrap_setattr}.
-     */
-    @ImportStatic(PGuards.class)
-    @GenerateInline(false)
-    @GenerateUncached
-    public abstract static class InitCheckFunctionResultNode extends CheckFunctionResultNode {
-
-        public abstract PNone executeInt(PythonThreadState threadState, TruffleString name, int result);
-
-        @Specialization
-        @SuppressWarnings("unused")
-        static PNone doInt(PythonThreadState state, TruffleString name, int result,
-                        @Bind Node inliningTarget,
-                        @Cached TransformExceptionFromNativeNode transformExceptionFromNativeNode) {
-            transformExceptionFromNativeNode.execute(inliningTarget, state, name, result < 0, true);
-            return PNone.NONE;
-        }
-    }
-
-    /**
-     * Processes the function result with CPython semantics:
-     *
-     * <pre>
      *     Py_ssize_t res = func(...);
      *     if (res == -1 && PyErr_Occurred())
      *         return NULL;

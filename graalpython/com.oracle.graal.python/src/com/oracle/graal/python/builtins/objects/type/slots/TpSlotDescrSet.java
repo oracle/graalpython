@@ -51,13 +51,12 @@ import java.lang.ref.Reference;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.InitCheckFunctionResultNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
@@ -68,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotBuiltin;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPython;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrSetFactory.CallSlotDescrSetNodeGen;
+import com.oracle.graal.python.builtins.objects.type.slots.TpSlotVarargs.InitCheckFunctionResultNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode.Dynamic;
@@ -198,11 +198,11 @@ public abstract class TpSlotDescrSet {
         static void callNative(VirtualFrame frame, Node inliningTarget, TpSlotNative slot, Object self, Object obj, Object value,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached EnsurePythonObjectNode ensurePythonObjectNode,
-                        @Cached(inline = false) PythonToNativeNode selfToNativeNode,
-                        @Cached(inline = false) PythonToNativeNode objToNativeNode,
-                        @Cached(inline = false) PythonToNativeNode valueToNativeNode,
+                        @Cached PythonToNativeInternalNode selfToNativeNode,
+                        @Cached PythonToNativeInternalNode objToNativeNode,
+                        @Cached PythonToNativeInternalNode valueToNativeNode,
                         @Cached("createFor($node)") BoundaryCallData boundaryCallData,
-                        @Cached(inline = false) InitCheckFunctionResultNode checkResultNode) {
+                        @Cached InitCheckFunctionResultNode checkResultNode) {
             PythonContext ctx = PythonContext.get(inliningTarget);
             PythonThreadState threadState = getThreadStateNode.execute(inliningTarget);
             Object promotedSelf = ensurePythonObjectNode.execute(ctx, self, false);
@@ -210,10 +210,10 @@ public abstract class TpSlotDescrSet {
             Object promotedValue = ensurePythonObjectNode.execute(ctx, value, false);
             try {
                 int iresult = ExternalFunctionInvoker.invokeDESCRSETFUNC(frame, C_API_TIMING, ctx.ensureNfiContext(), boundaryCallData, threadState, slot.callable,
-                                selfToNativeNode.executeLong(promotedSelf), //
-                                objToNativeNode.executeLong(promotedObj), //
-                                valueToNativeNode.executeLong(promotedValue));
-                checkResultNode.executeInt(threadState, T___SET__, iresult);
+                                selfToNativeNode.execute(inliningTarget, promotedSelf, false), //
+                                objToNativeNode.execute(inliningTarget, promotedObj, false), //
+                                valueToNativeNode.execute(inliningTarget, promotedValue, false));
+                checkResultNode.executeInt(inliningTarget, threadState, T___SET__, iresult);
             } finally {
                 Reference.reachabilityFence(promotedSelf);
                 Reference.reachabilityFence(promotedObj);

@@ -54,17 +54,17 @@ import com.oracle.graal.python.annotations.Slot.SlotSignature;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CreateArgsTupleNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.EagerTupleState;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.InitCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionFromNativeNode;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -79,6 +79,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotCExtNati
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotPythonSingle;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotDescrGet.CallSlotDescrGet;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
 import com.oracle.graal.python.nodes.call.BoundDescriptor;
@@ -108,6 +109,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
@@ -384,7 +386,7 @@ public final class TpSlotVarargs {
                 int nativeResult = ExternalFunctionInvoker.invokeINITPROC(frame, C_API_TIMING, context.ensureNfiContext(), boundaryCallData, state, slot.callable,
                                 toNativeNode.executeLong(promotedSelf), toNativeNode.executeLong(argsTuple), toNativeNode.executeLong(kwargsDict));
                 eagerTupleState.report(inliningTarget, argsTuple);
-                checkResultNode.executeInt(state, T___INIT__, nativeResult);
+                checkResultNode.executeInt(inliningTarget, state, T___INIT__, nativeResult);
             } finally {
                 Reference.reachabilityFence(promotedSelf);
                 Reference.reachabilityFence(argsTuple);
@@ -471,6 +473,34 @@ public final class TpSlotVarargs {
         static Object callNative(VirtualFrame frame, TpSlotCExtNative slot, Object self, Object[] args, PKeyword[] keywords,
                         @Cached CallNativeTernaryfuncNode callNode) {
             return callNode.execute(frame, slot, self, args, keywords, T___CALL__);
+        }
+    }
+
+    /**
+     * Processes the function result with CPython semantics:
+     *
+     * <pre>
+     *     if (func(self, args, kwds) < 0)
+     *         return NULL;
+     *     Py_RETURN_NONE;
+     * </pre>
+     *
+     * This is the case for {@code wrap_init}, {@code wrap_descr_delete}, {@code wrap_descr_set},
+     * {@code wrap_delattr}, {@code wrap_setattr}.
+     */
+    @ImportStatic(PGuards.class)
+    @GenerateInline
+    @GenerateUncached
+    @GenerateCached(false)
+    abstract static class InitCheckFunctionResultNode extends Node {
+
+        public abstract PNone executeInt(Node inliningTarget, PythonThreadState threadState, TruffleString name, int result);
+
+        @Specialization
+        static PNone doGeneric(Node inliningTarget, PythonThreadState state, TruffleString name, int result,
+                        @Cached TransformExceptionFromNativeNode transformExceptionFromNativeNode) {
+            transformExceptionFromNativeNode.execute(inliningTarget, state, name, result < 0, true);
+            return PNone.NONE;
         }
     }
 }
