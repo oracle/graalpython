@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -78,6 +78,8 @@ public abstract class ReadAttributeFromObjectNode extends PNodeWithContext {
     }
 
     public abstract Object execute(Object object, TruffleString key);
+
+    public abstract Object execute(PythonObject object, TruffleString key);
 
     public abstract Object execute(PythonAbstractNativeObject object, TruffleString key);
 

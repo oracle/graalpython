@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -139,7 +139,6 @@ public final class PythonCextStructSeqBuiltins {
         Object doGeneric(TruffleString typeName, TruffleString typeDoc, Object fields, int nInSequence,
                         @Cached GraalPyPrivate_StructSequence_InitType2 initNode,
                         @Cached ReadAttributeFromModuleNode readTypeBuiltinNode,
-                        @Cached DynamicObject.GetShapeFlagsNode getShapeFlagsNode,
                         @Cached DynamicObject.SetShapeFlagsNode setShapeFlagsNode,
                         @Cached CallNode callTypeNewNode,
                         @Bind PythonLanguage language) {
@@ -149,7 +148,7 @@ public final class PythonCextStructSeqBuiltins {
             Object cls = callTypeNewNode.executeWithoutFrame(typeBuiltin, typeName, bases, namespace);
             initNode.execute(cls, fields, nInSequence);
             if (cls instanceof PythonClass pythonClass) {
-                pythonClass.makeStaticBase(getShapeFlagsNode, setShapeFlagsNode);
+                pythonClass.makeStaticBase(setShapeFlagsNode);
             }
             return cls;
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -205,6 +205,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNod
 import com.oracle.graal.python.nodes.object.GetOrCreateDictNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
+import com.oracle.graal.python.nodes.util.LazyInteropLibrary;
 import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -1510,10 +1511,15 @@ public abstract class TypeNodes {
             return lib.isIdentical(left.getPtr(), right.getPtr(), lib);
         }
 
-        @Specialization(guards = {"isForeignObject(left)", "isForeignObject(right)"})
+        @Fallback
         @InliningCutoff
-        static boolean doOther(Object left, Object right,
-                        @CachedLibrary(limit = "2") InteropLibrary lib) {
+        static boolean doOther(Node inliningTarget, Object left, Object right,
+                        @Cached LazyInteropLibrary lazyInterop) {
+            if (!(PGuards.isForeignObject(left) && PGuards.isForeignObject(right))) {
+                return false;
+            }
+
+            InteropLibrary lib = lazyInterop.get(inliningTarget);
             if (lib.isMetaObject(left) && lib.isMetaObject(right)) {
                 if (left == right) {
                     return true;
@@ -1538,11 +1544,6 @@ public abstract class TypeNodes {
                 }
                 return lib.isIdentical(left, right, lib);
             }
-            return false;
-        }
-
-        @Fallback
-        static boolean doOther(@SuppressWarnings("unused") Object left, @SuppressWarnings("unused") Object right) {
             return false;
         }
     }

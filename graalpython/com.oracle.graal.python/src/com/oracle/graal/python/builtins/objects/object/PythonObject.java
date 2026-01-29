@@ -144,12 +144,4 @@ public class PythonObject extends PythonAbstractObject {
     public static int getCallSiteInlineCacheMaxDepth() {
         return PythonOptions.getCallSiteInlineCacheMaxDepth();
     }
-
-    public final void addShapeFlag(int flag, DynamicObject.GetShapeFlagsNode getShapeFlagsNode, DynamicObject.SetShapeFlagsNode setShapeFlagsNode) {
-        int oldFlags = getShapeFlagsNode.execute(this);
-        int newFlags = oldFlags | flag;
-        if (newFlags != oldFlags) {
-            setShapeFlagsNode.execute(this, newFlags);
-        }
-    }
 }

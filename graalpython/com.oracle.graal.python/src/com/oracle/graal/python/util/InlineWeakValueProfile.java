@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,7 +44,9 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.DenyReplace;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.UnadoptableNode;
 
 @GenerateInline
 @GenerateCached(false)
@@ -67,8 +69,9 @@ public abstract class InlineWeakValueProfile extends Node {
         return value;
     }
 
+    @DenyReplace
     @GenerateCached(false)
-    private static final class Uncached extends InlineWeakValueProfile {
+    private static final class Uncached extends InlineWeakValueProfile implements UnadoptableNode {
         private static final Uncached INSTANCE = new Uncached();
 
         @Override
