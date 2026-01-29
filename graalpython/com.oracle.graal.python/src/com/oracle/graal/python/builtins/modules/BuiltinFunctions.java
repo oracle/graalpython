@@ -2332,19 +2332,20 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @GenerateInline(false)       // footprint reduction 72 -> 53
     abstract static class UpdateBasesNode extends Node {
 
-        abstract PTuple execute(PTuple bases, Object[] arguments, int nargs);
+        abstract Object[] execute(Object[] bases);
 
         @Specialization
-        static PTuple update(PTuple bases, Object[] arguments, int nargs,
+        static Object[] update(Object[] bases,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
                         @Cached PyObjectLookupAttr getMroEntries,
                         @Cached CallUnaryMethodNode callMroEntries,
                         @Cached PRaiseNode raiseNode) {
             CompilerAsserts.neverPartOfCompilation();
+            PTuple originalBases = null;
             ArrayList<Object> newBases = null;
-            for (int i = 0; i < nargs; i++) {
-                Object base = arguments[i];
+            for (int i = 0; i < bases.length; i++) {
+                Object base = bases[i];
                 if (IsTypeNode.executeUncached(base)) {
                     if (newBases != null) {
                         // If we already have made a replacement, then we append every normal base,
@@ -2361,7 +2362,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     }
                     continue;
                 }
-                Object newBase = callMroEntries.executeObject(null, meth, bases);
+                if (originalBases == null) {
+                    originalBases = PFactory.createTuple(language, bases);
+                }
+                Object newBase = callMroEntries.executeObject(null, meth, originalBases);
                 if (!PGuards.isPTuple(newBase)) {
                     throw raiseNode.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.MRO_ENTRIES_MUST_RETURN_TUPLE);
                 }
@@ -2371,7 +2375,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     // previously encountered bases.
                     newBases = new ArrayList<>();
                     for (int j = 0; j < i; j++) {
-                        newBases.add(arguments[j]);
+                        newBases.add(bases[j]);
                     }
                 }
                 SequenceStorage storage = newBaseTuple.getSequenceStorage();
@@ -2382,18 +2386,18 @@ public final class BuiltinFunctions extends PythonBuiltins {
             if (newBases == null) {
                 return bases;
             }
-            return PFactory.createTuple(language, newBases.toArray());
+            return newBases.toArray();
         }
     }
 
     @GenerateInline(false)       // footprint reduction 36 -> 19
     abstract static class CalculateMetaclassNode extends Node {
 
-        abstract Object execute(Object metatype, PTuple bases);
+        abstract Object execute(Object metatype, Object[] bases);
 
         /* Determine the most derived metatype. */
         @Specialization
-        static Object calculate(Object metatype, PTuple bases,
+        static Object calculate(Object metatype, Object[] bases,
                         @Bind Node inliningTarget,
                         @Cached GetClassNode getClass,
                         @Cached IsSubtypeNode isSubType,
@@ -2405,12 +2409,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
              * while we're at it. Note that if some other metatype wins to contract, it's possible
              * that its instances are not types.
              */
-
-            SequenceStorage storage = bases.getSequenceStorage();
-            int nbases = storage.length();
             Object winner = metatype;
-            for (int i = 0; i < nbases; i++) {
-                Object tmp = SequenceStorageNodes.GetItemScalarNode.executeUncached(storage, i);
+            for (Object tmp : bases) {
                 Object tmpType = getClass.execute(inliningTarget, tmp);
                 if (isSubType.execute(winner, tmpType)) {
                     // nothing to do
@@ -2437,17 +2437,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
             Object module = PythonContext.get(null).lookupBuiltinModule(T___GRAALPYTHON__);
             Object buildFunction = PyObjectLookupAttr.executeUncached(module, T_BUILD_JAVA_CLASS);
             return CallNode.executeUncached(buildFunction, new Object[]{namespace, name, base}, keywords);
-        }
-
-        @InliningCutoff
-        private static Object buildJavaClass(VirtualFrame frame, Node inliningTarget, PythonLanguage language, PFunction function, Object[] arguments,
-                        PKeyword[] keywords, CallDispatchers.FunctionCachedInvokeNode invokeBody,
-                        TruffleString name) {
-            PDict ns = PFactory.createDict(language, new DynamicObjectStorage(language));
-            Object[] args = PArguments.create(0);
-            PArguments.setSpecialArgument(args, ns);
-            invokeBody.execute(frame, inliningTarget, function, args);
-            return buildJavaClass(ns, name, arguments[1], keywords);
         }
 
         @Specialization
@@ -2486,26 +2475,16 @@ public final class BuiltinFunctions extends PythonBuiltins {
             PythonLanguage language = ctx.getLanguage(inliningTarget);
 
             Object[] basesArray = Arrays.copyOfRange(arguments, 1, arguments.length);
-            PTuple origBases = PFactory.createTuple(language, basesArray);
-
-            if (arguments.length == 2) {
-                InteropLibrary lib = lazyInteropLibrary.get(inliningTarget);
-                if (lib.isHostObject(arguments[1]) && lib.isMetaObject(arguments[1])) {
-                    // we want to subclass a Java class
-                    return buildJavaClass(frame, inliningTarget, language, (PFunction) function, arguments, keywords, invokeBody, name);
-                }
-            }
 
             class InitializeBuildClass {
                 boolean isClass;
                 Object meta;
                 PKeyword[] mkw;
-                PTuple bases;
+                Object[] bases;
 
                 @TruffleBoundary
-                InitializeBuildClass(PythonContext ctx) {
-
-                    bases = update.execute(origBases, basesArray, basesArray.length);
+                InitializeBuildClass() {
+                    bases = update.execute(basesArray);
 
                     mkw = keywords;
                     for (int i = 0; i < keywords.length; i++) {
@@ -2522,12 +2501,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         }
                     }
                     if (meta == null) {
-                        // if there are no bases, use type:
-                        if (bases.getSequenceStorage().length() == 0) {
+                        // if there are no bases, use type
+                        if (bases.length == 0) {
                             meta = ctx.lookupType(PythonBuiltinClassType.PythonClass);
                         } else {
                             // else get the type of the first base
-                            meta = getClass.execute(inliningTarget, SequenceStorageNodes.GetItemScalarNode.executeUncached(bases.getSequenceStorage(), 0));
+                            meta = getClass.execute(inliningTarget, bases[0]);
                         }
                         isClass = true;  // meta is really a class
                     }
@@ -2544,15 +2523,16 @@ public final class BuiltinFunctions extends PythonBuiltins {
             Object savedState = BoundaryCallContext.enter(frame, language, ctx, boundaryCallData);
             InitializeBuildClass init;
             try {
-                init = new InitializeBuildClass(ctx);
+                init = new InitializeBuildClass();
             } finally {
                 BoundaryCallContext.exit(frame, language, ctx, savedState);
             }
 
             Object ns;
+            PTuple bases = PFactory.createTuple(language, init.bases);
             try {
                 Object prep = getPrepare.execute(frame, init.meta);
-                ns = callPrep.execute(frame, prep, new Object[]{name, init.bases}, init.mkw);
+                ns = callPrep.execute(frame, prep, new Object[]{name, bases}, init.mkw);
             } catch (PException p) {
                 p.expectAttributeError(inliningTarget, noAttributeProfile);
                 ns = PFactory.createDict(language, new DynamicObjectStorage(language));
@@ -2563,10 +2543,20 @@ public final class BuiltinFunctions extends PythonBuiltins {
             Object[] bodyArguments = PArguments.create(0);
             PArguments.setSpecialArgument(bodyArguments, ns);
             invokeBody.execute(frame, inliningTarget, (PFunction) function, bodyArguments);
-            if (init.bases != origBases) {
-                setOrigBases.execute(frame, inliningTarget, ns, SpecialAttributeNames.T___ORIG_BASES__, origBases);
+            if (init.bases != basesArray) {
+                setOrigBases.execute(frame, inliningTarget, ns, SpecialAttributeNames.T___ORIG_BASES__, PFactory.createTuple(language, basesArray));
             }
-            Object cls = callType.execute(frame, init.meta, new Object[]{name, init.bases, ns}, init.mkw);
+
+            if (init.bases.length == 1) {
+                InteropLibrary lib = lazyInteropLibrary.get(inliningTarget);
+                Object base = init.bases[0];
+                if (lib.isHostObject(base) && lib.isMetaObject(base)) {
+                    // we want to subclass a Java class
+                    return buildJavaClass(ns, name, base, keywords);
+                }
+            }
+
+            Object cls = callType.execute(frame, init.meta, new Object[]{name, bases, ns}, init.mkw);
 
             /*
              * We could check here and throw "__class__ not set defining..." errors.
