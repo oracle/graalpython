@@ -75,6 +75,7 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAcces
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeLongField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
 import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
+import static com.oracle.graal.python.nfi2.NativeMemory.readByteArrayElement;
 import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP;
 import static com.oracle.graal.python.nodes.ErrorMessages.PRECISION_TOO_LARGE;
 import static com.oracle.graal.python.nodes.ErrorMessages.SEPARATOR_EXPECTED_STR_INSTANCE_P_FOUND;
@@ -112,9 +113,12 @@ import com.oracle.graal.python.builtins.modules.codecs.ErrorHandlers;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.UnicodeFromFormatNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ReadUnicodeArrayNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
@@ -173,6 +177,7 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
+import com.oracle.truffle.api.strings.InternalByteArray;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
 import com.oracle.truffle.api.strings.TruffleString.FromNativePointerNode;
@@ -565,13 +570,48 @@ public final class PythonCextUnicodeBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObjectAsTruffleString, ConstCharPtrAsTruffleString}, call = Direct)
-    abstract static class PyUnicode_CompareWithASCIIString extends CApiBinaryBuiltinNode {
+    private static final CApiTiming TIMING_PYUNICODE_COMPAREWITHASCIISTRING = CApiTiming.create(false, "PyUnicode_CompareWithASCIIString");
 
-        @Specialization
-        static int compare(TruffleString left, TruffleString right,
-                        @Cached TruffleString.CompareIntsUTF32Node compare) {
-            return compare.execute(left, right);
+    @CApiBuiltin(ret = Int, args = {PyObjectAsTruffleString, ConstCharPtr}, call = Direct)
+    public static int PyUnicode_CompareWithASCIIString(long uniPtr, long str) {
+        /*
+         * This method cannot throw Python exceptions and doesn't need a GIL since both, the unicode
+         * object and the ASCII string are assumed to be immutable.
+         */
+        CApiTiming.enter();
+        try {
+            Object uniObj = NativeToPythonInternalNode.executeUncached(uniPtr, false);
+            /*
+             * This unchecked cast is fine because CPython will also just assume that the first
+             * argument is a unicode object and will crash otherwise.
+             */
+            TruffleString left = CastToTruffleStringNode.castKnownStringUncached(uniObj);
+            if (left.isCompatibleToUncached(Encoding.US_ASCII)) {
+                InternalByteArray internalByteArray = left.switchEncodingUncached(Encoding.US_ASCII).getInternalByteArrayUncached(Encoding.US_ASCII);
+
+                int len1 = internalByteArray.getLength();
+
+                // len2 = strlen(str)
+                int len2 = 0;
+                while (readByteArrayElement(str, len2) != 0) {
+                    len2++;
+                }
+
+                int len = Math.min(len1, len2);
+                for (int i = 0; i < len; i++) {
+                    int cmp = (internalByteArray.get(i) & 0xFF) - (NativeMemory.readByteArrayElement(str, i) & 0xFF);
+                    if (cmp != 0) {
+                        return cmp < 0 ? -1 : 1;
+                    }
+                }
+                return Integer.compare(len1, len2);
+            }
+
+            TruffleString asciiString = FromCharPointerNode.executeUncached(str, false);
+            assert asciiString.isCompatibleToUncached(Encoding.US_ASCII);
+            return left.compareIntsUTF32Uncached(asciiString);
+        } finally {
+            CApiTiming.exit(TIMING_PYUNICODE_COMPAREWITHASCIISTRING);
         }
     }
 
