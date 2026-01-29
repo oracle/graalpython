@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -34,6 +34,7 @@ import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.J_TB
 import static com.oracle.graal.python.builtins.objects.traceback.PTraceback.J_TB_NEXT;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___DIR__;
 
+import java.util.Arrays;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -64,6 +65,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -195,7 +197,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
                 for (int truffleIndex = pException.getTracebackStartIndex(), pyIndex = 0; truffleIndex < stackTrace.size() && pyIndex < pException.getTracebackFrameCount(); truffleIndex++) {
                     TruffleStackTraceElement element = stackTrace.get(truffleIndex);
                     if (LazyTraceback.elementWantedForTraceback(element)) {
-                        PFrame pFrame = materializeFrame(element, materializeFrameNode);
+                        PFrame pFrame = materializeFrame(element, materializeFrameNode, pException, stackTrace);
                         next = PFactory.createTraceback(language, pFrame, pFrame.getLine(), next);
                         next.setLocation(pFrame.getBci(), pFrame.getBytecodeNode());
                         pyIndex++;
@@ -213,7 +215,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
             tb.markMaterialized(); // Marks the Truffle stacktrace part as materialized
         }
 
-        private static PFrame materializeFrame(TruffleStackTraceElement element, MaterializeFrameNode materializeFrameNode) {
+        private static PFrame materializeFrame(TruffleStackTraceElement element, MaterializeFrameNode materializeFrameNode, PException pException, List<TruffleStackTraceElement> stackTrace) {
             Node location = element.getLocation();
             RootNode rootNode = element.getTarget().getRootNode();
             if (rootNode instanceof PBytecodeRootNode || rootNode instanceof PBytecodeGeneratorRootNode) {
@@ -222,7 +224,9 @@ public final class TracebackBuiltins extends PythonBuiltins {
             // We must have a callNode for Bytecode DSL root nodes. If this assertion fires,
             // it can be because of missing BoundaryCallContext.enter/exit around
             // @TruffleBoundary calls that may call back into Python code.
-            assert !PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER || !(unwrapContinuationRoot(rootNode) instanceof PBytecodeDSLRootNode) || location != null : rootNode;
+            assert !PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER || !(unwrapContinuationRoot(rootNode) instanceof PBytecodeDSLRootNode) ||
+                            location != null : String.format("root: %s, frame count: %d, start frame index: %d, stack trace:\n\n%s",
+                                            rootNode, pException.getTracebackFrameCount(), pException.getTracebackStartIndex(), Arrays.toString(stackTrace.toArray()));
             // create the PFrame and refresh frame values
             Frame frame = PGenerator.unwrapDSLGeneratorFrame(element);
             return materializeFrameNode.execute(location, true, true, frame);
@@ -264,13 +268,27 @@ public final class TracebackBuiltins extends PythonBuiltins {
         static PFrame doOnStack(VirtualFrame frame, PTraceback tb,
                         @Cached ReadFrameNode readCallerFrame) {
             Reference frameInfo = tb.getFrameInfo();
-            assert frameInfo.isEscaped() : "cannot create traceback for non-escaped frame";
+            assert frameInfo.isEscaped() : createAssertionMessage("Cannot create traceback for non-escaped frame", frameInfo);
 
             PFrame escapedFrame = readCallerFrame.getFrameForReference(frame, frameInfo, ReadFrameNode.AllPythonFramesSelector.INSTANCE, 0, 0);
-            assert escapedFrame != null : "Failed to find escaped frame on stack";
+            assert escapedFrame != null : createAssertionMessage("Failed to find escaped frame on stack", frameInfo);
 
             tb.setFrame(escapedFrame);
             return escapedFrame;
+        }
+
+        @TruffleBoundary
+        private static String createAssertionMessage(String prefix, Reference frameInfo) {
+            String stackTrace;
+            try {
+                stackTrace = ExceptionUtils.getPythonLikeStackTrace();
+            } catch (Throwable ex) {
+                stackTrace = "Exception while getting the Python stack trace: " + ex;
+            }
+            boolean isCurrentThread = frameInfo.getPyFrame().getThread() != null &&
+                            frameInfo.getPyFrame().getThread() != Thread.currentThread();
+            return String.format("%s. Frame reference: root node='%s', is current thread=%b. Current stack trace:\n%s.",
+                            prefix, frameInfo.getRootNode(), isCurrentThread, stackTrace);
         }
 
         // case 3: there is no PFrame[Ref], we need to take the top frame from the Truffle
