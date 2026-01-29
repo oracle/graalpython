@@ -538,8 +538,23 @@ public abstract class ExternalFunctionNodes {
     @Target(ElementType.TYPE)
     public @interface CApiWrapperDescriptor {
         PExternalFunctionWrapper[] value();
+    }
 
-        ExternalFunctionSignature[] signature();
+    /**
+     * A marker annotation used to denote root nodes that perform external function invocation. The
+     * annotated elements need to be extendable and are expected to have an abstract method
+     * {@code protected abstract <returnType> invokeExternalFunction(VirtualFrame frame, PythonContext context, NfiBoundFunction boundFunction, <arg0Type>, <arg1Type>, ..., <argNType>)}
+     * where the {@code returnType} matches the {@link ExternalFunctionSignature#returnValue} Java
+     * type and same for the arguments {@link ExternalFunctionSignature#arguments}.
+     */
+    @Retention(RetentionPolicy.SOURCE)
+    @Target(ElementType.METHOD)
+    public @interface InvokeExternalFunction {
+        ExternalFunctionSignature value();
+
+        Class<?> retConversion() default long.class;
+
+        Class<?>[] argConversions();
     }
 
     private static Signature createSignature(boolean takesVarKeywordArgs, int varArgIndex, TruffleString[] parameters, boolean checkEnclosingType, boolean hidden) {
@@ -889,7 +904,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     /** Implements semantics of {@code typeobject.c: wrap_unaryfunc}. */
-    @CApiWrapperDescriptor(value = UNARYFUNC, signature = ExternalFunctionSignature.UNARYFUNC)
+    @CApiWrapperDescriptor(value = UNARYFUNC)
     abstract static class MethUnaryFunc extends ObjectWrapperDescriptorRoot {
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self"), true, false);
 
@@ -897,6 +912,7 @@ public abstract class ExternalFunctionNodes {
             super(lang, name, provider);
         }
 
+        @InvokeExternalFunction(value = ExternalFunctionSignature.UNARYFUNC, argConversions = {PythonToNativeNode.class})
         protected abstract long invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self);
 
         @Override
@@ -934,13 +950,14 @@ public abstract class ExternalFunctionNodes {
         }
     }
 
-    @CApiWrapperDescriptor(value = NEW, signature = ExternalFunctionSignature.NEWFUNC)
+    @CApiWrapperDescriptor(value = NEW)
     abstract static class MethNewRoot extends MethNewOrCallRoot {
 
         public MethNewRoot(PythonLanguage language, TruffleString name, PExternalFunctionWrapper provider) {
             super(language, name, provider);
         }
 
+        @InvokeExternalFunction(value = ExternalFunctionSignature.NEWFUNC, argConversions = {PythonToNativeNode.class, PythonToNativeNode.class, PythonToNativeNode.class})
         protected abstract long invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, Object args, Object kwds);
 
         @Override
@@ -970,13 +987,14 @@ public abstract class ExternalFunctionNodes {
         }
     }
 
-    @CApiWrapperDescriptor(value = CALL, signature = ExternalFunctionSignature.TERNARYFUNC)
+    @CApiWrapperDescriptor(value = CALL)
     abstract static class MethCallRoot extends MethNewOrCallRoot {
 
         public MethCallRoot(PythonLanguage language, TruffleString name, PExternalFunctionWrapper provider) {
             super(language, name, provider);
         }
 
+        @InvokeExternalFunction(value = ExternalFunctionSignature.TERNARYFUNC, argConversions = {PythonToNativeNode.class, PythonToNativeNode.class, PythonToNativeNode.class})
         protected abstract long invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, Object args, Object kwds);
 
         @Override
@@ -1003,7 +1021,7 @@ public abstract class ExternalFunctionNodes {
         }
     }
 
-    @CApiWrapperDescriptor(value = INIT, signature = ExternalFunctionSignature.INITPROC)
+    @CApiWrapperDescriptor(value = INIT)
     abstract static class MethInitRoot extends WrapperDescriptorRoot {
         private static final Signature SIGNATURE = MethKeywordsRoot.SIGNATURE;
 
@@ -1022,6 +1040,7 @@ public abstract class ExternalFunctionNodes {
             this.freeNode = ReleaseNativeSequenceStorageNodeGen.create();
         }
 
+        @InvokeExternalFunction(value = ExternalFunctionSignature.INITPROC, retConversion = int.class, argConversions = {PythonToNativeNode.class, PythonToNativeNode.class, PythonToNativeNode.class})
         protected abstract int invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, Object args, Object kwds);
 
         @Override
@@ -1057,7 +1076,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     /** Implements semantics of {@code typeobject.c: wrap_inquirypred}. */
-    @CApiWrapperDescriptor(value = INQUIRYPRED, signature = ExternalFunctionSignature.INQUIRY)
+    @CApiWrapperDescriptor(value = INQUIRYPRED)
     public abstract static class MethInquiryRoot extends WrapperDescriptorRoot {
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self"), true, false);
 
@@ -1065,6 +1084,7 @@ public abstract class ExternalFunctionNodes {
             super(language, name, provider);
         }
 
+        @InvokeExternalFunction(value = ExternalFunctionSignature.INQUIRY, retConversion = int.class, argConversions = {PythonToNativeNode.class})
         protected abstract int invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self);
 
         @Override
@@ -1408,7 +1428,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     /** Implements semantics of {@code typeobject.c: wrap_indexargfunc}. */
-    @CApiWrapperDescriptor(value = INDEXARGFUNC, signature = ExternalFunctionSignature.SSIZEARGFUNC)
+    @CApiWrapperDescriptor(value = INDEXARGFUNC)
     public abstract static class IndexArgFuncRootNode extends ObjectWrapperDescriptorRoot {
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "i"), true, false);
         @Child private ReadIndexedArgumentNode readINode;
@@ -1420,6 +1440,7 @@ public abstract class ExternalFunctionNodes {
             this.asSizeNode = PyNumberAsSizeNode.create();
         }
 
+        @InvokeExternalFunction(value = ExternalFunctionSignature.SSIZEARGFUNC, argConversions = {PythonToNativeNode.class, long.class})
         protected abstract long invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, long i);
 
         @Override
@@ -1438,7 +1459,7 @@ public abstract class ExternalFunctionNodes {
     /**
      * Wrapper root node for a get attribute function (C type {@code getattrfunc}).
      */
-    @CApiWrapperDescriptor(value = GETATTR, signature = ExternalFunctionSignature.GETATTRFUNC)
+    @CApiWrapperDescriptor(value = GETATTR)
     public abstract static class GetAttrFuncRootNode extends ObjectWrapperDescriptorRoot {
         private static final TruffleLogger LOGGER = CApiContext.getLogger(GetAttrFuncRootNode.class);
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "key"), true, false);
@@ -1451,6 +1472,7 @@ public abstract class ExternalFunctionNodes {
             this.asCharPointerNode = AsCharPointerNodeGen.create();
         }
 
+        @InvokeExternalFunction(value = ExternalFunctionSignature.GETATTRFUNC, argConversions = {PythonToNativeNode.class, long.class})
         protected abstract long invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, long key);
 
         @Override
@@ -1476,7 +1498,7 @@ public abstract class ExternalFunctionNodes {
     /**
      * Wrapper root node for a set attribute function (C type {@code setattrfunc}).
      */
-    @CApiWrapperDescriptor(value = SETATTR, signature = ExternalFunctionSignature.SETATTRFUNC)
+    @CApiWrapperDescriptor(value = SETATTR)
     public abstract static class SetAttrFuncRootNode extends ObjectWrapperDescriptorRoot {
         private static final TruffleLogger LOGGER = CApiContext.getLogger(SetAttrFuncRootNode.class);
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "key", "value"), true, false);
@@ -1491,6 +1513,7 @@ public abstract class ExternalFunctionNodes {
             this.asCharPointerNode = AsCharPointerNodeGen.create();
         }
 
+        @InvokeExternalFunction(value = ExternalFunctionSignature.SETATTRFUNC, retConversion = int.class, argConversions = {PythonToNativeNode.class, long.class, PythonToNativeNode.class})
         protected abstract int invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, long key, Object value);
 
         @Override
@@ -1516,7 +1539,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     /** Implements semantics of {@code typeobject.c: wrap_setattr} */
-    @CApiWrapperDescriptor(value = SETATTRO, signature = ExternalFunctionSignature.SETATTROFUNC)
+    @CApiWrapperDescriptor(value = SETATTRO)
     public abstract static class SetAttrOFuncRootNode extends WrapperDescriptorRoot {
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "name", "value"), true, false);
         @Child private ReadIndexedArgumentNode readNameNode;
@@ -1528,6 +1551,8 @@ public abstract class ExternalFunctionNodes {
             this.readValueNode = ReadIndexedArgumentNode.create(2);
         }
 
+        @InvokeExternalFunction(value = ExternalFunctionSignature.SETATTROFUNC, retConversion = int.class, argConversions = {PythonToNativeNode.class, PythonToNativeNode.class,
+                        PythonToNativeNode.class})
         protected abstract int invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, Object name, Object value);
 
         @Override
@@ -1554,7 +1579,7 @@ public abstract class ExternalFunctionNodes {
      * equivalent wrapper function in CPython but this is needed to be able to call
      * {@code tp_richcompare}.
      */
-    @CApiWrapperDescriptor(value = RICHCMP, signature = ExternalFunctionSignature.RICHCMPFUNC)
+    @CApiWrapperDescriptor(value = RICHCMP)
     public abstract static class RichCmpFuncRootNode extends ObjectWrapperDescriptorRoot {
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "other", "op"), true, false);
         @Child private ReadIndexedArgumentNode readOtherNode;
@@ -1568,6 +1593,7 @@ public abstract class ExternalFunctionNodes {
             this.asSsizeTNode = ConvertPIntToPrimitiveNodeGen.create();
         }
 
+        @InvokeExternalFunction(value = ExternalFunctionSignature.RICHCMPFUNC, argConversions = {PythonToNativeNode.class, PythonToNativeNode.class, int.class})
         protected abstract long invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, Object name, int op);
 
         @Override
@@ -1590,7 +1616,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     /** Implements semantics of {@code typeobject.c: wrap_sq_item}. */
-    @CApiWrapperDescriptor(value = SQ_ITEM, signature = ExternalFunctionSignature.SSIZEARGFUNC)
+    @CApiWrapperDescriptor(value = SQ_ITEM)
     public abstract static class GetItemRootNode extends ObjectWrapperDescriptorRoot {
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "i"), true, false);
         @Child private ReadIndexedArgumentNode readArg1Node;
@@ -1602,6 +1628,7 @@ public abstract class ExternalFunctionNodes {
             this.getIndexNode = GetIndexNode.create();
         }
 
+        @InvokeExternalFunction(value = ExternalFunctionSignature.SSIZEARGFUNC, argConversions = {PythonToNativeNode.class, long.class})
         protected abstract long invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, long i);
 
         @Override
@@ -1619,7 +1646,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     /** Implements semantics of {@code typeobject.c: wrap_sq_setitem}. */
-    @CApiWrapperDescriptor(value = SQ_SETITEM, signature = ExternalFunctionSignature.SSIZEOBJARGPROC)
+    @CApiWrapperDescriptor(value = SQ_SETITEM)
     public abstract static class SetItemRootNode extends WrapperDescriptorRoot {
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "i", "value"), true, false);
         @Child private ReadIndexedArgumentNode readArg1Node;
@@ -1633,6 +1660,7 @@ public abstract class ExternalFunctionNodes {
             this.getIndexNode = GetIndexNode.create();
         }
 
+        @InvokeExternalFunction(value = ExternalFunctionSignature.SSIZEOBJARGPROC, retConversion = int.class, argConversions = {PythonToNativeNode.class, long.class, PythonToNativeNode.class})
         protected abstract int invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, long i, Object value);
 
         @Override
@@ -1654,7 +1682,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     /** Implements semantics of {@code typeobject.c: wrap_sq_delitem}. */
-    @CApiWrapperDescriptor(value = SQ_DELITEM, signature = ExternalFunctionSignature.SSIZEOBJARGPROC)
+    @CApiWrapperDescriptor(value = SQ_DELITEM)
     public abstract static class SqDelItemRootNode extends WrapperDescriptorRoot {
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "key"), true, false);
         @Child private ReadIndexedArgumentNode readKeyNode;
@@ -1666,6 +1694,7 @@ public abstract class ExternalFunctionNodes {
             this.getIndexNode = GetIndexNode.create();
         }
 
+        @InvokeExternalFunction(value = ExternalFunctionSignature.SSIZEOBJARGPROC, retConversion = int.class, argConversions = {PythonToNativeNode.class, long.class, PythonToNativeNode.class})
         protected abstract int invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, long key, Object value);
 
         @Override
@@ -1688,7 +1717,7 @@ public abstract class ExternalFunctionNodes {
     /**
      * Implements semantics of {@code typeobject.c:wrap_descr_get}
      */
-    @CApiWrapperDescriptor(value = DESCR_GET, signature = ExternalFunctionSignature.DESCRGETFUNC)
+    @CApiWrapperDescriptor(value = DESCR_GET)
     public abstract static class DescrGetRootNode extends ObjectWrapperDescriptorRoot {
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "obj", "type"), true, false);
         @Child private ReadIndexedArgumentNode readObj;
@@ -1700,6 +1729,7 @@ public abstract class ExternalFunctionNodes {
             this.readType = ReadIndexedArgumentNode.create(2);
         }
 
+        @InvokeExternalFunction(value = ExternalFunctionSignature.DESCRGETFUNC, argConversions = {PythonToNativeNode.class, PythonToNativeNode.class, PythonToNativeNode.class})
         protected abstract long invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, Object obj, Object type);
 
         @Override
@@ -1720,7 +1750,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     /** Implements semantics of {@code typeobject.c: wrap_descr_delete} */
-    @CApiWrapperDescriptor(value = DESCR_DELETE, signature = ExternalFunctionSignature.DESCRSETFUNC)
+    @CApiWrapperDescriptor(value = DESCR_DELETE)
     public abstract static class DescrDeleteRootNode extends WrapperDescriptorRoot {
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "obj"), true, false);
         @Child private ReadIndexedArgumentNode readObj;
@@ -1730,6 +1760,8 @@ public abstract class ExternalFunctionNodes {
             this.readObj = ReadIndexedArgumentNode.create(1);
         }
 
+        @InvokeExternalFunction(value = ExternalFunctionSignature.DESCRSETFUNC, retConversion = int.class, argConversions = {PythonToNativeNode.class, PythonToNativeNode.class,
+                        PythonToNativeNode.class})
         protected abstract int invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, Object obj, Object value);
 
         @Override
@@ -1749,7 +1781,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     /** Implements semantics of {@code typeobject.c: wrap_delattr}. */
-    @CApiWrapperDescriptor(value = DELATTRO, signature = ExternalFunctionSignature.SETATTROFUNC)
+    @CApiWrapperDescriptor(value = DELATTRO)
     public abstract static class DelAttrRootNode extends WrapperDescriptorRoot {
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "obj"), true, false);
         @Child private ReadIndexedArgumentNode readObj;
@@ -1759,6 +1791,8 @@ public abstract class ExternalFunctionNodes {
             this.readObj = ReadIndexedArgumentNode.create(1);
         }
 
+        @InvokeExternalFunction(value = ExternalFunctionSignature.SETATTROFUNC, retConversion = int.class, //
+                        argConversions = {PythonToNativeNode.class, PythonToNativeNode.class, PythonToNativeNode.class})
         protected abstract int invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, Object obj, Object value);
 
         @Override
@@ -1779,7 +1813,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     /** Implements semantics of {@code typeobject.c: wrap_delitem}. */
-    @CApiWrapperDescriptor(value = MP_DELITEM, signature = ExternalFunctionSignature.OBJOBJARGPROC)
+    @CApiWrapperDescriptor(value = MP_DELITEM)
     public abstract static class MpDelItemRootNode extends WrapperDescriptorRoot {
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "key"), true, false);
         @Child private ReadIndexedArgumentNode readKeyNode;
@@ -1789,6 +1823,8 @@ public abstract class ExternalFunctionNodes {
             this.readKeyNode = ReadIndexedArgumentNode.create(1);
         }
 
+        @InvokeExternalFunction(value = ExternalFunctionSignature.OBJOBJARGPROC, retConversion = int.class, //
+                        argConversions = {PythonToNativeNode.class, PythonToNativeNode.class, PythonToNativeNode.class})
         protected abstract int invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, Object key, Object value);
 
         @Override
@@ -1811,7 +1847,7 @@ public abstract class ExternalFunctionNodes {
      * Implements semantics of {@code typeobject.c: wrap_ternaryfunc} and
      * {@code typeobject.c: wrap_ternaryfunc_r}.
      */
-    @CApiWrapperDescriptor(value = {TERNARYFUNC, TERNARYFUNC_R}, signature = ExternalFunctionSignature.TERNARYFUNC)
+    @CApiWrapperDescriptor(value = {TERNARYFUNC, TERNARYFUNC_R})
     public abstract static class MethTernaryFuncRoot extends ObjectWrapperDescriptorRoot {
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "other", "third"), false, false);
 
@@ -1827,6 +1863,7 @@ public abstract class ExternalFunctionNodes {
             this.reverse = provider == TERNARYFUNC_R;
         }
 
+        @InvokeExternalFunction(value = ExternalFunctionSignature.TERNARYFUNC, argConversions = {PythonToNativeNode.class, PythonToNativeNode.class, PythonToNativeNode.class})
         protected abstract long invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, Object other, Object third);
 
         @Override
@@ -1860,7 +1897,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     /** Implements semantics of {@code typeobject.c: wrap_richcmpfunc} */
-    @CApiWrapperDescriptor(value = {GT, GE, LE, LT, EQ, NE}, signature = ExternalFunctionSignature.RICHCMPFUNC)
+    @CApiWrapperDescriptor(value = {GT, GE, LE, LT, EQ, NE})
     public abstract static class MethRichcmpOpRootNode extends ObjectWrapperDescriptorRoot {
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "other"), true, false);
 
@@ -1874,6 +1911,7 @@ public abstract class ExternalFunctionNodes {
             this.op = getCompareOpCode(provider);
         }
 
+        @InvokeExternalFunction(value = ExternalFunctionSignature.RICHCMPFUNC, argConversions = {PythonToNativeNode.class, PythonToNativeNode.class, int.class})
         protected abstract long invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, Object other, int op);
 
         @Override
@@ -1903,7 +1941,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     /** Implements semantics of {@code typeobject.c: wrap_next}. */
-    @CApiWrapperDescriptor(value = ITERNEXT, signature = ExternalFunctionSignature.UNARYFUNC)
+    @CApiWrapperDescriptor(value = ITERNEXT)
     public abstract static class IterNextFuncRootNode extends ObjectWrapperDescriptorRoot {
 
         @Child private CheckIterNextResultNode checkIterNextResultNode;
@@ -1913,6 +1951,7 @@ public abstract class ExternalFunctionNodes {
             this.checkIterNextResultNode = CheckIterNextResultNodeGen.create();
         }
 
+        @InvokeExternalFunction(value = ExternalFunctionSignature.UNARYFUNC, argConversions = {PythonToNativeNode.class})
         protected abstract long invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self);
 
         @Override
@@ -1933,7 +1972,7 @@ public abstract class ExternalFunctionNodes {
     /**
      * Wrapper root node for C function type {@code getter}.
      */
-    @CApiWrapperDescriptor(value = GETTER, signature = ExternalFunctionSignature.GETTER)
+    @CApiWrapperDescriptor(value = GETTER)
     public abstract static class GetterRoot extends ObjectWrapperDescriptorRoot {
         private static final Signature SIGNATURE = createSignatureWithClosure(false, -1, tsArray("self"), true, false);
 
@@ -1943,6 +1982,7 @@ public abstract class ExternalFunctionNodes {
             super(language, name, provider);
         }
 
+        @InvokeExternalFunction(value = ExternalFunctionSignature.GETTER, argConversions = {PythonToNativeNode.class, long.class})
         protected abstract long invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, long closure);
 
         @Override
@@ -1971,7 +2011,7 @@ public abstract class ExternalFunctionNodes {
     /**
      * Wrapper root node for C function type {@code setter}.
      */
-    @CApiWrapperDescriptor(value = SETTER, signature = ExternalFunctionSignature.SETTER)
+    @CApiWrapperDescriptor(value = SETTER)
     public abstract static class SetterRoot extends WrapperDescriptorRoot {
         private static final Signature SIGNATURE = createSignatureWithClosure(false, -1, tsArray("self", "value"), true, false);
 
@@ -1982,6 +2022,7 @@ public abstract class ExternalFunctionNodes {
             super(language, name, provider);
         }
 
+        @InvokeExternalFunction(value = ExternalFunctionSignature.SETTER, retConversion = int.class, argConversions = {PythonToNativeNode.class, PythonToNativeNode.class, long.class})
         protected abstract int invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, Object value, long closure);
 
         @Override
@@ -2014,7 +2055,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     /** Implements semantics of {@code typeobject.c: wrap_lenfunc} */
-    @CApiWrapperDescriptor(value = {LENFUNC, HASHFUNC}, signature = ExternalFunctionSignature.LENFUNC)
+    @CApiWrapperDescriptor(value = {LENFUNC, HASHFUNC})
     public abstract static class MethLenfuncRoot extends WrapperDescriptorRoot {
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self"), true, false);
 
@@ -2022,6 +2063,7 @@ public abstract class ExternalFunctionNodes {
             super(language, name, provider);
         }
 
+        @InvokeExternalFunction(value = ExternalFunctionSignature.LENFUNC, argConversions = {PythonToNativeNode.class})
         protected abstract long invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self);
 
         @Override
@@ -2041,7 +2083,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     /** Implements semantics of {@code typeobject.c: wrap_objobjproc}. */
-    @CApiWrapperDescriptor(value = OBJOBJPROC, signature = ExternalFunctionSignature.OBJOBJPROC)
+    @CApiWrapperDescriptor(value = OBJOBJPROC)
     public abstract static class MethObjObjProcRoot extends WrapperDescriptorRoot {
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "value"), true, false);
 
@@ -2052,6 +2094,7 @@ public abstract class ExternalFunctionNodes {
             this.readValueNode = ReadIndexedArgumentNode.create(1);
         }
 
+        @InvokeExternalFunction(value = ExternalFunctionSignature.OBJOBJPROC, retConversion = int.class, argConversions = {PythonToNativeNode.class, PythonToNativeNode.class})
         protected abstract int invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, Object value);
 
         @Override
@@ -2073,7 +2116,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     /** Implements semantics of {@code typeobject.c: wrap_objobjargproc}. */
-    @CApiWrapperDescriptor(value = OBJOBJARGPROC, signature = ExternalFunctionSignature.OBJOBJARGPROC)
+    @CApiWrapperDescriptor(value = OBJOBJARGPROC)
     public abstract static class MethObjObjArgProcRoot extends WrapperDescriptorRoot {
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "key", "value"), true, false);
 
@@ -2086,6 +2129,8 @@ public abstract class ExternalFunctionNodes {
             this.readValueNode = ReadIndexedArgumentNode.create(2);
         }
 
+        @InvokeExternalFunction(value = ExternalFunctionSignature.OBJOBJARGPROC, retConversion = int.class, //
+                        argConversions = {PythonToNativeNode.class, PythonToNativeNode.class, PythonToNativeNode.class})
         protected abstract int invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, Object key, Object value);
 
         @Override
@@ -2110,7 +2155,7 @@ public abstract class ExternalFunctionNodes {
      * Implements semantics of {@code typeobject.c: wrap_binaryfunc} and
      * {@code typeobject.c: wrap_binaryfunc_r}.
      */
-    @CApiWrapperDescriptor(value = {BINARYFUNC, BINARYFUNC_L, BINARYFUNC_R}, signature = ExternalFunctionSignature.BINARYFUNC)
+    @CApiWrapperDescriptor(value = {BINARYFUNC, BINARYFUNC_L, BINARYFUNC_R})
     public abstract static class MethBinaryRoot extends ObjectWrapperDescriptorRoot {
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "other"), true, false);
 
@@ -2124,6 +2169,7 @@ public abstract class ExternalFunctionNodes {
             this.reverse = provider == BINARYFUNC_R;
         }
 
+        @InvokeExternalFunction(value = ExternalFunctionSignature.BINARYFUNC, argConversions = {PythonToNativeNode.class, PythonToNativeNode.class})
         protected abstract long invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, Object other);
 
         @Override
@@ -2151,7 +2197,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     /** Implements semantics of {@code typeobject.c: wrap_descr_set} */
-    @CApiWrapperDescriptor(value = DESCR_SET, signature = ExternalFunctionSignature.DESCRSETFUNC)
+    @CApiWrapperDescriptor(value = DESCR_SET)
     public abstract static class MethDescrSetRoot extends WrapperDescriptorRoot {
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "instance", "value"), true, false);
         @Child private ReadIndexedArgumentNode readInstanceNode;
@@ -2163,6 +2209,8 @@ public abstract class ExternalFunctionNodes {
             this.readValueNode = ReadIndexedArgumentNode.create(2);
         }
 
+        @InvokeExternalFunction(value = ExternalFunctionSignature.DESCRSETFUNC, retConversion = int.class, //
+                        argConversions = {PythonToNativeNode.class, PythonToNativeNode.class, PythonToNativeNode.class})
         protected abstract int invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, Object instance, Object value);
 
         @Override

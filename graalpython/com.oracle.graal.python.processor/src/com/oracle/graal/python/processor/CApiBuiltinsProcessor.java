@@ -46,6 +46,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -65,11 +67,15 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
+import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.AbstractAnnotationValueVisitor14;
+import javax.lang.model.util.Elements;
+import javax.lang.model.util.Types;
 import javax.tools.Diagnostic.Kind;
 import javax.tools.StandardLocation;
 
@@ -82,6 +88,9 @@ import com.sun.source.util.TreePathScanner;
 import com.sun.source.util.Trees;
 
 public class CApiBuiltinsProcessor extends AbstractProcessor {
+    private static final String TRUFFLE_VIRTUAL_FRAME = "com.oracle.truffle.api.frame.VirtualFrame";
+    private static final String NFI_BOUND_FUNCTION = "com.oracle.graal.python.nfi2.NfiBoundFunction";
+
     private static class ArgDescriptorsTreeScanner extends TreePathScanner<Object, Trees> {
         private Map<String, String> initializerMap;
 
@@ -243,6 +252,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
     private static final String CAPI_BUILTIN = "com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin";
     private static final String CAPI_BUILTINS = "com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltins";
     private static final String CAPI_WRAPPER_DESCRIPTOR = "com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CApiWrapperDescriptor";
+    private static final String INVOKE_EXTERNAL_FUNCTION = "com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.InvokeExternalFunction";
 
     @Override
     public Set<String> getSupportedAnnotationTypes() {
@@ -1017,53 +1027,45 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         }
     }
 
+    private record InvokeExternalFunctionDesc(ExecutableElement origin, VariableElement signature, TypeMirror returnType, List<TypeMirror> argumentTypes) {
+    }
+
     private static final String NFI2_PACKAGE = "com.oracle.graal.python.nfi2";
     private static final String JAVA_TYPE_NFI_DOWNCALL_SIGNATURE = "NfiDowncallSignature";
     private static final String EXFUNC_INVOKER_PACKAGE = "com.oracle.graal.python.builtins.objects.cext.capi";
     private static final String EXFUNC_INVOKER_CLASS_NAME = "ExternalFunctionInvoker";
 
-    private List<CApiExternalFunctionWrapperDesc> addWrapperDescriptorDescs(RoundEnvironment re, Map<String, CApiExternalFunctionSignatureDesc> sigs) {
-        List<CApiExternalFunctionWrapperDesc> wrapperDescs = new ArrayList<>();
-        // qualified name of element type of 'CApiWrapperDescriptor.value'
+    /**
+     * Find classes annotated with {@link #CAPI_WRAPPER_DESCRIPTOR} and methods annotated with
+     * {@link #INVOKE_EXTERNAL_FUNCTION} and store the extraced information in
+     * {@link CApiExternalFunctionWrapperDesc} and {@link InvokeExternalFunctionDesc}, respectively.
+     */
+    private List<InvokeExternalFunctionDesc> collectExternalFunctionAndWrapperDescs(RoundEnvironment re, List<CApiExternalFunctionWrapperDesc> wrappers) {
+        List<InvokeExternalFunctionDesc> wrapperDescs = new ArrayList<>();
 
-        for (var root : re.getRootElements()) {
-            // find all elements annotated with 'CAPI_WRAPPER_DESCRIPTOR'
-            for (var element : root.getEnclosedElements()) {
-                AnnotationMirror annot = findAnnotationMirror(element, CAPI_WRAPPER_DESCRIPTOR);
-                if (annot != null) {
-                    List<VariableElement> wrapperElements = findValues(annot, "value", VariableElement.class);
-                    VariableElement signatureElement = findValue(annot, "signature", VariableElement.class);
-                    if (wrapperElements != null && !wrapperElements.isEmpty() && signatureElement != null) {
-                        String[] wrapperNames = wrapperElements.stream().map(CApiBuiltinsProcessor::name).toArray(String[]::new);
-                        CApiExternalFunctionSignatureDesc cApiExternalFunctionSignatureDesc = sigs.get(name(signatureElement));
-                        if (cApiExternalFunctionSignatureDesc != null) {
-                            wrapperDescs.add(new CApiExternalFunctionWrapperDesc(element, wrapperNames, name(element), cApiExternalFunctionSignatureDesc));
-                        } else {
-                            processingEnv.getMessager().printWarning(String.format("Could not resolve external function signature '%s'", name(signatureElement)), element);
-                        }
+        // TODO: remove this as soon as the annotation 'INVOKE_EXTERNAL_FUNCTION' is accessible by
+        // this processor
+        for (var rootElement : re.getRootElements()) {
+            // find all elements annotated with 'INVOKE_EXTERNAL_FUNCTION'
+            for (var innerElements : rootElement.getEnclosedElements()) {
+                for (var methodElement : innerElements.getEnclosedElements()) {
+                    AnnotationMirror annot = findAnnotationMirror(methodElement, INVOKE_EXTERNAL_FUNCTION);
+                    if (annot != null) {
+                        assert methodElement.getKind() == ElementKind.METHOD;
+                        VariableElement signatureElement = findValue(annot, "value", VariableElement.class);
+                        TypeMirror retConversion = findValue(annot, "retConversion", TypeMirror.class);
+                        List<TypeMirror> argConversion = findValues(annot, "argConversions", TypeMirror.class);
+                        wrapperDescs.add(new InvokeExternalFunctionDesc((ExecutableElement) methodElement, signatureElement, retConversion, argConversion));
                     }
+                }
+                AnnotationMirror annot = findAnnotationMirror(innerElements, CAPI_WRAPPER_DESCRIPTOR);
+                if (annot != null) {
+                    List<VariableElement> wrapperNames = findValues(annot, "value", VariableElement.class);
+                    wrappers.add(new CApiExternalFunctionWrapperDesc(innerElements, wrapperNames));
                 }
             }
         }
         return wrapperDescs;
-    }
-
-    /**
-     * Maps an {@code com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgBehavior} to
-     * the Python Java type.
-     */
-    private String toJavaPythonType(String argDescriptor) {
-        return switch (argDescriptor) {
-            case "Void" -> "void";
-            case "Int", "InquiryResult", "InitResult", "PrimitiveResult32" -> "int";
-            // TODO(fa): maybe CharPtrAsTruffleString should be 'TruffleString'
-            case "Py_ssize_t", "PrimitiveResult64", "PyObjectConstArray", "IterResult", "Pointer", "CHAR_PTR", "CharPtrAsTruffleString" -> "long";
-            case "PyObjectReturn", "PyObject", "PyObjectTransfer", "PyTypeObject" -> "Object";
-            default -> {
-                processingEnv.getMessager().printError(String.format("Unexpected ArgDescriptor: '%s'", argDescriptor));
-                yield null;
-            }
-        };
     }
 
     /**
@@ -1085,6 +1087,20 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         };
     }
 
+    private static String getSimpleName(TypeMirror typeMirror) {
+        if (typeMirror.getKind() == TypeKind.DECLARED) {
+            return ((DeclaredType) typeMirror).asElement().getSimpleName().toString();
+        }
+        return typeMirror.toString();
+    }
+
+    private TypeMirror toJavaNfiType(TypeMirror typeMirror) {
+        if (typeMirror.getKind() == TypeKind.VOID && typeMirror.getKind().isPrimitive()) {
+            return typeMirror;
+        }
+        return processingEnv.getTypeUtils().getPrimitiveType(TypeKind.LONG);
+    }
+
     /**
      * Maps an {@code com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgBehavior} to
      * the NFI type.
@@ -1104,26 +1120,11 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         };
     }
 
-    private String getConversionClassName(String argDescriptor) {
-        // TODO: types should be inferred with: 'ArgDescriptor.behavior.nfi2Type'
-        return switch (argDescriptor) {
-            case "Void", "Int", "InquiryResult", "InitResult", "PrimitiveResult32", "Py_ssize_t", "PrimitiveResult64", "CharPtrAsTruffleString", "IterResult", "Pointer", "CHAR_PTR",
-                            "PyObjectConstArray" ->
-                null;
-            case "PyObject", "PyTypeObject" -> "PythonToNativeNode";
-            case "PyObjectTransfer" -> "PythonToNativeNewRefNode";
-            default -> {
-                processingEnv.getMessager().printError(String.format("Unexpected ArgDescriptor: '%s'", argDescriptor));
-                yield null;
-            }
-        };
-    }
-
     private static String getNfiSignatureVarName(String signatureName) {
         return "NFI_SIGNATURE_" + signatureName;
     }
 
-    private void generateExternalFunctionNodes(List<CApiExternalFunctionSignatureDesc> signatures) throws IOException {
+    private void generateExternalFunctionInvoker(List<CApiExternalFunctionSignatureDesc> signatures) throws IOException {
         ArrayList<String> lines = new ArrayList<>();
 
         lines.add("// @formatter:off");
@@ -1151,7 +1152,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         lines.add("import com.oracle.graal.python.runtime.PythonContext;");
         lines.add("import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;");
         lines.add("import com.oracle.truffle.api.CompilerDirectives;");
-        lines.add("import com.oracle.truffle.api.frame.VirtualFrame;");
+        lines.add("import " + TRUFFLE_VIRTUAL_FRAME + ";");
         lines.add("");
         lines.add("public final class " + EXFUNC_INVOKER_CLASS_NAME + " {");
         lines.add("");
@@ -1249,26 +1250,75 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         }
     }
 
-    private static final class CApiExternalFunctionWrapperDesc {
-        final Element origin;
-        /** enum constant names denoting wrapper descriptors */
-        final String[] wrapperNames;
-        /** class name of the root node to generate impl for */
-        final String name;
+    /**
+     * @param wrapperNames enum constant names denoting wrapper descriptors
+     */
+    private record CApiExternalFunctionWrapperDesc(Element origin, List<VariableElement> wrapperNames) {
+    }
 
-        CApiExternalFunctionSignatureDesc signature;
-
-        public CApiExternalFunctionWrapperDesc(Element origin, String[] wrapperNames, String name, CApiExternalFunctionSignatureDesc signature) {
-            this.origin = origin;
-            this.wrapperNames = wrapperNames;
-            this.name = name;
-            this.signature = signature;
+    private boolean verifyArguments(ExecutableElement origin, String... expectedPrefixArgs) {
+        if (origin.getParameters().size() < expectedPrefixArgs.length) {
+            processingEnv.getMessager().printError(String.format("Method \"%s\" must at least have parameters %s.", origin, Arrays.toString(expectedPrefixArgs)), origin);
+            return false;
         }
+        assert origin.getParameters().size() >= expectedPrefixArgs.length;
+        Iterator<? extends VariableElement> iterator = origin.getParameters().iterator();
+        for (int i = 0; i < expectedPrefixArgs.length; i++) {
+            VariableElement formalParameter = iterator.next();
+            TypeElement te = (TypeElement) processingEnv.getTypeUtils().asElement(formalParameter.asType());
+
+            if (!expectedPrefixArgs[i].equals(te.getQualifiedName().toString())) {
+                processingEnv.getMessager().printError(String.format("Argument %d of method \"%s\" must be of type \"%s\" but was \"%s\"", i, origin, expectedPrefixArgs[i], formalParameter), origin);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean needsConversion(TypeMirror type) {
+        return !type.getKind().isPrimitive() && type.getKind() != TypeKind.VOID;
+    }
+
+    private static boolean needsReachabilityFence(TypeMirror type) {
+        return !type.getKind().isPrimitive() && type.getKind() != TypeKind.NULL;
+    }
+
+    /**
+     * Lookup a method in {@code enclosingType} that exactly satisfies the specified signature and
+     * has the given name prefix.
+     */
+    private ExecutableElement findMethod(Element location, TypeMirror enclosingType, String prefix, TypeMirror retType, TypeMirror... argTypes) {
+        Types typeUtils = processingEnv.getTypeUtils();
+        Elements elementUtils = processingEnv.getElementUtils();
+
+        Element el = typeUtils.asElement(enclosingType);
+        if (!(el instanceof TypeElement typeElement)) {
+            processingEnv.getMessager().printError("Type %s does not have any executable methods.", location);
+            // Not a declared type (could be primitive, array, type variable, etc.)
+            return null;
+        }
+
+        for (Element e : elementUtils.getAllMembers(typeElement)) {
+            if (e.getKind() == ElementKind.METHOD && e.getSimpleName().toString().startsWith(prefix)) {
+                ExecutableElement method = (ExecutableElement) e;
+                // if (retType.equals(method.getReturnType()) &&
+                // argType.equals(method.getParameters().get(0).asType()) ) {
+                TypeMirror[] parameters = method.getParameters().stream().map(VariableElement::asType).toArray(TypeMirror[]::new);
+                if (retType.equals(method.getReturnType()) && Arrays.equals(parameters, argTypes)) {
+                    return method;
+                }
+            }
+        }
+        processingEnv.getMessager().printError(String.format("Type %s does not have any \"%s %s*(%s)\" method.",
+                        enclosingType, retType, prefix, Arrays.stream(argTypes).map(Object::toString).collect(Collectors.joining(", "))), location);
+        return null;
     }
 
     private static final String WRAPPER_DESCRIPTOR_GEN_CLASS_NAME = "WrapperDescriptorRootNodesGen";
 
-    private void generateExternalFunctionRootNodes(List<CApiExternalFunctionWrapperDesc> wrappers) throws IOException {
+    private void generateExternalFunctionRootNodes(List<InvokeExternalFunctionDesc> externalFunctionDescs, List<CApiExternalFunctionWrapperDesc> wrappers,
+                    @SuppressWarnings("unused") Map<String, CApiExternalFunctionSignatureDesc> externalFunctionSignatures) throws IOException {
+        final Types typeUtils = processingEnv.getTypeUtils();
         ArrayList<String> lines = new ArrayList<>();
 
         lines.add("// @formatter:off");
@@ -1279,23 +1329,25 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
 
         lines.add("import com.oracle.graal.python.PythonLanguage;");
         lines.add("import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;");
-        for (CApiExternalFunctionWrapperDesc wrapper : wrappers) {
-            lines.add("import " + EXFUNC_INVOKER_PACKAGE + "." + wrapper.origin.getEnclosingElement().getSimpleName() + "." + wrapper.origin.getSimpleName() + ";");
+        for (InvokeExternalFunctionDesc wrapper : externalFunctionDescs) {
+            Element clazz = wrapper.origin.getEnclosingElement();
+            lines.add("import " + EXFUNC_INVOKER_PACKAGE + "." + clazz.getEnclosingElement().getSimpleName() + "." + clazz.getSimpleName() + ";");
         }
         lines.add("import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;");
         lines.add("import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.WrapperDescriptorRoot;");
         lines.add("import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;");
-        lines.add("import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;");
-        lines.add("import com.oracle.graal.python.nfi2.NfiBoundFunction;");
+        lines.add("import " + NFI_BOUND_FUNCTION + ";");
         lines.add("import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;");
         lines.add("import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;");
         lines.add("import com.oracle.graal.python.runtime.PythonContext;");
         lines.add("import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;");
         lines.add("import com.oracle.truffle.api.CompilerDirectives;");
         lines.add("import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;");
-        lines.add("import com.oracle.truffle.api.frame.VirtualFrame;");
+        lines.add("import " + TRUFFLE_VIRTUAL_FRAME + ";");
         lines.add("import com.oracle.truffle.api.nodes.Node.Child;");
         lines.add("import com.oracle.truffle.api.strings.TruffleString;");
+        lines.add("");
+        int importMarker = lines.size();
         lines.add("");
         lines.add("import java.lang.ref.Reference;");
         lines.add("");
@@ -1306,47 +1358,110 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
         lines.add("    }");
         lines.add("");
 
+        Set<Name> classesToImport = new HashSet<>();
+
         // declare downcall signature variables and resolve return and argument types
-        for (CApiExternalFunctionWrapperDesc wrapper : wrappers) {
-            assert wrapper.signature.returnType != null;
-            assert wrapper.signature.argumentTypes != null;
-            String returnType = toJavaNfiType(wrapper.signature.returnType);
-            List<String> argTypes = Arrays.stream(wrapper.signature.argumentTypes).map(this::toJavaPythonType).toList();
-            String[] argConversionClasses = Arrays.stream(wrapper.signature.argumentTypes).map(this::getConversionClassName).toArray(String[]::new);
+        for (InvokeExternalFunctionDesc wrapper : externalFunctionDescs) {
+            boolean errorOccurred = false;
 
-            assert argTypes.size() != argConversionClasses.length;
+            assert wrapper.returnType != null;
+            assert wrapper.argumentTypes != null;
+            List<? extends VariableElement> formalParameters = wrapper.origin.getParameters();
 
-            boolean isVoidReturn = "void".equals(returnType);
+            boolean isVoidReturn = wrapper.origin.getReturnType().getKind() == TypeKind.VOID;
+
+            // verify arguments of annotated method
+            if (!verifyArguments(wrapper.origin, TRUFFLE_VIRTUAL_FRAME, NFI_BOUND_FUNCTION)) {
+                return;
+            }
+
+            // check if the right count of argument conversion classes was specified
+            int actualArgConversionClasses = wrapper.argumentTypes.size();
+            int expectedArgConversionClasses = formalParameters.size() - 2;
+            if (actualArgConversionClasses != expectedArgConversionClasses) {
+                processingEnv.getMessager().printError(String.format("You need to specify exactly %d argument conversion classes but there were %d.",
+                                expectedArgConversionClasses, actualArgConversionClasses), wrapper.origin);
+                return;
+            }
 
             // formal arguments of method 'invokeExternalFunction'
-            List<String> methodInvokeFormalArgs = new LinkedList<>();
-            methodInvokeFormalArgs.add("VirtualFrame frame");
-            methodInvokeFormalArgs.add("NfiBoundFunction nfiFunction");
-            int i = 0;
-            for (String argType : argTypes) {
-                methodInvokeFormalArgs.add(argType + " " + argName(i++));
+            List<String> methodInvokeFormalArgs = new ArrayList<>(formalParameters.size());
+            List<VariableElement> needReachabilityFence = new LinkedList<>();
+            for (VariableElement formalParameter : formalParameters) {
+                TypeMirror type = formalParameter.asType();
+                Element element = typeUtils.asElement(type);
+                String typeString;
+                if (element != null) {
+                    typeString = element.getSimpleName().toString();
+                } else {
+                    typeString = type.toString();
+                }
+                methodInvokeFormalArgs.add(typeString + " " + formalParameter.getSimpleName());
             }
 
             // list of arguments passed to 'ExternalFunctionInvoker.invoke*' method
             List<String> cArgs = new LinkedList<>();
-            cArgs.add("frame");
+            cArgs.add(formalParameters.getFirst().getSimpleName().toString()); // frame
             cArgs.add("timing");
             cArgs.add("context.ensureNfiContext()");
             cArgs.add("boundaryCallData"); // boundaryCallData
             cArgs.add("getThreadStateNode.executeCached(context)"); // threadState
-            cArgs.add("nfiFunction");
+            cArgs.add(formalParameters.get(1).getSimpleName().toString()); // boundFunction
 
-            String genClassName = wrapper.name + "Gen";
+            Element clazz = wrapper.origin.getEnclosingElement();
+            String genClassName = clazz.getSimpleName() + "Gen";
 
             lines.add("");
-            lines.add("    public static final class " + genClassName + " extends " + wrapper.name + " {");
+            lines.add("    public static final class " + genClassName + " extends " + clazz.getSimpleName() + " {");
             lines.add("");
             lines.add("        @Child private CalleeContext calleeContext = CalleeContext.create();");
             lines.add("        @Child private BoundaryCallData boundaryCallData;");
             lines.add("        @Child private GetThreadStateNode getThreadStateNode = GetThreadStateNode.create();");
-            for (int j = 0; j < argConversionClasses.length; j++) {
-                if (argConversionClasses[j] != null) {
-                    lines.add("        @Child private " + argConversionClasses[j] + " convertArg" + j + " = " + argConversionClasses[j] + ".create();");
+            for (int j = 0; j < wrapper.argumentTypes.size(); j++) {
+                TypeMirror argConversionClass = wrapper.argumentTypes.get(j);
+
+                VariableElement formalParameter = formalParameters.get(j + 2);
+                Name formalParameterName = formalParameter.getSimpleName();
+                String convertNodeName = "convert" + formalParameterName;
+                if (needsConversion(argConversionClass)) {
+                    TypeElement argConversionClassTypeElement = (TypeElement) typeUtils.asElement(argConversionClass);
+                    classesToImport.add(argConversionClassTypeElement.getQualifiedName());
+                    Name simpleName = argConversionClassTypeElement.getSimpleName();
+                    ExecutableElement createMethod = findMethod(wrapper.origin, argConversionClass, "create", argConversionClass);
+                    String createMethodName = createMethod != null ? createMethod.getSimpleName().toString() : "null";
+                    lines.add(String.format("        @Child private %s %s = %s.%s();", simpleName, convertNodeName, simpleName, createMethodName));
+
+                    /*
+                     * TODO: Reliably determine the expected type for the actual parameter.
+                     * 
+                     * This is about the required type for the actual parameter for the call of
+                     * `ExternalFunctionInvoker.invoke*`. The required parameter type should be
+                     * inferred from the formal parameter type of the invoke method. Since those
+                     * methods are generated in the same go, we cannot rely on them being already
+                     * available. However, we know how they are generated in
+                     * `generateExternalFunctionInvoker` and we could use that. For this, we will
+                     * need table `externalFunctionSignatures`.
+                     */
+                    TypeMirror expectedActualType = toJavaNfiType(formalParameter.asType());
+
+                    ExecutableElement executeMethod = findMethod(wrapper.origin, argConversionClass, "execute", expectedActualType, formalParameter.asType());
+                    String executeMethodName = executeMethod != null ? executeMethod.getSimpleName().toString() : "null";
+                    if (executeMethod != null) {
+                        /*
+                         * Also already generate the expression that invokes the Python-to-native
+                         * conversion node.
+                         */
+                        cArgs.add(String.format("%s.%s(%s)", convertNodeName, executeMethodName, formalParameterName));
+                    } else {
+                        errorOccurred = true;
+                    }
+                } else {
+                    // If no conversion is required, then just pass the formal parameter.
+                    cArgs.add(formalParameterName.toString());
+                }
+
+                if (needsReachabilityFence(formalParameter.asType())) {
+                    needReachabilityFence.add(formalParameter);
                 }
             }
             lines.add("");
@@ -1360,35 +1475,19 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             lines.add("");
 
             lines.add("        @Override");
-            lines.add("        protected " + returnType + " invokeExternalFunction(" + String.join(", ", methodInvokeFormalArgs) + ") {");
-            for (int j = 0; j < argTypes.size(); j++) {
-                if ("Object".equals(argTypes.get(j))) {
-                    String argName = argName(j);
-                    lines.add(String.format("            assert EnsurePythonObjectNode.doesNotNeedPromotion(%s) : \"object \" + %s + \" needs promotion\";", argName, argName));
-                }
-            }
+            lines.add("        protected " + getSimpleName(wrapper.origin.getReturnType()) + " invokeExternalFunction(" + String.join(", ", methodInvokeFormalArgs) + ") {");
             lines.add("            PythonContext context = PythonContext.get(this);");
-
-            for (int j = 0; j < argConversionClasses.length; j++) {
-                String actualArg = argName(j);
-                if (argConversionClasses[j] != null) {
-                    // apply Python-to-native argument conversion
-                    cArgs.add("convertArg" + j + ".executeLong(" + actualArg + ")");
-                } else {
-                    // no conversion required; just pass arg
-                    cArgs.add(actualArg);
-                }
-            }
-            String argExpr = String.join(", ", cArgs);
 
             String returnStmt = isVoidReturn ? "" : "return ";
             lines.add("            try {");
-            lines.add("                " + returnStmt + EXFUNC_INVOKER_CLASS_NAME + "." + "invoke" + wrapper.signature.name + "(" + argExpr + ");");
+            if (errorOccurred) {
+                lines.add("                throw new RuntimeException(\"error occurred during generation\");");
+            } else {
+                lines.add("                " + returnStmt + EXFUNC_INVOKER_CLASS_NAME + "." + "invoke" + wrapper.signature + "(" + String.join(", ", cArgs) + ");");
+            }
             lines.add("            } finally {");
-            for (int j = 0; j < argTypes.size(); j++) {
-                if ("Object".equals(argTypes.get(j))) {
-                    lines.add("                Reference.reachabilityFence(" + argName(j) + ");");
-                }
+            for (VariableElement formalParameter : needReachabilityFence) {
+                lines.add(String.format("                Reference.reachabilityFence(%s);", formalParameter.getSimpleName()));
             }
             lines.add("            }");
 
@@ -1396,20 +1495,26 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             lines.add("    }");
         }
 
+        for (Name classToImport : classesToImport) {
+            lines.add(importMarker++, String.format("import %s;", classToImport));
+        }
+
         // generate factory method
         lines.add("    @TruffleBoundary");
         lines.add("    public static WrapperDescriptorRoot create(PythonLanguage language, TruffleString name, PExternalFunctionWrapper wrapper) {");
         lines.add("        return switch (wrapper) {");
         for (CApiExternalFunctionWrapperDesc wrapper : wrappers) {
-            lines.add("            case " + String.join(", ", wrapper.wrapperNames) + " -> new " + wrapper.name + "Gen(language, name, wrapper);");
+            String wrapperList = wrapper.wrapperNames.stream().map(CApiBuiltinsProcessor::name).collect(Collectors.joining(", "));
+            lines.add("        case " + wrapperList + " -> new " + name(wrapper.origin) + "Gen(language, name, wrapper);");
         }
-        lines.add("            default -> throw CompilerDirectives.shouldNotReachHere(\"no root node for wrapper \" + wrapper);");
+        lines.add("        default -> throw CompilerDirectives.shouldNotReachHere(\"no root node for wrapper \" + wrapper);");
         lines.add("        };");
         lines.add("    }");
 
+        // closing brace for WRAPPER_DESCRIPTOR_GEN_CLASS_NAME
         lines.add("}");
 
-        var origins = wrappers.stream().map((desc) -> desc.origin).toArray(Element[]::new);
+        var origins = externalFunctionDescs.stream().map((desc) -> desc.origin).toArray(Element[]::new);
         var file = processingEnv.getFiler().createSourceFile(EXFUNC_INVOKER_PACKAGE + "." + WRAPPER_DESCRIPTOR_GEN_CLASS_NAME, origins);
         try (var w = file.openWriter()) {
             w.append(String.join(System.lineSeparator(), lines));
@@ -1489,7 +1594,8 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                 processingEnv.getMessager().printError(CApiExternalFunctionSignatures.class.getSimpleName() + " is only applicable for enums.", el);
             }
         }
-        List<CApiExternalFunctionWrapperDesc> cApiExternalFunctionWrapperDescs = addWrapperDescriptorDescs(re, sigs);
+        List<CApiExternalFunctionWrapperDesc> cApiExternalFunctionWrapperDescs = new LinkedList<>();
+        List<InvokeExternalFunctionDesc> externalFunctionDescs = collectExternalFunctionAndWrapperDescs(re, cApiExternalFunctionWrapperDescs);
 
         if (allBuiltins.isEmpty()) {
             return true;
@@ -1499,8 +1605,8 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                 // needs jdk.compiler
                 generateCApiSource(allBuiltins, constants, fields, structs);
                 generateCApiHeader(javaBuiltins);
-                generateExternalFunctionNodes(new ArrayList<>(sigs.values()));
-                generateExternalFunctionRootNodes(cApiExternalFunctionWrapperDescs);
+                generateExternalFunctionInvoker(new ArrayList<>(sigs.values()));
+                generateExternalFunctionRootNodes(externalFunctionDescs, cApiExternalFunctionWrapperDescs, sigs);
             }
             generateBuiltinRegistry(javaBuiltins);
             generateUpcallConfig(javaBuiltins);
