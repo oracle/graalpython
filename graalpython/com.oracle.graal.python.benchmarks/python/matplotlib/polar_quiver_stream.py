@@ -1,25 +1,52 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026, Oracle and/or its affiliates. All rights reserved.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+#
+# The Universal Permissive License (UPL), Version 1.0
+#
+# Subject to the condition set forth below, permission is hereby granted to any
+# person obtaining a copy of this software, associated documentation and/or
+# data (collectively the "Software"), free of charge and under any and all
+# copyright rights in the Software, and any and all patent rights owned or
+# freely licensable by each licensor hereunder covering either (i) the
+# unmodified Software as contributed to or provided by such licensor, or (ii)
+# the Larger Works (as defined below), to deal in both
+#
+# (a) the Software, and
+#
+# (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
+# one is included with the Software each a "Larger Work" to which the Software
+# is contributed by such licensors),
+#
+# without restriction, including without limitation the rights to copy, create
+# derivative works of, display, perform, and distribute the Software and make,
+# use, sell, offer for sale, import, export, have made, and have sold the
+# Software and the Larger Work(s), and to sublicense the foregoing rights on
+# either these or other terms.
+#
+# This license is subject to the following condition:
+#
+# The above copyright notice and either this complete permission notice or at a
+# minimum a reference to the UPL must be included in all copies or substantial
+# portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
 Vector and polar plots: polar plot, quiver, and streamplot on separate pages.
 Saves a multi-page PDF using PdfPages.
-
-Run:
-  python tst/polar_quiver_stream.py
 """
-
-from pathlib import Path
-
-# Use a non-interactive backend to work in headless environments
-import matplotlib
-matplotlib.use("Agg")
-
-import matplotlib.pyplot as plt
-import numpy as np
-from matplotlib.backends.backend_pdf import PdfPages
 
 
 def page_polar(ax):
     # Polar demo with multiple radii and an area fill
+    import numpy as np
     theta = np.linspace(0, 2*np.pi, 512)
     r1 = 1.0 + 0.3*np.sin(5*theta)
     r2 = 0.7 + 0.2*np.cos(3*theta + 0.5)
@@ -36,6 +63,7 @@ def page_polar(ax):
 
 def page_quiver(ax):
     # Quiver plot for a simple rotational vector field
+    import numpy as np
     n = 25
     x = np.linspace(-2.0, 2.0, n)
     y = np.linspace(-2.0, 2.0, n)
@@ -58,6 +86,7 @@ def page_quiver(ax):
 
 def page_streamplot(ax):
     # Streamplot with linewidth and color mapped to speed
+    import numpy as np
     x = np.linspace(-3.0, 3.0, 200)
     y = np.linspace(-3.0, 3.0, 200)
     X, Y = np.meshgrid(x, y)
@@ -78,7 +107,20 @@ def page_streamplot(ax):
     ax.grid(True, linestyle="--", alpha=0.25)
 
 
-def main() -> None:
+def run():
+    # Execute all imports inside the `run` method so they're measured
+    from pathlib import Path
+    # Use a non-interactive backend to work in headless environments
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    import numpy as np
+    from matplotlib.backends.backend_pdf import PdfPages
+
+    # Ensure we have version info in the logs
+    print(f"Using matplotlib version '{matplotlib.__version__}'")
+    print(f"Using numpy version '{np.__version__}'")
+
     out_path = Path(__file__).parent / "vector_and_polar.pdf"
 
     with PdfPages(out_path) as pdf:
@@ -104,8 +146,18 @@ def main() -> None:
         pdf.savefig(fig3)
         plt.close(fig3)
 
-    print(f"Wrote PDF: {out_path.resolve()}")
+
+def warmupIterations():
+    return 0
 
 
-if __name__ == "__main__":
-    main()
+def iterations():
+    return 1
+
+
+def summary():
+    return {
+        "name": "OutlierRemovalAverageSummary",
+        "lower-threshold": 0.0,
+        "upper-threshold": 1.0,
+    }

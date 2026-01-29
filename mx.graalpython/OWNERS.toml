@@ -1,0 +1,6 @@
+[[rule]]
+files = "polybench-stable-run-config.json"
+any = [
+    "francois.farquet@oracle.com",
+    "andrija.kolic@oracle.com",
+]
