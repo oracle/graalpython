@@ -332,8 +332,6 @@ def unlink(filename):
 
 if sys.platform.startswith("win"):
     def _waitfor(func, pathname, waitall=False):
-        # GraalPy change: run GC to ensure all handles are closed
-        support.gc_collect()
         # Perform the operation
         func(pathname)
         # Now setup the wait loop
@@ -350,9 +348,7 @@ if sys.platform.startswith("win"):
         # required when contention occurs.
         timeout = 0.001
         # GraalPy change: increase timeout to account for our overloaded machines
-        # and run GC to ensure all handles are closed
         while timeout < 120.0:
-            support.gc_collect()
             # Note we are only testing for the existence of the file(s) in
             # the contents of the directory regardless of any security or
             # access rights.  If we have made it this far, we have sufficient
@@ -366,6 +362,10 @@ if sys.platform.startswith("win"):
             # Increase the timeout and try again
             time.sleep(timeout)
             timeout *= 2
+            # GraalPy change: if we are this far, also run GC to ensure
+            # all handles are closed
+            if timeout > 4.0:
+                support.gc_collect()
         warnings.warn('tests may fail, delete still pending for ' + pathname,
                       RuntimeWarning, stacklevel=4)
 
