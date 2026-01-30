@@ -587,6 +587,22 @@ class InteropTests(unittest.TestCase):
         assert List[Integer].__origin__ == List
         assert List[Integer].__args__ == (Integer,)
 
+    def test_java_generics_subclassing(self):
+        from typing import Generic, TypeVar
+        from java.util.function import Function
+
+        class MyFunction(Function[str, str], new_style=False):
+            def apply(self, val : str) -> str:
+                return val
+
+        assert MyFunction().apply(23) == 23
+
+        class MyFunction(Function[str, str], new_style=True):
+            def apply(self, val : str) -> str:
+                return val
+
+        assert MyFunction().apply(23) == 23
+
     def test_java_null_is_none(self):
         import java.lang.Integer as Integer
         x = Integer.getInteger("something_that_does_not_exists")
