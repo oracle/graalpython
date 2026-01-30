@@ -370,6 +370,10 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                     addInstrumentation(TraceOrProfileReturn.class).//
                     addInstrumentation(TraceException.class).//
                     addInstrumentation(TraceLineWithArgument.class).//
+                    addInstrumentation(EnterInstrumentedRoot.class).//
+                    addInstrumentation(ResumeYieldGenerator.class).//
+                    addInstrumentation(TraceYieldValue.class).//
+                    addInstrumentation(ResumeInstrumentedYield.class).//
                     build();
 
     @Child private transient CalleeContext calleeContext = CalleeContext.create();
@@ -390,7 +394,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @CompilationFinal protected transient Signature signature;
     @CompilationFinal protected transient int selfIndex;
     @CompilationFinal protected transient int classcellIndex;
-    @CompilationFinal public int yieldFromGeneratorIndex = -1;
+    @CompilationFinal protected transient int instrumentationDataIndex;
+    @CompilationFinal protected transient int yieldFromGeneratorIndex = -1;
     @CompilationFinal(dimensions = 1) protected transient Assumption[] cellEffectivelyFinalAssumptions;
 
     private transient boolean pythonInternal;
@@ -407,6 +412,11 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
     public static PBytecodeDSLRootNode cast(RootNode root) {
         return PBytecodeDSLRootNodeGen.BYTECODE.cast(root);
+    }
+
+    @TruffleBoundary
+    public static void updateAllToTracingConfig(PythonLanguage language) {
+        PBytecodeDSLRootNodeGen.BYTECODE.update(language, TRACE_AND_PROFILE_CONFIG);
     }
 
     public final PythonLanguage getLanguage() {
@@ -427,6 +437,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                 cellEffectivelyFinalAssumptions[i] = Truffle.getRuntime().createAssumption("cell is effectively final");
             }
         }
+        instrumentationDataIndex = co.instrumentationDataIndex;
+        yieldFromGeneratorIndex = co.yieldFromGeneratorIndex;
     }
 
     @Override
@@ -460,11 +472,37 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         public static void doEnter(VirtualFrame frame,
                         @Bind PBytecodeDSLRootNode root) {
             root.calleeContext.enter(frame, root);
+        }
+    }
 
-            if (root.needsTraceAndProfileInstrumentation()) {
-                root.ensureTraceAndProfileEnabled();
-                root.getThreadState().pushInstrumentationData(root);
-            }
+    private InstrumentationData getInstrumentationData(VirtualFrame frame, BytecodeNode bytecode) {
+        InstrumentationData current = (InstrumentationData) bytecode.getLocalValue(0, frame, instrumentationDataIndex);
+        if (current == null) {
+            // This should only happen when this root was on stack when the config was updated. It
+            // should have been deoptimized anyway when the stack was unwound back to it.
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            current = new InstrumentationData();
+            bytecode.setLocalValue(0, frame, instrumentationDataIndex, current);
+        }
+        return current;
+    }
+
+    private void resetInstrumenationData(VirtualFrame frame, BytecodeNode bytecode) {
+        InstrumentationData current = (InstrumentationData) bytecode.getLocalValue(0, frame, instrumentationDataIndex);
+        if (current == null) {
+            current = new InstrumentationData();
+            bytecode.setLocalValue(0, frame, instrumentationDataIndex, current);
+        }
+        current.reset();
+    }
+
+    @Instrumentation(storeBytecodeIndex = false)
+    public static final class EnterInstrumentedRoot {
+        @Specialization
+        public static void doEnter(VirtualFrame frame,
+                        @Bind PBytecodeDSLRootNode root,
+                        @Bind BytecodeNode bytecode) {
+            bytecode.setLocalValue(0, frame, root.instrumentationDataIndex, new InstrumentationData());
         }
     }
 
@@ -474,10 +512,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         public static Object doExit(VirtualFrame frame, Object returnValue,
                         @Bind PBytecodeDSLRootNode root,
                         @Bind BytecodeNode location) {
-            if (root.needsTraceAndProfileInstrumentation()) {
-                root.getThreadState().popInstrumentationData(root);
-            }
-
             root.calleeContext.exit(frame, root, location);
             return returnValue;
         }
@@ -492,15 +526,10 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             if (ate instanceof PException pe) {
                 pe.notifyAddedTracebackFrame(!root.isInternal());
             }
-
+            // We cannot use instrumentation for exceptional exit
             if (root.needsTraceAndProfileInstrumentation()) {
-                try {
-                    root.traceOrProfileReturn(frame, location, null);
-                } finally {
-                    root.getThreadState().popInstrumentationData(root);
-                }
+                root.traceOrProfileReturn(frame, location, null);
             }
-
             root.calleeContext.exit(frame, root, location);
         }
     }
@@ -509,26 +538,13 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
      * Data for tracing, profiling and instrumentation
      */
     public static final class InstrumentationData {
-        private final InstrumentationData previous;
-        private final PBytecodeDSLRootNode rootNode;
         private int pastLine;
         // Sometimes, we need to use pastLine value after it has been cleared. Implicit returns in
         // combination with loops are one such scenario.
         private int nonClearingPastLine;
 
-        public InstrumentationData(PBytecodeDSLRootNode rootNode, InstrumentationData previous) {
-            this.previous = previous;
-            this.rootNode = rootNode;
-            this.pastLine = -1;
-            this.nonClearingPastLine = -1;
-        }
-
-        public InstrumentationData getPrevious() {
-            return previous;
-        }
-
-        public PBytecodeDSLRootNode getRootNode() {
-            return rootNode;
+        public InstrumentationData() {
+            reset();
         }
 
         int getPastLine() {
@@ -550,6 +566,11 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         void setNonClearingPastLine(int value) {
             nonClearingPastLine = value;
         }
+
+        public void reset() {
+            this.pastLine = -1;
+            this.nonClearingPastLine = -1;
+        }
     }
 
     @NonIdempotent
@@ -561,18 +582,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @NonIdempotent
     public final PythonThreadState getThreadState() {
         return PythonContext.get(this).getThreadState(getLanguage());
-    }
-
-    /**
-     * Reparses with instrumentations for settrace and setprofile enabled.
-     */
-    public final void ensureTraceAndProfileEnabled() {
-        try {
-            getRootNodes().update(TRACE_AND_PROFILE_CONFIG);
-        } catch (MarshalModuleBuiltins.ReparseError e) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw PRaiseNode.raiseStatic(getBytecodeNode(), SystemError, ErrorMessages.FAILED_TO_REPARSE_BYTECODE_FILE);
-        }
     }
 
     private TracingNodes getTracingNodes(BytecodeNode location) {
@@ -612,7 +621,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
             Object realResult = result == PNone.NONE ? null : result;
             pyFrame.setLocalTraceFun(realResult);
         } catch (Throwable e) {
-            threadState.setProfileFun(null, getLanguage());
+            threadState.setProfileFun(null, null, getLanguage());
             throw e;
         } finally {
             threadState.profilingStop();
@@ -663,7 +672,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                 pyFrame.setLocalTraceFun(null);
             }
         } catch (Throwable e) {
-            threadState.setTraceFun(null, getLanguage());
+            threadState.setTraceFun(null, null, getLanguage());
             throw e;
         } finally {
             if (line != -1) {
@@ -689,7 +698,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @InliningCutoff
     private void traceLine(VirtualFrame frame, BytecodeNode location, int line) {
         PythonThreadState threadState = getThreadState();
-        InstrumentationData instrumentationData = threadState.getInstrumentationData(this);
+        InstrumentationData instrumentationData = getInstrumentationData(frame, location);
 
         // TODO: this should never happen by nature of how we emit TraceLine, but sometimes does.
         // needs investigation.
@@ -711,7 +720,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     @InliningCutoff
     private void traceLineAtLoopHeader(VirtualFrame frame, BytecodeNode location, int line) {
         PythonThreadState threadState = getThreadState();
-        InstrumentationData instrumentationData = threadState.getInstrumentationData(this);
+        InstrumentationData instrumentationData = getInstrumentationData(frame, location);
         int pastLine = instrumentationData.getPastLine();
 
         instrumentationData.setPastLine(line);
@@ -744,7 +753,8 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         PythonThreadState threadState = getThreadState();
         Object traceFun = threadState.getTraceFun();
         if (traceFun != null) {
-            int pastLine = threadState.getInstrumentationData(this).getNonClearingPastLine();
+            InstrumentationData instrumentationData = getInstrumentationData(frame, location);
+            int pastLine = instrumentationData.getNonClearingPastLine();
             invokeTraceFunction(frame, location, traceFun, threadState, TraceEvent.RETURN, value, pastLine);
         }
         Object profileFun = threadState.getProfileFun();
@@ -1075,6 +1085,14 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
+    public Object readYieldFromGenerator(BytecodeNode bytecodeNode, MaterializedFrame frame) {
+        return bytecodeNode.getLocalValue(0, frame, yieldFromGeneratorIndex);
+    }
+
+    public boolean hasYieldFromGenerator() {
+        return yieldFromGeneratorIndex != -1;
+    }
+
     @Operation
     @ConstantOperand(type = int.class)
     public static final class ArrayIndex {
@@ -1122,13 +1140,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind ContinuationRootNode continuationRootNode,
                         @Bind PBytecodeDSLRootNode innerRoot,
                         @Bind BytecodeNode bytecodeNode) {
-            try {
-                return createGenerator(continuationFrame, inliningTarget, continuationRootNode, innerRoot);
-            } finally {
-                if (innerRoot.needsTraceAndProfileInstrumentation()) {
-                    innerRoot.getThreadState().popInstrumentationData(innerRoot);
-                }
-            }
+            return createGenerator(continuationFrame, inliningTarget, continuationRootNode, innerRoot);
         }
 
         private static PythonAbstractObject createGenerator(MaterializedFrame continuationFrame, Node inliningTarget,
@@ -1153,21 +1165,28 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
      * Resumes execution after the artificial yield of the generator object
      * ({@link YieldGenerator}).
      */
-    @Operation(storeBytecodeIndex = true)
+    @Instrumentation(storeBytecodeIndex = true)
     public static final class ResumeYieldGenerator {
         @Specialization
-        public static void doObject(VirtualFrame frame, Object generator,
-                        @Bind Node location,
+        public static Object doObject(VirtualFrame frame, Object generator,
                         @Bind PBytecodeDSLRootNode root,
                         @Bind BytecodeNode bytecode,
-                        @Bind("$bytecodeIndex") int bci,
-                        @Cached GetSendValueNode getSendValue) {
-            if (root.needsTraceAndProfileInstrumentation()) {
-                // We may not have reparsed the root with instrumentation yet.
-                root.ensureTraceAndProfileEnabled();
-                root.getThreadState().pushInstrumentationData(root);
-                root.traceOrProfileCall(frame, bytecode, bci);
-            }
+                        @Bind("$bytecodeIndex") int bci) {
+            root.resetInstrumenationData(frame, bytecode);
+            root.traceOrProfileCall(frame, bytecode, bci);
+            return generator;
+        }
+    }
+
+    @Instrumentation(storeBytecodeIndex = true)
+    public static final class TraceYieldValue {
+        @Specialization
+        public static Object doObject(Object value,
+                        @Bind MaterializedFrame frame,
+                        @Bind PBytecodeDSLRootNode root,
+                        @Bind BytecodeNode bytecode) {
+            root.traceOrProfileReturn(frame, bytecode, value);
+            return value;
         }
     }
 
@@ -1183,14 +1202,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind MaterializedFrame frame,
                         @Bind PBytecodeDSLRootNode root,
                         @Bind BytecodeNode bytecode) {
-            if (root.needsTraceAndProfileInstrumentation()) {
-                try {
-                    root.traceOrProfileReturn(frame, bytecode, value);
-                } finally {
-                    root.getThreadState().popInstrumentationData(root);
-                }
-            }
-
             // Suspended generators have no backref
             PArguments.getCurrentFrameInfo(frame.getArguments()).setCallerInfo(PFrame.Reference.EMPTY);
             // we may need to synchronize the generator's frame locals to the PFrame if it escaped
@@ -3409,19 +3420,18 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     /**
-     * Resumes execution after yield.
+     * Prepares for resuming execution after yield: sets up exception context. This needs to be done
+     * before yield instrumentation, which needs to be done before receiving the sent value, which
+     * may potentially raise an exception passed in
+     * {@link com.oracle.graal.python.builtins.objects.generator.ThrowData}.
      */
-    @Operation(storeBytecodeIndex = true)
+    @Operation(storeBytecodeIndex = false)
     @ConstantOperand(type = LocalAccessor.class)
     @ConstantOperand(type = LocalAccessor.class)
-    public static final class ResumeYield {
+    public static final class PreResumeYield {
         @Specialization
         public static Object doObject(VirtualFrame frame, LocalAccessor currentGeneratorException, LocalAccessor savedException, Object sendValue,
-                        @Bind Node location,
-                        @Bind PBytecodeDSLRootNode root,
-                        @Bind BytecodeNode bytecode,
-                        @Bind("$bytecodeIndex") int bci,
-                        @Cached GetSendValueNode getSendValue) {
+                        @Bind BytecodeNode bytecode) {
             if (savedException != currentGeneratorException) {
                 // We cannot pass `null` as savedException, so savedException ==
                 // currentGeneratorException means "no saveException"
@@ -3445,13 +3455,34 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                 }
             }
 
-            if (root.needsTraceAndProfileInstrumentation()) {
-                // We may not have reparsed the root with instrumentation yet.
-                root.ensureTraceAndProfileEnabled();
-                root.getThreadState().pushInstrumentationData(root);
-                root.traceOrProfileCall(frame, bytecode, bci);
-            }
+            return sendValue;
+        }
+    }
 
+    /**
+     * Wraps {@link ResumeYield} to trace the resume event.
+     */
+    @Instrumentation(storeBytecodeIndex = true)
+    public static final class ResumeInstrumentedYield {
+        @Specialization
+        public static Object doObject(VirtualFrame frame, Object sendValue,
+                        @Bind PBytecodeDSLRootNode root,
+                        @Bind BytecodeNode bytecode,
+                        @Bind("$bytecodeIndex") int bci) {
+            root.resetInstrumenationData(frame, bytecode);
+            root.traceOrProfileCall(frame, bytecode, bci);
+            return sendValue;
+        }
+    }
+
+    /**
+     * Resumes execution after yield.
+     */
+    @Operation(storeBytecodeIndex = true)
+    public static final class ResumeYield {
+        @Specialization
+        public static Object doObject(Object sendValue,
+                        @Cached GetSendValueNode getSendValue) {
             return getSendValue.execute(sendValue);
         }
     }

@@ -29,6 +29,7 @@ import static com.oracle.graal.python.PythonLanguage.getPythonOS;
 import static com.oracle.graal.python.PythonLanguage.throwIfUnsupported;
 import static com.oracle.graal.python.annotations.PythonOS.PLATFORM_DARWIN;
 import static com.oracle.graal.python.annotations.PythonOS.PLATFORM_WIN32;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.modules.SysModuleBuiltins.T_CACHE_TAG;
 import static com.oracle.graal.python.builtins.modules.SysModuleBuiltins.T__MULTIARCH;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_CLOSED;
@@ -104,6 +105,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.PythonOS;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
@@ -128,7 +130,6 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -178,7 +179,6 @@ import com.oracle.truffle.api.ContextThreadLocal;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.ThreadLocalAction;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleContext;
 import com.oracle.truffle.api.TruffleContext.Builder;
 import com.oracle.truffle.api.TruffleFile;
@@ -198,7 +198,6 @@ import com.oracle.truffle.api.interop.ExceptionType;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
@@ -505,51 +504,13 @@ public final class PythonContext extends Python3Core {
             }
         }
 
-        private static void invalidateNoTracingOrProfilingAssumption(PythonLanguage language) {
-            if (language.noTracingOrProfilingAssumption.isValid()) {
-                language.noTracingOrProfilingAssumption.invalidate();
-
-                if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                    enableTracingOrProfilingForActiveRootNodes();
-                }
-            }
-        }
-
-        @TruffleBoundary
-        private static void enableTracingOrProfilingForActiveRootNodes() {
-            final List<PBytecodeDSLRootNode> rootNodes = new ArrayList<>();
-
-            // Ensure tracing + profiling are enabled for each method on the stack.
-            Truffle.getRuntime().iterateFrames((frameInstance) -> {
-                if (frameInstance.getCallTarget() instanceof RootCallTarget c) {
-                    RootNode root = PGenerator.unwrapContinuationRoot(c.getRootNode());
-                    if (root instanceof PBytecodeDSLRootNode r) {
-                        if (r.needsTraceAndProfileInstrumentation()) {
-                            r.ensureTraceAndProfileEnabled();
-                        }
-                        rootNodes.add(r);
-                    }
-                }
-                return null;
-            });
-
-            /**
-             * Normally, a root node will push + pop the instrumentation data in its prolog/epilog.
-             * Since these nodes are on stack, we need to push them manually, starting from the
-             * deepest stack frame.
-             */
-            for (PBytecodeDSLRootNode rootNode : rootNodes.reversed()) {
-                rootNode.getThreadState().pushInstrumentationData(rootNode);
-            }
-        }
-
         public Object getTraceFun() {
             return traceFun;
         }
 
-        public void setTraceFun(Object traceFun, PythonLanguage language) {
+        public void setTraceFun(Node location, Object traceFun, PythonLanguage language) {
             if (this.traceFun != traceFun) {
-                invalidateNoTracingOrProfilingAssumption(language);
+                enableTracingOrProfiling(location, language);
                 this.traceFun = traceFun;
             }
         }
@@ -576,10 +537,22 @@ public final class PythonContext extends Python3Core {
             this.tracingWhat = tracingWhat;
         }
 
-        public void setProfileFun(Object profileFun, PythonLanguage language) {
+        public void setProfileFun(Node location, Object profileFun, PythonLanguage language) {
             if (this.profileFun != profileFun) {
-                invalidateNoTracingOrProfilingAssumption(language);
+                enableTracingOrProfiling(location, language);
                 this.profileFun = profileFun;
+            }
+        }
+
+        private void enableTracingOrProfiling(Node location, PythonLanguage language) {
+            if (language.noTracingOrProfilingAssumption.isValid()) {
+                language.noTracingOrProfilingAssumption.invalidate();
+            }
+            try {
+                PBytecodeDSLRootNode.updateAllToTracingConfig(language);
+            } catch (MarshalModuleBuiltins.ReparseError e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw PRaiseNode.raiseStatic(location, SystemError, ErrorMessages.FAILED_TO_REPARSE_BYTECODE_FILE);
             }
         }
 
@@ -598,25 +571,6 @@ public final class PythonContext extends Python3Core {
 
         public void profilingStop() {
             this.profiling = false;
-        }
-
-        public PBytecodeDSLRootNode.InstrumentationData getInstrumentationData(PBytecodeDSLRootNode rootNode) {
-            assert PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER;
-            assert instrumentationData != null && instrumentationData.getRootNode() == rootNode;
-            return instrumentationData;
-        }
-
-        public void pushInstrumentationData(PBytecodeDSLRootNode rootNode) {
-            assert PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER;
-            instrumentationData = new PBytecodeDSLRootNode.InstrumentationData(rootNode, instrumentationData);
-        }
-
-        public void popInstrumentationData(PBytecodeDSLRootNode rootNode) {
-            assert PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER;
-            if (instrumentationData != null) {
-                assert instrumentationData.getRootNode() == rootNode : String.format("%s != %s", instrumentationData.getRootNode(), rootNode);
-                instrumentationData = instrumentationData.getPrevious();
-            }
         }
 
         public Object getAsyncgenFirstIter() {

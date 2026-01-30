@@ -1113,9 +1113,9 @@ public final class SysModuleBuiltins extends PythonBuiltins {
             PythonLanguage language = context.getLanguage(inliningTarget);
             PythonContext.PythonThreadState state = context.getThreadState(language);
             if (function == PNone.NONE) {
-                state.setTraceFun(null, language);
+                state.setTraceFun(inliningTarget, null, language);
             } else {
-                state.setTraceFun(function, language);
+                state.setTraceFun(inliningTarget, function, language);
             }
             return PNone.NONE;
         }
@@ -1132,9 +1132,9 @@ public final class SysModuleBuiltins extends PythonBuiltins {
             PythonLanguage language = context.getLanguage(inliningTarget);
             PythonContext.PythonThreadState state = context.getThreadState(language);
             if (function == PNone.NONE) {
-                state.setProfileFun(null, language);
+                state.setProfileFun(inliningTarget, null, language);
             } else {
-                state.setProfileFun(function, language);
+                state.setProfileFun(inliningTarget, function, language);
             }
             return PNone.NONE;
         }
