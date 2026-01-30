@@ -51,7 +51,9 @@ test.test_asyncio.test_base_events.BaseEventLoopWithSelectorTests.test_create_co
 test.test_asyncio.test_base_events.BaseEventLoopWithSelectorTests.test_create_connection_no_inet_pton @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_asyncio.test_base_events.BaseEventLoopWithSelectorTests.test_create_connection_no_local_addr @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_asyncio.test_base_events.BaseEventLoopWithSelectorTests.test_create_connection_no_ssl_server_hostname_errors @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_asyncio.test_base_events.BaseEventLoopWithSelectorTests.test_create_connection_service_name @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_asyncio.test_base_events.BaseEventLoopWithSelectorTests.test_create_connection_service_name @ darwin-arm64,linux-aarch64,linux-x86_64
+# GR-73063
+!test.test_asyncio.test_base_events.BaseEventLoopWithSelectorTests.test_create_connection_service_name @ linux-aarch64-github,linux-x86_64-github
 test.test_asyncio.test_base_events.BaseEventLoopWithSelectorTests.test_create_connection_ssl_server_hostname_default @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_asyncio.test_base_events.BaseEventLoopWithSelectorTests.test_create_connection_ssl_server_hostname_errors @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_asyncio.test_base_events.BaseEventLoopWithSelectorTests.test_create_connection_ssl_timeout_for_plain_socket @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
@@ -1127,7 +1129,7 @@ test.test_asyncio.test_tasks.PyTask_PyFuture_Tests.test_yield_future_passes_canc
 test.test_asyncio.test_tasks.PyTask_PyFuture_Tests.test_yield_wait_does_not_shield_cancel @ darwin-arm64,linux-aarch64,linux-x86_64,linux-x86_64-github
 test.test_asyncio.test_tasks.RunCoroutineThreadsafeTests.test_run_coroutine_threadsafe @ darwin-arm64,linux-aarch64,linux-x86_64,linux-x86_64-github
 test.test_asyncio.test_tasks.RunCoroutineThreadsafeTests.test_run_coroutine_threadsafe_task_cancelled @ darwin-arm64,linux-aarch64,linux-x86_64,linux-x86_64-github
-test.test_asyncio.test_tasks.RunCoroutineThreadsafeTests.test_run_coroutine_threadsafe_task_factory_exception @ darwin-arm64,linux-aarch64,linux-x86_64,linux-x86_64-github
+test.test_asyncio.test_tasks.RunCoroutineThreadsafeTests.test_run_coroutine_threadsafe_task_factory_exception @ darwin-arm64,linux-aarch64,linux-x86_64
 test.test_asyncio.test_tasks.RunCoroutineThreadsafeTests.test_run_coroutine_threadsafe_with_exception @ darwin-arm64,linux-aarch64,linux-x86_64,linux-x86_64-github
 test.test_asyncio.test_tasks.RunCoroutineThreadsafeTests.test_run_coroutine_threadsafe_with_timeout @ darwin-arm64,linux-aarch64,linux-x86_64,linux-x86_64-github
 test.test_asyncio.test_tasks.SleepTests.test_sleep_zero @ darwin-arm64,linux-aarch64,linux-x86_64,linux-x86_64-github

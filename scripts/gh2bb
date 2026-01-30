@@ -1,0 +1,123 @@
+# Copyright (c) 2026, Oracle and/or its affiliates. All rights reserved.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+#
+# The Universal Permissive License (UPL), Version 1.0
+#
+# Subject to the condition set forth below, permission is hereby granted to any
+# person obtaining a copy of this software, associated documentation and/or
+# data (collectively the "Software"), free of charge and under any and all
+# copyright rights in the Software, and any and all patent rights owned or
+# freely licensable by each licensor hereunder covering either (i) the
+# unmodified Software as contributed to or provided by such licensor, or (ii)
+# the Larger Works (as defined below), to deal in both
+#
+# (a) the Software, and
+#
+# (b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
+# one is included with the Software each a "Larger Work" to which the Software
+# is contributed by such licensors),
+#
+# without restriction, including without limitation the rights to copy, create
+# derivative works of, display, perform, and distribute the Software and make,
+# use, sell, offer for sale, import, export, have made, and have sold the
+# Software and the Larger Work(s), and to sublicense the foregoing rights on
+# either these or other terms.
+#
+# This license is subject to the following condition:
+#
+# The above copyright notice and either this complete permission notice or at a
+# minimum a reference to the UPL must be included in all copies or substantial
+# portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+#!/usr/bin/env bash
+
+if [ $# -ne 0 ]; then
+    cat <<EOF
+
+    This script helps synchronize a Github PR to Bitbucket when the PR is
+    developed and opened on Github. It will mirror the Github PR to bitbucket,
+    create an internal tracking issue and a PR for it.
+
+    Run it without any arguments, it will interactively offer Github PRs that
+    are not mirrored from the internal CI to Github.
+
+    You can re-run the script to force an update of the internally mirrored
+    branch if the Github PR changed.
+
+EOF
+    exit 0
+fi
+
+GHOWNER=oracle
+GHREPO=graalpython
+BBREPO=graalpython
+
+remotes=$(git remote -v 2>&1)
+if [ $? -eq 0 ]; then
+    remote=$(echo "${remotes}" | grep -E ".*bitbucket.*/${BBREPO}(\.git)? \(push\)")
+    if [ -n "$remote" ]; then
+        remote=$(echo $remote | cut -f1 -d' ')
+    fi
+fi
+
+if [ -z "$remote" ]; then
+    echo "Must be in the ${BBREPO} git repo with the bitbucket remote"
+    exit 1
+fi
+
+open_prs=$(ol-cli github list-prs -o ${GHOWNER} -r ${GHREPO} -s open | grep "PullRequest ID" | grep -v -E '\[GR-[0-9]+\]')
+declare -a menu_items
+declare -a urls
+while IFS= read -r line; do
+    url=$(echo "$line" | sed -n -E 's#.*pull/([0-9]+).*#\1#p')
+    title=$(echo "$line" | sed -n -E 's#.*TITLE \[(.+)\] URL.*#\1#p')
+    title=$(printf "%s" "$title" | xargs)
+    menu_items+=("$title #$url")
+    urls+=("$url")
+done <<< "$open_prs"
+echo "Open PRs without an associated Jira reference:"
+PS3="Enter the number of the PR you want to mirror (0 to abort): "
+select choice in "${menu_items[@]}"; do
+    if [[ -z "$choice" ]]; then
+        echo "No selection made. Exiting."
+        exit 0
+    fi
+    sel_index=$((REPLY-1))
+    selected_pr="${urls[$sel_index]}"
+    selected_title="${menu_items[$sel_index]}"
+    break
+done
+
+githubpullurl="https://github.com/${GHOWNER}/${GHREPO}/pull/${selected_pr}"
+jiraissueurl="$(ol-cli jira search --max=1 -jql="\"Web Link\" = \"${githubpullurl}\" AND \"Resolution\" = \"Unresolved\"" | grep https)"
+if [ $? -ne 0 ]; then
+    printf "Mirroring the Github PR to a Jira issue... "
+    parent_dir="$(readlink -f "${BASH_SOURCE[0]}" | xargs dirname)"
+    jiraissue=$(ol-cli jira mirror --from=GITHUB "--labels-mapping=${parent_dir}/github_mapping.yaml" --link "https://github.com/${GHOWNER}/${GHREPO}/issues/${selected_pr}" --format=key)
+else
+    printf "Jira issue exists... "
+    jiraissue=$(echo $jiraissueurl | sed 's#.*/##')
+fi
+echo "$jiraissue"
+
+echo "Mirroring the code from Github to Bitbucket..."
+mirrorbranch="gh/${selected_pr}"
+git fetch --force "https://github.com/${GHOWNER}/${GHREPO}" "pull/${selected_pr}/head:${mirrorbranch}"
+git push --force-with-lease "${remote}" "${mirrorbranch}:${mirrorbranch}"
+
+pr="$(ol-cli bitbucket list-prs --project G --repos graalpython --filterText "${selected_title}" 2>/dev/null | grep "/${BBREPO}/")"
+if [ $? -ne 0 ]; then
+    printf "Opening the bitbucket PR... "
+    pr=$(ol-cli bitbucket create-pr --project G --repo "${BBREPO}" --from-branch "${mirrorbranch}" --to-branch master --title "[${jiraissue}] ${selected_title}" --description "Mirrored from ${githubpullurl}")
+else
+    printf "Bitbucket PR exists... "
+fi
+echo "$pr"

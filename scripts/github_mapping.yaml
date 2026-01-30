@@ -1,0 +1,23 @@
+# Used by the gh2bb script to mirror Github PRs to the internal CI and issue tracking
+api: github
+repos:
+  - repo: oracle/graalpython
+    project: GR
+    githubLinkField: customfield_12408
+    issueTypes:
+      OCA Verified: Task
+    components:
+      default: Python
+    Product Type:
+      default: CE
+    labels:
+      defaultLabels:
+        - githubissue
+        - no-backport
+users:
+  timfel: tim.felgentreff@oracle.com
+  msimacek: michael.simacek@oracle.com
+  fangerer: florian.angerer@oracle.com
+  steve-s: stepan.sindelar@oracle.com
+  otethal: ondrej.tethal@oracle.com
+
