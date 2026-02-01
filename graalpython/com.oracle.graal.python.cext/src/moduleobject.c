@@ -167,10 +167,11 @@ check_api_version(const char *name, int module_api_version)
     return 1;
 }
 
-#if 0 // GraalPy change
 static int
 _add_methods_to_object(PyObject *module, PyObject *name, PyMethodDef *functions)
 {
+    return  GraalPyPrivate_AddMethodsToObject(module, name, functions);
+#if 0 // GraalPy change
     PyObject *func;
     PyMethodDef *fdef;
 
@@ -194,8 +195,8 @@ _add_methods_to_object(PyObject *module, PyObject *name, PyMethodDef *functions)
     }
 
     return 0;
-}
 #endif // GraalPy change
+}
 
 PyObject *
 PyModule_Create2(PyModuleDef* module, int module_api_version)
@@ -408,16 +409,10 @@ PyModule_FromDefAndSpec2(PyModuleDef* def, PyObject *spec, int module_api_versio
     }
 
     if (def->m_methods != NULL) {
-        // GraalPy change: use PyModule_AddFunctions instead of _add_methods_to_object
-        if (PyModule_AddFunctions(m, def->m_methods) != 0) {
-            Py_DECREF(m);
-            return NULL;
+        ret = _add_methods_to_object(m, nameobj, def->m_methods);
+        if (ret != 0) {
+            goto error;
         }
-        // End of GraalPy change, original code below
-        // ret = _add_methods_to_object(m, nameobj, def->m_methods);
-        // if (ret != 0) {
-        //     goto error;
-        // }
     }
 
     if (def->m_doc != NULL) {
