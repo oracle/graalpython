@@ -231,6 +231,7 @@ test.test_capi.test_misc.Test_testcapi.test_dict_iteration @ darwin-arm64,linux-
 test.test_capi.test_misc.Test_testcapi.test_empty_argparse @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_misc.Test_testcapi.test_from_contiguous @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_misc.Test_testcapi.test_from_spec_metatype_inheritance @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_capi.test_misc.Test_testcapi.test_frozenset_add_in_capi @ linux-x86_64-github
 test.test_capi.test_misc.Test_testcapi.test_gc_control @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_misc.Test_testcapi.test_gc_visit_objects_basic @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_capi.test_misc.Test_testcapi.test_gc_visit_objects_exit_early @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

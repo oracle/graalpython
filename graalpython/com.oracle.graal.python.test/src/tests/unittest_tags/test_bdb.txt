@@ -10,9 +10,9 @@ test.test_bdb.BreakpointTestCase.test_ignore_count_on_disabled_bp @ darwin-arm64
 test.test_bdb.BreakpointTestCase.test_load_bps_from_previous_Bdb_instance @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_bdb.BreakpointTestCase.test_temporary_bp @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_bdb.IssuesTestCase.test_next_to_botframe @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_bdb.IssuesTestCase.test_next_until_return_in_generator @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
 # TODO: GR-71863
 !test.test_bdb.IssuesTestCase.test_next_until_return_in_generator @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_bdb.IssuesTestCase.test_next_until_return_in_generator @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
 test.test_bdb.IssuesTestCase.test_step_at_return_with_no_trace_in_caller @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_bdb.RunTestCase.test_run_step @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_bdb.RunTestCase.test_runeval_step @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
