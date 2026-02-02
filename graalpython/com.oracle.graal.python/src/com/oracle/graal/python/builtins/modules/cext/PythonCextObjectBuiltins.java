@@ -95,7 +95,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonObjectReference;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateHandleTableReferenceNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.cext.common.GetNextVaArgNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
@@ -649,13 +648,6 @@ public abstract class PythonCextObjectBuiltins {
             }
             return referent == null ? 1 : 0;
         }
-
-        @Specialization
-        static int doInteropPointer(Object pointer,
-                        @Bind Node inliningTarget,
-                        @Cached CoerceNativePointerToLongNode coerceNativePointerToLongNode) {
-            return doLong(coerceNativePointerToLongNode.execute(inliningTarget, pointer), inliningTarget);
-        }
     }
 
     @CApiBuiltin(ret = Void, args = {Pointer}, call = Ignored)
@@ -663,8 +655,7 @@ public abstract class PythonCextObjectBuiltins {
 
         @Specialization
         @TruffleBoundary
-        static int doGeneric(Object pointerObject) {
-            long pointer = CoerceNativePointerToLongNode.executeUncached(pointerObject);
+        static int doGeneric(long pointer) {
             PythonContext context = PythonContext.get(null);
             PrintWriter stderr = new PrintWriter(context.getStandardErr());
 

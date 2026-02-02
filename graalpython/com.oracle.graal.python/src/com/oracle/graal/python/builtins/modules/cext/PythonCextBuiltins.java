@@ -91,7 +91,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.T__WEAKREF;
 import static com.oracle.graal.python.nodes.ErrorMessages.INDEX_OUT_OF_RANGE;
 import static com.oracle.graal.python.nodes.ErrorMessages.NATIVE_S_SUBTYPES_NOT_IMPLEMENTED;
 import static com.oracle.graal.python.nodes.HiddenAttr.NATIVE_SLOTS;
-import static com.oracle.graal.python.runtime.PythonContext.NATIVE_NULL;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
@@ -637,7 +636,6 @@ public final class PythonCextBuiltins {
                 case SINT64 -> -1L;
                 case FLOAT -> -1.0f;
                 case DOUBLE -> -1.0;
-                case POINTER -> NATIVE_NULL;
                 case RAW_POINTER -> NULLPTR;
             };
         }
@@ -740,9 +738,6 @@ public final class PythonCextBuiltins {
             }
             try {
                 Object[] args = frame.getArguments();
-                for (int i = 0; i < args.length; i++) {
-                    assert signature.getArgTypes()[i] != NfiType.POINTER;
-                }
                 Object result = executeBuiltinNode.execute(args);
                 return signature.getReturnType().convertToNative(result);
             } catch (Throwable e) {

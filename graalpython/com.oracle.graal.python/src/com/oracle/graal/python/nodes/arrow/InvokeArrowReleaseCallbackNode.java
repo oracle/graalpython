@@ -73,7 +73,7 @@ public abstract class InvokeArrowReleaseCallbackNode extends PNodeWithContext {
                     @Cached(value = "createReleaseCallbackSignature($node, ctx)", allowUncached = true) Object callbackSignature,
                     @CachedLibrary(limit = "1") SignatureLibrary signatureLibrary) {
         try {
-            signatureLibrary.call(callbackSignature, new NativePointer(releaseCallback), baseStructure);
+            signatureLibrary.call(callbackSignature, NativePointer.wrap(releaseCallback), baseStructure);
         } catch (Exception e) {
             throw CompilerDirectives.shouldNotReachHere("Unable to call release callback. Error:", e);
         }

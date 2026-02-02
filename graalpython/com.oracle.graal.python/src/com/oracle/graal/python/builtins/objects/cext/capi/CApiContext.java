@@ -1215,7 +1215,7 @@ public final class CApiContext extends CExtContext {
                 throw PRaiseNode.raiseStatic(node, PythonBuiltinClassType.SystemError, ErrorMessages.INIT_FUNC_RETURNED_UNINT_OBJ, initFuncName);
             }
 
-            return CExtNodes.createModule(node, cApiContext, spec, result, sharedLibrary);
+            return CExtNodes.createModule(node, cApiContext, spec, nativeResult, sharedLibrary);
         } else {
             // see: 'import.c: _PyImport_FixupExtensionObject'
             PythonModule module = (PythonModule) result;

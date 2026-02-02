@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.cext.structs;
 
 import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nfi2.NativeMemory.POINTER_SIZE;
+import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
@@ -49,14 +50,11 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFun
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativePtrToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.ReadCharPtrNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.ReadObjectNodeGen;
 import com.oracle.graal.python.nfi2.NativeMemory;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -251,7 +249,7 @@ public class CStructAccess {
         @Specialization
         static void writeLong(long dstPointer, int dstOffset, TruffleString src, int srcOffset, int length, TruffleString.Encoding encoding,
                         @Cached TruffleString.CopyToNativeMemoryNode copyToNativeMemoryNode) {
-            copyToNativeMemoryNode.execute(src, srcOffset, wrapPointer(dstPointer), dstOffset, length, encoding);
+            copyToNativeMemoryNode.execute(src, srcOffset, NativePointer.wrap(dstPointer), dstOffset, length, encoding);
         }
     }
 
@@ -277,7 +275,7 @@ public class CStructAccess {
 
         public final void writeArray(long pointer, Object[] values, int length, int sourceOffset, long targetOffset) {
             if (length > values.length) {
-                throw CompilerDirectives.shouldNotReachHere();
+                throw shouldNotReachHere();
             }
             for (int i = 0; i < length; i++) {
                 execute(pointer, (i + targetOffset) * POINTER_SIZE, values[i + sourceOffset]);
@@ -295,21 +293,5 @@ public class CStructAccess {
             }
             NativeMemory.writePtr(pointer + offset, toNative.executeLong(value));
         }
-    }
-
-    // The following are temporary helpers which should not be needed after all pointers are raw
-    // longs.
-    // These methods serve as markers for what still needs to be done.
-    public static long ensurePointer(Object value, Node inliningTarget, CoerceNativePointerToLongNode coerceNode) {
-        return coerceNode.execute(inliningTarget, value);
-    }
-
-    @TruffleBoundary
-    public static long ensurePointerUncached(Object value) {
-        return CoerceNativePointerToLongNode.executeUncached(value);
-    }
-
-    public static Object wrapPointer(long pointer) {
-        return new NativePointer(pointer);
     }
 }

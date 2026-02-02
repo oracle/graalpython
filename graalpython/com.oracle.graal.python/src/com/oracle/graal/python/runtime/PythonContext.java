@@ -287,7 +287,7 @@ public final class PythonContext extends Python3Core {
             mem = allocateContextMemory(byteLength + 1);
             NativeMemory.writeByte(mem.asPointer() + byteLength, (byte) 0);
         } else {
-            mem = new NativePointer(NativeMemory.callocByteArray(byteLength + 1));
+            mem = NativePointer.wrap(NativeMemory.callocByteArray(byteLength + 1));
         }
         utf8String.copyToNativeMemoryUncached(0, mem, 0, byteLength, Encoding.UTF_8);
         return mem.asPointer();
@@ -847,8 +847,6 @@ public final class PythonContext extends Python3Core {
 
     // the full module name for package imports
     private TruffleString pyPackageContext;
-
-    private final NativePointer nativeNull = NativePointer.createNull();
 
     public RootCallTarget signatureContainer;
 
@@ -2945,7 +2943,7 @@ public final class PythonContext extends Python3Core {
         if (nativeResources == null) {
             nativeResources = new LinkedList<>();
         }
-        NativePointer nativePointer = new NativePointer(NativeMemory.malloc(byteSize));
+        NativePointer nativePointer = NativePointer.wrap(NativeMemory.malloc(byteSize));
         if (LOGGER.isLoggable(Level.FINE)) {
             LOGGER.fine(String.format("Allocated %d bytes of context memory: %s", byteSize, nativePointer));
         }

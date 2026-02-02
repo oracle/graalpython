@@ -54,7 +54,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
-import static com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ensureExecutable;
+import static com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.bindFunctionPointer;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readIntField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readPtrField;
@@ -280,7 +280,7 @@ public final class PythonCextModuleBuiltins {
 
     /**
      * Implementation of {@code moduleobject.c: _add_methods_to_object}.
-     * 
+     *
      * TODO(fa): overlaps with
      * {@link com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes#createLegacyMethod}
      */
@@ -328,7 +328,7 @@ public final class PythonCextModuleBuiltins {
                     if (mSize <= 0 || mdState != NULLPTR) {
                         PythonContext ctx = PythonContext.get(inliningTarget);
                         PythonThreadState threadState = getThreadStateNode.execute(inliningTarget, ctx);
-                        NfiBoundFunction traverseExecutable = ensureExecutable(mTraverse, "m_traverse", ExternalFunctionSignature.TRAVERSEPROC.nfiSignature);
+                        NfiBoundFunction traverseExecutable = bindFunctionPointer(mTraverse, "m_traverse", ExternalFunctionSignature.TRAVERSEPROC.nfiSignature);
                         int ires = ExternalFunctionInvoker.invokeTRAVERSEPROC(null, TIMING, ctx.ensureNfiContext(), boundaryCallData, threadState, traverseExecutable,
                                         toNativeNode.executeLong(self), visitFun, arg);
                         checkPrimitiveFunctionResultNode.executeLong(inliningTarget, threadState, StringLiterals.T_VISIT, ires);

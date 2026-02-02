@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.type;
 
-import static com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ensureExecutable;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readPtrField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
 import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
@@ -165,6 +164,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.SqContai
 import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.SsizeargfuncSlotWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.SsizeobjargprocWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.TpSlotWrapper.UnaryFuncWrapper;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -1335,7 +1335,7 @@ public record TpSlots(TpSlot nb_bool, //
             }
             // There is no mapping from this pointer to existing TpSlot, we create a new
             // TpSlotNative wrapping the executable
-            NfiBoundFunction executable = ensureExecutable(fieldPtr, def.nativeSignature);
+            NfiBoundFunction executable = CExtCommonNodes.bindFunctionPointer(fieldPtr, def.nativeSignature);
             builder.set(def, TpSlotNative.createCExtSlot(executable));
         }
         return builder.build();

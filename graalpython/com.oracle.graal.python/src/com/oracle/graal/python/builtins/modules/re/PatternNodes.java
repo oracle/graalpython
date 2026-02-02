@@ -40,6 +40,11 @@
  */
 package com.oracle.graal.python.builtins.modules.re;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING_BINARY;
+import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.TRegexUtil;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -82,11 +87,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
-
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING_BINARY;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 public class PatternNodes {
 
@@ -421,13 +421,8 @@ public class PatternNodes {
                 }
                 if (bufferLib.isNative(buffer)) {
                     nativeProfile.enter(inliningTarget);
-                    Object ptr = bufferLib.getNativePointer(buffer);
-                    if (ptr != null) {
-                        if (ptr instanceof Long lptr) {
-                            ptr = new NativePointer(lptr);
-                        }
-                        return fromNativePointerNode.execute(ptr, 0, len, TS_ENCODING_BINARY, false);
-                    }
+                    long ptr = bufferLib.getNativePointer(buffer);
+                    return fromNativePointerNode.execute(NativePointer.wrap(ptr), 0, len, TS_ENCODING_BINARY, false);
                 }
                 fallbackProfile.enter(inliningTarget);
                 byte[] bytes = bufferLib.getCopiedByteArray(buffer);

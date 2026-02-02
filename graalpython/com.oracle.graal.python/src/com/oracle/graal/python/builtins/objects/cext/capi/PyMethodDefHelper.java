@@ -51,7 +51,6 @@ import java.util.logging.Level;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CoerceNativePointerToLongNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -96,6 +95,10 @@ import com.oracle.truffle.api.strings.TruffleString;
 public record PyMethodDefHelper(TruffleString name, Object meth, int flags, TruffleString doc) {
 
     private static final TruffleLogger LOGGER = CApiContext.getLogger(PyMethodDefHelper.class);
+
+    public PyMethodDefHelper {
+        assert meth instanceof NfiBoundFunction || meth instanceof PyCFunctionWrapper;
+    }
 
     private static Object getMethFromBuiltinFunction(CApiContext cApiContext, PBuiltinFunction object) {
         PKeyword[] kwDefaults = object.getKwDefaults();
@@ -149,7 +152,7 @@ public record PyMethodDefHelper(TruffleString name, Object meth, int flags, Truf
         PythonContext pythonContext = PythonContext.get(null);
         long nativeName = pythonContext.stringToNativeUtf8Bytes(name, false);
         long nativeDoc = doc != null ? pythonContext.stringToNativeUtf8Bytes(doc, false) : 0L;
-        long nativeMeth = CoerceNativePointerToLongNode.executeUncached(meth);
+        long nativeMeth = meth instanceof NfiBoundFunction f ? f.getAddress() : ((PyCFunctionWrapper) meth).getPointer();
 
         long mem = CStructAccess.allocate(CStructs.PyMethodDef);
         CStructAccess.writePtrField(mem, PyMethodDef__ml_name, nativeName);

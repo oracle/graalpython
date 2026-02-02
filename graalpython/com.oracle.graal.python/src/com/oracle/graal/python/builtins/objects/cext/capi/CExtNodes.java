@@ -49,7 +49,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbo
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_OBJECT_FREE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TYPE_GENERIC_ALLOC;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_SUBTYPE_TRAVERSE;
-import static com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ensureExecutable;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CConstants.PYLONG_BITS_IN_DIGIT;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyFloatObject__ob_fval;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMethodDef__ml_doc;
@@ -64,7 +63,6 @@ import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyMo
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyModuleDef__m_slots;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyObject__ob_type;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_as_buffer;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.ensurePointerUncached;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readDoubleField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readPtrField;
@@ -112,6 +110,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateStrongRefNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EnsureTruffleStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionFromNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformPExceptionToNativeNode;
@@ -445,7 +444,7 @@ public abstract class CExtNodes {
             while (readByteArrayElement(charPtr, length) != 0) {
                 length++;
             }
-            TruffleString nativeBacked = fromNativePointerNode.execute(new NativePointer(charPtr), 0, length, Encoding.UTF_8, copy);
+            TruffleString nativeBacked = fromNativePointerNode.execute(NativePointer.wrap(charPtr), 0, length, Encoding.UTF_8, copy);
             return switchEncodingNode.execute(nativeBacked, TS_ENCODING);
         }
     }
@@ -1258,10 +1257,7 @@ public abstract class CExtNodes {
      * </pre>
      */
     @TruffleBoundary
-    static Object createModule(Node node, CApiContext capiContext, ModuleSpec moduleSpec, Object moduleDefWrapper, Object library) {
-        // call to type the pointer
-        long moduleDefPtr = moduleDefWrapper instanceof PythonAbstractNativeObject ? ((PythonAbstractNativeObject) moduleDefWrapper).getPtr() : ensurePointerUncached(moduleDefWrapper);
-
+    static Object createModule(Node node, CApiContext capiContext, ModuleSpec moduleSpec, long moduleDefPtr, Object library) {
         /*
          * The name of the module is taken from the module spec and *NOT* from the module
          * definition.
@@ -1434,7 +1430,7 @@ public abstract class CExtNodes {
     /**
      * TODO(fa): overlaps with
      * {@link com.oracle.graal.python.builtins.modules.cext.PythonCextModuleBuiltins#GraalPyPrivate_Module_AddFunctions(long, long)}.
-     * 
+     *
      * <pre>
      *     struct PyMethodDef {
      *         const char * ml_name;
@@ -1464,7 +1460,7 @@ public abstract class CExtNodes {
         // TODO(fa) support static and class methods
         MethodDescriptorWrapper sig = MethodDescriptorWrapper.fromMethodFlags(flags);
         RootCallTarget callTarget = MethodDescriptorWrapper.getOrCreateCallTarget(language, sig, methodName, CExtContext.isMethStatic(flags));
-        NfiBoundFunction fun = ensureExecutable(mlMethObj, sig);
+        NfiBoundFunction fun = CExtCommonNodes.bindFunctionPointer(mlMethObj, sig);
         PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(fun);
         PBuiltinFunction function = PFactory.createBuiltinFunction(language, methodName, null, PythonUtils.EMPTY_OBJECT_ARRAY, kwDefaults, flags, callTarget);
         HiddenAttr.WriteLongNode.executeUncached(function, METHOD_DEF_PTR, methodDefPtr);

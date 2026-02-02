@@ -71,19 +71,17 @@ public final class NfiBoundFunction {
     @TruffleBoundary(allowInlining = true)
     public Object invoke(Object... args) {
         assert signature.checkArgTypes(args);
-        Object result;
         try {
             if (ImageInfo.inImageCode()) {
-                result = ForeignFunctions.invoke(signature.downcallDescriptor, ptr, args);
+                return ForeignFunctions.invoke(signature.downcallDescriptor, ptr, args);
             } else {
-                result = boundHandle.invokeExact(args);
+                return boundHandle.invokeExact(args);
             }
         } catch (Throwable e) {
             throw CompilerDirectives.shouldNotReachHere(e);
         } finally {
             Reference.reachabilityFence(args);
         }
-        return signature.convertResult(result);
     }
 
     @Override

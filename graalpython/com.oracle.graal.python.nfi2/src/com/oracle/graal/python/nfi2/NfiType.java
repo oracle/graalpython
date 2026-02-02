@@ -48,7 +48,6 @@ public enum NfiType {
     SINT64,
     FLOAT,
     DOUBLE,
-    POINTER,        // arg can be interop pointer, retval is wrapped in NativePointer
     RAW_POINTER;    // arg must be long, retval is long
 
     Class<?> asJavaType() {
@@ -60,7 +59,7 @@ public enum NfiType {
             case SINT64 -> long.class;
             case FLOAT -> float.class;
             case DOUBLE -> double.class;
-            case POINTER, RAW_POINTER -> long.class;
+            case RAW_POINTER -> long.class;
         };
     }
 
@@ -81,7 +80,7 @@ public enum NfiType {
             case SINT64 -> value instanceof Long;
             case FLOAT -> value instanceof Float;
             case DOUBLE -> value instanceof Double;
-            case POINTER, RAW_POINTER -> value instanceof Long;
+            case RAW_POINTER -> value instanceof Long;
         };
     }
 }

@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.cext.common;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readPtrField;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.wrapPointer;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writePtrField;
 import static com.oracle.graal.python.nfi2.NativeMemory.readByteArrayElement;
 import static com.oracle.graal.python.nfi2.NativeMemory.readByteArrayElements;
@@ -71,7 +70,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
-import com.oracle.graal.python.builtins.objects.cext.capi.PyCFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.GetIndexNodeGen;
@@ -445,7 +443,7 @@ public abstract class CExtCommonNodes {
             long nativeThreadState = threadState.getNativePointer();
             if (nativeThreadState != PythonAbstractObject.UNINITIALIZED) {
                 assert nativeThreadState != PythonAbstractObject.NATIVE_POINTER_FREED;
-                Object exception = nativeToPythonNode.execute(wrapPointer(readPtrField(nativeThreadState, CFields.PyThreadState__current_exception)));
+                Object exception = nativeToPythonNode.execute(readPtrField(nativeThreadState, CFields.PyThreadState__current_exception));
                 writePtrField(nativeThreadState, CFields.PyThreadState__current_exception, 0L);
                 return exception;
             }
@@ -1110,55 +1108,6 @@ public abstract class CExtCommonNodes {
         }
     }
 
-    /**
-     * Use this node to coerce an object (that is expected to be one of the pointer representations
-     * we use) into a {@code long} value. This node is semantically the same as method
-     * {@link PythonUtils#coerceToLong(Object, InteropLibrary)} but does profiling of the pointer
-     * object and additionally avoids the {@code InteropLibrary} for our known type
-     * {@link NativePointer}.
-     */
-    @GenerateUncached
-    @GenerateInline
-    @GenerateCached(false)
-    public abstract static class CoerceNativePointerToLongNode extends Node {
-
-        public static long executeUncached(Object pointerObject) {
-            return CExtCommonNodesFactory.CoerceNativePointerToLongNodeGen.getUncached().execute(null, pointerObject);
-        }
-
-        public abstract long execute(Node inliningTarget, Object pointerObject);
-
-        @Specialization
-        static long doLong(Long l) {
-            return l;
-        }
-
-        @Specialization
-        static long doNativePointer(NativePointer nativePointer) {
-            return nativePointer.asPointer();
-        }
-
-        @Specialization
-        static long doNfiFunction(NfiBoundFunction function) {
-            return function.getAddress();
-        }
-
-        @Specialization
-        static long doPyCFunctionWrapper(PyCFunctionWrapper wrapper) {
-            return wrapper.getPointer();
-        }
-
-        @Specialization(guards = "!isNativePointer(pointerObject)", limit = "3")
-        static long doOther(Object pointerObject,
-                        @CachedLibrary("pointerObject") InteropLibrary lib) {
-            return PythonUtils.coerceToLong(pointerObject, lib);
-        }
-
-        static boolean isNativePointer(Object pointerObject) {
-            return pointerObject instanceof NativePointer || pointerObject instanceof NfiBoundFunction;
-        }
-    }
-
     private static final TruffleLogger LOGGER = CApiContext.getLogger(CExtContext.class);
 
     /**
@@ -1170,11 +1119,11 @@ public abstract class CExtCommonNodes {
      * access} is not allowed
      * </p>
      */
-    public static NfiBoundFunction ensureExecutable(long pointer, NativeCExtSymbol descriptor) {
-        return ensureExecutable(pointer, descriptor.getName(), descriptor.getSignature());
+    public static NfiBoundFunction bindFunctionPointer(long pointer, NativeCExtSymbol descriptor) {
+        return bindFunctionPointer(pointer, descriptor.getName(), descriptor.getSignature());
     }
 
-    public static NfiBoundFunction ensureExecutable(long pointer, String name, NfiDowncallSignature signature) {
+    public static NfiBoundFunction bindFunctionPointer(long pointer, String name, NfiDowncallSignature signature) {
         PythonContext pythonContext = PythonContext.get(null);
         if (!pythonContext.isNativeAccessAllowed()) {
             LOGGER.severe(PythonUtils.formatJString("Attempting to bind %s to an NFI signature but native access is not allowed", pointer));

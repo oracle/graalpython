@@ -93,19 +93,17 @@ public final class NfiDowncallSignature {
     @TruffleBoundary(allowInlining = true)
     public Object invoke(@SuppressWarnings("unused") NfiContext context, long function, Object... args) {
         assert checkArgTypes(args);
-        Object result;
         try {
             if (ImageInfo.inImageCode()) {
-                result = ForeignFunctions.invoke(downcallDescriptor, function, args);
+                return ForeignFunctions.invoke(downcallDescriptor, function, args);
             } else {
-                result = downcallMethodHandle.invokeExact(MemorySegment.ofAddress(function), args);
+                return downcallMethodHandle.invokeExact(MemorySegment.ofAddress(function), args);
             }
         } catch (Throwable e) {
             throw CompilerDirectives.shouldNotReachHere(e);
         } finally {
             Reference.reachabilityFence(args);
         }
-        return convertResult(result);
     }
 
     boolean checkArgTypes(Object[] args) {
@@ -118,14 +116,6 @@ public final class NfiDowncallSignature {
             }
         }
         return true;
-    }
-
-    Object convertResult(Object r) {
-        if (resType == NfiType.POINTER) {
-            // TODO(NFI2) migrate to RAWPOINTER and remove this wrapping
-            return new NativePointer((long) r);
-        }
-        return r;
     }
 
     @Override

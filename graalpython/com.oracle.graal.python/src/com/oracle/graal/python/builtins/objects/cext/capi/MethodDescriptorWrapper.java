@@ -190,7 +190,7 @@ public enum MethodDescriptorWrapper implements NativeCExtSymbol {
         for (int i = 0; i < nfiTypes.length; i++) {
             nfiTypes[i] = methodDescriptorWrapper.arguments[i].getNFI2Type();
         }
-        PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(CExtCommonNodes.ensureExecutable(callable, methodDescriptorWrapper));
+        PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(CExtCommonNodes.bindFunctionPointer(callable, methodDescriptorWrapper));
 
         // generate default values for positional args (if necessary)
         Object[] defaults = PBuiltinFunction.generateDefaults(0);
