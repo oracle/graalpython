@@ -46,12 +46,13 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -85,27 +86,40 @@ public abstract class ReadAttributeFromPythonObjectNode extends PNodeWithContext
     // DynamicObject to ObjectHashMap
     public abstract Object execute(DynamicObject object, TruffleString key, Object defaultValue);
 
-    @Idempotent
-    protected static boolean isLongLivedObject(DynamicObject object) {
-        return object instanceof PythonModule || object instanceof PythonManagedClass;
+    @Specialization
+    protected final Object read(DynamicObject dynamicObject, TruffleString key, Object defaultValue,
+                    @Cached ReceiverCast receiverCast,
+                    @Cached DynamicObject.GetNode getNode) {
+        return getNode.execute(receiverCast.execute(this, dynamicObject), key, defaultValue);
     }
 
-    @SuppressWarnings("unused")
-    @Specialization(limit = "1", //
-                    guards = {
-                                    "isSingleContext()",
-                                    "dynamicObject == cachedObject",
-                                    "isLongLivedObject(cachedObject)",
-                    })
-    protected static Object readFinalAttr(DynamicObject dynamicObject, TruffleString key, Object defaultValue,
-                    @Shared @Cached DynamicObject.GetNode getNode,
-                    @Cached(value = "dynamicObject", weak = true) DynamicObject cachedObject) {
-        return getNode.execute(cachedObject, key, defaultValue);
-    }
+    @GenerateCached(false)
+    @GenerateUncached
+    @GenerateInline
+    protected abstract static class ReceiverCast extends PNodeWithContext {
 
-    @Specialization(replaces = {"readFinalAttr"})
-    protected static Object readDirect(DynamicObject dynamicObject, TruffleString key, Object defaultValue,
-                    @Shared @Cached DynamicObject.GetNode getNode) {
-        return getNode.execute(dynamicObject, key, defaultValue);
+        protected abstract DynamicObject execute(Node inliningTarget, DynamicObject object);
+
+        @Idempotent
+        protected static boolean isLongLivedObject(DynamicObject object) {
+            return object instanceof PythonModule || object instanceof PythonManagedClass;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(limit = "1", //
+                        guards = {
+                                        "isSingleContext()",
+                                        "dynamicObject == cachedObject",
+                                        "isLongLivedObject(cachedObject)",
+                        })
+        protected static DynamicObject readFinalAttr(DynamicObject dynamicObject,
+                        @Cached(value = "dynamicObject", weak = true) DynamicObject cachedObject) {
+            return cachedObject;
+        }
+
+        @Specialization(replaces = {"readFinalAttr"})
+        protected static DynamicObject readDirect(DynamicObject dynamicObject) {
+            return dynamicObject;
+        }
     }
 }
