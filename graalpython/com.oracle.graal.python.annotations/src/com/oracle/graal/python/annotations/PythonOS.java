@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -48,7 +48,7 @@ public enum PythonOS {
     PLATFORM_WIN32("win32", "Windows"),
     PLATFORM_ANY(null, null);
 
-    public static final String SUPPORTED_PLATFORMS = "linux/amd64, linux/aarch64, macos/amd64, macos/aarch64, and windows/amd64";
+    public static final String SUPPORTED_PLATFORMS = "linux/amd64, linux/aarch64, macos/aarch64, and windows/amd64";
 
     private final String name;
     private final String uname;

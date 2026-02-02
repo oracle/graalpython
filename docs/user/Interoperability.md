@@ -252,10 +252,11 @@ This allows other languages to call your Python code directly.
    Then use it, for example, from Java code:
    ```java
    import org.graalvm.polyglot.*;
-
+   import org.graalvm.python.embedding.GraalPyResources;
+   
    class Main {
        public static void main(String[] args) {
-           try (var context = Context.create()) {
+           try (var context = GraalPyResources.createContext()) {
                context.eval(Source.newBuilder("python", "file:///python_script.py").build());
 
                String result = context.
@@ -399,10 +400,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.graalvm.polyglot.Context;
+import org.graalvm.python.embedding.GraalPyResources;
 
 class Main {
     public static void main(String[] args) {
-        try (var context = Context.create()) {
+        try (var context = GraalPyResources.createContext()) {
             context.eval("python", Files.readString(Path.of("path/to/interop/behavior/script.py")));
             assert context.eval("python", "numpy.float64(12)").asDouble() == 12.0;
             assert context.eval("python", "numpy.int32(12)").asByte() == 12;
@@ -446,12 +448,13 @@ The following snippet sets up the Java environment and makes the object availabl
 
 ```java
 import org.example.MyJavaClass;
+import org.graalvm.python.embedding.GraalPyResources;
 
 class Main {
 
    public static void main(String[] args) {
       MyJavaClass myJavaObject = new MyJavaClass(42, 17);
-      try (var context = Context.create()) {
+      try (var context = GraalPyResources.createContext()) {
          // myJavaObject will be globally available in example.py as my_java_object
          context.getBindings("python").putMember("my_java_object", myJavaObject);
          context.eval(Source.newBuilder("python", "example.py"));
