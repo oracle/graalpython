@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -139,7 +139,14 @@ public abstract class MatchClassNode extends PNodeWithContext {
             attrs = new Object[kwArgs.length];
         }
         // Finally, the keyword subpatterns:
-        getKwArgs(frame, inliningTarget, subject, type, kwArgs, seen, seenLength, attrs, attrsLength, getAttr, eqStrNode, raise);
+        try {
+            getKwArgs(frame, inliningTarget, subject, type, kwArgs, seen, seenLength, attrs, attrsLength, getAttr, eqStrNode, raise);
+        } catch (PException pe) {
+            // missing keyword argument will throw AttributeError, but in pattern matching, that
+            // should be ignored
+            pe.expectAttributeError(inliningTarget, isClassProfile);
+            return null;
+        }
         return PFactory.createList(language, attrs);
     }
 
