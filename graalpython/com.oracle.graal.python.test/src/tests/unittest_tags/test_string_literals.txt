@@ -3,7 +3,7 @@ test.test_string_literals.TestLiterals.test_eval_bytes_invalid_escape @ darwin-a
 test.test_string_literals.TestLiterals.test_eval_bytes_normal @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_string_literals.TestLiterals.test_eval_bytes_raw @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_string_literals.TestLiterals.test_eval_str_incomplete @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_string_literals.TestLiterals.test_eval_str_invalid_escape @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
+test.test_string_literals.TestLiterals.test_eval_str_invalid_escape @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_string_literals.TestLiterals.test_eval_str_normal @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_string_literals.TestLiterals.test_eval_str_raw @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_string_literals.TestLiterals.test_eval_str_u @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

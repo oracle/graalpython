@@ -55,7 +55,7 @@ test.test_contextlib.TestExitStack.test_exit_exception_chaining_reference @ darw
 test.test_contextlib.TestExitStack.test_exit_exception_chaining_suppress @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_contextlib.TestExitStack.test_exit_exception_non_suppressing @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_contextlib.TestExitStack.test_exit_exception_traceback @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_contextlib.TestExitStack.test_exit_exception_with_correct_context @ linux-aarch64-github,linux-x86_64-github
+test.test_contextlib.TestExitStack.test_exit_exception_with_correct_context @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
 test.test_contextlib.TestExitStack.test_exit_exception_with_existing_context @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_contextlib.TestExitStack.test_exit_raise @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_contextlib.TestExitStack.test_exit_suppress @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
