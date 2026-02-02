@@ -607,9 +607,6 @@ public final class PythonCextBuiltins {
             RootCallTarget ct = lang.getCapiCallTarget(id);
             if (ct == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                for (int i = 0; i < args.length; i++) {
-                    assert args[i].getNFI2Type() != NfiType.POINTER;
-                }
                 ct = new ExecuteCApiBuiltinRootNode(this, ret.getNFI2Type()).getCallTarget();
                 lang.setCapiCallTarget(id, ct);
             }
