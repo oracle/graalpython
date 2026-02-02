@@ -211,7 +211,7 @@ test.test_unittest.test_loader.Test_TestLoader.test_loadTestsFromName__relative_
 test.test_unittest.test_loader.Test_TestLoader.test_loadTestsFromName__relative_TestSuite @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_unittest.test_loader.Test_TestLoader.test_loadTestsFromName__relative_bad_object @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_unittest.test_loader.Test_TestLoader.test_loadTestsFromName__relative_empty_name @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_unittest.test_loader.Test_TestLoader.test_loadTestsFromName__relative_invalid_testmethod @ linux-x86_64-github
+test.test_unittest.test_loader.Test_TestLoader.test_loadTestsFromName__relative_invalid_testmethod @ linux-aarch64-github,linux-x86_64-github
 test.test_unittest.test_loader.Test_TestLoader.test_loadTestsFromName__relative_malformed_name @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_unittest.test_loader.Test_TestLoader.test_loadTestsFromName__relative_not_a_module @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_unittest.test_loader.Test_TestLoader.test_loadTestsFromName__relative_testmethod @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -233,7 +233,7 @@ test.test_unittest.test_loader.Test_TestLoader.test_loadTestsFromNames__relative
 test.test_unittest.test_loader.Test_TestLoader.test_loadTestsFromNames__relative_bad_object @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_unittest.test_loader.Test_TestLoader.test_loadTestsFromNames__relative_empty_name @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_unittest.test_loader.Test_TestLoader.test_loadTestsFromNames__relative_empty_name_list @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_unittest.test_loader.Test_TestLoader.test_loadTestsFromNames__relative_invalid_testmethod @ linux-x86_64-github
+test.test_unittest.test_loader.Test_TestLoader.test_loadTestsFromNames__relative_invalid_testmethod @ linux-aarch64-github,linux-x86_64-github
 test.test_unittest.test_loader.Test_TestLoader.test_loadTestsFromNames__relative_malformed_name @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_unittest.test_loader.Test_TestLoader.test_loadTestsFromNames__relative_not_a_module @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_unittest.test_loader.Test_TestLoader.test_loadTestsFromNames__relative_testmethod @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

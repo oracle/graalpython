@@ -8,7 +8,7 @@ test.test_multiprocessing_spawn.test_misc.TestForkAwareThreadLock.test_lock @ da
 test.test_multiprocessing_spawn.test_misc.TestIgnoreEINTR.test_ignore @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc.TestIgnoreEINTR.test_ignore_listener @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc.TestInternalDecorators.test_only_run_in_spawn_testsuite @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_multiprocessing_spawn.test_misc.TestInvalidFamily.test_invalid_family @ darwin-arm64,linux-aarch64,linux-x86_64,linux-x86_64-github
+test.test_multiprocessing_spawn.test_misc.TestInvalidFamily.test_invalid_family @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc.TestInvalidHandle.test_invalid_handles @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc.TestNamedResource.test_global_named_resource_spawn @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc.TestNoForkBomb.test_noforkbomb @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
@@ -34,7 +34,7 @@ test.test_multiprocessing_spawn.test_misc.TestSyncManagerTypes.test_bounded_sema
 test.test_multiprocessing_spawn.test_misc.TestSyncManagerTypes.test_condition @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc.TestSyncManagerTypes.test_dict @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc.TestSyncManagerTypes.test_event @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_multiprocessing_spawn.test_misc.TestSyncManagerTypes.test_joinable_queue @ darwin-arm64,linux-aarch64,linux-x86_64,linux-x86_64-github
+test.test_multiprocessing_spawn.test_misc.TestSyncManagerTypes.test_joinable_queue @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc.TestSyncManagerTypes.test_list @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc.TestSyncManagerTypes.test_namespace @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc.TestSyncManagerTypes.test_pool @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
@@ -48,7 +48,7 @@ test.test_multiprocessing_spawn.test_misc.TestWait.test_wait @ darwin-arm64,linu
 test.test_multiprocessing_spawn.test_misc.TestWait.test_wait_slow @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc.TestWait.test_wait_socket @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc.TestWait.test_wait_socket_slow @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_multiprocessing_spawn.test_misc.TestWait.test_wait_timeout @ darwin-arm64,linux-aarch64,linux-x86_64,linux-x86_64-github
+test.test_multiprocessing_spawn.test_misc.TestWait.test_wait_timeout @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc._TestImportStar.test_import @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 !test.test_multiprocessing_spawn.test_processes.WithProcessesTestPool.test_enter
 # transiently fails
