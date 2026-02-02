@@ -1,4 +1,4 @@
-# Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -263,3 +263,15 @@ class TestErrors(unittest.TestCase):
                 case (a, 1) | (a, 2):
                     pass
             assert a == 1
+
+    def test_missing_kwarg(self):
+        def f():
+            x = sum
+            match x:
+                case object(factor=x) if x is not None:
+                    pass
+
+        try:
+            f()
+        except AttributeError:
+            self.fail("Invalid keyword argument should not raise AttributeError")
