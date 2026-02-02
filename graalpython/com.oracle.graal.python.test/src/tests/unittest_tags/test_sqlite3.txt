@@ -206,7 +206,7 @@ test.test_sqlite3.test_dbapi.SqliteOnConflictTests.test_on_conflict_ignore @ dar
 test.test_sqlite3.test_dbapi.SqliteOnConflictTests.test_on_conflict_replace @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sqlite3.test_dbapi.SqliteOnConflictTests.test_on_conflict_rollback_with_explicit_transaction @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sqlite3.test_dbapi.SqliteOnConflictTests.test_on_conflict_rollback_without_transaction @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_sqlite3.test_dbapi.ThreadTests.test_check_connection_thread @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,win32-AMD64,win32-AMD64-github
+test.test_sqlite3.test_dbapi.ThreadTests.test_check_connection_thread @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sqlite3.test_dbapi.ThreadTests.test_check_cursor_thread @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sqlite3.test_dbapi.ThreadTests.test_dont_check_same_thread @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sqlite3.test_dbapi.UninitialisedConnectionTests.test_uninit_operations @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
