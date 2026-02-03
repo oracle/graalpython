@@ -676,7 +676,11 @@ public final class PythonCextBuiltins {
             PythonContext context = PythonContext.get(null);
             long pointer = context.getCApiContext().getClosurePointer(this);
             if (pointer == -1) {
-                NfiUpcallSignature signature = Nfi.createUpcallSignature(ret.getNFI2Type(), Arrays.stream(args).map(ArgDescriptor::getNFI2Type).toArray(NfiType[]::new));
+                NfiType[] argTypes = new NfiType[args.length];
+                for (int i = 0; i < args.length; i++) {
+                    argTypes[i] = args[i].getNFI2Type();
+                }
+                NfiUpcallSignature signature = Nfi.createUpcallSignature(ret.getNFI2Type(), argTypes);
                 try {
                     pointer = signature.createClosure(context.ensureNfiContext(), name, PythonCextBuiltinRegistry.getMethodHandle(id));
                     context.getCApiContext().setClosurePointer(null, this, pointer);
