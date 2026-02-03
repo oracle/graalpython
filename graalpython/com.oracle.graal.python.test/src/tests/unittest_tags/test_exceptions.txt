@@ -53,6 +53,7 @@ test.test_exceptions.ImportErrorTests.test_reset_attributes @ darwin-arm64,linux
 test.test_exceptions.NameErrorTests.test_gh_111654 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_exceptions.NameErrorTests.test_issue45826 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_exceptions.NameErrorTests.test_issue45826_focused @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_exceptions.NameErrorTests.test_name_error_has_name @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
 test.test_exceptions.PEP626Tests.test_lineno_after_raise_in_with_exit @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_exceptions.PEP626Tests.test_lineno_after_raise_simple @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_exceptions.PEP626Tests.test_lineno_in_finally_normal @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

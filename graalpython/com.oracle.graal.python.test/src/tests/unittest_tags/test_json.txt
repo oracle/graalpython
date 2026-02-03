@@ -115,6 +115,7 @@ test.test_json.test_recursion.TestPyRecursion.test_highly_nested_objects_encodin
 test.test_json.test_recursion.TestPyRecursion.test_listrecursion @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_json.test_scanstring.TestCScanstring.test_bad_escapes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_json.test_scanstring.TestCScanstring.test_overflow @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_json.test_scanstring.TestCScanstring.test_scanstring @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
 test.test_json.test_scanstring.TestPyScanstring.test_bad_escapes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_json.test_scanstring.TestPyScanstring.test_overflow @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_json.test_scanstring.TestPyScanstring.test_scanstring @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

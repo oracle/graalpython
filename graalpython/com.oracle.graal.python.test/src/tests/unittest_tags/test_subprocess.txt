@@ -19,9 +19,9 @@ test.test_subprocess.POSIXProcessTestCase.test_call_string @ darwin-arm64,linux-
 test.test_subprocess.POSIXProcessTestCase.test_close_fd_0 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_subprocess.POSIXProcessTestCase.test_close_fd_1 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_subprocess.POSIXProcessTestCase.test_close_fd_2 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_subprocess.POSIXProcessTestCase.test_close_fds_0_1 @ darwin-arm64,linux-aarch64,linux-x86_64,linux-x86_64-github
-test.test_subprocess.POSIXProcessTestCase.test_close_fds_0_1_2 @ darwin-arm64,linux-aarch64,linux-x86_64,linux-x86_64-github
-test.test_subprocess.POSIXProcessTestCase.test_close_fds_0_2 @ darwin-arm64,linux-aarch64,linux-x86_64,linux-x86_64-github
+test.test_subprocess.POSIXProcessTestCase.test_close_fds_0_1 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_subprocess.POSIXProcessTestCase.test_close_fds_0_1_2 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_subprocess.POSIXProcessTestCase.test_close_fds_0_2 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_subprocess.POSIXProcessTestCase.test_close_fds_1_2 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_subprocess.POSIXProcessTestCase.test_communicate_BrokenPipeError_stdin_close @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_subprocess.POSIXProcessTestCase.test_communicate_BrokenPipeError_stdin_close_with_timeout @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
@@ -46,7 +46,7 @@ test.test_subprocess.POSIXProcessTestCase.test_send_signal_race @ darwin-arm64,l
 test.test_subprocess.POSIXProcessTestCase.test_send_signal_race2 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_subprocess.POSIXProcessTestCase.test_shell_sequence @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_subprocess.POSIXProcessTestCase.test_shell_string @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_subprocess.POSIXProcessTestCase.test_small_errpipe_write_fd @ darwin-arm64,linux-aarch64,linux-x86_64,linux-x86_64-github
+test.test_subprocess.POSIXProcessTestCase.test_small_errpipe_write_fd @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_subprocess.POSIXProcessTestCase.test_specific_shell @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_subprocess.POSIXProcessTestCase.test_start_new_session @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_subprocess.POSIXProcessTestCase.test_stderr_stdin_are_single_inout_fd @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github

@@ -39,7 +39,7 @@ test.test_xmlrpc.MultiPathServerTestCase.test_path2 @ darwin-arm64,linux-aarch64
 test.test_xmlrpc.MultiPathServerTestCase.test_path3 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_xmlrpc.MultiPathServerTestCase.test_path_fragment @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_xmlrpc.MultiPathServerTestCase.test_path_query @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_xmlrpc.MultiPathServerTestCase.test_path_query_fragment @ darwin-arm64,linux-aarch64,linux-x86_64,linux-x86_64-github
+test.test_xmlrpc.MultiPathServerTestCase.test_path_query_fragment @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_xmlrpc.MultiPathServerTestCase.test_root_path @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_xmlrpc.ServerProxyTestCase.test_close @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_xmlrpc.ServerProxyTestCase.test_transport @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

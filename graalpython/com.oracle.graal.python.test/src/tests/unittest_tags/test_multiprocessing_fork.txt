@@ -7,6 +7,9 @@ test.test_multiprocessing_fork.test_misc.TestInvalidFamily.test_invalid_family @
 test.test_multiprocessing_fork.test_misc.TestInvalidHandle.test_invalid_handles @ linux-aarch64-github,linux-x86_64-github
 test.test_multiprocessing_fork.test_misc.TestPoolNotLeakOnFailure.test_release_unused_processes @ linux-aarch64-github,linux-x86_64-github
 test.test_multiprocessing_fork.test_misc.TestResourceTracker.test_resource_tracker @ linux-aarch64-github,linux-x86_64-github
+test.test_multiprocessing_fork.test_misc.TestResourceTracker.test_resource_tracker_sigint @ linux-aarch64-github,linux-x86_64-github
+test.test_multiprocessing_fork.test_misc.TestResourceTracker.test_resource_tracker_sigkill @ linux-aarch64-github,linux-x86_64-github
+test.test_multiprocessing_fork.test_misc.TestResourceTracker.test_resource_tracker_sigterm @ linux-x86_64-github
 test.test_multiprocessing_fork.test_misc.TestResourceTracker.test_too_long_name_resource @ linux-aarch64-github,linux-x86_64-github
 test.test_multiprocessing_fork.test_misc.TestSimpleQueue.test_close @ linux-aarch64-github,linux-x86_64-github
 test.test_multiprocessing_fork.test_misc.TestSimpleQueue.test_empty_exceptions @ linux-aarch64-github,linux-x86_64-github
