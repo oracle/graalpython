@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -36,9 +36,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import os
+import ast
 import sys
-import unittest
 
 
 def assert_raises(err, fn, *args, **kwargs):
@@ -658,3 +657,14 @@ def test_faulthandler_many_threads():
         if ids:
             ids_per_block.append(ids)
             assert len(ids) == 1, f"Interleaved output detected in block {header!r} with multiple thread func ids: {ids}"
+
+
+def test_location_from_ast():
+    m = compile("a = 1\nx", "<stdin>", "exec", flags=ast.PyCF_ONLY_AST)
+
+    try:
+        exec(compile(m, "<stdin>", "exec"))
+    except NameError as e:
+        assert e.__traceback__.tb_next.tb_lineno == 2
+    else:
+        assert False

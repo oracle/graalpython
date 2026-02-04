@@ -788,20 +788,12 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         SourceRange oldSourceRange = this.currentLocation;
         this.currentLocation = sourceRange;
 
-        if (ctx.source.hasCharacters()) {
-            int startOffset = getStartOffset(sourceRange);
-            int endOffset = getEndOffset(sourceRange);
-            int length = endOffset - startOffset;
-            if (length == 0) {
-                startOffset = 0;
-            }
-            b.beginSourceSection(startOffset, length);
+        beginSourceSectionInner(b, sourceRange);
 
-            if (oldSourceRange == null || oldSourceRange.startLine != sourceRange.startLine) {
-                b.beginTag(StatementTag.class);
-                b.beginBlock();
-                return true;
-            }
+        if (oldSourceRange == null || oldSourceRange.startLine != sourceRange.startLine) {
+            b.beginTag(StatementTag.class);
+            b.beginBlock();
+            return true;
         }
         return false;
     }
@@ -820,39 +812,41 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             sourceRange = node.getSourceRange();
         }
 
-        if (ctx.source.hasCharacters()) {
-            int startOffset = getStartOffset(sourceRange);
-            int endOffset = getEndOffset(sourceRange);
-            int length = endOffset - startOffset;
-            if (length == 0) {
-                startOffset = 0;
+        beginSourceSectionInner(b, sourceRange);
+    }
+
+    private static void beginSourceSectionInner(Builder b, SourceRange sourceRange) {
+        if (sourceRange.startLine >= 1) {
+            if (sourceRange.startColumn >= 0 && sourceRange.endLine >= sourceRange.startLine && sourceRange.endColumn >= 0) {
+                if (sourceRange.endColumn > 0) {
+                    b.beginSourceSection(sourceRange.startLine, sourceRange.startColumn + 1, sourceRange.endLine, sourceRange.endColumn);
+                } else {
+                    /*
+                     * Truffle doesn't allow including an empty line with no characters, so we just
+                     * include the first character to have at least something. It's not correct, but
+                     * these cases are very rare, it occurs primarily in string consituents of
+                     * top-level multiline format strings.
+                     */
+                    b.beginSourceSection(sourceRange.startLine, sourceRange.startColumn + 1, sourceRange.endLine, 1);
+                }
+            } else {
+                b.beginSourceSection(sourceRange.startLine);
             }
-            b.beginSourceSection(startOffset, length);
+        } else {
+            b.beginSourceSectionUnavailable();
         }
     }
 
     void endSourceSection(Builder b, boolean closeTag) {
-        if (ctx.source.hasCharacters()) {
-            if (closeTag) {
-                b.endBlock();
-                b.endTag(StatementTag.class);
-            }
-            b.endSourceSection();
+        if (closeTag) {
+            b.endBlock();
+            b.endTag(StatementTag.class);
         }
+        b.endSourceSection();
     }
 
     void endRootSourceSection(Builder b) {
-        if (ctx.source.hasCharacters()) {
-            b.endSourceSection();
-        }
-    }
-
-    int getStartOffset(SourceRange sourceRange) {
-        return ctx.source.getLineStartOffset(sourceRange.startLine) + sourceRange.startColumn;
-    }
-
-    int getEndOffset(SourceRange sourceRange) {
-        return ctx.source.getLineStartOffset(sourceRange.endLine) + sourceRange.endColumn;
+        b.endSourceSection();
     }
 
     void beginReturn(Builder b) {
