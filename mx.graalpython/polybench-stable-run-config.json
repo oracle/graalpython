@@ -301,5 +301,430 @@
     "policy": "outlier-elimination-all-builds",
     "forks": "3x3",
     "focus": "0.0-0.3"
+  },
+  "interpreter/bm_pathlib.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "interpreter/bm_pickle.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "interpreter/bm_richards.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "interpreter/chaos.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "interpreter/fannkuch.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "interpreter/float.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "interpreter/go.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "interpreter/hexiom.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "interpreter/json_dumps.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "interpreter/json_loads.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "interpreter/meteor_contest.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "interpreter/nbody.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "interpreter/nqueens.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "interpreter/pickle_dict.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "interpreter/pickle_list.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "interpreter/pickle_pure_python.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "interpreter/pidigits.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "interpreter/pyflate.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "interpreter/regex_compile.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "interpreter/regex_dna.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "interpreter/regex_effbot.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "interpreter/regex_v8.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "interpreter/scimark.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "interpreter/spectral_norm.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "interpreter/telco.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "interpreter/unpack_sequence.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "interpreter/unpickle_list.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "interpreter/unpickle.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.Core.time_array_1.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.Core.time_array_empty.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.Core.time_arange_100.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.Core.time_array_float64_l1000.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.Core.time_array_float_l1000.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.Core.time_array_float_l1000_dtype.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.Core.time_array_int_l1000.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.Core.time_array_l.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.Core.time_array_l1.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.Core.time_array_l100.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.Core.time_array_l_view.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.Core.time_can_cast.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.Core.time_can_cast_same_kind.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.Core.time_diag_l100.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.Core.time_diagflat_l100.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.Core.time_diagflat_l50_l50.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.Core.time_dstack_l.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.Core.time_empty_100.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.Core.time_empty_like.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.Core.time_eye_100.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.Core.time_eye_3000.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.Core.time_hstack_l.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.Core.time_identity_100.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.Core.time_identity_3000.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.Core.time_ones_100.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.Core.time_tril_indices_500.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.Core.time_tril_l10x10.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.Core.time_triu_indices_500.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.Core.time_triu_l10x10.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.Core.time_vstack_l.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.Core.time_zeros_100.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.CorrConv.time_convolve.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.CorrConv.time_correlate.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.CountNonzero.time_count_nonzero.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.CountNonzero.time_count_nonzero_axis.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.CountNonzero.time_count_nonzero_multi_axis.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.Indices.time_indices.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.PackBits.time_packbits.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.PackBits.time_packbits_axis0.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.PackBits.time_packbits_axis1.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.PackBits.time_packbits_little.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.StatsMethods.time_max.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.StatsMethods.time_mean.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.StatsMethods.time_min.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.StatsMethods.time_prod.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.StatsMethods.time_std.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.StatsMethods.time_sum.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.StatsMethods.time_var.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.Temporaries.time_large.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.Temporaries.time_large2.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.Temporaries.time_mid.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.Temporaries.time_mid2.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.UnpackBits.time_unpackbits.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.UnpackBits.time_unpackbits_axis0.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.UnpackBits.time_unpackbits_axis1.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.UnpackBits.time_unpackbits_axis1_little.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
+  },
+  "numpy/bench_core.UnpackBits.time_unpackbits_little.py": {
+    "policy": "outlier-elimination-all-builds",
+    "forks": "1x1",
+    "focus": "0.0-1.0"
   }
 }

@@ -2095,6 +2095,9 @@ def python_checkcopyrights(args):
                 "/hpy/",
                 "com.oracle.graal.python.test.integration/src/org.graalvm.python.vfs/",
                 "com.oracle.graal.python.test.integration/src/GRAALPY-VFS/",
+                "com.oracle.graal.python.benchmarks/python/micro/pyperformance/",
+                "com.oracle.graal.python.benchmarks/python/micro/numpy/bench_core.py",
+                "com.oracle.graal.python.benchmarks/python/micro/numpy/common.py",
             ]):
                 pass
             elif os.path.splitext(line)[1] in [".py", ".java", ".c", ".h", ".sh"]:

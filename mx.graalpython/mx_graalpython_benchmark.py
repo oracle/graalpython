@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2025, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -1145,10 +1145,10 @@ def graalpython_polybench_runner(polybench_run: mx_polybench.PolybenchRunFunctio
 
 
 mx_polybench.register_polybench_benchmark_suite(mx_suite=SUITE, name="python", languages=["python"], benchmark_distribution="GRAALPYTHON_POLYBENCH_BENCHMARKS",
-                                                # Match all python files, except for:
-                                                #  * harness.py
-                                                #  * tests/__init__.py
-                                                # These two are necessary for running the C-extension-module benchmarks,
-                                                # but are not benchmarks themselves.
-                                                benchmark_file_filter=r"^(?!.*(harness\.py|tests/__init__\.py)$).*\.py$",
+                                                # There are python files that are necessary for running some benchmarks,
+                                                # but are not benchmarks themselves. For this reason, we exclude them:
+                                                #  * harness.py                             (C-extension-module)
+                                                #  * tests/__init__.py                      (C-extension-module)
+                                                #  * interpreter/bench_core.py              (numpy)
+                                                benchmark_file_filter=r"^(?!.*(harness\.py|tests/__init__\.py|interpreter/bench_core\.py)$).*\.py$",
                                                 runner=graalpython_polybench_runner, tags={"gate", "benchmark", "instructions"})
