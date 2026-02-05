@@ -38,13 +38,15 @@ You can inspect variables, set watch expressions, interactively evaluate code sn
 
 ## Profiling
 
-GraalPy provides three main profiling capabilities: CPU sampling, CPU tracing, and memory tracing. Each tool is described below.
+GraalPy provides three main profiling capabilities: CPU sampling, CPU tracing, and memory tracing.
+Each tool is described below.
 
 For complete options, use: `graalpy --help:tools`
 
 ### CPU Sampler
 
-Use the `--cpusampler` command-line option to take a CPU sample. For example:
+Use the `--cpusampler` command-line option to take a CPU sample.
+For example:
 ```bash
 graalpy --cpusampler my_script.py
 ```
@@ -79,7 +81,8 @@ Thread[main,5,main]
 
 ### CPU Tracer
 
-Use the `--cputracer --cputracer.TraceStatements` command-line options to trace CPU usage. For example:
+Use the `--cputracer --cputracer.TraceStatements` command-line options to trace CPU usage.
+For example:
 
 ```bash
 graalpy --cputracer --cputracer.TraceStatements my_script.py
@@ -118,7 +121,8 @@ Tracing Histogram. Counted a total of 1135 element executions.
 
 ### Memory Tracer
 
-Use the `--memtracer --memtracer.TraceStatements` command-line options to trace memory usage. For example:
+Use the `--memtracer --memtracer.TraceStatements` command-line options to trace memory usage.
+For example:
 
 ```bash
 graalpy --experimental-options --memtracer --memtracer.TraceStatements my_script.py
@@ -363,7 +367,7 @@ You can use GraalPy in PyCharm to create a virtual environment, install packages
 5. Install packages using pip or PyCharm's package manager.
    (For more information, see [Install, uninstall, and upgrade packages](https://www.jetbrains.com/help/pycharm/installing-uninstalling-and-upgrading-packages.html).)
 
-6. Use the PyCharm menu items to [run your Python application](https://www.jetbrains.com/help/pycharm/running-applications.html). 
+6. Use the PyCharm menu items to [run your Python application](https://www.jetbrains.com/help/pycharm/running-applications.html).
 Alternatively, use the terminal emulator to run the `graalpy` command.
 
 ## Using Visual Studio Code with GraalPy

@@ -2,11 +2,13 @@
 
 GraalPy can interoperate with Java and other Graal languages that are implemented on the [Truffle framework](https://www.graalvm.org/latest/graalvm-as-a-platform/language-implementation-framework/).
 This means that you can use other languages' objects and functions directly from your Python scripts.
-This interoperability works in both directions. Python can call other languages, and other languages can call Python code.
+This interoperability works in both directions.
+Python can call other languages, and other languages can call Python code.
 
-## Interacting with Java from Python scripts
+## Call Java from Python
 
-Java is the host language of the JVM and runs the GraalPy interpreter itself. This means you can seamlessly access any Java class available in your classpath directly from Python.
+Java is the host language of the JVM and runs the GraalPy interpreter itself.
+This means you can seamlessly access any Java class available in your classpath directly from Python.
 
 ### Basic Java access
 
@@ -63,9 +65,9 @@ assert java.is_function(my_list.add)
 assert java.instanceof(my_list, ArrayList)
 ```
 
-See the [Polyglot Programming](https://github.com/oracle/graal/blob/master/docs/reference-manual/polyglot-programming.md) and [Embed Languages](https://github.com/oracle/graal/blob/master/docs/reference-manual/embedding/embed-languages.md) documentation for more information about interoperability with other programming languages.
+See the [Polyglot Programming](https://www.graalvm.org/latest/reference-manual/polyglot-programming/) and [Embed Languages](https://www.graalvm.org/latest/reference-manual/embedding/embed-languages/) documentation for more information about interoperability with other programming languages.
 
-## Interacting with foreign objects from Python scripts
+## Call Foreign Objects from Python
 
 When you use foreign objects in Python, GraalPy automatically makes them behave like their Python equivalents.
 
@@ -116,12 +118,12 @@ assert l == [6]
 
 See the [Interop Types to Python](#interop-types-to-python) section for more interop traits and how they map to Python types.
 
-## Interacting with other dynamic languages from Python scripts
+## Call Other Languages from Python
 
 The _polyglot_ API allows non-JVM specific interactions with other languages from Python scripts.
 This includes all interactions with dynamic languages supported via the [Truffle framework](https://www.graalvm.org/latest/graalvm-as-a-platform/language-implementation-framework/), including JavaScript and Ruby.
 
-## Multi-threading and other languages
+## Multithreading
 
 GraalPy implements the Python global interpreter lock (GIL), which prevents any two threads from executing Python code at the same instant.
 When methods in other languages are called from Python, no Python code is running while the other language executes.
@@ -225,7 +227,7 @@ Here are practical examples of using the `polyglot` API to work with JavaScript 
 
     This program matches Python strings using the JavaScript regular expression object. Python reads the captured group from the JavaScript result and checks for a substring in it.
 
-## Exporting Python Objects to other languages
+## Export Python Objects
 
 Use the `polyglot` module to expose Python objects to JVM languages and other Graal languages (languages implemented on the [Truffle framework](https://www.graalvm.org/latest/graalvm-as-a-platform/language-implementation-framework/)).
 
@@ -236,7 +238,7 @@ This allows other languages to call your Python code directly.
    import ssl
    polyglot.export_value(value=ssl, name="python_ssl")
    ```
-   
+
    Then use it, for example, from JavaScript code:
    ```js
    Polyglot.import('python_ssl').get_server_certificate(["oracle.com", 443])
@@ -253,7 +255,7 @@ This allows other languages to call your Python code directly.
    ```java
    import org.graalvm.polyglot.*;
    import org.graalvm.python.embedding.GraalPyResources;
-   
+
    class Main {
        public static void main(String[] args) {
            try (var context = GraalPyResources.createContext()) {
@@ -270,7 +272,7 @@ This allows other languages to call your Python code directly.
     }
     ```
 
-## Mapping types between Python and other languages
+## Types Mapping
 
 The interop protocol defines different types and traits that determine foreign objects behavior and restrictions when used in Python.
 
@@ -325,7 +327,7 @@ The following table shows how Python objects are converted to interop types when
 | `number`       | Only subtypes of `int` and `float`.                                                                                                                   |
 | `string`       | Only subtypes of `str`.                                                                                                                               |
 
-## The Interoperability Extension API
+## Interoperability Extension API
 
 You can extend the interoperability protocol directly from Python through a simple API defined in the `polyglot` module.
 This API lets you define interoperability behavior for custom or user-defined types that are not automatically supported.
@@ -519,7 +521,8 @@ class MyPythonClass:
 
 ### Supported messages
 
-Most interop messages are supported by the interop behavior extension API. The naming convention for `register_interop_behavior` keyword arguments uses _snake_case_, so the interop `fitsInLong` message becomes `fits_in_long`. 
+Most interop messages are supported by the interop behavior extension API.
+The naming convention for `register_interop_behavior` keyword arguments uses _snake_case_, so the interop `fitsInLong` message becomes `fits_in_long`.
 Each message can be extended with either a **pure Python function** (no default keyword arguments, free vars, or cell vars allowed) or a **boolean constant**.
 
 The following table describes the supported interop messages:
@@ -580,4 +583,4 @@ The following table describes the supported interop messages:
 | `isHashEntryRemovable`     | `is_hash_entry_removable`     | `bool`                                                                               |
 | `readHashValue`            | `read_hash_value`             | `object`                                                                             |
 | `writeHashEntry`           | `write_hash_entry`            | `None`                                                                               |
-| `removeHashEntry`          | `remove_hash_entry`           | `None`                                                                               | 
+| `removeHashEntry`          | `remove_hash_entry`           | `None`                                                                               |

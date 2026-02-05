@@ -9,12 +9,16 @@ GraalPy integrates with the [GraalVM Polyglot Sandbox](https://www.graalvm.org/l
 GraalPy exposes the operating system interface to Python scripts in a GraalPy-specific way.
 By default, all access is routed through Java interfaces, but some packages rely on POSIX API details and require direct native access.
 
-Graal languages (implemented on the [Truffle framework](https://www.graalvm.org/latest/graalvm-as-a-platform/language-implementation-framework/)) typically implement system-related functions using the [Truffle abstraction layer](https://github.com/oracle/graal/blob/master/truffle/docs/README.md). This layer is OS-independent and provides extension points when embedding GraalPy or other Graal languages into Java applications. For example, see the [Truffle FileSystem service-provider](https://www.graalvm.org/truffle/javadoc/org/graalvm/polyglot/io/FileSystem.html).
+Graal languages (implemented on the [Truffle framework](https://www.graalvm.org/latest/graalvm-as-a-platform/language-implementation-framework/)) typically implement system-related functions using the [Truffle abstraction layer](https://www.graalvm.org/latest/graalvm-as-a-platform/language-implementation-framework/).
+This layer is OS-independent and provides extension points when embedding GraalPy or other Graal languages into Java applications.
+For example, see the [Truffle FileSystem service-provider](https://www.graalvm.org/truffle/javadoc/org/graalvm/polyglot/io/FileSystem.html).
 
-The standard Python library also provides an OS abstraction, but exposes lower level interfaces. For example, the `os` module directly exposes some POSIX functions.
+The standard Python library also provides an OS abstraction, but exposes lower level interfaces.
+For example, the `os` module directly exposes some POSIX functions.
 On non-POSIX platforms, this interface is emulated to a degree.
 
-GraalPy provides two alternative implementations ("backends") of system-related functionality for built-in Python modules such as `os`. The `PosixModuleBackend` option determines which backend is used: `native` or `java`.
+GraalPy provides two alternative implementations ("backends") of system-related functionality for built-in Python modules such as `os`.
+The `PosixModuleBackend` option determines which backend is used: `native` or `java`.
 
 ### Native Backend
 
@@ -22,7 +26,8 @@ The native backend directly calls the POSIX API in mostly the same way as CPytho
 
 This approach is the most compatible with CPython and provides bare access to the underlying OS interface without an intermediate emulation layer.
 
-However, this implementation bypasses the Truffle abstraction layer by default. This means:
+However, this implementation bypasses the Truffle abstraction layer by default.
+This means:
 - **No sandboxing** protection
 - **No support** for custom [Truffle FileSystem service-provider](https://www.graalvm.org/truffle/javadoc/org/graalvm/polyglot/io/FileSystem.html) implementations
 - **No support** for other Polyglot API providers related to system interfaces
@@ -38,19 +43,21 @@ Known limitations:
 
 ### Java Backend
 
-The Java backend uses the [Truffle abstraction layer](https://github.com/oracle/graal/blob/master/truffle/docs/README.md), which provides:
+The Java backend uses the [Truffle abstraction layer](https://www.graalvm.org/latest/graalvm-as-a-platform/language-implementation-framework/), which provides:
 
 - **Sandboxing support** for security
 - **Custom Polyglot API providers** for system interfaces
 - **Cross-platform compatibility**
 
-Because this abstraction is POSIX-agnostic, it cannot expose all necessary functionality. Some functionality is emulated, and some is unsupported.
+Because this abstraction is POSIX-agnostic, it cannot expose all necessary functionality.
+Some functionality is emulated, and some is unsupported.
 
-The Java backend is the default when [embedding GraalPy in Java applications](https://github.com/oracle/graal/blob/master/docs/reference-manual/embedding/embed-languages.md) using the `Context` API.
+The Java backend is the default when [embedding GraalPy in Java applications](https://oracle.github.io/graalpy-extensions/latest/org.graalvm.python.embedding/org/graalvm/python/embedding/package-summary.html) using the `Context` API.
 
 #### Limitations of the Java Backend
 
-To help identify compatibility issues, GraalPy can log information about known incompatibilities of functions executed at runtime. To enable this logging, use: `--log.python.compatibility.level=FINE`
+To help identify compatibility issues, GraalPy can log information about known incompatibilities of functions executed at runtime.
+To enable this logging, use: `--log.python.compatibility.level=FINE`
 
 Known limitations of the Java backend are:
 
@@ -118,6 +125,7 @@ Context context = Context.newBuilder("python")
 
 ## Python Native Extensions
 
-Python native extensions run by default as native binaries with full access to the underlying system. This means they bypass the security controls described above.
+Python native extensions run by default as native binaries with full access to the underlying system.
+This means they bypass the security controls described above.
 
 For more information about limitations when embedding native extensions, see [Embedding limitations](Native-Extensions.md#embedding-limitations).

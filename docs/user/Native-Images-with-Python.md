@@ -2,9 +2,9 @@
 
 GraalPy supports GraalVM Native Image to generate native binaries of Java applications that embed Python code.
 
-## Quickstart
+## Building Executables with Python
 
-If you started with the [Maven archetype](README.md), the generated _pom.xml_ file already includes the necessary configuration for creating a native executable using the [Maven plugin for Native Image building](https://graalvm.github.io/native-build-tools/latest/maven-plugin.html).
+If you started with the [Maven archetype](Embedding-Getting-Started.md#maven), the generated _pom.xml_ file already includes the necessary configuration for creating a native executable using the [Maven plugin for Native Image building](https://graalvm.github.io/native-build-tools/latest/maven-plugin.html).
 
 To build the application, run:
 
@@ -30,6 +30,7 @@ You can significantly reduce the size by excluding components your application d
 By default, GraalPy includes a pre-initialized Python context in the executable for faster startup.
 Disabling this reduces the binary size by about 15MiB.
 You should remove this if:
+
 - You are creating more than one context
 - Binary size is more important than a slight startup delay
 
@@ -65,4 +66,4 @@ Since every application is different, experiment with different combinations to 
 
 ## Shipping Python Packages
 
-Our Maven archetype by default is set up to include all needed Python files in the native binary itself, so the image is self-contained.
+GraalPy Maven archetype by default is set up to include all needed Python files in the native binary itself, so the image is self-contained.

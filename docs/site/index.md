@@ -7,7 +7,7 @@ layout: base
       <div class="container">
         <div class="hi__row">
           <div class="hi__body">
-            <h4 class="hi__title">A high-performance embeddable Python 3 runtime for Java</h4>
+            <h4 class="hi__title">A high-performance embeddable Python 3 runtime</h4>
             <div class="hi__buttons">
               <a href="#getting-started" class="btn btn-primary">Quickstart</a>
               <a href="#guides" class="btn btn-primary">Guides</a>
@@ -83,7 +83,7 @@ layout: base
               <h4>Script Java with Python</h4>
             </div>
             <div class="langpage__benefits-text">
-              <h5>Extend applications with Python scripts that <a href="{{ '/docs/#interoperability' | relative_url }}">interact with Java</a></h5>
+              <h5>Extend applications with Python scripts that <a href="{{ '/docs/java-developers/' | relative_url }}">interact with Java</a></h5>
             </div>
           </div>
           <div class="langbenefits__card">
@@ -94,7 +94,7 @@ layout: base
               <h4>Simple distribution</h4>
             </div>
             <div class="langpage__benefits-text">
-              <h5>Package Python applications as a <a href="{{ '/docs/#python-standalone-applications' | relative_url }}">single binary</a> with GraalVM Native Image</h5>
+              <h5>Package Python applications as a <a href="{{ '/docs/python-developers/' | relative_url }}">single binary</a> with GraalVM Native Image</h5>
             </div>
           </div>
         </div>
@@ -110,120 +110,88 @@ layout: base
       <div class="container">
         <h3 id="getting-started" class="langstarter__title">How to Get Started</h3>
         <div class="langpage__benefits-text">
-          <h5>You have the option to extend your Java application with Python, or go straight to the <a href="https://github.com/graalvm/graal-languages-demos/blob/main/graalpy/graalpy-starter/" target="_blank">starter project</a></h5>
+          <h5>GraalPy offers flexible integration options: <strong>embed Python in Java applications</strong> or <strong>use GraalPy as a standalone Python runtime</strong>. Choose your case &darr;</h5>
         </div>
-        <div class="languages__example-card">
-          <div class="language__example-subtitle-mobile">
-            <h4>1. Add GraalPy as a dependency from <a href="https://central.sonatype.com/artifact/org.graalvm.polyglot/python" target="_blank">Maven Central</a></h4>
-          </div>
-          <div class="languages__example-box">
-            <div class="languages__snippet">
-                      <div class="language__example-subtitle">
-            <h4>1. Add GraalPy as a dependency from <a href="https://central.sonatype.com/artifact/org.graalvm.polyglot/python" target="_blank">Maven Central</a></h4>
-          </div>
-              {%- highlight xml -%}
+        <div class="gs-divider"></div>
+        <div class="guides__row">
+          <div class="guides__column">
+            <div class="languages__example-card">
+              <div class="language__option-title">
+                <h3>Embed Python in Java Applications</h3>
+              </div>
+              <div class="language__example-subtitle">
+                <h4 style="color: #fff !important;">1. Add GraalPy as a dependency from <a href="https://central.sonatype.com/artifact/org.graalvm.polyglot/python" target="_blank">Maven Central</a></h4>
+              </div>
+              <div class="languages__example-box">
+                <div class="languages__snippet">
+                  {%- highlight xml -%}
 <dependency>
   <groupId>org.graalvm.polyglot</groupId>
-  <artifactId>polyglot</artifactId> 
+  <artifactId>polyglot</artifactId>
   <version>{{ site.language_version }}</version>
 </dependency>
 <dependency>
   <groupId>org.graalvm.polyglot</groupId>
-  <artifactId>python</artifactId> 
+  <artifactId>python</artifactId>
   <version>{{ site.language_version }}</version>
   <type>pom</type>
 </dependency>
-              {%- endhighlight -%}
-            </div>
-            <div class="example-logo-box">
-              <img alt="Maven icon" src='{{ "/assets/img/logos/maven-logo.svg" | relative_url }}' class="languages__example-logo">
-            </div>
-          </div>
-          <div class="languages__example-box">
-            <div class="languages__snippet">
-                      <div class="language__text-secondary">
-            <h4>or</h4>
-          </div>
-              {%- highlight groovy -%}
-implementation("org.graalvm.polyglot:polyglot:{{ site.language_version }}")
-implementation("org.graalvm.python:python-embedding:{{ site.language_version }}")
-              {%- endhighlight -%}
-            </div>
-            <div class="example-logo-box">
-              <img alt="Gradle icon" src='{{ "/assets/img/logos/gradle-logo.svg" | relative_url }}' class="languages__example-logo">
-            </div>
-          </div>
-          <div class="language__example-subtitle-mobile">
-            <h4>2. Embed Python code in Java</h4>
-          </div>
-          <div class="languages__example-box">
-            <div class="languages__snippet">
-                      <div class="language__example-subtitle">
-            <h4>2. Embed Python code in Java</h4>
-          </div>
-              {%- highlight java -%}
+                  {%- endhighlight -%}
+                </div>
+              </div>
+              <div class="language__example-subtitle">
+                <h4 style="color: #fff !important;">2. Embed Python code in Java</h4>
+              </div>
+              <div class="languages__example-box">
+                <div class="languages__snippet">
+                  {%- highlight java -%}
 import org.graalvm.polyglot.Context;
 import org.graalvm.python.embedding.GraalPyResources;
 
 try (Context context = GraalPyResources.contextBuilder().build()) {
     context.eval("python", "print('Hello from GraalPy!')");
 }
-              {%- endhighlight -%}
-            </div>
-            <div class="example-logo-box">
-              <img alt="Java icon" src='{{ "/assets/img/logos/java-logo.svg" | relative_url }}' class="languages__example-logo">
-            </div>
-          </div>
-          <div class="language__example-subtitle-mobile">
-            <h4>3. Add GraalPy plugins for additional Python packages (optional)</h4>
-          </div>
-          <div class="languages__example-box">
-            <div class="languages__snippet">
-                      <div class="language__example-subtitle">
-            <h4>3. Add GraalPy plugins for additional Python packages (optional)</h4>
-          </div>
-              {%- highlight xml -%}
-<plugin>
-  <groupId>org.graalvm.python</groupId>
-  <artifactId>graalpy-maven-plugin</artifactId>
-  <version>{{ site.language_version }}</version>
-  <executions>
-    <execution>
-      <configuration>
-        <packages>
-          <!-- Select Python packages to install via pip. -->
-          <package>pyfiglet==1.0.2</package>
-        </packages>
-      </configuration>
-      <goals>
-        <goal>process-graalpy-resources</goal>
-      </goals>
-    </execution>
-  </executions>
-</plugin>
-              {%- endhighlight -%}
-            </div>
-            <div class="example-logo-box">
-              <img alt="Maven icon" src='{{ "/assets/img/logos/maven-logo.svg" | relative_url }}' class="languages__example-logo">
+                  {%- endhighlight -%}
+                </div>
+              </div>
+              <div class="language__example-subtitle">
+                <h4><a href="{{ '/docs/java-developers/' | relative_url }}">See the complete embedding guide</a> for Maven, Gradle, and advanced features</h4>
+              </div>
             </div>
           </div>
-          <div class="languages__example-box">
-            <div class="languages__snippet">
-                      <div class="language__text-secondary">
-            <h4>or</h4>
-          </div>
-              {%- highlight groovy -%}
-plugins {
-    id("org.graalvm.python") version "{{ site.language_version }}"
-}
+          <div class="guides__column">
+            <div class="languages__example-card">
+              <div class="language__option-title">
+                <h3>Standalone Python Runtime</h3>
+              </div>
+              <div class="language__example-subtitle">
+                <h4 style="color: #fff !important;">1. Install GraalPy with pyenv</h4>
+              </div>
+              <div class="languages__example-box">
+                <div class="languages__snippet">
+                  {%- highlight bash -%}
+# Linux/macOS
+pyenv install graalpy-{{ site.language_version }} && pyenv shell graalpy-{{ site.language_version }}
 
-graalPy {
-    packages = setOf("pyfiglet==1.0.2")
-}
-              {%- endhighlight -%}
-            </div>
-            <div class="example-logo-box">
-              <img alt="Gradle icon" src='{{ "/assets/img/logos/gradle-logo.svg" | relative_url }}' class="languages__example-logo">
+# Windows
+pyenv install graalpy-{{ site.language_version }}-windows-amd64
+                  {%- endhighlight -%}
+                </div>
+              </div>
+              <div class="language__example-subtitle">
+                <h4 style="color: #fff !important;">2. Use pip to install Python packages</h4>
+              </div>
+              <div class="languages__example-box">
+                <div class="languages__snippet">
+                  {%- highlight bash -%}
+pip install numpy pandas requests
+python -c "import numpy; print('GraalPy works with NumPy!')"
+                  {%- endhighlight -%}
+                </div>
+              </div>
+              <div class="language__example-subtitle">
+                <h4><a href="{{ '/docs/python-developers/' | relative_url }}">See the complete installation guide</a> for manual installation and advanced usage</h4>
+              </div>
             </div>
           </div>
         </div>
@@ -239,6 +207,18 @@ graalPy {
         <h3 id="guides" class="truffle__subtitle">Guides</h3>
         <div class="guides__row">
           <div class="guides__column">
+            <div class="guides__card">
+              <img src='{{ "/assets/img/downloads-new/miscellaneous-book.svg" | relative_url }}' alt="book icon">
+              <a href="{{ '/docs/java-developers/' | relative_url }}">
+                <div class="guides__topics">Embed GraalPy in Java Applications</div>
+              </a>
+            </div>
+            <div class="guides__card">
+              <img src='{{ "/assets/img/downloads-new/miscellaneous-book.svg" | relative_url }}' alt="book icon">
+              <a href="{{ '/docs/java-developers/#migrate-from-jython-to-graalpy' | relative_url }}">
+                <div class="guides__topics">Migrate from Jython to GraalPy</div>
+              </a>
+            </div>
             <div class="guides__card">
               <img src='{{ "/assets/img/downloads-new/miscellaneous-book.svg" | relative_url }}' alt="book icon">
               <a href="https://github.com/graalvm/graal-languages-demos/blob/main/graalpy/graalpy-javase-guide/" target="_blank">
@@ -257,18 +237,18 @@ graalPy {
                 <div class="guides__topics">Use GraalPy with Micronaut</div>
               </a>
             </div>
-            <div class="guides__card">
-              <img src='{{ "/assets/img/downloads-new/miscellaneous-book.svg" | relative_url }}' alt="book icon">
-              <a href="https://github.com/graalvm/graal-languages-demos/blob/main/graalpy/graalpy-custom-venv-guide/" target="_blank">
-                <div class="guides__topics">Manually Install Python Packages and Files</div>
-              </a>
-            </div>
           </div>
           <div class="guides__column">
             <div class="guides__card">
               <img src='{{ "/assets/img/downloads-new/miscellaneous-book.svg" | relative_url }}' alt="book icon">
-              <a href="https://github.com/graalvm/graal-languages-demos/blob/main/graalpy/graalpy-jython-guide/" target="_blank">
-                <div class="guides__topics">Migrate from Jython to GraalPy</div>
+              <a href="{{ '/docs/python-developers/' | relative_url }}">
+                <div class="guides__topics">Use GraalPy as a Standalone Python Runtime</div>
+              </a>
+            </div>
+            <div class="guides__card">
+              <img src='{{ "/assets/img/downloads-new/miscellaneous-book.svg" | relative_url }}' alt="book icon">
+              <a href="https://github.com/graalvm/graal-languages-demos/blob/main/graalpy/graalpy-custom-venv-guide/" target="_blank">
+                <div class="guides__topics">Manually Install Python Packages</div>
               </a>
             </div>
             <div class="guides__card">
@@ -393,9 +373,9 @@ graalPy {
               <h4>Supercharge your Java Applications with Python!<br><a target="_target" href="https://devoxx.be/talk/?id=8173">Devoxx'24</a></h4>
             </div>
             <div class="lang-video__text">
-              <h5>The Python ecosystem provides many powerful packages for data science, machine learning, and more, that you can now leverage in Java. 
+              <h5>The Python ecosystem provides many powerful packages for data science, machine learning, and more, that you can now leverage in Java.
                 Get started by adding GraalPy as a dependency to your Java project.
-                There are also Maven and Gradle plugins for GraalPy that help you install additional Python packages. 
+                There are also Maven and Gradle plugins for GraalPy that help you install additional Python packages.
                 In this presentation, we also show live demos that illustrate different use cases, such as a Spring Boot application that visualizes data with Python, Python running on JBang!, a Java application scripted with Python, and more.
               </h5>
             </div>

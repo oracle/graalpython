@@ -2,6 +2,7 @@
 layout: base
 title: Compatibility
 permalink: compatibility/
+nav_order: 3
 ---
 
 <style>
