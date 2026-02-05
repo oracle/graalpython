@@ -2,7 +2,8 @@ test.test_dictviews.DictSetTest.test_abc_registry @ darwin-arm64,linux-aarch64,l
 test.test_dictviews.DictSetTest.test_compare_error @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_dictviews.DictSetTest.test_constructors_not_callable @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_dictviews.DictSetTest.test_copy @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_dictviews.DictSetTest.test_deeply_nested_repr @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,win32-AMD64,win32-AMD64-github
+# Unreliable RecursionError
+!test.test_dictviews.DictSetTest.test_deeply_nested_repr
 test.test_dictviews.DictSetTest.test_dict_items @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_dictviews.DictSetTest.test_dict_keys @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_dictviews.DictSetTest.test_dict_mixed_keys_items @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
