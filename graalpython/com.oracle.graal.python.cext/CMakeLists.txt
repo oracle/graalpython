@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2023, 2025, Oracle and/or its affiliates.
+# Copyright (c) 2023, 2026, Oracle and/or its affiliates.
 #
 # All rights reserved.
 #
@@ -36,8 +36,16 @@ function(require_var var)
 endfunction()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-add_custom_target(compile_commands_target ALL
-  COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_BINARY_DIR}/compile_commands.json" "${CMAKE_SOURCE_DIR}")
+
+execute_process(COMMAND ${CMAKE_COMMAND} -E touch "${CMAKE_SOURCE_DIR}/.compile_commands.json.probe" RESULT_VARIABLE _touch_res)
+if(_touch_res EQUAL 0)
+    file(REMOVE "${CMAKE_SOURCE_DIR}/.compile_commands.json.probe")
+    add_custom_target(compile_commands_target ALL
+        COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_BINARY_DIR}/compile_commands.json" "${CMAKE_SOURCE_DIR}")
+else()
+    message(STATUS "Source directory is not writable, skipping copy of compile_commands.json.")
+    add_custom_target(compile_commands_target)
+endif()
 
 require_var(GRAALPY_PARENT_DIR)
 require_var(CAPI_INC_DIR)
