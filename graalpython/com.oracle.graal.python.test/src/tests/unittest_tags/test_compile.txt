@@ -82,6 +82,6 @@ test.test_compile.TestStackSizeStability.test_if_else @ linux-aarch64-github,lin
 !test.test_compile.TestStackSizeStability.test_try_except_star_finally @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 !test.test_compile.TestStackSizeStability.test_try_except_star_qualified @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 !test.test_compile.TestStackSizeStability.test_try_finally @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-!test.test_compile.TestStackSizeStability.test_while_else @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_compile.TestStackSizeStability.test_while_else @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
+!test.test_compile.TestStackSizeStability.test_while_else @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 !test.test_compile.TestStackSizeStability.test_with @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
