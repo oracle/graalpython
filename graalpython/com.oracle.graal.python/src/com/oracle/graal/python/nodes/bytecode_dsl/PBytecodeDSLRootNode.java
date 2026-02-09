@@ -387,7 +387,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     }
 
     // Not a child of this root, adopted by the BytecodeNode
-    private transient TracingNodes tracingNodes;
+    @CompilationFinal private transient TracingNodes tracingNodes;
 
     // These fields are effectively final, but can only be set after construction.
     @CompilationFinal protected transient BytecodeDSLCodeUnit co;

@@ -7,6 +7,7 @@ graalpython/com.oracle.graal.python.benchmarks/python/meso/ai-nqueen.py,benchmar
 graalpython/com.oracle.graal.python.benchmarks/python/meso/binarytrees3.py,benchmarks.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/meso/bm-float.py,benchmarks.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/meso/chaos-sized2.py,pypy.copyright
+graalpython/com.oracle.graal.python.benchmarks/python/meso/chaos-traced.py,pypy.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/meso/chaos.py,pypy.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/meso/euler11.py,benchmarks.copyright
 graalpython/com.oracle.graal.python.benchmarks/python/meso/euler31.py,benchmarks.copyright
