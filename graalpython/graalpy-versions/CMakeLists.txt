@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2023, Oracle and/or its affiliates.
+# Copyright (c) 2023, 2026, Oracle and/or its affiliates.
 #
 # All rights reserved.
 #
@@ -27,7 +27,7 @@
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 cmake_minimum_required(VERSION 3.22)
-project(graalpy-versions)
+project(graalpy-versions LANGUAGES NONE)
 
 if (NOT DEFINED GRAALPY_VER)
     message(FATAL_ERROR "GRAALPY_VER needs to be set")

@@ -1,4 +1,4 @@
-# Copyright (c) 2021, 2025, Oracle and/or its affiliates.
+# Copyright (c) 2021, 2026, Oracle and/or its affiliates.
 # Copyright (C) 1996-2020 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -14,6 +14,7 @@ import posixpath
 import shutil
 import sys
 from collections import namedtuple
+from io import StringIO
 
 FROZEN_ONLY = os.path.join(os.path.dirname(__file__), "flag.py")
 
@@ -492,7 +493,7 @@ def lower_camel_case(str):
 # write frozen files
 
 FROZEN_MODULES_HEADER = """/*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -596,28 +597,34 @@ def write_frozen_module_file(file, modules):
                 linesep = os.linesep
         else:
             linesep = "\n"
-        stat_result = os.stat(file)
-        atime, mtime = stat_result.st_atime, stat_result.st_mtime
     else:
         linesep = os.linesep
         content = None
+
+    # Generate content in memory so we can compare with existing content and avoid
+    # rewriting unchanged files (e.g. in case of a read-only source filesystem).
+
+    buf = StringIO(newline=linesep)
+    buf.write(FROZEN_MODULES_HEADER)
+    buf.write("\n\n")
+    write_frozen_modules_map(buf, modules)
+    buf.write("\n")
+    write_frozen_lookup(buf, modules)
+    buf.write("}\n")
+    generated = buf.getvalue()
+
+    if content is not None and content == generated:
+        print(f"{file} not modified")
+        return
+
+    # Content differs (or file is missing). Now try to update the real file.
+    # If the source filesystem is read-only, this will fail.
     os.makedirs(os.path.dirname(file), exist_ok=True)
     with open(file, "w", encoding="utf-8", newline=linesep) as out_file:
-        out_file.write(FROZEN_MODULES_HEADER)
-        out_file.write("\n\n")
-        write_frozen_modules_map(out_file, modules)
-        out_file.write("\n")
-        write_frozen_lookup(out_file, modules)
-        out_file.write("}\n")
-    with open(file, "r", encoding="utf-8", newline=linesep) as f:
-        new_content = f.read()
-    if new_content == content:
-        # set mtime to the old one, if we didn't change anything
-        print(f"{file} not modified")
-        os.utime(file, (atime, mtime))
-    else:
-        print(f"{file} modified, rebuild needed!")
-        sys.exit(1)
+        out_file.write(generated)
+
+    print(f"{file} modified, rebuild needed!")
+    sys.exit(1)
 
 
 def add_tabs(str, number):
