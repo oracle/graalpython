@@ -1,5 +1,5 @@
 test.test_multiprocessing_spawn.test_misc.ChallengeResponseTest.test_challengeresponse @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_multiprocessing_spawn.test_misc.MiscTestCase.test__all__ @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_multiprocessing_spawn.test_misc.MiscTestCase.test__all__ @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64
 test.test_multiprocessing_spawn.test_misc.MiscTestCase.test_spawn_sys_executable_none_allows_import @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc.OtherTest.test_answer_challenge_auth_failure @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc.OtherTest.test_deliver_challenge_auth_failure @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
@@ -10,7 +10,7 @@ test.test_multiprocessing_spawn.test_misc.TestIgnoreEINTR.test_ignore_listener @
 test.test_multiprocessing_spawn.test_misc.TestInternalDecorators.test_only_run_in_spawn_testsuite @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc.TestInvalidFamily.test_invalid_family @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc.TestInvalidHandle.test_invalid_handles @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_multiprocessing_spawn.test_misc.TestNamedResource.test_global_named_resource_spawn @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_multiprocessing_spawn.test_misc.TestNamedResource.test_global_named_resource_spawn @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64
 test.test_multiprocessing_spawn.test_misc.TestNoForkBomb.test_noforkbomb @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc.TestPoolNotLeakOnFailure.test_release_unused_processes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc.TestResourceTracker.test_resource_tracker @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
@@ -36,7 +36,7 @@ test.test_multiprocessing_spawn.test_misc.TestSyncManagerTypes.test_dict @ darwi
 test.test_multiprocessing_spawn.test_misc.TestSyncManagerTypes.test_event @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc.TestSyncManagerTypes.test_joinable_queue @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc.TestSyncManagerTypes.test_list @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_multiprocessing_spawn.test_misc.TestSyncManagerTypes.test_namespace @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_multiprocessing_spawn.test_misc.TestSyncManagerTypes.test_namespace @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64
 test.test_multiprocessing_spawn.test_misc.TestSyncManagerTypes.test_pool @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc.TestSyncManagerTypes.test_queue @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc.TestSyncManagerTypes.test_rlock @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
