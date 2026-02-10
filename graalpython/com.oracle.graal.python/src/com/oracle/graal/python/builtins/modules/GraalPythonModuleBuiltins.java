@@ -941,7 +941,10 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = "dis", minNumOfPositionalArgs = 1, parameterNames = {"obj", "quickened"}, doc = "Helper to disassemble code objects")
+    @Builtin(name = "dis", minNumOfPositionalArgs = 1,
+                    parameterNames = {"obj", "quickened"},
+                    keywordOnlyNames = {"quickened"},
+                    doc = "Helper to disassemble code objects")
     @ArgumentClinic(name = "quickened", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "false")
     @GenerateNodeFactory
     abstract static class DisNode extends PythonBinaryClinicBuiltinNode {
