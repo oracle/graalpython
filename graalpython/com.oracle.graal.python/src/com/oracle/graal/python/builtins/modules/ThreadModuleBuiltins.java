@@ -46,6 +46,8 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J__THREAD;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__THREAD;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.lang.ref.WeakReference;
 import java.util.List;
 
@@ -57,8 +59,11 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.thread.PExceptHookArgs;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -78,6 +83,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -106,6 +112,7 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
     public void initialize(Python3Core core) {
         addBuiltinConstant("error", core.lookupType(PythonBuiltinClassType.RuntimeError));
         addBuiltinConstant("TIMEOUT_MAX", TIMEOUT_MAX);
+        addBuiltinConstant("_ExceptHookArgs", core.lookupType(PythonBuiltinClassType.PExceptHookArgs));
         core.lookupBuiltinModule(T__THREAD).setModuleState(0);
         super.initialize(core);
     }
@@ -170,6 +177,59 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.SIZE_MUST_BE_D_OR_S, 0, "a positive value");
             }
             return PythonContext.get(inliningTarget).getAndSetPythonsThreadStackSize(stackSize);
+        }
+    }
+
+    @Builtin(name = "_excepthook", minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    abstract static class GetThreadExceptHookNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        Object getExceptHook(PythonModule self,
+                             Object exceptHookArgs,
+                             @Cached PRaiseNode raiseNode) {
+            if (!(exceptHookArgs instanceof PExceptHookArgs args))
+                throw PRaiseNode.getUncached().raise(raiseNode, PythonBuiltinClassType.TypeError, ErrorMessages.ARG_TYPE_MUST_BE, "_thread.excepthook", "ExceptHookArgs");
+
+            Object excType = args.getExcType();
+
+            if (excType == PythonBuiltinClassType.SystemExit)
+                return PNone.NONE;
+
+            Object excValue = args.getExcValue();
+            Object excTraceback = args.getExcTraceback();
+            Object thread = args.getThread();
+
+            CallNode callNode = CallNode.create();
+            Object name = null;
+
+            Object nameAttr = ((PythonObject) thread).getAttribute(tsLiteral("_name"));
+            if (nameAttr != null && nameAttr != PNone.NONE && nameAttr != PNone.NO_VALUE) {
+                name = nameAttr.toString();
+            }
+
+            if (name == null) {
+                Object getIdentBuiltin = self.getAttribute(tsLiteral("get_ident"));
+                Object ident = callNode.executeWithoutFrame(getIdentBuiltin);
+                name = ident != null ? ident.toString() : "<unknown>";
+            }
+
+            PrintWriter pw = new PrintWriter(getContext().getEnv().err(), true);
+            pw.printf("Exception in thread %s:\n", name);
+
+            PException pException;
+            if (excValue instanceof PException)
+                pException = (PException) excValue;
+            else if (excValue instanceof PBaseException base) {
+                pException = PException.fromObject(base, base.getException().getLocation(), false);
+                pException.materializeMessage();
+            } else {
+                pw.println(excTraceback.toString());
+                return PNone.NONE;
+            }
+
+            ExceptionUtils.printPythonLikeStackTrace(getContext(), pException);
+            return PNone.NONE;
         }
     }
 
