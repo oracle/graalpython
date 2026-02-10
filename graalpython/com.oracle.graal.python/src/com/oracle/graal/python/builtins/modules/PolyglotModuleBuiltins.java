@@ -924,7 +924,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
             if (!interopLibrary.isMetaObject(object)) {
                 throw raiseNode.raise(inliningTarget, ValueError, S_ARG_MUST_BE_S_NOT_P, "first", "a class or interface", object);
             }
-            if (!getContext().getEnv().isHostObject(object)) {
+            if (!PythonContext.get(inliningTarget).getEnv().isHostObject(object)) {
                 return object;
             }
             final String memberClass = "class";
