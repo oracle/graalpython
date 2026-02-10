@@ -50,7 +50,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.IndirectCallData.IndirectCallDataBase;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
@@ -128,7 +128,7 @@ public final class ForeignExecutableBuiltins extends PythonBuiltins {
         @Specialization
         static Object doInteropCall(VirtualFrame frame, Object callee, Object[] arguments,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") IndirectCallDataBase callData,
+                        @Cached("createFor($node)") IndirectCallData callData,
                         @CachedLibrary(limit = "4") InteropLibrary lib,
                         @Cached PForeignToPTypeNode toPTypeNode,
                         @Cached GilNode.Interop gil,

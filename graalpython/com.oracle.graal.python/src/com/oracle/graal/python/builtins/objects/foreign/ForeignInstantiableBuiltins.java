@@ -43,7 +43,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.IndirectCallData.IndirectCallDataBase;
+import com.oracle.graal.python.runtime.IndirectCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -78,7 +78,7 @@ public final class ForeignInstantiableBuiltins extends PythonBuiltins {
         @Specialization
         static Object doInteropCall(VirtualFrame frame, Object callee, Object[] arguments,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") IndirectCallDataBase callData,
+                        @Cached("createFor($node)") IndirectCallData callData,
                         @CachedLibrary(limit = "4") InteropLibrary lib,
                         @Cached PForeignToPTypeNode toPTypeNode,
                         @Cached GilNode.Interop gil,
