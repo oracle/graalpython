@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,14 +43,12 @@ package com.oracle.graal.python.runtime.interop;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
@@ -87,30 +85,18 @@ public final class PythonScopes implements TruffleObject {
 
     public static Object create(Node node, Frame frame) {
         RootNode root = node.getRootNode();
-        PythonLocalScope localScope = PythonLocalScope.createLocalScope(root, frame != null ? frame.materialize() : null);
-        Object[] scopes;
-        if (frame != null) {
-            PythonObject globals = PArguments.getGlobalsSafe(frame);
-            MaterializedFrame generatorFrame = null;
-            if (PGenerator.isGeneratorFrame(frame)) {
-                generatorFrame = PGenerator.getGeneratorFrame(frame);
-            }
-            Object globalsScope = null;
-            if (globals != null) {
-                globalsScope = new PythonMapScope(new Object[]{scopeFromObject(globals)}, new String[]{"globals()"});
-            }
-            if (globals != null && generatorFrame != null) {
-                scopes = new Object[]{localScope, globalsScope, PythonLocalScope.createLocalScope(root, generatorFrame)};
-            } else if (globals != null) {
-                scopes = new Object[]{localScope, globalsScope};
-            } else if (generatorFrame != null) {
-                scopes = new Object[]{localScope, PythonLocalScope.createLocalScope(root, generatorFrame)};
-            } else {
-                return localScope;
-            }
-        } else {
-            return localScope;
+        if (frame == null) {
+            return PythonLocalScope.createEmpty(root);
         }
+
+        Object globalsScope = null;
+        PythonObject globals = PArguments.getGlobalsSafe(frame);
+        if (globals != null) {
+            globalsScope = new PythonMapScope(new Object[]{scopeFromObject(globals)}, new String[]{"globals()"});
+        }
+
+        Object localScope = PythonLocalScope.create(node, frame);
+        Object[] scopes = globalsScope != null ? new Object[]{localScope, globalsScope} : new Object[]{localScope};
         return new PythonScopes(scopes, 0);
     }
 

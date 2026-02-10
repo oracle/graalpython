@@ -313,6 +313,7 @@ import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
                 enableSerialization = true, //
                 enableTagInstrumentation = true, //
                 boxingEliminationTypes = {int.class}, //
+                tagTreeNodeLibrary = PTagTreeNodeExports.class, //
                 storeBytecodeIndexInFrame = true //
 )
 @OperationProxy(PyNumberSubtractNode.class)
