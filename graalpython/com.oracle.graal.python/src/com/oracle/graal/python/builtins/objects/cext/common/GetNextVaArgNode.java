@@ -60,10 +60,6 @@ public abstract class GetNextVaArgNode extends Node {
 
     public abstract long execute(Node inliningTarget, long valist);
 
-    public static long executeUncached(long valist) {
-        return GetNextVaArgNodeGen.getUncached().execute(null, valist);
-    }
-
     @Specialization
     static long doGeneric(long valist,
                     @Cached(inline = false) PCallCapiFunction nextNode) {

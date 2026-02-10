@@ -273,16 +273,19 @@ public abstract class PythonCextObjectBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, VA_LIST_PTR}, call = Ignored)
-    abstract static class GraalPyPrivate_Object_CallFunctionObjArgs extends CApiBinaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, VA_LIST_PTR}, call = Ignored)
+    abstract static class GraalPyPrivate_Object_CallMethodObjArgs extends CApiTernaryBuiltinNode {
 
         @Specialization
-        static Object doFunction(Object callable, long vaList,
+        static Object doMethod(Object receiver, Object methodName, long vaList,
                         @Bind Node inliningTarget,
                         @Cached GetNextVaArgNode getVaArgs,
                         @Cached CallNode callNode,
+                        @Cached PyObjectGetAttrO getAnyAttributeNode,
                         @Cached NativeToPythonNode toJavaNode) {
-            return callFunction(inliningTarget, callable, vaList, getVaArgs, callNode, toJavaNode);
+
+            Object method = getAnyAttributeNode.execute(null, inliningTarget, receiver, methodName);
+            return callFunction(inliningTarget, method, vaList, getVaArgs, callNode, toJavaNode);
         }
 
         static Object callFunction(Node inliningTarget, Object callable, long vaList,
@@ -309,22 +312,6 @@ public abstract class PythonCextObjectBuiltins {
                 args = PythonUtils.arrayCopyOf(args, filled);
             }
             return callNode.executeWithoutFrame(callable, args);
-        }
-    }
-
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, VA_LIST_PTR}, call = Ignored)
-    abstract static class GraalPyPrivate_Object_CallMethodObjArgs extends CApiTernaryBuiltinNode {
-
-        @Specialization
-        static Object doMethod(Object receiver, Object methodName, long vaList,
-                        @Bind Node inliningTarget,
-                        @Cached GetNextVaArgNode getVaArgs,
-                        @Cached CallNode callNode,
-                        @Cached PyObjectGetAttrO getAnyAttributeNode,
-                        @Cached NativeToPythonNode toJavaNode) {
-
-            Object method = getAnyAttributeNode.execute(null, inliningTarget, receiver, methodName);
-            return GraalPyPrivate_Object_CallFunctionObjArgs.callFunction(inliningTarget, method, vaList, getVaArgs, callNode, toJavaNode);
         }
     }
 

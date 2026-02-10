@@ -833,6 +833,7 @@ _PyObject_CallMethodId_SizeT(PyObject *obj, _Py_Identifier *name,
     Py_DECREF(callable);
     return retval;
 }
+#endif // GraalPy change
 
 
 /* --- Call with "..." arguments ---------------------------------- */
@@ -898,7 +899,6 @@ object_vacall(PyThreadState *tstate, PyObject *base,
     }
     return result;
 }
-#endif // GraalPy change
 
 
 PyObject *
@@ -966,12 +966,14 @@ _PyObject_CallMethodIdObjArgs(PyObject *obj, _Py_Identifier *name, ...)
 PyObject *
 PyObject_CallFunctionObjArgs(PyObject *callable, ...)
 {
-    // GraalPy change: different implementation
+    PyThreadState *tstate = _PyThreadState_GET();
     va_list vargs;
+    PyObject *result;
+
     va_start(vargs, callable);
-    // the arguments are given as a variable list followed by NULL
-    PyObject *result = GraalPyPrivate_Object_CallFunctionObjArgs(callable, &vargs);
+    result = object_vacall(tstate, NULL, callable, vargs);
     va_end(vargs);
+
     return result;
 }
 
