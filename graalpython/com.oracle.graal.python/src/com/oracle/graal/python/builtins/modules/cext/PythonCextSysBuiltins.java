@@ -46,8 +46,8 @@ import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectBorrowed;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.VA_LIST_PTR;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_STDERR;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_STDOUT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
@@ -58,7 +58,7 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnar
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.PromoteBorrowedValue;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.UnicodeFromFormatNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
@@ -116,6 +116,7 @@ public final class PythonCextSysBuiltins {
         return file;
     }
 
+    /** similar to {@code sys_pyfile_write} */
     @CApiBuiltin(ret = Int, args = {Int, ConstCharPtr}, call = Ignored, acquireGil = false)
     @TruffleBoundary
     public static int GraalPyPrivate_Sys_WriteStd(int fd, long msgPtr) {
@@ -124,11 +125,11 @@ public final class PythonCextSysBuiltins {
         return 0;
     }
 
-    @CApiBuiltin(ret = Int, args = {Int, ConstCharPtr, VA_LIST_PTR}, call = Ignored, acquireGil = false)
+    /** similar to {@code sys_pyfile_write_unicode} */
+    @CApiBuiltin(ret = Int, args = {Int, PyObject}, call = Ignored, acquireGil = false)
     @TruffleBoundary
-    public static int GraalPyPrivate_Sys_FormatStd(int fd, long formatPtr, long vaList) {
-        TruffleString format = FromCharPointerNode.executeUncached(formatPtr, false);
-        Object msg = UnicodeFromFormatNode.executeUncached(format, vaList);
+    public static int GraalPyPrivate_Sys_PyFileWriteUnicode(int fd, long unicodePtr) {
+        Object msg = NativeToPythonInternalNode.executeUncached(unicodePtr, false);
         PyObjectCallMethodObjArgs.executeUncached(selectOut(fd), T_WRITE, msg);
         return 0;
     }

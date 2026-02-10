@@ -68,7 +68,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectConstPtr;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.VA_LIST_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor._PY_ERROR_HANDLER;
 import static com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.getByteArray;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.writeLongField;
@@ -104,7 +103,6 @@ import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi5Bui
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApi6BuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiQuaternaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
@@ -113,7 +111,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.UnicodeFromFormatNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
@@ -1254,16 +1251,6 @@ public final class PythonCextUnicodeBuiltins {
                 // TODO
                 throw raiseNode.raise(inliningTarget, PythonErrorType.LookupError, ErrorMessages.M, e);
             }
-        }
-    }
-
-    @CApiBuiltin(ret = PyObjectTransfer, args = {ConstCharPtrAsTruffleString, VA_LIST_PTR}, call = CApiCallPath.Ignored)
-    abstract static class GraalPyPrivate_Unicode_FromFormat extends CApiBinaryBuiltinNode {
-        @Specialization
-        static Object doGeneric(TruffleString format, long vaList,
-                        @Bind Node inliningTarget,
-                        @Cached UnicodeFromFormatNode unicodeFromFormatNode) {
-            return unicodeFromFormatNode.execute(inliningTarget, format, vaList);
         }
     }
 
