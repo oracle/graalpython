@@ -209,7 +209,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "__set_gil_locked_during_foreign_calls__", parameterNames = {"lock"})
+    @Builtin(name = "__set_gil_locked_during_foreign_calls__", parameterNames = {"lock"}, keywordOnlyNames = {"lock"})
     @GenerateNodeFactory
     @ArgumentClinic(name = "lock", conversion = ClinicConversion.Boolean)
     public abstract static class EnterForeignCriticalRegionNode extends PythonUnaryClinicBuiltinNode {
