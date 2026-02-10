@@ -39,10 +39,11 @@
 
 import math
 import os
-import sys
 import types
 import unittest
-from unittest import skipUnless
+from unittest import skipIf, skipUnless
+
+import sys
 
 if sys.implementation.name == "graalpy":
     import polyglot
@@ -1441,11 +1442,34 @@ class InteropTests(unittest.TestCase):
         assert doctest.testmod(m=polyglot, verbose=getattr(unittest, "verbose"), optionflags=doctest.ELLIPSIS).failed == 0
 
     def test_keep_gil_around_interop(self):
-        # __graalpython__.interop_has_gil returns an interop object that checks the GIL when it's executed
-        self.assertFalse(__graalpython__.interop_has_gil())
+        import java.lang.Thread as Thread
+        import threading, time
+        resumed = 0
+        done = threading.Event()
+
+        def worker():
+            nonlocal resumed
+            resumed = 0
+            while not done.is_set():
+                resumed += 1
+                time.sleep(0.0001)
+
+        def gil_test(gil_locked):
+            done.clear()
+            t = threading.Thread(target=worker)
+            t.start()
+            Thread.sleep(1000)
+            done.set()
+            t.join(timeout=5)
+            if gil_locked:
+                self.assertLess(resumed, 200, "Worker ran too many times when GIL was supposed to be locked")
+            else:
+                self.assertGreater(resumed, 100, "Worker ran too few times when GIL was supposed to be released")
+
+        gil_test(gil_locked=False)
         with polyglot.gil_locked_during_interop(True):
-            self.assertTrue(__graalpython__.interop_has_gil())
+            gil_test(gil_locked=True)
             with polyglot.gil_locked_during_interop(False):
-                self.assertFalse(__graalpython__.interop_has_gil())
-            self.assertTrue(__graalpython__.interop_has_gil())
-        self.assertFalse(__graalpython__.interop_has_gil())
+                gil_test(gil_locked=False)
+            gil_test(gil_locked=True)
+        gil_test(gil_locked=False)
