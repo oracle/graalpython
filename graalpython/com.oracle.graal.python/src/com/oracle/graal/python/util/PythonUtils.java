@@ -763,7 +763,9 @@ public final class PythonUtils {
 
     @TruffleBoundary
     public static PBuiltinFunction createMethod(Object klass, Builtin builtin, RootCallTarget callTarget, Object type, int numDefaults) {
-        assert callTarget.getRootNode() instanceof BuiltinFunctionRootNode r && r.getBuiltin() == builtin;
+        RootNode rootNode = callTarget.getRootNode();
+        assert rootNode instanceof BuiltinFunctionRootNode : String.format("root: %s, builtin: %s, klass: %s", rootNode, builtin, klass);
+        assert ((BuiltinFunctionRootNode) rootNode).getBuiltin() == builtin : String.format("%s != %s, klass: %s", ((BuiltinFunctionRootNode) rootNode).getBuiltin(), builtin, klass);
         int flags = PBuiltinFunction.getFlags(builtin, callTarget);
         TruffleString name = toInternedTruffleStringUncached(builtin.name());
         PBuiltinFunction function = PFactory.createBuiltinFunction(PythonLanguage.get(null), name, type, numDefaults, flags, callTarget);

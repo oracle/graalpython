@@ -51,12 +51,14 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.lib.PyDictGetItem;
 import com.oracle.graal.python.nodes.bytecode.FrameInfo;
+import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
 import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLFrameInfo;
 import com.oracle.graal.python.nodes.frame.GetFrameLocalsNodeGen.CopyDSLLocalsToDictNodeGen;
 import com.oracle.graal.python.nodes.frame.GetFrameLocalsNodeGen.CopyLocalsToDictNodeGen;
 import com.oracle.graal.python.runtime.CallerFlags;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.bytecode.BytecodeFrame;
 import com.oracle.truffle.api.bytecode.BytecodeNode;
@@ -245,7 +247,8 @@ public abstract class GetFrameLocalsNode extends Node {
     /**
      * Equivalent of CPython's {@code PyFrame_LocalsToFast}
      */
-    public static void syncLocalsBackToFrame(CodeUnit co, BytecodeNode bytecodeNode, PFrame pyFrame, Frame localFrame) {
+    public static void syncLocalsBackToFrame(BytecodeDSLCodeUnit co, BytecodeNode bytecodeNode, PFrame pyFrame, Frame localFrame) {
+        CompilerAsserts.partialEvaluationConstant(co);
         if (!pyFrame.hasCustomLocals()) {
             PDict localsDict = (PDict) pyFrame.getLocalsDict();
             copyLocalsArray(localFrame, bytecodeNode, localsDict, co.varnames, 0, false);
@@ -254,7 +257,10 @@ public abstract class GetFrameLocalsNode extends Node {
         }
     }
 
+    @ExplodeLoop
     private static void copyLocalsArray(Frame localFrame, BytecodeNode bytecodeNode, PDict localsDict, TruffleString[] namesArray, int offset, boolean deref) {
+        CompilerAsserts.partialEvaluationConstant(namesArray);
+        CompilerAsserts.partialEvaluationConstant(offset);
         for (int i = 0; i < namesArray.length; i++) {
             TruffleString varname = namesArray[i];
             Object value = getDictItemUncached(localsDict, varname);

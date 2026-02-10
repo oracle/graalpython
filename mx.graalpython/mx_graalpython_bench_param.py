@@ -1,4 +1,4 @@
-# Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2026, Oracle and/or its affiliates.
 # Copyright (c) 2013, Regents of the University of California
 #
 # All rights reserved.
@@ -256,6 +256,7 @@ MESO_BENCHMARKS = {
     'regexdna-sized2': ITER_25 + ['4'],
     'knucleotide': ITER_25 + [],
     'chaos-sized2': ITER_10 + ['500'],
+    'chaos-traced': ITER_5 + ['500'],
     'go-sized2': ITER_15 + ['50'],
     'raytrace-simple': ITER_10 + [],
     'lud-sized2': ITER_10 + ['1536'],
