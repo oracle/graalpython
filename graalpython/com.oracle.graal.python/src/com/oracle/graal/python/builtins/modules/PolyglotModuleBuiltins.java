@@ -799,8 +799,9 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "register_interop_type", minNumOfPositionalArgs = 2, parameterNames = {"foreign_class", "python_class"}, takesVarKeywordArgs = true, keywordOnlyNames = {
-                    "allow_method_overwrites"}, doc = """
+    @Builtin(name = "register_interop_type", minNumOfPositionalArgs = 2,
+                    parameterNames = {"foreign_class", "python_class", "allow_method_overwrites"},
+                    takesVarKeywordArgs = true, keywordOnlyNames = {"allow_method_overwrites"}, doc = """
                                     register_interop_type(foreign_class, python_class, allow_method_overwrites=False)
 
                                     Registers the python class for the given foreign_class.
