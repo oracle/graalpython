@@ -3,17 +3,6 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
-## Version 25.1.0
-* Intern string literals in source files
-* Allocation reporting via Truffle has been removed. Python object sizes were never reported correctly, so the data was misleading and there was a non-neglible overhead for object allocations even when reporting was inactive.
-* Better `readline` support via JLine. Autocompletion and history now works in `pdb`
-* Remove the intrinsified _ctypes module in favor of the native CPython version. This makes GraalPy's ctypes implementation more compatible and reduces the memory footprint of using ctypes.
-* Add a new, more natural style of subclassing Java classes from Python by passing the `new_style=True` keyword. Multiple levels of inheritance are supported, and `super()` calls both in the constructor override via `__new__` as well as in Java method overrides work as expected.
-* Add `polyglot.gil_locked_during_interop` context manager. By default, the global interpreter lock (GIL) is unlocked when interacting with objects from another language, to give other Python threads a chance to run in parallel. While this avoids potential deadlocks, repeated unlocking and locking of the GIL can decrease performance, so this context manager can be used to keep the lock held around short-running interop.
-
-## Version 25.0.1
-* Allow users to keep going on unsupported JDK/OS/ARCH combinations at their own risk by opting out of early failure using `-Dtruffle.UseFallbackRuntime=true`, `-Dpolyglot.engine.userResourceCache=/set/to/a/writeable/dir`, `-Dpolyglot.engine.allowUnsupportedPlatform=true`, and `-Dpolyglot.python.UnsupportedPlatformEmulates=[linux|macos|windows]` and `-Dorg.graalvm.python.resources.exclude=native.files`.
-
 ## Version 25.0.0
 * `sys.implementation.version` now returns the GraalPy version instead of the Python version it implements. Also available as `sys.graalpy_version_info` for better discoverability by people already familiar with PyPy and its `sys.pypy_version_info`.
 * `GRAALPY_VERSION_NUM` C macro now inlcudes the release level and serial number at the end to conform to the `hexversion` format. This shouldn't break any existing comparisons.
@@ -61,7 +50,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * Update to Python 3.11.7.
 * We now provide intrinsified `_pickle` module also in the community version.
 * `polyglot.eval` now raises more meaningful exceptions. Unavailable languages raise `ValueError`. Exceptions from the polyglot language are raised directly as interop objects (typed as `polyglot.ForeignException`). The shortcut for executing python files without specifying language has been removed, use regular `eval` for executing Python code.
-* In Jython emulation mode we now magically fall back to calling Java getters or setters when using Python attribute access for non-visible properties. This can help migrating away from Jython if you relied on this behavior. 
+* In Jython emulation mode we now magically fall back to calling Java getters or setters when using Python attribute access for non-visible properties. This can help migrating away from Jython if you relied on this behavior.
 * The option `python.EmulateJython` to enable Jython emulation is now marked as stable, and can thus be relied upon in production.
 * Fixed parsing of pyvenv.cfg according to PEP 405, which is required to use [uv](https://github.com/astral-sh/uv?tab=readme-ov-file#uv) generated venvs with GraalPy.
 * Use https://www.graalvm.org/python/wheels/ as the default value for the `--extra-index-url` pip option. This will make it easy for users to install GraalPy binary wheels in the future.
@@ -209,7 +198,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * Escaping Unicode characters using the character names in strings like
   "\N{GREEK CAPITAL LETTER DELTA}".
 * When a `*.py` file is imported, `*.pyc` file is created. It contains binary data to speed up parsing.
-* Adding option `PyCachePrefix`, which is equivalent to PYTHONPYCACHEPREFIX environment variable, which is also accepted now. 
+* Adding option `PyCachePrefix`, which is equivalent to PYTHONPYCACHEPREFIX environment variable, which is also accepted now.
 * Adding optin `DontWriteBytecodeFlag`. Equivalent to the Python -B flag. Don't write bytecode files.
 * Command option -B works
 * Implement better reference counting for native extensions to fix memory leaks
