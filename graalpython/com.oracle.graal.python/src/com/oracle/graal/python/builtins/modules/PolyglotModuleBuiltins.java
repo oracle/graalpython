@@ -383,7 +383,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
                         @Cached("create(T___NAME__)") GetAttributeNode getNameAttributeNode,
                         @Cached CastToJavaStringNode castToStringNode,
                         @Cached PRaiseNode raiseNode) {
-            Object attrNameValue = getNameAttributeNode.execute(frame, fun);
+            Object attrNameValue = getNameAttributeNode.executeObject(frame, fun);
             String methodName;
             try {
                 methodName = castToStringNode.execute(attrNameValue);
@@ -924,7 +924,7 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
             if (!interopLibrary.isMetaObject(object)) {
                 throw raiseNode.raise(inliningTarget, ValueError, S_ARG_MUST_BE_S_NOT_P, "first", "a class or interface", object);
             }
-            if (!interopLibrary.isHostObject(object)) {
+            if (!getContext().getEnv().isHostObject(object)) {
                 return object;
             }
             final String memberClass = "class";
