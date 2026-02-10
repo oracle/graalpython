@@ -41,9 +41,9 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
-import com.oracle.graal.python.runtime.ExecutionContext.InteropCallContext;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
+import com.oracle.graal.python.runtime.IndirectCallData.IndirectCallDataBase;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -78,7 +78,7 @@ public final class ForeignInstantiableBuiltins extends PythonBuiltins {
         @Specialization
         static Object doInteropCall(VirtualFrame frame, Object callee, Object[] arguments,
                         @Bind Node inliningTarget,
-                        @Cached("createFor($node)") InteropCallData callData,
+                        @Cached("createFor($node)") IndirectCallDataBase callData,
                         @CachedLibrary(limit = "4") InteropLibrary lib,
                         @Cached PForeignToPTypeNode toPTypeNode,
                         @Cached GilNode.Interop gil,
@@ -86,13 +86,13 @@ public final class ForeignInstantiableBuiltins extends PythonBuiltins {
             PythonContext context = PythonContext.get(inliningTarget);
             PythonLanguage language = context.getLanguage(inliningTarget);
             try {
-                Object state = InteropCallContext.enter(frame, language, context, callData);
+                Object state = IndirectCallContext.enter(frame, language, context, callData);
                 gil.release(context, true);
                 try {
                     return toPTypeNode.executeConvert(lib.instantiate(callee, arguments));
                 } finally {
                     gil.acquire(context, inliningTarget);
-                    InteropCallContext.exit(frame, language, context, state);
+                    IndirectCallContext.exit(frame, language, context, state);
                 }
             } catch (ArityException | UnsupportedTypeException e) {
                 throw raiseNode.raise(inliningTarget, PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);
