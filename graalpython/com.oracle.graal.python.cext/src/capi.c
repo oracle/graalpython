@@ -520,10 +520,6 @@ PyAPI_FUNC(void) GraalPyPrivate_CheckTypeReady(PyTypeObject* type) {
     }
 }
 
-PyAPI_FUNC(void*) GraalPyPrivate_VaArgPointer(va_list* va) {
-	return va_arg(*va, void*);
-}
-
 PyAPI_FUNC(int) GraalPyPrivate_NoOpClear(PyObject* o) {
     return 0;
 }

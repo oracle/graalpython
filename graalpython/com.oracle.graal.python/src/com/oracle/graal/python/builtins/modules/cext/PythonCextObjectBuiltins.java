@@ -55,11 +55,9 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.Arg
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyVarObject;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_hash_t;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.VA_LIST_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Void;
 import static com.oracle.graal.python.builtins.objects.ints.PInt.intValue;
 import static com.oracle.graal.python.builtins.objects.object.PythonObject.IMMORTAL_REFCNT;
-import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nfi2.NativeMemory.readPtrArrayElement;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNHASHABLE_TYPE_P;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___BYTES__;
@@ -92,10 +90,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransi
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonObjectReference;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.UpdateHandleTableReferenceNode;
-import com.oracle.graal.python.builtins.objects.cext.common.GetNextVaArgNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
@@ -146,7 +142,6 @@ import com.oracle.graal.python.runtime.sequence.storage.ArrayBasedSequenceStorag
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -273,45 +268,19 @@ public abstract class PythonCextObjectBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, VA_LIST_PTR}, call = Ignored)
-    abstract static class GraalPyPrivate_Object_CallMethodObjArgs extends CApiTernaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObjectConstPtr, Py_ssize_t}, call = Ignored)
+    abstract static class GraalPyPrivate_Object_CallMethodObjArgs extends CApiQuaternaryBuiltinNode {
 
         @Specialization
-        static Object doMethod(Object receiver, Object methodName, long vaList,
+        static Object doMethod(Object receiver, Object methodName, long argsArray, long nargs,
                         @Bind Node inliningTarget,
-                        @Cached GetNextVaArgNode getVaArgs,
-                        @Cached CallNode callNode,
                         @Cached PyObjectGetAttrO getAnyAttributeNode,
-                        @Cached NativeToPythonNode toJavaNode) {
+                        @Cached CStructAccess.ReadObjectNode readNode,
+                        @Cached CallNode callNode) {
 
             Object method = getAnyAttributeNode.execute(null, inliningTarget, receiver, methodName);
-            return callFunction(inliningTarget, method, vaList, getVaArgs, callNode, toJavaNode);
-        }
-
-        static Object callFunction(Node inliningTarget, Object callable, long vaList,
-                        GetNextVaArgNode getVaArgs,
-                        CallNode callNode,
-                        NativeToPythonNode toJavaNode) {
-            /*
-             * Function 'PyObject_CallFunctionObjArgs' expects a va_list that contains just
-             * 'PyObject *' and is terminated by 'NULL'.
-             */
-            Object[] args = new Object[4];
-            int filled = 0;
-            while (true) {
-                long argPtr = getVaArgs.execute(inliningTarget, vaList);
-                if (argPtr == NULLPTR) {
-                    break;
-                }
-                if (filled >= args.length) {
-                    args = PythonUtils.arrayCopyOf(args, args.length * 2);
-                }
-                args[filled++] = toJavaNode.executeRaw(argPtr);
-            }
-            if (filled < args.length) {
-                args = PythonUtils.arrayCopyOf(args, filled);
-            }
-            return callNode.executeWithoutFrame(callable, args);
+            Object[] args = readNode.readPyObjectArray(argsArray, (int) nargs);
+            return callNode.executeWithoutFrame(method, args);
         }
     }
 
