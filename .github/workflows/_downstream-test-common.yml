@@ -1,0 +1,50 @@
+name: Downstream test (common)
+
+on:
+  workflow_call:
+    inputs:
+      package:
+        type: string
+        required: true
+      needs_cmake:
+        type: boolean
+        required: false
+        default: false
+      needs_rust:
+        type: boolean
+        required: false
+        default: false
+      needs_uv:
+        type: boolean
+        required: false
+        default: false
+
+jobs:
+  downstream:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - id: ubuntu-latest
+            platform: linux
+            arch: amd64
+          - id: macos-latest
+            platform: macos
+            arch: aarch64
+
+    runs-on: ${{ matrix.os.id }}
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Run downstream test
+        uses: ./.github/actions/downstream-test
+        with:
+          package: ${{ inputs.package }}
+          needs_cmake: ${{ inputs.needs_cmake }}
+          needs_rust: ${{ inputs.needs_rust }}
+          needs_uv: ${{ inputs.needs_uv }}
+          platform: ${{ matrix.os.platform }}
+          arch: ${{ matrix.os.arch }}

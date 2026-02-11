@@ -1,0 +1,56 @@
+name: Downstream test (oracledb)
+
+on:
+  workflow_call:
+    inputs:
+      package:
+        type: string
+        required: true
+      needs_cmake:
+        type: boolean
+        required: false
+        default: false
+      needs_rust:
+        type: boolean
+        required: false
+        default: false
+      needs_uv:
+        type: boolean
+        required: false
+        default: false
+
+jobs:
+  downstream:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - id: ubuntu-latest
+            platform: linux
+            arch: amd64
+
+    runs-on: ${{ matrix.os.id }}
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      PYO_TEST_CONNECT_STRING: "127.0.0.1:1521/FREEPDB1"
+      PYO_TEST_ADMIN_PASSWORD: "asdf12345678"
+
+    services:
+      oracledb:
+        image: container-registry.oracle.com/database/free@sha256:51940ce2a4c9a085c9deb715713d68c579756e9bf09a0d7318c7e3e28f70ba1e
+        env:
+          ORACLE_PWD: ${{ env.PYO_TEST_ADMIN_PASSWORD }}
+        ports:
+          - 1521:1521
+          - 5500:5500
+
+    steps:
+      - name: Run downstream test
+        uses: ./.github/actions/downstream-test
+        with:
+          package: ${{ inputs.package }}
+          needs_cmake: ${{ inputs.needs_cmake }}
+          needs_rust: ${{ inputs.needs_rust }}
+          needs_uv: ${{ inputs.needs_uv }}
+          platform: ${{ matrix.os.platform }}
+          arch: ${{ matrix.os.arch }}
