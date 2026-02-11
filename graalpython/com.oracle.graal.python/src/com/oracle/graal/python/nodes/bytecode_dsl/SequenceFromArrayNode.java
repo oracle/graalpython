@@ -38,221 +38,185 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.bytecode;
-
-import java.lang.reflect.Array;
+package com.oracle.graal.python.nodes.bytecode_dsl;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.list.PList.ListOrigin;
-import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ArrayBasedSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.BoolSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.StorageType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorageFactory;
-import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.SlowPathException;
+import com.oracle.truffle.api.profiles.InlinedIntValueProfile;
 import com.oracle.truffle.api.source.SourceSection;
 
-abstract class SequenceFromStackNode extends PNodeWithContext {
-    @CompilationFinal protected final int length;
-    @CompilationFinal protected SequenceStorage.StorageType type = SequenceStorage.StorageType.Uninitialized;
+abstract class SequenceFromArrayNode extends Node {
+    private static final SlowPathException SLOW_PATH_EXCEPTION = new SlowPathException();
+    @CompilationFinal protected SequenceStorage.StorageType type = StorageType.Uninitialized;
 
-    SequenceFromStackNode(int length) {
-        this.length = length;
-    }
-
-    @ExplodeLoop
-    protected SequenceStorage createSequenceStorageForDirect(VirtualFrame frame, int start, int stop) {
-        CompilerAsserts.partialEvaluationConstant(start);
-        CompilerAsserts.partialEvaluationConstant(stop);
-
+    SequenceStorage createSequenceStorage(Object[] objectElements, int length) {
         SequenceStorage storage;
         if (type == SequenceStorage.StorageType.Uninitialized) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            try {
-                Object[] elements = new Object[length];
-                for (int j = 0, i = start; i < stop; i++, j++) {
-                    elements[j] = frame.getObject(i);
-                    frame.setObject(i, null);
-                }
-                storage = SequenceStorageFactory.createStorage(elements);
-                type = storage.getElementType();
-            } catch (Throwable t) {
-                // we do not want to repeatedly deopt if a value execution
-                // always raises, for example
-                type = SequenceStorage.StorageType.Generic;
-                throw t;
-            }
+            storage = initialize(objectElements);
         } else {
-            int j = 0;
-            Object array = null;
             try {
                 switch (type) {
                     // Ugh. We want to use primitive arrays during unpacking, so
                     // we cannot dispatch generically here.
                     case Empty: {
-                        assert length == 0;
+                        if (length != 0) {
+                            throw SLOW_PATH_EXCEPTION;
+                        }
                         storage = EmptySequenceStorage.INSTANCE;
                         break;
                     }
                     case Boolean: {
-                        boolean[] elements = new boolean[getCapacityEstimate()];
-                        array = elements;
-                        for (int i = start; i < stop; i++, j++) {
-                            elements[j] = castBoolean(frame.getObject(i));
-                            frame.setObject(i, null);
+                        boolean[] elements = new boolean[getCapacityEstimate(length)];
+                        for (int i = 0; i < length; i++) {
+                            elements[i] = castBoolean(objectElements[i]);
                         }
                         storage = new BoolSequenceStorage(elements, length);
                         break;
                     }
-                    case Byte: {
-                        byte[] elements = new byte[getCapacityEstimate()];
-                        array = elements;
-                        for (int i = start; i < stop; i++, j++) {
-                            int element = castInt(frame.getObject(i));
-                            if (element <= Byte.MAX_VALUE && element >= Byte.MIN_VALUE) {
-                                elements[j] = (byte) element;
-                                frame.setObject(i, null);
-                            } else {
-                                CompilerDirectives.transferToInterpreterAndInvalidate();
-                                throw new UnexpectedResultException(element);
-                            }
-                        }
-                        storage = new ByteSequenceStorage(elements, length);
-                        break;
-                    }
                     case Int: {
-                        int[] elements = new int[getCapacityEstimate()];
-                        array = elements;
-                        for (int i = start; i < stop; i++, j++) {
-                            elements[j] = castInt(frame.getObject(i));
-                            frame.setObject(i, null);
+                        int[] elements = new int[getCapacityEstimate(length)];
+                        for (int i = 0; i < length; i++) {
+                            elements[i] = castInt(objectElements[i]);
                         }
                         storage = new IntSequenceStorage(elements, length);
                         break;
                     }
                     case Long: {
-                        long[] elements = new long[getCapacityEstimate()];
-                        array = elements;
-                        for (int i = start; i < stop; i++, j++) {
-                            elements[j] = castLong(frame.getObject(i));
-                            frame.setObject(i, null);
+                        long[] elements = new long[getCapacityEstimate(length)];
+                        for (int i = 0; i < length; i++) {
+                            elements[i] = castLong(objectElements[i]);
                         }
                         storage = new LongSequenceStorage(elements, length);
                         break;
                     }
                     case Double: {
-                        double[] elements = new double[getCapacityEstimate()];
-                        array = elements;
-                        for (int i = start; i < stop; i++, j++) {
-                            elements[j] = castDouble(frame.getObject(i));
-                            frame.setObject(i, null);
+                        double[] elements = new double[getCapacityEstimate(length)];
+                        for (int i = 0; i < length; i++) {
+                            elements[i] = castDouble(objectElements[i]);
                         }
                         storage = new DoubleSequenceStorage(elements, length);
                         break;
                     }
                     case Generic: {
-                        Object[] elements = new Object[getCapacityEstimate()];
-                        for (int i = start; i < stop; i++, j++) {
-                            elements[j] = frame.getObject(i);
-                            frame.setObject(i, null);
-                        }
-                        storage = new ObjectSequenceStorage(elements, length);
+                        storage = new ObjectSequenceStorage(objectElements, length);
                         break;
                     }
                     default:
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         throw new RuntimeException("unexpected state");
                 }
-            } catch (UnexpectedResultException e) {
+            } catch (SlowPathException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                storage = genericFallback(frame, array, start, stop, j, e.getResult());
+                type = SequenceStorage.StorageType.Generic;
+                storage = new ObjectSequenceStorage(objectElements, length);
             }
         }
         return storage;
     }
 
-    private SequenceStorage genericFallback(VirtualFrame frame, Object array, int start, int stop, int count, Object result) {
-        type = SequenceStorage.StorageType.Generic;
-        Object[] elements = new Object[getCapacityEstimate()];
-        int j = 0;
-        for (; j < count; j++) {
-            elements[j] = Array.get(array, j);
+    @InliningCutoff
+    private SequenceStorage initialize(Object[] objectElements) {
+        SequenceStorage storage;
+        try {
+            storage = SequenceStorageFactory.createStorage(objectElements);
+            type = storage.getElementType();
+        } catch (Throwable t) {
+            // we do not want to repeatedly deopt if a value execution
+            // always raises, for example
+            type = SequenceStorage.StorageType.Generic;
+            throw t;
         }
-        elements[j++] = result;
-        for (int i = start + count + 1; i < stop; i++, j++) {
-            elements[j] = frame.getObject(i);
-            frame.setObject(i, null);
-        }
-        return new ObjectSequenceStorage(elements, length);
+        return storage;
     }
 
-    private static int castInt(Object o) throws UnexpectedResultException {
+    private static int castInt(Object o) throws SlowPathException {
         if (o instanceof Integer) {
             return (int) o;
         }
-        throw new UnexpectedResultException(o);
+        throw SLOW_PATH_EXCEPTION;
     }
 
-    private static long castLong(Object o) throws UnexpectedResultException {
+    private static long castLong(Object o) throws SlowPathException {
         if (o instanceof Long) {
             return (long) o;
         }
-        throw new UnexpectedResultException(o);
+        throw SLOW_PATH_EXCEPTION;
     }
 
-    private static double castDouble(Object o) throws UnexpectedResultException {
+    private static double castDouble(Object o) throws SlowPathException {
         if (o instanceof Double) {
             return (double) o;
         }
-        throw new UnexpectedResultException(o);
+        throw SLOW_PATH_EXCEPTION;
     }
 
-    private static boolean castBoolean(Object o) throws UnexpectedResultException {
+    private static boolean castBoolean(Object o) throws SlowPathException {
         if (o instanceof Boolean) {
             return (boolean) o;
         }
-        throw new UnexpectedResultException(o);
+        throw SLOW_PATH_EXCEPTION;
     }
 
-    protected abstract int getCapacityEstimate();
+    protected abstract int getCapacityEstimate(int length);
 
-    public abstract static class ListFromStackNode extends SequenceFromStackNode implements ListOrigin {
+    public abstract static class ListFromArrayNode extends SequenceFromArrayNode implements ListOrigin {
+        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(ListFromArrayNode.class);
+        private static final ListFromArrayNode UNCACHED = new ListFromArrayNode() {
+            @Override
+            public PList execute(PythonLanguage language, Object[] elements) {
+                return PFactory.createList(language, elements);
+            }
+        };
 
-        private static final TruffleLogger LOGGER = PythonLanguage.getLogger(ListFromStackNode.class);
-
-        public ListFromStackNode(int length) {
-            super(length);
-            this.initialCapacity = new SizeEstimate(length);
+        public static ListFromArrayNode getUncached(int ignored) {
+            return UNCACHED;
         }
 
-        public abstract SequenceStorage execute(Frame virtualFrame, int start, int stop);
+        @CompilationFinal private SizeEstimate initialCapacity;
+
+        public abstract PList execute(PythonLanguage language, Object[] elements);
 
         @Specialization
-        SequenceStorage doIt(VirtualFrame virtualFrame, int start, int stop) {
-            return createSequenceStorageForDirect(virtualFrame, start, stop);
+        PList doIt(PythonLanguage language, Object[] elements,
+                        @Bind Node inliningTarget,
+                        @Cached InlinedIntValueProfile lengthProfile) {
+            SequenceStorage storage = createSequenceStorage(elements, lengthProfile.profile(inliningTarget, elements.length));
+            return PFactory.createList(language, storage, initialCapacity != null ? this : null);
         }
 
-        private final SizeEstimate initialCapacity;
-
         @Override
-        protected int getCapacityEstimate() {
-            return initialCapacity.estimate();
+        protected int getCapacityEstimate(int length) {
+            assert isAdoptable();
+            if (initialCapacity == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                initialCapacity = new SizeEstimate(length);
+            }
+            return Math.max(initialCapacity.estimate(), length);
         }
 
         @Override
@@ -284,21 +248,29 @@ abstract class SequenceFromStackNode extends PNodeWithContext {
         }
     }
 
-    public abstract static class TupleFromStackNode extends SequenceFromStackNode {
+    public abstract static class TupleFromArrayNode extends SequenceFromArrayNode {
+        private static final TupleFromArrayNode UNCACHED = new TupleFromArrayNode() {
+            @Override
+            public PTuple execute(PythonLanguage language, Object[] elements) {
+                return PFactory.createTuple(language, elements);
+            }
+        };
 
-        public TupleFromStackNode(int length) {
-            super(length);
+        public static TupleFromArrayNode getUncached() {
+            return UNCACHED;
         }
 
-        public abstract SequenceStorage execute(Frame virtualFrame, int start, int stop);
+        public abstract PTuple execute(PythonLanguage language, Object[] elements);
 
         @Specialization
-        SequenceStorage doIt(VirtualFrame virtualFrame, int start, int stop) {
-            return createSequenceStorageForDirect(virtualFrame, start, stop);
+        PTuple doIt(PythonLanguage language, Object[] elements,
+                        @Bind Node inliningTarget,
+                        @Cached InlinedIntValueProfile lengthProfile) {
+            return PFactory.createTuple(language, createSequenceStorage(elements, lengthProfile.profile(inliningTarget, elements.length)));
         }
 
         @Override
-        protected int getCapacityEstimate() {
+        protected int getCapacityEstimate(int length) {
             return length;
         }
     }
