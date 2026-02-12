@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,8 +44,14 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.generator.PGenerator;
+import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
+import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.bytecode.BytecodeFrame;
+import com.oracle.truffle.api.bytecode.BytecodeNode;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.MaterializedFrame;
@@ -55,40 +61,52 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.SourceSection;
+import com.oracle.truffle.api.strings.TruffleString;
 
-/**
- * represents the inner local scope, which relies on the frame to retrieve variables values
- */
 @ExportLibrary(InteropLibrary.class)
-public final class PythonLocalScope implements TruffleObject {
+public abstract class PythonLocalScope implements TruffleObject {
 
-    final Map<String, Integer> slots;
-    final RootNode root;
-    final Frame frame;
-    final SourceSection sourceSection;
+    private final Map<String, Integer> slots;
+    private final RootNode root;
+    private final SourceSection sourceSection;
 
-    PythonLocalScope(Map<String, Integer> slotsMap, RootNode root, Frame frame) {
+    PythonLocalScope(RootNode root, Map<String, Integer> slots) {
         assert root != null;
-        this.slots = slotsMap;
         this.root = root;
+        this.slots = slots;
         this.sourceSection = root.getSourceSection();
-        this.frame = frame;
     }
 
-    @TruffleBoundary
-    static PythonLocalScope createLocalScope(RootNode root, MaterializedFrame frame) {
-        LinkedHashMap<String, Integer> slotsMap = new LinkedHashMap<>();
+    public static PythonLocalScope create(Node node, Frame frame) {
+        assert node != null;
+        assert frame != null;
 
-        FrameDescriptor fd = frame == null ? root.getFrameDescriptor() : frame.getFrameDescriptor();
-        for (int slot = 0; slot < fd.getNumberOfSlots(); slot++) {
-            Object identifier = fd.getSlotName(slot);
-            if (identifier != null && (frame == null || frame.getValue(slot) != null)) {
-                slotsMap.put(identifier.toString(), slot);
+        RootNode root = node.getRootNode();
+        PBytecodeDSLRootNode dslRoot = PBytecodeDSLRootNode.cast(root);
+        if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER && dslRoot != null) {
+            BytecodeNode bytecodeNode = BytecodeNode.get(node);
+            BytecodeFrame bytecodeFrame;
+            if (bytecodeNode != null) {
+                bytecodeFrame = bytecodeNode.createMaterializedFrame(0, frame.materialize());
+            } else {
+                assert false : String.format("root: %s, node: %s", dslRoot, node);
+                bytecodeFrame = null;
             }
+            return BytecodeFrameLocalScope.create(dslRoot, bytecodeFrame);
         }
-        return new PythonLocalScope(slotsMap, root, frame);
+
+        Frame actualFrame = frame;
+        if (PGenerator.isGeneratorFrame(frame)) {
+            actualFrame = PGenerator.getGeneratorFrame(frame);
+        }
+        return FrameLocalScope.create(root, actualFrame.materialize());
+    }
+
+    public static PythonLocalScope createEmpty(RootNode root) {
+        return FrameLocalScope.create(root, null);
     }
 
     @ExportMessage
@@ -108,10 +126,6 @@ public final class PythonLocalScope implements TruffleObject {
         return slots.get(member);
     }
 
-    private boolean hasFrame() {
-        return frame != null;
-    }
-
     @ExportMessage
     @TruffleBoundary
     Object readMember(String member) throws UnknownIdentifierException, UnsupportedMessageException {
@@ -120,7 +134,7 @@ public final class PythonLocalScope implements TruffleObject {
             if (slot == null) {
                 throw UnknownIdentifierException.create(member);
             } else {
-                return frame.getValue(slot);
+                return readSlotValue(slot);
             }
         } else {
             throw UnsupportedMessageException.create();
@@ -146,7 +160,7 @@ public final class PythonLocalScope implements TruffleObject {
     @ExportMessage
     @TruffleBoundary
     boolean isMemberModifiable(String member) {
-        return slots.containsKey(member) && frame != null;
+        return slots.containsKey(member) && hasFrame();
     }
 
     @ExportMessage
@@ -157,11 +171,10 @@ public final class PythonLocalScope implements TruffleObject {
             if (slot == null) {
                 throw UnknownIdentifierException.create(member);
             } else {
-                frame.setObject(slot, PForeignToPTypeNode.getUncached().executeConvert(value));
+                writeSlotValue(slot, PForeignToPTypeNode.getUncached().executeConvert(value));
             }
         } else {
             throw UnsupportedMessageException.create();
-
         }
     }
 
@@ -202,5 +215,97 @@ public final class PythonLocalScope implements TruffleObject {
     Object toDisplayString(@SuppressWarnings("unused") boolean allowSideEffects) {
         String name = root.getName();
         return name == null ? "local" : name;
+    }
+
+    protected abstract boolean hasFrame();
+
+    protected abstract Object readSlotValue(int slot);
+
+    protected abstract void writeSlotValue(int slot, Object value);
+
+    private static final class FrameLocalScope extends PythonLocalScope {
+        private final MaterializedFrame frame;
+
+        private FrameLocalScope(RootNode root, Map<String, Integer> slots, MaterializedFrame frame) {
+            super(root, slots);
+            this.frame = frame;
+        }
+
+        @TruffleBoundary
+        private static FrameLocalScope create(RootNode root, MaterializedFrame frame) {
+            LinkedHashMap<String, Integer> slotsMap = new LinkedHashMap<>();
+            FrameDescriptor fd = frame == null ? root.getFrameDescriptor() : frame.getFrameDescriptor();
+            int slots = fd.getNumberOfSlots();
+            for (int slot = 0; slot < slots; slot++) {
+                Object identifier = fd.getSlotName(slot);
+                if (identifier != null && (frame == null || frame.getValue(slot) != null)) {
+                    slotsMap.put(identifier.toString(), slot);
+                }
+            }
+            return new FrameLocalScope(root, slotsMap, frame);
+        }
+
+        @Override
+        protected boolean hasFrame() {
+            return frame != null;
+        }
+
+        @Override
+        protected Object readSlotValue(int slot) {
+            return frame.getValue(slot);
+        }
+
+        @Override
+        protected void writeSlotValue(int slot, Object value) {
+            frame.setObject(slot, value);
+        }
+    }
+
+    private static final class BytecodeFrameLocalScope extends PythonLocalScope {
+        private final BytecodeFrame bytecodeFrame;
+
+        private BytecodeFrameLocalScope(PBytecodeDSLRootNode root, Map<String, Integer> slots, BytecodeFrame bytecodeFrame) {
+            super(root, slots);
+            this.bytecodeFrame = bytecodeFrame;
+        }
+
+        @TruffleBoundary
+        private static BytecodeFrameLocalScope create(PBytecodeDSLRootNode root, BytecodeFrame bytecodeFrame) {
+            LinkedHashMap<String, Integer> slotsMap = new LinkedHashMap<>();
+            if (bytecodeFrame != null) {
+                BytecodeDSLCodeUnit codeUnit = root.getCodeUnit();
+                int varIndex = 0;
+                varIndex = addSlots(varIndex, codeUnit.varnames, bytecodeFrame, slotsMap);
+                varIndex = addSlots(varIndex, codeUnit.cellvars, bytecodeFrame, slotsMap);
+                addSlots(varIndex, codeUnit.freevars, bytecodeFrame, slotsMap);
+            }
+            return new BytecodeFrameLocalScope(root, slotsMap, bytecodeFrame);
+        }
+
+        private static int addSlots(int startIndex, TruffleString[] names, BytecodeFrame frame, LinkedHashMap<String, Integer> slots) {
+            int varIndex = startIndex;
+            for (TruffleString name : names) {
+                if (frame.getLocalValue(varIndex) != null) {
+                    slots.put(name.toJavaStringUncached(), varIndex);
+                }
+                varIndex++;
+            }
+            return varIndex;
+        }
+
+        @Override
+        protected boolean hasFrame() {
+            return bytecodeFrame != null;
+        }
+
+        @Override
+        protected Object readSlotValue(int slot) {
+            return bytecodeFrame.getLocalValue(slot);
+        }
+
+        @Override
+        protected void writeSlotValue(int slot, Object value) {
+            bytecodeFrame.setLocalValue(slot, value);
+        }
     }
 }

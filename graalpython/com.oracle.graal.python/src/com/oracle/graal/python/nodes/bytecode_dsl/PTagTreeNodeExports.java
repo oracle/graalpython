@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2026, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,53 +38,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+package com.oracle.graal.python.nodes.bytecode_dsl;
 
-package com.oracle.graal.python.pegparser.tokenizer;
+import com.oracle.graal.python.runtime.interop.PythonScopes;
+import com.oracle.truffle.api.bytecode.TagTreeNode;
+import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.interop.NodeLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
-public final class SourceRange {
-    public static final SourceRange ARTIFICIAL_RANGE = new SourceRange(1, 0, 1, 0);
+@ExportLibrary(value = NodeLibrary.class, receiverType = TagTreeNode.class)
+final class PTagTreeNodeExports {
 
-    public final int startLine;
-    public final int startColumn;
-    public final int endLine;
-    public final int endColumn;
-
-    public SourceRange(int startLine, int startColumn, int endLine, int endColumn) {
-        this.startLine = startLine;
-        this.startColumn = startColumn;
-        this.endLine = endLine;
-        this.endColumn = endColumn;
+    @ExportMessage
+    static boolean hasScope(TagTreeNode node, Frame frame) {
+        return true;
     }
 
-    public SourceRange withEnd(SourceRange end) {
-        return withEnd(end.endLine, end.endColumn);
-    }
-
-    public SourceRange withEnd(int newEndLine, int newEndColumn) {
-        return new SourceRange(startLine, startColumn, newEndLine, newEndColumn);
-    }
-
-    public SourceRange startLineShiftColumn(int shift) {
-        assert shift >= 0;
-        if (shift == 0) {
-            return this;
-        }
-        return new SourceRange(startLine, startColumn, startLine, startColumn + shift);
-    }
-
-    public SourceRange shiftStartRight(int columns) {
-        assert columns >= 0;
-        if (columns == 0) {
-            return this;
-        }
-        return new SourceRange(startLine, startColumn + columns, endLine, endColumn);
-    }
-
-    public SourceRange shiftEndRight(int columns) {
-        assert columns >= 0;
-        if (columns == 0) {
-            return this;
-        }
-        return new SourceRange(startLine, startColumn, endLine, endColumn + columns);
+    @ExportMessage
+    @SuppressWarnings("unused")
+    static Object getScope(TagTreeNode node, Frame frame, boolean nodeEnter) {
+        return PythonScopes.create(node, frame != null ? frame.materialize() : null);
     }
 }

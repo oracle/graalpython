@@ -780,7 +780,11 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
      * corresponding {@link #endSourceSection} call to ensure the Tag is closed.
      */
     boolean beginSourceSection(SSTNode node, Builder b) {
-        SourceRange sourceRange = node.getSourceRange();
+        return beginSourceSection(node.getSourceRange(), b);
+    }
+
+    /** {@link #beginSourceSection(SSTNode, Builder)} */
+    boolean beginSourceSection(SourceRange sourceRange, Builder b) {
         SourceRange oldSourceRange = this.currentLocation;
         this.currentLocation = sourceRange;
 
@@ -4123,7 +4127,11 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
 
         public void emitFunctionDef(StmtTy node, String name, ArgumentsTy args, StmtTy[] body, ExprTy[] decoratorList, ExprTy returns, TypeParamTy[] typeParams) {
             BytecodeLocal[] decoratorLocals = evaluateDecorators(decoratorList);
-            boolean newStatement = beginSourceSection(node, b);
+            // For instrumentation, we want to map this statement only to the declaration line, such
+            // that, e.g., breakpoints inside the body fire only once the body actually executes and
+            // not is declared. There is no simple way to get the exact line width here, so we just
+            // approximate it with name width.
+            boolean newStatement = beginSourceSection(node.getSourceRange().startLineShiftColumn(name.length()), b);
             emitTraceLineChecked(node, b);
 
             beginStoreLocal(name, b);
