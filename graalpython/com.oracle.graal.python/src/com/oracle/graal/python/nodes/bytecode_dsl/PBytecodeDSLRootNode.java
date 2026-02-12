@@ -3432,7 +3432,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @Specialization
         public static Object doObject(VirtualFrame frame, LocalAccessor currentGeneratorException, LocalAccessor savedException, Object sendValue,
                         @Bind BytecodeNode bytecode) {
-            if (savedException != currentGeneratorException) {
+            if (!savedException.equals(currentGeneratorException)) {
                 // We cannot pass `null` as savedException, so savedException ==
                 // currentGeneratorException means "no saveException"
                 //
