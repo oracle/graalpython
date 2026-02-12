@@ -108,12 +108,7 @@ public final class DynamicObjectStorage extends HashingStorage {
     }
 
     protected static Object[] keyArray(DynamicObjectStorage self) {
-        return DynamicObjectStorage.keyArray(self.store.getShape());
-    }
-
-    @TruffleBoundary
-    protected static Object[] keyArray(Shape shape) {
-        return shape.getKeyList().toArray();
+        return DynamicObject.GetKeyArrayNode.getUncached().execute(self.store);
     }
 
     @GenerateUncached
@@ -139,22 +134,16 @@ public final class DynamicObjectStorage extends HashingStorage {
             return len;
         }
 
-        @Specialization(replaces = "cachedLen", guards = {"cachedShape == self.store.getShape()"}, limit = "3")
-        static int cachedKeys(DynamicObjectStorage self,
-                        @SuppressWarnings("unused") @Cached("self.store.getShape()") Shape cachedShape,
-                        @Cached(value = "keyArray(self)", dimensions = 1) Object[] keys,
-                        @Shared @Cached ReadAttributeFromPythonObjectNode readNode) {
+        @Specialization(replaces = "cachedLen")
+        static int length(DynamicObjectStorage self,
+                        @Shared @Cached ReadAttributeFromPythonObjectNode readNode,
+                        @Cached DynamicObject.GetKeyArrayNode keyArrayNode) {
+            Object[] keys = keyArrayNode.execute(self.store);
             int len = 0;
             for (Object key : keys) {
                 len = incrementLen(self, readNode, len, key);
             }
             return len;
-        }
-
-        @Specialization(replaces = "cachedKeys")
-        static int length(DynamicObjectStorage self,
-                        @Shared @Cached ReadAttributeFromPythonObjectNode readNode) {
-            return cachedKeys(self, self.store.getShape(), keyArray(self), readNode);
         }
 
         private static boolean hasStringKey(DynamicObjectStorage self, TruffleString key, ReadAttributeFromPythonObjectNode readNode) {
@@ -221,7 +210,7 @@ public final class DynamicObjectStorage extends HashingStorage {
                             @Bind Node inliningTarget,
                             @Shared("readKey") @Cached ReadAttributeFromPythonObjectNode readKey,
                             @Exclusive @Cached("self.store.getShape()") Shape cachedShape,
-                            @Exclusive @Cached(value = "keyArray(cachedShape)", dimensions = 1) Object[] keyList,
+                            @Exclusive @Cached(value = "keyArray(self)", dimensions = 1) Object[] keyList,
                             @Shared("eqNode") @Cached PyObjectRichCompareBool eqNode,
                             @Shared("hashNode") @Cached PyObjectHashNode hashNode,
                             @Shared("noValueProfile") @Cached InlinedConditionProfile noValueProfile) {
