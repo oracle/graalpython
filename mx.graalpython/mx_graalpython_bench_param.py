@@ -234,6 +234,7 @@ MICRO_NATIVE_BENCHMARKS = {
     'c-call-method-o': ITER_5 + ['5000000'],
     'c-call-method-noargs': ITER_5 + ['5000000'],
     'c-call-method-varargs': ITER_5 + ['5000000'],
+    'c-call-method-fastcall': ITER_5 + ['5000000'],
     'c-call-method-int-float': ITER_5 + ['5000000'],
     'c-call-method-obj-args': ITER_5 + ['5000000'],
     'c-instantiate-large': ITER_5 + ['1000'],
