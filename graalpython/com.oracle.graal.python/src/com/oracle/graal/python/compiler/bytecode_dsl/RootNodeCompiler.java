@@ -3841,10 +3841,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
             // For type parameters the root node compiler produces intermediate code unit that will
             // assemble the generic parameters and then call __build_class__ and we just need to
             // call that code unit
-            BytecodeLocal[] decoratorsLocals = evaluateDecorators(node.decoratorList);
             boolean newStatement = beginSourceSection(node, b);
-            emitTraceLineChecked(node, b);
-
             beginStoreLocal(node.name, b);
 
             if (node.decoratorList != null && node.decoratorList.length > 0) {
@@ -3852,7 +3849,9 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 beginTraceLineChecked(b);
             }
 
-            beginWrapWithDecorators(decoratorsLocals);
+            beginWrapWithDecorators(node.decoratorList);
+            b.beginBlock();
+            b.emitTraceLine(node.getSourceRange().startLine);
             if (node.isGeneric()) {
                 RootNodeCompiler typeParamsCompiler = new RootNodeCompiler(ctx, RootNodeCompiler.this, node.name, node, node.typeParams, futureFeatures);
                 RootNodeCompiler classBodyCompiler = createRootNodeCompilerFor(node, typeParamsCompiler);
@@ -3867,15 +3866,16 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 BytecodeDSLCompilerResult classBody = createRootNodeCompilerFor(node).compileClassDefBody(node);
                 emitBuildClass(classBody.codeUnit(), node);
             }
-            endWrapWithDecorators(decoratorsLocals, node.decoratorList);
+            b.endBlock();
+            endWrapWithDecorators(node.decoratorList);
 
             if (node.decoratorList != null && node.decoratorList.length > 0) {
                 // needs to emit line before return (that will also move the return)
                 endTraceLineChecked(node, b);
             }
-
+            // we didn't properly update lastTracedLine, force next traceline
+            lastTracedLine = -1;
             endStoreLocal(node.name, b);
-            endTemporaryLocals(decoratorsLocals);
             endSourceSection(b, newStatement);
             return null;
         }
@@ -4126,25 +4126,23 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         }
 
         public void emitFunctionDef(StmtTy node, String name, ArgumentsTy args, StmtTy[] body, ExprTy[] decoratorList, ExprTy returns, TypeParamTy[] typeParams) {
-            BytecodeLocal[] decoratorLocals = evaluateDecorators(decoratorList);
-            // For instrumentation, we want to map this statement only to the declaration line, such
             // that, e.g., breakpoints inside the body fire only once the body actually executes and
             // not is declared. There is no simple way to get the exact line width here, so we just
             // approximate it with name width.
             boolean newStatement = beginSourceSection(node.getSourceRange().startLineShiftColumn(name.length()), b);
-            emitTraceLineChecked(node, b);
-
+            // Note: source range of `node` excludes the source range of the decorators
             beginStoreLocal(name, b);
             if (decoratorList != null && decoratorList.length > 0) {
                 // needs to emit line before return (that will also move the return)
                 b.beginTraceLineWithArgument();
             }
-            beginWrapWithDecorators(decoratorLocals);
+            beginWrapWithDecorators(decoratorList);
 
+            b.beginTraceLineWithArgument();
             boolean isGeneric = typeParams != null && typeParams.length > 0;
             if (isGeneric) {
                 // The values of default positional and keyword arguments must be passed as
-                // arguments to the "type parameters" code unit, because we must eveluate them
+                // arguments to the "type parameters" code unit, because we must evaluate them
                 // already here
                 int argsCount = 0;
                 if (hasDefaultArgs(args)) {
@@ -4175,14 +4173,16 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 BytecodeDSLCompilerResult funBodyCodeUnit = createRootNodeCompilerFor(node).compileFunctionDef(node, name, args, body);
                 emitBuildFunction(funBodyCodeUnit.codeUnit(), node, name, args, decoratorList, returns);
             }
+            b.endTraceLineWithArgument(node.getSourceRange().startLine);
 
-            endWrapWithDecorators(decoratorLocals, decoratorList);
+            endWrapWithDecorators(decoratorList);
             if (decoratorList != null && decoratorList.length > 0) {
                 // needs to emit line before return (that will also move the return)
                 b.endTraceLineWithArgument(node.getSourceRange().startLine);
             }
+            // we didn't properly update lastTracedLine, force next traceline
+            lastTracedLine = -1;
             endStoreLocal(name, b);
-            endTemporaryLocals(decoratorLocals);
             endSourceSection(b, newStatement);
         }
 
@@ -4252,24 +4252,33 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
          * Emits the "opening parentheses" of expression {@code decorator1( decoractor2( ... (
          * {value} )) ... )}.
          */
-        public void beginWrapWithDecorators(BytecodeLocal[] locals) {
-            for (int i = 0; i < locals.length; i++) {
+        public void beginWrapWithDecorators(ExprTy[] decorators) {
+            if (decorators == null) {
+                return;
+            }
+            for (int i = 0; i < decorators.length; i++) {
                 b.beginCallUnaryMethod();
-                b.emitLoadLocal(locals[i]);
-                beginTraceLineChecked(b);
+                // evaluation of the decorator expression
+                b.beginTraceLineWithArgument();
+                decorators[i].accept(this);
+                // trace line for the decorator expression, must be executed before the next
+                // decorator expression is evaluated and before the function declaration itself
+                b.endTraceLineWithArgument(decorators[i].getSourceRange().startLine);
+
+                // trace the call to the decorator function (Python 3.12+)
+                b.beginTraceLineWithArgument();
             }
         }
 
-        /**
-         * "Closing parentheses" for {@link #beginWrapWithDecorators(BytecodeLocal[])}.
-         */
-        public void endWrapWithDecorators(BytecodeLocal[] locals, ExprTy[] decorators) {
-            for (int i = 0; i < locals.length; i++) {
+        public void endWrapWithDecorators(ExprTy[] decorators) {
+            if (decorators == null) {
+                return;
+            }
+            for (int i = 0; i < decorators.length; i++) {
                 // we need to trace line in opposite direction -> decorator calls are nested and so
-                // they will "flip"
-                // w.r.t. original decorator ordering, but tracings won't, so we need to flip them
-                // manually
-                endTraceLineChecked(decorators[locals.length - 1 - i], b);
+                // they will "flip" w.r.t. original decorator ordering, but tracings won't, so we
+                // need to flip them manually
+                b.endTraceLineWithArgument(decorators[decorators.length - 1 - i].getSourceRange().startLine);
                 b.endCallUnaryMethod();
             }
         }
