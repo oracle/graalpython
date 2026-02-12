@@ -691,6 +691,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
+    @InliningCutoff
     private void traceOrProfileCall(VirtualFrame frame, BytecodeNode bytecode, int bci) {
         PythonThreadState threadState = getThreadState();
         Object traceFun = threadState.getTraceFun();
@@ -758,6 +759,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
+    @InliningCutoff
     private void traceOrProfileReturn(VirtualFrame frame, BytecodeNode location, Object value) {
         PythonThreadState threadState = getThreadState();
         Object traceFun = threadState.getTraceFun();
