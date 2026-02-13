@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -298,8 +298,8 @@ public abstract class TpSlotDescrGet {
             return invoke.execute(frame, inliningTarget, callNode, cachedCallee, arguments);
         }
 
-        private static Object normalizeNoValue(InlinedConditionProfile profile, Node inlinintTarget, Object o) {
-            return profile.profile(inlinintTarget, o == PNone.NO_VALUE) ? PNone.NONE : o;
+        private static Object normalizeNoValue(InlinedConditionProfile profile, Node inliningTarget, Object o) {
+            return profile.profile(inliningTarget, o == PNone.NO_VALUE) ? PNone.NONE : o;
         }
 
         @Specialization(replaces = "doCachedPFunction")

@@ -496,7 +496,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         return current;
     }
 
-    private void resetInstrumenationData(VirtualFrame frame, BytecodeNode bytecode) {
+    private void resetInstrumentationData(VirtualFrame frame, BytecodeNode bytecode) {
         InstrumentationData current = (InstrumentationData) bytecode.getLocalValue(0, frame, instrumentationDataIndex);
         if (current == null) {
             current = new InstrumentationData();
@@ -1172,7 +1172,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind PBytecodeDSLRootNode root,
                         @Bind BytecodeNode bytecode,
                         @Bind("$bytecodeIndex") int bci) {
-            root.resetInstrumenationData(frame, bytecode);
+            root.resetInstrumentationData(frame, bytecode);
             root.traceOrProfileCall(frame, bytecode, bci);
             return generator;
         }
@@ -3486,7 +3486,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         @Bind PBytecodeDSLRootNode root,
                         @Bind BytecodeNode bytecode,
                         @Bind("$bytecodeIndex") int bci) {
-            root.resetInstrumenationData(frame, bytecode);
+            root.resetInstrumentationData(frame, bytecode);
             root.traceOrProfileCall(frame, bytecode, bci);
             return sendValue;
         }
