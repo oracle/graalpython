@@ -59,7 +59,6 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotGetAttr.CallSlo
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
@@ -135,62 +134,71 @@ abstract class MergedObjectTypeModuleGetAttributeInnerNode extends PNodeWithCont
                     @Cached InlinedBranchProfile hasNonDescriptorValueProfile,
                     @Cached CallSlotDescrGet.Lazy callSlotValueGet,
                     @Cached ModuleBuiltins.LazyHandleGetattrExceptionNode handleException) {
-        assert hasNoGetAttr(object);
+        assert hasNoGetAttr(type);
         try {
             Object descr = lookup.execute(type, key);
             boolean hasDescr = hasDescProfile.profile(inliningTarget, descr != PNone.NO_VALUE);
 
             TpSlot get = null;
             boolean hasDescrGet = false;
+            boolean getValue = true;
             if (hasDescr) {
                 var descrSlots = getDescrSlotsNode.execute(inliningTarget, descr);
                 get = descrSlots.tp_descr_get();
                 hasDescrGet = hasDescrGetProfile.profile(inliningTarget, get != null);
                 if (hasDescrGet && TpSlotDescrSet.PyDescr_IsData(descrSlots)) {
-                    return callSlotDescrGet.get(inliningTarget).executeCached(frame, get, descr, object, type);
+                    // fall through to callSlotDescrGet below to avoid duplicating the call site
+                    getValue = false;
                 }
             }
 
-            // The main difference between all 3 nodes
-            Object value;
-            if (cachedSlot != TypeBuiltins.SLOTS.tp_getattro()) {
-                // ObjectBuiltins.SLOTS.tp_getattro() || ModuleBuiltins.SLOTS.tp_getattro()
-                value = readAttributeOfObjectNode.execute(object, key);
-                if (hasValueProfile.profile(inliningTarget, value != PNone.NO_VALUE)) {
-                    return value;
-                }
-            } else {
-                // TypeBuiltins.SLOTS.tp_getattro()
-                value = readAttributeOfClassNode.execute(object, key);
-                if (hasValueProfile.profile(inliningTarget, value != PNone.NO_VALUE)) {
-                    var valueGet = getValueSlotsNode.execute(inliningTarget, value).tp_descr_get();
-                    if (valueGet == null) {
-                        hasNonDescriptorValueProfile.enter(inliningTarget);
+            if (getValue) {
+                // The main difference between all 3 nodes
+                if (cachedSlot != TypeBuiltins.SLOTS.tp_getattro()) {
+                    // ObjectBuiltins.SLOTS.tp_getattro() || ModuleBuiltins.SLOTS.tp_getattro()
+                    Object value = readAttributeOfObjectNode.execute(object, key);
+                    if (hasValueProfile.profile(inliningTarget, value != PNone.NO_VALUE)) {
                         return value;
-                    } else {
-                        return callSlotValueGet.get(inliningTarget).executeCached(frame, valueGet, value, PNone.NO_VALUE, object);
+                    }
+                } else {
+                    // TypeBuiltins.SLOTS.tp_getattro()
+                    Object value = readAttributeOfClassNode.execute(object, key);
+                    if (hasValueProfile.profile(inliningTarget, value != PNone.NO_VALUE)) {
+                        var valueGet = getValueSlotsNode.execute(inliningTarget, value).tp_descr_get();
+                        if (valueGet == null) {
+                            hasNonDescriptorValueProfile.enter(inliningTarget);
+                            return value;
+                        } else {
+                            return callSlotValueGet.get(inliningTarget).executeCached(frame, valueGet, value, PNone.NO_VALUE, object);
+                        }
                     }
                 }
             }
 
             if (hasDescr) {
-                if (!hasDescrGet) {
-                    return descr;
-                } else {
+                if (hasDescrGet) {
                     return callSlotDescrGet.get(inliningTarget).executeCached(frame, get, descr, object, type);
+                } else {
+                    return descr;
                 }
             }
 
-            TruffleString errorMessage = cachedSlot != TypeBuiltins.SLOTS.tp_getattro() ? ErrorMessages.OBJ_P_HAS_NO_ATTR_S : ErrorMessages.TYPE_N_HAS_NO_ATTR;
+            TruffleString errorMessage = cachedSlot == TypeBuiltins.SLOTS.tp_getattro() ? ErrorMessages.TYPE_N_HAS_NO_ATTR : ErrorMessages.OBJ_P_HAS_NO_ATTR_S;
             throw raiseNode.raiseAttributeError(inliningTarget, errorMessage, object, key);
         } catch (PException e) {
             // Extra behavior for module.__getattribute__
             if (cachedSlot == ModuleBuiltins.SLOTS.tp_getattro()) {
-                return handleException.get(inliningTarget).execute(frame, (PythonModule) object, key, e);
+                return handleModuleException(frame, inliningTarget, object, key, e, handleException);
             } else {
                 throw e;
             }
         }
+    }
+
+    @InliningCutoff
+    private static Object handleModuleException(VirtualFrame frame, Node inliningTarget, Object object, TruffleString key, PException e,
+                    ModuleBuiltins.LazyHandleGetattrExceptionNode handleException) {
+        return handleException.get(inliningTarget).execute(frame, (PythonModule) object, key, e);
     }
 
     @InliningCutoff
@@ -210,8 +218,8 @@ abstract class MergedObjectTypeModuleGetAttributeInnerNode extends PNodeWithCont
         return slot == ObjectBuiltins.SLOTS.tp_getattro() || slot == TypeBuiltins.SLOTS.tp_getattro() || slot == ModuleBuiltins.SLOTS.tp_getattro();
     }
 
-    static boolean hasNoGetAttr(Object obj) {
+    static boolean hasNoGetAttr(Object type) {
         CompilerAsserts.neverPartOfCompilation("only used in asserts");
-        return LookupAttributeInMRONode.Dynamic.getUncached().execute(GetClassNode.executeUncached(obj), T___GETATTR__) == PNone.NO_VALUE;
+        return LookupAttributeInMRONode.Dynamic.getUncached().execute(type, T___GETATTR__) == PNone.NO_VALUE;
     }
 }
