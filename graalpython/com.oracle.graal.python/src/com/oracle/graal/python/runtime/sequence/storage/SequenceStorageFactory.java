@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -50,8 +50,6 @@ public abstract class SequenceStorageFactory {
             return new LongSequenceStorage(specializeToLong(values));
         } else if (canSpecializeToBool(values)) {
             return new BoolSequenceStorage(specializeToBool(values));
-        } else if (canSpecializeToByte(values)) {
-            return new ByteSequenceStorage(specializeToByte(values));
         } else {
             return new ObjectSequenceStorage(values);
         }

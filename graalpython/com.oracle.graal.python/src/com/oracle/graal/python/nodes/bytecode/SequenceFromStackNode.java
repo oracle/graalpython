@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,7 +49,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.sequence.storage.ArrayBasedSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.BoolSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
@@ -118,22 +117,6 @@ abstract class SequenceFromStackNode extends PNodeWithContext {
                             frame.setObject(i, null);
                         }
                         storage = new BoolSequenceStorage(elements, length);
-                        break;
-                    }
-                    case Byte: {
-                        byte[] elements = new byte[getCapacityEstimate()];
-                        array = elements;
-                        for (int i = start; i < stop; i++, j++) {
-                            int element = castInt(frame.getObject(i));
-                            if (element <= Byte.MAX_VALUE && element >= Byte.MIN_VALUE) {
-                                elements[j] = (byte) element;
-                                frame.setObject(i, null);
-                            } else {
-                                CompilerDirectives.transferToInterpreterAndInvalidate();
-                                throw new UnexpectedResultException(element);
-                            }
-                        }
-                        storage = new ByteSequenceStorage(elements, length);
                         break;
                     }
                     case Int: {

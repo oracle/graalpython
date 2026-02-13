@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -39,7 +39,6 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_RBRACKET;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.util.List;
 
@@ -70,7 +69,6 @@ import com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterato
 import com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.range.PIntRange;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotBinaryFunc.MpSubscriptBuiltinNode;
@@ -92,7 +90,6 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
-import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ClearListStorageNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.GetClassForNewListNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.GetListStorageNode;
@@ -105,7 +102,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PFactory;
@@ -137,7 +133,6 @@ import com.oracle.truffle.api.profiles.InlinedLoopConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
-import com.oracle.truffle.api.strings.TruffleStringIterator;
 
 /**
  * NOTE: self can either be a PList or a foreign list (hasArrayElements()).
@@ -242,37 +237,6 @@ public final class ListBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ListInitNode extends PythonBinaryBuiltinNode {
 
-        @Specialization
-        static PNone initTruffleString(PList list, TruffleString value,
-                        @Bind Node inliningTarget,
-                        @Shared @Cached ClearListStorageNode clearStorageNode,
-                        @Shared("cpIt") @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
-                        @Shared("cpItNext") @Cached TruffleStringIterator.NextNode nextNode,
-                        @Shared("fromCp") @Cached TruffleString.FromCodePointNode fromCodePointNode,
-                        @Shared("appendNode") @Cached AppendNode appendNode) {
-            clearStorageNode.execute(inliningTarget, list);
-            TruffleStringIterator iterator = createCodePointIteratorNode.execute(value, TS_ENCODING);
-            while (iterator.hasNext()) {
-                // TODO: GR-37219: use SubstringNode with lazy=true?
-                int cp = nextNode.execute(iterator, TS_ENCODING);
-                appendNode.execute(list, fromCodePointNode.execute(cp, TS_ENCODING, true));
-            }
-            return PNone.NONE;
-        }
-
-        // @Exclusive to address warning
-        @Specialization
-        static PNone initPString(PList list, PString value,
-                        @Bind Node inliningTarget,
-                        @Cached CastToTruffleStringNode castStr,
-                        @Exclusive @Cached ClearListStorageNode clearStorageNode,
-                        @Shared("cpIt") @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
-                        @Shared("cpItNext") @Cached TruffleStringIterator.NextNode nextNode,
-                        @Shared("fromCp") @Cached TruffleString.FromCodePointNode fromCodePointNode,
-                        @Shared("appendNode") @Cached AppendNode appendNode) {
-            return initTruffleString(list, castStr.execute(inliningTarget, value), inliningTarget, clearStorageNode, createCodePointIteratorNode, nextNode, fromCodePointNode, appendNode);
-        }
-
         @Specialization(guards = "isNoValue(none)")
         static PNone init(Object list, PNone none,
                         @Bind Node inliningTarget,
@@ -299,7 +263,7 @@ public final class ListBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(guards = {"!isNoValue(iterable)", "!isString(iterable)", "!isPIntRange(iterable)"})
+        @Specialization(guards = {"!isNoValue(iterable)", "!isPIntRange(iterable)"})
         static PNone listIterable(VirtualFrame frame, PList list, Object iterable,
                         @Bind Node inliningTarget,
                         // exclusive for truffle-interpreted-performance
