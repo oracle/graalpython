@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -188,7 +188,7 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
             return poll;
         });
 
-        if (!context.getEnv().isPreInitialization() && context.getOption(PythonOptions.InstallSignalHandlers)) {
+        if (!context.getEnv().isPreInitialization() && context.getOption(PythonOptions.InstallSignalHandlers) && context.getOption(PythonOptions.AllowSignalHandlers)) {
             Object defaultSigintHandler = signalModule.getAttribute(T_DEFAULT_INT_HANDLER);
             assert defaultSigintHandler != PNone.NO_VALUE;
             SignalNode.signal(null, new Signal("INT").getNumber(), defaultSigintHandler, moduleData);
@@ -351,7 +351,12 @@ public final class SignalModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object signalHandler(VirtualFrame frame, PythonModule self, Object signal, Object handler,
                         @Bind Node inliningTarget,
-                        @Cached PyNumberAsSizeNode asSizeNode) {
+                        @Bind PythonContext context,
+                        @Cached PyNumberAsSizeNode asSizeNode,
+                        @Cached PConstructAndRaiseNode.Lazy constructAndRaiseNode) {
+            if (!context.getOption(PythonOptions.AllowSignalHandlers)) {
+                throw constructAndRaiseNode.get(inliningTarget).raiseOSError(frame, OSErrorEnum.EPERM);
+            }
             int signum = asSizeNode.executeExact(frame, inliningTarget, signal);
             return signalHandlerBoundary(self, handler, inliningTarget, signum);
         }

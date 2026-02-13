@@ -812,6 +812,8 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
             contextBuilder.option("python.PyCachePrefix", cachePrefix);
         }
 
+        setOptionIfNotSetViaCommandLine(contextBuilder, "AllowSignalHandlers", "true");
+
         if (IS_WINDOWS) {
             contextBuilder.option("python.PosixModuleBackend", "java");
         }
