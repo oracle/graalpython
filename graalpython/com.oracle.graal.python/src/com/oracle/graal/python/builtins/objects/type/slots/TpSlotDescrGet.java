@@ -215,6 +215,7 @@ public abstract class TpSlotDescrGet {
             return dispatcherNode.execute(frame, inliningTarget, slot.getCallable(), slot.getType(), self, obj, type);
         }
 
+        @InliningCutoff
         @Specialization
         static Object callNative(VirtualFrame frame, Node inliningTarget, TpSlotNative slot, Object self, Object obj, Object value,
                         @Cached GetThreadStateNode getThreadStateNode,
