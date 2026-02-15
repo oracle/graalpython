@@ -874,6 +874,16 @@ public final class GraalPythonMain extends AbstractLanguageLauncher {
         } catch (IOException e) {
             rc = 1;
             e.printStackTrace();
+        } catch (Throwable t) {
+            // On some paths (e.g. Windows, issue #543) the polyglot-threads error may be wrapped
+            // or reported differently; catch so we never exit without handling and produce a silent crash.
+            if (t.getMessage() != null && t.getMessage().contains("did not complete all polyglot threads")) {
+                if (!verboseFlag) {
+                    System.exit(rc);
+                }
+            } else {
+                throw t;
+            }
         }
         System.exit(rc);
     }

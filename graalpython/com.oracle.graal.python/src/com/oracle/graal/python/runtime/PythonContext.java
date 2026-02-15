@@ -84,6 +84,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.WeakHashMap;
@@ -212,6 +213,9 @@ public final class PythonContext extends Python3Core {
     public static final boolean DEBUG_CAPI = Boolean.getBoolean("python.DebugCAPI");
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(PythonContext.class);
+
+    /** On Windows, use longer join timeouts to reduce "did not complete all polyglot threads" (issue #543). */
+    private static final boolean IS_WINDOWS = System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("win");
 
     public final HandleContext nativeContext = new HandleContext(DEBUG_CAPI);
     public final NativeBufferContext nativeBufferContext = new NativeBufferContext();
@@ -2174,8 +2178,8 @@ public final class PythonContext extends Python3Core {
                     disposeThread(thread, true);
                     boolean isOurThread = runViaLauncher || thread.getThreadGroup() == threadGroup;
                     // Do not try so hard when running in embedded mode and the thread may not be
-                    // running any GraalPython code anymore
-                    int tries = isOurThread ? 100 : 5;
+                    // running any GraalPython code anymore. On Windows use more attempts (issue #543).
+                    int tries = isOurThread ? (IS_WINDOWS ? 200 : 100) : 5;
                     for (int i = 0; i < tries && thread.isAlive(); i++) {
                         thread.join(tries - i);
                         if (!thread.isAlive()) {
@@ -2227,7 +2231,7 @@ public final class PythonContext extends Python3Core {
             }
             assert thread != Thread.currentThread();
             LOGGER.finest("joining thread " + thread);
-            int tries = 100;
+            int tries = IS_WINDOWS ? 200 : 100;
             for (int i = 0; i < tries && thread.isAlive(); i++) {
                 killSystemThread(thread);
                 try {
