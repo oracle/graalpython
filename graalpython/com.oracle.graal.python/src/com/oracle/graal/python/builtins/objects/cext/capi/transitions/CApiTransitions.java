@@ -2523,63 +2523,6 @@ public abstract class CApiTransitions {
         return obj != null && (obj.getClass().toString().contains("LLVMPointerImpl") || obj.getClass().toString().contains("NFIPointer") || obj.getClass().toString().contains("NativePointer"));
     }
 
-    @GenerateUncached
-    @GenerateInline
-    @GenerateCached(false)
-    public abstract static class NativePtrToPythonWrapperNode extends Node {
-
-        public abstract Object execute(Node inliningTarget, long ptr, boolean strict);
-
-        @Specialization
-        static Object doGeneric(Node inliningTarget, long pointer, boolean strict,
-                        @Cached InlinedConditionProfile isNullProfile,
-                        @Cached InlinedConditionProfile isNativeProfile,
-                        @Cached InlinedExactClassProfile nativeWrapperProfile,
-                        @Cached InlinedConditionProfile isHandleSpaceProfile) {
-            if (isNullProfile.profile(inliningTarget, pointer == 0)) {
-                return null;
-            }
-            PythonContext pythonContext = PythonContext.get(inliningTarget);
-            HandleContext nativeContext = pythonContext.nativeContext;
-            assert pythonContext.ownsGil();
-            if (isHandleSpaceProfile.profile(inliningTarget, HandlePointerConverter.pointsToPyHandleSpace(pointer))) {
-                if (HandlePointerConverter.pointsToPyIntHandle(pointer)) {
-                    throw CompilerDirectives.shouldNotReachHere("not implemented NativePtrToPythonWrapperNode int");
-                } else if (HandlePointerConverter.pointsToPyFloatHandle(pointer)) {
-                    throw CompilerDirectives.shouldNotReachHere("not implemented NativePtrToPythonWrapperNode float");
-                }
-                int idx = readIntField(HandlePointerConverter.pointerToStub(pointer), CFields.GraalPyObject__handle_table_index);
-                PythonAbstractObject wrapper;
-                Object reference = nativeStubLookupGet(nativeContext, pointer, idx);
-                if (reference instanceof PythonAbstractObject) {
-                    wrapper = (PythonAbstractObject) reference;
-                } else {
-                    assert reference == null || reference instanceof PythonObjectReference;
-                    wrapper = reference == null ? null : ((PythonObjectReference) reference).get();
-                }
-                if (strict && wrapper == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw CompilerDirectives.shouldNotReachHere("reference was collected: " + Long.toHexString(pointer));
-                }
-                return wrapper;
-            } else {
-                IdReference<?> lookup = nativeLookupGet(nativeContext, pointer);
-                if (isNativeProfile.profile(inliningTarget, lookup != null)) {
-                    Object ref = lookup.get();
-                    if (strict && ref == null) {
-                        CompilerDirectives.transferToInterpreterAndInvalidate();
-                        throw CompilerDirectives.shouldNotReachHere("reference was collected: " + Long.toHexString(pointer));
-                    }
-                    Object profiled = nativeWrapperProfile.profile(inliningTarget, ref);
-                    if (profiled instanceof PythonAbstractObject pythonAbstractObject) {
-                        return pythonAbstractObject;
-                    }
-                }
-                return null;
-            }
-        }
-    }
-
     /**
      * Same as {@link UpdateHandleTableReferenceNode} but the handle table reference is directly
      * accessed via {@link PythonObject#ref}. This node should be used of you have the
