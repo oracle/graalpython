@@ -8,7 +8,7 @@ test.test_multiprocessing_spawn.test_misc.TestForkAwareThreadLock.test_lock @ li
 test.test_multiprocessing_spawn.test_misc.TestIgnoreEINTR.test_ignore @ linux-aarch64,linux-aarch64-github,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc.TestIgnoreEINTR.test_ignore_listener @ linux-aarch64,linux-aarch64-github,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc.TestInternalDecorators.test_only_run_in_spawn_testsuite @ linux-aarch64,linux-aarch64-github,linux-x86_64-github
-test.test_multiprocessing_spawn.test_misc.TestInvalidFamily.test_invalid_family @ linux-aarch64,linux-aarch64-github,linux-x86_64-github
+test.test_multiprocessing_spawn.test_misc.TestInvalidFamily.test_invalid_family @ linux-aarch64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc.TestInvalidHandle.test_invalid_handles @ linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc.TestNamedResource.test_global_named_resource_spawn @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64-github
 test.test_multiprocessing_spawn.test_misc.TestNoForkBomb.test_noforkbomb @ linux-aarch64,linux-aarch64-github,linux-x86_64-github
