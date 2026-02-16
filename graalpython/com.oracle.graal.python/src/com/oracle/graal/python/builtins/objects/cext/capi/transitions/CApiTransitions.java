@@ -1390,6 +1390,16 @@ public abstract class CApiTransitions {
                 Object ref;
                 if (initialRefCount > MANAGED_REFCNT) {
                     ref = object;
+
+                    assert !gc || taggedGCHead != 0;
+                    if (gc) {
+                        /*
+                         * Note: The following part will require the GIL even if we resolve GR-51314
+                         * and remove the outer acquire.
+                         */
+                        assert pythonContext.ownsGil();
+                        gcTrackNode.executeGc(inliningTarget, taggedGCHead);
+                    }
                 } else {
                     /*
                      * If the object is not a 'PythonObject', it is expected to be immortal and will
@@ -1399,16 +1409,6 @@ public abstract class CApiTransitions {
                     ref = PythonObjectReference.createStub(handleContext, (PythonObject) object, false, taggedPointer, idx, gc);
                 }
                 nativeStubLookupPut(handleContext, idx, ref, taggedPointer);
-
-                assert !gc || taggedGCHead != 0;
-                if (gc) {
-                    /*
-                     * Note: The following part will require the GIL even if we resolve GR-51314 and
-                     * remove the outer acquire.
-                     */
-                    assert pythonContext.ownsGil();
-                    gcTrackNode.executeGc(inliningTarget, taggedGCHead);
-                }
             } catch (OverflowException e) {
                 /*
                  * The OverflowException may be thrown by 'nativeStubLookupReserve' and indicates
