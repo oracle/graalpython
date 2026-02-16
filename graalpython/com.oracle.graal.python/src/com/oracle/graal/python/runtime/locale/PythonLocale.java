@@ -113,6 +113,7 @@ public final class PythonLocale {
     public Locale category(int category) {
         return switch (category) {
             case LC_COLLATE, LC_CTYPE, LC_MESSAGES -> formatLocale;
+            case LC_MONETARY, LC_NUMERIC, LC_TIME -> displayLocale;
             default -> displayLocale;
         };
     }

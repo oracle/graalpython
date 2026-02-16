@@ -14,6 +14,8 @@ import java.text.NumberFormat;
 
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.locale.PythonLocale;
 import com.oracle.graal.python.runtime.formatting.FormattingBuffer.StringFormattingBuffer;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -117,9 +119,8 @@ public class IntegerFormatter extends InternalFormat.Formatter {
                     break;
 
                 case 'n':
-                    // Locale-sensitive version of d-format
-                    format_d(value);
-                    setGroupingAndGroupSize(getCurrentDecimalFormat());
+                    // Locale-sensitive version of d-format using current Python locale
+                    format_n(value);
                     break;
 
                 default:
@@ -176,7 +177,8 @@ public class IntegerFormatter extends InternalFormat.Formatter {
      */
     void format_n(BigInteger value) {
         String number;
-        NumberFormat nf = NumberFormat.getNumberInstance();
+        NumberFormat nf = NumberFormat.getNumberInstance(
+                        PythonContext.get(null).getCurrentLocale().category(PythonLocale.LC_NUMERIC));
         if (value.signum() < 0) {
             // Negative value: deal with sign and base, and convert magnitude.
             negativeSign(null);
@@ -194,7 +196,8 @@ public class IntegerFormatter extends InternalFormat.Formatter {
      */
     void format_n(int value) {
         String number;
-        NumberFormat nf = NumberFormat.getNumberInstance();
+        NumberFormat nf = NumberFormat.getNumberInstance(
+                        PythonContext.get(null).getCurrentLocale().category(PythonLocale.LC_NUMERIC));
         if (value < 0) {
             // Negative value: deal with sign and base, and convert magnitude.
             negativeSign(null);
@@ -349,8 +352,7 @@ public class IntegerFormatter extends InternalFormat.Formatter {
 
                 case 'n':
                     // Locale-sensitive version of d-format
-                    format_d(value);
-                    setGroupingAndGroupSize(getCurrentDecimalFormat());
+                    format_n(value);
                     break;
 
                 default:

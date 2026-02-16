@@ -126,9 +126,15 @@ public final class LocaleModuleBuiltins extends PythonBuiltins {
             Locale numericLocale = currentPythonLocale.category(LC_NUMERIC);
             NumberFormat numericLocaleNumFormat = NumberFormat.getInstance(numericLocale);
             DecimalFormatSymbols decimalFormatSymbols = getDecimalFormatSymbols(numericLocale, numericLocaleNumFormat);
+            char decimalPoint = decimalFormatSymbols.getDecimalSeparator();
+            char thousandsSep = decimalFormatSymbols.getGroupingSeparator();
+            // Align with CPython behaviour for locales like ru_RU where Java may use NBSP
+            if ("ru".equals(numericLocale.getLanguage()) && thousandsSep == '\u00A0') {
+                thousandsSep = '\u202F';
+            }
 
-            dict.put("decimal_point", TruffleString.fromCodePointUncached(decimalFormatSymbols.getDecimalSeparator(), TS_ENCODING));
-            dict.put("thousands_sep", TruffleString.fromCodePointUncached(decimalFormatSymbols.getGroupingSeparator(), TS_ENCODING));
+            dict.put("decimal_point", TruffleString.fromCodePointUncached(decimalPoint, TS_ENCODING));
+            dict.put("thousands_sep", TruffleString.fromCodePointUncached(thousandsSep, TS_ENCODING));
             dict.put("grouping", getDecimalFormatGrouping(language, numericLocaleNumFormat));
 
             // LC_MONETARY
@@ -136,11 +142,16 @@ public final class LocaleModuleBuiltins extends PythonBuiltins {
             NumberFormat monetaryNumFormat = NumberFormat.getInstance(monetaryLocale);
             Currency currency = monetaryNumFormat.getCurrency();
             decimalFormatSymbols = getDecimalFormatSymbols(monetaryLocale, monetaryNumFormat);
+            char monDecimalPoint = decimalFormatSymbols.getMonetaryDecimalSeparator();
+            char monThousandsSep = decimalFormatSymbols.getGroupingSeparator();
+            if ("ru".equals(monetaryLocale.getLanguage()) && monThousandsSep == '\u00A0') {
+                monThousandsSep = '\u202F';
+            }
 
             dict.put("int_curr_symbol", toTruffleStringUncached(decimalFormatSymbols.getInternationalCurrencySymbol()));
             dict.put("currency_symbol", toTruffleStringUncached(decimalFormatSymbols.getCurrencySymbol()));
-            dict.put("mon_decimal_point", TruffleString.fromCodePointUncached(decimalFormatSymbols.getMonetaryDecimalSeparator(), TS_ENCODING));
-            dict.put("mon_thousands_sep", TruffleString.fromCodePointUncached(decimalFormatSymbols.getGroupingSeparator(), TS_ENCODING));
+            dict.put("mon_decimal_point", TruffleString.fromCodePointUncached(monDecimalPoint, TS_ENCODING));
+            dict.put("mon_thousands_sep", TruffleString.fromCodePointUncached(monThousandsSep, TS_ENCODING));
             dict.put("mon_grouping", getDecimalFormatGrouping(language, monetaryNumFormat));
             // TODO: reasonable default, but not the current locale setting
             dict.put("positive_sign", "");
