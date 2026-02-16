@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -47,13 +47,11 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
-import com.oracle.truffle.api.source.SourceSection;
 
 @SuppressWarnings("truffle-abstract-export")
 @ExportLibrary(InteropLibrary.class)
@@ -80,29 +78,6 @@ public final class PList extends PTupleListBase {
 
     public ListOrigin getOrigin() {
         return origin;
-    }
-
-    @ExportMessage
-    public SourceSection getSourceLocation(@Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
-        boolean mustRelease = gil.acquire();
-        try {
-            ListOrigin node = getOrigin();
-            SourceSection result = null;
-            if (node != null) {
-                result = node.getSourceSection();
-            }
-            if (result == null) {
-                throw UnsupportedMessageException.create();
-            }
-            return result;
-        } finally {
-            gil.release(mustRelease);
-        }
-    }
-
-    @ExportMessage
-    public boolean hasSourceLocation() {
-        return getOrigin() != null && getOrigin().getSourceSection() != null;
     }
 
     @ExportMessage
@@ -235,7 +210,5 @@ public final class PList extends PTupleListBase {
         }
 
         void reportUpdatedCapacity(ArrayBasedSequenceStorage newStore);
-
-        SourceSection getSourceSection();
     }
 }

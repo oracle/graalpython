@@ -237,7 +237,6 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.PTupleListBase;
 import com.oracle.graal.python.runtime.sequence.storage.BoolSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
@@ -1733,19 +1732,11 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
 
     @Operation(storeBytecodeIndex = false)
     public static final class MakeList {
-        @Specialization(guards = "elements.length == 0")
-        public static PList doEmpty(@Variadic Object[] elements,
-                        @Bind PBytecodeDSLRootNode rootNode) {
-            // Common pattern is to create an empty list and then add items.
-            // We need to start from empty storage, so that we can specialize to, say, int storage
-            // if only ints are appended to this list
-            return PFactory.createList(rootNode.getLanguage(), EmptySequenceStorage.INSTANCE);
-        }
-
-        @Specialization(guards = "elements.length > 0")
+        @Specialization
         public static PList perform(@Variadic Object[] elements,
-                        @Bind PBytecodeDSLRootNode rootNode) {
-            return PFactory.createList(rootNode.getLanguage(), elements);
+                        @Bind PBytecodeDSLRootNode rootNode,
+                        @Cached SequenceFromArrayNode.ListFromArrayNode listFromArrayNode) {
+            return listFromArrayNode.execute(rootNode.getLanguage(), elements);
         }
     }
 
@@ -1792,8 +1783,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
     public static final class MakeTuple {
         @Specialization
         public static Object perform(@Variadic Object[] elements,
-                        @Bind PBytecodeDSLRootNode rootNode) {
-            return PFactory.createTuple(rootNode.getLanguage(), elements);
+                        @Bind PBytecodeDSLRootNode rootNode,
+                        @Cached SequenceFromArrayNode.TupleFromArrayNode tupleFromArrayNode) {
+            return tupleFromArrayNode.execute(rootNode.getLanguage(), elements);
         }
     }
 
@@ -3433,7 +3425,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @Specialization
         public static Object doObject(VirtualFrame frame, LocalAccessor currentGeneratorException, LocalAccessor savedException, Object sendValue,
                         @Bind BytecodeNode bytecode) {
-            if (savedException != currentGeneratorException) {
+            if (!savedException.equals(currentGeneratorException)) {
                 // We cannot pass `null` as savedException, so savedException ==
                 // currentGeneratorException means "no saveException"
                 //
