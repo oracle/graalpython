@@ -98,6 +98,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyMethodDefHelper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes.HashingStorageLen;
 import com.oracle.graal.python.builtins.objects.frame.FrameBuiltins;
@@ -105,6 +106,7 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PDecoratedMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
@@ -116,6 +118,7 @@ import com.oracle.graal.python.builtins.objects.str.NativeStringData;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringLenNode;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSetAttr;
@@ -123,7 +126,6 @@ import com.oracle.graal.python.nodes.HiddenAttr;
 import com.oracle.graal.python.nodes.attributes.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -139,15 +141,18 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextSlotBuiltins {
 
-    @CApiBuiltin(name = "GraalPyPrivate_Get_PyListObject_ob_item", ret = PyObjectPtr, args = {PyListObject}, call = Ignored)
-    @CApiBuiltin(name = "GraalPyPrivate_Get_PyTupleObject_ob_item", ret = PyObjectPtr, args = {PyTupleObject}, call = Ignored)
-    abstract static class GraalPyPrivate_Get_PSequence_ob_item extends CApiUnaryBuiltinNode {
+    @CApiBuiltin(ret = PyObjectPtr, args = {PyListObject}, call = Ignored)
+    public static long GraalPyPrivate_Get_PyListObject_ob_item(long ptr) {
+        PList object = (PList) NativeToPythonInternalNode.executeUncached(ptr, false);
+        assert !(object.getSequenceStorage() instanceof NativeByteSequenceStorage);
+        return PySequenceArrayWrapper.ensureNativeSequence(object);
+    }
 
-        @Specialization
-        static long get(PSequence object) {
-            assert !(object.getSequenceStorage() instanceof NativeByteSequenceStorage);
-            return PySequenceArrayWrapper.ensureNativeSequence(object);
-        }
+    @CApiBuiltin(ret = PyObjectPtr, args = {PyTupleObject}, call = Ignored)
+    public static long GraalPyPrivate_Get_PyTupleObject_ob_item(long ptr) {
+        PTuple object = (PTuple) NativeToPythonInternalNode.executeUncached(ptr, false);
+        assert !(object.getSequenceStorage() instanceof NativeByteSequenceStorage);
+        return PySequenceArrayWrapper.ensureNativeSequence(object);
     }
 
     @CApiBuiltin(ret = Py_ssize_t, args = {PyASCIIObject}, call = Ignored)
