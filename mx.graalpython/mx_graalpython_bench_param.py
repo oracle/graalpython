@@ -121,6 +121,8 @@ MICRO_BENCHMARKS = {
     'virtualize-in-try-catch-oom': ITER_10,
     'phase_shift_warmup_baseline': ITER_5 + ['--self-measurement'] + ['500'],
     'phase_shift_warmup': ITER_3 + ['--self-measurement'] + ['1600', '500'],
+    'startup': ITER_5 + ['50'],
+    'startup-imports': ITER_5 + ['20'],
 }
 
 # For benchmarking the interpreter with --engine.Compilation=false
@@ -190,6 +192,7 @@ MICRO_BENCHMARKS_SMALL = {
     'c-call-method-int-float': ITER_5 + ['500000'],
     'regexp': ITER_5 + WARMUP_2,
     'startup': ITER_5 + ['50'],
+    'startup-imports': ITER_5 + ['10'],
 }
 
 def _pickling_benchmarks(module='pickle'):
