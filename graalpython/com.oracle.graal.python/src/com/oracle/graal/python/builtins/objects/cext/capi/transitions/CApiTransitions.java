@@ -2566,8 +2566,8 @@ public abstract class CApiTransitions {
             if ((pythonObjectReference = pythonObject.ref) != null) {
                 hasWeakRef.enter(inliningTarget);
                 UpdateHandleTableReferenceNode.handlePythonObjectReference(inliningTarget, pythonObjectReference, taggedPointer, pythonObjectReference.handleTableIndex,
-                                setStrong, isLoggable,
-                                gcTrackNode);
+                                setStrong, keepInGcList, isLoggable,
+                                gcTrackNode, gcListRemoveNode);
                 Reference.reachabilityFence(pythonObject);
             } else if (!setStrong) {
                 // 'pythonObject.ref == null' -> reference is strong
@@ -2641,7 +2641,9 @@ public abstract class CApiTransitions {
             Object ref = nativeStubLookupGet(handleContext, taggedPointer, handleTableIndex);
             if (ref instanceof PythonObjectReference pythonObjectReference) {
                 hasWeakRef.enter(inliningTarget);
-                handlePythonObjectReference(inliningTarget, pythonObjectReference, taggedPointer, handleTableIndex, setStrong, isLoggable, gcTrackNode);
+                handlePythonObjectReference(inliningTarget, pythonObjectReference, taggedPointer, handleTableIndex,
+                                setStrong, keepInGcList, isLoggable,
+                                gcTrackNode, gcListRemoveNode);
             } else if (!setStrong) {
                 // no PythonObjectReference in the handle table -> reference is strong
 
@@ -2660,8 +2662,10 @@ public abstract class CApiTransitions {
             }
         }
 
-        static void handlePythonObjectReference(Node inliningTarget, PythonObjectReference pythonObjectReference, long taggedPointer, int handleTableIndex, boolean setStrong, boolean isLoggable,
-                        PyObjectGCTrackNode gcTrackNode) {
+        static void handlePythonObjectReference(Node inliningTarget, PythonObjectReference pythonObjectReference, long taggedPointer, int handleTableIndex,
+                        boolean setStrong, boolean keepInGcList, boolean isLoggable,
+                        PyObjectGCTrackNode gcTrackNode,
+                        GCListRemoveNode gcListRemoveNode) {
             assert pythonObjectReference.handleTableIndex == handleTableIndex;
             assert pythonObjectReference.pointer == taggedPointer;
             if (setStrong && !pythonObjectReference.isStrongReference()) {
@@ -2680,6 +2684,9 @@ public abstract class CApiTransitions {
             } else if (!setStrong && pythonObjectReference.isStrongReference()) {
                 if (isLoggable) {
                     logStrongToWeak(taggedPointer, handleTableIndex, pythonObjectReference.strongReference);
+                }
+                if (!keepInGcList && pythonObjectReference.gc) {
+                    gcListRemoveNode.executeOp(inliningTarget, taggedPointer);
                 }
                 pythonObjectReference.setStrongReference(null);
             }
