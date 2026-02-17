@@ -962,7 +962,7 @@ def graalvm_jdk(enterprise=False):
     if not DISABLE_REBUILD:
         run_mx(mx_args + ["build", "--dep", f"GRAALVM_{edition}JAVA{jdk_major_version}"], env={**os.environ, **LATEST_JAVA_HOME})
     out = mx.OutputCapture()
-    run_mx(mx_args + ["graalvm-home"], out=out)
+    run_mx(["--quiet"] + mx_args + ["graalvm-home"], out=out)
     return out.data.splitlines()[-1].strip()
 
 def get_maven_cache():
