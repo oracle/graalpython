@@ -125,6 +125,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
+import com.oracle.truffle.api.profiles.InlinedIntValueProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.Super)
@@ -517,6 +518,7 @@ public final class SuperBuiltins extends PythonBuiltins {
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached GetObjectTypeNode getObjectType,
                         @Cached CastToTruffleStringChecked1Node castToTruffleStringNode,
+                        @Cached InlinedIntValueProfile mroLenProfile,
                         @Cached InlinedConditionProfile hasDescrGetProfile,
                         @Cached InlinedConditionProfile getObjectIsStartObjectProfile,
                         @Cached IsForeignObjectNode isForeignObjectNode,
@@ -545,7 +547,7 @@ public final class SuperBuiltins extends PythonBuiltins {
             PythonAbstractClass[] mro = getMro(startType);
             /* No need to check the last one: it's gonna be skipped anyway. */
             int i = 0;
-            int n = mro.length;
+            int n = mroLenProfile.profile(inliningTarget, mro.length);
             for (i = 0; i + 1 < n; i++) {
                 if (isSameType(type, mro[i])) {
                     break;
