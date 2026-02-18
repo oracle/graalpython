@@ -2841,6 +2841,40 @@ def run_downstream_test(args):
     downstream_tests.run_downstream_test(graalpy, args.project)
 
 
+def update_github_unittest_tags(*args):
+    import urllib
+    import json
+    params = {
+        'q': "repo:oracle/graalpython is:pr in:title Weekly Retagger: Update tags",
+        'sort': 'updated',
+        'order': 'desc',
+        'per_page': '1',
+    }
+    request = urllib.request.Request(
+        f"https://api.github.com/search/issues?" + urllib.parse.urlencode(params),
+        headers={'Content-Type': 'application/json'},
+    )
+    mx.log(f"Looking up the PR in {request.full_url}")
+    with urllib.request.urlopen(request, timeout=30) as f:
+        prs = json.load(f)
+
+    pr_num = prs['items'][0]['number']
+    request = urllib.request.Request(
+        f"https://api.github.com/repos/oracle/graalpython/pulls/{pr_num}/commits",
+        headers={'Content-Type': 'application/json'}
+    )
+
+    mx.log("Fetching the PR")
+    mx.run(['git', 'fetch', 'https://github.com/oracle/graalpython', f'pull/{pr_num}/head:ghtags'])
+
+    mx.log(f"Loading the commits of PR {pr_num} from {request.full_url}")
+    with urllib.request.urlopen(request, timeout=30) as f:
+        commits = json.load(f)
+    shas = [c['sha'] for c in commits]
+    mx.log(f"Cherry picking {' '.join(shas)}")
+    mx.run(["git", "cherry-pick", *shas], cwd=SUITE.dir)
+
+
 # ----------------------------------------------------------------------------------------------------------------------
 #
 # register the suite commands (if any)
@@ -2876,4 +2910,5 @@ mx.update_commands(SUITE, {
     'deploy-extensions-to-local-maven-repo': [deploy_graalpy_extensions_to_local_maven_repo_wrapper, ''],
     'downstream-test': [run_downstream_test, ''],
     'python-native-pgo': [graalpy_native_pgo_build_and_test, 'Build PGO-instrumented native image, run tests, then build PGO-optimized native image'],
+    'python-update-github-unittest-tags': [update_github_unittest_tags, ''],
 })
