@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -76,7 +76,7 @@ import com.oracle.truffle.api.nodes.Node;
  */
 @CoreFunctions(extendClasses = PythonBuiltinClassType.ForeignAbstractClass)
 public final class ForeignAbstractClassBuiltins extends PythonBuiltins {
-    public static TpSlots SLOTS = ForeignAbstractClassBuiltinsSlotsGen.SLOTS;
+    public static final TpSlots SLOTS = ForeignAbstractClassBuiltinsSlotsGen.SLOTS;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
