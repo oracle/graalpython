@@ -1292,3 +1292,87 @@ class SingleLineMultipleStmts(TracingEventsUnitTest):
         ]
 
         self.assert_events(self.events, events)
+
+
+class AnnotationsEvents(TracingEventsUnitTest):
+    def test_multiple_fun_annotations(self):
+        class AnnotationTracer:
+            def my_annotation(self, func=None, *, tag=None):
+                def decorator(f):
+                    return f
+                return decorator
+            def your_annotation(self, func=None, *, tag=None):
+                def decorator(f):
+                    return f
+                return decorator
+        annotation_tracer = AnnotationTracer()
+
+        def func():
+            @annotation_tracer.my_annotation(tag="outer")
+            @annotation_tracer.your_annotation(tag="inner")
+            def target(x, y):
+                pass
+
+        def klass():
+            @annotation_tracer.your_annotation(tag="outer")
+            @annotation_tracer.my_annotation(tag="inner")
+            class TargetCls:
+                pass
+
+        self.trace_function(func)
+        events = [
+            (0, 'func', 'call'),
+            (1, 'func', 'line'),
+            (-10, 'my_annotation', 'call'),
+            (-9, 'my_annotation', 'line'),
+            (-7, 'my_annotation', 'line'),
+            (-7, 'my_annotation', 'return'),
+            (2, 'func', 'line'),
+            (-6, 'your_annotation', 'call'),
+            (-5, 'your_annotation', 'line'),
+            (-3, 'your_annotation', 'line'),
+            (-3, 'your_annotation', 'return'),
+            (3, 'func', 'line'),
+            (2, 'func', 'line'),
+            (-5, 'decorator', 'call'),
+            (-4, 'decorator', 'line'),
+            (-4, 'decorator', 'return'),
+            (1, 'func', 'line'),
+            (-9, 'decorator', 'call'),
+            (-8, 'decorator', 'line'),
+            (-8, 'decorator', 'return'),
+            (3, 'func', 'line'),
+            (3, 'func', 'return'),
+        ]
+        self.assert_events(self.events, events)
+
+        self.trace_function(klass)
+        events = [
+            (0, 'klass', 'call'),
+            (1, 'klass', 'line'),
+            (-12, 'your_annotation', 'call'),
+            (-11, 'your_annotation', 'line'),
+            (-9, 'your_annotation', 'line'),
+            (-9, 'your_annotation', 'return'),
+            (2, 'klass', 'line'),
+            (-16, 'my_annotation', 'call'),
+            (-15, 'my_annotation', 'line'),
+            (-13, 'my_annotation', 'line'),
+            (-13, 'my_annotation', 'return'),
+            (3, 'klass', 'line'),
+            (1, 'TargetCls', 'call'),
+            (1, 'TargetCls', 'line'),
+            (4, 'TargetCls', 'line'),
+            (4, 'TargetCls', 'return'),
+            (2, 'klass', 'line'),
+            (-15, 'decorator', 'call'),
+            (-14, 'decorator', 'line'),
+            (-14, 'decorator', 'return'),
+            (1, 'klass', 'line'),
+            (-11, 'decorator', 'call'),
+            (-10, 'decorator', 'line'),
+            (-10, 'decorator', 'return'),
+            (3, 'klass', 'line'),
+            (3, 'klass', 'return'),
+        ]
+        self.assert_events(self.events, events)
