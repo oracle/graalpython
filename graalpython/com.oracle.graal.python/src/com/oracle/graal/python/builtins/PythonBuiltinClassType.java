@@ -265,7 +265,6 @@ import com.oracle.graal.python.builtins.objects.struct.StructUnpackIteratorBuilt
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.CommonLockBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.LockTypeBuiltins;
-import com.oracle.graal.python.builtins.objects.thread.PExceptHookArgsBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.RLockBuiltins;
 import com.oracle.graal.python.builtins.objects.thread.ThreadLocalBuiltins;
 import com.oracle.graal.python.builtins.objects.tokenize.TokenizerIterBuiltins;
@@ -629,7 +628,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
                                     If strict is true and one of the arguments is exhausted before the others,
                                     raise a ValueError.""")),
     PThreadLocal("_local", PythonObject, newBuilder().publishInModule(J__THREAD).basetype().slots(ThreadLocalBuiltins.SLOTS)),
-    PExceptHookArgs("_ExceptHookArgs", PythonObject, newBuilder().publishInModule(J__THREAD).slots(PExceptHookArgsBuiltins.SLOTS)),
     PLock("LockType", PythonObject, newBuilder().publishInModule(J__THREAD).disallowInstantiation().slots(CommonLockBuiltins.SLOTS, LockTypeBuiltins.SLOTS)),
     PRLock("RLock", PythonObject, newBuilder().publishInModule(J__THREAD).basetype().slots(CommonLockBuiltins.SLOTS, RLockBuiltins.SLOTS)),
     PSemLock("SemLock", PythonObject, newBuilder().publishInModule("_multiprocessing").basetype().slots(SemLockBuiltins.SLOTS)),
@@ -989,7 +987,13 @@ public enum PythonBuiltinClassType implements TruffleObject {
                                     UnraisableHookArgs
 
                                     Type used to pass arguments to sys.unraisablehook.""")),
+    PExceptHookArgs(
+            "_ExceptHookArgs",
+            PTuple,
+            newBuilder().publishInModule(J__THREAD).slots(StructSequenceBuiltins.SLOTS, InstantiableStructSequenceBuiltins.SLOTS).doc("""
+                                    _ExceptHookArgs
 
+                                    Type used to pass arguments to _thread._excepthook.""")),
     PSSLSession("SSLSession", PythonObject, newBuilder().publishInModule(J__SSL).disallowInstantiation()),
     PSSLContext("_SSLContext", PythonObject, newBuilder().publishInModule(J__SSL).basetype().slots(SSLContextBuiltins.SLOTS)),
     PSSLSocket("_SSLSocket", PythonObject, newBuilder().publishInModule(J__SSL).basetype()),

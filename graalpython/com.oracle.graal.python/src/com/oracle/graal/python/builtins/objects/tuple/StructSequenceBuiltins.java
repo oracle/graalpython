@@ -116,7 +116,8 @@ import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
                 PythonBuiltinClassType.PIntInfo,
                 PythonBuiltinClassType.PHashInfo,
                 PythonBuiltinClassType.PThreadInfo,
-                PythonBuiltinClassType.PUnraisableHookArgs})
+                PythonBuiltinClassType.PUnraisableHookArgs,
+                PythonBuiltinClassType.PExceptHookArgs})
 public final class StructSequenceBuiltins extends PythonBuiltins {
 
     public static final TpSlots SLOTS = StructSequenceBuiltinsSlotsGen.SLOTS;
