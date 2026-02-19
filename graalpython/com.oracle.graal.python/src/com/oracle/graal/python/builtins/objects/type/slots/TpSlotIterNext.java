@@ -91,6 +91,10 @@ public final class TpSlotIterNext {
     /** Equivalent of {@code _PyObject_NextNotImplemented} */
     public static final TpSlot NEXT_NOT_IMPLEMENTED = TpSlotIterNextSlotsGen.SLOTS.tp_iternext();
 
+    public static void initNextNotImplementedCallTarget(PythonLanguage language) {
+        ((TpSlotIterNext.TpSlotIterNextBuiltin<?>) NEXT_NOT_IMPLEMENTED).initialize(language);
+    }
+
     public abstract static class TpSlotIterNextBuiltin<T extends PythonUnaryBuiltinNode> extends TpSlotBuiltin<T> {
         final int callTargetIndex = TpSlotBuiltinCallTargetRegistry.getNextCallTargetIndex();
 
