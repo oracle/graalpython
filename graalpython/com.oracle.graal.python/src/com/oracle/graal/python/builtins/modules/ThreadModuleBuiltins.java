@@ -46,7 +46,6 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J__THREAD;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__THREAD;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.ref.WeakReference;
 import java.util.List;
@@ -59,14 +58,18 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.thread.PExceptHookArgs;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.builtins.objects.thread.PThread;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.WriteUnraisableNode;
@@ -81,12 +84,14 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleThreadBuilder;
@@ -103,6 +108,15 @@ import com.oracle.truffle.api.strings.TruffleString;
 @CoreFunctions(defineModule = J__THREAD)
 public final class ThreadModuleBuiltins extends PythonBuiltins {
 
+    public static final StructSequence.BuiltinTypeDescriptor EXCEPTHOOK_ARGS_DESC = new StructSequence.BuiltinTypeDescriptor(
+            PythonBuiltinClassType.PExceptHookArgs,
+            4,
+            new String[]{
+                    "exc_type", "exc_value", "exc_traceback", "thread"},
+            new String[]{
+                    "Exception type", "Exception value", "Exception traceback",
+                    "Exception thread"});
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ThreadModuleBuiltinsFactory.getFactories();
@@ -112,7 +126,7 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
     public void initialize(Python3Core core) {
         addBuiltinConstant("error", core.lookupType(PythonBuiltinClassType.RuntimeError));
         addBuiltinConstant("TIMEOUT_MAX", TIMEOUT_MAX);
-        addBuiltinConstant("_ExceptHookArgs", core.lookupType(PythonBuiltinClassType.PExceptHookArgs));
+        StructSequence.initType(core, EXCEPTHOOK_ARGS_DESC);
         core.lookupBuiltinModule(T__THREAD).setModuleState(0);
         super.initialize(core);
     }
@@ -188,28 +202,34 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
         Object getExceptHook(PythonModule self,
                              Object exceptHookArgs,
                              @Cached PRaiseNode raiseNode) {
-            if (!(exceptHookArgs instanceof PExceptHookArgs args))
+
+            Object argsType = GetClassNode.GetPythonObjectClassNode.executeUncached((PythonObject) exceptHookArgs);
+            if (!TypeNodes.IsSameTypeNode.executeUncached(argsType, PythonBuiltinClassType.PExceptHookArgs))
                 throw PRaiseNode.getUncached().raise(raiseNode, PythonBuiltinClassType.TypeError, ErrorMessages.ARG_TYPE_MUST_BE, "_thread.excepthook", "ExceptHookArgs");
 
-            Object excType = args.getExcType();
+            SequenceStorage seq = ((PTuple) exceptHookArgs).getSequenceStorage();
+            if (seq.length() != 4)
+                throw PRaiseNode.getUncached().raise(raiseNode, PythonBuiltinClassType.TypeError, ErrorMessages.TAKES_EXACTLY_D_ARGUMENTS_D_GIVEN, 4, seq.length());
 
-            if (excType == PythonBuiltinClassType.SystemExit)
+            Object excType = SequenceStorageNodes.GetItemScalarNode.executeUncached(seq, 0);
+
+            if (TypeNodes.IsSameTypeNode.executeUncached(excType, PythonBuiltinClassType.SystemExit))
                 return PNone.NONE;
 
-            Object excValue = args.getExcValue();
-            Object excTraceback = args.getExcTraceback();
-            Object thread = args.getThread();
+            Object excValue = SequenceStorageNodes.GetItemScalarNode.executeUncached(seq, 1);
+            Object excTraceback = SequenceStorageNodes.GetItemScalarNode.executeUncached(seq, 2);
+            Object thread = SequenceStorageNodes.GetItemScalarNode.executeUncached(seq, 3);
 
             CallNode callNode = CallNode.create();
             Object name = null;
 
-            Object nameAttr = ((PythonObject) thread).getAttribute(tsLiteral("_name"));
+            Object nameAttr = PyObjectLookupAttr.executeUncached(thread, tsLiteral("_name"));
             if (nameAttr != null && nameAttr != PNone.NONE && nameAttr != PNone.NO_VALUE) {
                 name = nameAttr.toString();
             }
 
             if (name == null) {
-                Object getIdentBuiltin = self.getAttribute(tsLiteral("get_ident"));
+                Object getIdentBuiltin = PyObjectLookupAttr.executeUncached(thread, tsLiteral("get_ident"));
                 Object ident = callNode.executeWithoutFrame(getIdentBuiltin);
                 name = ident != null ? ident.toString() : "<unknown>";
             }

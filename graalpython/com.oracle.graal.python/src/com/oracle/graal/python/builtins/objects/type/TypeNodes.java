@@ -2603,7 +2603,7 @@ public abstract class TypeNodes {
                 case PInt, Boolean -> 4;
                 case PAsyncGenerator, PFlags, PHashInfo, PTuple, PCoroutine, PGenerator, PThreadInfo, PMemoryView,
                      PStatResult, PUnameResult, PStructTime, PFloatInfo, PStatvfsResult, PIntInfo, PFrame,
-                     PTerminalSize, PUnraisableHookArgs -> 8;
+                     PTerminalSize, PUnraisableHookArgs, PExceptHookArgs -> 8;
                 case PythonClass -> 40;
                 default -> 0;
             };
