@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -194,7 +194,7 @@ public final class TpSlotIterNext {
             if (pythonResult == PNone.NO_VALUE) {
                 Object currentException = readAndClearNativeException.execute(inliningTarget, state);
                 if (currentException != PNone.NO_VALUE) {
-                    throw PException.fromObject(currentException, inliningTarget, false);
+                    throw PException.fromObjectFixUncachedLocation(currentException, inliningTarget, false);
                 } else {
                     throw TpIterNextBuiltin.iteratorExhausted();
                 }

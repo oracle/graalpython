@@ -76,6 +76,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.source.SourceSection;
@@ -135,6 +136,14 @@ public final class PException extends AbstractTruffleException {
         super(null, wrapped, UNLIMITED_STACK_TRACE, validateLocation(node));
         this.pythonException = pythonException;
         assert PyExceptionInstanceCheckNode.executeUncached(pythonException);
+    }
+
+    public static PException fromObjectFixUncachedLocation(Object pythonException, Node location, boolean withJavaStacktrace) {
+        Node n = location;
+        if (n == null || !n.isAdoptable()) {
+            n = EncapsulatingNodeReference.getCurrent().get();
+        }
+        return fromObject(pythonException, n, withJavaStacktrace);
     }
 
     public static PException fromObject(Object pythonException, Node node, boolean withJavaStacktrace) {
