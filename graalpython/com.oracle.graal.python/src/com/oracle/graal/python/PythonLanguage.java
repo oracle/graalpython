@@ -45,6 +45,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
@@ -1090,7 +1091,12 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     @Override
+    @TruffleBoundary
     protected void disposeThread(PythonContext context, Thread thread) {
+        // On Windows, yield to allow other threads to progress during shutdown (issue #543).
+        if (System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("win")) {
+            Thread.yield();
+        }
         context.disposeThread(thread, false);
     }
 
