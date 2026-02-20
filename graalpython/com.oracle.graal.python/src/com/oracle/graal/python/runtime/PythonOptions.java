@@ -88,6 +88,9 @@ public final class PythonOptions {
      * bytecode interpreter.
      */
     public static final boolean ENABLE_BYTECODE_DSL_INTERPRETER;
+    public static final int UNCACHED_BYTECODE_DSL_INTERPRETER_LIMIT;
+    private static final OptionType<TruffleString> TS_OPTION_TYPE = new OptionType<>("graal.python.TruffleString", PythonUtils::toTruffleStringUncached);
+
     static {
         String prop = System.getProperty("python.EnableBytecodeDSLInterpreter");
         if (prop != null) {
@@ -104,9 +107,18 @@ public final class PythonOptions {
         } else {
             ENABLE_BYTECODE_DSL_INTERPRETER = true;
         }
-    }
 
-    private static final OptionType<TruffleString> TS_OPTION_TYPE = new OptionType<>("graal.python.TruffleString", PythonUtils::toTruffleStringUncached);
+        if (Boolean.getBoolean("python.ForceUncachedInterpreter")) {
+            UNCACHED_BYTECODE_DSL_INTERPRETER_LIMIT = Integer.MIN_VALUE;
+        } else {
+            String uncachedLimitStr = System.getProperty("python.UncachedInterpreterLimit");
+            if (uncachedLimitStr != null) {
+                UNCACHED_BYTECODE_DSL_INTERPRETER_LIMIT = Integer.parseInt(uncachedLimitStr);
+            } else {
+                UNCACHED_BYTECODE_DSL_INTERPRETER_LIMIT = -1;
+            }
+        }
+    }
 
     private PythonOptions() {
         // no instances

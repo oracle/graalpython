@@ -78,7 +78,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 @GenerateUncached
 @GenerateInline(false)
 @GenerateCached
-@OperationProxy.Proxyable(storeBytecodeIndex = false)
+@OperationProxy.Proxyable(allowUncached = true, storeBytecodeIndex = false)
 public abstract class PyObjectIsTrueNode extends PNodeWithContext {
     public abstract boolean execute(Frame frame, Object object);
 

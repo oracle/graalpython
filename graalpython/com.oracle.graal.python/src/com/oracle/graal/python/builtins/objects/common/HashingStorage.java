@@ -75,6 +75,7 @@ import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NeverDefault;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -190,6 +191,7 @@ public abstract class HashingStorage {
     // partial impl dict_update_arg
     @GenerateCached
     @GenerateInline(false)
+    @GenerateUncached
     public abstract static class ObjectToArrayPairNode extends PNodeWithContext {
         public abstract ArrayBuilder<KeyValue> execute(VirtualFrame frame, Object mapping, Object keyAttr);
 

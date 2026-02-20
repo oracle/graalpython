@@ -75,7 +75,7 @@ import com.oracle.truffle.api.strings.TruffleString;
 
 @GenerateInline(false)
 @GenerateUncached
-@OperationProxy.Proxyable(storeBytecodeIndex = false)
+@OperationProxy.Proxyable(allowUncached = true, storeBytecodeIndex = false)
 public abstract class PyNumberAddNode extends PyNumberAddFastPathsBase {
 
     @Specialization(guards = {"isBuiltinList(left)", "isBuiltinList(right)"})

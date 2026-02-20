@@ -121,6 +121,7 @@ public class PGenerator extends PythonBuiltinObject {
     public static class BytecodeDSLState {
         private final PBytecodeDSLRootNode rootNode;
         private final Object[] arguments;
+        private ContinuationRootNode prevContinuationRootNode;
         private ContinuationRootNode continuationRootNode;
         private boolean isStarted;
 
@@ -133,6 +134,9 @@ public class PGenerator extends PythonBuiltinObject {
         public Object handleResult(PGenerator generator, ContinuationResult result) {
             assert result.getContinuationRootNode() == null || result.getContinuationRootNode().getFrameDescriptor() == generator.frame.getFrameDescriptor();
             isStarted = true;
+            // We must keep the previous root so that we can load its BytecodeNode to resolve BCI to
+            // location, the next continuation node may have different BytecodeNode
+            prevContinuationRootNode = continuationRootNode;
             continuationRootNode = result.getContinuationRootNode();
             return result.getResult();
         }
@@ -301,12 +305,11 @@ public class PGenerator extends PythonBuiltinObject {
 
     public BytecodeNode getBytecodeNode() {
         assert PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER;
+        assert !running; // When it is running, we must use stack walking to get the location
         BytecodeDSLState state = getBytecodeDSLState();
         if (state.isStarted) {
-            return state.continuationRootNode.getLocation().getBytecodeNode();
+            return state.prevContinuationRootNode.getLocation().getBytecodeNode();
         } else {
-            // Loading the BytecodeNode from the RootNode field is, in general, not correct, but can
-            // be used if we know that the generator function is currently not on stack.
             return state.rootNode.getBytecodeNode();
         }
     }

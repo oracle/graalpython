@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNode;
+import com.oracle.graal.python.nodes.call.CallDispatchersFactory.FunctionIndirectInvokeNodeGen;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.runtime.ExecutionContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
@@ -354,6 +355,10 @@ public class CallDispatchers {
     @GenerateCached(false)
     @GenerateUncached
     public abstract static class FunctionIndirectInvokeNode extends Node {
+
+        public static FunctionIndirectInvokeNode getUncached() {
+            return FunctionIndirectInvokeNodeGen.getUncached();
+        }
 
         public abstract Object execute(Frame frame, Node inliningTarget, PFunction callee, Object[] arguments);
 

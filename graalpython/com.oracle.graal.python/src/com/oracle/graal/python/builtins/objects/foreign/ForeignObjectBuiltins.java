@@ -105,7 +105,7 @@ import com.oracle.truffle.api.strings.TruffleString;
  */
 @CoreFunctions(extendClasses = PythonBuiltinClassType.ForeignObject)
 public final class ForeignObjectBuiltins extends PythonBuiltins {
-    public static TpSlots SLOTS = ForeignObjectBuiltinsSlotsGen.SLOTS;
+    public static final TpSlots SLOTS = ForeignObjectBuiltinsSlotsGen.SLOTS;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

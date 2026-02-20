@@ -72,6 +72,7 @@ import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.bytecode.FrameInfo;
 import com.oracle.graal.python.nodes.bytecode.GeneratorReturnException;
 import com.oracle.graal.python.nodes.bytecode.GeneratorYieldResult;
+import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.call.CallDispatchers;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -398,7 +399,7 @@ public final class CommonGeneratorBuiltins extends PythonBuiltins {
                 Node location;
                 RootNode rootNode = self.getCurrentCallTarget().getRootNode();
                 if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-                    location = self.getBytecodeNode();
+                    location = ((PBytecodeDSLRootNode) self.getRootNode()).getBytecodeNode();
                 } else {
                     location = rootNode;
                 }

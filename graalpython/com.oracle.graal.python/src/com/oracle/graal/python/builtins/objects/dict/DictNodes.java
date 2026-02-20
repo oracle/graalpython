@@ -131,6 +131,7 @@ public abstract class DictNodes {
     }
 
     @GenerateInline(false)       // footprint reduction 52 -> 36
+    @GenerateUncached
     public abstract static class UpdateNode extends PNodeWithContext {
         public abstract void execute(Frame frame, Object self, Object other);
 
@@ -155,6 +156,7 @@ public abstract class DictNodes {
     }
 
     @GenerateInline
+    @GenerateUncached
     @GenerateCached(false)
     public abstract static class UpdateInnerNode extends PNodeWithContext {
         public abstract void execute(Frame frame, Node inliningTarget, Object self, HashingStorage selfStorage, Object other, Object otherStorage);

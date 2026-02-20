@@ -189,11 +189,11 @@ abstract class SequenceFromArrayNode extends Node {
         private static final ListFromArrayNode UNCACHED = new ListFromArrayNode() {
             @Override
             public PList execute(PythonLanguage language, Object[] elements) {
-                return PFactory.createList(language, elements);
+                return PFactory.createList(language, SequenceStorageFactory.createStorage(elements));
             }
         };
 
-        public static ListFromArrayNode getUncached(int ignored) {
+        public static ListFromArrayNode getUncached() {
             return UNCACHED;
         }
 
@@ -252,7 +252,7 @@ abstract class SequenceFromArrayNode extends Node {
         private static final TupleFromArrayNode UNCACHED = new TupleFromArrayNode() {
             @Override
             public PTuple execute(PythonLanguage language, Object[] elements) {
-                return PFactory.createTuple(language, elements);
+                return PFactory.createTuple(language, SequenceStorageFactory.createStorage(elements));
             }
         };
 

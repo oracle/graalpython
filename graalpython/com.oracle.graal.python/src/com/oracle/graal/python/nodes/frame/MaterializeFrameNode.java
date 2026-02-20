@@ -72,6 +72,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.MaterializedFrame;
+import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedIntValueProfile;
@@ -138,9 +139,13 @@ public abstract class MaterializeFrameNode extends Node {
                 location = PArguments.getCurrentFrameInfo(frameToMaterialize).getRootNode();
             }
         } else {
-            // We will need EncapsulatingNodeReference or thread the BytecodeNode as argument for
-            // BytecodeDSL uncached execution
-            assert this.isAdoptable();
+            if (!this.isAdoptable()) {
+                // This can happen in the uncached interpreter, but there the UncachedBytecodeNode
+                // should set itself as encapsulating node before it starts executing its bytecode
+                location = EncapsulatingNodeReference.getCurrent().get();
+                assert location != null;
+                assert BytecodeNode.get(location) != null;
+            }
         }
         return execute(location, markAsEscaped, forceSync, frameToMaterialize);
     }

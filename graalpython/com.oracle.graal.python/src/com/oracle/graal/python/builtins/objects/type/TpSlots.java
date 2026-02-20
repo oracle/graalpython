@@ -1720,6 +1720,7 @@ public record TpSlots(TpSlot nb_bool, //
     }
 
     public static void initializeBuiltinSlots(PythonLanguage language) {
+        TpSlotIterNext.initNextNotImplementedCallTarget(language);
         for (PythonBuiltinClassType klass : PythonBuiltinClassType.VALUES) {
             for (TpSlotMeta slotMeta : TpSlotMeta.VALUES) {
                 TpSlot slotValue = slotMeta.getValue(klass.getDeclaredSlots());

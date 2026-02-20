@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode.GetPythonObjectClassNode;
@@ -149,7 +150,11 @@ public abstract class CastToJavaDoubleNode extends PNodeWithContext {
         return null;
     }
 
-    @Specialization(guards = "!isNumber(obj)")
+    static boolean isInteropObject(Object obj) {
+        return !PGuards.isNumber(obj) && !(obj instanceof PythonAbstractNativeObject);
+    }
+
+    @Specialization(guards = "isInteropObject(obj)")
     @InliningCutoff
     static double doGeneric(Object obj,
                     @CachedLibrary(limit = "3") InteropLibrary interopLibrary) {

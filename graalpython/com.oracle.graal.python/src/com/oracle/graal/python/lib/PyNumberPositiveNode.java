@@ -63,7 +63,7 @@ import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
 @GenerateInline(false)
-@OperationProxy.Proxyable(storeBytecodeIndex = false)
+@OperationProxy.Proxyable(allowUncached = true, storeBytecodeIndex = false)
 public abstract class PyNumberPositiveNode extends UnaryOpNode {
 
     @Specialization

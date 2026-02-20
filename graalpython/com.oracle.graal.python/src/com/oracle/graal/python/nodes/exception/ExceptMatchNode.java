@@ -69,7 +69,7 @@ import com.oracle.truffle.api.nodes.Node;
 
 @ImportStatic(PGuards.class)
 @GenerateUncached
-@OperationProxy.Proxyable(storeBytecodeIndex = true)
+@OperationProxy.Proxyable(allowUncached = true, storeBytecodeIndex = true)
 @GenerateInline(false)       // footprint reduction 44 -> 25
 public abstract class ExceptMatchNode extends Node {
     public abstract boolean executeMatch(Object exception, Object clause);

@@ -78,7 +78,7 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 @GenerateUncached
 @ImportStatic(PArguments.class)
 @GenerateInline(false) // used in BCI root node
-@OperationProxy.Proxyable(storeBytecodeIndex = true)
+@OperationProxy.Proxyable(allowUncached = true, storeBytecodeIndex = true)
 public abstract class SetupAnnotationsNode extends PNodeWithContext {
     public abstract void execute(Frame frame);
 

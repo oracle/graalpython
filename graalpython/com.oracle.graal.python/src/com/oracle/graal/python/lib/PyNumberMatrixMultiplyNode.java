@@ -54,7 +54,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateInline(false)
-@OperationProxy.Proxyable(storeBytecodeIndex = false)
+@OperationProxy.Proxyable(allowUncached = true, storeBytecodeIndex = false)
 @GenerateUncached
 public abstract class PyNumberMatrixMultiplyNode extends BinaryOpNode {
 

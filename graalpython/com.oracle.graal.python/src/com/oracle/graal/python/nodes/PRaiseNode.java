@@ -58,7 +58,6 @@ import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -275,11 +274,7 @@ public abstract class PRaiseNode extends Node {
 
     // No @InliningCutoff, done in callers already
     public static PException raiseExceptionObjectStatic(Node raisingNode, Object exc, boolean withJavaStacktrace) {
-        if (raisingNode != null && raisingNode.isAdoptable()) {
-            throw PException.fromObject(exc, raisingNode, withJavaStacktrace);
-        } else {
-            throw PException.fromObject(exc, EncapsulatingNodeReference.getCurrent().get(), withJavaStacktrace);
-        }
+        throw PException.fromObjectFixUncachedLocation(exc, raisingNode, withJavaStacktrace);
     }
 
     public static PRaiseNode getUncached() {

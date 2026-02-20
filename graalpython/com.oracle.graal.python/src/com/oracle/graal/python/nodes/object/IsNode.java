@@ -79,7 +79,7 @@ import com.oracle.truffle.api.nodes.RootNode;
 
 @ImportStatic(PythonOptions.class)
 @GenerateUncached
-@OperationProxy.Proxyable(storeBytecodeIndex = false)
+@OperationProxy.Proxyable(allowUncached = true, storeBytecodeIndex = false)
 @GenerateInline(false)       // footprint reduction 44 -> 26
 public abstract class IsNode extends Node implements BinaryOp {
 
