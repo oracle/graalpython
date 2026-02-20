@@ -1,8 +1,11 @@
-# Copyright (c) 2018, 2023, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates.
 # Copyright (C) 1996-2020 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
-    
+import os
+import subprocess
+import sys
+import tempfile
 import unittest
 
 class MyIndexable(object):
@@ -68,7 +71,7 @@ class BuiltinTest(unittest.TestCase):
         self.assertEqual(chr(97), 'a')
         self.assertEqual(chr(0xfff), '\u0fff')
         self.assertEqual(chr(0xf0000), '\U000f0000')
-        
+
     def test_ord(self):
         self.assertEqual(ord(' '), 32)
         self.assertEqual(ord('a'), 97)
@@ -93,19 +96,26 @@ class BuiltinTest(unittest.TestCase):
 
     def test_sort_keyfunc(self):
         lists = [[], [1], [1,2], [1,2,3], [1,3,2], [3,2,1], [9,3,8,1,7,9,3,6,7,8]]
-        
+
         for l in lists:
             count = 0
-            
+
             def keyfunc(v):
                 nonlocal count
                 count += 1
                 return v
-            
+
             result = sorted(l, key = keyfunc)
             self.assertEqual(len(l), count)
             self.assertEqual(sorted(l), result)
             count = 0
             result = sorted(l, key = keyfunc, reverse = True)
             self.assertEqual(len(l), count)
-            self.assertEqual(sorted(l, reverse = True), result)       
+            self.assertEqual(sorted(l, reverse = True), result)
+
+    def test_license(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Test that it can find the license even when ran outside of the distribution
+            license = subprocess.check_output([sys.executable, "-c", "print(license())"], cwd=tmpdir, text=True, input=("\n" * 100))
+            if sys.implementation.name == 'graalpy':
+                self.assertIn('Oracle', license)

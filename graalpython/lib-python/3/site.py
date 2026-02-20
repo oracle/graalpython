@@ -435,12 +435,13 @@ def setcopyright():
     here = getattr(sys, '_stdlib_dir', None)
     if not here and hasattr(os, '__file__'):
         here = os.path.dirname(os.__file__)
-    if here:
-        files.extend(["LICENSE.txt", "LICENSE"])
-        dirs.extend([os.path.join(here, os.pardir), here, os.curdir])
+    # GraalPy change: use graalpy home
+    files.append("LICENSE.txt")
+    dirs.append(__graalpython__.home)
     builtins.license = _sitebuiltins._Printer(
         "license",
-        "See https://www.python.org/psf/license/",
+        # GraalPy change
+        "See the license file in the root of distribution",
         files, dirs)
 
 
