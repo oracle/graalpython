@@ -512,6 +512,7 @@ class ImportSideEffectTests(unittest.TestCase):
                          'need SSL support to download license')
     @test.support.requires_resource('network')
     @test.support.system_must_validate_cert
+    @test.support.impl_detail("CPython-specific", graalpy=False)
     def test_license_exists_at_url(self):
         # This test is a bit fragile since it depends on the format of the
         # string displayed by license in the absence of a LICENSE file.
