@@ -76,11 +76,14 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctio
 import static com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper.TERNARYFUNC;
 import static com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper.TERNARYFUNC_R;
 import static com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper.UNARYFUNC;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_DEALLOC;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TYPE_GENERIC_ALLOC;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectReturn;
-import static com.oracle.graal.python.builtins.objects.object.PythonObject.MANAGED_REFCNT;
+import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
 import static com.oracle.graal.python.nfi2.NativeMemory.NULLPTR;
 import static com.oracle.graal.python.nfi2.NativeMemory.free;
 import static com.oracle.graal.python.nfi2.NativeMemory.readPtrArrayElement;
+import static com.oracle.graal.python.nfi2.NativeMemory.writePtrArrayElement;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.util.PythonUtils.tsArray;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
@@ -95,21 +98,24 @@ import java.util.logging.Level;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiGCSupport.PyObjectGCTrackNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.XDecRefPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsCharPointerNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.GetNativeClassNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CheckIterNextResultNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CreateArgsTupleNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CreateNativeArgsTupleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.FromLongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.FromUInt32NodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.PyObjectCheckFunctionResultNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ReleaseNativeSequenceStorageNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ReleaseNativeArgsTupleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToInt32NodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToInt64NodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ToPythonStringNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandlePointerConverter;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonReturnNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
@@ -122,12 +128,17 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFacto
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.NativeCExtSymbol;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.StorageToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.builtins.objects.type.TypeFlags;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot;
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlot.TpSlotNative;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -151,10 +162,7 @@ import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.graal.python.runtime.sequence.storage.NativeObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -164,7 +172,6 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -179,8 +186,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
-import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -753,16 +758,18 @@ public abstract class ExternalFunctionNodes {
     public static final class MethVarargsRoot extends PyCFunctionRootNode {
         private static final Signature SIGNATURE = createSignature(false, 1, tsArray("self"), true, true);
         @Child private ReadVarArgsNode readVarargsNode;
-        @Child private CreateArgsTupleNode createArgsTupleNode;
-        @Child private ReleaseNativeSequenceStorageNode freeNode;
+        @Child private PythonToNativeNode argsTupleToNativeNode;
+        @Child private CreateNativeArgsTupleNode createNativeArgsTupleNode;
+        @Child private ReleaseNativeArgsTupleNode freeNode;
 
         @CompilationFinal private boolean seenNativeArgsTupleStorage;
 
         public MethVarargsRoot(PythonLanguage language, TruffleString name, boolean isStatic, MethodDescriptorWrapper provider) {
             super(language, name, isStatic, provider);
             this.readVarargsNode = ReadVarArgsNode.create(SIGNATURE.varArgsPArgumentsIndex());
-            this.createArgsTupleNode = CreateArgsTupleNodeGen.create();
-            this.freeNode = ReleaseNativeSequenceStorageNodeGen.create();
+            this.argsTupleToNativeNode = PythonToNativeNode.create();
+            this.createNativeArgsTupleNode = CreateNativeArgsTupleNodeGen.create();
+            this.freeNode = ReleaseNativeArgsTupleNodeGen.create();
         }
 
         @Override
@@ -770,63 +777,43 @@ public abstract class ExternalFunctionNodes {
             PythonContext context = PythonContext.get(this);
             Object self = readSelf(frame);
             Object[] args = readVarargsNode.execute(frame);
-            PTuple argsTuple = createArgsTupleNode.execute(context, args, seenNativeArgsTupleStorage);
+
+            PTuple managedArgsTuple;
+            long argsTuplePtr;
+            if (seenNativeArgsTupleStorage) {
+                managedArgsTuple = null;
+                argsTuplePtr = createNativeArgsTupleNode.execute(context, args);
+            } else {
+                managedArgsTuple = PFactory.createTuple(context.getLanguage(this), args);
+                assert EnsurePythonObjectNode.doesNotNeedPromotion(managedArgsTuple);
+                argsTuplePtr = argsTupleToNativeNode.executeLong(managedArgsTuple);
+            }
+
             try {
-                return invokeExternalFunction(frame, boundFunction, self, argsTuple);
+                return invokeExternalFunction(frame, boundFunction, self, argsTuplePtr);
             } finally {
-                boolean freed = releaseArgsTuple(context, argsTuple, freeNode, seenNativeArgsTupleStorage);
-                if (!seenNativeArgsTupleStorage && freed) {
+                assert managedArgsTuple != null || seenNativeArgsTupleStorage;
+                boolean hadNativeSequenceStorage = postprocessArgsTuple(managedArgsTuple, argsTuplePtr, args, freeNode);
+                if (!seenNativeArgsTupleStorage || hadNativeSequenceStorage) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     seenNativeArgsTupleStorage = true;
                 }
+                Reference.reachabilityFence(args);
             }
         }
 
-        static boolean releaseArgsTuple(PythonContext context, Object argsTupleObject, ReleaseNativeSequenceStorageNode freeNode, boolean eagerNativeStorage) {
-            if (!context.isNativeAccessAllowed()) {
+        public static boolean postprocessArgsTuple(PTuple managedArgsTuple, long argsTuplePtr, Object[] args,
+                        ReleaseNativeArgsTupleNode releaseNativeArgsTupleNode) {
+            if (managedArgsTuple == null) {
+                releaseNativeArgsTupleNode.execute(argsTuplePtr, args);
                 return false;
             }
-            try {
-                assert argsTupleObject instanceof PTuple;
-                PTuple argsTuple = (PTuple) argsTupleObject;
-                SequenceStorage s = argsTuple.getSequenceStorage();
-                /*
-                 * This assumes that the common case is that the args tuple is still owned by the
-                 * runtime. However, it could be that the C extension does 'Py_INCREF(argsTuple)'
-                 * and in this case, we must not free the memory. Further, since we assumed that we
-                 * may free the memory after the call returned, we also need to create a
-                 * NativeSequenceStorageReference such that the NativeSequenceStorage will not leak.
-                 */
-                if (s instanceof NativeSequenceStorage nativeSequenceStorage) {
-                    /*
-                     * TODO we would like to release the memory already, but we currently can't tell
-                     * if the args tuple escaped back to managed. So we always create the native
-                     * storage with an ownership reference and the following condition is always
-                     * true.
-                     */
-                    if (nativeSequenceStorage.hasReference()) {
-                        /*
-                         * Not allocated by this root. Note that this can happen even when
-                         * seenNativeArgsTupleStorage is true, because it could have been set by a
-                         * recursive invocation of this root.
-                         */
-                        return true;
-                    }
-                    assert eagerNativeStorage;
-                    if (argsTuple.getRefCount() == MANAGED_REFCNT) {
-                        // in this case, the runtime still exclusively owns the memory
-                        freeNode.execute(nativeSequenceStorage);
-                    } else {
-                        // the C ext also created a reference; no exclusive ownership
-                        CApiTransitions.registerNativeSequenceStorage(nativeSequenceStorage);
-                    }
-                    return true;
-                }
-                return false;
-            } catch (ClassCastException e) {
-                // cut exception edge
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
+            /*
+             * Note: 'seenNativeArgsTupleStorage' is not necessarily 'false' in this case because a
+             * recursive invocation may have already set it to 'true' in the meantime.
+             */
+            assert !(managedArgsTuple.getSequenceStorage() instanceof NativeSequenceStorage nativeSequenceStorage) || nativeSequenceStorage.hasReference();
+            return managedArgsTuple.getSequenceStorage() instanceof NativeSequenceStorage;
         }
 
         @Override
@@ -840,8 +827,8 @@ public abstract class ExternalFunctionNodes {
 
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
-        @Child private CreateArgsTupleNode createArgsTupleNode;
-        @Child private ReleaseNativeSequenceStorageNode freeNode;
+        @Child private CreateNativeArgsTupleNode createNativeArgsTupleNode;
+        @Child private ReleaseNativeArgsTupleNode freeNode;
         @Child private CalleeContext calleeContext;
         @Child private BoundaryCallData boundaryCallData;
 
@@ -867,8 +854,16 @@ public abstract class ExternalFunctionNodes {
             assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
 
             Object[] args = readVarargsNode.execute(frame);
-            PTuple argsTuple = createArgsTupleNode.execute(context, args, seenNativeArgsTupleStorage);
-            assert EnsurePythonObjectNode.doesNotNeedPromotion(argsTuple);
+            PTuple managedArgsTuple;
+            long argsTuplePtr;
+            if (seenNativeArgsTupleStorage) {
+                managedArgsTuple = null;
+                argsTuplePtr = createNativeArgsTupleNode.execute(context, args);
+            } else {
+                managedArgsTuple = PFactory.createTuple(context.getLanguage(this), args);
+                assert EnsurePythonObjectNode.doesNotNeedPromotion(managedArgsTuple);
+                argsTuplePtr = argsToNativeNode.executeLong(managedArgsTuple);
+            }
 
             PKeyword[] kwargs = readKwargsNode.execute(frame);
             Object kwargsDict = kwargs.length > 0 ? PFactory.createDict(context.getLanguage(), kwargs) : PNone.NO_VALUE;
@@ -876,17 +871,17 @@ public abstract class ExternalFunctionNodes {
 
             try {
                 long l = ExternalFunctionInvoker.invokePYCFUNCTION_WITH_KEYWORDS(frame, timing, context.ensureNfiContext(), boundaryCallData, ensureGetThreadStateNode().executeCached(context),
-                                boundFunction, selfToNativeNode.executeLong(self), argsToNativeNode.executeLong(argsTuple), kwargsToNativeNode.executeLong(kwargsDict));
+                                boundFunction, selfToNativeNode.executeLong(self), argsTuplePtr, kwargsToNativeNode.executeLong(kwargsDict));
                 return nativeToPython(context, l);
             } finally {
                 Reference.reachabilityFence(self);
-                Reference.reachabilityFence(argsTuple);
-                Reference.reachabilityFence(kwargsDict);
-                boolean freed = MethVarargsRoot.releaseArgsTuple(context, argsTuple, freeNode, seenNativeArgsTupleStorage);
-                if (!seenNativeArgsTupleStorage && freed) {
+                boolean hadNativeSequenceStorage = MethVarargsRoot.postprocessArgsTuple(managedArgsTuple, argsTuplePtr, args, freeNode);
+                if (!seenNativeArgsTupleStorage && hadNativeSequenceStorage) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     seenNativeArgsTupleStorage = true;
                 }
+                Reference.reachabilityFence(args);
+                Reference.reachabilityFence(kwargsDict);
             }
         }
 
@@ -894,8 +889,8 @@ public abstract class ExternalFunctionNodes {
             CompilerAsserts.neverPartOfCompilation();
             readVarargsNode = insert(ReadVarArgsNode.create(SIGNATURE.varArgsPArgumentsIndex()));
             readKwargsNode = insert(ReadVarKeywordsNode.create(SIGNATURE.varKeywordsPArgumentsIndex()));
-            createArgsTupleNode = insert(CreateArgsTupleNodeGen.create());
-            freeNode = insert(ReleaseNativeSequenceStorageNodeGen.create());
+            createNativeArgsTupleNode = insert(CreateNativeArgsTupleNodeGen.create());
+            freeNode = insert(ReleaseNativeArgsTupleNodeGen.create());
             calleeContext = insert(CalleeContext.create());
             boundaryCallData = insert(BoundaryCallData.createFor(this));
             selfToNativeNode = insert(PythonToNativeNode.create());
@@ -937,8 +932,9 @@ public abstract class ExternalFunctionNodes {
         private static final Signature SIGNATURE = MethKeywordsRoot.SIGNATURE;
         @Child ReadVarArgsNode readVarargsNode;
         @Child ReadVarKeywordsNode readKwargsNode;
-        @Child CreateArgsTupleNode createArgsTupleNode;
-        @Child ReleaseNativeSequenceStorageNode freeNode;
+        @Child PythonToNativeNode argsTupleToNativeNode;
+        @Child CreateNativeArgsTupleNode createNativeArgsTupleNode;
+        @Child ReleaseNativeArgsTupleNode freeNode;
 
         @CompilationFinal boolean seenNativeArgsTupleStorage;
 
@@ -946,8 +942,9 @@ public abstract class ExternalFunctionNodes {
             super(language, name, provider);
             this.readVarargsNode = ReadVarArgsNode.create(SIGNATURE.varArgsPArgumentsIndex());
             this.readKwargsNode = ReadVarKeywordsNode.create(SIGNATURE.varKeywordsPArgumentsIndex());
-            this.createArgsTupleNode = CreateArgsTupleNodeGen.create();
-            this.freeNode = ReleaseNativeSequenceStorageNodeGen.create();
+            this.argsTupleToNativeNode = PythonToNativeNode.create();
+            this.createNativeArgsTupleNode = CreateNativeArgsTupleNodeGen.create();
+            this.freeNode = ReleaseNativeArgsTupleNodeGen.create();
         }
 
         @Override
@@ -963,8 +960,8 @@ public abstract class ExternalFunctionNodes {
             super(language, name, provider);
         }
 
-        @InvokeExternalFunction(value = ExternalFunctionSignature.NEWFUNC, argConversions = {PythonToNativeNode.class, PythonToNativeNode.class, PythonToNativeNode.class})
-        protected abstract long invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, Object args, Object kwds);
+        @InvokeExternalFunction(value = ExternalFunctionSignature.NEWFUNC, argConversions = {PythonToNativeNode.class, long.class, PythonToNativeNode.class})
+        protected abstract long invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, long argsTuplePtr, Object kwds);
 
         @Override
         protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction) {
@@ -975,20 +972,30 @@ public abstract class ExternalFunctionNodes {
             Object self = args[0];
 
             args = PythonUtils.arrayCopyOfRange(args, 1, args.length);
-            PTuple argsTuple = createArgsTupleNode.execute(context, args, seenNativeArgsTupleStorage);
+            PTuple managedArgsTuple;
+            long argsTuplePtr;
+            if (seenNativeArgsTupleStorage) {
+                managedArgsTuple = null;
+                argsTuplePtr = createNativeArgsTupleNode.execute(context, args);
+            } else {
+                managedArgsTuple = PFactory.createTuple(context.getLanguage(this), args);
+                assert EnsurePythonObjectNode.doesNotNeedPromotion(managedArgsTuple);
+                argsTuplePtr = argsTupleToNativeNode.executeLong(managedArgsTuple);
+            }
 
             PKeyword[] kwargs = readKwargsNode.execute(frame);
             PythonLanguage language = getLanguage(PythonLanguage.class);
             Object kwargsDict = kwargs.length > 0 ? PFactory.createDict(language, kwargs) : PNone.NO_VALUE;
 
             try {
-                return returnNativeObjectToPython(invokeExternalFunction(frame, boundFunction, self, argsTuple, kwargsDict));
+                return returnNativeObjectToPython(invokeExternalFunction(frame, boundFunction, self, argsTuplePtr, kwargsDict));
             } finally {
-                boolean freed = MethVarargsRoot.releaseArgsTuple(context, argsTuple, freeNode, seenNativeArgsTupleStorage);
-                if (!seenNativeArgsTupleStorage && freed) {
+                boolean hadNativeSequenceStorage = MethVarargsRoot.postprocessArgsTuple(managedArgsTuple, argsTuplePtr, args, freeNode);
+                if (!seenNativeArgsTupleStorage && hadNativeSequenceStorage) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     seenNativeArgsTupleStorage = true;
                 }
+                Reference.reachabilityFence(args);
             }
         }
     }
@@ -1000,8 +1007,8 @@ public abstract class ExternalFunctionNodes {
             super(language, name, provider);
         }
 
-        @InvokeExternalFunction(value = ExternalFunctionSignature.TERNARYFUNC, argConversions = {PythonToNativeNode.class, PythonToNativeNode.class, PythonToNativeNode.class})
-        protected abstract long invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, Object args, Object kwds);
+        @InvokeExternalFunction(value = ExternalFunctionSignature.TERNARYFUNC, argConversions = {PythonToNativeNode.class, long.class, PythonToNativeNode.class})
+        protected abstract long invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, long args, Object kwds);
 
         @Override
         protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction) {
@@ -1010,19 +1017,29 @@ public abstract class ExternalFunctionNodes {
             Object self = readSelf(frame);
 
             Object[] args = readVarargsNode.execute(frame);
-            PTuple argsTuple = createArgsTupleNode.execute(context, args, seenNativeArgsTupleStorage);
+            PTuple managedArgsTuple;
+            long argsTuplePtr;
+            if (seenNativeArgsTupleStorage) {
+                managedArgsTuple = null;
+                argsTuplePtr = createNativeArgsTupleNode.execute(context, args);
+            } else {
+                managedArgsTuple = PFactory.createTuple(context.getLanguage(this), args);
+                assert EnsurePythonObjectNode.doesNotNeedPromotion(managedArgsTuple);
+                argsTuplePtr = argsTupleToNativeNode.executeLong(managedArgsTuple);
+            }
 
             PKeyword[] kwargs = readKwargsNode.execute(frame);
             Object kwargsDict = kwargs.length > 0 ? PFactory.createDict(context.getLanguage(), kwargs) : PNone.NO_VALUE;
 
             try {
-                return returnNativeObjectToPython(invokeExternalFunction(frame, boundFunction, self, argsTuple, kwargsDict));
+                return returnNativeObjectToPython(invokeExternalFunction(frame, boundFunction, self, argsTuplePtr, kwargsDict));
             } finally {
-                boolean freed = MethVarargsRoot.releaseArgsTuple(context, argsTuple, freeNode, seenNativeArgsTupleStorage);
-                if (!seenNativeArgsTupleStorage && freed) {
+                boolean hadNativeSequenceStorage = MethVarargsRoot.postprocessArgsTuple(managedArgsTuple, argsTuplePtr, args, freeNode);
+                if (!seenNativeArgsTupleStorage && hadNativeSequenceStorage) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     seenNativeArgsTupleStorage = true;
                 }
+                Reference.reachabilityFence(args);
             }
         }
     }
@@ -1033,8 +1050,9 @@ public abstract class ExternalFunctionNodes {
 
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
-        @Child private CreateArgsTupleNode createArgsTupleNode;
-        @Child private ReleaseNativeSequenceStorageNode freeNode;
+        @Child private PythonToNativeNode argsTupleToNativeNode;
+        @Child private CreateNativeArgsTupleNode createNativeArgsTupleNode;
+        @Child private ReleaseNativeArgsTupleNode freeNode;
 
         @CompilationFinal boolean seenNativeArgsTupleStorage;
 
@@ -1042,12 +1060,13 @@ public abstract class ExternalFunctionNodes {
             super(language, name, provider);
             this.readVarargsNode = ReadVarArgsNode.create(SIGNATURE.varArgsPArgumentsIndex());
             this.readKwargsNode = ReadVarKeywordsNode.create(SIGNATURE.varKeywordsPArgumentsIndex());
-            this.createArgsTupleNode = CreateArgsTupleNodeGen.create();
-            this.freeNode = ReleaseNativeSequenceStorageNodeGen.create();
+            this.argsTupleToNativeNode = PythonToNativeNode.create();
+            this.createNativeArgsTupleNode = CreateNativeArgsTupleNodeGen.create();
+            this.freeNode = ReleaseNativeArgsTupleNodeGen.create();
         }
 
-        @InvokeExternalFunction(value = ExternalFunctionSignature.INITPROC, retConversion = int.class, argConversions = {PythonToNativeNode.class, PythonToNativeNode.class, PythonToNativeNode.class})
-        protected abstract int invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, Object args, Object kwds);
+        @InvokeExternalFunction(value = ExternalFunctionSignature.INITPROC, retConversion = int.class, argConversions = {PythonToNativeNode.class, long.class, PythonToNativeNode.class})
+        protected abstract int invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, long argsTuplePtr, Object kwds);
 
         @Override
         protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction) {
@@ -1056,22 +1075,32 @@ public abstract class ExternalFunctionNodes {
             Object self = readSelf(frame);
 
             Object[] args = readVarargsNode.execute(frame);
-            PTuple argsTuple = createArgsTupleNode.execute(context, args, seenNativeArgsTupleStorage);
+            PTuple managedArgsTuple;
+            long argsTuplePtr;
+            if (seenNativeArgsTupleStorage) {
+                managedArgsTuple = null;
+                argsTuplePtr = createNativeArgsTupleNode.execute(context, args);
+            } else {
+                managedArgsTuple = PFactory.createTuple(context.getLanguage(this), args);
+                assert EnsurePythonObjectNode.doesNotNeedPromotion(managedArgsTuple);
+                argsTuplePtr = argsTupleToNativeNode.executeLong(managedArgsTuple);
+            }
 
             PKeyword[] kwargs = readKwargsNode.execute(frame);
             Object kwargsDict = kwargs.length > 0 ? PFactory.createDict(context.getLanguage(), kwargs) : PNone.NO_VALUE;
 
             try {
-                if (invokeExternalFunction(frame, boundFunction, self, argsTuple, kwargsDict) < 0) {
+                if (invokeExternalFunction(frame, boundFunction, self, argsTuplePtr, kwargsDict) < 0) {
                     transformExceptionFromNative();
                 }
                 return PNone.NONE;
             } finally {
-                boolean freed = MethVarargsRoot.releaseArgsTuple(context, argsTuple, freeNode, seenNativeArgsTupleStorage);
-                if (!seenNativeArgsTupleStorage && freed) {
+                boolean hadNativeSequenceStorage = MethVarargsRoot.postprocessArgsTuple(managedArgsTuple, argsTuplePtr, args, freeNode);
+                if (!seenNativeArgsTupleStorage && hadNativeSequenceStorage) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     seenNativeArgsTupleStorage = true;
                 }
+                Reference.reachabilityFence(args);
             }
         }
 
@@ -1120,7 +1149,7 @@ public abstract class ExternalFunctionNodes {
         protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction) {
             Object self = readSelf(frame);
             assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
-            return invokeExternalFunction(frame, boundFunction, self, PNone.NO_VALUE);
+            return invokeExternalFunction(frame, boundFunction, self, NULLPTR);
         }
 
         @Override
@@ -1134,27 +1163,24 @@ public abstract class ExternalFunctionNodes {
         @Child private BoundaryCallData boundaryCallData;
 
         @Child private PythonToNativeNode selfToNativeNode;
-        @Child private PythonToNativeNode argToNativeNode;
 
         public PyCFunctionRootNode(PythonLanguage language, TruffleString name, boolean isStatic, MethodDescriptorWrapper provider) {
             super(language, name, isStatic, provider);
         }
 
-        final Object invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, Object arg) {
+        final Object invokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction, Object self, long arg) {
             assert EnsurePythonObjectNode.doesNotNeedPromotion(self);
-            assert EnsurePythonObjectNode.doesNotNeedPromotion(arg);
-            if (calleeContext == null || boundaryCallData == null || selfToNativeNode == null || argToNativeNode == null) {
+            if (calleeContext == null || boundaryCallData == null || selfToNativeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 createNodes();
             }
             PythonContext context = PythonContext.get(this);
             try {
                 long l = ExternalFunctionInvoker.invokePYCFUNCTION(frame, timing, context.ensureNfiContext(), boundaryCallData, ensureGetThreadStateNode().executeCached(context), boundFunction,
-                                selfToNativeNode.executeLong(self), argToNativeNode.executeLong(arg));
+                                selfToNativeNode.executeLong(self), arg);
                 return nativeToPython(context, l);
             } finally {
                 Reference.reachabilityFence(self);
-                Reference.reachabilityFence(arg);
             }
         }
 
@@ -1163,24 +1189,29 @@ public abstract class ExternalFunctionNodes {
             calleeContext = insert(CalleeContext.create());
             boundaryCallData = insert(BoundaryCallData.createFor(this));
             selfToNativeNode = insert(PythonToNativeNode.create());
-            argToNativeNode = insert(PythonToNativeNode.create());
         }
     }
 
     public static final class MethORoot extends PyCFunctionRootNode {
         private static final Signature SIGNATURE = createSignature(false, -1, tsArray("self", "arg"), true, true);
         @Child private ReadIndexedArgumentNode readArgNode;
+        @Child private PythonToNativeNode argToNativeNode;
 
         public MethORoot(PythonLanguage language, TruffleString name, boolean isStatic, MethodDescriptorWrapper provider) {
             super(language, name, isStatic, provider);
             this.readArgNode = ReadIndexedArgumentNode.create(1);
+            this.argToNativeNode = PythonToNativeNode.create();
         }
 
         @Override
         protected Object readArgumentsAndInvokeExternalFunction(VirtualFrame frame, NfiBoundFunction boundFunction) {
             Object self = readSelf(frame);
             Object arg = ensurePythonObject(readArgNode.execute(frame));
-            return invokeExternalFunction(frame, boundFunction, self, arg);
+            try {
+                return invokeExternalFunction(frame, boundFunction, self, argToNativeNode.executeLong(arg));
+            } finally {
+                Reference.reachabilityFence(arg);
+            }
         }
 
         @Override
@@ -2238,7 +2269,7 @@ public abstract class ExternalFunctionNodes {
 
     /**
      * An inlined node-like object for keeping track of eager native allocation state bit. Should be
-     * {@code @Cached} and passed into {@link CreateArgsTupleNode#execute}. Then the
+     * {@code @Cached} and passed into {@link CreateNativeArgsTupleNode#execute}. Then the
      * {@link #report(Node, PTuple)} method should be called with the tuple after the native call
      * returns.
      */
@@ -2282,105 +2313,111 @@ public abstract class ExternalFunctionNodes {
     }
 
     /**
-     * We need to inflate all primitives in order to avoid memory leaks. Explanation: Primitives
-     * would currently be wrapped into a PrimitiveNativeWrapper. If any of those will receive a
-     * toNative message, the managed code will be the only owner of those wrappers. But we will
-     * never be able to reach the wrapper from the arguments if they are just primitive. So, we
-     * inflate the primitives and we can then traverse the tuple and reach the wrappers of its
-     * arguments after the call returned.
+     * Allocates a native tuple and initializes it with the given elements. The elements will be
+     * promoted to Python objects using {@link EnsurePythonObjectNode} (not promoting boxable
+     * primitives) and written into the passed array.
+     *
+     * For performance reasons, this node takes some shortcuts: It allocates the native tuple using
+     * {@link NativeCAPISymbol#FUN_PY_TYPE_GENERIC_ALLOC PyType_GenericAlloc} and initializes the
+     * elements by writing them directly to {@link CFields#PyTupleObject__ob_item}.
+     *
+     * Also, this node will not register the tuple to the
+     * {@link com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.HandleContext#nativeLookup
+     * nativeLookup} and thus won't create a {@link PythonAbstractNativeObject native wrapper} for
+     * it. In this way, the {@link ReleaseNativeArgsTupleNode release node} can detect if the tuple
+     * escaped to managed.
      */
     @GenerateInline(false)
     @GenerateUncached
-    public abstract static class CreateArgsTupleNode extends Node {
-        public abstract PTuple execute(PythonContext context, Object[] args, boolean eagerNative);
+    public abstract static class CreateNativeArgsTupleNode extends Node {
+        static final TruffleLogger LOGGER = CApiContext.getLogger(CreateNativeArgsTupleNode.class);
 
-        public final PTuple execute(Node inliningTarget, PythonContext context, Object[] args, EagerTupleState state) {
-            return execute(context, args, state.isEager(inliningTarget));
-        }
+        private static final NfiDowncallSignature TYPE_GENERIC_ALLOC = FUN_PY_TYPE_GENERIC_ALLOC.getSignature();
 
-        @Specialization(guards = {"args.length == cachedLen", "cachedLen <= 8", "!eagerNative"}, limit = "1")
-        @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL)
-        static PTuple doCachedLen(PythonContext context, Object[] args, @SuppressWarnings("unused") boolean eagerNative,
-                        @Cached("args.length") int cachedLen,
-                        @Cached("createMaterializeNodes(args.length)") EnsurePythonObjectNode[] materializePrimitiveNodes) {
+        public abstract long execute(PythonContext context, Object[] args);
 
-            for (int i = 0; i < cachedLen; i++) {
-                args[i] = materializePrimitiveNodes[i].execute(context, args[i], false);
-            }
-            return PFactory.createTuple(context.getLanguage(), args);
-        }
-
-        @Specialization(guards = {"args.length == cachedLen", "cachedLen <= 8", "eagerNative"}, limit = "1", replaces = "doCachedLen")
-        @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL)
-        static PTuple doCachedLenEagerNative(PythonContext context, Object[] args, @SuppressWarnings("unused") boolean eagerNative,
-                        @Bind Node inliningTarget,
-                        @Cached("args.length") int cachedLen,
-                        @Cached("createMaterializeNodes(args.length)") EnsurePythonObjectNode[] materializePrimitiveNodes,
-                        @Exclusive @Cached StorageToNativeNode storageToNativeNode) {
-
-            for (int i = 0; i < cachedLen; i++) {
-                args[i] = materializePrimitiveNodes[i].execute(context, args[i], false);
-            }
-            return PFactory.createTuple(context.getLanguage(), storageToNativeNode.execute(inliningTarget, args, cachedLen, true));
-        }
-
-        @Specialization(replaces = {"doCachedLen", "doCachedLenEagerNative"})
-        static PTuple doGeneric(PythonContext context, Object[] args, boolean eagerNative,
+        @Specialization
+        static long doGeneric(PythonContext context, Object[] args,
                         @Bind Node inliningTarget,
                         @Cached EnsurePythonObjectNode materializePrimitiveNode,
-                        @Exclusive @Cached StorageToNativeNode storageToNativeNode) {
+                        @Cached PythonToNativeInternalNode pythonToNativeNode) {
+            if (!context.isNativeAccessAllowed()) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
 
             int n = args.length;
-            for (int i = 0; i < n; i++) {
-                args[i] = materializePrimitiveNode.execute(context, args[i], false);
-            }
-            SequenceStorage storage;
-            if (eagerNative) {
-                storage = storageToNativeNode.execute(inliningTarget, args, n, true);
-            } else {
-                storage = new ObjectSequenceStorage(args);
-            }
-            return PFactory.createTuple(context.getLanguage(), storage);
-        }
 
-        static EnsurePythonObjectNode[] createMaterializeNodes(int length) {
-            EnsurePythonObjectNode[] materializePrimitiveNodes = new EnsurePythonObjectNode[length];
-            for (int i = 0; i < length; i++) {
-                materializePrimitiveNodes[i] = EnsurePythonObjectNode.create();
+            assert (GetTypeFlagsNode.executeUncached(PythonBuiltinClassType.PTuple) & TypeFlags.HAVE_GC) != 0;
+
+            PythonBuiltinClass argsTupleClass = context.lookupType(PythonBuiltinClassType.PTuple);
+            NfiBoundFunction callable = CApiContext.getNativeSymbol(inliningTarget, FUN_PY_TYPE_GENERIC_ALLOC);
+            long op = (long) TYPE_GENERIC_ALLOC.invoke(context.ensureNfiContext(), callable.getAddress(),
+                            pythonToNativeNode.execute(inliningTarget, argsTupleClass, false),
+                            (long) n);
+
+            long obItem = CStructAccess.getFieldPtr(op, CFields.PyTupleObject__ob_item);
+
+            for (int i = 0; i < n; i++) {
+                Object promoted = materializePrimitiveNode.execute(context, args[i], false);
+                args[i] = promoted;
+                writePtrArrayElement(obItem, i, pythonToNativeNode.execute(inliningTarget, promoted, true));
             }
-            return materializePrimitiveNodes;
+
+            if (LOGGER.isLoggable(Level.FINE)) {
+                LOGGER.fine(PythonUtils.formatJString("Created native args tuple %x (size=%d)", op, n));
+            }
+
+            assert !HandlePointerConverter.pointsToPyHandleSpace(op);
+            assert PyObjectGCTrackNode.isGcTracked(op);
+            return op;
         }
     }
 
+    /**
+     * Attempts to eagerly release the native tuple previously created with
+     * {@link CreateNativeArgsTupleNode} if it did not escape.
+     */
     @GenerateInline(false)
-    abstract static class ReleaseNativeSequenceStorageNode extends Node {
+    @GenerateUncached
+    public abstract static class ReleaseNativeArgsTupleNode extends Node {
+        private static final NfiDowncallSignature PY_DEALLOC = FUN_PY_DEALLOC.getSignature();
 
-        abstract void execute(NativeSequenceStorage storage);
+        public abstract void execute(long argsTuplePtr, Object[] managedArgs);
 
-        @Specialization(guards = {"storage.length() == cachedLen", "cachedLen <= 8"}, limit = "1")
-        @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL)
-        static void doObjectCachedLen(NativeObjectSequenceStorage storage,
-                        @Bind Node inliningTarget,
-                        @Cached("storage.length()") int cachedLen,
-                        @Shared @Cached XDecRefPointerNode decRefPointerNode) {
-            for (int i = 0; i < cachedLen; i++) {
-                long elementPointer = readPtrArrayElement(storage.getPtr(), i);
-                decRefPointerNode.execute(inliningTarget, elementPointer);
+        @Specialization
+        static void doGeneric(long argsTuplePtr, Object[] managedArgs,
+                        @Bind Node inliningTarget) {
+            assert !HandlePointerConverter.pointsToPyHandleSpace(argsTuplePtr);
+            assert IsSameTypeNode.executeUncached(GetNativeClassNodeGen.getUncached().execute(null, new PythonAbstractNativeObject(argsTuplePtr)), PythonBuiltinClassType.PTuple);
+            long refCount = CApiTransitions.readNativeRefCount(argsTuplePtr);
+            assert refCount >= 1;
+            if (refCount > 1) {
+                if (LOGGER.isLoggable(Level.FINE)) {
+                    LOGGER.fine(PythonUtils.formatJString("Native args tuple %x escaped (refcount = %d). Decref'ing by 1.", argsTuplePtr, refCount));
+                }
+                // The args tuple escaped. We cannot do anything and just give away our reference.
+                CApiTransitions.subNativeRefCount(argsTuplePtr, 1);
+                return;
             }
-            // in this case, the runtime still exclusively owns the memory
-            free(storage.getPtr());
+            assert readLongField(argsTuplePtr, CFields.PyVarObject__ob_size) == managedArgs.length;
+            assert verifyElements(argsTuplePtr, managedArgs);
+            if (LOGGER.isLoggable(Level.FINE)) {
+                LOGGER.fine(PythonUtils.formatJString("Releasing native args tuple %x.", argsTuplePtr));
+            }
+            CApiTransitions.subNativeRefCount(argsTuplePtr, 1);
+            PythonContext context = PythonContext.get(inliningTarget);
+            NfiBoundFunction callable = CApiContext.getNativeSymbol(inliningTarget, FUN_PY_DEALLOC);
+            PY_DEALLOC.invoke(context.ensureNfiContext(), callable.getAddress(), argsTuplePtr);
         }
 
-        @Specialization(replaces = "doObjectCachedLen")
-        static void doObjectGeneric(NativeObjectSequenceStorage storage,
-                        @Bind Node inliningTarget,
-                        @Shared @Cached XDecRefPointerNode decRefPointerNode) {
-            for (int i = 0; i < storage.length(); i++) {
-                long elementPointer = readPtrArrayElement(storage.getPtr(), i);
-                decRefPointerNode.execute(inliningTarget, elementPointer);
+        private static boolean verifyElements(long op, Object[] managedArgs) {
+            long obItem = CStructAccess.getFieldPtr(op, CFields.PyTupleObject__ob_item);
+            for (int i = 0; i < managedArgs.length; i++) {
+                if (readPtrArrayElement(obItem, i) != PythonToNativeInternalNode.executeUncached(managedArgs[i], false)) {
+                    return false;
+                }
             }
-            // in this case, the runtime still exclusively owns the memory
-            free(storage.getPtr());
+            return true;
         }
     }
 

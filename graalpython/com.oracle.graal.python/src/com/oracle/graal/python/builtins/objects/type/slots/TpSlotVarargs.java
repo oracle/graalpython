@@ -57,13 +57,14 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.EnsurePythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionInvoker;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CreateArgsTupleNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.CreateNativeArgsTupleNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.EagerTupleState;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PyObjectCheckFunctionResultNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.ReleaseNativeArgsTupleNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionFromNativeNode;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -325,8 +326,9 @@ public final class TpSlotVarargs {
                         @Bind PythonContext context,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached EnsurePythonObjectNode ensurePythonObjectNode,
-                        @Cached PythonToNativeNode toNativeNode,
-                        @Cached CreateArgsTupleNode createArgsTupleNode,
+                        @Cached PythonToNativeInternalNode toNativeNode,
+                        @Cached CreateNativeArgsTupleNode createNativeArgsTupleNode,
+                        @Cached ReleaseNativeArgsTupleNode releaseNativeArgsTupleNode,
                         @Cached EagerTupleState eagerTupleState,
                         @Cached NativeToPythonInternalNode toPythonNode,
                         @Cached PyObjectCheckFunctionResultNode checkResultNode,
@@ -334,18 +336,32 @@ public final class TpSlotVarargs {
             PythonLanguage language = context.getLanguage(inliningTarget);
             PythonThreadState state = getThreadStateNode.execute(inliningTarget, context);
             Object promotedSelf = ensurePythonObjectNode.execute(context, self, false);
-            PTuple argsTuple = createArgsTupleNode.execute(inliningTarget, context, args, eagerTupleState);
-            assert EnsurePythonObjectNode.doesNotNeedPromotion(argsTuple);
+            PTuple managedArgsTuple;
+            long argsTuplePtr;
+            if (eagerTupleState.isEager(inliningTarget)) {
+                managedArgsTuple = null;
+                argsTuplePtr = createNativeArgsTupleNode.execute(context, args);
+            } else {
+                managedArgsTuple = PFactory.createTuple(context.getLanguage(inliningTarget), args);
+                assert EnsurePythonObjectNode.doesNotNeedPromotion(managedArgsTuple);
+                argsTuplePtr = toNativeNode.execute(inliningTarget, managedArgsTuple, false);
+            }
             Object kwargsDict = keywords.length > 0 ? PFactory.createDict(language, keywords) : NO_VALUE;
             assert EnsurePythonObjectNode.doesNotNeedPromotion(kwargsDict);
             try {
                 long nativeResult = ExternalFunctionInvoker.invokeTERNARYFUNC(frame, C_API_TIMING, context.ensureNfiContext(), boundaryCallData, state, slot.callable,
-                                toNativeNode.executeLong(promotedSelf), toNativeNode.executeLong(argsTuple), toNativeNode.executeLong(kwargsDict));
-                eagerTupleState.report(inliningTarget, argsTuple);
+                                toNativeNode.execute(inliningTarget, promotedSelf, false),
+                                argsTuplePtr,
+                                toNativeNode.execute(inliningTarget, kwargsDict, false));
                 return checkResultNode.execute(state, name, toPythonNode.execute(inliningTarget, nativeResult, true, true));
             } finally {
+                if (managedArgsTuple != null) {
+                    eagerTupleState.report(inliningTarget, managedArgsTuple);
+                } else {
+                    releaseNativeArgsTupleNode.execute(argsTuplePtr, args);
+                }
                 Reference.reachabilityFence(promotedSelf);
-                Reference.reachabilityFence(argsTuple);
+                Reference.reachabilityFence(args);
                 Reference.reachabilityFence(kwargsDict);
             }
         }
@@ -379,26 +395,41 @@ public final class TpSlotVarargs {
                         @Bind PythonContext context,
                         @Cached GetThreadStateNode getThreadStateNode,
                         @Cached EnsurePythonObjectNode ensurePythonObjectNode,
-                        @Cached PythonToNativeNode toNativeNode,
-                        @Cached CreateArgsTupleNode createArgsTupleNode,
+                        @Cached PythonToNativeInternalNode toNativeNode,
+                        @Cached CreateNativeArgsTupleNode createNativeArgsTupleNode,
+                        @Cached ReleaseNativeArgsTupleNode releaseNativeArgsTupleNode,
                         @Cached EagerTupleState eagerTupleState,
                         @Cached("createFor($node)") BoundaryCallData boundaryCallData,
                         @Cached InitCheckFunctionResultNode checkResultNode) {
             PythonLanguage language = context.getLanguage(inliningTarget);
             PythonThreadState state = getThreadStateNode.execute(inliningTarget, context);
             Object promotedSelf = ensurePythonObjectNode.execute(context, self, false);
-            PTuple argsTuple = createArgsTupleNode.execute(inliningTarget, context, args, eagerTupleState);
-            assert EnsurePythonObjectNode.doesNotNeedPromotion(argsTuple);
+            PTuple managedArgsTuple;
+            long argsTuplePtr;
+            if (eagerTupleState.isEager(inliningTarget)) {
+                managedArgsTuple = null;
+                argsTuplePtr = createNativeArgsTupleNode.execute(context, args);
+            } else {
+                managedArgsTuple = PFactory.createTuple(context.getLanguage(inliningTarget), args);
+                assert EnsurePythonObjectNode.doesNotNeedPromotion(managedArgsTuple);
+                argsTuplePtr = toNativeNode.execute(inliningTarget, managedArgsTuple, false);
+            }
             Object kwargsDict = keywords.length > 0 ? PFactory.createDict(language, keywords) : NO_VALUE;
             assert EnsurePythonObjectNode.doesNotNeedPromotion(kwargsDict);
             try {
                 int nativeResult = ExternalFunctionInvoker.invokeINITPROC(frame, C_API_TIMING, context.ensureNfiContext(), boundaryCallData, state, slot.callable,
-                                toNativeNode.executeLong(promotedSelf), toNativeNode.executeLong(argsTuple), toNativeNode.executeLong(kwargsDict));
-                eagerTupleState.report(inliningTarget, argsTuple);
+                                toNativeNode.execute(inliningTarget, promotedSelf, false),
+                                argsTuplePtr,
+                                toNativeNode.execute(inliningTarget, kwargsDict, false));
                 checkResultNode.executeInt(inliningTarget, state, T___INIT__, nativeResult);
             } finally {
+                if (managedArgsTuple != null) {
+                    eagerTupleState.report(inliningTarget, managedArgsTuple);
+                } else {
+                    releaseNativeArgsTupleNode.execute(argsTuplePtr, args);
+                }
                 Reference.reachabilityFence(promotedSelf);
-                Reference.reachabilityFence(argsTuple);
+                Reference.reachabilityFence(args);
                 Reference.reachabilityFence(kwargsDict);
             }
             return NO_VALUE;
