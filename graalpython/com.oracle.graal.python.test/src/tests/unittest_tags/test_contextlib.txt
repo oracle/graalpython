@@ -18,7 +18,8 @@ test.test_contextlib.ContextManagerTestCase.test_contextmanager_trap_yield_after
 test.test_contextlib.ContextManagerTestCase.test_contextmanager_wrap_runtimeerror @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_contextlib.ContextManagerTestCase.test_instance_docstring_given_cm_docstring @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_contextlib.ContextManagerTestCase.test_keywords @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_contextlib.ContextManagerTestCase.test_nokeepref @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+# GR-73564 - regression in Truffle
+!test.test_contextlib.ContextManagerTestCase.test_nokeepref @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_contextlib.ContextManagerTestCase.test_param_errors @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_contextlib.ContextManagerTestCase.test_recursive @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_contextlib.FileContextTestCase.testWithOpen @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
