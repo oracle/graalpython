@@ -92,7 +92,7 @@ class AST_Tests(unittest.TestCase):
         a.x.a = a
         ref = weakref.ref(a.x)
         del a
-        support.gc_collect()
+        support.gc_collect(lambda: ref())
         self.assertIsNone(ref())
 
     def test_snippets(self):

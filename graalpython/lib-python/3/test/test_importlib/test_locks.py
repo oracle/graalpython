@@ -136,7 +136,7 @@ class LifetimeTests:
         self.assertIn(name, self.bootstrap._module_locks)
         wr = weakref.ref(lock)
         del lock
-        support.gc_collect()
+        support.gc_collect(lambda: wr() or name in self.bootstrap._module_locks)
         self.assertNotIn(name, self.bootstrap._module_locks)
         self.assertIsNone(wr())
 

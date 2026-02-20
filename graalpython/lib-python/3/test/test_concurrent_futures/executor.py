@@ -106,5 +106,5 @@ class ExecutorTest:
         for obj in self.executor.map(make_dummy_object, range(10)):
             wr = weakref.ref(obj)
             del obj
-            support.gc_collect()  # For PyPy or other GCs.
+            support.gc_collect(wr())  # For PyPy or other GCs.
             self.assertIsNone(wr())

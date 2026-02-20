@@ -769,7 +769,7 @@ def captured_stdin():
     return captured_output("stdin")
 
 
-def gc_collect():
+def gc_collect(until = None):
     """Force as many objects as possible to be collected.
 
     In non-CPython implementations of Python, this is needed because timely
@@ -784,9 +784,16 @@ def gc_collect():
     if is_graalpy:
         time.sleep(0.1)
     gc.collect()
-    if is_graalpy:
-        time.sleep(0.1)
-    gc.collect()
+    if until:
+        i = 0
+        while until():
+            if is_graalpy:
+                time.sleep(0.1)
+            gc.collect()
+            i += 1
+            if i > 1000:
+                print("WARNING: timeout while waiting for GC")
+                break
 
 @contextlib.contextmanager
 def disable_gc():

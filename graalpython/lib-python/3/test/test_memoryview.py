@@ -17,6 +17,7 @@ import time # GraalPy Change
 import struct
 
 from test.support import import_helper
+from test.support import gc_collect
 
 
 class MyObject:
@@ -688,7 +689,7 @@ class OtherTest(unittest.TestCase):
         o.o = o
         wr = weakref.ref(o)
         del m, o
-        gc.collect()
+        gc_collect(lambda: wr())
         self.assertIsNone(wr())
 
     def test_picklebuffer_reference_loop(self):
@@ -698,7 +699,7 @@ class OtherTest(unittest.TestCase):
         o.o = o
         wr = weakref.ref(o)
         del pb, o
-        gc.collect()
+        gc_collect(lambda: wr())
         self.assertIsNone(wr())
 
 
