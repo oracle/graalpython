@@ -40,14 +40,14 @@
  */
 package com.oracle.graal.python.nodes.builtins;
 
-import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTupleObject__ob_item;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyVarObject__ob_size;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readLongField;
-import static com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.readPtrField;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.CreateStorageFromIteratorNode;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
@@ -148,7 +148,7 @@ public abstract class TupleNodes {
         NativeObjectSequenceStorage getNative(PythonAbstractNativeObject tuple) {
             assert PyTupleCheckNode.executeUncached(tuple);
             long tupleRawPtr = tuple.getPtr();
-            long array = readPtrField(tupleRawPtr, PyTupleObject__ob_item);
+            long array = CStructAccess.getFieldPtr(tupleRawPtr, CFields.PyTupleObject__ob_item);
             int size = (int) readLongField(tupleRawPtr, PyVarObject__ob_size);
             return NativeObjectSequenceStorage.create(array, size, size, false);
         }

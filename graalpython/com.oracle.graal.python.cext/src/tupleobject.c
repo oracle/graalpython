@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, 2025, Oracle and/or its affiliates.
+/* Copyright (c) 2018, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2022 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -16,9 +16,6 @@
 #include "pycore_initconfig.h"    // _PyStatus_OK()
 #endif // GraalPy change
 #include "pycore_object.h"        // _PyObject_GC_TRACK(), _Py_FatalRefcountError()
-
-// GraalPy change
-void GraalPyPrivate_Tuple_Dealloc(PyTupleObject* self);
 
 #if 0 // GraalPy change
 /*[clinic input]
@@ -203,13 +200,13 @@ PyTuple_Pack(Py_ssize_t n, ...)
     return result;
 }
 
-#if 0 // GraalPy change
 
 /* Methods */
 
 static void
 tupledealloc(PyTupleObject *op)
 {
+#if 0 // GraalPy change
     if (Py_SIZE(op) == 0) {
         /* The empty tuple is statically allocated. */
         if (op == &_Py_SINGLETON(tuple_empty)) {
@@ -224,6 +221,7 @@ tupledealloc(PyTupleObject *op)
         assert(!PyTuple_CheckExact(op));
 #endif
     }
+#endif // GraalPy change
 
     PyObject_GC_UnTrack(op);
     Py_TRASHCAN_BEGIN(op, tupledealloc)
@@ -233,13 +231,17 @@ tupledealloc(PyTupleObject *op)
         Py_XDECREF(op->ob_item[i]);
     }
     // This will abort on the empty singleton (if there is one).
+#if 0 // GraalPy change
     if (!maybe_freelist_push(op)) {
         Py_TYPE(op)->tp_free((PyObject *)op);
     }
+#endif // GraalPy change
+    Py_TYPE(op)->tp_free((PyObject *)op);
 
     Py_TRASHCAN_END
 }
 
+#if 0 // GraalPy change
 static PyObject *
 tuplerepr(PyTupleObject *v)
 {
@@ -711,6 +713,7 @@ tuplerichcompare(PyObject *v, PyObject *w, int op)
     /* Compare the final item again using the proper operator */
     return PyObject_RichCompare(vt->ob_item[i], wt->ob_item[i], op);
 }
+#endif // GraalPy change
 
 static PyObject *
 tuple_subtype_new(PyTypeObject *type, PyObject *iterable);
@@ -737,13 +740,43 @@ tuple_new_impl(PyTypeObject *type, PyObject *iterable)
         return tuple_subtype_new(type, iterable);
 
     if (iterable == NULL) {
+#if 0 // GraalPy change
         return tuple_get_empty();
+#endif // GraalPy change
+        return PyTuple_New(0);
     }
     else {
         return PySequence_Tuple(iterable);
     }
 }
 
+// GraalPy change: imported from 'clinit/tupleobject.c.h'
+static PyObject *
+tuple_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
+{
+    PyObject *return_value = NULL;
+    PyTypeObject *base_tp = &PyTuple_Type;
+    PyObject *iterable = NULL;
+
+    if ((type == base_tp || type->tp_init == base_tp->tp_init) &&
+        !_PyArg_NoKeywords("tuple", kwargs)) {
+        goto exit;
+        }
+    if (!_PyArg_CheckPositional("tuple", PyTuple_GET_SIZE(args), 0, 1)) {
+        goto exit;
+    }
+    if (PyTuple_GET_SIZE(args) < 1) {
+        goto skip_optional;
+    }
+    iterable = PyTuple_GET_ITEM(args, 0);
+    skip_optional:
+        return_value = tuple_new_impl(type, iterable);
+
+    exit:
+        return return_value;
+}
+
+#if 0 // GraalPy change
 static PyObject *
 tuple_vectorcall(PyObject *type, PyObject * const*args,
                  size_t nargsf, PyObject *kwnames)
@@ -767,37 +800,49 @@ tuple_vectorcall(PyObject *type, PyObject * const*args,
 
 #endif // GraalPy change
 
-// GraalPy change
-PyObject* GraalPyPrivate_Tuple_Alloc(PyTypeObject* cls, Py_ssize_t nitems);
-
-PyAPI_FUNC(PyObject *) // GraalPy change: export for downcall, rename
-GraalPyPrivate_Tuple_SubtypeNew(PyTypeObject *type, PyObject *iterable)
+static PyObject *
+tuple_subtype_new(PyTypeObject *type, PyObject *iterable)
 {
-    // GraalPy change: different implementation
     PyObject *tmp, *newobj, *item;
     Py_ssize_t i, n;
 
     assert(PyType_IsSubtype(type, &PyTuple_Type));
-    tmp = iterable == NULL ? PyTuple_New(0) : PySequence_Tuple(iterable);
+    // tuple subclasses must implement the GC protocol
+    assert(_PyType_IS_GC(type));
+
+    tmp = tuple_new_impl(&PyTuple_Type, iterable);
     if (tmp == NULL)
         return NULL;
     assert(PyTuple_Check(tmp));
-    n = PyTuple_GET_SIZE(tmp);
-
-    /* GraalPy note: we cannot call type->tp_alloc here because managed subtypes don't inherit tp_alloc but get a generic one.
-     * In CPython tuple uses the generic one to begin with, so they don't have this problem
-     */
-    newobj = GraalPyPrivate_Tuple_Alloc(type, n);
+    /* This may allocate an empty tuple that is not the global one. */
+    newobj = type->tp_alloc(type, n = PyTuple_GET_SIZE(tmp));
     if (newobj == NULL) {
+        Py_DECREF(tmp);
         return NULL;
     }
+    // GraalPy change
+    PyObject **src_arr = _PyTuple_ITEMS(tmp);
+    PyObject **arr = _PyTuple_ITEMS(newobj);
     for (i = 0; i < n; i++) {
+#if 0 // GraalPy change
         item = PyTuple_GET_ITEM(tmp, i);
-        Py_INCREF(item);
-        ((PyTupleObject*) newobj)->ob_item[i] = Py_NewRef(item); // PyTuple_SETITEM
+        PyTuple_SET_ITEM(newobj, i, Py_NewRef(item));
+#endif // GraalPy change
+        arr[i] = Py_NewRef(src_arr[i]);
     }
     Py_DECREF(tmp);
-    return (PyObject*) newobj;
+
+    // Don't track if a subclass tp_alloc is PyType_GenericAlloc()
+    if (!_PyObject_GC_IS_TRACKED(newobj)) {
+        _PyObject_GC_TRACK(newobj);
+    }
+    return newobj;
+}
+
+PyAPI_FUNC(PyObject *) // GraalPy change: export for downcall, rename
+GraalPyPrivate_Tuple_SubtypeNew(PyTypeObject *type, PyObject *iterable)
+{
+    return tuple_subtype_new(type, iterable);
 }
 
 #if 0 // GraalPy change
@@ -900,7 +945,7 @@ PyTypeObject PyTuple_Type = {
     "tuple",
     sizeof(PyTupleObject) - sizeof(PyObject *),
     sizeof(PyObject *),
-    (destructor)GraalPyPrivate_Tuple_Dealloc,        /* tp_dealloc */ // GraalPy change: different function
+    (destructor)tupledealloc,                   /* tp_dealloc */
     0,                                          /* tp_vectorcall_offset */
     0,                                          /* tp_getattr */
     0,                                          /* tp_setattr */
@@ -934,9 +979,9 @@ PyTypeObject PyTuple_Type = {
     0,                                          /* tp_descr_set */
     0,                                          /* tp_dictoffset */
     0,                                          /* tp_init */
-    GraalPyPrivate_Tuple_Alloc,                      /* tp_alloc */ // GraalPy change
-    0,                                          /* tp_new */ // GraalPy change: nulled
-    GraalPyPrivate_Object_GC_Del,              /* tp_free */ // GraalPy change: different function
+    0,                                          /* tp_alloc */
+    tuple_new,                                  /* tp_new */
+    PyObject_GC_Del,                            /* tp_free */
 #if 0 // GraalPy change
     .tp_vectorcall = tuple_vectorcall,
 #endif // GraalPy change
@@ -1304,74 +1349,6 @@ _PyTuple_DebugMallocStats(FILE *out)
 #undef STATE
 #undef FREELIST_FINALIZED
 #endif // GraalPy change
-
-// GraalPy additions
-PyObject* GraalPyPrivate_Tuple_Alloc(PyTypeObject* type, Py_ssize_t nitems) {
-    /*
-     * TODO(fa): For 'PyVarObjects' (i.e. 'nitems > 0') we increase the size by 'sizeof(void *)'
-     * because this additional pointer can then be used as pointer to the element array.
-     * CPython usually embeds the array in the struct but Sulong doesn't currently support that.
-     * So we allocate space for the additional array pointer.
-     * Also consider any 'PyVarObject' (in particular 'PyTupleObject') if this is fixed.
-     *
-     * This function is mostly an inlined copy-paste of PyType_GenericAlloc, with different size
-     * and added initialization of ob_item
-     */
-    PyObject *obj;
-    const size_t size = _PyObject_VAR_SIZE(type, nitems+1) + sizeof(PyObject **);
-    /* note that we need to add one, for the sentinel */
-
-    const size_t presize = _PyType_PreHeaderSize(type);
-    char *alloc = PyObject_Malloc(size + presize);
-    if (alloc  == NULL) {
-        return PyErr_NoMemory();
-    }
-
-    // GraalPy change: zero whole object
-    memset(alloc, '\0', size + presize);
-
-    obj = (PyObject *)(alloc + presize);
-    if (presize) {
-        // GraalPy change: different header layout
-        // ((PyObject **)alloc)[0] = NULL;
-        // ((PyObject **)alloc)[1] = NULL;
-        _PyObject_GC_Link(obj);
-    }
-    // GraalPy change: whole memory is zero'd above
-    // memset(obj, '\0', size);
-
-    if (type->tp_itemsize == 0) {
-        _PyObject_Init(obj, type);
-    }
-    else {
-        _PyObject_InitVar((PyVarObject *)obj, type, nitems);
-    }
-
-    if (_PyType_IS_GC(type)) {
-        _PyObject_GC_TRACK(obj);
-    }
-
-    ((PyTupleObject*)obj)->ob_item = (PyObject **) ((char *)obj + offsetof(PyTupleObject, ob_item) + sizeof(PyObject **));
-
-    return obj;
-}
-
-void GraalPyPrivate_Tuple_Dealloc(PyTupleObject* self) {
-    PyObject_GC_UnTrack(self);
-    if (points_to_py_handle_space(self)) {
-        return;
-    }
-    Py_TRASHCAN_BEGIN(self, GraalPyPrivate_Tuple_Dealloc)
-    Py_ssize_t len =  PyTuple_GET_SIZE(self);
-    if (len > 0) {
-        Py_ssize_t i = len;
-        while (--i >= 0) {
-            Py_XDECREF(self->ob_item[i]);
-        }
-    }
-    Py_TYPE(self)->tp_free((PyObject *)self);
-    Py_TRASHCAN_END
-}
 
 PyObject **
 GraalPyTuple_ITEMS(PyObject *op)
