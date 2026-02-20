@@ -424,8 +424,7 @@
         environment+: $.environment(self.os, self.arch),
         packages+: $.packages(self.os, self.arch),
         run+: [
-            // TODO: remove inlineVerifierInstrument=false once VerifierInstrument#checkFrameIsEmpty is fixed, GR-72201
-            ["mx", "--J", "@-Dtck.inlineVerifierInstrument=false"] + self.mx_parameters + self.dy + self.primary_suite + [
+            ["mx"] + self.mx_parameters + self.dy + self.primary_suite + [
                 "--strict-compliance", "--primary", "gate", "--tags", self.tags, "-B=--force-deprecation-as-warning",
             ] + self.all_suites + self.gate_parameters,
         ],
