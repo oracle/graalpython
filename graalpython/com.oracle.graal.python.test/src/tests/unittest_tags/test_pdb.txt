@@ -40,9 +40,9 @@ test.test_pdb.PdbTestCase.test_gh_93696_frozen_list @ darwin-arm64,linux-aarch64
 test.test_pdb.PdbTestCase.test_gh_94215_crash @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_pdb.PdbTestCase.test_header @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_pdb.PdbTestCase.test_invalid_cmd_line_options @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_pdb.PdbTestCase.test_issue13120 @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
 # GR-71918
 !test.test_pdb.PdbTestCase.test_issue13120 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_pdb.PdbTestCase.test_issue13120 @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
 test.test_pdb.PdbTestCase.test_issue13183 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_pdb.PdbTestCase.test_issue16180 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_pdb.PdbTestCase.test_issue26053 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
