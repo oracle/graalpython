@@ -47,9 +47,9 @@ test.test_pdb.PdbTestCase.test_issue13183 @ darwin-arm64,linux-aarch64,linux-aar
 test.test_pdb.PdbTestCase.test_issue16180 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_pdb.PdbTestCase.test_issue26053 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_pdb.PdbTestCase.test_issue34266 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
+test.test_pdb.PdbTestCase.test_issue36250 @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
 # GR-71918
 !test.test_pdb.PdbTestCase.test_issue36250 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_pdb.PdbTestCase.test_issue36250 @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
 test.test_pdb.PdbTestCase.test_issue42383 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_pdb.PdbTestCase.test_issue42384 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64
 test.test_pdb.PdbTestCase.test_issue42384_symlink @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
