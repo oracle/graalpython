@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,7 +43,6 @@ package com.oracle.graal.python.nfi2;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.Linker;
 import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodType;
 
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -58,24 +57,9 @@ public final class NfiUpcallSignature {
         this.argTypes = argTypes;
     }
 
-    public NfiType[] getArgTypes() {
-        return argTypes;
-    }
-
-    public NfiType getReturnType() {
-        return resType;
-    }
-
     @SuppressWarnings({"unused", "restricted"})
     public long createClosure(NfiContext context, String name, MethodHandle staticMethodHandle) {
         // TODO(NFI2) if logging enabled, wrap the handle in a method that logs the name and args
-        Class<?>[] javaArgTypes = new Class<?>[argTypes.length];
-        for (int i = 0; i < argTypes.length; i++) {
-            javaArgTypes[i] = argTypes[i].asJavaType();
-        }
-        // TODO(NFI2): once CApiContext#registerClosure is migrated, remove the next line, it
-        // shouldn't be needed
-        staticMethodHandle = staticMethodHandle.asType(MethodType.methodType(resType.asJavaType(), javaArgTypes));
         FunctionDescriptor functionDescriptor = NfiContext.createFunctionDescriptor(resType, argTypes);
         return Linker.nativeLinker().upcallStub(staticMethodHandle, functionDescriptor, context.arena).address();
     }

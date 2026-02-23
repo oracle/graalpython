@@ -50,27 +50,6 @@ public enum NfiType {
     DOUBLE,
     RAW_POINTER;    // arg must be long, retval is long
 
-    Class<?> asJavaType() {
-        return switch (this) {
-            case VOID -> void.class;
-            case SINT8 -> byte.class;
-            case SINT16 -> short.class;
-            case SINT32 -> int.class;
-            case SINT64 -> long.class;
-            case FLOAT -> float.class;
-            case DOUBLE -> double.class;
-            case RAW_POINTER -> long.class;
-        };
-    }
-
-    public Object convertToNative(Object value) {
-        if (this == VOID) {
-            return null;
-        }
-        assert checkType(value);
-        return value;
-    }
-
     boolean checkType(Object value) {
         return switch (this) {
             case VOID -> value == null;

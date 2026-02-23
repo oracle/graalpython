@@ -2088,19 +2088,6 @@ public abstract class CApiTransitions {
             return nativeToPythonInternalNode.execute(inliningTarget, value, false);
         }
 
-        @Specialization(limit = "1")
-        static Object doInteropPointer(Object nativePointer,
-                        @Bind Node inliningTarget,
-                        @Shared @Cached NativeToPythonInternalNode nativeToPythonInternalNode,
-                        @CachedLibrary("nativePointer") InteropLibrary lib) {
-            // TODO(NFI2) remove this when there are no more interop pointers
-            try {
-                return nativeToPythonInternalNode.execute(inliningTarget, lib.asPointer(nativePointer), false);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
-        }
-
         @NeverDefault
         public static NativeToPythonNode create() {
             return NativeToPythonNodeGen.create();
@@ -2127,19 +2114,6 @@ public abstract class CApiTransitions {
                         @Bind Node inliningTarget,
                         @Shared @Cached NativeToPythonInternalNode nativeToPythonInternalNode) {
             return nativeToPythonInternalNode.execute(inliningTarget, pointer, true);
-        }
-
-        @Specialization(limit = "1")
-        static Object doInteropPointer(Object nativePointer,
-                        @Bind Node inliningTarget,
-                        @Shared @Cached NativeToPythonInternalNode nativeToPythonInternalNode,
-                        @CachedLibrary("nativePointer") InteropLibrary lib) {
-            // TODO(NFI2) remove this when there are no more interop pointers
-            try {
-                return nativeToPythonInternalNode.execute(inliningTarget, lib.asPointer(nativePointer), true);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
         }
 
         @NeverDefault

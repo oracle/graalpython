@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,15 +45,6 @@ import java.lang.invoke.MethodHandle;
 public final class NfiUpcallSignature {
 
     NfiUpcallSignature() {
-    }
-
-    // TODO(NFI2) remove - temporarily needed for arg conversions in graalpy
-    public NfiType[] getArgTypes() {
-        throw new UnsupportedOperationException();
-    }
-
-    public NfiType getReturnType() {
-        throw new UnsupportedOperationException();
     }
 
     @SuppressWarnings({"unused", "static-method"})

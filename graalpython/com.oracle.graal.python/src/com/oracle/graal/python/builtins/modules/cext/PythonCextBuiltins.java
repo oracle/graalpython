@@ -107,7 +107,6 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -607,7 +606,7 @@ public final class PythonCextBuiltins {
             RootCallTarget ct = lang.getCapiCallTarget(id);
             if (ct == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                ct = new ExecuteCApiBuiltinRootNode(this, ret.getNFI2Type()).getCallTarget();
+                ct = new ExecuteCApiBuiltinRootNode(this).getCallTarget();
                 lang.setCapiCallTarget(id, ct);
             }
             return ct;
@@ -719,13 +718,11 @@ public final class PythonCextBuiltins {
     static final class ExecuteCApiBuiltinRootNode extends RootNode {
 
         final CApiBuiltinExecutable self;
-        final NfiType returnValue;
         @Child ExecuteCApiBuiltinNode executeBuiltinNode;
 
-        ExecuteCApiBuiltinRootNode(CApiBuiltinExecutable self, NfiType nfiType) {
+        ExecuteCApiBuiltinRootNode(CApiBuiltinExecutable self) {
             super(PythonLanguage.get(null));
             this.self = self;
-            this.returnValue = nfiType;
         }
 
         @Override
@@ -736,8 +733,7 @@ public final class PythonCextBuiltins {
             }
             try {
                 Object[] args = frame.getArguments();
-                Object result = executeBuiltinNode.execute(args);
-                return returnValue.convertToNative(result);
+                return executeBuiltinNode.execute(args);
             } catch (Throwable e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             }
@@ -1017,8 +1013,8 @@ public final class PythonCextBuiltins {
                         @Cached GetMroStorageNode getMroStorageNode) {
             pythonClass.setTpSlots(TpSlots.fromNative(pythonClass, getCApiContext(inliningTarget).getContext()));
 
-            Long[] getsets = collect(getMroStorageNode.execute(inliningTarget, pythonClass), INDEX_GETSETS);
-            Long[] members = collect(getMroStorageNode.execute(inliningTarget, pythonClass), INDEX_MEMBERS);
+            long[] getsets = collect(getMroStorageNode.execute(inliningTarget, pythonClass), INDEX_GETSETS);
+            long[] members = collect(getMroStorageNode.execute(inliningTarget, pythonClass), INDEX_MEMBERS);
 
             PDict dict = (PDict) readNativeDict.readFromObj(pythonClass, CFields.PyTypeObject__tp_dict);
 
@@ -1066,20 +1062,21 @@ public final class PythonCextBuiltins {
         private static final int INDEX_MEMBERS = 1;
 
         @TruffleBoundary
-        private static Long[] collect(MroSequenceStorage mro, int idx) {
-            // TODO(NFI2) avoid boxing, return long[]
-            ArrayList<Long> l = new ArrayList<>();
+        private static long[] collect(MroSequenceStorage mro, int idx) {
             int mroLength = mro.length();
+            long[] result = new long[mroLength];
+            int resultCount = 0;
             for (int i = 0; i < mroLength; i++) {
                 PythonAbstractClass kls = mro.getPythonClassItemNormalized(i);
                 Object value = HiddenAttr.ReadNode.executeUncached((PythonAbstractObject) kls, NATIVE_SLOTS, null);
                 if (value != null) {
                     long[] tuple = (long[]) value;
                     assert tuple.length == 2;
-                    l.add(tuple[idx]);
+                    result[resultCount++] = tuple[idx];
                 }
             }
-            return l.toArray(Long[]::new);
+            // the array may be overallocated, but the caller ignores any NULLPTR elements anyway
+            return result;
         }
     }
 
