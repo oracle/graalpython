@@ -1578,4 +1578,6 @@ public abstract class ErrorMessages {
     public static final TruffleString NO_SUCH_GROUP = tsLiteral("no such group");
     public static final TruffleString WEAKLY_REFERENCED_OBJECT_NO_LONGER_EXISTS = tsLiteral("weakly-referenced object no longer exists");
     public static final TruffleString WEAKREF_PROXY_REFERENCED_A_NON_ITERATOR_S_OBJECT = tsLiteral("Weakref proxy referenced a non-iterator '%s' object");
+
+    public static final TruffleString S_MUST_BE_CALLABLE = tsLiteral("%s must be callable");
 }

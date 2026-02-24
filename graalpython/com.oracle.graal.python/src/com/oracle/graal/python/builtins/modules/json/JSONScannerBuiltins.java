@@ -6,6 +6,7 @@
 package com.oracle.graal.python.builtins.modules.json;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RecursionError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.byteIndexToCodepointIndex;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.codepointIndexToByteIndex;
 import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
@@ -36,6 +37,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.PyCallableCheckNode;
 import com.oracle.graal.python.lib.PyFloatCheckExactNode;
 import com.oracle.graal.python.lib.PyLongCheckExactNode;
 import com.oracle.graal.python.lib.PyLongFromUnicodeObject;
@@ -59,6 +61,7 @@ import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.util.ArrayBuilder;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
@@ -107,6 +110,7 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
         public PJSONScanner doNew(VirtualFrame frame, Object cls, Object context,
                         @Bind Node inliningTarget,
                         @Cached PyObjectIsTrueNode castStrict,
+                        @Cached PyCallableCheckNode checkCallable,
                         @Cached TypeNodes.GetInstanceShape getInstanceShape,
                         @Cached PyFloatCheckExactNode pyFloatCheckExactNode,
                         @Cached PyLongCheckExactNode pyLongCheckExactNode) {
@@ -119,6 +123,19 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
             Object parseConstant = getParseConstant.execute(frame, context);
             Object parseFloat = pyFloatCheckExactNode.execute(inliningTarget, parseFloatProp) ? PNone.NONE : parseFloatProp;
             Object parseInt = pyLongCheckExactNode.execute(inliningTarget, parseIntProp) ? PNone.NONE : parseIntProp;
+            /*
+             * Validate that object_hook and object_pairs_hook, if provided, are callable. This
+             * mirrors CPython's behavior and prevents ClassCastException when a non‑callable (e.g.,
+             * a string) is supplied.
+             */
+            if (objectHook != PNone.NONE && !checkCallable.execute(inliningTarget, objectHook)) {
+                CompilerDirectives.transferToInterpreter();
+                throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.S_MUST_BE_CALLABLE, "object_hook");
+            }
+            if (objectPairsHook != PNone.NONE && !checkCallable.execute(inliningTarget, objectPairsHook)) {
+                CompilerDirectives.transferToInterpreter();
+                throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.S_MUST_BE_CALLABLE, "object_pairs_hook");
+            }
             return PFactory.createJSONScanner(cls, getInstanceShape.execute(cls), strict, objectHook, objectPairsHook, parseFloat, parseInt, parseConstant);
         }
     }
