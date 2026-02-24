@@ -4898,7 +4898,7 @@ order (MRO) for bases """
         x.attr = 42
         wr = weakref.ref(x)
         del x
-        support.gc_collect()
+        support.gc_collect(lambda: wr())
         self.assertIsNone(wr())
         for o in gc.get_objects():
             self.assertIsNot(type(o), X)

@@ -84,7 +84,7 @@ class AsCompletedTests:
                 futures_list.remove(future)
                 wr = weakref.ref(future)
                 del future
-                support.gc_collect()  # For PyPy or other GCs.
+                support.gc_collect(wr())  # For PyPy or other GCs.
                 self.assertIsNone(wr())
 
         futures_list[0].set_result("test")
@@ -92,7 +92,7 @@ class AsCompletedTests:
             futures_list.remove(future)
             wr = weakref.ref(future)
             del future
-            support.gc_collect()  # For PyPy or other GCs.
+            support.gc_collect(wr())  # For PyPy or other GCs.
             self.assertIsNone(wr())
             if futures_list:
                 futures_list[0].set_result("test")

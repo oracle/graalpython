@@ -1872,7 +1872,7 @@ class TestLRU:
 
         del A
         del test_function
-        support.gc_collect()
+        support.gc_collect(lambda: any([ref() for ref in refs]))
 
         for ref in refs:
             self.assertIsNone(ref())

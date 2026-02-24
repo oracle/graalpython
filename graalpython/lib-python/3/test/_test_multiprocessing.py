@@ -5851,7 +5851,7 @@ class TestResourceTracker(unittest.TestCase):
             # ensure `sem` gets collected, which triggers communication with
             # the semaphore tracker
             del sem
-            gc_collect()
+            gc_collect(lambda: wr())
             self.assertIsNone(wr())
             if should_die:
                 self.assertEqual(len(all_warn), 1)
