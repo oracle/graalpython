@@ -12,6 +12,7 @@ jobs:
       jobs_to_run: ^(?:python-svm-build|style|style-ecj)-gate-.*$
       logs_retention_days: 0
       artifacts_retention_days: 0
+      export_test_reports: true
 
   run-tests:
     if: success()
@@ -19,3 +20,29 @@ jobs:
     uses: ./.github/workflows/ci-matrix-gen.yml
     with:
       jobs_to_run: ^(?!python-svm-build|style).*-gate.*$
+
+  collect-reports:
+    needs: run-tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Download test reports
+        uses: actions/download-artifact@v5
+        with:
+          pattern: '*_test_reports'
+          merge-multiple: true
+          path: test-reports
+      - name: Merge test reports
+        run: |
+          python3 .github/scripts/merge_reports.py \
+            --outfile merged_test_reports.json \
+            --dir test-reports \
+            --pattern "**/*.json" \
+            --status-filter "failed"
+      - name: Upload merged test report
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: merged_test_reports
+          path: merged_test_reports.json
+          if-no-files-found: ignore

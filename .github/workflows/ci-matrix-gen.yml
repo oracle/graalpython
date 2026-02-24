@@ -274,6 +274,15 @@ jobs:
             ${{ matrix.logs }}
           retention-days: ${{ inputs.logs_retention_days || 15 }}
           if-no-files-found: ignore
+      
+      - name: Upload test reports
+        if: ${{ matrix.test_reports }}
+        uses: actions/upload-artifact@v5
+        continue-on-error: true
+        with:
+          name: ${{ format('{0}_test_reports', matrix.name) }}
+          path: /tmp/test-report-*.json
+          retention-days: 1
 
   tier2:
     if: ${{ success() || inputs.jobs_to_run }}
