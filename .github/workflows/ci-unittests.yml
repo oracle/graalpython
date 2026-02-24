@@ -12,16 +12,17 @@ jobs:
       jobs_to_run: ^(?:python-svm-build|style|style-ecj)-gate-.*$
       logs_retention_days: 0
       artifacts_retention_days: 0
-      export_test_reports: true
 
   run-tests:
     if: success()
     needs: build-standalone-artifacts
     uses: ./.github/workflows/ci-matrix-gen.yml
     with:
-      jobs_to_run: ^(?!python-svm-build|style).*-gate.*$
+      jobs_to_run: python-tagged-unittest-gate #^(?!python-svm-build|style).*-gate.*$
+      export_test_reports: true
 
   collect-reports:
+    if: always()
     needs: run-tests
     runs-on: ubuntu-latest
     steps:

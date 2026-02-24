@@ -20,6 +20,10 @@ on:
         required: false
         type: number
         default: 7
+      export_test_reports:
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   generate-tier1:
@@ -276,7 +280,7 @@ jobs:
           if-no-files-found: ignore
       
       - name: Upload test reports
-        if: ${{ matrix.test_reports }}
+        if: ${{ inputs.export_test_reports && (success() || failure()) }}
         uses: actions/upload-artifact@v5
         continue-on-error: true
         with:
