@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, 2025, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -445,6 +445,7 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
                 final Object value;
                 ScannerState nextState = null;
                 if (state == ScannerState.dict) {
+                    /* scanner is currently inside a dictionary */
                     int c;
                     if (idx >= length || (c = codePointAtIndexNode.execute(string, idx)) != '"' && (c != '}')) {
                         throw decodeError(frame, boundaryCallData, inliningTarget, errorProfile, this, string, idx, ErrorMessages.EXPECTING_PROP_NAME_ECLOSED_IN_DBL_QUOTES);
@@ -457,6 +458,17 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
                         Object topOfStack = stack.pop();
                         TruffleString parentKey = null;
                         final Object dict;
+                        /*
+                         * If no hooks are present, the stack contains only the parent dicts or
+                         * lists the current object is nested in. If a objectHook or objectPairsHook
+                         * is present, the stack also stores the property keys of nested dicts. For
+                         * example, when parsing the innermost dict of '{"a":{"b":{"c":"d"}}}', the
+                         * stack will contain (from bottom to top) [<dictStorage>, <dictStorage>,
+                         * "a", <dictStorage>, "b"]. This is necessary so after finishing parsing a
+                         * dict, we can call the hook and replace it with the hook's return value in
+                         * the parent dict, i.e. when in the previous example we finish parsing
+                         * '{"c":"d"}', we effectively execute parent["b"] = objectHook({"c":"d"}).
+                         */
                         if (hasPairsHook) {
                             if (topOfStack instanceof TruffleString) {
                                 parentKey = (TruffleString) topOfStack;
@@ -484,6 +496,9 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
                                 nextState = parentKey == null ? ScannerState.list : ScannerState.dict;
                                 if (nextState == ScannerState.dict) {
                                     Object parent = stack.peek();
+                                    if (parent instanceof TruffleString) {
+                                        parent = stack.get(stack.size() - 2);
+                                    }
                                     if (hasPairsHook) {
                                         currentPairsStorage = (ObjectSequenceStorage) parent;
                                         currentPairsStorage.setObjectItemNormalized(currentPairsStorage.length() - 1, PFactory.createTuple(language, new Object[]{parentKey, dict}));
@@ -518,6 +533,7 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
                                         substringByteIndexNode,
                                         appendCodePointNode,
                                         appendSubstringByteIndexNode, builderToStringNode);
+                        /* force hash computation */
                         hashCodeNode.execute(newKey, TS_ENCODING);
                         TruffleString key = memoPutIfAbsent(memo, newKey);
                         if (key == null) {
@@ -624,12 +640,20 @@ public final class JSONScannerBuiltins extends PythonBuiltins {
                             assert nextState == ScannerState.dict;
                             currentPairsStorage = (ObjectSequenceStorage) value;
                             if (state == ScannerState.dict) {
+                                /*
+                                 * save the associated propertyKey so we can replace the current
+                                 * value with the hook's result later
+                                 */
                                 stack.add(propertyKey);
                             }
                         } else {
                             assert nextState == ScannerState.dict;
                             currentDictStorage = (EconomicMapStorage) ((PDict) value).getDictStorage();
                             if (hasObjectHook && state == ScannerState.dict) {
+                                /*
+                                 * save the associated propertyKey so we can replace the current
+                                 * value with the hook's result later
+                                 */
                                 stack.add(propertyKey);
                             }
                         }
