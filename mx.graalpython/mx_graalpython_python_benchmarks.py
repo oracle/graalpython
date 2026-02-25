@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -36,10 +36,6 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
-import mx
-import mx_benchmark
-
 import glob
 import json
 import math
@@ -47,9 +43,11 @@ import os
 import re
 import shutil
 import sys
-
+import tempfile
 from os.path import join, abspath
 
+import mx
+import mx_benchmark
 
 SUITE = None
 python_vm_registry = None
@@ -763,7 +761,13 @@ class PandasSuite(PySuite):
 
             vm.run(workdir, ["-m", "venv", join(workdir, vm_venv)])
             pip = join(workdir, vm_venv, "bin", "pip")
-            mx.run([pip, "install", *self.BENCHMARK_REQ], cwd=workdir)
+            with tempfile.NamedTemporaryFile('w') as constraints:
+                # Constrain the version of setuptools used to build pandas
+                constraints.write('setuptools==70.3.0\n')
+                constraints.flush()
+                env = os.environ.copy()
+                env['PIP_CONSTRAINT'] = constraints.name
+                mx.run([pip, "install", *self.BENCHMARK_REQ], cwd=workdir, env=env)
             mx.run(
                 [join(workdir, vm_venv, "bin", "asv"), "machine", "--yes"], cwd=benchdir
             )
