@@ -49,6 +49,7 @@ import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -60,6 +61,7 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
@@ -122,30 +124,35 @@ public abstract class LookupAndCallUnaryNode extends UnaryOpNode {
     Object callObjectGeneric(VirtualFrame frame, Object receiver,
                     @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Cached("receiver.getClass()") Class<?> cachedClass,
+                    @Shared @Cached InlinedBranchProfile notFoundProfile,
                     @Shared @Cached GetClassNode getClassNode,
                     @Shared @Cached("create(name)") LookupSpecialMethodNode getattr,
                     @Shared @Cached CallUnaryMethodNode dispatchNode) {
-        return doCallObject(frame, inliningTarget, receiver, getClassNode, getattr, dispatchNode);
+        return doCallObject(frame, inliningTarget, notFoundProfile, receiver, getClassNode, getattr, dispatchNode);
     }
 
     @Specialization(replaces = "callObjectGeneric")
     @Megamorphic
+    @InliningCutoff
     @SuppressWarnings("truffle-static-method")
     Object callObjectMegamorphic(VirtualFrame frame, Object receiver,
                     @Bind Node inliningTarget,
+                    @Shared @Cached InlinedBranchProfile notFoundProfile,
                     @Shared @Cached GetClassNode getClassNode,
                     @Shared @Cached("create(name)") LookupSpecialMethodNode getattr,
                     @Shared @Cached CallUnaryMethodNode dispatchNode) {
-        return doCallObject(frame, inliningTarget, receiver, getClassNode, getattr, dispatchNode);
+        return doCallObject(frame, inliningTarget, notFoundProfile, receiver, getClassNode, getattr, dispatchNode);
     }
 
     protected Class<?> getObjectClass(Object object) {
         return object.getClass();
     }
 
-    private Object doCallObject(VirtualFrame frame, Node inliningTarget, Object receiver, GetClassNode getClassNode, LookupSpecialMethodNode getattr, CallUnaryMethodNode dispatchNode) {
+    private Object doCallObject(VirtualFrame frame, Node inliningTarget, InlinedBranchProfile notFoundProfile,
+                    Object receiver, GetClassNode getClassNode, LookupSpecialMethodNode getattr, CallUnaryMethodNode dispatchNode) {
         Object attr = getattr.execute(frame, getClassNode.execute(inliningTarget, receiver), receiver);
         if (attr == PNone.NO_VALUE) {
+            notFoundProfile.enter(inliningTarget);
             throw SpecialMethodNotFound.INSTANCE;
         }
         return dispatchNode.executeObject(frame, attr, receiver);
