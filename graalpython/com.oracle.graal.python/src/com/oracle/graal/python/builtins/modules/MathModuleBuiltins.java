@@ -72,6 +72,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.call.special.SpecialMethodNotFound;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -2185,7 +2186,12 @@ public final class MathModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached("create(T___TRUNC__)") LookupAndCallUnaryNode callTrunc,
                         @Cached PRaiseNode raiseNode) {
-            Object result = callTrunc.executeObject(frame, obj);
+            Object result;
+            try {
+                result = callTrunc.executeObject(frame, obj);
+            } catch (SpecialMethodNotFound e) {
+                result = PNone.NO_VALUE;
+            }
             if (result == PNone.NO_VALUE) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.TYPE_DOESNT_DEFINE_METHOD, obj, "__trunc__");
             }

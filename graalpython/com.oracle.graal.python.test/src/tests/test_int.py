@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -702,6 +702,13 @@ class FromBytesTests(unittest.TestCase):
                 return bytes([10,20])
 
         self.assertEqual(int.from_bytes(mybyteslike(), 'big'), 2580)
+
+    def test_from_object_without_bytes_uses_iterable_fallback(self):
+        class IterableOnly:
+            def __iter__(self):
+                return iter([1, 2, 3])
+
+        self.assertEqual(int.from_bytes(IterableOnly(), 'big'), 0x010203)
 
     def test_from_wrong_byteslike_object(self):
         class mybyteslike1():

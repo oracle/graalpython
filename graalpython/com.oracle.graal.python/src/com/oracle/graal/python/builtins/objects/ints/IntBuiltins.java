@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -125,6 +125,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.call.special.SpecialMethodNotFound;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -2631,7 +2632,12 @@ public final class IntBuiltins extends PythonBuiltins {
                 throw raiseNode.raise(inliningTarget, PythonErrorType.ValueError, ErrorMessages.BYTEORDER_MUST_BE_LITTLE_OR_BIG);
             }
             byte[] bytes;
-            Object bytesObj = callBytes.executeObject(frame, object);
+            Object bytesObj;
+            try {
+                bytesObj = callBytes.executeObject(frame, object);
+            } catch (SpecialMethodNotFound e) {
+                bytesObj = PNone.NO_VALUE;
+            }
             if (bytesObj != PNone.NO_VALUE) {
                 hasBytesProfile.enter(inliningTarget);
                 if (!(bytesObj instanceof PBytes)) {

@@ -222,7 +222,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.StringLiterals;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.NoAttributeHandler;
+import com.oracle.graal.python.nodes.call.special.SpecialMethodNotFound;
 import com.oracle.graal.python.nodes.frame.ReadFrameNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -263,7 +263,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(defineModule = "sys", isEager = true)
@@ -995,7 +994,13 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                         @Shared @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached("createWithError()") LookupAndCallUnaryNode callSizeofNode,
                         @Shared @Cached PRaiseNode raiseNode) {
-            return checkResult(frame, inliningTarget, asSizeNode, callSizeofNode.executeObject(frame, object), raiseNode);
+            Object result;
+            try {
+                result = callSizeofNode.executeObject(frame, object);
+            } catch (SpecialMethodNotFound e) {
+                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.TYPE_DOESNT_DEFINE_METHOD, object, T___SIZEOF__);
+            }
+            return checkResult(frame, inliningTarget, asSizeNode, result, raiseNode);
         }
 
         @Specialization(guards = "!isNoValue(dflt)")
@@ -1004,8 +1009,10 @@ public final class SysModuleBuiltins extends PythonBuiltins {
                         @Shared @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached("createWithoutError()") LookupAndCallUnaryNode callSizeofNode,
                         @Shared @Cached PRaiseNode raiseNode) {
-            Object result = callSizeofNode.executeObject(frame, object);
-            if (result == PNone.NO_VALUE) {
+            Object result;
+            try {
+                result = callSizeofNode.executeObject(frame, object);
+            } catch (SpecialMethodNotFound e) {
                 return dflt;
             }
             return checkResult(frame, inliningTarget, asSizeNode, result, raiseNode);
@@ -1021,15 +1028,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
 
         @NeverDefault
         protected LookupAndCallUnaryNode createWithError() {
-            return LookupAndCallUnaryNode.create(T___SIZEOF__, () -> new NoAttributeHandler() {
-                private final BranchProfile errorProfile = BranchProfile.create();
-
-                @Override
-                public Object execute(Object receiver) {
-                    errorProfile.enter();
-                    throw PRaiseNode.raiseStatic(this, TypeError, ErrorMessages.TYPE_DOESNT_DEFINE_METHOD, receiver, T___SIZEOF__);
-                }
-            });
+            return LookupAndCallUnaryNode.create(T___SIZEOF__);
         }
 
         @NeverDefault

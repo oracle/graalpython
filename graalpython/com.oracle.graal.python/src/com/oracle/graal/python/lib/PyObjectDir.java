@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,7 +42,6 @@ package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -50,6 +49,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.call.special.SpecialMethodNotFound;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -72,8 +72,10 @@ public abstract class PyObjectDir extends PNodeWithContext {
                     @Cached(inline = false) ListNodes.ConstructListNode constructListNode,
                     @Cached(value = "create(T___DIR__)", inline = false) LookupAndCallUnaryNode callDir,
                     @Cached PRaiseNode raiseNode) {
-        Object result = callDir.executeObject(frame, object);
-        if (result == PNone.NO_VALUE) {
+        Object result;
+        try {
+            result = callDir.executeObject(frame, object);
+        } catch (SpecialMethodNotFound e) {
             throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.OBJ_DOES_NOT_PROVIDE_DIR);
         }
         PList list = constructListNode.execute(frame, result);

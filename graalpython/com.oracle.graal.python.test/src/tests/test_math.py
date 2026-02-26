@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2023, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -214,7 +214,7 @@ class MathTests(unittest.TestCase):
         class MyFloat2:
             def __float__(self):
                 return 1.6
-        self.assertRaises(ValueError, math.acos, MyFloat2())        
+        self.assertRaises(ValueError, math.acos, MyFloat2())
 
         class MyFloat3:
             def __float__(self):
@@ -265,7 +265,7 @@ class MathTests(unittest.TestCase):
         self.assertRaises(ValueError, math.sqrt, -1)
         self.assertRaises(ValueError, math.sqrt, NINF)
         self.assertTrue(math.isnan(math.sqrt(NAN)))
-        
+
         math.sqrt(MyFloat())
         math.sqrt(BIG_INT)
         self.assertRaises(TypeError, math.asin, 'ahoj')
@@ -307,7 +307,7 @@ class MathTests(unittest.TestCase):
             self.assertAlmostEqual(math.log1p(n), math.log1p(float(n)))
         self.assertRaises(ValueError, math.log1p, -1)
         self.assertEqual(math.log1p(INF), INF)
-        
+
         # test of specializations
         self.ftest('log1p(MyFloat())', math.log1p(MyFloat()), 0.4700036292457356)
         self.assertRaises(TypeError, math.log1p, 'ahoj')
@@ -382,7 +382,7 @@ class MathTests(unittest.TestCase):
         self.assertFalse(math.isinf(float("nan")))
         self.assertFalse(math.isinf(0.))
         self.assertFalse(math.isinf(1.))
-        
+
         self.assertFalse(math.isinf(True))
         self.assertFalse(math.isinf(LONG_INT))
         self.assertFalse(math.isinf(BIG_INT))
@@ -484,7 +484,7 @@ class MathTests(unittest.TestCase):
         self.assertEqual(math.copysign(999999999999999999999.1, 1), 999999999999999999999.1)
         self.assertRaises(TypeError, math.copysign, 'hello', 1)
         self.assertRaises(TypeError, math.copysign, 1, 'hello')
-        
+
         self.assertEqual(math.copysign(MyFloat(), 1), 0.6)
         self.assertEqual(math.copysign(MyFloat(), -1), -0.6)
         self.assertEqual(math.copysign(1.2, MyFloat()), 1.2)
@@ -679,12 +679,12 @@ class MathTests(unittest.TestCase):
         self.assertEqual(math.pow(999999999999999999999999999, 0), 1)
         self.assertEqual(math.pow(0.0, 999999999999999999999999999), 0)
         self.assertEqual(math.pow(999999999999999999999999999, 0.0), 1)
-        
+
         class MyNumber():
             def __float__(self):
                 return -2.;
         self.ftest('MyFloat()**-3.', math.pow(MyNumber(), -3.0), -0.125)
-    
+
     def testAtan2(self):
         self.assertRaises(TypeError, math.atan2)
         self.ftest('atan2(-1, 0)', math.atan2(-1, 0), -math.pi/2)
@@ -768,7 +768,7 @@ class MathTests(unittest.TestCase):
             self.assertRaises(ValueError, math.cos, INF)
             self.assertRaises(ValueError, math.cos, NINF)
         self.assertTrue(math.isnan(math.cos(NAN)))
- 
+
         #test of specializations
         self.ftest('cos(BIG_INT)', math.cos(BIG_INT), 0.4145587418469303)
         self.ftest('cos(MyFloat())', math.cos(MyFloat()), 0.8253356149096783)
@@ -786,7 +786,7 @@ class MathTests(unittest.TestCase):
         self.ftest('cosh(MyFloat())', math.cosh(MyFloat()), 1.1854652182422676)
         self.assertRaises(TypeError, math.cosh, 'ahoj')
         self.assertRaises(OverflowError, math.cosh, BIG_INT)
-        
+
     def testSin(self):
         self.assertRaises(TypeError, math.sin)
         self.ftest('sin(0)', math.sin(0), 0)
@@ -813,7 +813,7 @@ class MathTests(unittest.TestCase):
         self.assertEqual(math.sinh(INF), INF)
         self.assertEqual(math.sinh(NINF), NINF)
         self.assertTrue(math.isnan(math.sinh(NAN)))
-        
+
         # test of specializations
         self.ftest('sinh(MyFloat())', math.sinh(MyFloat()), 0.6366535821482412)
         self.assertRaises(TypeError, math.sinh, 'ahoj')
@@ -1128,7 +1128,7 @@ class MathTests(unittest.TestCase):
         self.assertEqual(math.exp(NINF), 0.)
         self.assertTrue(math.isnan(math.exp(NAN)))
         self.assertRaises(OverflowError, math.exp, 1000000)
-        
+
         # test of specializations
         self.ftest('exp(MyFloat())', math.exp(MyFloat()), 1.8221188003905089)
         self.assertRaises(TypeError, math.exp, 'ahoj')
@@ -1239,7 +1239,7 @@ class MathTests(unittest.TestCase):
         self.assertRaises(TypeError, math.ldexp, 'Hello', 1000000)
         self.assertRaises(TypeError, math.ldexp, 1, 'Hello')
         self.assertEqual(math.ldexp(7589167167882033, -48), 26.962138008038156)
-    
+
         self.assertRaises(TypeError, math.ldexp, 1, MyIndexable(2))
         self.assertRaises(TypeError, math.ldexp, 1, MyInt(2))
         self.assertRaises(TypeError, math.ldexp, 1, MyFloat())
@@ -1271,6 +1271,20 @@ class MathTests(unittest.TestCase):
         self.assertRaises(TypeError, math.trunc)
         self.assertRaises(TypeError, math.trunc, 1, 2)
         self.assertRaises(TypeError, math.trunc, TestNoTrunc())
+
+        class MissingTrunc:
+            def __getattr__(self, name):
+                if name == "__trunc__":
+                    return lambda: 99
+                raise AttributeError(name)
+
+        self.assertRaises(TypeError, math.trunc, MissingTrunc())
+
+        class NotImplementedTrunc:
+            def __trunc__(self):
+                return NotImplemented
+
+        self.assertIs(math.trunc(NotImplementedTrunc()), NotImplemented)
 
     def testDegrees(self):
         self.assertRaises(TypeError, math.degrees)
@@ -1325,7 +1339,7 @@ class MathTests(unittest.TestCase):
             result = fn(value[0])
             expected = value[1]
             if math.isnan(expected):
-                self.assertTrue(math.isnan(result), "Test2 fail: {}({}) = {}, but was {}".format(fnName, value[0], expected, result))            
+                self.assertTrue(math.isnan(result), "Test2 fail: {}({}) = {}, but was {}".format(fnName, value[0], expected, result))
             else :
                 if result != expected:
                     if (sys.version_info.major >= 3 and sys.version_info.minor >= 5):
@@ -1334,7 +1348,7 @@ class MathTests(unittest.TestCase):
     def test_erf(self):
         erfValues = [(0.0,  0.0), (-0.0, -0.0), (INF,  1.0), (NINF,  -1.0), (NAN, NAN),
             # tiny values
-            (1e-308, 1.1283791670955125e-308), (5e-324, 4.9406564584124654e-324), 
+            (1e-308, 1.1283791670955125e-308), (5e-324, 4.9406564584124654e-324),
             (1e-10, 1.1283791670955126e-10),
             # small integers
             (1, 0.842700792949715), (2, 0.99532226501895271), (3, 0.99997790950300136),
@@ -1356,7 +1370,7 @@ class MathTests(unittest.TestCase):
             (1e-308, 1.0), (5e-324, 1.0), (1e-10, 0.99999999988716204),
             # small integers
             (1, 0.157299207050285), (2, 0.004677734981047268), (3, 2.2090496998585482e-05),
-            (4, 1.541725790028002e-08), (5, 1.5374597944280341e-12), 
+            (4, 1.541725790028002e-08), (5, 1.5374597944280341e-12),
             # this number needs to be rounded
             (6, 2.1519736712498925e-17),
             (-1, 1.842700792949715), (-2, 1.9953222650189528), (-3, 1.9999779095030015),
@@ -1372,7 +1386,7 @@ class MathTests(unittest.TestCase):
             (-26.8, 2.0), (-27.0, 2.0), (-27.2, 2.0), (-27.4, 2.0), (-27.6, 2.0)
         ]
         self.executeFnTest(values, math.erfc, 'math.erfc')
-        
+
     def test_gamma(self):
         self.assertRaises(ValueError, math.gamma, 0.)
         self.assertRaises(ValueError, math.gamma, -0.0)
@@ -1400,34 +1414,34 @@ class MathTests(unittest.TestCase):
             (3.5, 3.323350970447842), (-0.5, -3.5449077018110322), (-1.5, 2.3632718012073544),
             (-2.5, -0.94530872048294170), (-3.5, 0.27008820585226917),
             # values near 0
-            (0.1, 9.5135076986687306), 
-            (0.01, 99.432585119150602), 
+            (0.1, 9.5135076986687306),
+            (0.01, 99.432585119150602),
             (1e-8, 99999999.422784343),
-            #(1e-16, 10000000000000000), 
+            #(1e-16, 10000000000000000),
             (1e-30, 9.9999999999999988e+29), (1e-160, 1.0000000000000000e+160),
-            (1e-308, 1.0000000000000000e+308), 
+            (1e-308, 1.0000000000000000e+308),
             (5.6e-309, 1.7857142857142848e+308),
-            (-0.1, -10.686287021193193), 
-            (-0.01, -100.58719796441078), 
+            (-0.1, -10.686287021193193),
+            (-0.01, -100.58719796441078),
             (-1e-8, -100000000.57721567),
-            (-1e-16, -10000000000000000), 
+            (-1e-16, -10000000000000000),
             (-1e-30, -9.9999999999999988e+29), (-1e-160, -1.0000000000000000e+160),
-            (-1e-308, -1.0000000000000000e+308), 
+            (-1e-308, -1.0000000000000000e+308),
             (-5.6e-309, -1.7857142857142848e+308),
             # values near negative integers
-            (-0.99999999999999989, -9007199254740992.0), 
+            (-0.99999999999999989, -9007199254740992.0),
             (-1.0000000000000002, 4503599627370495.5),
-            (-1.9999999999999998, 2251799813685248.5), 
+            (-1.9999999999999998, 2251799813685248.5),
             (-2.0000000000000004, -1125899906842623.5),
-            (-100.00000000000001, -7.5400833348831090e-145), 
+            (-100.00000000000001, -7.5400833348831090e-145),
             (-99.999999999999986, 7.5400833348840962e-145),
             # large inputs
-            (170, 4.2690680090047051e+304), 
-            (171, 7.2574156153079990e+306), 
+            (170, 4.2690680090047051e+304),
+            (171, 7.2574156153079990e+306),
             (171.624, 1.7942117599248104e+308),
             # inputs for which gamma(x) is tiny
-            (-100.5, -3.3536908198076787e-159), 
-            (-160.5, -5.2555464470078293e-286), 
+            (-100.5, -3.3536908198076787e-159),
+            (-160.5, -5.2555464470078293e-286),
             (-170.5, -3.3127395215386074e-308),
             (-171.5, 1.9316265431711902e-310), (-176.5, -1.1956388629358166e-321), (-177.5, 4.9406564584124654e-324),
             (-178.5, -0.0), (-179.5, 0.0), (-201.0001, 0.0), (-202.9999, -0.0), (-1000.5, -0.0),
@@ -1452,11 +1466,11 @@ class MathTests(unittest.TestCase):
 
         values = [(INF, INF), (-INF, INF), (NAN, NAN),
             # small positive integers give factorials
-            (1, 0.0), (2, 0.0), 
-            (3, 0.69314718055994529), 
-            (4, 1.791759469228055), 
-            (5, 3.1780538303479458), 
-            (6, 4.7874917427820458), 
+            (1, 0.0), (2, 0.0),
+            (3, 0.69314718055994529),
+            (4, 1.791759469228055),
+            (5, 3.1780538303479458),
+            (6, 4.7874917427820458),
             # half integers
             (0.5, 0.57236494292470008),
             (1.5, -0.12078223763524522),
