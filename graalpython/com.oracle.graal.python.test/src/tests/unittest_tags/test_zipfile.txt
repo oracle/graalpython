@@ -3,7 +3,7 @@
 test.test_zipfile._path.test_path.TestPath.test_backslash_not_separator @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile._path.test_path.TestPath.test_dir_parent @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile._path.test_path.TestPath.test_eq_hash @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_zipfile._path.test_path.TestPath.test_extract_orig_with_implied_dirs @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
+test.test_zipfile._path.test_path.TestPath.test_extract_orig_with_implied_dirs @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile._path.test_path.TestPath.test_filename @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile._path.test_path.TestPath.test_getinfo_missing @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile._path.test_path.TestPath.test_glob_chars @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -35,7 +35,7 @@ test.test_zipfile._path.test_path.TestPath.test_open_extant_directory @ darwin-a
 test.test_zipfile._path.test_path.TestPath.test_open_missing_directory @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile._path.test_path.TestPath.test_open_write @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile._path.test_path.TestPath.test_parent @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_zipfile._path.test_path.TestPath.test_pathlike_construction @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
+test.test_zipfile._path.test_path.TestPath.test_pathlike_construction @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_zipfile._path.test_path.TestPath.test_pickle @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 # Times out on Windows in CI
 !test.test_zipfile._path.test_path.TestPath.test_pickle @ win32-AMD64,win32-AMD64-github

@@ -244,7 +244,7 @@ test.test_statistics.TestNormalDistPython.test_equality @ darwin-arm64,linux-aar
 test.test_statistics.TestNormalDistPython.test_hashability @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_statistics.TestNormalDistPython.test_instantiation_and_attributes @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_statistics.TestNormalDistPython.test_inv_cdf @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_statistics.TestNormalDistPython.test_overlap @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
+test.test_statistics.TestNormalDistPython.test_overlap @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_statistics.TestNormalDistPython.test_pdf @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_statistics.TestNormalDistPython.test_pickle @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_statistics.TestNormalDistPython.test_properties @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

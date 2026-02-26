@@ -47,6 +47,7 @@ from pathlib import Path
 
 DIR = Path(__file__).parent.parent
 DOWNSTREAM_TESTS = {}
+CI = os.environ.get('CI', '').lower() in ('1', 'true')
 
 
 def run(*args, check=True, **kwargs):
@@ -55,6 +56,10 @@ def run(*args, check=True, **kwargs):
 
 def run_in_venv(venv, cmd, **kwargs):
     return run(['sh', '-c', f". {venv}/bin/activate && {shlex.join(cmd)}"], **kwargs)
+
+
+def replace_in_file(path: Path, pattern, replacement):
+    path.write_text(re.sub(pattern, replacement, path.read_text()))
 
 
 def downstream_test(name):
@@ -129,15 +134,14 @@ def downstream_test_virtualenv(graalpy, testdir):
     env['CI_RUN'] = '1'
     # Need to avoid pulling in graalpy seeder
     env['PIP_GRAALPY_DISABLE_PATCHING'] = '1'
-    run_in_venv(venv, ['pip', 'install', f'{src}[test]'], env=env)
+    # Update to pip that supports --group
+    run_in_venv(venv, ['pip', 'install', 'pip>=26'], env=env)
+    run_in_venv(venv, ['pip', 'install', '--group=test', '.'], env=env, cwd=src)
     # Allow newer CPython for building zipapp, we don't have 3.11 in the CI anymore
-    run(
-        [
-            'sed', '-i',
-            's/version in range(11, 6, -1)/version in range(14, 6, -1)/',
-            'tests/integration/test_zipapp.py',
-        ],
-        cwd=src,
+    replace_in_file(
+        src / 'tests/integration/test_zipapp.py',
+        r'version in range\(11, 6, -1\)',
+        'version in range(14, 6, -1)',
     )
     # Don't activate the venv, it interferes with the test
     run([
@@ -194,12 +198,12 @@ def downstream_test_cython(graalpy, testdir):
     env["PYTHON_VERSION"] = "graalpy"
     env["BACKEND"] = "c"
     run([graalpy, '-m', 'venv', str(venv)])
-    if os.environ.get('CI', '').lower() not in ('1', 'true'):
-        run(['sed', '-i', r's/^\s*sudo/#&/', 'Tools/ci-run.sh'], cwd=src)
+    if not CI:
+        replace_in_file(src / 'Tools/ci-run.sh', r'^\s*sudo', '# sudo')
         try:
             run([graalpy, '--version', '--experimental-options', '--engine.Compilation=false'])
         except subprocess.CalledProcessError:
-            run(['sed', '-i', r's/--engine.Compilation=false//g', 'Tools/ci-run.sh'], cwd=src)
+            replace_in_file(src / 'Tools/ci-run.sh', r'--engine\.Compilation=false', '')
     run_in_venv(venv, ["bash", "./Tools/ci-run.sh"], cwd=src, env=env)
 
 

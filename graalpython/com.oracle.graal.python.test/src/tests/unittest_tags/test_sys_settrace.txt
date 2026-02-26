@@ -54,7 +54,7 @@ test.test_sys_settrace.SkipLineEventsTraceTestCase.test_notrace_lambda @ darwin-
 test.test_sys_settrace.SkipLineEventsTraceTestCase.test_set_and_retrieve_func @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.SkipLineEventsTraceTestCase.test_set_and_retrieve_none @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.SkipLineEventsTraceTestCase.test_settrace_error @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_sys_settrace.SkipLineEventsTraceTestCase.test_tracing_exception_raised_in_with @ darwin-arm64,linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
+test.test_sys_settrace.SkipLineEventsTraceTestCase.test_tracing_exception_raised_in_with @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_sys_settrace.SkipLineEventsTraceTestCase.test_try_except_no_exception @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.SkipLineEventsTraceTestCase.test_try_except_star_exception_caught @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.SkipLineEventsTraceTestCase.test_try_except_star_exception_not_caught @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -63,8 +63,8 @@ test.test_sys_settrace.SkipLineEventsTraceTestCase.test_try_except_star_named_ex
 test.test_sys_settrace.SkipLineEventsTraceTestCase.test_try_except_star_named_no_exception @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.SkipLineEventsTraceTestCase.test_try_except_star_nested @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.SkipLineEventsTraceTestCase.test_try_except_star_no_exception @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-!test.test_sys_settrace.SkipLineEventsTraceTestCase.test_try_except_with_wrong_type @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sys_settrace.SkipLineEventsTraceTestCase.test_try_except_with_wrong_type @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
+!test.test_sys_settrace.SkipLineEventsTraceTestCase.test_try_except_with_wrong_type @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sys_settrace.SkipLineEventsTraceTestCase.test_try_exception_in_else @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.SkipLineEventsTraceTestCase.test_try_in_try @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.SkipLineEventsTraceTestCase.test_try_in_try_with_exception @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -77,8 +77,8 @@ test.test_sys_settrace.TestLinesAfterTraceStarted.test_02_arigo1 @ darwin-arm64,
 test.test_sys_settrace.TestLinesAfterTraceStarted.test_02_arigo2 @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TestLinesAfterTraceStarted.test_03_one_instr @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TestLinesAfterTraceStarted.test_04_no_pop_blocks @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-!test.test_sys_settrace.TestLinesAfterTraceStarted.test_05_no_pop_tops @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sys_settrace.TestLinesAfterTraceStarted.test_05_no_pop_tops @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
+!test.test_sys_settrace.TestLinesAfterTraceStarted.test_05_no_pop_tops @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sys_settrace.TestLinesAfterTraceStarted.test_06_call @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TestLinesAfterTraceStarted.test_07_raise @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TestLinesAfterTraceStarted.test_08_settrace_and_return @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -87,8 +87,8 @@ test.test_sys_settrace.TestLinesAfterTraceStarted.test_10_ireturn @ darwin-arm64
 test.test_sys_settrace.TestLinesAfterTraceStarted.test_11_tightloop @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TestLinesAfterTraceStarted.test_12_tighterloop @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TestLinesAfterTraceStarted.test_14_onliner_if @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-!test.test_sys_settrace.TestLinesAfterTraceStarted.test_15_loops @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sys_settrace.TestLinesAfterTraceStarted.test_15_loops @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
+!test.test_sys_settrace.TestLinesAfterTraceStarted.test_15_loops @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sys_settrace.TestLinesAfterTraceStarted.test_16_blank_lines @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TestLinesAfterTraceStarted.test_17_none_f_trace @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TestLinesAfterTraceStarted.test_18_except_with_name @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -104,8 +104,8 @@ test.test_sys_settrace.TestLinesAfterTraceStarted.test_class_creation_with_decor
 test.test_sys_settrace.TestLinesAfterTraceStarted.test_continue_through_finally @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TestLinesAfterTraceStarted.test_events @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TestLinesAfterTraceStarted.test_finally_with_conditional @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-!test.test_sys_settrace.TestLinesAfterTraceStarted.test_flow_converges_on_same_line @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sys_settrace.TestLinesAfterTraceStarted.test_flow_converges_on_same_line @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
+!test.test_sys_settrace.TestLinesAfterTraceStarted.test_flow_converges_on_same_line @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sys_settrace.TestLinesAfterTraceStarted.test_if_break @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TestLinesAfterTraceStarted.test_if_false_in_try_except @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TestLinesAfterTraceStarted.test_if_false_in_with @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -122,7 +122,7 @@ test.test_sys_settrace.TestLinesAfterTraceStarted.test_notrace_lambda @ darwin-a
 test.test_sys_settrace.TestLinesAfterTraceStarted.test_set_and_retrieve_func @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TestLinesAfterTraceStarted.test_set_and_retrieve_none @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TestLinesAfterTraceStarted.test_settrace_error @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_sys_settrace.TestLinesAfterTraceStarted.test_tracing_exception_raised_in_with @ darwin-arm64,linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
+test.test_sys_settrace.TestLinesAfterTraceStarted.test_tracing_exception_raised_in_with @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_sys_settrace.TestLinesAfterTraceStarted.test_try_except_no_exception @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TestLinesAfterTraceStarted.test_try_except_star_exception_caught @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TestLinesAfterTraceStarted.test_try_except_star_exception_not_caught @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -153,8 +153,8 @@ test.test_sys_settrace.TestSetLocalTrace.test_10_ireturn @ darwin-arm64,linux-aa
 test.test_sys_settrace.TestSetLocalTrace.test_11_tightloop @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TestSetLocalTrace.test_12_tighterloop @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TestSetLocalTrace.test_14_onliner_if @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-!test.test_sys_settrace.TestSetLocalTrace.test_15_loops @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sys_settrace.TestSetLocalTrace.test_15_loops @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
+!test.test_sys_settrace.TestSetLocalTrace.test_15_loops @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sys_settrace.TestSetLocalTrace.test_16_blank_lines @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TestSetLocalTrace.test_17_none_f_trace @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TestSetLocalTrace.test_18_except_with_name @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -162,10 +162,10 @@ test.test_sys_settrace.TestSetLocalTrace.test_19_except_with_finally @ darwin-ar
 test.test_sys_settrace.TestSetLocalTrace.test_21_repeated_pass @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TestSetLocalTrace.test_break_through_finally @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TestSetLocalTrace.test_break_to_break @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-!test.test_sys_settrace.TestSetLocalTrace.test_break_to_continue1 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sys_settrace.TestSetLocalTrace.test_break_to_continue1 @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
-!test.test_sys_settrace.TestSetLocalTrace.test_break_to_continue2 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+!test.test_sys_settrace.TestSetLocalTrace.test_break_to_continue1 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sys_settrace.TestSetLocalTrace.test_break_to_continue2 @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
+!test.test_sys_settrace.TestSetLocalTrace.test_break_to_continue2 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sys_settrace.TestSetLocalTrace.test_class_creation_with_decorator @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TestSetLocalTrace.test_continue_through_finally @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TestSetLocalTrace.test_finally_with_conditional @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -187,7 +187,7 @@ test.test_sys_settrace.TestSetLocalTrace.test_notrace_lambda @ darwin-arm64,linu
 test.test_sys_settrace.TestSetLocalTrace.test_set_and_retrieve_func @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TestSetLocalTrace.test_set_and_retrieve_none @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TestSetLocalTrace.test_settrace_error @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_sys_settrace.TestSetLocalTrace.test_tracing_exception_raised_in_with @ darwin-arm64,linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
+test.test_sys_settrace.TestSetLocalTrace.test_tracing_exception_raised_in_with @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_sys_settrace.TestSetLocalTrace.test_try_except_no_exception @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TestSetLocalTrace.test_try_except_star_exception_caught @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TestSetLocalTrace.test_try_except_star_exception_not_caught @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -228,14 +228,15 @@ test.test_sys_settrace.TraceTestCase.test_19_except_with_finally @ darwin-arm64,
 test.test_sys_settrace.TraceTestCase.test_21_repeated_pass @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TraceTestCase.test_break_through_finally @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TraceTestCase.test_break_to_break @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-!test.test_sys_settrace.TraceTestCase.test_break_to_continue1 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sys_settrace.TraceTestCase.test_break_to_continue1 @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
+!test.test_sys_settrace.TraceTestCase.test_break_to_continue1 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
+test.test_sys_settrace.TraceTestCase.test_break_to_continue2 @ linux-aarch64-github,linux-x86_64-github
 !test.test_sys_settrace.TraceTestCase.test_break_to_continue2 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sys_settrace.TraceTestCase.test_class_creation_with_decorator @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TraceTestCase.test_continue_through_finally @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TraceTestCase.test_finally_with_conditional @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-!test.test_sys_settrace.TraceTestCase.test_flow_converges_on_same_line @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sys_settrace.TraceTestCase.test_flow_converges_on_same_line @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
+!test.test_sys_settrace.TraceTestCase.test_flow_converges_on_same_line @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sys_settrace.TraceTestCase.test_if_break @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TraceTestCase.test_if_false_in_try_except @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TraceTestCase.test_if_false_in_with @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
@@ -252,7 +253,7 @@ test.test_sys_settrace.TraceTestCase.test_notrace_lambda @ darwin-arm64,linux-aa
 test.test_sys_settrace.TraceTestCase.test_set_and_retrieve_func @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TraceTestCase.test_set_and_retrieve_none @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TraceTestCase.test_settrace_error @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
-test.test_sys_settrace.TraceTestCase.test_tracing_exception_raised_in_with @ darwin-arm64,linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
+test.test_sys_settrace.TraceTestCase.test_tracing_exception_raised_in_with @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_sys_settrace.TraceTestCase.test_try_except_no_exception @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TraceTestCase.test_try_except_star_exception_caught @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TraceTestCase.test_try_except_star_exception_not_caught @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
