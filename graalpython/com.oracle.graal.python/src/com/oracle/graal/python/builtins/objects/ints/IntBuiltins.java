@@ -2632,19 +2632,14 @@ public final class IntBuiltins extends PythonBuiltins {
                 throw raiseNode.raise(inliningTarget, PythonErrorType.ValueError, ErrorMessages.BYTEORDER_MUST_BE_LITTLE_OR_BIG);
             }
             byte[] bytes;
-            Object bytesObj;
             try {
-                bytesObj = callBytes.executeObject(frame, object);
-            } catch (SpecialMethodNotFound e) {
-                bytesObj = PNone.NO_VALUE;
-            }
-            if (bytesObj != PNone.NO_VALUE) {
+                Object bytesObj = callBytes.executeObject(frame, object);
                 hasBytesProfile.enter(inliningTarget);
                 if (!(bytesObj instanceof PBytes)) {
                     throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.RETURNED_NONBYTES, T___BYTES__);
                 }
                 bytes = bufferLib.getCopiedByteArray(bytesObj);
-            } else {
+            } catch (SpecialMethodNotFound e) {
                 bytes = bytesFromObject.execute(frame, object);
             }
             Object result = fromByteArray.execute(inliningTarget, bytes, littleEndian, signed);

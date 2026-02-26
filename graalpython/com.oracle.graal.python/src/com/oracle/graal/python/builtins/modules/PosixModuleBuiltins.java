@@ -3492,9 +3492,6 @@ public final class PosixModuleBuiltins extends PythonBuiltins {
             try {
                 pathObject = callFSPath.executeObject(frame, value);
             } catch (SpecialMethodNotFound e) {
-                pathObject = PNone.NO_VALUE;
-            }
-            if (pathObject == PNone.NO_VALUE) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.S_S_SHOULD_BE_S_NOT_P, functionNameWithColon, argumentName,
                                 getAllowedTypes(), value);
             }

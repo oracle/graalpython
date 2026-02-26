@@ -43,7 +43,6 @@ package com.oracle.graal.python.nodes.util;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -95,13 +94,8 @@ public abstract class CoerceToComplexNode extends PNodeWithContext {
                     @Cached PyFloatAsDoubleNode asDoubleNode,
                     @Bind PythonLanguage language,
                     @Cached PRaiseNode raiseNode) {
-        Object result;
         try {
-            result = callComplexFunc.executeObject(frame, x);
-        } catch (SpecialMethodNotFound e) {
-            result = PNone.NO_VALUE;
-        }
-        if (result != PNone.NO_VALUE) {
+            Object result = callComplexFunc.executeObject(frame, x);
             if (result instanceof PComplex) {
                 // TODO we need pass here deprecation warning
                 // DeprecationWarning: __complex__ returned non-complex (type %p).
@@ -109,10 +103,10 @@ public abstract class CoerceToComplexNode extends PNodeWithContext {
                 // deprecated,
                 // and may be removed in a future version of Python.
                 return (PComplex) result;
-            } else {
-                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.SHOULD_RETURN, "__complex__", "complex object");
             }
+            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.SHOULD_RETURN, "__complex__", "complex object");
+        } catch (SpecialMethodNotFound e) {
+            return PFactory.createComplex(language, asDoubleNode.execute(frame, inliningTarget, x), 0);
         }
-        return PFactory.createComplex(language, asDoubleNode.execute(frame, inliningTarget, x), 0);
     }
 }

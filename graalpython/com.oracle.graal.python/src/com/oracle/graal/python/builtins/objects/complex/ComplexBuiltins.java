@@ -621,7 +621,7 @@ public final class ComplexBuiltins extends PythonBuiltins {
             try {
                 return callComplexNode.executeObject(frame, object);
             } catch (SpecialMethodNotFound e) {
-                return PNone.NO_VALUE;
+                return null;
             }
         }
 
@@ -654,7 +654,7 @@ public final class ComplexBuiltins extends PythonBuiltins {
                                         object, "__complex__", "complex", result, "complex");
                     }
                     return (PComplex) result;
-                } else if (result != PNone.NO_VALUE) {
+                } else if (result != null) {
                     throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.COMPLEX_RETURNED_NON_COMPLEX, result);
                 }
                 if (object instanceof PComplex) {

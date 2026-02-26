@@ -1934,16 +1934,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached("create(T___ROUND__)") LookupAndCallUnaryNode callRound,
                         @Shared @Cached PRaiseNode raiseNode) {
-            Object result;
             try {
-                result = callRound.executeObject(frame, x);
+                return callRound.executeObject(frame, x);
             } catch (SpecialMethodNotFound e) {
-                result = PNone.NO_VALUE;
-            }
-            if (result == PNone.NO_VALUE) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.TYPE_DOESNT_DEFINE_METHOD, x, T___ROUND__);
             }
-            return result;
         }
 
         @Specialization(guards = "!isPNone(n)")

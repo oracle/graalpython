@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -187,7 +187,7 @@ def test_createFromObjects():
     c = complex(CP1(5+5j), 7+7j)
     assert c == complex(-2, 12)
     assert type(c) == complex
-    
+
     c = complex(CP1(5+5j), CP1(7+7j))
     assert c == complex(-2, 12)
     assert type(c) == complex
@@ -203,7 +203,7 @@ def test_createFromObjects():
     c = CP1(CP1(5+5j), 7+7j)
     assert c == complex(-2, 12)
     assert type(c) == CP1
-    
+
     c = CP1(CP1(5+5j), CP1(7+7j))
     assert c == complex(-2, 12)
     assert type(c) == CP1
@@ -215,7 +215,7 @@ def test_createFromObjects():
     c = CP1(CP2(5+5j), 7+7j)
     assert c == complex(-7, 49)
     assert type(c) == CP1
-    
+
     c = CP1(CP2(5+5j), CP2(7+7j))
     assert c == complex(-7, 49)
     assert type(c) == CP1
@@ -227,7 +227,7 @@ def test_createFromObjects():
     c = complex(CP2(5+5j), 7+7j)
     assert c == complex(-7, 49)
     assert type(c) == complex
-    
+
     c = complex(CP2(5+5j), CP2(7+7j))
     assert c == complex(-7, 49)
     assert type(c) == complex
@@ -243,7 +243,7 @@ def test_createFromObjects():
     c = CP2(CP2(5+5j), 7+7j)
     assert c == complex(-7, 49)
     assert type(c) == CP2
-    
+
     c = CP2(CP2(5+5j), CP2(7+7j))
     assert c == complex(-7, 49)
     assert type(c) == CP2
@@ -251,6 +251,17 @@ def test_createFromObjects():
     assert complex(CP3()) == complex(6.0)
     if sys.version_info >= (3, 8, 0):
         assert complex(CP4()) == complex(123)
+
+
+def test_complex_subclass_without_dunder_complex_uses_fallback():
+    class SubComplex(complex):
+        pass
+
+    value = SubComplex(2 + 3j)
+    result = complex(value)
+
+    assert result == 2 + 3j
+    assert type(result) is complex
 
 class ComplexTest(unittest.TestCase):
 
@@ -442,7 +453,7 @@ class ComplexTest(unittest.TestCase):
                 return None
 
         self.assertEqual(complex(complex0(1j)), 42j)
-        # TODO we are not able to throw warning now. 
+        # TODO we are not able to throw warning now.
 #        with self.assertWarns(DeprecationWarning):
         self.assertEqual(complex(complex1(1j)), 2j)
         self.assertRaises(TypeError, complex, complex2(1j))

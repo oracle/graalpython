@@ -2186,16 +2186,11 @@ public final class MathModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached("create(T___TRUNC__)") LookupAndCallUnaryNode callTrunc,
                         @Cached PRaiseNode raiseNode) {
-            Object result;
             try {
-                result = callTrunc.executeObject(frame, obj);
+                return callTrunc.executeObject(frame, obj);
             } catch (SpecialMethodNotFound e) {
-                result = PNone.NO_VALUE;
-            }
-            if (result == PNone.NO_VALUE) {
                 throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.TYPE_DOESNT_DEFINE_METHOD, obj, "__trunc__");
             }
-            return result;
         }
     }
 
