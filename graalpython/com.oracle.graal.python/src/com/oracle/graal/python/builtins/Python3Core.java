@@ -98,6 +98,7 @@ import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixShMemModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixSubprocessModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.PwdModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.pyexpat.PyExpatModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.QueueModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.RandomModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ReadlineModuleBuiltins;
@@ -364,6 +365,7 @@ import com.oracle.graal.python.builtins.objects.traceback.TracebackBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.InstantiableStructSequenceBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequenceBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
+import com.oracle.graal.python.builtins.modules.pyexpat.XMLParserBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleGetterBuiltins;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
@@ -658,8 +660,10 @@ public abstract class Python3Core {
                         new JavaModuleBuiltins(),
                         new JArrayModuleBuiltins(),
                         new CSVModuleBuiltins(),
+                        new PyExpatModuleBuiltins(),
                         new JSONModuleBuiltins(),
                         new SREModuleBuiltins(),
+                        new XMLParserBuiltins(),
                         new AstModuleBuiltins(),
                         PythonImageBuildOptions.WITHOUT_NATIVE_POSIX && (PythonImageBuildOptions.WITHOUT_JAVA_INET || !env.isSocketIOAllowed()) ? null : new SelectModuleBuiltins(),
                         PythonImageBuildOptions.WITHOUT_NATIVE_POSIX && (PythonImageBuildOptions.WITHOUT_JAVA_INET || !env.isSocketIOAllowed()) ? null : new SocketModuleBuiltins(),

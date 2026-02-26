@@ -52,6 +52,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.J_EXTEND;
 import static com.oracle.graal.python.nodes.BuiltinNames.J___GRAALPYTHON__;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_FORMAT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_MTIME;
+import static com.oracle.graal.python.nodes.BuiltinNames.T_PYEXPAT;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SHA3;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SIZE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T__IMP;
@@ -928,6 +929,15 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
         @Specialization
         TruffleString sha3ModuleBackend() {
             return getContext().lookupBuiltinModule(T_SHA3) == null ? T_NATIVE : T_JAVA;
+        }
+    }
+
+    @Builtin(name = "pyexpat_module_backend", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    public abstract static class PyExpatModuleBackendNode extends PythonBuiltinNode {
+        @Specialization
+        TruffleString pyexpatModuleBackend() {
+            return getContext().lookupBuiltinModule(T_PYEXPAT) == null ? T_NATIVE : T_JAVA;
         }
     }
 

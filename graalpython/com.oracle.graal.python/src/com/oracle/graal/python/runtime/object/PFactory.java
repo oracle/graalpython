@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -40,6 +40,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixFileHandle;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2Object;
+import com.oracle.graal.python.builtins.modules.pyexpat.PXMLParser;
 import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteCodec;
 import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteCodecObject;
 import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteIncrementalDecoderObject;
@@ -1456,6 +1457,11 @@ public final class PFactory {
                     TruffleString itemSeparator,
                     boolean sortKeys, boolean skipKeys, boolean allowNan, FastEncode fastEncode) {
         return new PJSONEncoder(cls, shape, markers, defaultFn, encoder, indent, keySeparator, itemSeparator, sortKeys, skipKeys, allowNan, fastEncode);
+    }
+
+    @TruffleBoundary
+    public static PXMLParser createXMLParser(Object cls, Shape shape, TruffleString namespaceSeparator) {
+        return new PXMLParser(cls, shape, namespaceSeparator);
     }
 
     public static PDeque createDeque(PythonLanguage language) {

@@ -397,6 +397,7 @@ suite = {
             "requires": [
                 "java.logging",
                 "java.management",
+                "java.xml",
                 "jdk.management",
                 "jdk.unsupported",
                 "jdk.security.auth",

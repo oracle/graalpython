@@ -29,6 +29,7 @@ import static com.oracle.graal.python.builtins.modules.SysModuleBuiltins.INT_MAX
 import static com.oracle.graal.python.nodes.StringLiterals.T_DEFAULT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_JAVA;
+import static com.oracle.graal.python.nodes.StringLiterals.T_NATIVE;
 import static com.oracle.graal.python.nodes.StringLiterals.T_SPACE;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -240,6 +241,9 @@ public final class PythonOptions {
 
     @EngineOption @Option(category = OptionCategory.USER, help = "Choose the backend for the Zlib, Bz2, and LZMA modules.", usageSyntax = "java|native", stability = OptionStability.STABLE) //
     public static final OptionKey<TruffleString> CompressionModulesBackend = new OptionKey<>(T_JAVA, TS_OPTION_TYPE);
+
+    @EngineOption @Option(category = OptionCategory.USER, help = "Choose the backend for the pyexpat module.", usageSyntax = "java|native", stability = OptionStability.STABLE) //
+    public static final OptionKey<TruffleString> PyExpatModuleBackend = new OptionKey<>(T_NATIVE, TS_OPTION_TYPE);
 
     @Option(category = OptionCategory.USER, help = "Install default signal handlers on startup", usageSyntax = "true|false", stability = OptionStability.STABLE) //
     public static final OptionKey<Boolean> InstallSignalHandlers = new OptionKey<>(false);
