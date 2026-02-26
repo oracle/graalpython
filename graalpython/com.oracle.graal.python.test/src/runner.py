@@ -546,7 +546,7 @@ def write_tags(test_file: 'TestFile', tags: typing.Iterable['Tag']):
         tag_file.unlink(missing_ok=True)
         return
     with open(tag_file, 'w') as f:
-        for tag in sorted(tags, key=lambda t: t.test_id.test_name):
+        for tag in sorted(tags, key=lambda t: (t.test_id.test_name, t.is_exclusion)):
             f.write(f'{tag}\n')
 
 
@@ -1207,6 +1207,7 @@ def collect(all_specifiers: list[TestSpecifier], *, use_tags=False, ignore=None,
             to_run.append(collected)
     return to_run
 
+
 @dataclass(frozen=True)
 class Tag:
     test_id: TestId
@@ -1230,7 +1231,6 @@ class Tag:
             if keys == self.keys:
                 return self
             return Tag(self.test_id, keys, is_exclusion=self.is_exclusion)
-
 
     def __str__(self):
         s = ''
@@ -1266,7 +1266,6 @@ def read_tags(test_file: TestFile, allow_exclusions=False) -> list[Tag]:
                 if test.startswith('!'):
                     is_exclusion = True
                     test = test.removeprefix('!')
-
 
                 if not keys and not is_exclusion:
                     log(f'WARNING: invalid tag {test}: missing platform keys')
