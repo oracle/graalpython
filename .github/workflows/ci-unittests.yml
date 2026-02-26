@@ -18,7 +18,7 @@ jobs:
     needs: build-standalone-artifacts
     uses: ./.github/workflows/ci-matrix-gen.yml
     with:
-      jobs_to_run: python-tagged-unittest-gate #^(?!python-svm-build|style).*-gate.*$
+      jobs_to_run: ^(?!python-svm-build|style).*-gate.*$
       export_test_reports: true
 
   collect-reports:
