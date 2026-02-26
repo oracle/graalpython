@@ -69,6 +69,7 @@ public final class PXMLParser extends PythonBuiltinObject {
     boolean foreignDTD;
     int paramEntityParsing = XML_PARAM_ENTITY_PARSING_NEVER;
     boolean reparseDeferralEnabled = true;
+    int deliveredEventCount;
 
     byte[] data = new byte[0];
 

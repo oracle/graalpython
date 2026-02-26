@@ -46,6 +46,7 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.ByteArrayInputStream;
+import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -54,6 +55,8 @@ import java.util.List;
 import javax.xml.parsers.SAXParserFactory;
 
 import org.xml.sax.Attributes;
+import org.xml.sax.InputSource;
+import org.xml.sax.Locator;
 import org.xml.sax.SAXParseException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.ext.DefaultHandler2;
@@ -112,6 +115,9 @@ public final class XMLParserBuiltins extends PythonBuiltins {
     private static final TruffleString T_CURRENT_BYTE_INDEX = tsLiteral("CurrentByteIndex");
     private static final TruffleString T_CURRENT_LINE_NUMBER = tsLiteral("CurrentLineNumber");
     private static final TruffleString T_CURRENT_COLUMN_NUMBER = tsLiteral("CurrentColumnNumber");
+    private static final TruffleString T_ERROR_BYTE_INDEX = tsLiteral("ErrorByteIndex");
+    private static final TruffleString T_ERROR_LINE_NUMBER = tsLiteral("ErrorLineNumber");
+    private static final TruffleString T_ERROR_COLUMN_NUMBER = tsLiteral("ErrorColumnNumber");
     private static final TruffleString T_READ = tsLiteral("read");
 
     @Override
@@ -143,6 +149,9 @@ public final class XMLParserBuiltins extends PythonBuiltins {
         parser.setAttribute(T_CURRENT_BYTE_INDEX, 0);
         parser.setAttribute(T_CURRENT_LINE_NUMBER, 1);
         parser.setAttribute(T_CURRENT_COLUMN_NUMBER, 0);
+        parser.setAttribute(T_ERROR_BYTE_INDEX, 0);
+        parser.setAttribute(T_ERROR_LINE_NUMBER, 1);
+        parser.setAttribute(T_ERROR_COLUMN_NUMBER, 0);
         return parser;
     }
 
@@ -171,10 +180,6 @@ public final class XMLParserBuiltins extends PythonBuiltins {
             byte[] merged = Arrays.copyOf(self.data, self.data.length + chunk.length);
             System.arraycopy(chunk, 0, merged, self.data.length, chunk.length);
             self.data = merged;
-
-            if (!isFinal && self.reparseDeferralEnabled) {
-                return 1;
-            }
 
             try {
                 Object savedState = BoundaryCallContext.enter(frame, boundaryCallData);
@@ -330,142 +335,209 @@ public final class XMLParserBuiltins extends PythonBuiltins {
 
     @TruffleBoundary
     private static void parseNow(PXMLParser parser, boolean swallowErrors, BoundaryCallData boundaryCallData) {
-        try {
-            final class Handler extends DefaultHandler2 {
-                int line = 1;
-                int col;
+        final class Handler extends DefaultHandler2 {
+            int line = 1;
+            int col;
+            int eventOrdinal;
+            Locator locator;
+            boolean keepCurrentPositionForNextCall;
 
-                Handler() {
-                    if (parser.foreignDTD && parser.paramEntityParsing == PXMLParser.XML_PARAM_ENTITY_PARSING_ALWAYS) {
-                        call("ExternalEntityRefHandler", PNone.NONE, PNone.NONE, PNone.NONE, PNone.NONE);
-                    }
-                }
+            @Override
+            public void setDocumentLocator(Locator locator) {
+                this.locator = locator;
+            }
 
-                @Override
-                public void startPrefixMapping(String prefix, String uri) {
-                    call("StartNamespaceDeclHandler", toTs(prefix), toTs(uri));
-                }
-
-                @Override
-                public void endPrefixMapping(String prefix) {
-                    call("EndNamespaceDeclHandler", toTs(prefix));
-                }
-
-                @Override
-                public void processingInstruction(String target, String data) {
-                    call("ProcessingInstructionHandler", toTs(target), toTs(data));
-                }
-
-                @Override
-                public void startElement(String uri, String localName, String qName, Attributes attrs) {
-                    Object attrsObj;
-                    if (isTrue(T_ORDERED_ATTRIBUTES)) {
-                        List<Object> l = new ArrayList<>(attrs.getLength() * 2);
-                        for (int i = 0; i < attrs.getLength(); i++) {
-                            l.add(toTs(attrs.getQName(i)));
-                            l.add(toTs(attrs.getValue(i)));
-                        }
-                        attrsObj = PFactory.createList(PythonLanguage.get(null), l.toArray());
-                    } else {
-                        PDict d = PFactory.createDict(PythonLanguage.get(null));
-                        for (int i = 0; i < attrs.getLength(); i++) {
-                            d.setItem(toTs(attrs.getQName(i)), toTs(attrs.getValue(i)));
-                        }
-                        attrsObj = d;
-                    }
-                    call("StartElementHandler", toTs(elementName(uri, localName, qName)), attrsObj);
-                }
-
-                @Override
-                public void endElement(String uri, String localName, String qName) {
-                    call("EndElementHandler", toTs(elementName(uri, localName, qName)));
-                }
-
-                @Override
-                public void characters(char[] ch, int start, int length) {
-                    if (length > 0) {
-                        call("CharacterDataHandler", toTs(new String(ch, start, length)));
-                    }
-                }
-
-                @Override
-                public void comment(char[] ch, int start, int length) {
-                    call("CommentHandler", toTs(new String(ch, start, length)));
-                }
-
-                @Override
-                public void startCDATA() {
-                    call("StartCdataSectionHandler");
-                }
-
-                @Override
-                public void endCDATA() {
-                    call("EndCdataSectionHandler");
-                }
-
-                @Override
-                public void skippedEntity(String name) {
-                    call("SkippedEntityHandler", toTs(name), 0);
-                }
-
-                private String elementName(String uri, String localName, String qName) {
-                    if (parser.namespaceSeparator != null && uri != null && !uri.isEmpty()) {
-                        return uri + parser.namespaceSeparator.toJavaStringUncached() + localName;
-                    }
-                    return qName == null || qName.isEmpty() ? localName : qName;
-                }
-
-                private boolean isTrue(TruffleString attr) {
-                    Object o = parser.getAttribute(attr);
-                    return o instanceof Boolean b && b;
-                }
-
-                private void call(String handlerName, Object... args) {
-                    Object cb = parser.getAttribute(toTruffleStringUncached(handlerName));
-                    if (cb != PNone.NO_VALUE) {
-                        Node prevEncapsulatingNode = EncapsulatingNodeReference.getCurrent().set(boundaryCallData);
-                        try {
-                            PyObjectCallMethodObjArgs.executeUncached(cb, tsLiteral("__call__"), args);
-                        } catch (PException e) {
-                            throw e;
-                        } finally {
-                            EncapsulatingNodeReference.getCurrent().set(prevEncapsulatingNode);
-                        }
-                    }
-                }
-
-                private TruffleString toTs(String s) {
-                    return toTruffleStringUncached(s == null ? "" : s);
+            Handler() {
+                if (parser.foreignDTD && parser.paramEntityParsing == PXMLParser.XML_PARAM_ENTITY_PARSING_ALWAYS) {
+                    call("ExternalEntityRefHandler", PNone.NONE, PNone.NONE, PNone.NONE, PNone.NONE);
                 }
             }
 
+            @Override
+            public void startPrefixMapping(String prefix, String uri) {
+                call("StartNamespaceDeclHandler", toTs(prefix), toTs(uri));
+            }
+
+            @Override
+            public void endPrefixMapping(String prefix) {
+                call("EndNamespaceDeclHandler", toTs(prefix));
+            }
+
+            @Override
+            public void processingInstruction(String target, String data) {
+                call("ProcessingInstructionHandler", toTs(target), toTs(data));
+            }
+
+            @Override
+            public void startElement(String uri, String localName, String qName, Attributes attrs) {
+                Object attrsObj;
+                if (isTrue(T_ORDERED_ATTRIBUTES)) {
+                    List<Object> l = new ArrayList<>(attrs.getLength() * 2);
+                    for (int i = 0; i < attrs.getLength(); i++) {
+                        l.add(toTs(attributeName(attrs, i)));
+                        l.add(toTs(attrs.getValue(i)));
+                    }
+                    attrsObj = PFactory.createList(PythonLanguage.get(null), l.toArray());
+                } else {
+                    PDict d = PFactory.createDict(PythonLanguage.get(null));
+                    for (int i = 0; i < attrs.getLength(); i++) {
+                        d.setItem(toTs(attributeName(attrs, i)), toTs(attrs.getValue(i)));
+                    }
+                    attrsObj = d;
+                }
+                call("StartElementHandler", toTs(elementName(uri, localName, qName)), attrsObj);
+            }
+
+            @Override
+            public void endElement(String uri, String localName, String qName) {
+                call("EndElementHandler", toTs(elementName(uri, localName, qName)));
+            }
+
+            @Override
+            public void characters(char[] ch, int start, int length) {
+                if (length > 0) {
+                    call("CharacterDataHandler", toTs(new String(ch, start, length)));
+                }
+            }
+
+            @Override
+            public void comment(char[] ch, int start, int length) {
+                call("CommentHandler", toTs(new String(ch, start, length)));
+            }
+
+            @Override
+            public void startCDATA() {
+                call("StartCdataSectionHandler");
+            }
+
+            @Override
+            public void endCDATA() {
+                call("EndCdataSectionHandler");
+            }
+
+            @Override
+            public void skippedEntity(String name) {
+                call("SkippedEntityHandler", toTs(name), 0);
+                if (locator != null) {
+                    int entityLen = name.length() + 2; // '&' + ';'
+                    line = Math.max(1, locator.getLineNumber());
+                    col = Math.max(0, locator.getColumnNumber() - 1 - entityLen);
+                    parser.currentLineNumber = line;
+                    parser.currentColumnNumber = col;
+                    parser.setAttribute(T_CURRENT_LINE_NUMBER, line);
+                    parser.setAttribute(T_CURRENT_COLUMN_NUMBER, col);
+                    parser.setAttribute(T_ERROR_LINE_NUMBER, line);
+                    parser.setAttribute(T_ERROR_COLUMN_NUMBER, col);
+                }
+                keepCurrentPositionForNextCall = true;
+                call("DefaultHandlerExpand", toTs("&" + name + ";"));
+            }
+
+            private String elementName(String uri, String localName, String qName) {
+                if (parser.namespaceSeparator != null && uri != null && !uri.isEmpty()) {
+                    return uri + parser.namespaceSeparator.toJavaStringUncached() + localName;
+                }
+                return qName == null || qName.isEmpty() ? localName : qName;
+            }
+
+            private String attributeName(Attributes attrs, int i) {
+                String uri = attrs.getURI(i);
+                String localName = attrs.getLocalName(i);
+                String qName = attrs.getQName(i);
+                if (parser.namespaceSeparator != null && uri != null && !uri.isEmpty()) {
+                    return uri + parser.namespaceSeparator.toJavaStringUncached() + localName;
+                }
+                return qName == null || qName.isEmpty() ? localName : qName;
+            }
+
+            private boolean isTrue(TruffleString attr) {
+                Object o = parser.getAttribute(attr);
+                return o instanceof Boolean b && b;
+            }
+
+            private void call(String handlerName, Object... args) {
+                boolean shouldDeliver = eventOrdinal++ >= parser.deliveredEventCount;
+                if (!shouldDeliver) {
+                    return;
+                }
+                if (!keepCurrentPositionForNextCall && locator != null) {
+                    line = Math.max(1, locator.getLineNumber());
+                    col = Math.max(0, locator.getColumnNumber() - 1);
+                    parser.currentLineNumber = line;
+                    parser.currentColumnNumber = col;
+                    parser.setAttribute(T_CURRENT_LINE_NUMBER, line);
+                    parser.setAttribute(T_CURRENT_COLUMN_NUMBER, col);
+                    parser.setAttribute(T_ERROR_LINE_NUMBER, line);
+                    parser.setAttribute(T_ERROR_COLUMN_NUMBER, col);
+                }
+                keepCurrentPositionForNextCall = false;
+                Object cb = parser.getAttribute(toTruffleStringUncached(handlerName));
+                if (cb != PNone.NO_VALUE) {
+                    Node prevEncapsulatingNode = EncapsulatingNodeReference.getCurrent().set(boundaryCallData);
+                    try {
+                        PyObjectCallMethodObjArgs.executeUncached(cb, tsLiteral("__call__"), args);
+                    } catch (PException e) {
+                        throw e;
+                    } finally {
+                        EncapsulatingNodeReference.getCurrent().set(prevEncapsulatingNode);
+                    }
+                }
+            }
+
+            private TruffleString toTs(String s) {
+                return toTruffleStringUncached(s == null ? "" : s);
+            }
+        }
+
+        Handler handler = new Handler();
+        try {
             SAXParserFactory factory = SAXParserFactory.newInstance();
             factory.setNamespaceAware(parser.namespaceSeparator != null);
             XMLReader reader = factory.newSAXParser().getXMLReader();
-            Handler handler = new Handler();
+            try {
+                reader.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+            } catch (Exception ignored) {
+            }
+            reader.setEntityResolver((publicId, systemId) -> new InputSource(new StringReader("")));
             reader.setContentHandler(handler);
             reader.setProperty("http://xml.org/sax/properties/lexical-handler", handler);
             reader.setDTDHandler(handler);
             reader.setErrorHandler(new DefaultHandler());
             reader.parse(new org.xml.sax.InputSource(new ByteArrayInputStream(parser.data)));
+            parser.deliveredEventCount = handler.eventOrdinal;
             parser.currentByteIndex = parser.data.length;
             parser.currentLineNumber = handler.line;
             parser.currentColumnNumber = handler.col;
             parser.setAttribute(T_CURRENT_BYTE_INDEX, parser.currentByteIndex);
             parser.setAttribute(T_CURRENT_LINE_NUMBER, parser.currentLineNumber);
             parser.setAttribute(T_CURRENT_COLUMN_NUMBER, parser.currentColumnNumber);
+            parser.setAttribute(T_ERROR_BYTE_INDEX, parser.currentByteIndex);
+            parser.setAttribute(T_ERROR_LINE_NUMBER, parser.currentLineNumber);
+            parser.setAttribute(T_ERROR_COLUMN_NUMBER, parser.currentColumnNumber);
         } catch (SAXParseException e) {
+            parser.deliveredEventCount = handler.eventOrdinal;
             parser.currentLineNumber = e.getLineNumber();
             parser.currentColumnNumber = Math.max(0, e.getColumnNumber() - 1);
             parser.setAttribute(T_CURRENT_LINE_NUMBER, parser.currentLineNumber);
             parser.setAttribute(T_CURRENT_COLUMN_NUMBER, parser.currentColumnNumber);
+            parser.setAttribute(T_ERROR_BYTE_INDEX, parser.currentByteIndex);
+            parser.setAttribute(T_ERROR_LINE_NUMBER, parser.currentLineNumber);
+            parser.setAttribute(T_ERROR_COLUMN_NUMBER, parser.currentColumnNumber);
             if (!swallowErrors) {
-                throw raiseExpatError(null, toTruffleStringUncached("syntax error"), PXMLParser.XML_ERROR_SYNTAX, parser.currentByteIndex, parser.currentLineNumber,
+                TruffleString msg = toTruffleStringUncached(formatErrorMessage(e));
+                throw raiseExpatError(null, msg, PXMLParser.XML_ERROR_SYNTAX, parser.currentByteIndex, parser.currentLineNumber,
                                 parser.currentColumnNumber);
             }
+        } catch (PException e) {
+            throw e;
         } catch (Exception e) {
+            parser.deliveredEventCount = handler.eventOrdinal;
+            parser.setAttribute(T_ERROR_BYTE_INDEX, parser.currentByteIndex);
+            parser.setAttribute(T_ERROR_LINE_NUMBER, parser.currentLineNumber);
+            parser.setAttribute(T_ERROR_COLUMN_NUMBER, parser.currentColumnNumber);
             if (!swallowErrors) {
-                throw raiseExpatError(null, toTruffleStringUncached("unclosed token"), PXMLParser.XML_ERROR_UNCLOSED_TOKEN, parser.currentByteIndex,
+                TruffleString msg = toTruffleStringUncached(e.getMessage() == null ? "unclosed token" : e.getMessage());
+                throw raiseExpatError(null, msg, PXMLParser.XML_ERROR_UNCLOSED_TOKEN, parser.currentByteIndex,
                                 parser.currentLineNumber,
                                 parser.currentColumnNumber);
             }
@@ -481,5 +553,21 @@ public final class XMLParserBuiltins extends PythonBuiltins {
         exc.setAttribute(tsLiteral("message"), msg);
         exc.setAttribute(tsLiteral("byteindex"), byteIndex);
         throw PRaiseNode.raiseExceptionObjectStatic(raisingNode, exc, false);
+    }
+
+    private static String formatErrorMessage(SAXParseException e) {
+        String message = e.getMessage();
+        if (message == null) {
+            return "syntax error";
+        }
+        if (message.contains("entity") && message.contains("not declared")) {
+            int firstQuote = message.indexOf('"');
+            int secondQuote = firstQuote >= 0 ? message.indexOf('"', firstQuote + 1) : -1;
+            if (firstQuote >= 0 && secondQuote > firstQuote + 1) {
+                String entity = message.substring(firstQuote + 1, secondQuote);
+                return "undefined entity &" + entity + ";: line " + e.getLineNumber() + ", column " + Math.max(0, e.getColumnNumber() - 1);
+            }
+        }
+        return message;
     }
 }
