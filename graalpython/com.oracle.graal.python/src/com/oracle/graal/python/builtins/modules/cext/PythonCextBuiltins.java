@@ -421,6 +421,12 @@ public final class PythonCextBuiltins {
             throw PRaiseNode.raiseStatic(this, SystemError, INDEX_OUT_OF_RANGE);
         }
 
+        protected static void checkNonNullArgUncached(Object obj) {
+            if (obj == PNone.NO_VALUE) {
+                throw PRaiseNode.raiseStatic(null, SystemError, ErrorMessages.NULL_ARG_INTERNAL);
+            }
+        }
+
         protected static void checkNonNullArg(Node inliningTarget, Object obj, PRaiseNode raiseNode) {
             if (obj == PNone.NO_VALUE) {
                 throw raiseNode.raise(inliningTarget, SystemError, ErrorMessages.NULL_ARG_INTERNAL);
@@ -853,7 +859,7 @@ public final class PythonCextBuiltins {
         Ignored,
     }
 
-    @Target(ElementType.TYPE)
+    @Target({ElementType.TYPE, ElementType.METHOD})
     @Retention(RetentionPolicy.SOURCE)
     public @interface CApiBuiltins {
         CApiBuiltin[] value();

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.type.slots.TpSlotUnaryFunc.CallS
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode.HandleFloatResultNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -72,6 +73,11 @@ public abstract class PyNumberFloatNode extends PNodeWithContext {
 
     public final double execute(Node inliningTarget, Object object) {
         return execute(null, inliningTarget, object);
+    }
+
+    @TruffleBoundary
+    public static double executeUncached(Object object) {
+        return PyNumberFloatNodeGen.getUncached().execute(null, null, object);
     }
 
     @Specialization

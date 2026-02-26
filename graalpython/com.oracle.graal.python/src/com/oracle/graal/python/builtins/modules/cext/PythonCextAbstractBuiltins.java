@@ -43,12 +43,13 @@ package com.oracle.graal.python.builtins.modules.cext;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltinNode.checkNonNullArgUncached;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Direct;
 import static com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiCallPath.Ignored;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtr;
-import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.ConstCharPtrAsTruffleString;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Int;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObject;
+import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectRawPointer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.PyObjectTransfer;
 import static com.oracle.graal.python.builtins.objects.cext.capi.transitions.ArgDescriptor.Py_ssize_t;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyTypeObject__tp_doc;
@@ -70,26 +71,21 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions.HexNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions.OctNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBinaryBuiltinNode;
 import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiBuiltin;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiQuaternaryBuiltinNode;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiTernaryBuiltinNode;
-import com.oracle.graal.python.builtins.modules.cext.PythonCextBuiltins.CApiUnaryBuiltinNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
-import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.ItemsNode;
-import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.KeysNode;
-import com.oracle.graal.python.builtins.objects.dict.DictBuiltins.ValuesNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.CharPtrToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
-import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltins;
-import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins.TupleNode;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
 import com.oracle.graal.python.builtins.objects.type.TpSlots.GetObjectSlotsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
@@ -132,6 +128,7 @@ import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetItem;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PySequenceCheckNode;
 import com.oracle.graal.python.lib.PySequenceConcatNode;
 import com.oracle.graal.python.lib.PySequenceContainsNode;
@@ -144,55 +141,50 @@ import com.oracle.graal.python.lib.PySequenceSetItemNode;
 import com.oracle.graal.python.lib.PySequenceSizeNode;
 import com.oracle.graal.python.lib.PySliceNew;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToPythonObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
+import com.oracle.graal.python.nodes.builtins.TupleNodes.ConstructTupleNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinObjectProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextAbstractBuiltins {
-
+    private static final TruffleLogger PY_OBJECT_SET_DOC_LOGGER = CApiContext.getLogger(PythonCextAbstractBuiltins.class);
     /////// PyNumber ///////
 
-    @CApiBuiltin(name = "_PyNumber_Index", ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    abstract static class PyNumber_Index extends CApiUnaryBuiltinNode {
-        @Specialization
-        static Object index(Object obj,
-                        @Bind Node inliningTarget,
-                        @Cached PyNumberIndexNode indexNode,
-                        @Cached PRaiseNode raiseNode) {
-            checkNonNullArg(inliningTarget, obj, raiseNode);
-            return indexNode.execute(null, inliningTarget, obj);
-        }
+    @CApiBuiltin(name = "_PyNumber_Index", ret = PyObjectRawPointer, args = {PyObjectRawPointer}, call = Direct, acquireGil = false)
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer}, call = Direct, acquireGil = false)
+    static long PyNumber_Index(long objPtr) {
+        Object obj = NativeToPythonNode.executeRawUncached(objPtr);
+        checkNonNullArgUncached(obj);
+        Object result = PyNumberIndexNode.executeUncached(obj);
+        return PythonToNativeNewRefNode.executeLongUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Ignored)
-    abstract static class GraalPyPrivate_PyNumber_Long extends CApiUnaryBuiltinNode {
-
-        @Specialization
-        static Object doGeneric(Object object,
-                        @Bind Node inliningTarget,
-                        @Cached PyNumberLongNode pyNumberLongNode) {
-            return pyNumberLongNode.execute(null, inliningTarget, object);
-        }
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    static long GraalPyPrivate_PyNumber_Long(long objectPtr) {
+        Object object = NativeToPythonNode.executeRawUncached(objectPtr);
+        Object result = PyNumberLongNode.executeUncached(object);
+        return PythonToNativeNewRefNode.executeLongUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Int}, call = Direct)
+    // TODO(CAPI STATIC): uses nodes without @GenerateUncached
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Int}, call = Direct, acquireGil = false)
     protected abstract static class PyNumber_ToBase extends CApiBinaryBuiltinNode {
         @Specialization(guards = "base == 2")
         static Object toBase2(Object n, @SuppressWarnings("unused") int base,
@@ -241,738 +233,562 @@ public final class PythonCextAbstractBuiltins {
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Ignored)
-    abstract static class GraalPyPrivate_PyNumber_Float extends CApiUnaryBuiltinNode {
-
-        @Specialization
-        static Object doGeneric(Object object,
-                        @Bind Node inliningTarget,
-                        @Cached PyNumberFloatNode pyNumberFloat) {
-            return pyNumberFloat.execute(inliningTarget, object);
-        }
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    static long GraalPyPrivate_PyNumber_Float(long objectPtr) {
+        Object object = NativeToPythonNode.executeRawUncached(objectPtr);
+        double result = PyNumberFloatNode.executeUncached(object);
+        return PythonToNativeNewRefNode.executeLongUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
-    abstract static class GraalPyPrivate_PyNumber_Add extends CApiBinaryBuiltinNode {
-
-        @Specialization
-        static Object doGeneric(Object o1, Object o2,
-                        @Cached PyNumberAddNode addNode) {
-            return addNode.execute(null, o1, o2);
-        }
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    static long GraalPyPrivate_PyNumber_Add(long o1Ptr, long o2Ptr) {
+        Object o1 = NativeToPythonNode.executeRawUncached(o1Ptr);
+        Object o2 = NativeToPythonNode.executeRawUncached(o2Ptr);
+        Object result = PyNumberAddNode.getUncached().execute(null, o1, o2);
+        return PythonToNativeNewRefNode.executeLongUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
-    abstract static class GraalPyPrivate_PyNumber_Subtract extends CApiBinaryBuiltinNode {
-
-        @Specialization
-        static Object doGeneric(Object o1, Object o2,
-                        @Cached PyNumberSubtractNode subtractNode) {
-            return subtractNode.execute(null, o1, o2);
-        }
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    static long GraalPyPrivate_PyNumber_Subtract(long o1Ptr, long o2Ptr) {
+        Object o1 = NativeToPythonNode.executeRawUncached(o1Ptr);
+        Object o2 = NativeToPythonNode.executeRawUncached(o2Ptr);
+        Object result = PyNumberSubtractNode.getUncached().execute(null, o1, o2);
+        return PythonToNativeNewRefNode.executeLongUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
-    abstract static class GraalPyPrivate_PyNumber_Multiply extends CApiBinaryBuiltinNode {
-
-        @Specialization
-        static Object doGeneric(Object o1, Object o2,
-                        @Cached PyNumberMultiplyNode multiplyNode) {
-            return multiplyNode.execute(null, o1, o2);
-        }
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    static long GraalPyPrivate_PyNumber_Multiply(long o1Ptr, long o2Ptr) {
+        Object o1 = NativeToPythonNode.executeRawUncached(o1Ptr);
+        Object o2 = NativeToPythonNode.executeRawUncached(o2Ptr);
+        Object result = PyNumberMultiplyNode.getUncached().execute(null, o1, o2);
+        return PythonToNativeNewRefNode.executeLongUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
-    abstract static class GraalPyPrivate_PyNumber_Remainder extends CApiBinaryBuiltinNode {
-
-        @Specialization
-        static Object doGeneric(Object o1, Object o2,
-                        @Cached PyNumberRemainderNode remainderNode) {
-            return remainderNode.execute(null, o1, o2);
-        }
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    static long GraalPyPrivate_PyNumber_Remainder(long o1Ptr, long o2Ptr) {
+        Object o1 = NativeToPythonNode.executeRawUncached(o1Ptr);
+        Object o2 = NativeToPythonNode.executeRawUncached(o2Ptr);
+        Object result = PyNumberRemainderNode.getUncached().execute(null, o1, o2);
+        return PythonToNativeNewRefNode.executeLongUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
-    abstract static class GraalPyPrivate_PyNumber_TrueDivide extends CApiBinaryBuiltinNode {
-
-        @Specialization
-        static Object doGeneric(Object o1, Object o2,
-                        @Cached PyNumberTrueDivideNode trueDivideNode) {
-            return trueDivideNode.execute(null, o1, o2);
-        }
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    static long GraalPyPrivate_PyNumber_TrueDivide(long o1Ptr, long o2Ptr) {
+        Object o1 = NativeToPythonNode.executeRawUncached(o1Ptr);
+        Object o2 = NativeToPythonNode.executeRawUncached(o2Ptr);
+        Object result = PyNumberTrueDivideNode.getUncached().execute(null, o1, o2);
+        return PythonToNativeNewRefNode.executeLongUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
-    abstract static class GraalPyPrivate_PyNumber_FloorDivide extends CApiBinaryBuiltinNode {
-
-        @Specialization
-        static Object doGeneric(Object o1, Object o2,
-                        @Cached PyNumberFloorDivideNode floorDivideNode) {
-            return floorDivideNode.execute(null, o1, o2);
-        }
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    static long GraalPyPrivate_PyNumber_FloorDivide(long o1Ptr, long o2Ptr) {
+        Object o1 = NativeToPythonNode.executeRawUncached(o1Ptr);
+        Object o2 = NativeToPythonNode.executeRawUncached(o2Ptr);
+        Object result = PyNumberFloorDivideNode.getUncached().execute(null, o1, o2);
+        return PythonToNativeNewRefNode.executeLongUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
-    abstract static class GraalPyPrivate_PyNumber_Divmod extends CApiBinaryBuiltinNode {
-        @Specialization
-        static Object div(Object a, Object b,
-                        @Bind Node inliningTarget,
-                        @Cached PyNumberDivmodNode divmodNode) {
-            return divmodNode.execute(null, inliningTarget, a, b);
-        }
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    static long GraalPyPrivate_PyNumber_Divmod(long o1Ptr, long o2Ptr) {
+        Object o1 = NativeToPythonNode.executeRawUncached(o1Ptr);
+        Object o2 = NativeToPythonNode.executeRawUncached(o2Ptr);
+        Object result = PyNumberDivmodNode.getUncached().execute(null, o1, o2);
+        return PythonToNativeNewRefNode.executeLongUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
-    abstract static class GraalPyPrivate_PyNumber_And extends CApiBinaryBuiltinNode {
-
-        @Specialization
-        static Object doGeneric(Object o1, Object o2,
-                        @Cached PyNumberAndNode andNode) {
-            return andNode.execute(null, o1, o2);
-        }
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    static long GraalPyPrivate_PyNumber_And(long o1Ptr, long o2Ptr) {
+        Object o1 = NativeToPythonNode.executeRawUncached(o1Ptr);
+        Object o2 = NativeToPythonNode.executeRawUncached(o2Ptr);
+        Object result = PyNumberAndNode.getUncached().execute(null, o1, o2);
+        return PythonToNativeNewRefNode.executeLongUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
-    abstract static class GraalPyPrivate_PyNumber_Or extends CApiBinaryBuiltinNode {
-
-        @Specialization
-        static Object doGeneric(Object o1, Object o2,
-                        @Cached PyNumberOrNode orNode) {
-            return orNode.execute(null, o1, o2);
-        }
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    static long GraalPyPrivate_PyNumber_Or(long o1Ptr, long o2Ptr) {
+        Object o1 = NativeToPythonNode.executeRawUncached(o1Ptr);
+        Object o2 = NativeToPythonNode.executeRawUncached(o2Ptr);
+        Object result = PyNumberOrNode.getUncached().execute(null, o1, o2);
+        return PythonToNativeNewRefNode.executeLongUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
-    abstract static class GraalPyPrivate_PyNumber_Xor extends CApiBinaryBuiltinNode {
-
-        @Specialization
-        static Object doGeneric(Object o1, Object o2,
-                        @Cached PyNumberXorNode xorNode) {
-            return xorNode.execute(null, o1, o2);
-        }
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    static long GraalPyPrivate_PyNumber_Xor(long o1Ptr, long o2Ptr) {
+        Object o1 = NativeToPythonNode.executeRawUncached(o1Ptr);
+        Object o2 = NativeToPythonNode.executeRawUncached(o2Ptr);
+        Object result = PyNumberXorNode.getUncached().execute(null, o1, o2);
+        return PythonToNativeNewRefNode.executeLongUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
-    abstract static class GraalPyPrivate_PyNumber_Lshift extends CApiBinaryBuiltinNode {
-
-        @Specialization
-        static Object doGeneric(Object o1, Object o2,
-                        @Cached PyNumberLshiftNode lshiftNode) {
-            return lshiftNode.execute(null, o1, o2);
-        }
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    static long GraalPyPrivate_PyNumber_Lshift(long o1Ptr, long o2Ptr) {
+        Object o1 = NativeToPythonNode.executeRawUncached(o1Ptr);
+        Object o2 = NativeToPythonNode.executeRawUncached(o2Ptr);
+        Object result = PyNumberLshiftNode.getUncached().execute(null, o1, o2);
+        return PythonToNativeNewRefNode.executeLongUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
-    abstract static class GraalPyPrivate_PyNumber_Rshift extends CApiBinaryBuiltinNode {
-
-        @Specialization
-        static Object doGeneric(Object o1, Object o2,
-                        @Cached PyNumberRshiftNode rshiftNode) {
-            return rshiftNode.execute(null, o1, o2);
-        }
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    static long GraalPyPrivate_PyNumber_Rshift(long o1Ptr, long o2Ptr) {
+        Object o1 = NativeToPythonNode.executeRawUncached(o1Ptr);
+        Object o2 = NativeToPythonNode.executeRawUncached(o2Ptr);
+        Object result = PyNumberRshiftNode.getUncached().execute(null, o1, o2);
+        return PythonToNativeNewRefNode.executeLongUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
-    abstract static class GraalPyPrivate_PyNumber_MatrixMultiply extends CApiBinaryBuiltinNode {
-
-        @Specialization
-        static Object doGeneric(Object o1, Object o2,
-                        @Cached PyNumberMatrixMultiplyNode matrixMultiplyNode) {
-            return matrixMultiplyNode.execute(null, o1, o2);
-        }
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    static long GraalPyPrivate_PyNumber_MatrixMultiply(long o1Ptr, long o2Ptr) {
+        Object o1 = NativeToPythonNode.executeRawUncached(o1Ptr);
+        Object o2 = NativeToPythonNode.executeRawUncached(o2Ptr);
+        Object result = PyNumberMatrixMultiplyNode.getUncached().execute(null, o1, o2);
+        return PythonToNativeNewRefNode.executeLongUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
-    abstract static class GraalPyPrivate_PyNumber_InPlaceAdd extends CApiBinaryBuiltinNode {
-
-        @Specialization
-        static Object doGeneric(Object o1, Object o2,
-                        @Cached PyNumberInPlaceAddNode addNode) {
-            return addNode.execute(null, o1, o2);
-        }
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    static long GraalPyPrivate_PyNumber_InPlaceAdd(long o1Ptr, long o2Ptr) {
+        Object o1 = NativeToPythonNode.executeRawUncached(o1Ptr);
+        Object o2 = NativeToPythonNode.executeRawUncached(o2Ptr);
+        Object result = PyNumberInPlaceAddNode.getUncached().execute(null, o1, o2);
+        return PythonToNativeNewRefNode.executeLongUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
-    abstract static class GraalPyPrivate_PyNumber_InPlaceSubtract extends CApiBinaryBuiltinNode {
-
-        @Specialization
-        static Object doGeneric(Object o1, Object o2,
-                        @Cached PyNumberInPlaceSubtractNode subtractNode) {
-            return subtractNode.execute(null, o1, o2);
-        }
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    static long GraalPyPrivate_PyNumber_InPlaceSubtract(long o1Ptr, long o2Ptr) {
+        Object o1 = NativeToPythonNode.executeRawUncached(o1Ptr);
+        Object o2 = NativeToPythonNode.executeRawUncached(o2Ptr);
+        Object result = PyNumberInPlaceSubtractNode.getUncached().execute(null, o1, o2);
+        return PythonToNativeNewRefNode.executeLongUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
-    abstract static class GraalPyPrivate_PyNumber_InPlaceMultiply extends CApiBinaryBuiltinNode {
-
-        @Specialization
-        static Object doGeneric(Object o1, Object o2,
-                        @Cached PyNumberInPlaceMultiplyNode multiplyNode) {
-            return multiplyNode.execute(null, o1, o2);
-        }
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    static long GraalPyPrivate_PyNumber_InPlaceMultiply(long o1Ptr, long o2Ptr) {
+        Object o1 = NativeToPythonNode.executeRawUncached(o1Ptr);
+        Object o2 = NativeToPythonNode.executeRawUncached(o2Ptr);
+        Object result = PyNumberInPlaceMultiplyNode.getUncached().execute(null, o1, o2);
+        return PythonToNativeNewRefNode.executeLongUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
-    abstract static class GraalPyPrivate_PyNumber_InPlaceRemainder extends CApiBinaryBuiltinNode {
-
-        @Specialization
-        static Object doGeneric(Object o1, Object o2,
-                        @Cached PyNumberInPlaceRemainderNode remainderNode) {
-            return remainderNode.execute(null, o1, o2);
-        }
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    static long GraalPyPrivate_PyNumber_InPlaceRemainder(long o1Ptr, long o2Ptr) {
+        Object o1 = NativeToPythonNode.executeRawUncached(o1Ptr);
+        Object o2 = NativeToPythonNode.executeRawUncached(o2Ptr);
+        Object result = PyNumberInPlaceRemainderNode.getUncached().execute(null, o1, o2);
+        return PythonToNativeNewRefNode.executeLongUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
-    abstract static class GraalPyPrivate_PyNumber_InPlaceTrueDivide extends CApiBinaryBuiltinNode {
-
-        @Specialization
-        static Object doGeneric(Object o1, Object o2,
-                        @Cached PyNumberInPlaceTrueDivideNode trueDivideNode) {
-            return trueDivideNode.execute(null, o1, o2);
-        }
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    static long GraalPyPrivate_PyNumber_InPlaceTrueDivide(long o1Ptr, long o2Ptr) {
+        Object o1 = NativeToPythonNode.executeRawUncached(o1Ptr);
+        Object o2 = NativeToPythonNode.executeRawUncached(o2Ptr);
+        Object result = PyNumberInPlaceTrueDivideNode.getUncached().execute(null, o1, o2);
+        return PythonToNativeNewRefNode.executeLongUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
-    abstract static class GraalPyPrivate_PyNumber_InPlaceFloorDivide extends CApiBinaryBuiltinNode {
-
-        @Specialization
-        static Object doGeneric(Object o1, Object o2,
-                        @Cached PyNumberInPlaceFloorDivideNode floorDivideNode) {
-            return floorDivideNode.execute(null, o1, o2);
-        }
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    static long GraalPyPrivate_PyNumber_InPlaceFloorDivide(long o1Ptr, long o2Ptr) {
+        Object o1 = NativeToPythonNode.executeRawUncached(o1Ptr);
+        Object o2 = NativeToPythonNode.executeRawUncached(o2Ptr);
+        Object result = PyNumberInPlaceFloorDivideNode.getUncached().execute(null, o1, o2);
+        return PythonToNativeNewRefNode.executeLongUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
-    abstract static class GraalPyPrivate_PyNumber_InPlaceAnd extends CApiBinaryBuiltinNode {
-
-        @Specialization
-        static Object doGeneric(Object o1, Object o2,
-                        @Cached PyNumberInPlaceAndNode andNode) {
-            return andNode.execute(null, o1, o2);
-        }
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    static long GraalPyPrivate_PyNumber_InPlaceAnd(long o1Ptr, long o2Ptr) {
+        Object o1 = NativeToPythonNode.executeRawUncached(o1Ptr);
+        Object o2 = NativeToPythonNode.executeRawUncached(o2Ptr);
+        Object result = PyNumberInPlaceAndNode.getUncached().execute(null, o1, o2);
+        return PythonToNativeNewRefNode.executeLongUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
-    abstract static class GraalPyPrivate_PyNumber_InPlaceOr extends CApiBinaryBuiltinNode {
-
-        @Specialization
-        static Object doGeneric(Object o1, Object o2,
-                        @Cached PyNumberInPlaceOrNode orNode) {
-            return orNode.execute(null, o1, o2);
-        }
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    static long GraalPyPrivate_PyNumber_InPlaceOr(long o1Ptr, long o2Ptr) {
+        Object o1 = NativeToPythonNode.executeRawUncached(o1Ptr);
+        Object o2 = NativeToPythonNode.executeRawUncached(o2Ptr);
+        Object result = PyNumberInPlaceOrNode.getUncached().execute(null, o1, o2);
+        return PythonToNativeNewRefNode.executeLongUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
-    abstract static class GraalPyPrivate_PyNumber_InPlaceXor extends CApiBinaryBuiltinNode {
-
-        @Specialization
-        static Object doGeneric(Object o1, Object o2,
-                        @Cached PyNumberInPlaceXorNode xorNode) {
-            return xorNode.execute(null, o1, o2);
-        }
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    static long GraalPyPrivate_PyNumber_InPlaceXor(long o1Ptr, long o2Ptr) {
+        Object o1 = NativeToPythonNode.executeRawUncached(o1Ptr);
+        Object o2 = NativeToPythonNode.executeRawUncached(o2Ptr);
+        Object result = PyNumberInPlaceXorNode.getUncached().execute(null, o1, o2);
+        return PythonToNativeNewRefNode.executeLongUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
-    abstract static class GraalPyPrivate_PyNumber_InPlaceLshift extends CApiBinaryBuiltinNode {
-
-        @Specialization
-        static Object doGeneric(Object o1, Object o2,
-                        @Cached PyNumberInPlaceLshiftNode lshiftNode) {
-            return lshiftNode.execute(null, o1, o2);
-        }
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    static long GraalPyPrivate_PyNumber_InPlaceLshift(long o1Ptr, long o2Ptr) {
+        Object o1 = NativeToPythonNode.executeRawUncached(o1Ptr);
+        Object o2 = NativeToPythonNode.executeRawUncached(o2Ptr);
+        Object result = PyNumberInPlaceLshiftNode.getUncached().execute(null, o1, o2);
+        return PythonToNativeNewRefNode.executeLongUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
-    abstract static class GraalPyPrivate_PyNumber_InPlaceRshift extends CApiBinaryBuiltinNode {
-
-        @Specialization
-        static Object doGeneric(Object o1, Object o2,
-                        @Cached PyNumberInPlaceRshiftNode rshiftNode) {
-            return rshiftNode.execute(null, o1, o2);
-        }
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    static long GraalPyPrivate_PyNumber_InPlaceRshift(long o1Ptr, long o2Ptr) {
+        Object o1 = NativeToPythonNode.executeRawUncached(o1Ptr);
+        Object o2 = NativeToPythonNode.executeRawUncached(o2Ptr);
+        Object result = PyNumberInPlaceRshiftNode.getUncached().execute(null, o1, o2);
+        return PythonToNativeNewRefNode.executeLongUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
-    abstract static class GraalPyPrivate_PyNumber_InPlaceMatrixMultiply extends CApiBinaryBuiltinNode {
-
-        @Specialization
-        static Object doGeneric(Object o1, Object o2,
-                        @Cached PyNumberInPlaceMatrixMultiplyNode matrixMultiplyNode) {
-            return matrixMultiplyNode.execute(null, o1, o2);
-        }
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    static long GraalPyPrivate_PyNumber_InPlaceMatrixMultiply(long o1Ptr, long o2Ptr) {
+        Object o1 = NativeToPythonNode.executeRawUncached(o1Ptr);
+        Object o2 = NativeToPythonNode.executeRawUncached(o2Ptr);
+        Object result = PyNumberInPlaceMatrixMultiplyNode.getUncached().execute(null, o1, o2);
+        return PythonToNativeNewRefNode.executeLongUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject}, call = Ignored)
-    abstract static class GraalPyPrivate_PyNumber_InPlacePower extends CApiTernaryBuiltinNode {
-
-        @Specialization
-        static Object doGeneric(Object o1, Object o2, Object o3,
-                        @Cached PyNumberInPlacePowerNode powerNode) {
-            return powerNode.execute(null, o1, o2, o3);
-        }
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    static long GraalPyPrivate_PyNumber_InPlacePower(long o1Ptr, long o2Ptr, long o3Ptr) {
+        Object o1 = NativeToPythonNode.executeRawUncached(o1Ptr);
+        Object o2 = NativeToPythonNode.executeRawUncached(o2Ptr);
+        Object o3 = NativeToPythonNode.executeRawUncached(o3Ptr);
+        Object result = PyNumberInPlacePowerNode.getUncached().execute(null, o1, o2, o3);
+        return PythonToNativeNewRefNode.executeLongUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject, PyObject}, call = Ignored)
-    abstract static class GraalPyPrivate_PyNumber_Power extends CApiTernaryBuiltinNode {
-
-        @Specialization
-        Object doGeneric(Object o1, Object o2, Object o3,
-                        @Cached PyNumberPowerNode powerNode) {
-            return powerNode.execute(null, o1, o2, o3);
-        }
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    static long GraalPyPrivate_PyNumber_Power(long o1Ptr, long o2Ptr, long o3Ptr) {
+        Object o1 = NativeToPythonNode.executeRawUncached(o1Ptr);
+        Object o2 = NativeToPythonNode.executeRawUncached(o2Ptr);
+        Object o3 = NativeToPythonNode.executeRawUncached(o3Ptr);
+        Object result = PyNumberPowerNode.getUncached().execute(null, o1, o2, o3);
+        return PythonToNativeNewRefNode.executeLongUncached(result);
     }
 
     /////// PySequence ///////
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    abstract static class PySequence_Tuple extends CApiUnaryBuiltinNode {
-
-        @Specialization
-        Object values(Object obj,
-                        @Bind Node inliningTarget,
-                        @Cached TupleNode tupleNode,
-                        @Cached GetClassNode getClassNode) {
-            if (getClassNode.execute(inliningTarget, obj) == PythonBuiltinClassType.PTuple) {
-                return obj;
-            } else {
-                return tupleNode.execute(null, PythonBuiltinClassType.PTuple, obj);
-            }
-        }
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer}, call = Direct, acquireGil = false)
+    static long PySequence_Tuple(long objPtr) {
+        Object obj = NativeToPythonNode.executeRawUncached(objPtr);
+        checkNonNullArgUncached(obj);
+        Object result = GetClassNode.executeUncached(obj) == PythonBuiltinClassType.PTuple ? obj : ConstructTupleNode.getUncached().execute(null, obj);
+        return PythonToNativeNewRefNode.executeLongUncached(result);
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    abstract static class PySequence_List extends CApiUnaryBuiltinNode {
-        @Specialization
-        Object values(Object obj,
-                        @Cached ConstructListNode listNode) {
-            return listNode.execute(null, obj);
-        }
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer}, call = Direct, acquireGil = false)
+    static long PySequence_List(long objPtr) {
+        Object obj = NativeToPythonNode.executeRawUncached(objPtr);
+        Object result = ConstructListNode.getUncached().execute(null, obj);
+        return PythonToNativeNewRefNode.executeLongUncached(result);
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, Py_ssize_t, PyObject}, call = Ignored)
-    public abstract static class GraalPyPrivate_Sequence_SetItem extends CApiTernaryBuiltinNode {
-        @Specialization
-        static Object setItem(Object obj, long key, Object value,
-                        @Bind Node inliningTarget,
-                        @Cached PySequenceSetItemNode setItemNode) {
-            if ((int) key != key) {
-                throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.OverflowError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, key);
-            }
-            setItemNode.execute(null, inliningTarget, obj, (int) key, value);
+    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer, Py_ssize_t, PyObjectRawPointer}, call = Ignored, acquireGil = false)
+    static int GraalPyPrivate_Sequence_SetItem(long objPtr, long key, long valuePtr) {
+        if ((int) key != key) {
+            throw PRaiseNode.raiseStatic(null, PythonErrorType.OverflowError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, key);
+        }
+        Object obj = NativeToPythonNode.executeRawUncached(objPtr);
+        Object value = NativeToPythonNode.executeRawUncached(valuePtr);
+        PySequenceSetItemNode.executeUncached(obj, (int) key, value);
+        return 0;
+    }
+
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, Py_ssize_t, Py_ssize_t}, call = Direct, acquireGil = false)
+    static long PySequence_GetSlice(long objPtr, long iLow, long iHigh) {
+        Object obj = NativeToPythonNode.executeRawUncached(objPtr);
+        if (PySequenceCheckNode.executeUncached(obj)) {
+            Object getItemCallable = PyObjectLookupAttr.executeUncached(obj, T___GETITEM__);
+            Object result = CallNode.executeUncached(getItemCallable, PySliceNew.executeUncached(iLow, iHigh, PNone.NONE));
+            return PythonToNativeNewRefNode.executeLongUncached(result);
+        }
+        throw PRaiseNode.raiseStatic(null, TypeError, ErrorMessages.OBJ_IS_UNSLICEABLE, obj);
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Direct, acquireGil = false)
+    static int PySequence_Contains(long haystackPtr, long needlePtr) {
+        Object haystack = NativeToPythonNode.executeRawUncached(haystackPtr);
+        Object needle = NativeToPythonNode.executeRawUncached(needlePtr);
+        return PInt.intValue(PySequenceContainsNode.executeUncached(haystack, needle));
+    }
+
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, Py_ssize_t}, call = Direct)
+    static long PySequence_InPlaceRepeat(long objPtr, long n) {
+        if (!PInt.isIntRange(n)) {
+            throw PRaiseNode.raiseStatic(null, OverflowError);
+        }
+        Object obj = NativeToPythonNode.executeRawUncached(objPtr);
+        Object result = PySequenceInPlaceRepeatNode.executeUncached(obj, (int) n);
+        return PythonToNativeNewRefNode.executeLongUncached(result);
+    }
+
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Direct)
+    static long PySequence_Concat(long s1Ptr, long s2Ptr) {
+        Object s1 = NativeToPythonNode.executeRawUncached(s1Ptr);
+        Object s2 = NativeToPythonNode.executeRawUncached(s2Ptr);
+        Object result = PySequenceConcatNode.executeUncached(s1, s2);
+        return PythonToNativeNewRefNode.executeLongUncached(result);
+    }
+
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Direct)
+    static long PySequence_InPlaceConcat(long s1Ptr, long s2Ptr) {
+        Object s1 = NativeToPythonNode.executeRawUncached(s1Ptr);
+        Object s2 = NativeToPythonNode.executeRawUncached(s2Ptr);
+        Object result = PySequenceInPlaceConcatNode.executeUncached(s1, s2);
+        return PythonToNativeNewRefNode.executeLongUncached(result);
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer, Py_ssize_t}, call = Ignored)
+    static int GraalPyPrivate_Sequence_DelItem(long oPtr, long i) {
+        if ((int) i != i) {
+            throw PRaiseNode.raiseStatic(null, PythonErrorType.OverflowError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, i);
+        }
+        Object o = NativeToPythonNode.executeRawUncached(oPtr);
+        PySequenceDelItemNode.executeUncached(o, (int) i);
+        return 0;
+    }
+
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, Py_ssize_t}, call = Ignored)
+    static long GraalPyPrivate_Sequence_GetItem(long delegatePtr, long position) {
+        if ((int) position != position) {
+            throw PRaiseNode.raiseStatic(null, PythonErrorType.OverflowError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, position);
+        }
+        Object delegate = NativeToPythonNode.executeRawUncached(delegatePtr);
+        Object result = PySequenceGetItemNode.executeUncached(delegate, (int) position);
+        return PythonToNativeNewRefNode.executeLongUncached(result);
+    }
+
+    @CApiBuiltin(ret = Py_ssize_t, args = {PyObjectRawPointer}, call = Ignored)
+    static long GraalPyPrivate_Sequence_Size(long objPtr) {
+        Object obj = NativeToPythonNode.executeRawUncached(objPtr);
+        return PySequenceSizeNode.executeUncached(obj);
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer, Py_ssize_t, Py_ssize_t, PyObjectRawPointer}, call = Direct)
+    static int PySequence_SetSlice(long sequencePtr, long iLow, long iHigh, long sPtr) {
+        Object sequence = NativeToPythonNode.executeRawUncached(sequencePtr);
+        TpSlots slots = GetObjectSlotsNode.executeUncached(sequence);
+        if (slots.mp_ass_subscript() != null) {
+            Object s = NativeToPythonNode.executeRawUncached(sPtr);
+            PSlice slice = PySliceNew.executeUncached(iLow, iHigh, PNone.NONE);
+            CallSlotMpAssSubscriptNode.executeUncached(slots.mp_ass_subscript(), sequence, slice, s);
             return 0;
+        } else {
+            throw PRaiseNode.raiseStatic(null, TypeError, ErrorMessages.P_OBJECT_DOESNT_SUPPORT_SLICE_ASSIGNMENT, sequence);
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t, Py_ssize_t}, call = Direct)
-    abstract static class PySequence_GetSlice extends CApiTernaryBuiltinNode {
-
-        @Specialization(guards = "checkNode.execute(inliningTarget, obj)", limit = "1")
-        static Object getSlice(Object obj, long iLow, long iHigh,
-                        @Bind Node inliningTarget,
-                        @SuppressWarnings("unused") @Exclusive @Cached PySequenceCheckNode checkNode,
-                        @Cached PyObjectLookupAttr lookupAttrNode,
-                        @Cached PySliceNew sliceNode,
-                        @Cached CallNode callNode) {
-            Object getItemCallable = lookupAttrNode.execute(null, inliningTarget, obj, T___GETITEM__);
-            return callNode.executeWithoutFrame(getItemCallable, sliceNode.execute(inliningTarget, iLow, iHigh, PNone.NONE));
-        }
-
-        @Specialization(guards = "!checkNode.execute(inliningTarget, obj)", limit = "1")
-        static Object getSlice(Object obj, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") Object value,
-                        @SuppressWarnings("unused") @Exclusive @Cached PySequenceCheckNode checkNode,
-                        @Bind Node inliningTarget) {
-            throw PRaiseNode.raiseStatic(inliningTarget, TypeError, ErrorMessages.OBJ_IS_UNSLICEABLE, obj);
-        }
-    }
-
-    @CApiBuiltin(ret = Int, args = {PyObject, PyObject}, call = Direct)
-    abstract static class PySequence_Contains extends CApiBinaryBuiltinNode {
-
-        @Specialization
-        static int contains(Object haystack, Object needle,
-                        @Bind Node inliningTarget,
-                        @Cached PySequenceContainsNode containsNode) {
-            return PInt.intValue(containsNode.execute(null, inliningTarget, haystack, needle));
-        }
-    }
-
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t}, call = Direct)
-    abstract static class PySequence_InPlaceRepeat extends CApiBinaryBuiltinNode {
-        @Specialization
-        static Object repeat(Object obj, long n,
-                        @Bind Node inliningTarget,
-                        @Cached PRaiseNode raiseNode,
-                        @Cached PySequenceInPlaceRepeatNode repeat) {
-            if (!PInt.isIntRange(n)) {
-                throw raiseNode.raise(inliningTarget, OverflowError);
-            }
-            return repeat.execute(null, inliningTarget, obj, (int) n);
-        }
-    }
-
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
-    abstract static class PySequence_Concat extends CApiBinaryBuiltinNode {
-        @Specialization
-        Object doIt(Object s1, Object s2,
-                        @Bind Node inliningTarget,
-                        @Cached PySequenceConcatNode pySeqConcat) {
-            return pySeqConcat.execute(null, inliningTarget, s1, s2);
-        }
-    }
-
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
-    abstract static class PySequence_InPlaceConcat extends CApiBinaryBuiltinNode {
-
-        @Specialization
-        static Object concat(Object s1, Object s2,
-                        @Bind Node inliningTarget,
-                        @Cached PySequenceInPlaceConcatNode concat) {
-            return concat.execute(null, inliningTarget, s1, s2);
-        }
-    }
-
-    @CApiBuiltin(ret = Int, args = {PyObject, Py_ssize_t}, call = Ignored)
-    abstract static class GraalPyPrivate_Sequence_DelItem extends CApiBinaryBuiltinNode {
-        @Specialization
-        static Object run(Object o, long i,
-                        @Bind Node inliningTarget,
-                        @Cached PySequenceDelItemNode delItemNode) {
-            if ((int) i != i) {
-                throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.OverflowError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, i);
-            }
-            delItemNode.execute(null, inliningTarget, o, (int) i);
+    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer, Py_ssize_t, Py_ssize_t}, call = Direct)
+    static int PySequence_DelSlice(long sequencePtr, long iLow, long iHigh) {
+        Object sequence = NativeToPythonNode.executeRawUncached(sequencePtr);
+        TpSlots slots = GetObjectSlotsNode.executeUncached(sequence);
+        if (slots.mp_ass_subscript() != null) {
+            PSlice slice = PySliceNew.executeUncached(iLow, iHigh, PNone.NONE);
+            CallSlotMpAssSubscriptNode.executeUncached(slots.mp_ass_subscript(), sequence, slice, PNone.NO_VALUE);
             return 0;
+        } else {
+            throw PRaiseNode.raiseStatic(null, TypeError, ErrorMessages.P_OBJECT_DOESNT_SUPPORT_SLICE_DELETION, sequence);
         }
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, Py_ssize_t}, call = Ignored)
-    abstract static class GraalPyPrivate_Sequence_GetItem extends CApiBinaryBuiltinNode {
-        @Specialization
-        static Object doManaged(Object delegate, long position,
-                        @Bind Node inliningTarget,
-                        @Cached PySequenceGetItemNode getItemNode) {
-            if ((int) position != position) {
-                throw PRaiseNode.raiseStatic(inliningTarget, PythonErrorType.OverflowError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, position);
-            }
-            return getItemNode.execute(null, delegate, (int) position);
-        }
+    @CApiBuiltin(ret = Py_ssize_t, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Direct)
+    static long PySequence_Count(long haystackPtr, long needlePtr) {
+        Object haystack = NativeToPythonNode.executeRawUncached(haystackPtr);
+        Object needle = NativeToPythonNode.executeRawUncached(needlePtr);
+        return PySequenceIterSearchNode.executeUncached(haystack, needle, PySequenceIterSearchNode.PY_ITERSEARCH_COUNT);
     }
 
-    @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Ignored)
-    abstract static class GraalPyPrivate_Sequence_Size extends CApiUnaryBuiltinNode {
-
-        @Specialization
-        static long doSequence(Object obj,
-                        @Bind Node inliningTarget,
-                        @Cached PySequenceSizeNode sizeNode) {
-            return sizeNode.execute(null, inliningTarget, obj);
-        }
-    }
-
-    @CApiBuiltin(ret = Int, args = {PyObject, Py_ssize_t, Py_ssize_t, PyObject}, call = Direct)
-    abstract static class PySequence_SetSlice extends CApiQuaternaryBuiltinNode {
-        @Specialization
-        static int setSlice(Object sequence, Object iLow, Object iHigh, Object s,
-                        @Bind Node inliningTarget,
-                        @Cached GetObjectSlotsNode getSlotsNode,
-                        @Cached CallSlotMpAssSubscriptNode callSetItem,
-                        @Cached PySliceNew sliceNode,
-                        @Cached PRaiseNode raiseNode) {
-            TpSlots slots = getSlotsNode.execute(inliningTarget, sequence);
-            if (slots.mp_ass_subscript() != null) {
-                PSlice slice = sliceNode.execute(inliningTarget, iLow, iHigh, PNone.NONE);
-                callSetItem.execute(null, inliningTarget, slots.mp_ass_subscript(), sequence, slice, s);
-                return 0;
-            } else {
-                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.P_OBJECT_DOESNT_SUPPORT_SLICE_ASSIGNMENT, sequence);
-            }
-        }
-    }
-
-    @CApiBuiltin(ret = Int, args = {PyObject, Py_ssize_t, Py_ssize_t}, call = Direct)
-    abstract static class PySequence_DelSlice extends CApiTernaryBuiltinNode {
-        @Specialization
-        static int setSlice(Object sequence, Object iLow, Object iHigh,
-                        @Bind Node inliningTarget,
-                        @Cached GetObjectSlotsNode getSlotsNode,
-                        @Cached CallSlotMpAssSubscriptNode callSetItem,
-                        @Cached PySliceNew sliceNode,
-                        @Cached PRaiseNode raiseNode) {
-            TpSlots slots = getSlotsNode.execute(inliningTarget, sequence);
-            if (slots.mp_ass_subscript() != null) {
-                PSlice slice = sliceNode.execute(inliningTarget, iLow, iHigh, PNone.NONE);
-                callSetItem.execute(null, inliningTarget, slots.mp_ass_subscript(), sequence, slice, PNone.NO_VALUE);
-                return 0;
-            } else {
-                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.P_OBJECT_DOESNT_SUPPORT_SLICE_DELETION, sequence);
-            }
-        }
-    }
-
-    @CApiBuiltin(ret = Py_ssize_t, args = {PyObject, PyObject}, call = Direct)
-    abstract static class PySequence_Count extends CApiBinaryBuiltinNode {
-
-        @Specialization
-        static long contains(Object haystack, Object needle,
-                        @Bind Node inliningTarget,
-                        @Cached PySequenceIterSearchNode searchNode) {
-            return searchNode.execute(inliningTarget, haystack, needle, PySequenceIterSearchNode.PY_ITERSEARCH_COUNT);
-        }
-    }
-
-    @CApiBuiltin(ret = Py_ssize_t, args = {PyObject, PyObject}, call = Direct)
-    abstract static class PySequence_Index extends CApiBinaryBuiltinNode {
-
-        @Specialization
-        static long contains(Object haystack, Object needle,
-                        @Bind Node inliningTarget,
-                        @Cached PySequenceIterSearchNode searchNode) {
-            return searchNode.execute(inliningTarget, haystack, needle, PySequenceIterSearchNode.PY_ITERSEARCH_INDEX);
-        }
+    @CApiBuiltin(ret = Py_ssize_t, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Direct)
+    static long PySequence_Index(long haystackPtr, long needlePtr) {
+        Object haystack = NativeToPythonNode.executeRawUncached(haystackPtr);
+        Object needle = NativeToPythonNode.executeRawUncached(needlePtr);
+        return PySequenceIterSearchNode.executeUncached(haystack, needle, PySequenceIterSearchNode.PY_ITERSEARCH_INDEX);
     }
 
     /////// PyObject ///////
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Direct)
-    @CApiBuiltin(name = "GraalPyPrivate_Object_GetItemString", ret = PyObjectTransfer, args = {PyObject, ConstCharPtrAsTruffleString}, call = Ignored)
-    abstract static class PyObject_GetItem extends CApiBinaryBuiltinNode {
-        @Specialization
-        Object doManaged(Object list, Object key,
-                        @Bind Node inliningTarget,
-                        @Cached PyObjectGetItem getItem) {
-            return getItem.execute(null, inliningTarget, list, key);
-        }
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Direct)
+    static long PyObject_GetItem(long objPtr, long keyPtr) {
+        Object obj = NativeToPythonNode.executeRawUncached(objPtr);
+        Object key = NativeToPythonNode.executeRawUncached(keyPtr);
+        Object result = PyObjectGetItem.executeUncached(obj, key);
+        return PythonToNativeNewRefNode.executeLongUncached(result);
     }
 
-    @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Ignored)
-    abstract static class GraalPyPrivate_Object_Size extends CApiUnaryBuiltinNode {
-
-        @Specialization
-        static long doGenericUnboxed(Object obj,
-                        @Bind Node inliningTarget,
-                        @Cached com.oracle.graal.python.lib.PyObjectSizeNode sizeNode) {
-            // Native objects are handled in C
-            assert !(obj instanceof PythonAbstractNativeObject);
-            // TODO: theoretically, it is legal for __LEN__ to return a PythonNativeVoidPtr,
-            // which is not handled in c.o.g.p.lib.PyObjectSizeNode at this point
-            return sizeNode.execute(null, inliningTarget, obj);
-        }
+    @CApiBuiltin(name = "GraalPyPrivate_Object_GetItemString", ret = PyObjectRawPointer, args = {PyObjectRawPointer, ConstCharPtr}, call = Ignored)
+    static long GraalPyPrivate_Object_GetItemString(long objPtr, long keyPtr) {
+        Object obj = NativeToPythonNode.executeRawUncached(objPtr);
+        Object key = CharPtrToPythonNode.getUncached().execute(keyPtr);
+        Object result = PyObjectGetItem.executeUncached(obj, key);
+        return PythonToNativeNewRefNode.executeLongUncached(result);
     }
 
-    @CApiBuiltin(ret = Py_ssize_t, args = {PyObject, Py_ssize_t}, call = Direct)
-    abstract static class PyObject_LengthHint extends CApiBinaryBuiltinNode {
+    @CApiBuiltin(ret = Py_ssize_t, args = {PyObjectRawPointer}, call = Ignored)
+    static long GraalPyPrivate_Object_Size(long objPtr) {
+        Object obj = NativeToPythonNode.executeRawUncached(objPtr);
+        // Native objects are handled in C
+        assert !(obj instanceof PythonAbstractNativeObject);
+        // TODO: theoretically, it is legal for __LEN__ to return a PythonNativeVoidPtr,
+        // which is not handled in c.o.g.p.lib.PyObjectSizeNode at this point
+        return PyObjectSizeNode.executeUncached(obj);
+    }
 
-        @Specialization
-        static long doGenericUnboxed(Object obj, long defaultValue,
-                        @Bind Node inliningTarget,
-                        @Cached IteratorNodes.GetLength getLength) {
-            int len = getLength.execute(null, inliningTarget, obj);
-            if (len == -1) {
-                return defaultValue;
-            }
-            return len;
+    @CApiBuiltin(ret = Py_ssize_t, args = {PyObjectRawPointer, Py_ssize_t}, call = Direct)
+    static long PyObject_LengthHint(long objPtr, long defaultValue) {
+        Object obj = NativeToPythonNode.executeRawUncached(objPtr);
+        int len = IteratorNodes.GetLength.executeUncached(obj);
+        if (len == -1) {
+            return defaultValue;
         }
+        return len;
     }
 
     /////// PyMapping ///////
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    abstract static class PyMapping_Keys extends CApiUnaryBuiltinNode {
-        @Specialization(guards = "isBuiltinDict(obj)")
-        Object keys(PDict obj,
-                        @Cached KeysNode keysNode,
-                        @Shared @Cached ConstructListNode listNode) {
-            return listNode.execute(null, keysNode.execute(null, obj));
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer}, call = Direct)
+    static long PyMapping_Keys(long objPtr) {
+        Object obj = NativeToPythonNode.executeRawUncached(objPtr);
+        checkNonNullArgUncached(obj);
+        ConstructListNode listNode = ConstructListNode.getUncached();
+        Object listResult;
+        if (obj instanceof PDict dict && PGuards.isBuiltinDict(dict)) {
+            PythonLanguage language = PythonContext.get(null).getLanguage();
+            Object view = PFactory.createDictKeysView(language, dict);
+            listResult = listNode.execute(null, view);
+        } else {
+            Object callable = PyObjectGetAttr.executeUncached(obj, T_KEYS);
+            Object view = CallNode.executeUncached(callable);
+            listResult = listNode.execute(null, view);
         }
-
-        @Fallback
-        Object keys(Object obj,
-                        @Bind Node inliningTarget,
-                        @Cached PyObjectGetAttr getAttrNode,
-                        @Cached CallNode callNode,
-                        @Shared @Cached ConstructListNode listNode) {
-            return getKeys(null, inliningTarget, obj, getAttrNode, callNode, listNode);
-        }
-
+        return PythonToNativeNewRefNode.executeLongUncached(listResult);
     }
 
-    private static PList getKeys(VirtualFrame frame, Node inliningTarget, Object obj, PyObjectGetAttr getAttrNode, CallNode callNode, ConstructListNode listNode) {
-        Object attr = getAttrNode.execute(frame, inliningTarget, obj, T_KEYS);
-        return listNode.execute(frame, callNode.execute(frame, attr));
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer}, call = Direct)
+    static long PyMapping_Items(long objPtr) {
+        Object obj = NativeToPythonNode.executeRawUncached(objPtr);
+        checkNonNullArgUncached(obj);
+        ConstructListNode listNode = ConstructListNode.getUncached();
+        Object listResult;
+        if (obj instanceof PDict dict && PGuards.isBuiltinDict(dict)) {
+            PythonLanguage language = PythonContext.get(null).getLanguage();
+            Object view = PFactory.createDictItemsView(language, dict);
+            listResult = listNode.execute(null, view);
+        } else {
+            Object callable = PyObjectGetAttr.executeUncached(obj, T_ITEMS);
+            Object view = CallNode.executeUncached(callable);
+            listResult = listNode.execute(null, view);
+        }
+        return PythonToNativeNewRefNode.executeLongUncached(listResult);
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    abstract static class PyMapping_Items extends CApiUnaryBuiltinNode {
-        @Specialization(guards = "isBuiltinDict(obj)")
-        static Object items(PDict obj,
-                        @Cached ItemsNode itemsNode,
-                        @Shared @Cached ConstructListNode listNode) {
-            return listNode.execute(null, itemsNode.execute(null, obj));
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer}, call = Direct)
+    static long PyMapping_Values(long objPtr) {
+        Object obj = NativeToPythonNode.executeRawUncached(objPtr);
+        checkNonNullArgUncached(obj);
+        ConstructListNode listNode = ConstructListNode.getUncached();
+        Object listResult;
+        if (obj instanceof PDict dict && PGuards.isBuiltinDict(dict)) {
+            PythonLanguage language = PythonContext.get(null).getLanguage();
+            Object view = PFactory.createDictValuesView(language, dict);
+            listResult = listNode.execute(null, view);
+        } else {
+            Object callable = PyObjectGetAttr.executeUncached(obj, T_VALUES);
+            Object view = CallNode.executeUncached(callable);
+            listResult = listNode.execute(null, view);
         }
-
-        @Fallback
-        static Object items(Object obj,
-                        @Bind Node inliningTarget,
-                        @Cached PyObjectGetAttr getAttrNode,
-                        @Cached CallNode callNode,
-                        @Shared @Cached ConstructListNode listNode) {
-            Object attr = getAttrNode.execute(inliningTarget, obj, T_ITEMS);
-            return listNode.execute(null, callNode.executeWithoutFrame(attr));
-        }
+        return PythonToNativeNewRefNode.executeLongUncached(listResult);
     }
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    abstract static class PyMapping_Values extends CApiUnaryBuiltinNode {
-        @Specialization(guards = "isBuiltinDict(obj)")
-        static Object values(PDict obj,
-                        @Shared @Cached ConstructListNode listNode,
-                        @Cached ValuesNode valuesNode) {
-            return listNode.execute(null, valuesNode.execute(null, obj));
+    @CApiBuiltin(ret = Py_ssize_t, args = {PyObjectRawPointer}, call = Ignored)
+    static long GraalPyPrivate_Mapping_Size(long objPtr) {
+        Object obj = NativeToPythonNode.executeRawUncached(objPtr);
+        Object cls = GetClassNode.executeUncached(obj);
+        if (IsSameTypeNode.executeUncached(cls, PythonBuiltinClassType.PSet) ||
+                        IsSameTypeNode.executeUncached(cls, PythonBuiltinClassType.PFrozenSet) ||
+                        IsSameTypeNode.executeUncached(cls, PythonBuiltinClassType.PDeque)) {
+            throw PRaiseNode.raiseStatic(null, TypeError, OBJ_ISNT_MAPPING, obj);
         }
-
-        @Fallback
-        static Object values(Object obj,
-                        @Bind Node inliningTarget,
-                        @Cached PyObjectGetAttr getAttrNode,
-                        @Cached CallNode callNode,
-                        @Shared @Cached ConstructListNode listNode,
-                        @Cached PRaiseNode raiseNode) {
-            checkNonNullArg(inliningTarget, obj, raiseNode);
-            Object attr = getAttrNode.execute(inliningTarget, obj, T_VALUES);
-            return listNode.execute(null, callNode.executeWithoutFrame(attr));
-        }
-    }
-
-    @CApiBuiltin(ret = Py_ssize_t, args = {PyObject}, call = Ignored)
-    abstract static class GraalPyPrivate_Mapping_Size extends CApiUnaryBuiltinNode {
-
-        // cant use PyMapping_Check: PyMapping_Size returns the __len__ value also for
-        // subclasses of types not accepted by PyMapping_Check as long they have an overriden
-        // __len__ method
-        @Specialization
-        static long doMapping(Object obj,
-                        @Bind Node inliningTarget,
-                        @Cached com.oracle.graal.python.lib.PyObjectSizeNode sizeNode,
-                        @Cached IsSameTypeNode isSameType,
-                        @Cached GetClassNode getClassNode,
-                        @Cached PRaiseNode raiseNode) {
-            Object cls = getClassNode.execute(inliningTarget, obj);
-            if (isSameType.execute(inliningTarget, cls, PythonBuiltinClassType.PSet) ||
-                            isSameType.execute(inliningTarget, cls, PythonBuiltinClassType.PFrozenSet) ||
-                            isSameType.execute(inliningTarget, cls, PythonBuiltinClassType.PDeque)) {
-                throw raiseNode.raise(inliningTarget, TypeError, OBJ_ISNT_MAPPING, obj);
-            } else {
-                return sizeNode.execute(null, inliningTarget, obj);
-            }
-        }
+        return PyObjectSizeNode.executeUncached(obj);
     }
 
     /////// PyIter ///////
 
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
-    abstract static class PyIter_Next extends CApiUnaryBuiltinNode {
-        @Specialization
-        Object check(Object object,
-                        @Bind Node inliningTarget,
-                        @Cached PyIterNextNode nextNode) {
-            try {
-                return nextNode.execute(null, inliningTarget, object);
-            } catch (IteratorExhausted e) {
-                return NATIVE_NULL;
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer}, call = Direct)
+    static long PyIter_Next(long iteratorPtr) {
+        Object iterator = NativeToPythonNode.executeRawUncached(iteratorPtr);
+        try {
+            Object result = PyIterNextNode.executeUncached(iterator);
+            if (result == NATIVE_NULL) {
+                return NULLPTR;
             }
-        }
-    }
-
-    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject, PyObject}, call = Ignored)
-    abstract static class GraalPyPrivate_Iter_Send extends CApiBinaryBuiltinNode {
-        @Specialization
-        Object send(Object iter, Object arg,
-                        @Bind Node inliningTarget,
-                        @Cached PyIterCheckNode pyiterCheck,
-                        @Cached PyObjectCallMethodObjArgs callMethodNode,
-                        @Cached PyIterNextNode nextNode,
-                        @Cached IsBuiltinObjectProfile isClassProfile) {
-            if (arg instanceof PNone && pyiterCheck.execute(inliningTarget, iter)) {
-                try {
-                    return nextNode.execute(null, inliningTarget, iter);
-                } catch (IteratorExhausted e) {
-                    return NATIVE_NULL;
-                }
-            } else {
-                try {
-                    return callMethodNode.execute(null, inliningTarget, iter, T_SEND, arg);
-                } catch (PException e) {
-                    e.expectStopIteration(inliningTarget, isClassProfile);
-                    return NATIVE_NULL;
-                }
-            }
-        }
-    }
-
-    @CApiBuiltin(ret = ConstCharPtr, args = {PyObject}, call = Direct)
-    abstract static class PyObject_GetDoc extends CApiUnaryBuiltinNode {
-        @Specialization
-        long get(Object obj,
-                        @Bind Node inliningTarget,
-                        @Cached PyObjectLookupAttr lookupAttr,
-                        @Cached AsCharPointerNode asCharPointerNode) {
-            try {
-                Object doc = lookupAttr.execute(null, inliningTarget, obj, T___DOC__);
-                if (!(doc instanceof PNone)) {
-                    return asCharPointerNode.execute(doc);
-                }
-            } catch (PException e) {
-                // ignore
-            }
+            return PythonToNativeNewRefNode.executeLongUncached(result);
+        } catch (IteratorExhausted e) {
             return NULLPTR;
         }
     }
 
-    @CApiBuiltin(ret = Int, args = {PyObject, ConstCharPtrAsTruffleString}, call = Direct)
-    abstract static class PyObject_SetDoc extends CApiBinaryBuiltinNode {
-        private static final TruffleLogger LOGGER = CApiContext.getLogger(PyObject_SetDoc.class);
-
-        @Specialization
-        static int set(PBuiltinFunction obj, Object value,
-                        @Shared("write") @Cached WriteAttributeToPythonObjectNode write) {
-            write.execute(obj, T___DOC__, value);
-            return 1;
-        }
-
-        @Specialization
-        static int set(PBuiltinMethod obj, Object value,
-                        @Shared("write") @Cached WriteAttributeToPythonObjectNode write) {
-            set(obj.getBuiltinFunction(), value, write);
-            return 1;
-        }
-
-        @Specialization
-        static int set(GetSetDescriptor obj, Object value,
-                        @Shared("write") @Cached WriteAttributeToPythonObjectNode write) {
-            write.execute(obj, T___DOC__, value);
-            return 1;
-        }
-
-        @Specialization(guards = "isType.execute(inliningTarget, type)", limit = "1")
-        static int set(PythonAbstractNativeObject type, Object value,
-                        @SuppressWarnings("unused") @Bind Node inliningTarget,
-                        @SuppressWarnings("unused") @Cached IsTypeNode isType,
-                        @Cached AsCharPointerNode asCharPointerNode) {
-            long cValue = NULLPTR;
-            if (value instanceof TruffleString stringValue) {
-                cValue = asCharPointerNode.execute(stringValue);
+    @CApiBuiltin(ret = PyObjectRawPointer, args = {PyObjectRawPointer, PyObjectRawPointer}, call = Ignored)
+    static long GraalPyPrivate_Iter_Send(long iterPtr, long argPtr) {
+        Object iter = NativeToPythonNode.executeRawUncached(iterPtr);
+        Object arg = NativeToPythonNode.executeRawUncached(argPtr);
+        if (arg instanceof PNone && PyIterCheckNode.executeUncached(iter)) {
+            try {
+                Object result = PyIterNextNode.executeUncached(iter);
+                if (result == NATIVE_NULL) {
+                    return NULLPTR;
+                }
+                return PythonToNativeNewRefNode.executeLongUncached(result);
+            } catch (IteratorExhausted e) {
+                return NULLPTR;
             }
-            writePtrField(type.getPtr(), PyTypeObject__tp_doc, cValue);
-            return 1;
         }
+        try {
+            Object result = PyObjectCallMethodObjArgs.executeUncached(iter, T_SEND, arg);
+            if (result == NATIVE_NULL) {
+                return NULLPTR;
+            }
+            return PythonToNativeNewRefNode.executeLongUncached(result);
+        } catch (PException e) {
+            e.expectStopIteration(null, IsBuiltinObjectProfile.getUncached());
+            return NULLPTR;
+        }
+    }
 
-        @Fallback
-        @SuppressWarnings("unused")
-        static int set(Object obj, Object value) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            // The callers don't expect errors, so just warn
-            LOGGER.warning("Unexpected type in PyObject_SetDoc: " + obj.getClass());
+    @CApiBuiltin(ret = ConstCharPtr, args = {PyObjectRawPointer}, call = Direct)
+    static long PyObject_GetDoc(long objPtr) {
+        Object obj = NativeToPythonNode.executeRawUncached(objPtr);
+        try {
+            Object doc = PyObjectLookupAttr.executeUncached(obj, T___DOC__);
+            if (!(doc instanceof PNone)) {
+                return AsCharPointerNode.getUncached().execute(doc);
+            }
+        } catch (PException e) {
+            // ignore
+        }
+        return NULLPTR;
+    }
+
+    @CApiBuiltin(ret = Int, args = {PyObjectRawPointer, ConstCharPtr}, call = Direct)
+    static int PyObject_SetDoc(long objPtr, long valuePtr) {
+        Object obj = NativeToPythonNode.executeRawUncached(objPtr);
+        Object value = CharPtrToPythonNode.getUncached().execute(valuePtr);
+        if (obj instanceof PBuiltinFunction builtinFunction) {
+            WriteAttributeToPythonObjectNode.executeUncached(builtinFunction, T___DOC__, value);
             return 1;
         }
+        if (obj instanceof PBuiltinMethod builtinMethod) {
+            PBuiltinFunction builtinFunction = builtinMethod.getBuiltinFunction();
+            WriteAttributeToPythonObjectNode.executeUncached(builtinFunction, T___DOC__, value);
+            return 1;
+        }
+        if (obj instanceof GetSetDescriptor descriptor) {
+            WriteAttributeToPythonObjectNode.executeUncached(descriptor, T___DOC__, value);
+            return 1;
+        }
+        if (obj instanceof PythonAbstractNativeObject nativeType) {
+            if (IsTypeNode.executeUncached(nativeType)) {
+                long cValue = NULLPTR;
+                if (value instanceof TruffleString stringValue) {
+                    cValue = AsCharPointerNode.getUncached().execute(stringValue);
+                }
+                writePtrField(nativeType.getPtr(), PyTypeObject__tp_doc, cValue);
+                return 1;
+            }
+        }
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        PY_OBJECT_SET_DOC_LOGGER.warning("Unexpected type in PyObject_SetDoc: " + obj.getClass());
+        return 1;
     }
 }

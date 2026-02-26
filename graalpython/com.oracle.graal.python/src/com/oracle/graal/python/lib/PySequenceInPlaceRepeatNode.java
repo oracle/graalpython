@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -52,10 +52,12 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
@@ -63,8 +65,14 @@ import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 @GenerateInline
 @GenerateCached(false)
+@GenerateUncached
 public abstract class PySequenceInPlaceRepeatNode extends PNodeWithContext {
     public abstract Object execute(VirtualFrame frame, Node inliningTarget, Object o, int count);
+
+    @TruffleBoundary
+    public static Object executeUncached(Object o, int count) {
+        return PySequenceInPlaceRepeatNodeGen.getUncached().execute(null, null, o, count);
+    }
 
     @Specialization
     static Object doIt(VirtualFrame frame, Node inliningTarget, Object o, int count,

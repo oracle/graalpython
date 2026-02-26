@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.objects.type.TpSlots.GetCachedTpSlotsNod
 import com.oracle.graal.python.builtins.objects.type.slots.TpSlotSqContains.CallSlotSqContainsNode;
 import com.oracle.graal.python.lib.PySequenceIterSearchNode.LazyPySequenceIterSeachNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -63,6 +64,11 @@ import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 @GenerateCached(false)
 public abstract class PySequenceContainsNode extends Node {
     public abstract boolean execute(Frame frame, Node inliningTarget, Object container, Object key);
+
+    @TruffleBoundary
+    public static boolean executeUncached(Object container, Object key) {
+        return PySequenceContainsNodeGen.getUncached().execute(null, null, container, key);
+    }
 
     @Specialization
     static boolean contains(VirtualFrame frame, Node inliningTarget, Object container, Object key,

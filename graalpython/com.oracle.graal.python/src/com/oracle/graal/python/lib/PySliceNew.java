@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.object.PFactory;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -64,6 +65,11 @@ import com.oracle.truffle.api.nodes.Node;
 @ImportStatic(PInt.class)
 public abstract class PySliceNew extends PNodeWithContext {
     public abstract PSlice execute(Node inliningTarget, Object start, Object stop, Object step);
+
+    @TruffleBoundary
+    public static PSlice executeUncached(Object start, Object stop, Object step) {
+        return PySliceNewNodeGen.getUncached().execute(null, start, stop, step);
+    }
 
     @SuppressWarnings("unused")
     static PSlice doInt(int start, int stop, PNone step,
