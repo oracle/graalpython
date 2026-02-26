@@ -134,7 +134,9 @@ def downstream_test_virtualenv(graalpy, testdir):
     env['CI_RUN'] = '1'
     # Need to avoid pulling in graalpy seeder
     env['PIP_GRAALPY_DISABLE_PATCHING'] = '1'
-    run_in_venv(venv, ['pip', 'install', f'{src}[test]'], env=env)
+    # Update to pip that supports --group
+    run_in_venv(venv, ['pip', 'install', 'pip>=26'], env=env)
+    run_in_venv(venv, ['pip', 'install', '--group=test', '.'], env=env, cwd=src)
     # Allow newer CPython for building zipapp, we don't have 3.11 in the CI anymore
     replace_in_file(
         src / 'tests/integration/test_zipapp.py',
