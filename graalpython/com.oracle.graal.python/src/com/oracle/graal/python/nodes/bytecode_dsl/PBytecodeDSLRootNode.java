@@ -315,7 +315,7 @@ import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
                 boxingEliminationTypes = {int.class}, //
                 tagTreeNodeLibrary = PTagTreeNodeExports.class, //
                 storeBytecodeIndexInFrame = true, //
-                defaultUncachedThreshold = "5", //
+                defaultUncachedThreshold = "4", //
                 enableUncachedInterpreter = true)
 @OperationProxy(PyNumberSubtractNode.class)
 @OperationProxy(PyNumberTrueDivideNode.class)
