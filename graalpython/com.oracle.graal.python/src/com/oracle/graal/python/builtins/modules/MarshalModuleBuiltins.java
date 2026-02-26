@@ -1236,12 +1236,12 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         private TruffleString readShortString() {
             int sz = readByteSize();
             byte[] bytes = readNBytes(sz);
-            return TruffleString.fromByteArrayUncached(bytes, 0, sz, Encoding.ISO_8859_1, false).switchEncodingUncached(TS_ENCODING);
+            return TruffleString.fromByteArrayWithCompactionUTF32Uncached(bytes, 0, sz, TruffleString.CompactionLevel.S1, false);
         }
 
         private Object readAscii(int sz, boolean intern) {
             byte[] bytes = readNBytes(sz);
-            TruffleString value = TruffleString.fromByteArrayUncached(bytes, 0, sz, Encoding.US_ASCII, false).switchEncodingUncached(TS_ENCODING);
+            TruffleString value = TruffleString.fromByteArrayWithCompactionUTF32Uncached(bytes, 0, sz, TruffleString.CompactionLevel.S1, false);
             if (intern) {
                 return PythonUtils.internString(value);
             } else {

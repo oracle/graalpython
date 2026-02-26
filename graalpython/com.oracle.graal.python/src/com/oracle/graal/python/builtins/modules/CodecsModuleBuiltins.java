@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -72,6 +72,7 @@ import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
@@ -133,7 +134,9 @@ import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.util.CharsetMapping;
 import com.oracle.graal.python.util.CharsetMapping.NormalizeEncodingNameNode;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.HostCompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -183,6 +186,44 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
     }
 
     @GenerateUncached
+    @GenerateInline
+    public abstract static class CharsetLookupNode extends Node {
+        public abstract CharsetMapping.CharsetWrapper execute(Node inliningTarget, TruffleString name);
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "name == cachedName", limit = "1")
+        static CharsetMapping.CharsetWrapper doCachedIdentity(TruffleString name,
+                        @Cached("name") TruffleString cachedName,
+                        @Cached("lookup(name)") CharsetMapping.CharsetWrapper cachedResult) {
+            return cachedResult;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "equals(name, cachedName, equalNode)", limit = "1", replaces = "doCachedIdentity")
+        static CharsetMapping.CharsetWrapper doCachedEqual(TruffleString name,
+                        @Cached("name") TruffleString cachedName,
+                        @Cached("lookup(name)") CharsetMapping.CharsetWrapper cachedResult,
+                        @Cached TruffleString.EqualNode equalNode) {
+            return cachedResult;
+        }
+
+        @Specialization(replaces = "doCachedEqual")
+        static CharsetMapping.CharsetWrapper doDynamic(Node inliningTarget, TruffleString name,
+                        @Cached NormalizeEncodingNameNode normalizeEncodingNameNode) {
+            return CharsetMapping.getCharsetNormalized(normalizeEncodingNameNode.execute(inliningTarget, name));
+        }
+
+        @SuppressWarnings("unused")
+        static CharsetMapping.CharsetWrapper lookup(TruffleString name) {
+            return CharsetMapping.getCharsetNormalized(CharsetMapping.normalizeUncached(name));
+        }
+
+        static boolean equals(TruffleString a, TruffleString b, TruffleString.EqualNode equalNode) {
+            return equalNode.execute(a, b, TS_ENCODING);
+        }
+    }
+
+    @GenerateUncached
     @GenerateInline(false) // footprint reduction 48 -> 30
     public abstract static class CodecsEncodeToJavaBytesNode extends Node {
         public abstract byte[] execute(Frame frame, Object self, TruffleString encoding, TruffleString errors);
@@ -191,6 +232,11 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
         byte[] encode(VirtualFrame frame, Object self, TruffleString encoding, TruffleString errors,
                         @Bind Node inliningTarget,
                         @Cached CastToTruffleStringNode castTruffleStr,
+                        @Cached TruffleString.IsValidNode isValidNode,
+                        @Cached TruffleString.GetCodeRangeNode getCodeRangeNode,
+                        @Cached InlinedConditionProfile fastPathProfile,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                         @Cached TruffleString.EqualNode equalNode,
                         @Cached ErrorHandlers.CallEncodingErrorHandlerNode errorHandler,
@@ -198,17 +244,67 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached CastToJavaStringNode castToJavaStringNode,
                         @Cached PRaiseNode raiseNode,
-                        @Cached NormalizeEncodingNameNode normalizeEncodingNameNode) {
+                        @Cached(inline = true) CharsetLookupNode charsetLookupNode) {
             TruffleString input = castTruffleStr.castKnownString(inliningTarget, self);
-            String inputStr = toJavaStringNode.execute(input);
-            CodingErrorAction errorAction = convertCodingErrorAction(errors, equalNode);
-            TruffleString normalizedEncoding = normalizeEncodingNameNode.execute(inliningTarget, encoding);
-            Charset charset = CharsetMapping.getCharsetNormalized(normalizedEncoding);
-            if (charset == null) {
+            CharsetMapping.CharsetWrapper charsetWrapper = charsetLookupNode.execute(inliningTarget, encoding);
+            if (charsetWrapper == null) {
                 throw raiseNode.raise(inliningTarget, LookupError, ErrorMessages.UNKNOWN_ENCODING, encoding);
             }
+            TruffleString.Encoding targetTStringEncoding = charsetWrapper.tStringEncoding();
+            if (fastPathProfile.profile(inliningTarget, isValidNode.execute(input, TS_ENCODING) && targetTStringEncoding != null)) {
+                byte[] ret = fastPath(input, getCodeRangeNode, switchEncodingNode, copyToByteArrayNode, targetTStringEncoding, charsetWrapper);
+                if (ret != null) {
+                    return ret;
+                }
+            }
+            return slowPath(frame, encoding, errors, inliningTarget, toJavaStringNode, equalNode, errorHandler, acquireLib, bufferLib, castToJavaStringNode, raiseNode, input, charsetWrapper);
+        }
+
+        private static byte[] fastPath(TruffleString input,
+                        TruffleString.GetCodeRangeNode getCodeRangeNode,
+                        TruffleString.SwitchEncodingNode switchEncodingNode,
+                        TruffleString.CopyToByteArrayNode copyToByteArrayNode,
+                        TruffleString.Encoding targetTStringEncoding,
+                        CharsetMapping.CharsetWrapper charsetWrapper) {
+            if (targetTStringEncoding == TruffleString.Encoding.US_ASCII || targetTStringEncoding == TruffleString.Encoding.ISO_8859_1) {
+                TruffleString.CodeRange codeRange = getCodeRangeNode.execute(input, TS_ENCODING);
+                if (codeRange.isSupersetOf(targetTStringEncoding == TruffleString.Encoding.US_ASCII ? TruffleString.CodeRange.LATIN_1 : TruffleString.CodeRange.BMP)) {
+                    // string contains characters that cannot be represented in ASCII / LATIN-1.
+                    // defer to slow path
+                    return null;
+                }
+            }
+            TruffleString transcoded = switchEncodingNode.execute(input, targetTStringEncoding);
+            CharsetMapping.BOM bom = charsetWrapper.bom();
+            byte[] ret = new byte[transcoded.byteLength(targetTStringEncoding) + (bom == null ? 0 : bom.bytes.length)];
+            int startIndex;
+            if (bom == null) {
+                startIndex = 0;
+            } else {
+                System.arraycopy(bom.bytes, 0, ret, 0, bom.bytes.length);
+                startIndex = bom.bytes.length;
+            }
+            copyToByteArrayNode.execute(transcoded, 0, ret, startIndex, transcoded.byteLength(targetTStringEncoding), targetTStringEncoding);
+            return ret;
+        }
+
+        @HostCompilerDirectives.InliningCutoff
+        private byte[] slowPath(VirtualFrame frame, TruffleString encoding, TruffleString errors,
+                        Node inliningTarget,
+                        TruffleString.ToJavaStringNode toJavaStringNode,
+                        TruffleString.EqualNode equalNode,
+                        ErrorHandlers.CallEncodingErrorHandlerNode errorHandler,
+                        PythonBufferAcquireLibrary acquireLib,
+                        PythonBufferAccessLibrary bufferLib,
+                        CastToJavaStringNode castToJavaStringNode,
+                        PRaiseNode raiseNode,
+                        TruffleString input,
+                        CharsetMapping.CharsetWrapper charsetWrapper) {
+            String inputStr = toJavaStringNode.execute(input);
+            CodingErrorAction errorAction = convertCodingErrorAction(errors, equalNode);
             TruffleEncoder encoder;
             ErrorHandlers.ErrorHandlerCache errorHandlerCache = new ErrorHandlers.ErrorHandlerCache();
+            Charset charset = charsetWrapper.charset();
             try {
                 encoder = new TruffleEncoder(charset, inputStr, errorAction);
                 while (!encoder.encodingStep()) {
@@ -290,8 +386,12 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
                         @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
+                        @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                        @Cached TruffleString.IsValidNode isValidNode,
+                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached InlinedConditionProfile fastPathProfile,
                         @Cached TruffleString.EqualNode equalNode,
-                        @Cached NormalizeEncodingNameNode normalizeEncodingNameNode,
+                        @Cached(inline = true) CharsetLookupNode charsetLookupNode,
                         @Cached ErrorHandlers.CallDecodingErrorHandlerNode callDecodingErrorHandlerNode,
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                         @Cached InlinedBranchProfile inputReplaced,
@@ -300,16 +400,56 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
             try {
                 int len = bufferLib.getBufferLength(buffer);
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
-                CodingErrorAction errorAction = convertCodingErrorAction(errors, equalNode);
-                TruffleString normalizedEncoding = normalizeEncodingNameNode.execute(inliningTarget, encoding);
-                Charset charset = CharsetMapping.getCharsetForDecodingNormalized(normalizedEncoding, bytes, len);
+                CharsetMapping.CharsetWrapper charset = charsetLookupNode.execute(inliningTarget, encoding);
                 if (charset == null) {
                     throw raiseNode.raise(inliningTarget, LookupError, ErrorMessages.UNKNOWN_ENCODING, encoding);
                 }
+                CharsetMapping.BOM bom = charset.bom();
+                int offset = 0;
+                if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN && bom != null) {
+                    /*
+                     * JDK's charsets for UTF-16 and UTF-32 default to big endian irrespective of
+                     * the platform if there is no BOM. The UTF-16-LE and UTF-32-LE charsets reject
+                     * big endian BOM. CPython defaults to platform endian and accepts both BOMs.
+                     * So, in order to get the behavior we need, we have to take a peek at the
+                     * possible BOM and if it has a BOM use the UTF-16/32 encoding and let it
+                     * detect, otherwise default to UTF-16/32-LE.
+                     */
+                    if (charset == CharsetMapping.UTF_16LE_BOM) {
+                        if (len >= 2) {
+                            short first = PythonUtils.ARRAY_ACCESSOR.getShort(bytes, 0);
+                            if (first == (short) 0xFFFE) {
+                                charset = CharsetMapping.UTF_16BE_BOM;
+                                offset = 2;
+                            } else if (first == (short) 0xFEFF) {
+                                offset = 2;
+                            }
+                        }
+                    } else {
+                        assert charset == CharsetMapping.UTF_32LE_BOM;
+                        if (len >= 4) {
+                            int first = PythonUtils.ARRAY_ACCESSOR.getInt(bytes, 0);
+                            if (first == 0xFFFE0000) {
+                                charset = CharsetMapping.UTF_32BE_BOM;
+                                offset = 4;
+                            } else if (first == 0x0000FEFF) {
+                                offset = 4;
+                            }
+                        }
+                    }
+                }
+                TruffleString.Encoding tStringEncoding = charset.tStringEncoding();
+                if (tStringEncoding != null && (len & (charset.stride() - 1)) == 0) {
+                    TruffleString direct = fromByteArrayNode.execute(bytes, offset, len - offset, tStringEncoding, true);
+                    if (fastPathProfile.profile(inliningTarget, isValidNode.execute(direct, tStringEncoding))) {
+                        return PFactory.createTuple(language, new Object[]{switchEncodingNode.execute(direct, TS_ENCODING), len});
+                    }
+                }
+                CodingErrorAction errorAction = convertCodingErrorAction(errors, equalNode);
                 ErrorHandlers.ErrorHandlerCache handlerCache = new ErrorHandlers.ErrorHandlerCache();
                 TruffleDecoder decoder;
                 try {
-                    decoder = new TruffleDecoder(normalizedEncoding, charset, bytes, len, errorAction);
+                    decoder = new TruffleDecoder(charset.charset(), bytes, len, errorAction);
                     while (!decoder.decodingStep(finalData)) {
                         int pos = decoder.getInputPosition();
                         ErrorHandlers.DecodingErrorHandlerResult result = callDecodingErrorHandlerNode.execute(frame, inliningTarget, handlerCache, errors, encoding, input,
@@ -1367,15 +1507,13 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
     }
 
     static class TruffleDecoder {
-        private final TruffleString encodingName;
         private final CharsetDecoder decoder;
         private ByteBuffer inputBuffer;
         private CharBuffer outputBuffer;
         private CoderResult coderResult;
 
         @TruffleBoundary
-        public TruffleDecoder(TruffleString encodingName, Charset charset, byte[] input, int inputLen, CodingErrorAction errorAction) {
-            this.encodingName = encodingName;
+        public TruffleDecoder(Charset charset, byte[] input, int inputLen, CodingErrorAction errorAction) {
             this.inputBuffer = ByteBuffer.wrap(input, 0, inputLen);
             this.decoder = charset.newDecoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction);
             this.outputBuffer = CharBuffer.allocate((int) (inputLen * decoder.averageCharsPerByte()));
@@ -1473,8 +1611,5 @@ public final class CodecsModuleBuiltins extends PythonBuiltins {
             inputBuffer.position(inputBuffer.position() + skipInput);
         }
 
-        public TruffleString getEncodingName() {
-            return encodingName;
-        }
     }
 }

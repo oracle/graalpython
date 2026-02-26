@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.bytes;
 
-import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.createASCIIString;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.isSpace;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyBytesObject__ob_sval;
 import static com.oracle.graal.python.builtins.objects.cext.structs.CFields.PyVarObject__ob_size;
@@ -707,8 +706,7 @@ public abstract class BytesNodes {
 
         @Specialization(guards = "bytesPerSepGroup == 0")
         static TruffleString zero(byte[] argbuf, int arglen, @SuppressWarnings("unused") byte sep, @SuppressWarnings("unused") int bytesPerSepGroup,
-                        @Shared @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
-                        @Shared @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
+                        @Shared @Cached TruffleString.FromByteArrayWithCompactionUTF32Node fromByteArrayNode) {
 
             int resultlen = arglen * 2;
             byte[] retbuf = new byte[resultlen];
@@ -719,14 +717,13 @@ public abstract class BytesNodes {
                 retbuf[j++] = BytesUtils.HEXDIGITS[c >>> 4];
                 retbuf[j++] = BytesUtils.HEXDIGITS[c & 0x0f];
             }
-            return createASCIIString(retbuf, fromByteArrayNode, switchEncodingNode);
+            return fromByteArrayNode.execute(retbuf, 0, retbuf.length, TruffleString.CompactionLevel.S1, false);
         }
 
         @Specialization(guards = "bytesPerSepGroup < 0")
         static TruffleString negative(Node inliningTarget, byte[] argbuf, int arglen, byte sep, int bytesPerSepGroup,
                         @Shared @Cached InlinedConditionProfile earlyExit,
-                        @Shared @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
-                        @Shared @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Shared @Cached TruffleString.FromByteArrayWithCompactionUTF32Node fromByteArrayNode,
                         @Shared @Cached PRaiseNode raiseNode) {
             if (earlyExit.profile(inliningTarget, arglen == 0)) {
                 return T_EMPTY_STRING;
@@ -741,7 +738,7 @@ public abstract class BytesNodes {
             resultlen += arglen * 2;
 
             if (absBytesPerSepGroup >= arglen) {
-                return zero(argbuf, arglen, sep, 0, fromByteArrayNode, switchEncodingNode);
+                return zero(argbuf, arglen, sep, 0, fromByteArrayNode);
             }
 
             byte[] retbuf = new byte[resultlen];
@@ -761,14 +758,13 @@ public abstract class BytesNodes {
                 retbuf[j++] = BytesUtils.HEXDIGITS[c & 0x0f];
             }
 
-            return createASCIIString(retbuf, fromByteArrayNode, switchEncodingNode);
+            return fromByteArrayNode.execute(retbuf, 0, retbuf.length, TruffleString.CompactionLevel.S1, false);
         }
 
         @Specialization(guards = "absBytesPerSepGroup > 0")
         static TruffleString positive(Node inliningTarget, byte[] argbuf, int arglen, byte sep, int absBytesPerSepGroup,
                         @Shared @Cached InlinedConditionProfile earlyExit,
-                        @Shared @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
-                        @Shared @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Shared @Cached TruffleString.FromByteArrayWithCompactionUTF32Node fromByteArrayNode,
                         @Shared @Cached PRaiseNode raiseNode) {
             if (earlyExit.profile(inliningTarget, arglen == 0)) {
                 return T_EMPTY_STRING;
@@ -783,7 +779,7 @@ public abstract class BytesNodes {
             resultlen += arglen * 2;
 
             if (absBytesPerSepGroup >= arglen) {
-                return zero(argbuf, arglen, sep, 0, fromByteArrayNode, switchEncodingNode);
+                return zero(argbuf, arglen, sep, 0, fromByteArrayNode);
             }
 
             byte[] retbuf = new byte[resultlen];
@@ -803,7 +799,7 @@ public abstract class BytesNodes {
                 retbuf[j--] = BytesUtils.HEXDIGITS[c & 0x0f];
                 retbuf[j--] = BytesUtils.HEXDIGITS[c >>> 4];
             }
-            return createASCIIString(retbuf, fromByteArrayNode, switchEncodingNode);
+            return fromByteArrayNode.execute(retbuf, 0, retbuf.length, TruffleString.CompactionLevel.S1, false);
         }
     }
 

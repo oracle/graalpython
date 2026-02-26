@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -80,15 +80,14 @@ public final class NativeStringData {
         return storage.length();
     }
 
-    public TruffleString toTruffleString(TruffleString.FromNativePointerNode fromNativePointerNode) {
-        TruffleString.Encoding encoding = switch (kind) {
-            case KIND_ASCII -> TruffleString.Encoding.US_ASCII;
-            case KIND_1BYTE -> TruffleString.Encoding.ISO_8859_1;
-            case KIND_2BYTE -> TruffleString.Encoding.UTF_16;
-            case KIND_4BYTE -> TruffleString.Encoding.UTF_32;
+    public TruffleString toTruffleString(TruffleString.FromNativePointerWithCompactionUTF32Node fromNativePointerNode) {
+        TruffleString.CompactionLevel compactionLevel = switch (kind) {
+            case KIND_ASCII, KIND_1BYTE -> TruffleString.CompactionLevel.S1;
+            case KIND_2BYTE -> TruffleString.CompactionLevel.S2;
+            case KIND_4BYTE -> TruffleString.CompactionLevel.S4;
             default -> throw CompilerDirectives.shouldNotReachHere();
         };
         // NativeByteSequenceStorage implements asPointer
-        return fromNativePointerNode.execute(storage, 0, storage.length(), encoding, false);
+        return fromNativePointerNode.execute(storage, 0, storage.length(), compactionLevel, false);
     }
 }

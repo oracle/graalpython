@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -871,7 +871,7 @@ public class PUnpickler extends PythonBuiltinObject {
             }
 
             try {
-                long x = PickleUtils.asciiBytesToLong(s, ensureTsParseLongNode(), ensureTsFromByteArray());
+                long x = PickleUtils.asciiBytesToLong(s, ensureTsParseLongNode(), ensureTsFromByteArrayWithCompaction());
                 if (s.length == 3 && (x == 0 || x == 1)) {
                     value = x != 0;
                 } else if (x == (int) x) {
@@ -900,7 +900,7 @@ public class PUnpickler extends PythonBuiltinObject {
                 s[s.length - 2] = 0;
             }
             try {
-                value = PickleUtils.asciiBytesToLong(s, ensureTsParseLongNode(), ensureTsFromByteArray());
+                value = PickleUtils.asciiBytesToLong(s, ensureTsParseLongNode(), ensureTsFromByteArrayWithCompaction());
             } catch (TruffleString.NumberFormatException nfe) {
                 value = parseInt(s);
             }
@@ -1505,7 +1505,7 @@ public class PUnpickler extends PythonBuiltinObject {
             }
             int idx;
             try {
-                idx = PickleUtils.asciiBytesToInt(s, ensureTsParseIntNode(), ensureTsFromByteArray());
+                idx = PickleUtils.asciiBytesToInt(s, ensureTsParseIntNode(), ensureTsFromByteArrayWithCompaction());
             } catch (TruffleString.NumberFormatException nfe) {
                 // TODO handle exception [GR-38101]
                 throw CompilerDirectives.shouldNotReachHere();
@@ -1572,7 +1572,7 @@ public class PUnpickler extends PythonBuiltinObject {
             Object value = self.stack.data[self.stack.size - 1];
             int idx;
             try {
-                idx = PickleUtils.asciiBytesToInt(s, ensureTsParseIntNode(), ensureTsFromByteArray());
+                idx = PickleUtils.asciiBytesToInt(s, ensureTsParseIntNode(), ensureTsFromByteArrayWithCompaction());
             } catch (TruffleString.NumberFormatException nfe) {
                 // TODO handle exception [GR-38101]
                 throw CompilerDirectives.shouldNotReachHere();

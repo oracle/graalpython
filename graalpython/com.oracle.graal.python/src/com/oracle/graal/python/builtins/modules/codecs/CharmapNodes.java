@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -369,15 +369,14 @@ public final class CharmapNodes {
                         @Shared @Cached("createFor($node)") InteropCallData callData,
                         @CachedLibrary("data") PythonBufferAcquireLibrary bufferAcquireLib,
                         @CachedLibrary(limit = "3") @Shared PythonBufferAccessLibrary bufferLib,
-                        @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                        @Cached TruffleString.FromByteArrayWithCompactionUTF32Node fromByteArrayNode,
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
             // equivalent of PyUnicode_DecodeLatin1
             Object dataBuffer = bufferAcquireLib.acquireReadonly(data, frame, context, context.getLanguage(inliningTarget), callData);
             try {
                 int len = bufferLib.getBufferLength(dataBuffer);
                 byte[] src = bufferLib.getInternalOrCopiedByteArray(dataBuffer);
-                TruffleString latin1 = fromByteArrayNode.execute(src, 0, len, TruffleString.Encoding.ISO_8859_1, true);
-                return switchEncodingNode.execute(latin1, TS_ENCODING);
+                return fromByteArrayNode.execute(src, 0, len, TruffleString.CompactionLevel.S1, true);
             } finally {
                 bufferLib.release(dataBuffer, frame, callData);
             }

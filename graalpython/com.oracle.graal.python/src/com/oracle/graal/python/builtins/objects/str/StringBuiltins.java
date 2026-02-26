@@ -892,7 +892,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached TruffleString.ByteIndexOfCodePointSetNode indexOfCodePointSetNode,
                         @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
-                        @Cached TruffleString.FromByteArrayNode fromByteArrayNode) {
+                        @Cached TruffleString.FromByteArrayWithCompactionUTF32Node fromByteArrayNode) {
             TruffleString ascii = switchEncodingNode.execute(self, Encoding.US_ASCII);
             int i = indexOfCodePointSetNode.execute(ascii, 0, ascii.byteLength(Encoding.US_ASCII), ASCII_UPPER);
             if (i < 0) {
@@ -905,7 +905,7 @@ public final class StringBuiltins extends PythonBuiltins {
                     buf[i] = (byte) (buf[i] - 'A' + 'a');
                 }
             }
-            return switchEncodingNode.execute(fromByteArrayNode.execute(buf, Encoding.US_ASCII, false), TS_ENCODING);
+            return fromByteArrayNode.execute(buf, 0, buf.length, TruffleString.CompactionLevel.S1, false);
         }
 
         @Specialization(guards = "!isAscii(self, getCodeRangeNode)")
@@ -939,7 +939,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
                         @Cached TruffleString.ByteIndexOfCodePointSetNode indexOfCodePointSetNode,
                         @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
-                        @Cached TruffleString.FromByteArrayNode fromByteArrayNode) {
+                        @Cached TruffleString.FromByteArrayWithCompactionUTF32Node fromByteArrayNode) {
             TruffleString ascii = switchEncodingNode.execute(self, Encoding.US_ASCII);
             int i = indexOfCodePointSetNode.execute(ascii, 0, ascii.byteLength(Encoding.US_ASCII), ASCII_LOWER);
             if (i < 0) {
@@ -952,7 +952,7 @@ public final class StringBuiltins extends PythonBuiltins {
                     buf[i] = (byte) (buf[i] - 'a' + 'A');
                 }
             }
-            return switchEncodingNode.execute(fromByteArrayNode.execute(buf, Encoding.US_ASCII, false), TS_ENCODING);
+            return fromByteArrayNode.execute(buf, 0, buf.length, TruffleString.CompactionLevel.S1, false);
         }
 
         @Specialization(guards = "!isAscii(self, getCodeRangeNode)")

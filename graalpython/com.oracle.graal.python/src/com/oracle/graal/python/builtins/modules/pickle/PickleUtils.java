@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -257,21 +257,21 @@ public final class PickleUtils {
     }
 
     public static TruffleString getValidIntString(byte[] bytes) {
-        return getValidIntASCIIString(bytes, TruffleString.FromByteArrayNode.getUncached());
+        return getValidIntASCIIString(bytes, TruffleString.FromByteArrayWithCompactionUTF32Node.getUncached());
     }
 
-    public static int asciiBytesToInt(byte[] bytes, TruffleString.ParseIntNode parseIntNode, TruffleString.FromByteArrayNode fromByteArrayNode)
+    public static int asciiBytesToInt(byte[] bytes, TruffleString.ParseIntNode parseIntNode, TruffleString.FromByteArrayWithCompactionUTF32Node fromByteArrayNode)
                     throws TruffleString.NumberFormatException {
         return parseIntNode.execute(getValidIntASCIIString(bytes, fromByteArrayNode), 10);
     }
 
-    public static long asciiBytesToLong(byte[] bytes, TruffleString.ParseLongNode parseLongNode, TruffleString.FromByteArrayNode fromByteArrayNode)
+    public static long asciiBytesToLong(byte[] bytes, TruffleString.ParseLongNode parseLongNode, TruffleString.FromByteArrayWithCompactionUTF32Node fromByteArrayNode)
                     throws TruffleString.NumberFormatException {
         return parseLongNode.execute(getValidIntASCIIString(bytes, fromByteArrayNode), 10);
     }
 
-    private static TruffleString getValidIntASCIIString(byte[] bytes, TruffleString.FromByteArrayNode fromByteArray) {
-        return fromByteArray.execute(bytes, 0, getStringSize(bytes), TruffleString.Encoding.US_ASCII, true);
+    private static TruffleString getValidIntASCIIString(byte[] bytes, TruffleString.FromByteArrayWithCompactionUTF32Node fromByteArray) {
+        return fromByteArray.execute(bytes, 0, getStringSize(bytes), TruffleString.CompactionLevel.S1, true);
     }
 
     @TruffleBoundary
@@ -316,8 +316,8 @@ public final class PickleUtils {
         return decodeStrict(data, len, fromByteArrayNode, TruffleString.Encoding.UTF_8, switchEncodingNode);
     }
 
-    public static TruffleString decodeLatin1Strict(byte[] data, TruffleString.FromByteArrayNode fromByteArrayNode, TruffleString.SwitchEncodingNode switchEncodingNode) {
-        return decodeStrict(data, data.length, fromByteArrayNode, TruffleString.Encoding.ISO_8859_1, switchEncodingNode);
+    public static TruffleString decodeLatin1Strict(byte[] data, TruffleString.FromByteArrayWithCompactionUTF32Node fromByteArrayNode) {
+        return fromByteArrayNode.execute(data, 0, data.length, TruffleString.CompactionLevel.S1, true);
     }
 
     private static TruffleString decodeStrict(byte[] data, int len, TruffleString.FromByteArrayNode fromByteArrayNode, TruffleString.Encoding encoding,

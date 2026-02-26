@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -54,7 +54,6 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.api.strings.TruffleString.Encoding;
 import com.oracle.truffle.api.strings.TruffleStringIterator;
 
 /**
@@ -81,8 +80,7 @@ public abstract class PyObjectAsciiNode extends PNodeWithContext {
                     @Cached TruffleString.CreateCodePointIteratorNode createCodePointIteratorNode,
                     @Cached TruffleStringIterator.NextNode nextNode,
                     @Cached TruffleString.CodePointLengthNode codePointLengthNode,
-                    @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
-                    @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
+                    @Cached TruffleString.FromByteArrayWithCompactionUTF32Node fromByteArrayNode) {
         // TODO GR-37220: rewrite using TruffleStringBuilder?
         TruffleString repr = reprNode.execute(frame, inliningTarget, obj);
         if (getCodeRangeNode.execute(repr, TS_ENCODING) == TruffleString.CodeRange.ASCII) {
@@ -95,7 +93,7 @@ public abstract class PyObjectAsciiNode extends PNodeWithContext {
             int ch = nextNode.execute(it, TS_ENCODING);
             j = unicodeNonAsciiEscape(ch, j, bytes);
         }
-        return switchEncodingNode.execute(fromByteArrayNode.execute(bytes, 0, j, Encoding.US_ASCII, true), TS_ENCODING);
+        return fromByteArrayNode.execute(bytes, 0, j, TruffleString.CompactionLevel.S1, true);
     }
 
     @NeverDefault
