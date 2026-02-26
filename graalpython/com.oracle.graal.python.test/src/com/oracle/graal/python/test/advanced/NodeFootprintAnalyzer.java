@@ -466,6 +466,11 @@ public class NodeFootprintAnalyzer {
         printStream.println("    --no-headers    Don't include header in .csv file (also works for .txt version)");
         printStream.println("    --output-dir    Where to output the non-shortened files.");
         printStream.println("                    Creates 'nfa-output' directory. Default: '/tmp'");
+        printStream.println("Note: Files are stored in your selected output directory (of in '/tmp' if you didn't");
+        printStream.println("      specify any), in the 'nfa-output' subdirectory. Each invocation of the tool creates");
+        printStream.println("      another subdirectory in the 'nfa-output' direcotry with ISO date and time set as");
+        printStream.println("      its name. If your platform supports it, a link called 'latest' is created that");
+        printStream.println("      will always point to the directory containing the results of the latest run.");
     }
 
     public static void main(String[] args) throws Exception {
@@ -485,7 +490,10 @@ public class NodeFootprintAnalyzer {
             } else if (args[i].equals("--output-dir")) {
                 outDirModifiable = args[i + 1];
                 i++;
-            } else {
+            } else if (args[i].equals("--help")) {
+                printHelp(System.out);
+                return;
+            }else {
                 System.err.println(String.format("Invalid option: \"%s\"", args[i]));
                 printHelp(System.err);
                 return;
