@@ -84,6 +84,7 @@ import com.oracle.graal.python.annotations.CApiConstants;
 import com.oracle.graal.python.annotations.CApiExternalFunctionSignatures;
 import com.oracle.graal.python.annotations.CApiFields;
 import com.oracle.graal.python.annotations.CApiStructs;
+import com.oracle.graal.python.annotations.CApiUpcallTarget;
 import com.sun.source.tree.VariableTree;
 import com.sun.source.util.TreePathScanner;
 import com.sun.source.util.Trees;
@@ -710,7 +711,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
     /**
      * Generates the native image config for the direct upcalls to the builtins.
      */
-    private void generateUpcallConfig(List<CApiBuiltinDesc> javaBuiltins) throws IOException {
+    private void generateUpcallConfig(List<CApiBuiltinDesc> javaBuiltins, List<ExecutableElement> explicitUpcallTargets) throws IOException {
         ArrayList<String> lines = new ArrayList<>();
         lines.add("{");
         lines.add("  \"foreign\": {");
@@ -722,11 +723,31 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             String classString = getUpcallTargetClass(builtin);
             String methodString = getUpcallTargetMethod(builtin);
             lines.add("      {");
-            lines.add("        \"class\": \"" + classString + "\",");
-            lines.add("        \"method\": \"" + methodString + "\",");
-            lines.add("        \"returnType\": \"" + capiTypeToForeignPrimitiveType(builtin.returnType) + "\",");
-            lines.add("        \"parameterTypes\": [" + argString + "]");
-            if (i < javaBuiltins.size() - 1) {
+            emitDirectUpcall(lines, classString, methodString, capiTypeToForeignPrimitiveType(builtin.returnType), argString);
+            if (i < javaBuiltins.size() - 1 || !explicitUpcallTargets.isEmpty()) {
+                lines.add("      },");
+            } else {
+                lines.add("      }");
+            }
+        }
+        for (int i = 0; i < explicitUpcallTargets.size(); i++) {
+            ExecutableElement explicitUpcallTarget = explicitUpcallTargets.get(i);
+
+            if (!verifySignatureOfExplicitUpcallTarget(explicitUpcallTarget)) {
+                continue;
+            }
+
+            Element enclosingElement = explicitUpcallTarget.getEnclosingElement();
+            if (enclosingElement.getKind() != ElementKind.CLASS) {
+                processingEnv.getMessager().printError("Method is expected to be enclosed by a class", explicitUpcallTarget);
+                continue;
+            }
+            String classString = processingEnv.getElementUtils().getBinaryName((TypeElement) enclosingElement).toString();
+            String methodString = explicitUpcallTarget.getSimpleName().toString();
+            String argString = explicitUpcallTarget.getParameters().stream().map(VariableElement::asType).map(t -> '"' + toJNIName(t) + '"').collect(Collectors.joining(", "));
+            lines.add("      {");
+            emitDirectUpcall(lines, classString, methodString, explicitUpcallTarget.getReturnType().toString(), argString);
+            if (i < explicitUpcallTargets.size() - 1) {
                 lines.add("      },");
             } else {
                 lines.add("      }");
@@ -755,6 +776,37 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
             return "upcall_" + builtin.name;
         }
         return builtin.origin.getSimpleName().toString();
+    }
+
+    private static void emitDirectUpcall(ArrayList<String> lines, String classString, String methodString, String returnType, String argString) {
+        lines.add("        \"class\": \"" + classString + "\",");
+        lines.add("        \"method\": \"" + methodString + "\",");
+        lines.add("        \"returnType\": \"" + returnType + "\",");
+        lines.add("        \"parameterTypes\": [" + argString + "]");
+    }
+
+    private static String toJNIName(TypeMirror typeMirror) {
+        assert typeMirror.getKind().isPrimitive();
+        if (typeMirror.getKind() == TypeKind.VOID) {
+            return "void";
+        }
+        return "j" + typeMirror;
+    }
+
+    private boolean verifySignatureOfExplicitUpcallTarget(ExecutableElement explicitUpcallTarget) {
+        if (!explicitUpcallTarget.getReturnType().getKind().isPrimitive()) {
+            processingEnv.getMessager().printError("Return type must be primitive but was " + explicitUpcallTarget.getReturnType(), explicitUpcallTarget);
+            return false;
+        }
+
+        for (int i = 0; i < explicitUpcallTarget.getParameters().size(); i++) {
+            VariableElement variableElement = explicitUpcallTarget.getParameters().get(i);
+            if (!variableElement.asType().getKind().isPrimitive()) {
+                processingEnv.getMessager().printError("Parameter type must be primitive but was " + variableElement.asType(), variableElement);
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -2008,6 +2060,14 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                 }
             }
         }
+        List<ExecutableElement> explicitUpcallTargets = new LinkedList<>();
+        for (var el : re.getElementsAnnotatedWith(CApiUpcallTarget.class)) {
+            if (el.getKind() == ElementKind.METHOD) {
+                explicitUpcallTargets.add((ExecutableElement) el);
+            } else {
+                processingEnv.getMessager().printError(CApiUpcallTarget.class.getSimpleName() + " is only applicable for methods.", el);
+            }
+        }
         Map<String, CApiExternalFunctionSignatureDesc> sigs = new HashMap<>();
         for (var el : re.getElementsAnnotatedWith(CApiExternalFunctionSignatures.class)) {
             if (el.getKind() == ElementKind.ENUM) {
@@ -2038,7 +2098,7 @@ public class CApiBuiltinsProcessor extends AbstractProcessor {
                 generateExternalFunctionRootNodes(externalFunctionDescs, cApiExternalFunctionWrapperDescs, sigs);
             }
             generateBuiltinRegistry(javaBuiltins);
-            generateUpcallConfig(javaBuiltins);
+            generateUpcallConfig(javaBuiltins, explicitUpcallTargets);
             generateCApiAsserts(allBuiltins);
             if (trees != null) {
                 // needs jdk.compiler
