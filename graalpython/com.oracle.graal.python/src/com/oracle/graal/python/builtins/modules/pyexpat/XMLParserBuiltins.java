@@ -422,17 +422,18 @@ public final class XMLParserBuiltins extends PythonBuiltins {
             @Override
             public void externalEntityDecl(String name, String publicId, String systemId) {
                 boolean isParameterEntity = name != null && name.startsWith("%");
-                call("EntityDeclHandler", toTs(name), isParameterEntity ? 1 : 0, PNone.NONE, parser.base == null ? PNone.NONE : parser.base, toTs(systemId), toTs(publicId), PNone.NONE);
+                call("EntityDeclHandler", toTs(name), isParameterEntity ? 1 : 0, PNone.NONE, parser.base == null ? PNone.NONE : parser.base, toOptionalTs(normalizeSystemId(systemId)),
+                                toOptionalTs(publicId), PNone.NONE);
             }
 
             @Override
             public void notationDecl(String name, String publicId, String systemId) {
-                call("NotationDeclHandler", toTs(name), parser.base == null ? PNone.NONE : parser.base, toTs(systemId), toTs(publicId));
+                call("NotationDeclHandler", toTs(name), parser.base == null ? PNone.NONE : parser.base, toOptionalTs(normalizeSystemId(systemId)), toOptionalTs(publicId));
             }
 
             @Override
             public void unparsedEntityDecl(String name, String publicId, String systemId, String notationName) {
-                call("UnparsedEntityDeclHandler", toTs(name), parser.base == null ? PNone.NONE : parser.base, toTs(systemId), toTs(publicId), toTs(notationName));
+                call("UnparsedEntityDeclHandler", toTs(name), parser.base == null ? PNone.NONE : parser.base, toOptionalTs(normalizeSystemId(systemId)), toOptionalTs(publicId), toTs(notationName));
             }
 
             @Override
@@ -569,6 +570,27 @@ public final class XMLParserBuiltins extends PythonBuiltins {
 
             private TruffleString toTs(String s) {
                 return toTruffleStringUncached(s == null ? "" : s);
+            }
+
+            private Object toOptionalTs(String s) {
+                return s == null || s.isEmpty() ? PNone.NONE : toTruffleStringUncached(s);
+            }
+
+            private String normalizeSystemId(String systemId) {
+                if (systemId == null || parser.base != null) {
+                    return systemId;
+                }
+                String s = systemId;
+                while (s.startsWith("file://")) {
+                    s = s.substring("file://".length());
+                }
+                if (s.startsWith("/")) {
+                    int idx = s.lastIndexOf('/');
+                    if (idx >= 0 && idx + 1 < s.length()) {
+                        return s.substring(idx + 1);
+                    }
+                }
+                return systemId;
             }
         }
 

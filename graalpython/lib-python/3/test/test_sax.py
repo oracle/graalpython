@@ -1004,10 +1004,6 @@ class ExpatReaderTest(XmlTestBase):
             source.setSystemId(systemId)
             return source
 
-    @_skip_if_java_pyexpat_backend(
-        "Java pyexpat backend currently does not provide Expat-equivalent DTD notation/entity callbacks "
-        "used by this SAX DTD handler test."
-    )
     def test_expat_dtdhandler(self):
         parser = create_parser()
         handler = self.TestDTDHandler()
