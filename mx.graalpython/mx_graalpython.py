@@ -113,7 +113,8 @@ SANDBOXED_OPTIONS = [
     '--experimental-options',
     '--python.PosixModuleBackend=java',
     '--python.Sha3ModuleBackend=java',
-    '--python.CompressionModulesBackend=java'
+    '--python.CompressionModulesBackend=java',
+    '--python.PyExpatModuleBackend=java',
 ]
 
 
@@ -1308,6 +1309,29 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
     return result
 
 
+def run_sandboxed_tests(python_binary, report, **kwargs):
+    run_python_unittests(python_binary, args=SANDBOXED_OPTIONS, report=report, **kwargs)
+    tagged_test_path = os.path.relpath(os.path.join(_get_stdlib_home(), 'test'))
+    tagged_tests = [
+        # compression
+        'test_zlib.py',
+        # TODO
+        # 'test_lzma.py',
+        # 'test_zipimport.py',
+        # sha3
+        'test_hashlib.py',
+        # expat
+        'test_pyexpat.py',
+        'test_xml_etree.py',
+        'test_xml_dom_minicompat.py',
+        'test_sax.py',
+        'test_pulldom.py',
+        'test_minidom.py',
+    ]
+    paths = [os.path.join(tagged_test_path, test) for test in tagged_tests]
+    run_tagged_unittests(python_binary, args=SANDBOXED_OPTIONS, paths=paths, report=report, **kwargs)
+
+
 def run_hpy_unittests(python_binary, args=None, env=None, nonZeroIsFatal=True, timeout=None, report: Union[Task, bool, None] = False):
     t0 = time.time()
     result = downstream_tests.downstream_test_hpy(python_binary, args=args, env=env, check=nonZeroIsFatal, timeout=timeout)
@@ -1320,12 +1344,12 @@ def run_hpy_unittests(python_binary, args=None, env=None, nonZeroIsFatal=True, t
 
 
 def run_tagged_unittests(python_binary, env=None, cwd=None, nonZeroIsFatal=True, checkIfWithGraalPythonEE=False,
-                         report: Union[Task, bool, None] = False, parallel=8, exclude=None, paths=()):
-
+                         report: Union[Task, bool, None] = False, parallel=8, exclude=None, paths=(), args=None):
     if checkIfWithGraalPythonEE:
         mx.run([python_binary, "-c", "import sys; print(sys.version)"])
     run_python_unittests(
         python_binary,
+        args=args,
         runner_args=[f'--append-path={os.path.join(_dev_pythonhome(), "lib-python", "3")}', '--tagged'],
         paths=paths or [os.path.relpath(os.path.join(_get_stdlib_home(), 'test'))],
         env=env,
@@ -1497,7 +1521,11 @@ def graalpython_gate_runner(_, tasks):
 
     with Task('GraalPython sandboxed tests', tasks, tags=[GraalPythonTags.unittest_sandboxed]) as task:
         if task:
-            run_python_unittests(graalpy_standalone_jvm_enterprise(), args=SANDBOXED_OPTIONS, report=report())
+            run_sandboxed_tests(graalpy_standalone_jvm_enterprise(), report=report())
+
+    with Task('GraalPython sandboxed tests on SVM', tasks, tags=[GraalPythonTags.svmunit_sandboxed]) as task:
+        if task:
+            run_sandboxed_tests(graalpy_standalone_native_enterprise(), parallel=8, report=report())
 
     with Task('GraalPython multi-context unittests', tasks, tags=[GraalPythonTags.unittest_multi]) as task:
         if task:
@@ -1571,10 +1599,6 @@ def graalpython_gate_runner(_, tasks):
     with Task('GraalPython tests on SVM', tasks, tags=[GraalPythonTags.svmunit]) as task:
         if task:
             run_python_unittests(graalpy_standalone_native(), parallel=8, report=report())
-
-    with Task('GraalPython sandboxed tests on SVM', tasks, tags=[GraalPythonTags.svmunit_sandboxed]) as task:
-        if task:
-            run_python_unittests(graalpy_standalone_native_enterprise(), parallel=8, args=SANDBOXED_OPTIONS, report=report())
 
     with Task('GraalPython license header update', tasks, tags=[GraalPythonTags.license]) as task:
         if task:
