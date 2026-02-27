@@ -1176,7 +1176,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     XMLParser(
                     "xmlparser",
                     PythonObject,
-                    newBuilder().publishInModule("pyexpat").basetype().addDict().slots(XMLParserBuiltins.SLOTS).doc("""
+                    newBuilder().publishInModule("pyexpat").basetype().disallowInstantiation().slots(XMLParserBuiltins.SLOTS).doc("""
                                     pyexpat XML parser object""")),
 
     // datetime

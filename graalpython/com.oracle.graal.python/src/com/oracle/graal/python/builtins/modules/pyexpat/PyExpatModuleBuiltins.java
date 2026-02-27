@@ -74,6 +74,9 @@ import com.oracle.truffle.api.strings.TruffleString;
 public final class PyExpatModuleBuiltins extends PythonBuiltins {
     private static final TruffleString T_CODES = tsLiteral("codes");
     private static final TruffleString T_MESSAGES = tsLiteral("messages");
+    private static final TruffleString T_PARSER_CREATE = tsLiteral("ParserCreate");
+    private static final TruffleString T_NAMESPACE_SEPARATOR = tsLiteral("'namespace_separator'");
+    private static final TruffleString T_STR_OR_NONE = tsLiteral("str or None");
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -157,6 +160,9 @@ public final class PyExpatModuleBuiltins extends PythonBuiltins {
                         @Bind Node inliningTarget,
                         @Cached PRaiseNode raiseNode) {
             Object sep = namespaceSeparator == PNone.NO_VALUE ? PNone.NONE : namespaceSeparator;
+            if (sep != PNone.NONE && !(sep instanceof TruffleString)) {
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.S_BRACKETS_ARG_S_MUST_BE_S_NOT_P, T_PARSER_CREATE, T_NAMESPACE_SEPARATOR, T_STR_OR_NONE, sep);
+            }
             Object internDict;
             if (intern == PNone.NO_VALUE) {
                 internDict = PFactory.createDict(PythonLanguage.get(inliningTarget));

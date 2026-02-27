@@ -58,6 +58,7 @@ import org.xml.sax.InputSource;
 import org.xml.sax.Locator;
 import org.xml.sax.SAXParseException;
 import org.xml.sax.XMLReader;
+import org.xml.sax.ext.Attributes2;
 import org.xml.sax.ext.DefaultHandler2;
 import org.xml.sax.helpers.DefaultHandler;
 
@@ -76,7 +77,10 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrar
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.type.TpSlots;
+import com.oracle.graal.python.lib.PyLongAsLongNode;
+import com.oracle.graal.python.lib.PyLongCheckNode;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -106,19 +110,10 @@ import com.oracle.truffle.api.strings.TruffleString;
 @CoreFunctions(extendClasses = PythonBuiltinClassType.XMLParser)
 public final class XMLParserBuiltins extends PythonBuiltins {
     public static final TpSlots SLOTS = XMLParserBuiltinsSlotsGen.SLOTS;
-    private static final TruffleString T_BUFFER_TEXT = tsLiteral("buffer_text");
-    private static final TruffleString T_NAMESPACE_PREFIXES = tsLiteral("namespace_prefixes");
-    private static final TruffleString T_ORDERED_ATTRIBUTES = tsLiteral("ordered_attributes");
-    private static final TruffleString T_SPECIFIED_ATTRIBUTES = tsLiteral("specified_attributes");
-    private static final TruffleString T_BUFFER_SIZE = tsLiteral("buffer_size");
-    private static final TruffleString T_RETURNS_UNICODE = tsLiteral("returns_unicode");
-    private static final TruffleString T_CURRENT_BYTE_INDEX = tsLiteral("CurrentByteIndex");
-    private static final TruffleString T_CURRENT_LINE_NUMBER = tsLiteral("CurrentLineNumber");
-    private static final TruffleString T_CURRENT_COLUMN_NUMBER = tsLiteral("CurrentColumnNumber");
-    private static final TruffleString T_ERROR_BYTE_INDEX = tsLiteral("ErrorByteIndex");
-    private static final TruffleString T_ERROR_LINE_NUMBER = tsLiteral("ErrorLineNumber");
-    private static final TruffleString T_ERROR_COLUMN_NUMBER = tsLiteral("ErrorColumnNumber");
     private static final TruffleString T_READ = tsLiteral("read");
+    private static final TruffleString T_BUFFER_SIZE_MUST_BE_AN_INTEGER = tsLiteral("buffer_size must be an integer");
+    private static final TruffleString T_BUFFER_SIZE_MUST_BE_GREATER_THAN_ZERO = tsLiteral("buffer_size must be greater than zero");
+    private static final TruffleString T_BUFFER_SIZE_MUST_NOT_BE_GREATER_THAN_D = tsLiteral("buffer_size must not be greater than %d");
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -139,19 +134,7 @@ public final class XMLParserBuiltins extends PythonBuiltins {
         }
         PythonLanguage language = PythonLanguage.get(inliningTarget);
         PXMLParser parser = PFactory.createXMLParser(PythonBuiltinClassType.XMLParser, PythonBuiltinClassType.XMLParser.getInstanceShape(language), sep);
-        parser.setAttribute(T_BUFFER_TEXT, false);
-        parser.setAttribute(T_NAMESPACE_PREFIXES, false);
-        parser.setAttribute(T_ORDERED_ATTRIBUTES, false);
-        parser.setAttribute(T_SPECIFIED_ATTRIBUTES, false);
-        parser.setAttribute(T_BUFFER_SIZE, parser.getBufferSize());
-        parser.setAttribute(T_CURRENT_BYTE_INDEX, 0);
-        parser.setAttribute(T_CURRENT_LINE_NUMBER, 1);
-        parser.setAttribute(T_CURRENT_COLUMN_NUMBER, 0);
-        parser.setAttribute(T_ERROR_BYTE_INDEX, 0);
-        parser.setAttribute(T_ERROR_LINE_NUMBER, 1);
-        parser.setAttribute(T_ERROR_COLUMN_NUMBER, 0);
         parser.setIntern(intern);
-        parser.setAttribute(tsLiteral("intern"), intern);
         return parser;
     }
 
@@ -163,6 +146,171 @@ public final class XMLParserBuiltins extends PythonBuiltins {
         Object doIt(Object cls, @SuppressWarnings("unused") Object arg1, Object arg2,
                         @Bind Node inliningTarget) {
             return createParser(inliningTarget, this, arg2 == PNone.NO_VALUE ? PNone.NONE : arg2, PNone.NONE);
+        }
+    }
+
+    @Builtin(name = "buffer_text", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class BufferTextNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(value)")
+        static boolean get(PXMLParser self, @SuppressWarnings("unused") PNone value) {
+            return self.isBufferText();
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        static Object set(VirtualFrame frame, PXMLParser self, Object value,
+                        @Cached PyObjectIsTrueNode isTrueNode) {
+            self.setBufferText(isTrueNode.execute(frame, value));
+            self.setBufferUsed(0);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "namespace_prefixes", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class NamespacePrefixesNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(value)")
+        static boolean get(PXMLParser self, @SuppressWarnings("unused") PNone value) {
+            return self.isNamespacePrefixes();
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        static Object set(VirtualFrame frame, PXMLParser self, Object value,
+                        @Cached PyObjectIsTrueNode isTrueNode) {
+            self.setNamespacePrefixes(isTrueNode.execute(frame, value));
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "ordered_attributes", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class OrderedAttributesNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(value)")
+        static boolean get(PXMLParser self, @SuppressWarnings("unused") PNone value) {
+            return self.isOrderedAttributes();
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        static Object set(VirtualFrame frame, PXMLParser self, Object value,
+                        @Cached PyObjectIsTrueNode isTrueNode) {
+            self.setOrderedAttributes(isTrueNode.execute(frame, value));
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "specified_attributes", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class SpecifiedAttributesNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(value)")
+        static boolean get(PXMLParser self, @SuppressWarnings("unused") PNone value) {
+            return self.isSpecifiedAttributes();
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        static Object set(VirtualFrame frame, PXMLParser self, Object value,
+                        @Cached PyObjectIsTrueNode isTrueNode) {
+            self.setSpecifiedAttributes(isTrueNode.execute(frame, value));
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "buffer_size", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class BufferSizeNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(value)")
+        static int get(PXMLParser self, @SuppressWarnings("unused") PNone value) {
+            return self.getBufferSize();
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        static Object set(VirtualFrame frame, PXMLParser self, Object value,
+                        @Bind Node inliningTarget,
+                        @Cached PyLongCheckNode longCheckNode,
+                        @Cached PyLongAsLongNode asLongNode) {
+            if (!longCheckNode.execute(inliningTarget, value)) {
+                throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.MUST_BE_INTEGER, "buffer_size");
+            }
+            long newBufferSize = asLongNode.execute(frame, inliningTarget, value);
+            if (newBufferSize <= 0) {
+                throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.S_MUST_BE_GREATER_THAN_ZERO, "buffer_size");
+            }
+            if (newBufferSize != (int) newBufferSize) {
+                throw PRaiseNode.raiseStatic(inliningTarget, PythonBuiltinClassType.OverflowError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, value);
+            }
+            self.setBufferSize((int) newBufferSize);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "buffer_used", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    abstract static class BufferUsedNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static int get(PXMLParser self) {
+            return self.getBufferUsed();
+        }
+    }
+
+    @Builtin(name = "CurrentByteIndex", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    abstract static class CurrentByteIndexNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static int get(PXMLParser self) {
+            return self.getCurrentByteIndex();
+        }
+    }
+
+    @Builtin(name = "CurrentLineNumber", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    abstract static class CurrentLineNumberNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static int get(PXMLParser self) {
+            return self.getCurrentLineNumber();
+        }
+    }
+
+    @Builtin(name = "CurrentColumnNumber", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    abstract static class CurrentColumnNumberNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static int get(PXMLParser self) {
+            return self.getCurrentColumnNumber();
+        }
+    }
+
+    @Builtin(name = "ErrorByteIndex", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    abstract static class ErrorByteIndexNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static int get(PXMLParser self) {
+            return self.getErrorByteIndex();
+        }
+    }
+
+    @Builtin(name = "ErrorLineNumber", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    abstract static class ErrorLineNumberNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static int get(PXMLParser self) {
+            return self.getErrorLineNumber();
+        }
+    }
+
+    @Builtin(name = "ErrorColumnNumber", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    abstract static class ErrorColumnNumberNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static int get(PXMLParser self) {
+            return self.getErrorColumnNumber();
+        }
+    }
+
+    @Builtin(name = "intern", minNumOfPositionalArgs = 1, isGetter = true)
+    @GenerateNodeFactory
+    abstract static class InternNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        static Object get(PXMLParser self) {
+            return self.getIntern();
         }
     }
 
@@ -421,9 +569,21 @@ public final class XMLParserBuiltins extends PythonBuiltins {
             @Override
             public void startElement(String uri, String localName, String qName, Attributes attrs) {
                 Object attrsObj;
-                if (isTrue(T_ORDERED_ATTRIBUTES)) {
-                    List<Object> l = new ArrayList<>(attrs.getLength() * 2);
+                int attrCount = attrs.getLength();
+                if (parser.isSpecifiedAttributes() && attrs instanceof Attributes2 attrs2) {
+                    attrCount = 0;
                     for (int i = 0; i < attrs.getLength(); i++) {
+                        if (attrs2.isSpecified(i)) {
+                            attrCount++;
+                        }
+                    }
+                }
+                if (parser.isOrderedAttributes()) {
+                    List<Object> l = new ArrayList<>(attrCount * 2);
+                    for (int i = 0; i < attrs.getLength(); i++) {
+                        if (parser.isSpecifiedAttributes() && attrs instanceof Attributes2 attrs2 && !attrs2.isSpecified(i)) {
+                            continue;
+                        }
                         l.add(toTs(attributeName(attrs, i)));
                         l.add(toTs(attrs.getValue(i)));
                     }
@@ -431,6 +591,9 @@ public final class XMLParserBuiltins extends PythonBuiltins {
                 } else {
                     PDict d = PFactory.createDict(PythonLanguage.get(null));
                     for (int i = 0; i < attrs.getLength(); i++) {
+                        if (parser.isSpecifiedAttributes() && attrs instanceof Attributes2 attrs2 && !attrs2.isSpecified(i)) {
+                            continue;
+                        }
                         d.setItem(toTs(attributeName(attrs, i)), toTs(attrs.getValue(i)));
                     }
                     attrsObj = d;
@@ -474,10 +637,8 @@ public final class XMLParserBuiltins extends PythonBuiltins {
                     col = Math.max(0, locator.getColumnNumber() - 1 - entityLen);
                     parser.setCurrentLineNumber(line);
                     parser.setCurrentColumnNumber(col);
-                    parser.setAttribute(T_CURRENT_LINE_NUMBER, line);
-                    parser.setAttribute(T_CURRENT_COLUMN_NUMBER, col);
-                    parser.setAttribute(T_ERROR_LINE_NUMBER, line);
-                    parser.setAttribute(T_ERROR_COLUMN_NUMBER, col);
+                    parser.setErrorLineNumber(line);
+                    parser.setErrorColumnNumber(col);
                 }
                 keepCurrentPositionForNextCall = true;
                 call("DefaultHandlerExpand", toTs("&" + name + ";"));
@@ -486,7 +647,7 @@ public final class XMLParserBuiltins extends PythonBuiltins {
             private String elementName(String uri, String localName, String qName) {
                 if (parser.getNamespaceSeparator() != null && uri != null && !uri.isEmpty()) {
                     String sep = parser.getNamespaceSeparator().toJavaStringUncached();
-                    if (isTrue(T_NAMESPACE_PREFIXES) && qName != null && !qName.isEmpty()) {
+                    if (parser.isNamespacePrefixes() && qName != null && !qName.isEmpty()) {
                         int colon = qName.indexOf(':');
                         if (colon > 0) {
                             String prefix = qName.substring(0, colon);
@@ -504,7 +665,7 @@ public final class XMLParserBuiltins extends PythonBuiltins {
                 String qName = attrs.getQName(i);
                 if (parser.getNamespaceSeparator() != null && uri != null && !uri.isEmpty()) {
                     String sep = parser.getNamespaceSeparator().toJavaStringUncached();
-                    if (isTrue(T_NAMESPACE_PREFIXES) && qName != null && !qName.isEmpty()) {
+                    if (parser.isNamespacePrefixes() && qName != null && !qName.isEmpty()) {
                         int colon = qName.indexOf(':');
                         if (colon > 0) {
                             String prefix = qName.substring(0, colon);
@@ -514,11 +675,6 @@ public final class XMLParserBuiltins extends PythonBuiltins {
                     return uri + sep + localName;
                 }
                 return qName == null || qName.isEmpty() ? localName : qName;
-            }
-
-            private boolean isTrue(TruffleString attr) {
-                Object o = parser.getAttribute(attr);
-                return o instanceof Boolean b && b;
             }
 
             private void call(String handlerName, Object... args) {
@@ -531,10 +687,8 @@ public final class XMLParserBuiltins extends PythonBuiltins {
                     col = Math.max(0, locator.getColumnNumber() - 1);
                     parser.setCurrentLineNumber(line);
                     parser.setCurrentColumnNumber(col);
-                    parser.setAttribute(T_CURRENT_LINE_NUMBER, line);
-                    parser.setAttribute(T_CURRENT_COLUMN_NUMBER, col);
-                    parser.setAttribute(T_ERROR_LINE_NUMBER, line);
-                    parser.setAttribute(T_ERROR_COLUMN_NUMBER, col);
+                    parser.setErrorLineNumber(line);
+                    parser.setErrorColumnNumber(col);
                 }
                 keepCurrentPositionForNextCall = false;
                 Object cb = parser.getAttribute(toTruffleStringUncached(handlerName));
@@ -594,21 +748,16 @@ public final class XMLParserBuiltins extends PythonBuiltins {
             parser.setCurrentByteIndex(parser.getData().length);
             parser.setCurrentLineNumber(handler.line);
             parser.setCurrentColumnNumber(handler.col);
-            parser.setAttribute(T_CURRENT_BYTE_INDEX, parser.getCurrentByteIndex());
-            parser.setAttribute(T_CURRENT_LINE_NUMBER, parser.getCurrentLineNumber());
-            parser.setAttribute(T_CURRENT_COLUMN_NUMBER, parser.getCurrentColumnNumber());
-            parser.setAttribute(T_ERROR_BYTE_INDEX, parser.getCurrentByteIndex());
-            parser.setAttribute(T_ERROR_LINE_NUMBER, parser.getCurrentLineNumber());
-            parser.setAttribute(T_ERROR_COLUMN_NUMBER, parser.getCurrentColumnNumber());
+            parser.setErrorByteIndex(parser.getCurrentByteIndex());
+            parser.setErrorLineNumber(parser.getCurrentLineNumber());
+            parser.setErrorColumnNumber(parser.getCurrentColumnNumber());
         } catch (SAXParseException e) {
             parser.setDeliveredEventCount(handler.eventOrdinal);
             parser.setCurrentLineNumber(e.getLineNumber());
             parser.setCurrentColumnNumber(Math.max(0, e.getColumnNumber() - 1));
-            parser.setAttribute(T_CURRENT_LINE_NUMBER, parser.getCurrentLineNumber());
-            parser.setAttribute(T_CURRENT_COLUMN_NUMBER, parser.getCurrentColumnNumber());
-            parser.setAttribute(T_ERROR_BYTE_INDEX, parser.getCurrentByteIndex());
-            parser.setAttribute(T_ERROR_LINE_NUMBER, parser.getCurrentLineNumber());
-            parser.setAttribute(T_ERROR_COLUMN_NUMBER, parser.getCurrentColumnNumber());
+            parser.setErrorByteIndex(parser.getCurrentByteIndex());
+            parser.setErrorLineNumber(parser.getCurrentLineNumber());
+            parser.setErrorColumnNumber(parser.getCurrentColumnNumber());
             if (!swallowErrors) {
                 TruffleString msg = toTruffleStringUncached(formatErrorMessage(e));
                 throw raiseExpatError(null, msg, PXMLParser.XML_ERROR_SYNTAX, parser.getCurrentByteIndex(), parser.getCurrentLineNumber(),
@@ -618,9 +767,9 @@ public final class XMLParserBuiltins extends PythonBuiltins {
             throw e;
         } catch (Exception e) {
             parser.setDeliveredEventCount(handler.eventOrdinal);
-            parser.setAttribute(T_ERROR_BYTE_INDEX, parser.getCurrentByteIndex());
-            parser.setAttribute(T_ERROR_LINE_NUMBER, parser.getCurrentLineNumber());
-            parser.setAttribute(T_ERROR_COLUMN_NUMBER, parser.getCurrentColumnNumber());
+            parser.setErrorByteIndex(parser.getCurrentByteIndex());
+            parser.setErrorLineNumber(parser.getCurrentLineNumber());
+            parser.setErrorColumnNumber(parser.getCurrentColumnNumber());
             if (!swallowErrors) {
                 TruffleString msg = toTruffleStringUncached(e.getMessage() == null ? "unclosed token" : e.getMessage());
                 throw raiseExpatError(null, msg, PXMLParser.XML_ERROR_UNCLOSED_TOKEN, parser.getCurrentByteIndex(),

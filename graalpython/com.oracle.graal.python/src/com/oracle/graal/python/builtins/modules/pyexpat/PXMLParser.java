@@ -55,11 +55,19 @@ public final class PXMLParser extends PythonBuiltinObject {
 
     private final TruffleString namespaceSeparator;
 
+    private boolean bufferText;
+    private boolean namespacePrefixes;
+    private boolean orderedAttributes;
+    private boolean specifiedAttributes;
     private int bufferSize = 8192;
+    private int bufferUsed;
 
     private int currentByteIndex;
     private int currentLineNumber = 1;
     private int currentColumnNumber;
+    private int errorByteIndex;
+    private int errorLineNumber = 1;
+    private int errorColumnNumber;
 
     private boolean finished;
     private boolean foreignDTD;
@@ -80,12 +88,52 @@ public final class PXMLParser extends PythonBuiltinObject {
         return namespaceSeparator;
     }
 
+    public boolean isBufferText() {
+        return bufferText;
+    }
+
+    public void setBufferText(boolean bufferText) {
+        this.bufferText = bufferText;
+    }
+
+    public boolean isNamespacePrefixes() {
+        return namespacePrefixes;
+    }
+
+    public void setNamespacePrefixes(boolean namespacePrefixes) {
+        this.namespacePrefixes = namespacePrefixes;
+    }
+
+    public boolean isOrderedAttributes() {
+        return orderedAttributes;
+    }
+
+    public void setOrderedAttributes(boolean orderedAttributes) {
+        this.orderedAttributes = orderedAttributes;
+    }
+
+    public boolean isSpecifiedAttributes() {
+        return specifiedAttributes;
+    }
+
+    public void setSpecifiedAttributes(boolean specifiedAttributes) {
+        this.specifiedAttributes = specifiedAttributes;
+    }
+
     public int getBufferSize() {
         return bufferSize;
     }
 
     public void setBufferSize(int bufferSize) {
         this.bufferSize = bufferSize;
+    }
+
+    public int getBufferUsed() {
+        return bufferUsed;
+    }
+
+    public void setBufferUsed(int bufferUsed) {
+        this.bufferUsed = bufferUsed;
     }
 
     public int getCurrentByteIndex() {
@@ -110,6 +158,30 @@ public final class PXMLParser extends PythonBuiltinObject {
 
     public void setCurrentColumnNumber(int currentColumnNumber) {
         this.currentColumnNumber = currentColumnNumber;
+    }
+
+    public int getErrorByteIndex() {
+        return errorByteIndex;
+    }
+
+    public void setErrorByteIndex(int errorByteIndex) {
+        this.errorByteIndex = errorByteIndex;
+    }
+
+    public int getErrorLineNumber() {
+        return errorLineNumber;
+    }
+
+    public void setErrorLineNumber(int errorLineNumber) {
+        this.errorLineNumber = errorLineNumber;
+    }
+
+    public int getErrorColumnNumber() {
+        return errorColumnNumber;
+    }
+
+    public void setErrorColumnNumber(int errorColumnNumber) {
+        this.errorColumnNumber = errorColumnNumber;
     }
 
     public boolean isFinished() {
