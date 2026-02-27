@@ -137,10 +137,20 @@ public final class PyExpatModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ParserCreateNode extends PythonBuiltinNode {
         @Specialization
-        Object create(Object encoding, Object namespaceSeparator, @SuppressWarnings("unused") Object intern,
+        Object create(@SuppressWarnings("unused") Object encoding, Object namespaceSeparator, Object intern,
                         @Bind Node inliningTarget) {
             Object sep = namespaceSeparator == PNone.NO_VALUE ? PNone.NONE : namespaceSeparator;
-            return XMLParserBuiltins.createParser(inliningTarget, this, sep);
+            Object internDict;
+            if (intern == PNone.NO_VALUE) {
+                internDict = PFactory.createDict(PythonLanguage.get(inliningTarget));
+            } else if (intern == PNone.NONE) {
+                internDict = PNone.NONE;
+            } else if (intern instanceof PDict) {
+                internDict = intern;
+            } else {
+                throw com.oracle.graal.python.nodes.PRaiseNode.raiseStatic(this, PythonBuiltinClassType.TypeError, toTruffleStringUncached("intern must be a dictionary"));
+            }
+            return XMLParserBuiltins.createParser(inliningTarget, this, sep, internDict);
         }
     }
 }

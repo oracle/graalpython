@@ -72,6 +72,8 @@ public final class PXMLParser extends PythonBuiltinObject {
     int deliveredEventCount;
 
     byte[] data = new byte[0];
+    TruffleString base;
+    Object intern;
 
     Object startElementHandler;
     Object endElementHandler;

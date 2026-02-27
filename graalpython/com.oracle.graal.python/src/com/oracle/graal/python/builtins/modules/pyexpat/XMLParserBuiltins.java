@@ -125,7 +125,7 @@ public final class XMLParserBuiltins extends PythonBuiltins {
         return XMLParserBuiltinsFactory.getFactories();
     }
 
-    static Object createParser(Node inliningTarget, Node raisingNode, Object namespaceSeparatorObj) {
+    static Object createParser(Node inliningTarget, Node raisingNode, Object namespaceSeparatorObj, Object intern) {
         TruffleString sep = null;
         if (namespaceSeparatorObj != PNone.NONE && namespaceSeparatorObj != PNone.NO_VALUE) {
             if (!(namespaceSeparatorObj instanceof TruffleString ts)) {
@@ -152,6 +152,8 @@ public final class XMLParserBuiltins extends PythonBuiltins {
         parser.setAttribute(T_ERROR_BYTE_INDEX, 0);
         parser.setAttribute(T_ERROR_LINE_NUMBER, 1);
         parser.setAttribute(T_ERROR_COLUMN_NUMBER, 0);
+        parser.intern = intern;
+        parser.setAttribute(tsLiteral("intern"), intern);
         return parser;
     }
 
@@ -162,7 +164,7 @@ public final class XMLParserBuiltins extends PythonBuiltins {
         @Specialization
         Object doIt(Object cls, @SuppressWarnings("unused") Object arg1, Object arg2,
                         @Bind Node inliningTarget) {
-            return createParser(inliningTarget, this, arg2 == PNone.NO_VALUE ? PNone.NONE : arg2);
+            return createParser(inliningTarget, this, arg2 == PNone.NO_VALUE ? PNone.NONE : arg2, PNone.NONE);
         }
     }
 
@@ -267,13 +269,44 @@ public final class XMLParserBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "SetBase", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class SetBaseNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        PNone set(PXMLParser self, TruffleString base) {
+            self.base = base;
+            return PNone.NONE;
+        }
+
+        @Specialization
+        PNone setNone(PXMLParser self, @SuppressWarnings("unused") PNone base) {
+            self.base = null;
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = {"!isString(base)", "!isNone(base)"})
+        @SuppressWarnings("unused")
+        PNone setError(PXMLParser self, Object base) {
+            throw PRaiseNode.raiseStatic(this, PythonBuiltinClassType.TypeError, toTruffleStringUncached("SetBase() argument must be str or None"));
+        }
+    }
+
+    @Builtin(name = "GetBase", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class GetBaseNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object get(PXMLParser self) {
+            return self.base == null ? PNone.NONE : self.base;
+        }
+    }
+
     @Builtin(name = "ExternalEntityParserCreate", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class ExternalEntityParserCreateNode extends PythonTernaryBuiltinNode {
         @Specialization
         Object create(PXMLParser self, @SuppressWarnings("unused") Object context, @SuppressWarnings("unused") Object encoding,
                         @Bind Node inliningTarget) {
-            return createParser(inliningTarget, this, self.namespaceSeparator == null ? PNone.NONE : self.namespaceSeparator);
+            return createParser(inliningTarget, this, self.namespaceSeparator == null ? PNone.NONE : self.namespaceSeparator, self.intern);
         }
     }
 
@@ -369,6 +402,40 @@ public final class XMLParserBuiltins extends PythonBuiltins {
             }
 
             @Override
+            public void startDTD(String name, String publicId, String systemId) {
+                // We conservatively report an internal subset. This matches minidom builder
+                // expectations and enables DTD callback wiring for entity/notation handling.
+                call("StartDoctypeDeclHandler", toTs(name), toTs(systemId), toTs(publicId), 1);
+            }
+
+            @Override
+            public void endDTD() {
+                call("EndDoctypeDeclHandler");
+            }
+
+            @Override
+            public void internalEntityDecl(String name, String value) {
+                boolean isParameterEntity = name != null && name.startsWith("%");
+                call("EntityDeclHandler", toTs(name), isParameterEntity ? 1 : 0, toTs(value), parser.base == null ? PNone.NONE : parser.base, PNone.NONE, PNone.NONE, PNone.NONE);
+            }
+
+            @Override
+            public void externalEntityDecl(String name, String publicId, String systemId) {
+                boolean isParameterEntity = name != null && name.startsWith("%");
+                call("EntityDeclHandler", toTs(name), isParameterEntity ? 1 : 0, PNone.NONE, parser.base == null ? PNone.NONE : parser.base, toTs(systemId), toTs(publicId), PNone.NONE);
+            }
+
+            @Override
+            public void notationDecl(String name, String publicId, String systemId) {
+                call("NotationDeclHandler", toTs(name), parser.base == null ? PNone.NONE : parser.base, toTs(systemId), toTs(publicId));
+            }
+
+            @Override
+            public void unparsedEntityDecl(String name, String publicId, String systemId, String notationName) {
+                call("UnparsedEntityDeclHandler", toTs(name), parser.base == null ? PNone.NONE : parser.base, toTs(systemId), toTs(publicId), toTs(notationName));
+            }
+
+            @Override
             public void startElement(String uri, String localName, String qName, Attributes attrs) {
                 Object attrsObj;
                 if (isTrue(T_ORDERED_ATTRIBUTES)) {
@@ -435,7 +502,15 @@ public final class XMLParserBuiltins extends PythonBuiltins {
 
             private String elementName(String uri, String localName, String qName) {
                 if (parser.namespaceSeparator != null && uri != null && !uri.isEmpty()) {
-                    return uri + parser.namespaceSeparator.toJavaStringUncached() + localName;
+                    String sep = parser.namespaceSeparator.toJavaStringUncached();
+                    if (isTrue(T_NAMESPACE_PREFIXES) && qName != null && !qName.isEmpty()) {
+                        int colon = qName.indexOf(':');
+                        if (colon > 0) {
+                            String prefix = qName.substring(0, colon);
+                            return uri + sep + localName + sep + prefix;
+                        }
+                    }
+                    return uri + sep + localName;
                 }
                 return qName == null || qName.isEmpty() ? localName : qName;
             }
@@ -445,7 +520,15 @@ public final class XMLParserBuiltins extends PythonBuiltins {
                 String localName = attrs.getLocalName(i);
                 String qName = attrs.getQName(i);
                 if (parser.namespaceSeparator != null && uri != null && !uri.isEmpty()) {
-                    return uri + parser.namespaceSeparator.toJavaStringUncached() + localName;
+                    String sep = parser.namespaceSeparator.toJavaStringUncached();
+                    if (isTrue(T_NAMESPACE_PREFIXES) && qName != null && !qName.isEmpty()) {
+                        int colon = qName.indexOf(':');
+                        if (colon > 0) {
+                            String prefix = qName.substring(0, colon);
+                            return uri + sep + localName + sep + prefix;
+                        }
+                    }
+                    return uri + sep + localName;
                 }
                 return qName == null || qName.isEmpty() ? localName : qName;
             }
@@ -501,6 +584,7 @@ public final class XMLParserBuiltins extends PythonBuiltins {
             reader.setEntityResolver((publicId, systemId) -> new InputSource(new StringReader("")));
             reader.setContentHandler(handler);
             reader.setProperty("http://xml.org/sax/properties/lexical-handler", handler);
+            reader.setProperty("http://xml.org/sax/properties/declaration-handler", handler);
             reader.setDTDHandler(handler);
             reader.setErrorHandler(new DefaultHandler());
             reader.parse(new org.xml.sax.InputSource(new ByteArrayInputStream(parser.data)));
