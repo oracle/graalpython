@@ -50,6 +50,7 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Function;
 
 import javax.xml.parsers.SAXParserFactory;
 
@@ -60,6 +61,7 @@ import org.xml.sax.SAXParseException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.ext.Attributes2;
 import org.xml.sax.ext.DefaultHandler2;
+import org.xml.sax.ext.Locator2;
 import org.xml.sax.helpers.DefaultHandler;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -314,6 +316,336 @@ public final class XMLParserBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "StartElementHandler", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class StartElementHandlerNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(value)")
+        static Object get(PXMLParser self, @SuppressWarnings("unused") PNone value) {
+            return self.getStartElementHandler();
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        static Object set(PXMLParser self, Object value) {
+            self.setStartElementHandler(value);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "EndElementHandler", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class EndElementHandlerNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(value)")
+        static Object get(PXMLParser self, @SuppressWarnings("unused") PNone value) {
+            return self.getEndElementHandler();
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        static Object set(PXMLParser self, Object value) {
+            self.setEndElementHandler(value);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "ProcessingInstructionHandler", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class ProcessingInstructionHandlerNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(value)")
+        static Object get(PXMLParser self, @SuppressWarnings("unused") PNone value) {
+            return self.getProcessingInstructionHandler();
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        static Object set(PXMLParser self, Object value) {
+            self.setProcessingInstructionHandler(value);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "CharacterDataHandler", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class CharacterDataHandlerNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(value)")
+        static Object get(PXMLParser self, @SuppressWarnings("unused") PNone value) {
+            return self.getCharacterDataHandler();
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        static Object set(PXMLParser self, Object value) {
+            self.setCharacterDataHandler(value);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "UnparsedEntityDeclHandler", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class UnparsedEntityDeclHandlerNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(value)")
+        static Object get(PXMLParser self, @SuppressWarnings("unused") PNone value) {
+            return self.getUnparsedEntityDeclHandler();
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        static Object set(PXMLParser self, Object value) {
+            self.setUnparsedEntityDeclHandler(value);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "NotationDeclHandler", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class NotationDeclHandlerNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(value)")
+        static Object get(PXMLParser self, @SuppressWarnings("unused") PNone value) {
+            return self.getNotationDeclHandler();
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        static Object set(PXMLParser self, Object value) {
+            self.setNotationDeclHandler(value);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "StartNamespaceDeclHandler", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class StartNamespaceDeclHandlerNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(value)")
+        static Object get(PXMLParser self, @SuppressWarnings("unused") PNone value) {
+            return self.getStartNamespaceDeclHandler();
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        static Object set(PXMLParser self, Object value) {
+            self.setStartNamespaceDeclHandler(value);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "EndNamespaceDeclHandler", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class EndNamespaceDeclHandlerNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(value)")
+        static Object get(PXMLParser self, @SuppressWarnings("unused") PNone value) {
+            return self.getEndNamespaceDeclHandler();
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        static Object set(PXMLParser self, Object value) {
+            self.setEndNamespaceDeclHandler(value);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "CommentHandler", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class CommentHandlerNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(value)")
+        static Object get(PXMLParser self, @SuppressWarnings("unused") PNone value) {
+            return self.getCommentHandler();
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        static Object set(PXMLParser self, Object value) {
+            self.setCommentHandler(value);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "StartCdataSectionHandler", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class StartCdataSectionHandlerNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(value)")
+        static Object get(PXMLParser self, @SuppressWarnings("unused") PNone value) {
+            return self.getStartCdataSectionHandler();
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        static Object set(PXMLParser self, Object value) {
+            self.setStartCdataSectionHandler(value);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "EndCdataSectionHandler", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class EndCdataSectionHandlerNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(value)")
+        static Object get(PXMLParser self, @SuppressWarnings("unused") PNone value) {
+            return self.getEndCdataSectionHandler();
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        static Object set(PXMLParser self, Object value) {
+            self.setEndCdataSectionHandler(value);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "DefaultHandler", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class DefaultHandlerNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(value)")
+        static Object get(PXMLParser self, @SuppressWarnings("unused") PNone value) {
+            return self.getDefaultHandler();
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        static Object set(PXMLParser self, Object value) {
+            self.setDefaultHandler(value);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "DefaultHandlerExpand", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class DefaultHandlerExpandNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(value)")
+        static Object get(PXMLParser self, @SuppressWarnings("unused") PNone value) {
+            return self.getDefaultHandlerExpand();
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        static Object set(PXMLParser self, Object value) {
+            self.setDefaultHandlerExpand(value);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "NotStandaloneHandler", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class NotStandaloneHandlerNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(value)")
+        static Object get(PXMLParser self, @SuppressWarnings("unused") PNone value) {
+            return self.getNotStandaloneHandler();
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        static Object set(PXMLParser self, Object value) {
+            self.setNotStandaloneHandler(value);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "ExternalEntityRefHandler", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class ExternalEntityRefHandlerNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(value)")
+        static Object get(PXMLParser self, @SuppressWarnings("unused") PNone value) {
+            return self.getExternalEntityRefHandler();
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        static Object set(PXMLParser self, Object value) {
+            self.setExternalEntityRefHandler(value);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "StartDoctypeDeclHandler", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class StartDoctypeDeclHandlerNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(value)")
+        static Object get(PXMLParser self, @SuppressWarnings("unused") PNone value) {
+            return self.getStartDoctypeDeclHandler();
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        static Object set(PXMLParser self, Object value) {
+            self.setStartDoctypeDeclHandler(value);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "EndDoctypeDeclHandler", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class EndDoctypeDeclHandlerNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(value)")
+        static Object get(PXMLParser self, @SuppressWarnings("unused") PNone value) {
+            return self.getEndDoctypeDeclHandler();
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        static Object set(PXMLParser self, Object value) {
+            self.setEndDoctypeDeclHandler(value);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "EntityDeclHandler", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class EntityDeclHandlerNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(value)")
+        static Object get(PXMLParser self, @SuppressWarnings("unused") PNone value) {
+            return self.getEntityDeclHandler();
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        static Object set(PXMLParser self, Object value) {
+            self.setEntityDeclHandler(value);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "XmlDeclHandler", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class XmlDeclHandlerNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(value)")
+        static Object get(PXMLParser self, @SuppressWarnings("unused") PNone value) {
+            return self.getXmlDeclHandler();
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        static Object set(PXMLParser self, Object value) {
+            self.setXmlDeclHandler(value);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "ElementDeclHandler", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class ElementDeclHandlerNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(value)")
+        static Object get(PXMLParser self, @SuppressWarnings("unused") PNone value) {
+            return self.getElementDeclHandler();
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        static Object set(PXMLParser self, Object value) {
+            self.setElementDeclHandler(value);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "AttlistDeclHandler", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class AttlistDeclHandlerNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(value)")
+        static Object get(PXMLParser self, @SuppressWarnings("unused") PNone value) {
+            return self.getAttlistDeclHandler();
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        static Object set(PXMLParser self, Object value) {
+            self.setAttlistDeclHandler(value);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "SkippedEntityHandler", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class SkippedEntityHandlerNode extends PythonBinaryBuiltinNode {
+        @Specialization(guards = "isNoValue(value)")
+        static Object get(PXMLParser self, @SuppressWarnings("unused") PNone value) {
+            return self.getSkippedEntityHandler();
+        }
+
+        @Specialization(guards = "!isNoValue(value)")
+        static Object set(PXMLParser self, Object value) {
+            self.setSkippedEntityHandler(value);
+            return PNone.NONE;
+        }
+    }
+
     @Builtin(name = "Parse", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 3, parameterNames = {"$cls", "data", "isfinal"})
     @ArgumentClinic(name = "isfinal", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "false")
     @GenerateNodeFactory
@@ -375,6 +707,9 @@ public final class XMLParserBuiltins extends PythonBuiltins {
         }
 
         private void doParseFile(PXMLParser self, Object file, BoundaryCallData boundaryCallData) {
+            if (self.isFinished()) {
+                throw raiseExpatError(this, ErrorMessages.PARSING_FINISHED, PXMLParser.XML_ERROR_FINISHED, 0, 1, 0);
+            }
             while (true) {
                 Object r = PyObjectCallMethodObjArgs.executeUncached(file, T_READ);
                 byte[] b = toBytes(r);
@@ -511,59 +846,78 @@ public final class XMLParserBuiltins extends PythonBuiltins {
 
             Handler() {
                 if (parser.isForeignDTD() && parser.getParamEntityParsing() == PXMLParser.XML_PARAM_ENTITY_PARSING_ALWAYS) {
-                    call("ExternalEntityRefHandler", PNone.NONE, PNone.NONE, PNone.NONE, PNone.NONE);
+                    call(PXMLParser::getExternalEntityRefHandler, PNone.NONE, PNone.NONE, PNone.NONE, PNone.NONE);
                 }
             }
 
             @Override
             public void startPrefixMapping(String prefix, String uri) {
-                call("StartNamespaceDeclHandler", toTs(prefix), toTs(uri));
+                call(PXMLParser::getStartNamespaceDeclHandler, toTs(prefix), toTs(uri));
             }
 
             @Override
             public void endPrefixMapping(String prefix) {
-                call("EndNamespaceDeclHandler", toTs(prefix));
+                call(PXMLParser::getEndNamespaceDeclHandler, toTs(prefix));
             }
 
             @Override
             public void processingInstruction(String target, String data) {
-                call("ProcessingInstructionHandler", toTs(target), toTs(data));
+                call(PXMLParser::getProcessingInstructionHandler, toTs(target), toTs(data));
+            }
+
+            @Override
+            public void startDocument() {
+                if (locator instanceof Locator2 locator2) {
+                    call(PXMLParser::getXmlDeclHandler, toOptionalTs(locator2.getXMLVersion()), toOptionalTs(locator2.getEncoding()), -1);
+                }
             }
 
             @Override
             public void startDTD(String name, String publicId, String systemId) {
                 // We conservatively report an internal subset. This matches minidom builder
                 // expectations and enables DTD callback wiring for entity/notation handling.
-                call("StartDoctypeDeclHandler", toTs(name), toTs(systemId), toTs(publicId), 1);
+                call(PXMLParser::getStartDoctypeDeclHandler, toTs(name), toTs(systemId), toTs(publicId), 1);
             }
 
             @Override
             public void endDTD() {
-                call("EndDoctypeDeclHandler");
+                call(PXMLParser::getEndDoctypeDeclHandler);
             }
 
             @Override
             public void internalEntityDecl(String name, String value) {
                 boolean isParameterEntity = name != null && name.startsWith("%");
-                call("EntityDeclHandler", toTs(name), isParameterEntity ? 1 : 0, toTs(value), parser.getBase() == null ? PNone.NONE : parser.getBase(), PNone.NONE, PNone.NONE, PNone.NONE);
+                call(PXMLParser::getEntityDeclHandler, toTs(name), isParameterEntity ? 1 : 0, toTs(value), parser.getBase() == null ? PNone.NONE : parser.getBase(), PNone.NONE, PNone.NONE,
+                                PNone.NONE);
             }
 
             @Override
             public void externalEntityDecl(String name, String publicId, String systemId) {
                 boolean isParameterEntity = name != null && name.startsWith("%");
-                call("EntityDeclHandler", toTs(name), isParameterEntity ? 1 : 0, PNone.NONE, parser.getBase() == null ? PNone.NONE : parser.getBase(), toOptionalTs(normalizeSystemId(systemId)),
+                call(PXMLParser::getEntityDeclHandler, toTs(name), isParameterEntity ? 1 : 0, PNone.NONE, parser.getBase() == null ? PNone.NONE : parser.getBase(),
+                                toOptionalTs(normalizeSystemId(systemId)),
                                 toOptionalTs(publicId), PNone.NONE);
             }
 
             @Override
             public void notationDecl(String name, String publicId, String systemId) {
-                call("NotationDeclHandler", toTs(name), parser.getBase() == null ? PNone.NONE : parser.getBase(), toOptionalTs(normalizeSystemId(systemId)), toOptionalTs(publicId));
+                call(PXMLParser::getNotationDeclHandler, toTs(name), parser.getBase() == null ? PNone.NONE : parser.getBase(), toOptionalTs(normalizeSystemId(systemId)), toOptionalTs(publicId));
             }
 
             @Override
             public void unparsedEntityDecl(String name, String publicId, String systemId, String notationName) {
-                call("UnparsedEntityDeclHandler", toTs(name), parser.getBase() == null ? PNone.NONE : parser.getBase(), toOptionalTs(normalizeSystemId(systemId)), toOptionalTs(publicId),
+                call(PXMLParser::getUnparsedEntityDeclHandler, toTs(name), parser.getBase() == null ? PNone.NONE : parser.getBase(), toOptionalTs(normalizeSystemId(systemId)), toOptionalTs(publicId),
                                 toTs(notationName));
+            }
+
+            @Override
+            public void elementDecl(String name, String model) {
+                call(PXMLParser::getElementDeclHandler, toTs(name), toTs(model));
+            }
+
+            @Override
+            public void attributeDecl(String eName, String aName, String type, String mode, String value) {
+                call(PXMLParser::getAttlistDeclHandler, toTs(eName), toTs(aName), toTs(type), toOptionalTs(mode), toOptionalTs(value));
             }
 
             @Override
@@ -598,39 +952,39 @@ public final class XMLParserBuiltins extends PythonBuiltins {
                     }
                     attrsObj = d;
                 }
-                call("StartElementHandler", toTs(elementName(uri, localName, qName)), attrsObj);
+                call(PXMLParser::getStartElementHandler, toTs(elementName(uri, localName, qName)), attrsObj);
             }
 
             @Override
             public void endElement(String uri, String localName, String qName) {
-                call("EndElementHandler", toTs(elementName(uri, localName, qName)));
+                call(PXMLParser::getEndElementHandler, toTs(elementName(uri, localName, qName)));
             }
 
             @Override
             public void characters(char[] ch, int start, int length) {
                 if (length > 0) {
-                    call("CharacterDataHandler", toTs(new String(ch, start, length)));
+                    call(PXMLParser::getCharacterDataHandler, toTs(new String(ch, start, length)));
                 }
             }
 
             @Override
             public void comment(char[] ch, int start, int length) {
-                call("CommentHandler", toTs(new String(ch, start, length)));
+                call(PXMLParser::getCommentHandler, toTs(new String(ch, start, length)));
             }
 
             @Override
             public void startCDATA() {
-                call("StartCdataSectionHandler");
+                call(PXMLParser::getStartCdataSectionHandler);
             }
 
             @Override
             public void endCDATA() {
-                call("EndCdataSectionHandler");
+                call(PXMLParser::getEndCdataSectionHandler);
             }
 
             @Override
             public void skippedEntity(String name) {
-                call("SkippedEntityHandler", toTs(name), 0);
+                call(PXMLParser::getSkippedEntityHandler, toTs(name), 0);
                 if (locator != null) {
                     int entityLen = name.length() + 2; // '&' + ';'
                     line = Math.max(1, locator.getLineNumber());
@@ -641,7 +995,7 @@ public final class XMLParserBuiltins extends PythonBuiltins {
                     parser.setErrorColumnNumber(col);
                 }
                 keepCurrentPositionForNextCall = true;
-                call("DefaultHandlerExpand", toTs("&" + name + ";"));
+                call(PXMLParser::getDefaultHandlerExpand, toTs("&" + name + ";"));
             }
 
             private String elementName(String uri, String localName, String qName) {
@@ -677,7 +1031,7 @@ public final class XMLParserBuiltins extends PythonBuiltins {
                 return qName == null || qName.isEmpty() ? localName : qName;
             }
 
-            private void call(String handlerName, Object... args) {
+            private void call(Function<PXMLParser, Object> handlerGetter, Object... args) {
                 boolean shouldDeliver = eventOrdinal++ >= parser.getDeliveredEventCount();
                 if (!shouldDeliver) {
                     return;
@@ -691,8 +1045,8 @@ public final class XMLParserBuiltins extends PythonBuiltins {
                     parser.setErrorColumnNumber(col);
                 }
                 keepCurrentPositionForNextCall = false;
-                Object cb = parser.getAttribute(toTruffleStringUncached(handlerName));
-                if (cb != PNone.NO_VALUE) {
+                Object cb = handlerGetter.apply(parser);
+                if (cb != PNone.NONE) {
                     Node prevEncapsulatingNode = EncapsulatingNodeReference.getCurrent().set(boundaryCallData);
                     try {
                         PyObjectCallMethodObjArgs.executeUncached(cb, tsLiteral("__call__"), args);
@@ -760,7 +1114,7 @@ public final class XMLParserBuiltins extends PythonBuiltins {
             parser.setErrorColumnNumber(parser.getCurrentColumnNumber());
             if (!swallowErrors) {
                 TruffleString msg = toTruffleStringUncached(formatErrorMessage(e));
-                throw raiseExpatError(null, msg, PXMLParser.XML_ERROR_SYNTAX, parser.getCurrentByteIndex(), parser.getCurrentLineNumber(),
+                throw raiseExpatError(null, msg, mapErrorCode(e), parser.getCurrentByteIndex(), parser.getCurrentLineNumber(),
                                 parser.getCurrentColumnNumber());
             }
         } catch (PException e) {
@@ -804,5 +1158,15 @@ public final class XMLParserBuiltins extends PythonBuiltins {
             }
         }
         return message;
+    }
+
+    private static int mapErrorCode(SAXParseException e) {
+        String message = e.getMessage();
+        if (message != null) {
+            if (message.contains("start and end within the same entity") || message.contains("premature end of file") || message.contains("must be terminated")) {
+                return PXMLParser.XML_ERROR_UNCLOSED_TOKEN;
+            }
+        }
+        return PXMLParser.XML_ERROR_SYNTAX;
     }
 }

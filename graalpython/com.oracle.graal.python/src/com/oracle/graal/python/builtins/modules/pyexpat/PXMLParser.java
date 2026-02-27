@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules.pyexpat;
 
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -78,6 +79,29 @@ public final class PXMLParser extends PythonBuiltinObject {
     private byte[] data = new byte[0];
     private TruffleString base;
     private Object intern;
+
+    private Object startElementHandler = PNone.NONE;
+    private Object endElementHandler = PNone.NONE;
+    private Object processingInstructionHandler = PNone.NONE;
+    private Object characterDataHandler = PNone.NONE;
+    private Object unparsedEntityDeclHandler = PNone.NONE;
+    private Object notationDeclHandler = PNone.NONE;
+    private Object startNamespaceDeclHandler = PNone.NONE;
+    private Object endNamespaceDeclHandler = PNone.NONE;
+    private Object commentHandler = PNone.NONE;
+    private Object startCdataSectionHandler = PNone.NONE;
+    private Object endCdataSectionHandler = PNone.NONE;
+    private Object defaultHandler = PNone.NONE;
+    private Object defaultHandlerExpand = PNone.NONE;
+    private Object notStandaloneHandler = PNone.NONE;
+    private Object externalEntityRefHandler = PNone.NONE;
+    private Object startDoctypeDeclHandler = PNone.NONE;
+    private Object endDoctypeDeclHandler = PNone.NONE;
+    private Object entityDeclHandler = PNone.NONE;
+    private Object xmlDeclHandler = PNone.NONE;
+    private Object elementDeclHandler = PNone.NONE;
+    private Object attlistDeclHandler = PNone.NONE;
+    private Object skippedEntityHandler = PNone.NONE;
 
     public PXMLParser(Object cls, Shape instanceShape, TruffleString namespaceSeparator) {
         super(cls, instanceShape);
@@ -246,5 +270,181 @@ public final class PXMLParser extends PythonBuiltinObject {
 
     public void setIntern(Object intern) {
         this.intern = intern;
+    }
+
+    public Object getStartElementHandler() {
+        return startElementHandler;
+    }
+
+    public void setStartElementHandler(Object startElementHandler) {
+        this.startElementHandler = startElementHandler;
+    }
+
+    public Object getEndElementHandler() {
+        return endElementHandler;
+    }
+
+    public void setEndElementHandler(Object endElementHandler) {
+        this.endElementHandler = endElementHandler;
+    }
+
+    public Object getProcessingInstructionHandler() {
+        return processingInstructionHandler;
+    }
+
+    public void setProcessingInstructionHandler(Object processingInstructionHandler) {
+        this.processingInstructionHandler = processingInstructionHandler;
+    }
+
+    public Object getCharacterDataHandler() {
+        return characterDataHandler;
+    }
+
+    public void setCharacterDataHandler(Object characterDataHandler) {
+        this.characterDataHandler = characterDataHandler;
+    }
+
+    public Object getUnparsedEntityDeclHandler() {
+        return unparsedEntityDeclHandler;
+    }
+
+    public void setUnparsedEntityDeclHandler(Object unparsedEntityDeclHandler) {
+        this.unparsedEntityDeclHandler = unparsedEntityDeclHandler;
+    }
+
+    public Object getNotationDeclHandler() {
+        return notationDeclHandler;
+    }
+
+    public void setNotationDeclHandler(Object notationDeclHandler) {
+        this.notationDeclHandler = notationDeclHandler;
+    }
+
+    public Object getStartNamespaceDeclHandler() {
+        return startNamespaceDeclHandler;
+    }
+
+    public void setStartNamespaceDeclHandler(Object startNamespaceDeclHandler) {
+        this.startNamespaceDeclHandler = startNamespaceDeclHandler;
+    }
+
+    public Object getEndNamespaceDeclHandler() {
+        return endNamespaceDeclHandler;
+    }
+
+    public void setEndNamespaceDeclHandler(Object endNamespaceDeclHandler) {
+        this.endNamespaceDeclHandler = endNamespaceDeclHandler;
+    }
+
+    public Object getCommentHandler() {
+        return commentHandler;
+    }
+
+    public void setCommentHandler(Object commentHandler) {
+        this.commentHandler = commentHandler;
+    }
+
+    public Object getStartCdataSectionHandler() {
+        return startCdataSectionHandler;
+    }
+
+    public void setStartCdataSectionHandler(Object startCdataSectionHandler) {
+        this.startCdataSectionHandler = startCdataSectionHandler;
+    }
+
+    public Object getEndCdataSectionHandler() {
+        return endCdataSectionHandler;
+    }
+
+    public void setEndCdataSectionHandler(Object endCdataSectionHandler) {
+        this.endCdataSectionHandler = endCdataSectionHandler;
+    }
+
+    public Object getDefaultHandler() {
+        return defaultHandler;
+    }
+
+    public void setDefaultHandler(Object defaultHandler) {
+        this.defaultHandler = defaultHandler;
+    }
+
+    public Object getDefaultHandlerExpand() {
+        return defaultHandlerExpand;
+    }
+
+    public void setDefaultHandlerExpand(Object defaultHandlerExpand) {
+        this.defaultHandlerExpand = defaultHandlerExpand;
+    }
+
+    public Object getNotStandaloneHandler() {
+        return notStandaloneHandler;
+    }
+
+    public void setNotStandaloneHandler(Object notStandaloneHandler) {
+        this.notStandaloneHandler = notStandaloneHandler;
+    }
+
+    public Object getExternalEntityRefHandler() {
+        return externalEntityRefHandler;
+    }
+
+    public void setExternalEntityRefHandler(Object externalEntityRefHandler) {
+        this.externalEntityRefHandler = externalEntityRefHandler;
+    }
+
+    public Object getStartDoctypeDeclHandler() {
+        return startDoctypeDeclHandler;
+    }
+
+    public void setStartDoctypeDeclHandler(Object startDoctypeDeclHandler) {
+        this.startDoctypeDeclHandler = startDoctypeDeclHandler;
+    }
+
+    public Object getEndDoctypeDeclHandler() {
+        return endDoctypeDeclHandler;
+    }
+
+    public void setEndDoctypeDeclHandler(Object endDoctypeDeclHandler) {
+        this.endDoctypeDeclHandler = endDoctypeDeclHandler;
+    }
+
+    public Object getEntityDeclHandler() {
+        return entityDeclHandler;
+    }
+
+    public void setEntityDeclHandler(Object entityDeclHandler) {
+        this.entityDeclHandler = entityDeclHandler;
+    }
+
+    public Object getXmlDeclHandler() {
+        return xmlDeclHandler;
+    }
+
+    public void setXmlDeclHandler(Object xmlDeclHandler) {
+        this.xmlDeclHandler = xmlDeclHandler;
+    }
+
+    public Object getElementDeclHandler() {
+        return elementDeclHandler;
+    }
+
+    public void setElementDeclHandler(Object elementDeclHandler) {
+        this.elementDeclHandler = elementDeclHandler;
+    }
+
+    public Object getAttlistDeclHandler() {
+        return attlistDeclHandler;
+    }
+
+    public void setAttlistDeclHandler(Object attlistDeclHandler) {
+        this.attlistDeclHandler = attlistDeclHandler;
+    }
+
+    public Object getSkippedEntityHandler() {
+        return skippedEntityHandler;
+    }
+
+    public void setSkippedEntityHandler(Object skippedEntityHandler) {
+        this.skippedEntityHandler = skippedEntityHandler;
     }
 }

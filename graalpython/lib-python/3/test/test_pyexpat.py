@@ -286,10 +286,6 @@ class ParseTest(unittest.TestCase):
         operations = out.out
         self._verify_parse_output(operations)
 
-    @_skip_if_java_pyexpat_backend(
-        "Java pyexpat backend currently does not match Expat's 'parsing finished' state transition "
-        "behavior after ParseFile for repeated parsing."
-    )
     def test_parse_again(self):
         parser = expat.ParserCreate()
         file = BytesIO(data)
@@ -787,10 +783,6 @@ class ErrorMessageTest(unittest.TestCase):
         self.assertEqual(errors.XML_ERROR_SYNTAX,
                          errors.messages[errors.codes[errors.XML_ERROR_SYNTAX]])
 
-    @_skip_if_java_pyexpat_backend(
-        "Java pyexpat backend currently does not map all parser failures to native Expat error codes "
-        "with full fidelity (expected XML_ERROR_UNCLOSED_TOKEN here)."
-    )
     def test_expaterror(self):
         xml = b'<'
         parser = expat.ParserCreate()
