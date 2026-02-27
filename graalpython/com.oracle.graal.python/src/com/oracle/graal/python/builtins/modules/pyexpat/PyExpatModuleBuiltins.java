@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.modules.pyexpat;
 
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___DOC__;
+import static com.oracle.graal.python.nodes.StringLiterals.T_JAVA;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
@@ -54,11 +56,14 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.nodes.SpecialAttributeNames;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -77,25 +82,26 @@ public final class PyExpatModuleBuiltins extends PythonBuiltins {
 
     @Override
     public void initialize(Python3Core core) {
-        addBuiltinConstant(SpecialAttributeNames.T___DOC__, """
+        PythonLanguage language = core.getLanguage();
+        addBuiltinConstant(T___DOC__, """
                         Interface to pyexpat parser (Java backend).
 
                         NOTE: This backend currently provides best-effort compatibility with native Expat.
                         Known incompatibilities include Expat-specific incremental buffering/chunking behavior,
                         exact error code/message mapping, and some DTD/external entity callback semantics.
                         """);
-        addBuiltinConstant("EXPAT_VERSION", toTruffleStringUncached("expat_2.6.0"));
-        addBuiltinConstant("version_info", PFactory.createTuple(core.getLanguage(), new Object[]{2, 6, 0}));
+        addBuiltinConstant("EXPAT_VERSION", T_JAVA);
+        addBuiltinConstant("version_info", PFactory.createTuple(language, new Object[]{2, 6, 0}));
         addBuiltinConstant("native_encoding", toTruffleStringUncached("UTF-8"));
 
         addBuiltinConstant("XML_PARAM_ENTITY_PARSING_NEVER", PXMLParser.XML_PARAM_ENTITY_PARSING_NEVER);
         addBuiltinConstant("XML_PARAM_ENTITY_PARSING_UNLESS_STANDALONE", PXMLParser.XML_PARAM_ENTITY_PARSING_UNLESS_STANDALONE);
         addBuiltinConstant("XML_PARAM_ENTITY_PARSING_ALWAYS", PXMLParser.XML_PARAM_ENTITY_PARSING_ALWAYS);
 
-        addBuiltinConstant("error", core.lookupType(PythonBuiltinClassType.PyExpatError));
-        addBuiltinConstant("ExpatError", core.lookupType(PythonBuiltinClassType.PyExpatError));
+        PythonBuiltinClass expatErrorType = core.lookupType(PythonBuiltinClassType.PyExpatError);
+        addBuiltinConstant("error", expatErrorType);
+        addBuiltinConstant("ExpatError", expatErrorType);
 
-        PythonLanguage language = core.getLanguage();
         PythonModule errors = PFactory.createPythonModule(toTruffleStringUncached("pyexpat.errors"));
         PDict codes = PFactory.createDict(language);
         PDict messages = PFactory.createDict(language);
@@ -109,8 +115,13 @@ public final class PyExpatModuleBuiltins extends PythonBuiltins {
         PythonModule model = PFactory.createPythonModule(toTruffleStringUncached("pyexpat.model"));
         addBuiltinConstant("model", model);
 
-        addBuiltinConstant("features", PFactory.createList(language));
         super.initialize(core);
+    }
+
+    @Override
+    public void postInitialize(Python3Core core) {
+        super.postInitialize(core);
+        addBuiltinConstant("features", PFactory.createList(core.getLanguage()));
     }
 
     private static void addError(PythonModule errors, PDict codes, PDict messages, String constName, String msg, int code) {
@@ -123,12 +134,17 @@ public final class PyExpatModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "ErrorString", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ErrorStringNode extends PythonBuiltinNode {
+
+        private static final TruffleString T_PARSING_FINISHED = tsLiteral("parsing finished");
+        private static final TruffleString T_UNCLOSED_TOKEN = tsLiteral("unclosed token");
+        private static final TruffleString T_SYNTAX_ERROR = tsLiteral("syntax error");
+
         @Specialization
         static TruffleString doIt(int code) {
             return switch (code) {
-                case PXMLParser.XML_ERROR_FINISHED -> toTruffleStringUncached("parsing finished");
-                case PXMLParser.XML_ERROR_UNCLOSED_TOKEN -> toTruffleStringUncached("unclosed token");
-                default -> toTruffleStringUncached("syntax error");
+                case PXMLParser.XML_ERROR_FINISHED -> T_PARSING_FINISHED;
+                case PXMLParser.XML_ERROR_UNCLOSED_TOKEN -> T_UNCLOSED_TOKEN;
+                default -> T_SYNTAX_ERROR;
             };
         }
     }
@@ -137,8 +153,9 @@ public final class PyExpatModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ParserCreateNode extends PythonBuiltinNode {
         @Specialization
-        Object create(@SuppressWarnings("unused") Object encoding, Object namespaceSeparator, Object intern,
-                        @Bind Node inliningTarget) {
+        static Object create(@SuppressWarnings("unused") Object encoding, Object namespaceSeparator, Object intern,
+                        @Bind Node inliningTarget,
+                        @Cached PRaiseNode raiseNode) {
             Object sep = namespaceSeparator == PNone.NO_VALUE ? PNone.NONE : namespaceSeparator;
             Object internDict;
             if (intern == PNone.NO_VALUE) {
@@ -148,9 +165,9 @@ public final class PyExpatModuleBuiltins extends PythonBuiltins {
             } else if (intern instanceof PDict) {
                 internDict = intern;
             } else {
-                throw com.oracle.graal.python.nodes.PRaiseNode.raiseStatic(this, PythonBuiltinClassType.TypeError, toTruffleStringUncached("intern must be a dictionary"));
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.INTERN_MUST_BE_A_DICTIONARY);
             }
-            return XMLParserBuiltins.createParser(inliningTarget, this, sep, internDict);
+            return XMLParserBuiltins.createParser(inliningTarget, inliningTarget, sep, internDict);
         }
     }
 }

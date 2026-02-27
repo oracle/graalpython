@@ -45,61 +45,134 @@ import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PXMLParser extends PythonBuiltinObject {
-    static final int XML_PARAM_ENTITY_PARSING_NEVER = 0;
-    static final int XML_PARAM_ENTITY_PARSING_UNLESS_STANDALONE = 1;
-    static final int XML_PARAM_ENTITY_PARSING_ALWAYS = 2;
+    public static final int XML_PARAM_ENTITY_PARSING_NEVER = 0;
+    public static final int XML_PARAM_ENTITY_PARSING_UNLESS_STANDALONE = 1;
+    public static final int XML_PARAM_ENTITY_PARSING_ALWAYS = 2;
 
-    static final int XML_ERROR_FINISHED = 1;
-    static final int XML_ERROR_SYNTAX = 2;
-    static final int XML_ERROR_UNCLOSED_TOKEN = 3;
+    public static final int XML_ERROR_FINISHED = 1;
+    public static final int XML_ERROR_SYNTAX = 2;
+    public static final int XML_ERROR_UNCLOSED_TOKEN = 3;
 
-    final TruffleString namespaceSeparator;
+    private final TruffleString namespaceSeparator;
 
-    boolean bufferText;
-    boolean namespacePrefixes;
-    boolean orderedAttributes;
-    boolean specifiedAttributes;
-    int bufferSize = 8192;
+    private int bufferSize = 8192;
 
-    int currentByteIndex;
-    int currentLineNumber = 1;
-    int currentColumnNumber;
+    private int currentByteIndex;
+    private int currentLineNumber = 1;
+    private int currentColumnNumber;
 
-    boolean finished;
-    boolean foreignDTD;
-    int paramEntityParsing = XML_PARAM_ENTITY_PARSING_NEVER;
-    boolean reparseDeferralEnabled = true;
-    int deliveredEventCount;
+    private boolean finished;
+    private boolean foreignDTD;
+    private int paramEntityParsing = XML_PARAM_ENTITY_PARSING_NEVER;
+    private boolean reparseDeferralEnabled = true;
+    private int deliveredEventCount;
 
-    byte[] data = new byte[0];
-    TruffleString base;
-    Object intern;
-
-    Object startElementHandler;
-    Object endElementHandler;
-    Object characterDataHandler;
-    Object processingInstructionHandler;
-    Object unparsedEntityDeclHandler;
-    Object notationDeclHandler;
-    Object startNamespaceDeclHandler;
-    Object endNamespaceDeclHandler;
-    Object commentHandler;
-    Object startCdataSectionHandler;
-    Object endCdataSectionHandler;
-    Object defaultHandler;
-    Object defaultHandlerExpand;
-    Object notStandaloneHandler;
-    Object externalEntityRefHandler;
-    Object startDoctypeDeclHandler;
-    Object endDoctypeDeclHandler;
-    Object entityDeclHandler;
-    Object xmlDeclHandler;
-    Object elementDeclHandler;
-    Object attlistDeclHandler;
-    Object skippedEntityHandler;
+    private byte[] data = new byte[0];
+    private TruffleString base;
+    private Object intern;
 
     public PXMLParser(Object cls, Shape instanceShape, TruffleString namespaceSeparator) {
         super(cls, instanceShape);
         this.namespaceSeparator = namespaceSeparator;
+    }
+
+    public TruffleString getNamespaceSeparator() {
+        return namespaceSeparator;
+    }
+
+    public int getBufferSize() {
+        return bufferSize;
+    }
+
+    public void setBufferSize(int bufferSize) {
+        this.bufferSize = bufferSize;
+    }
+
+    public int getCurrentByteIndex() {
+        return currentByteIndex;
+    }
+
+    public void setCurrentByteIndex(int currentByteIndex) {
+        this.currentByteIndex = currentByteIndex;
+    }
+
+    public int getCurrentLineNumber() {
+        return currentLineNumber;
+    }
+
+    public void setCurrentLineNumber(int currentLineNumber) {
+        this.currentLineNumber = currentLineNumber;
+    }
+
+    public int getCurrentColumnNumber() {
+        return currentColumnNumber;
+    }
+
+    public void setCurrentColumnNumber(int currentColumnNumber) {
+        this.currentColumnNumber = currentColumnNumber;
+    }
+
+    public boolean isFinished() {
+        return finished;
+    }
+
+    public void setFinished(boolean finished) {
+        this.finished = finished;
+    }
+
+    public boolean isForeignDTD() {
+        return foreignDTD;
+    }
+
+    public void setForeignDTD(boolean foreignDTD) {
+        this.foreignDTD = foreignDTD;
+    }
+
+    public int getParamEntityParsing() {
+        return paramEntityParsing;
+    }
+
+    public void setParamEntityParsing(int paramEntityParsing) {
+        this.paramEntityParsing = paramEntityParsing;
+    }
+
+    public boolean isReparseDeferralEnabled() {
+        return reparseDeferralEnabled;
+    }
+
+    public void setReparseDeferralEnabled(boolean reparseDeferralEnabled) {
+        this.reparseDeferralEnabled = reparseDeferralEnabled;
+    }
+
+    public int getDeliveredEventCount() {
+        return deliveredEventCount;
+    }
+
+    public void setDeliveredEventCount(int deliveredEventCount) {
+        this.deliveredEventCount = deliveredEventCount;
+    }
+
+    public byte[] getData() {
+        return data;
+    }
+
+    public void setData(byte[] data) {
+        this.data = data;
+    }
+
+    public TruffleString getBase() {
+        return base;
+    }
+
+    public void setBase(TruffleString base) {
+        this.base = base;
+    }
+
+    public Object getIntern() {
+        return intern;
+    }
+
+    public void setIntern(Object intern) {
+        this.intern = intern;
     }
 }
