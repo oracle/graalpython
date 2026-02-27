@@ -158,6 +158,7 @@ public final class PyExpatModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object create(@SuppressWarnings("unused") Object encoding, Object namespaceSeparator, Object intern,
                         @Bind Node inliningTarget,
+                        @Cached XMLParserBuiltins.CreateParserNode createParserNode,
                         @Cached PRaiseNode raiseNode) {
             Object sep = namespaceSeparator == PNone.NO_VALUE ? PNone.NONE : namespaceSeparator;
             if (sep != PNone.NONE && !(sep instanceof TruffleString)) {
@@ -173,7 +174,7 @@ public final class PyExpatModuleBuiltins extends PythonBuiltins {
             } else {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.INTERN_MUST_BE_A_DICTIONARY);
             }
-            return XMLParserBuiltins.createParser(inliningTarget, inliningTarget, sep, internDict);
+            return createParserNode.execute(inliningTarget, sep, internDict);
         }
     }
 }

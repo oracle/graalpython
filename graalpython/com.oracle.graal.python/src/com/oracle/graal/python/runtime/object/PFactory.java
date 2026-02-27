@@ -40,7 +40,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixFileHandle;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2Object;
-import com.oracle.graal.python.builtins.modules.pyexpat.PXMLParser;
 import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteCodec;
 import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteCodecObject;
 import com.oracle.graal.python.builtins.modules.cjkcodecs.MultibyteIncrementalDecoderObject;
@@ -76,6 +75,7 @@ import com.oracle.graal.python.builtins.modules.pickle.PPickler;
 import com.oracle.graal.python.builtins.modules.pickle.PPicklerMemoProxy;
 import com.oracle.graal.python.builtins.modules.pickle.PUnpickler;
 import com.oracle.graal.python.builtins.modules.pickle.PUnpicklerMemoProxy;
+import com.oracle.graal.python.builtins.modules.pyexpat.PXMLParser;
 import com.oracle.graal.python.builtins.modules.zlib.JavaCompress;
 import com.oracle.graal.python.builtins.modules.zlib.JavaDecompress;
 import com.oracle.graal.python.builtins.modules.zlib.NativeZlibCompObject;
@@ -1459,7 +1459,6 @@ public final class PFactory {
         return new PJSONEncoder(cls, shape, markers, defaultFn, encoder, indent, keySeparator, itemSeparator, sortKeys, skipKeys, allowNan, fastEncode);
     }
 
-    @TruffleBoundary
     public static PXMLParser createXMLParser(Object cls, Shape shape, TruffleString namespaceSeparator) {
         return new PXMLParser(cls, shape, namespaceSeparator);
     }

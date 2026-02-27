@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.modules.pyexpat;
 
+import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
+import static com.oracle.graal.python.nodes.StringLiterals.T_READ;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
@@ -50,7 +52,6 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Function;
 
 import javax.xml.parsers.SAXParserFactory;
 
@@ -86,6 +87,7 @@ import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
@@ -101,43 +103,53 @@ import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateCached;
+import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.strings.InternalByteArray;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.XMLParser)
 public final class XMLParserBuiltins extends PythonBuiltins {
     public static final TpSlots SLOTS = XMLParserBuiltinsSlotsGen.SLOTS;
-    private static final TruffleString T_READ = tsLiteral("read");
-    private static final TruffleString T_BUFFER_SIZE_MUST_BE_AN_INTEGER = tsLiteral("buffer_size must be an integer");
-    private static final TruffleString T_BUFFER_SIZE_MUST_BE_GREATER_THAN_ZERO = tsLiteral("buffer_size must be greater than zero");
-    private static final TruffleString T_BUFFER_SIZE_MUST_NOT_BE_GREATER_THAN_D = tsLiteral("buffer_size must not be greater than %d");
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return XMLParserBuiltinsFactory.getFactories();
     }
 
-    static Object createParser(Node inliningTarget, Node raisingNode, Object namespaceSeparatorObj, Object intern) {
-        TruffleString sep = null;
-        if (!(namespaceSeparatorObj instanceof PNone)) {
-            if (!(namespaceSeparatorObj instanceof TruffleString ts)) {
-                throw PRaiseNode.raiseStatic(raisingNode, PythonBuiltinClassType.ValueError, ErrorMessages.NAMESPACE_SEPARATOR_MUST_BE);
+    @GenerateInline
+    @GenerateCached(false)
+    abstract static class CreateParserNode extends Node {
+        abstract Object execute(Node inliningTarget, Object namespaceSeparatorObj, Object intern);
+
+        @Specialization
+        static Object doIt(Node inliningTarget, Object namespaceSeparatorObj, Object intern,
+                        @Cached PyUnicodeCheckNode unicodeCheckNode,
+                        @Cached CastToTruffleStringNode castToTruffleStringNode,
+                        @Cached TruffleString.CodePointLengthNode codePointLengthNode,
+                        @Cached PRaiseNode raiseNode) {
+            TruffleString sep = null;
+            if (!(namespaceSeparatorObj instanceof PNone)) {
+                if (!unicodeCheckNode.execute(inliningTarget, namespaceSeparatorObj)) {
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.NAMESPACE_SEPARATOR_MUST_BE);
+                }
+                TruffleString namespaceSeparator = castToTruffleStringNode.castKnownString(inliningTarget, namespaceSeparatorObj);
+                int len = codePointLengthNode.execute(namespaceSeparator, TS_ENCODING);
+                if (len > 1) {
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ErrorMessages.NAMESPACE_SEPARATOR_MUST_BE);
+                }
+                sep = namespaceSeparator;
             }
-            int len = ts.codePointLengthUncached(TS_ENCODING);
-            if (len > 1) {
-                throw PRaiseNode.raiseStatic(raisingNode, PythonBuiltinClassType.ValueError, ErrorMessages.NAMESPACE_SEPARATOR_MUST_BE);
-            }
-            sep = ts;
+            PythonLanguage language = PythonLanguage.get(inliningTarget);
+            PXMLParser parser = PFactory.createXMLParser(PythonBuiltinClassType.XMLParser, PythonBuiltinClassType.XMLParser.getInstanceShape(language), sep);
+            parser.setIntern(intern);
+            return parser;
         }
-        PythonLanguage language = PythonLanguage.get(inliningTarget);
-        PXMLParser parser = PFactory.createXMLParser(PythonBuiltinClassType.XMLParser, PythonBuiltinClassType.XMLParser.getInstanceShape(language), sep);
-        parser.setIntern(intern);
-        return parser;
     }
 
     @Slot(value = SlotKind.tp_new, isComplex = true)
@@ -145,9 +157,10 @@ public final class XMLParserBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class NewNode extends PythonTernaryBuiltinNode {
         @Specialization
-        Object doIt(Object cls, @SuppressWarnings("unused") Object arg1, Object arg2,
-                        @Bind Node inliningTarget) {
-            return createParser(inliningTarget, this, arg2 == PNone.NO_VALUE ? PNone.NONE : arg2, PNone.NONE);
+        static Object doIt(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") Object arg1, Object arg2,
+                        @Bind Node inliningTarget,
+                        @Cached CreateParserNode createParserNode) {
+            return createParserNode.execute(inliningTarget, arg2 == PNone.NO_VALUE ? PNone.NONE : arg2, PNone.NONE);
         }
     }
 
@@ -653,35 +666,25 @@ public final class XMLParserBuiltins extends PythonBuiltins {
         @Specialization
         int parse(VirtualFrame frame, PXMLParser self, Object data, boolean isFinal,
                         @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
+            Object savedState = BoundaryCallContext.enter(frame, boundaryCallData);
             try {
-                Object savedState = BoundaryCallContext.enter(frame, boundaryCallData);
-                try {
-                    doParse(self, data, isFinal, boundaryCallData);
-                } finally {
-                    BoundaryCallContext.exit(frame, boundaryCallData, savedState);
-                }
-                if (isFinal) {
-                    self.setFinished(true);
-                }
-                return 1;
-            } catch (RuntimeException e) {
-                if (!isFinal) {
-                    return 1;
-                }
-                throw e;
+                doParse(self, data, isFinal);
+            } finally {
+                BoundaryCallContext.exit(frame, boundaryCallData, savedState);
             }
+            return 1;
         }
 
         @TruffleBoundary
-        private void doParse(PXMLParser self, Object data, boolean isFinal, BoundaryCallData boundaryCallData) {
+        private void doParse(PXMLParser self, Object data, boolean isFinal) {
             if (self.isFinished()) {
                 throw raiseExpatError(this, ErrorMessages.PARSING_FINISHED, PXMLParser.XML_ERROR_FINISHED, 0, 1, 0);
             }
-            byte[] chunk = toBytes(data);
-            byte[] merged = Arrays.copyOf(self.getData(), self.getData().length + chunk.length);
-            System.arraycopy(chunk, 0, merged, self.getData().length, chunk.length);
-            self.setData(merged);
-            parseNow(self, !isFinal, boundaryCallData);
+            appendData(self, data);
+            parseNow(self, !isFinal);
+            if (isFinal) {
+                self.setFinished(true);
+            }
         }
 
         @Override
@@ -698,7 +701,7 @@ public final class XMLParserBuiltins extends PythonBuiltins {
                         @Cached("createFor($node)") BoundaryCallData boundaryCallData) {
             Object savedState = BoundaryCallContext.enter(frame, boundaryCallData);
             try {
-                doParseFile(self, file, boundaryCallData);
+                doParseFile(self, file);
             } finally {
                 BoundaryCallContext.exit(frame, boundaryCallData, savedState);
             }
@@ -706,21 +709,18 @@ public final class XMLParserBuiltins extends PythonBuiltins {
             return 1;
         }
 
-        private void doParseFile(PXMLParser self, Object file, BoundaryCallData boundaryCallData) {
+        private void doParseFile(PXMLParser self, Object file) {
             if (self.isFinished()) {
                 throw raiseExpatError(this, ErrorMessages.PARSING_FINISHED, PXMLParser.XML_ERROR_FINISHED, 0, 1, 0);
             }
             while (true) {
-                Object r = PyObjectCallMethodObjArgs.executeUncached(file, T_READ);
-                byte[] b = toBytes(r);
-                if (b.length == 0) {
+                Object r = PyObjectCallMethodObjArgs.executeUncached(file, T_READ, self.getBufferSize());
+                if (appendData(self, r) == 0) {
                     break;
                 }
-                byte[] merged = Arrays.copyOf(self.getData(), self.getData().length + b.length);
-                System.arraycopy(b, 0, merged, self.getData().length, b.length);
-                self.setData(merged);
+                parseNow(self, true);
             }
-            parseNow(self, false, boundaryCallData);
+            parseNow(self, false);
         }
     }
 
@@ -811,27 +811,46 @@ public final class XMLParserBuiltins extends PythonBuiltins {
     abstract static class ExternalEntityParserCreateNode extends PythonTernaryBuiltinNode {
         @Specialization
         Object create(PXMLParser self, @SuppressWarnings("unused") Object context, @SuppressWarnings("unused") Object encoding,
-                        @Bind Node inliningTarget) {
-            return createParser(inliningTarget, this, self.getNamespaceSeparator() == null ? PNone.NONE : self.getNamespaceSeparator(), self.getIntern());
+                        @Bind Node inliningTarget,
+                        @Cached CreateParserNode createParserNode) {
+            return createParserNode.execute(inliningTarget, self.getNamespaceSeparator() == null ? PNone.NONE : self.getNamespaceSeparator(), self.getIntern());
         }
     }
 
     @TruffleBoundary
-    private static byte[] toBytes(Object data) {
+    private static int appendData(PXMLParser parser, Object data) {
+        byte[] existing = parser.getData();
+        int existingLen = existing.length;
         if (PyUnicodeCheckNode.executeUncached(data)) {
             TruffleString utf8 = CastToTruffleStringNode.castKnownStringUncached(data).switchEncodingUncached(TruffleString.Encoding.UTF_8);
-            return utf8.copyToByteArrayUncached(TruffleString.Encoding.UTF_8);
+            InternalByteArray internalByteArray = utf8.getInternalByteArrayUncached(TruffleString.Encoding.UTF_8);
+            int chunkLen = internalByteArray.getLength();
+            if (chunkLen == 0) {
+                return 0;
+            }
+            byte[] merged = Arrays.copyOf(existing, existingLen + chunkLen);
+            System.arraycopy(internalByteArray.getArray(), internalByteArray.getOffset(), merged, existingLen, chunkLen);
+            parser.setData(merged);
+            return chunkLen;
         }
         Object buffer = PythonBufferAcquireLibrary.getUncached().acquireReadonly(data);
         try {
-            return PythonBufferAccessLibrary.getUncached().getCopiedByteArray(buffer);
+            PythonBufferAccessLibrary accessLib = PythonBufferAccessLibrary.getUncached();
+            int chunkLen = accessLib.getBufferLength(buffer);
+            if (chunkLen == 0) {
+                return 0;
+            }
+            byte[] merged = Arrays.copyOf(existing, existingLen + chunkLen);
+            accessLib.readIntoByteArray(buffer, 0, merged, existingLen, chunkLen);
+            parser.setData(merged);
+            return chunkLen;
         } finally {
             PythonBufferAccessLibrary.getUncached().release(buffer);
         }
     }
 
     @TruffleBoundary
-    private static void parseNow(PXMLParser parser, boolean swallowErrors, BoundaryCallData boundaryCallData) {
+    private static void parseNow(PXMLParser parser, boolean swallowErrors) {
         final class Handler extends DefaultHandler2 {
             int line = 1;
             int col;
@@ -846,29 +865,29 @@ public final class XMLParserBuiltins extends PythonBuiltins {
 
             Handler() {
                 if (parser.isForeignDTD() && parser.getParamEntityParsing() == PXMLParser.XML_PARAM_ENTITY_PARSING_ALWAYS) {
-                    call(PXMLParser::getExternalEntityRefHandler, PNone.NONE, PNone.NONE, PNone.NONE, PNone.NONE);
+                    call(parser.getExternalEntityRefHandler(), PNone.NONE, PNone.NONE, PNone.NONE, PNone.NONE);
                 }
             }
 
             @Override
             public void startPrefixMapping(String prefix, String uri) {
-                call(PXMLParser::getStartNamespaceDeclHandler, toTs(prefix), toTs(uri));
+                call(parser.getStartNamespaceDeclHandler(), toTs(prefix), toTs(uri));
             }
 
             @Override
             public void endPrefixMapping(String prefix) {
-                call(PXMLParser::getEndNamespaceDeclHandler, toTs(prefix));
+                call(parser.getEndNamespaceDeclHandler(), toTs(prefix));
             }
 
             @Override
             public void processingInstruction(String target, String data) {
-                call(PXMLParser::getProcessingInstructionHandler, toTs(target), toTs(data));
+                call(parser.getProcessingInstructionHandler(), toTs(target), toTs(data));
             }
 
             @Override
             public void startDocument() {
                 if (locator instanceof Locator2 locator2) {
-                    call(PXMLParser::getXmlDeclHandler, toOptionalTs(locator2.getXMLVersion()), toOptionalTs(locator2.getEncoding()), -1);
+                    call(parser.getXmlDeclHandler(), toOptionalTs(locator2.getXMLVersion()), toOptionalTs(locator2.getEncoding()), -1);
                 }
             }
 
@@ -876,48 +895,48 @@ public final class XMLParserBuiltins extends PythonBuiltins {
             public void startDTD(String name, String publicId, String systemId) {
                 // We conservatively report an internal subset. This matches minidom builder
                 // expectations and enables DTD callback wiring for entity/notation handling.
-                call(PXMLParser::getStartDoctypeDeclHandler, toTs(name), toTs(systemId), toTs(publicId), 1);
+                call(parser.getStartDoctypeDeclHandler(), toTs(name), toTs(systemId), toTs(publicId), 1);
             }
 
             @Override
             public void endDTD() {
-                call(PXMLParser::getEndDoctypeDeclHandler);
+                call(parser.getEndDoctypeDeclHandler());
             }
 
             @Override
             public void internalEntityDecl(String name, String value) {
                 boolean isParameterEntity = name != null && name.startsWith("%");
-                call(PXMLParser::getEntityDeclHandler, toTs(name), isParameterEntity ? 1 : 0, toTs(value), parser.getBase() == null ? PNone.NONE : parser.getBase(), PNone.NONE, PNone.NONE,
+                call(parser.getEntityDeclHandler(), toTs(name), isParameterEntity ? 1 : 0, toTs(value), parser.getBase() == null ? PNone.NONE : parser.getBase(), PNone.NONE, PNone.NONE,
                                 PNone.NONE);
             }
 
             @Override
             public void externalEntityDecl(String name, String publicId, String systemId) {
                 boolean isParameterEntity = name != null && name.startsWith("%");
-                call(PXMLParser::getEntityDeclHandler, toTs(name), isParameterEntity ? 1 : 0, PNone.NONE, parser.getBase() == null ? PNone.NONE : parser.getBase(),
+                call(parser.getEntityDeclHandler(), toTs(name), isParameterEntity ? 1 : 0, PNone.NONE, parser.getBase() == null ? PNone.NONE : parser.getBase(),
                                 toOptionalTs(normalizeSystemId(systemId)),
                                 toOptionalTs(publicId), PNone.NONE);
             }
 
             @Override
             public void notationDecl(String name, String publicId, String systemId) {
-                call(PXMLParser::getNotationDeclHandler, toTs(name), parser.getBase() == null ? PNone.NONE : parser.getBase(), toOptionalTs(normalizeSystemId(systemId)), toOptionalTs(publicId));
+                call(parser.getNotationDeclHandler(), toTs(name), parser.getBase() == null ? PNone.NONE : parser.getBase(), toOptionalTs(normalizeSystemId(systemId)), toOptionalTs(publicId));
             }
 
             @Override
             public void unparsedEntityDecl(String name, String publicId, String systemId, String notationName) {
-                call(PXMLParser::getUnparsedEntityDeclHandler, toTs(name), parser.getBase() == null ? PNone.NONE : parser.getBase(), toOptionalTs(normalizeSystemId(systemId)), toOptionalTs(publicId),
+                call(parser.getUnparsedEntityDeclHandler(), toTs(name), parser.getBase() == null ? PNone.NONE : parser.getBase(), toOptionalTs(normalizeSystemId(systemId)), toOptionalTs(publicId),
                                 toTs(notationName));
             }
 
             @Override
             public void elementDecl(String name, String model) {
-                call(PXMLParser::getElementDeclHandler, toTs(name), toTs(model));
+                call(parser.getElementDeclHandler(), toTs(name), toTs(model));
             }
 
             @Override
             public void attributeDecl(String eName, String aName, String type, String mode, String value) {
-                call(PXMLParser::getAttlistDeclHandler, toTs(eName), toTs(aName), toTs(type), toOptionalTs(mode), toOptionalTs(value));
+                call(parser.getAttlistDeclHandler(), toTs(eName), toTs(aName), toTs(type), toOptionalTs(mode), toOptionalTs(value));
             }
 
             @Override
@@ -952,39 +971,39 @@ public final class XMLParserBuiltins extends PythonBuiltins {
                     }
                     attrsObj = d;
                 }
-                call(PXMLParser::getStartElementHandler, toTs(elementName(uri, localName, qName)), attrsObj);
+                call(parser.getStartElementHandler(), toTs(elementName(uri, localName, qName)), attrsObj);
             }
 
             @Override
             public void endElement(String uri, String localName, String qName) {
-                call(PXMLParser::getEndElementHandler, toTs(elementName(uri, localName, qName)));
+                call(parser.getEndElementHandler(), toTs(elementName(uri, localName, qName)));
             }
 
             @Override
             public void characters(char[] ch, int start, int length) {
                 if (length > 0) {
-                    call(PXMLParser::getCharacterDataHandler, toTs(new String(ch, start, length)));
+                    call(parser.getCharacterDataHandler(), toTs(new String(ch, start, length)));
                 }
             }
 
             @Override
             public void comment(char[] ch, int start, int length) {
-                call(PXMLParser::getCommentHandler, toTs(new String(ch, start, length)));
+                call(parser.getCommentHandler(), toTs(new String(ch, start, length)));
             }
 
             @Override
             public void startCDATA() {
-                call(PXMLParser::getStartCdataSectionHandler);
+                call(parser.getStartCdataSectionHandler());
             }
 
             @Override
             public void endCDATA() {
-                call(PXMLParser::getEndCdataSectionHandler);
+                call(parser.getEndCdataSectionHandler());
             }
 
             @Override
             public void skippedEntity(String name) {
-                call(PXMLParser::getSkippedEntityHandler, toTs(name), 0);
+                call(parser.getSkippedEntityHandler(), toTs(name), 0);
                 if (locator != null) {
                     int entityLen = name.length() + 2; // '&' + ';'
                     line = Math.max(1, locator.getLineNumber());
@@ -995,7 +1014,7 @@ public final class XMLParserBuiltins extends PythonBuiltins {
                     parser.setErrorColumnNumber(col);
                 }
                 keepCurrentPositionForNextCall = true;
-                call(PXMLParser::getDefaultHandlerExpand, toTs("&" + name + ";"));
+                call(parser.getDefaultHandlerExpand(), toTs("&" + name + ";"));
             }
 
             private String elementName(String uri, String localName, String qName) {
@@ -1031,7 +1050,7 @@ public final class XMLParserBuiltins extends PythonBuiltins {
                 return qName == null || qName.isEmpty() ? localName : qName;
             }
 
-            private void call(Function<PXMLParser, Object> handlerGetter, Object... args) {
+            private void call(Object handler, Object... args) {
                 boolean shouldDeliver = eventOrdinal++ >= parser.getDeliveredEventCount();
                 if (!shouldDeliver) {
                     return;
@@ -1045,19 +1064,13 @@ public final class XMLParserBuiltins extends PythonBuiltins {
                     parser.setErrorColumnNumber(col);
                 }
                 keepCurrentPositionForNextCall = false;
-                Object cb = handlerGetter.apply(parser);
-                if (cb != PNone.NONE) {
-                    Node prevEncapsulatingNode = EncapsulatingNodeReference.getCurrent().set(boundaryCallData);
-                    try {
-                        PyObjectCallMethodObjArgs.executeUncached(cb, tsLiteral("__call__"), args);
-                    } finally {
-                        EncapsulatingNodeReference.getCurrent().set(prevEncapsulatingNode);
-                    }
+                if (handler != PNone.NONE) {
+                    CallNode.executeUncached(handler, args);
                 }
             }
 
             private TruffleString toTs(String s) {
-                return toTruffleStringUncached(s == null ? "" : s);
+                return s == null ? T_EMPTY_STRING : toTruffleStringUncached(s);
             }
 
             private Object toOptionalTs(String s) {
@@ -1097,7 +1110,7 @@ public final class XMLParserBuiltins extends PythonBuiltins {
             reader.setProperty("http://xml.org/sax/properties/declaration-handler", handler);
             reader.setDTDHandler(handler);
             reader.setErrorHandler(new DefaultHandler());
-            reader.parse(new org.xml.sax.InputSource(new ByteArrayInputStream(parser.getData())));
+            reader.parse(new InputSource(new ByteArrayInputStream(parser.getData())));
             parser.setDeliveredEventCount(handler.eventOrdinal);
             parser.setCurrentByteIndex(parser.getData().length);
             parser.setCurrentLineNumber(handler.line);
@@ -1133,7 +1146,7 @@ public final class XMLParserBuiltins extends PythonBuiltins {
         }
     }
 
-    private static RuntimeException raiseExpatError(Node raisingNode, TruffleString msg, int code, int byteIndex, int line, int column) {
+    private static PException raiseExpatError(Node raisingNode, TruffleString msg, int code, int byteIndex, int line, int column) {
         PythonLanguage language = PythonLanguage.get(raisingNode);
         PBaseException exc = PFactory.createBaseException(language, PythonBuiltinClassType.PyExpatError, msg, EMPTY_OBJECT_ARRAY);
         exc.setAttribute(tsLiteral("code"), code);
