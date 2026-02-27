@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -57,6 +57,7 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 /**
@@ -126,9 +127,10 @@ public abstract class LookupAndCallBinaryNode extends Node {
                     @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Cached("left.getClass()") Class<?> cachedLeftClass,
                     @SuppressWarnings("unused") @Cached("right.getClass()") Class<?> cachedRightClass,
+                    @Exclusive @Cached InlinedBranchProfile notFoundProfile,
                     @Exclusive @Cached GetClassNode getClassNode,
                     @Exclusive @Cached("create(name)") LookupSpecialMethodNode getattr) {
-        return doCallObject(frame, inliningTarget, left, right, getClassNode, getattr);
+        return doCallObject(frame, inliningTarget, notFoundProfile, left, right, getClassNode, getattr);
     }
 
     @Specialization(replaces = "callObjectGeneric")
@@ -136,15 +138,18 @@ public abstract class LookupAndCallBinaryNode extends Node {
     @SuppressWarnings("truffle-static-method")
     Object callObjectMegamorphic(VirtualFrame frame, Object left, Object right,
                     @Bind Node inliningTarget,
+                    @Exclusive @Cached InlinedBranchProfile notFoundProfile,
                     @Exclusive @Cached GetClassNode getClassNode,
                     @Exclusive @Cached("create(name)") LookupSpecialMethodNode getattr) {
-        return doCallObject(frame, inliningTarget, left, right, getClassNode, getattr);
+        return doCallObject(frame, inliningTarget, notFoundProfile, left, right, getClassNode, getattr);
     }
 
-    private Object doCallObject(VirtualFrame frame, Node inliningTarget, Object left, Object right, GetClassNode getClassNode, LookupSpecialMethodNode getattr) {
+    private Object doCallObject(VirtualFrame frame, Node inliningTarget, InlinedBranchProfile notFoundProfile, Object left, Object right, GetClassNode getClassNode,
+                    LookupSpecialMethodNode getattr) {
         Object leftClass = getClassNode.execute(inliningTarget, left);
         Object leftCallable = getattr.execute(frame, leftClass, left);
         if (PGuards.isNoValue(leftCallable)) {
+            notFoundProfile.enter(inliningTarget);
             throw SpecialMethodNotFound.INSTANCE;
         }
         return ensureDispatch().executeObject(frame, leftCallable, left, right);

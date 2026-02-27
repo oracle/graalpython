@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,8 +49,7 @@ import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.util.Supplier;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -62,21 +61,15 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @ImportStatic(PythonOptions.class)
 public abstract class LookupAndCallUnaryNode extends UnaryOpNode {
-
-    public abstract static class NoAttributeHandler extends PNodeWithContext {
-        public abstract Object execute(Object receiver);
-    }
-
     protected final TruffleString name;
-    protected final Supplier<NoAttributeHandler> handlerFactory;
-    @Child private NoAttributeHandler handler;
 
-    public abstract Object executeObject(VirtualFrame frame, Object receiver);
+    public abstract Object executeObject(VirtualFrame frame, Object receiver) throws SpecialMethodNotFound;
 
     @Override
     public Object execute(VirtualFrame frame, Object receiver) {
@@ -85,17 +78,11 @@ public abstract class LookupAndCallUnaryNode extends UnaryOpNode {
 
     @NeverDefault
     public static LookupAndCallUnaryNode create(TruffleString name) {
-        return LookupAndCallUnaryNodeGen.create(name, null);
+        return LookupAndCallUnaryNodeGen.create(name);
     }
 
-    @NeverDefault
-    public static LookupAndCallUnaryNode create(TruffleString name, Supplier<NoAttributeHandler> handlerFactory) {
-        return LookupAndCallUnaryNodeGen.create(name, handlerFactory);
-    }
-
-    LookupAndCallUnaryNode(TruffleString name, Supplier<NoAttributeHandler> handlerFactory) {
+    LookupAndCallUnaryNode(TruffleString name) {
         this.name = name;
-        this.handlerFactory = handlerFactory;
     }
 
     public TruffleString getMethodName() {
@@ -137,41 +124,38 @@ public abstract class LookupAndCallUnaryNode extends UnaryOpNode {
     Object callObjectGeneric(VirtualFrame frame, Object receiver,
                     @Bind Node inliningTarget,
                     @SuppressWarnings("unused") @Cached("receiver.getClass()") Class<?> cachedClass,
+                    @Shared @Cached InlinedBranchProfile notFoundProfile,
                     @Shared @Cached GetClassNode getClassNode,
                     @Shared @Cached("create(name)") LookupSpecialMethodNode getattr,
                     @Shared @Cached CallUnaryMethodNode dispatchNode) {
-        return doCallObject(frame, inliningTarget, receiver, getClassNode, getattr, dispatchNode);
+        return doCallObject(frame, inliningTarget, notFoundProfile, receiver, getClassNode, getattr, dispatchNode);
     }
 
     @Specialization(replaces = "callObjectGeneric")
     @Megamorphic
+    @InliningCutoff
     @SuppressWarnings("truffle-static-method")
     Object callObjectMegamorphic(VirtualFrame frame, Object receiver,
                     @Bind Node inliningTarget,
+                    @Shared @Cached InlinedBranchProfile notFoundProfile,
                     @Shared @Cached GetClassNode getClassNode,
                     @Shared @Cached("create(name)") LookupSpecialMethodNode getattr,
                     @Shared @Cached CallUnaryMethodNode dispatchNode) {
-        return doCallObject(frame, inliningTarget, receiver, getClassNode, getattr, dispatchNode);
+        return doCallObject(frame, inliningTarget, notFoundProfile, receiver, getClassNode, getattr, dispatchNode);
     }
 
     protected Class<?> getObjectClass(Object object) {
         return object.getClass();
     }
 
-    private Object doCallObject(VirtualFrame frame, Node inliningTarget, Object receiver, GetClassNode getClassNode, LookupSpecialMethodNode getattr, CallUnaryMethodNode dispatchNode) {
+    private Object doCallObject(VirtualFrame frame, Node inliningTarget, InlinedBranchProfile notFoundProfile,
+                    Object receiver, GetClassNode getClassNode, LookupSpecialMethodNode getattr, CallUnaryMethodNode dispatchNode) {
         Object attr = getattr.execute(frame, getClassNode.execute(inliningTarget, receiver), receiver);
         if (attr == PNone.NO_VALUE) {
-            if (handlerFactory != null) {
-                if (handler == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    handler = insert(handlerFactory.get());
-                }
-                return handler.execute(receiver);
-            }
-            return PNone.NO_VALUE;
-        } else {
-            return dispatchNode.executeObject(frame, attr, receiver);
+            notFoundProfile.enter(inliningTarget);
+            throw SpecialMethodNotFound.INSTANCE;
         }
+        return dispatchNode.executeObject(frame, attr, receiver);
     }
 
     @GenerateUncached

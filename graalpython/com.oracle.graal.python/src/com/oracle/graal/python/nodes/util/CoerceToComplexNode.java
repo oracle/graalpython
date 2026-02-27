@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,7 +43,6 @@ package com.oracle.graal.python.nodes.util;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -51,6 +50,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.call.special.SpecialMethodNotFound;
 import com.oracle.graal.python.nodes.truffle.PythonIntegerAndFloatTypes;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.dsl.Bind;
@@ -94,8 +94,8 @@ public abstract class CoerceToComplexNode extends PNodeWithContext {
                     @Cached PyFloatAsDoubleNode asDoubleNode,
                     @Bind PythonLanguage language,
                     @Cached PRaiseNode raiseNode) {
-        Object result = callComplexFunc.executeObject(frame, x);
-        if (result != PNone.NO_VALUE) {
+        try {
+            Object result = callComplexFunc.executeObject(frame, x);
             if (result instanceof PComplex) {
                 // TODO we need pass here deprecation warning
                 // DeprecationWarning: __complex__ returned non-complex (type %p).
@@ -103,10 +103,10 @@ public abstract class CoerceToComplexNode extends PNodeWithContext {
                 // deprecated,
                 // and may be removed in a future version of Python.
                 return (PComplex) result;
-            } else {
-                throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.SHOULD_RETURN, "__complex__", "complex object");
             }
+            throw raiseNode.raise(inliningTarget, TypeError, ErrorMessages.SHOULD_RETURN, "__complex__", "complex object");
+        } catch (SpecialMethodNotFound e) {
+            return PFactory.createComplex(language, asDoubleNode.execute(frame, inliningTarget, x), 0);
         }
-        return PFactory.createComplex(language, asDoubleNode.execute(frame, inliningTarget, x), 0);
     }
 }

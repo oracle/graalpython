@@ -59,6 +59,26 @@ BIGINT_JSON_DATA = '''
 
 
 class JsonTest(unittest.TestCase):
+    def test_callable_object_hook(self):
+        called = []
+        class Hook:
+            def __call__(self, obj):
+                called.append(True)
+                return obj
+
+        hook_instance = Hook()
+        result = json.loads('{"a": 1, "b": 2}', object_hook=hook_instance)
+        assert len(called) == 1
+        assert result == {"a": 1, "b": 2}
+
+    def test_invalid_object_hook(self):
+        with self.assertRaises(TypeError):
+            json.loads('{"a": 1}', object_hook="not_a_function")
+
+    def test_invalid_object_pairs_hook(self):
+        with self.assertRaises(TypeError):
+            json.loads('{"a": 1}', object_pairs_hook=12345)
+
     def test_dump(self):
         cwd = os.getcwd()
         new_file_path = os.path.join(cwd, 'myFile.json')

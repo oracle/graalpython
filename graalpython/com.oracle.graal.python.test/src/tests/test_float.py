@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -147,6 +147,23 @@ class BasicTests(unittest.TestCase):
         assert round(C(), 1) == 1
         a = object()
         assert round(C(), a) == a
+
+    def test_round_missing_special_method(self):
+        class MissingRound:
+            def __getattr__(self, name):
+                if name == "__round__":
+                    return lambda *args: 42
+                raise AttributeError(name)
+
+        with self.assertRaisesRegex(TypeError, "__round__"):
+            round(MissingRound())
+
+    def test_round_returns_notimplemented(self):
+        class NotImplementedRound:
+            def __round__(self, *args):
+                return NotImplemented
+
+        assert round(NotImplementedRound()) is NotImplemented
 
     def test_create(self):
         class Obj:
