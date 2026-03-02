@@ -339,7 +339,7 @@ test.test_sqlite3.test_transactions.TransactionTests.test_locking @ darwin-arm64
 test.test_sqlite3.test_transactions.TransactionTests.test_multiple_cursors_and_iternext @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_sqlite3.test_transactions.TransactionTests.test_raise_timeout @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_sqlite3.test_transactions.TransactionTests.test_replace_starts_transaction @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
-test.test_sqlite3.test_transactions.TransactionTests.test_rollback_cursor_consistency @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
+test.test_sqlite3.test_transactions.TransactionTests.test_rollback_cursor_consistency @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64-github
 test.test_sqlite3.test_transactions.TransactionTests.test_toggle_auto_commit @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_sqlite3.test_transactions.TransactionTests.test_update_starts_transaction @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github
 test.test_sqlite3.test_transactions.TransactionalDDL.test_ddl_does_not_autostart_transaction @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github

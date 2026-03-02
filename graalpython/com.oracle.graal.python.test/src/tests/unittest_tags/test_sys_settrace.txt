@@ -230,7 +230,7 @@ test.test_sys_settrace.TraceTestCase.test_break_through_finally @ darwin-arm64,l
 test.test_sys_settrace.TraceTestCase.test_break_to_break @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TraceTestCase.test_break_to_continue1 @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
 !test.test_sys_settrace.TraceTestCase.test_break_to_continue1 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
-test.test_sys_settrace.TraceTestCase.test_break_to_continue2 @ linux-aarch64-github,linux-x86_64-github
+test.test_sys_settrace.TraceTestCase.test_break_to_continue2 @ linux-aarch64-github,linux-x86_64-github,win32-AMD64-github
 !test.test_sys_settrace.TraceTestCase.test_break_to_continue2 @ darwin-arm64,linux-aarch64,linux-x86_64,win32-AMD64
 test.test_sys_settrace.TraceTestCase.test_class_creation_with_decorator @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
 test.test_sys_settrace.TraceTestCase.test_continue_through_finally @ darwin-arm64,linux-aarch64,linux-aarch64-github,linux-x86_64,linux-x86_64-github,win32-AMD64,win32-AMD64-github
