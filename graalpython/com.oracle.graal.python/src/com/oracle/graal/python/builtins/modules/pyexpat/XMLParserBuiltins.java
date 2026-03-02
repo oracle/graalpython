@@ -54,7 +54,11 @@ import java.io.InputStream;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import javax.xml.parsers.SAXParserFactory;
 
@@ -65,6 +69,7 @@ import org.xml.sax.SAXParseException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.ext.Attributes2;
 import org.xml.sax.ext.DefaultHandler2;
+import org.xml.sax.ext.EntityResolver2;
 import org.xml.sax.ext.Locator2;
 import org.xml.sax.helpers.DefaultHandler;
 
@@ -712,12 +717,14 @@ public final class XMLParserBuiltins extends PythonBuiltins {
             return 1;
         }
 
+        @TruffleBoundary
         private void doParseFile(PXMLParser self, Object file) {
             if (self.isFinished()) {
                 throw raiseExpatError(this, ErrorMessages.PARSING_FINISHED, PXMLParser.XML_ERROR_FINISHED, 0, 1, 0);
             }
             PythonFileInputStream stream = new PythonFileInputStream(file, self.getBufferSize());
-            parseNow(self, false, new InputSource(stream), stream::getBytesRead);
+            stream.prefetch();
+            parseNow(self, false, new InputSource(stream), stream::getBytesRead, detectXmlDecl(stream.getXmlDeclBytes()));
         }
     }
 
@@ -858,17 +865,24 @@ public final class XMLParserBuiltins extends PythonBuiltins {
     @TruffleBoundary
     private static void parseNow(PXMLParser parser, boolean swallowErrors) {
         int byteLen = parser.getData().length;
-        parseNow(parser, swallowErrors, new InputSource(new ByteArrayInputStream(parser.getData())), () -> byteLen);
+        parseNow(parser, swallowErrors, new InputSource(new ByteArrayInputStream(parser.getData())), () -> byteLen, detectXmlDecl(parser.getData()));
     }
 
     @TruffleBoundary
     private static void parseNow(PXMLParser parser, boolean swallowErrors, InputSource source, ByteIndexSupplier byteIndexSupplier) {
+        parseNow(parser, swallowErrors, source, byteIndexSupplier, null);
+    }
+
+    @TruffleBoundary
+    private static void parseNow(PXMLParser parser, boolean swallowErrors, InputSource source, ByteIndexSupplier byteIndexSupplier, XmlDeclInfo xmlDeclInfo) {
         final class Handler extends DefaultHandler2 {
             int line = 1;
             int col;
             int eventOrdinal;
             Locator locator;
             boolean keepCurrentPositionForNextCall;
+            final Map<String, ExternalEntityInfo> externalEntities = new HashMap<>();
+            final Set<String> resolvedExternalEntities = new HashSet<>();
 
             @Override
             public void setDocumentLocator(Locator locator) {
@@ -898,20 +912,28 @@ public final class XMLParserBuiltins extends PythonBuiltins {
 
             @Override
             public void startDocument() {
-                if (locator instanceof Locator2 locator2) {
+                if (xmlDeclInfo != null) {
+                    call(parser.getXmlDeclHandler(), toOptionalTs(xmlDeclInfo.version), toOptionalTs(xmlDeclInfo.encoding), xmlDeclInfo.standalone);
+                } else if (locator instanceof Locator2 locator2) {
                     call(parser.getXmlDeclHandler(), toOptionalTs(locator2.getXMLVersion()), toOptionalTs(locator2.getEncoding()), -1);
                 }
             }
 
             @Override
             public void startDTD(String name, String publicId, String systemId) {
+                if (xmlDeclInfo != null && xmlDeclInfo.standalone == 0) {
+                    call(parser.getNotStandaloneHandler());
+                }
                 // We conservatively report an internal subset. This matches minidom builder
                 // expectations and enables DTD callback wiring for entity/notation handling.
-                call(parser.getStartDoctypeDeclHandler(), toTs(name), toTs(systemId), toTs(publicId), 1);
+                call(parser.getStartDoctypeDeclHandler(), toTs(name), toTs(systemId), toOptionalTs(publicId), 1);
             }
 
             @Override
             public void endDTD() {
+                if (xmlDeclInfo != null && xmlDeclInfo.standalone == 0) {
+                    call(parser.getNotStandaloneHandler());
+                }
                 call(parser.getEndDoctypeDeclHandler());
             }
 
@@ -925,6 +947,9 @@ public final class XMLParserBuiltins extends PythonBuiltins {
             @Override
             public void externalEntityDecl(String name, String publicId, String systemId) {
                 boolean isParameterEntity = name != null && name.startsWith("%");
+                if (!isParameterEntity) {
+                    externalEntities.put(name, new ExternalEntityInfo(systemId, publicId));
+                }
                 call(parser.getEntityDeclHandler(), toTs(name), isParameterEntity ? 1 : 0, PNone.NONE, parser.getBase() == null ? PNone.NONE : parser.getBase(),
                                 toOptionalTs(normalizeSystemId(systemId)),
                                 toOptionalTs(publicId), PNone.NONE);
@@ -943,12 +968,21 @@ public final class XMLParserBuiltins extends PythonBuiltins {
 
             @Override
             public void elementDecl(String name, String model) {
-                call(parser.getElementDeclHandler(), toTs(name), toTs(model));
+                call(parser.getElementDeclHandler(), toTs(name), elementModel(model));
             }
 
             @Override
             public void attributeDecl(String eName, String aName, String type, String mode, String value) {
-                call(parser.getAttlistDeclHandler(), toTs(eName), toTs(aName), toTs(type), toOptionalTs(mode), toOptionalTs(value));
+                Object defaultValue = toOptionalTs(value);
+                int required = 0;
+                if ("#REQUIRED".equals(mode)) {
+                    defaultValue = PNone.NONE;
+                    required = 1;
+                } else if ("#IMPLIED".equals(mode)) {
+                    defaultValue = PNone.NONE;
+                    required = 0;
+                }
+                call(parser.getAttlistDeclHandler(), toTs(eName), toTs(aName), toTs(type), defaultValue, required);
             }
 
             @Override
@@ -1015,6 +1049,12 @@ public final class XMLParserBuiltins extends PythonBuiltins {
 
             @Override
             public void skippedEntity(String name) {
+                ExternalEntityInfo externalEntity = externalEntities.get(name);
+                if (externalEntity != null && !resolvedExternalEntities.contains(name)) {
+                    call(parser.getExternalEntityRefHandler(), PNone.NONE, parser.getBase() == null ? PNone.NONE : parser.getBase(),
+                                    toOptionalTs(normalizeSystemId(externalEntity.systemId)), toOptionalTs(externalEntity.publicId));
+                    return;
+                }
                 call(parser.getSkippedEntityHandler(), toTs(name), 0);
                 if (locator != null) {
                     int entityLen = name.length() + 2; // '&' + ';'
@@ -1105,6 +1145,14 @@ public final class XMLParserBuiltins extends PythonBuiltins {
                 }
                 return systemId;
             }
+
+            private Object elementModel(String model) {
+                if ("ANY".equals(model)) {
+                    return PFactory.createTuple(PythonLanguage.get(null), new Object[]{2, 0, PNone.NONE,
+                                    PFactory.createTuple(PythonLanguage.get(null), EMPTY_OBJECT_ARRAY)});
+                }
+                return toTs(model);
+            }
         }
 
         Handler handler = new Handler();
@@ -1116,7 +1164,27 @@ public final class XMLParserBuiltins extends PythonBuiltins {
                 reader.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
             } catch (Exception ignored) {
             }
-            reader.setEntityResolver((publicId, systemId) -> new InputSource(new StringReader("")));
+            reader.setEntityResolver(new EntityResolver2() {
+                @Override
+                public InputSource getExternalSubset(String name, String baseURI) {
+                    return null;
+                }
+
+                @Override
+                public InputSource resolveEntity(String name, String publicId, String baseURI, String systemId) {
+                    if (name != null && !name.isEmpty()) {
+                        handler.resolvedExternalEntities.add(name);
+                    }
+                    handler.call(parser.getExternalEntityRefHandler(), PNone.NONE, parser.getBase() == null ? PNone.NONE : parser.getBase(),
+                                    handler.toOptionalTs(handler.normalizeSystemId(systemId)), handler.toOptionalTs(publicId));
+                    return new InputSource(new StringReader(""));
+                }
+
+                @Override
+                public InputSource resolveEntity(String publicId, String systemId) {
+                    return new InputSource(new StringReader(""));
+                }
+            });
             reader.setContentHandler(handler);
             reader.setProperty("http://xml.org/sax/properties/lexical-handler", handler);
             reader.setProperty("http://xml.org/sax/properties/declaration-handler", handler);
@@ -1173,6 +1241,8 @@ public final class XMLParserBuiltins extends PythonBuiltins {
         private int offset;
         private boolean eof;
         private int bytesRead;
+        private byte[] xmlDeclBytes = EMPTY_BYTE_ARRAY;
+        private boolean xmlDeclComplete;
 
         private PythonFileInputStream(Object file, int readSize) {
             this.file = file;
@@ -1219,6 +1289,7 @@ public final class XMLParserBuiltins extends PythonBuiltins {
                 buffer = chunk;
                 offset = 0;
                 bytesRead += chunk.length;
+                captureXmlDeclBytes(chunk);
             } catch (PException e) {
                 throw new IOException(e);
             }
@@ -1227,6 +1298,91 @@ public final class XMLParserBuiltins extends PythonBuiltins {
         int getBytesRead() {
             return bytesRead;
         }
+
+        byte[] getXmlDeclBytes() {
+            return xmlDeclBytes;
+        }
+
+        void prefetch() {
+            if (buffer.length == 0 && !eof) {
+                try {
+                    fillBuffer();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+
+        private void captureXmlDeclBytes(byte[] chunk) {
+            if (xmlDeclComplete) {
+                return;
+            }
+            int newLen = Math.min(1024, xmlDeclBytes.length + chunk.length);
+            byte[] merged = Arrays.copyOf(xmlDeclBytes, newLen);
+            int canCopy = newLen - xmlDeclBytes.length;
+            System.arraycopy(chunk, 0, merged, xmlDeclBytes.length, canCopy);
+            xmlDeclBytes = merged;
+            for (int i = 1; i < xmlDeclBytes.length; i++) {
+                if (xmlDeclBytes[i - 1] == '?' && xmlDeclBytes[i] == '>') {
+                    xmlDeclComplete = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    private record ExternalEntityInfo(String systemId, String publicId) {
+    }
+
+    private record XmlDeclInfo(String version, String encoding, int standalone) {
+    }
+
+    @TruffleBoundary
+    private static XmlDeclInfo detectXmlDecl(byte[] data) {
+        if (data.length == 0 || data[0] != '<') {
+            return null;
+        }
+        int end = -1;
+        for (int i = 1; i < data.length; i++) {
+            if (data[i - 1] == '?' && data[i] == '>') {
+                end = i + 1;
+                break;
+            }
+        }
+        if (end == -1) {
+            return null;
+        }
+        String decl = new String(data, 0, end, java.nio.charset.StandardCharsets.ISO_8859_1);
+        if (!decl.startsWith("<?xml")) {
+            return null;
+        }
+        String version = extractXmlDeclAttr(decl, "version");
+        String encoding = extractXmlDeclAttr(decl, "encoding");
+        String standalone = extractXmlDeclAttr(decl, "standalone");
+        int standaloneInt = "yes".equalsIgnoreCase(standalone) ? 1 : "no".equalsIgnoreCase(standalone) ? 0 : -1;
+        return new XmlDeclInfo(version, encoding, standaloneInt);
+    }
+
+    @TruffleBoundary
+    private static String extractXmlDeclAttr(String decl, String attr) {
+        String key = attr + "=";
+        int idx = decl.indexOf(key);
+        if (idx < 0) {
+            return null;
+        }
+        int valueStart = idx + key.length();
+        if (valueStart >= decl.length()) {
+            return null;
+        }
+        char quote = decl.charAt(valueStart);
+        if (quote != '\'' && quote != '"') {
+            return null;
+        }
+        int end = decl.indexOf(quote, valueStart + 1);
+        if (end < 0) {
+            return null;
+        }
+        return decl.substring(valueStart + 1, end);
     }
 
     private static PException raiseExpatError(Node raisingNode, TruffleString msg, int code, int byteIndex, int line, int column) {

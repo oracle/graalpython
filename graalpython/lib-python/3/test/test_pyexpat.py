@@ -270,10 +270,6 @@ class ParseTest(unittest.TestCase):
         operations = out.out
         self._verify_parse_output(operations)
 
-    @_skip_if_java_pyexpat_backend(
-        "Java pyexpat backend currently cannot preserve Expat's ParseFile incremental semantics "
-        "and callback ordering for this test document when using SAX-based parsing."
-    )
     def test_parse_file(self):
         # Try parsing a file
         out = self.Outputter()
