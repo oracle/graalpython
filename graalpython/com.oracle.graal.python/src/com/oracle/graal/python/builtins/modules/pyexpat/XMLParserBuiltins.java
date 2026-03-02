@@ -688,6 +688,14 @@ public final class XMLParserBuiltins extends PythonBuiltins {
             if (self.isFinished()) {
                 throw raiseExpatError(this, ErrorMessages.PARSING_FINISHED, PXMLParser.XML_ERROR_FINISHED, 0, 1, 0);
             }
+            if (isFinal && self.getData().length == 0 && PyUnicodeCheckNode.executeUncached(data)) {
+                TruffleString strData = CastToTruffleStringNode.castKnownStringUncached(data);
+                String javaData = strData.toJavaStringUncached();
+                parseNow(self, false, new InputSource(new StringReader(javaData)), javaData::length,
+                                detectXmlDecl(javaData.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1)));
+                self.setFinished(true);
+                return;
+            }
             appendData(self, data);
             parseNow(self, !isFinal);
             if (isFinal) {

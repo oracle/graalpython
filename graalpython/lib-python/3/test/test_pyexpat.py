@@ -240,10 +240,6 @@ class ParseTest(unittest.TestCase):
         for operation, expected_operation in zip(operations, expected_operations):
             self.assertEqual(operation, expected_operation)
 
-    @_skip_if_java_pyexpat_backend(
-        "Java pyexpat backend currently fails to parse this Expat conformance byte-sequence with "
-        "equivalent event stream and raises 'unclosed token' where native Expat succeeds."
-    )
     def test_parse_bytes(self):
         out = self.Outputter()
         parser = expat.ParserCreate(namespace_separator='!')
@@ -256,10 +252,6 @@ class ParseTest(unittest.TestCase):
         # Issue #6697.
         self.assertRaises(AttributeError, getattr, parser, '\uD800')
 
-    @_skip_if_java_pyexpat_backend(
-        "Java pyexpat backend currently cannot preserve Expat's incremental parsing/event emission "
-        "sequence for this test document when using SAX-based parsing."
-    )
     def test_parse_str(self):
         out = self.Outputter()
         parser = expat.ParserCreate(namespace_separator='!')
