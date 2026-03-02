@@ -893,6 +893,7 @@ suite = {
                 "-Dpolyglot.python.PosixModuleBackend=native",
                 "-Dpolyglot.python.Sha3ModuleBackend=native",
                 "-Dpolyglot.python.CompressionModulesBackend=native",
+                "-Dpolyglot.python.PyExpatModuleBackend=native",
             ],
             "dynamicBuildArgs": "libpythonvm_build_args",
         },
