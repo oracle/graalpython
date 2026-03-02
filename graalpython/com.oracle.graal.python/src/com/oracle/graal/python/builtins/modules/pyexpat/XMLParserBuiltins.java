@@ -42,12 +42,15 @@ package com.oracle.graal.python.builtins.modules.pyexpat;
 
 import static com.oracle.graal.python.nodes.StringLiterals.T_EMPTY_STRING;
 import static com.oracle.graal.python.nodes.StringLiterals.T_READ;
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_BYTE_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -713,14 +716,8 @@ public final class XMLParserBuiltins extends PythonBuiltins {
             if (self.isFinished()) {
                 throw raiseExpatError(this, ErrorMessages.PARSING_FINISHED, PXMLParser.XML_ERROR_FINISHED, 0, 1, 0);
             }
-            while (true) {
-                Object r = PyObjectCallMethodObjArgs.executeUncached(file, T_READ, self.getBufferSize());
-                if (appendData(self, r) == 0) {
-                    break;
-                }
-                parseNow(self, true);
-            }
-            parseNow(self, false);
+            PythonFileInputStream stream = new PythonFileInputStream(file, self.getBufferSize());
+            parseNow(self, false, new InputSource(stream), stream::getBytesRead);
         }
     }
 
@@ -821,29 +818,38 @@ public final class XMLParserBuiltins extends PythonBuiltins {
     private static int appendData(PXMLParser parser, Object data) {
         byte[] existing = parser.getData();
         int existingLen = existing.length;
+        byte[] chunk = asByteArray(data);
+        int chunkLen = chunk.length;
+        if (chunkLen == 0) {
+            return 0;
+        }
+        byte[] merged = Arrays.copyOf(existing, existingLen + chunkLen);
+        System.arraycopy(chunk, 0, merged, existingLen, chunkLen);
+        parser.setData(merged);
+        return chunkLen;
+    }
+
+    @TruffleBoundary
+    private static byte[] asByteArray(Object data) {
         if (PyUnicodeCheckNode.executeUncached(data)) {
             TruffleString utf8 = CastToTruffleStringNode.castKnownStringUncached(data).switchEncodingUncached(TruffleString.Encoding.UTF_8);
             InternalByteArray internalByteArray = utf8.getInternalByteArrayUncached(TruffleString.Encoding.UTF_8);
             int chunkLen = internalByteArray.getLength();
             if (chunkLen == 0) {
-                return 0;
+                return EMPTY_BYTE_ARRAY;
             }
-            byte[] merged = Arrays.copyOf(existing, existingLen + chunkLen);
-            System.arraycopy(internalByteArray.getArray(), internalByteArray.getOffset(), merged, existingLen, chunkLen);
-            parser.setData(merged);
-            return chunkLen;
+            return Arrays.copyOfRange(internalByteArray.getArray(), internalByteArray.getOffset(), internalByteArray.getOffset() + chunkLen);
         }
         Object buffer = PythonBufferAcquireLibrary.getUncached().acquireReadonly(data);
         try {
             PythonBufferAccessLibrary accessLib = PythonBufferAccessLibrary.getUncached();
             int chunkLen = accessLib.getBufferLength(buffer);
             if (chunkLen == 0) {
-                return 0;
+                return EMPTY_BYTE_ARRAY;
             }
-            byte[] merged = Arrays.copyOf(existing, existingLen + chunkLen);
-            accessLib.readIntoByteArray(buffer, 0, merged, existingLen, chunkLen);
-            parser.setData(merged);
-            return chunkLen;
+            byte[] bytes = new byte[chunkLen];
+            accessLib.readIntoByteArray(buffer, 0, bytes, 0, chunkLen);
+            return bytes;
         } finally {
             PythonBufferAccessLibrary.getUncached().release(buffer);
         }
@@ -851,6 +857,12 @@ public final class XMLParserBuiltins extends PythonBuiltins {
 
     @TruffleBoundary
     private static void parseNow(PXMLParser parser, boolean swallowErrors) {
+        int byteLen = parser.getData().length;
+        parseNow(parser, swallowErrors, new InputSource(new ByteArrayInputStream(parser.getData())), () -> byteLen);
+    }
+
+    @TruffleBoundary
+    private static void parseNow(PXMLParser parser, boolean swallowErrors, InputSource source, ByteIndexSupplier byteIndexSupplier) {
         final class Handler extends DefaultHandler2 {
             int line = 1;
             int col;
@@ -1110,15 +1122,17 @@ public final class XMLParserBuiltins extends PythonBuiltins {
             reader.setProperty("http://xml.org/sax/properties/declaration-handler", handler);
             reader.setDTDHandler(handler);
             reader.setErrorHandler(new DefaultHandler());
-            reader.parse(new InputSource(new ByteArrayInputStream(parser.getData())));
+            reader.parse(source);
+            int byteIndex = byteIndexSupplier.get();
             parser.setDeliveredEventCount(handler.eventOrdinal);
-            parser.setCurrentByteIndex(parser.getData().length);
+            parser.setCurrentByteIndex(byteIndex);
             parser.setCurrentLineNumber(handler.line);
             parser.setCurrentColumnNumber(handler.col);
             parser.setErrorByteIndex(parser.getCurrentByteIndex());
             parser.setErrorLineNumber(parser.getCurrentLineNumber());
             parser.setErrorColumnNumber(parser.getCurrentColumnNumber());
         } catch (SAXParseException e) {
+            parser.setCurrentByteIndex(byteIndexSupplier.get());
             parser.setDeliveredEventCount(handler.eventOrdinal);
             parser.setCurrentLineNumber(e.getLineNumber());
             parser.setCurrentColumnNumber(Math.max(0, e.getColumnNumber() - 1));
@@ -1133,6 +1147,7 @@ public final class XMLParserBuiltins extends PythonBuiltins {
         } catch (PException e) {
             throw e;
         } catch (Exception e) {
+            parser.setCurrentByteIndex(byteIndexSupplier.get());
             parser.setDeliveredEventCount(handler.eventOrdinal);
             parser.setErrorByteIndex(parser.getCurrentByteIndex());
             parser.setErrorLineNumber(parser.getCurrentLineNumber());
@@ -1143,6 +1158,74 @@ public final class XMLParserBuiltins extends PythonBuiltins {
                                 parser.getCurrentLineNumber(),
                                 parser.getCurrentColumnNumber());
             }
+        }
+    }
+
+    @FunctionalInterface
+    private interface ByteIndexSupplier {
+        int get();
+    }
+
+    private static final class PythonFileInputStream extends InputStream {
+        private final Object file;
+        private final int readSize;
+        private byte[] buffer = EMPTY_BYTE_ARRAY;
+        private int offset;
+        private boolean eof;
+        private int bytesRead;
+
+        private PythonFileInputStream(Object file, int readSize) {
+            this.file = file;
+            this.readSize = readSize;
+        }
+
+        @Override
+        public int read() throws IOException {
+            byte[] b = new byte[1];
+            int n = read(b, 0, 1);
+            return n == -1 ? -1 : b[0] & 0xFF;
+        }
+
+        @Override
+        public int read(byte[] b, int off, int len) throws IOException {
+            if (len == 0) {
+                return 0;
+            }
+            if (offset >= buffer.length) {
+                fillBuffer();
+                if (eof) {
+                    return -1;
+                }
+            }
+            int n = Math.min(len, buffer.length - offset);
+            System.arraycopy(buffer, offset, b, off, n);
+            offset += n;
+            return n;
+        }
+
+        private void fillBuffer() throws IOException {
+            if (eof) {
+                return;
+            }
+            try {
+                Object chunkObj = PyObjectCallMethodObjArgs.executeUncached(file, T_READ, readSize);
+                byte[] chunk = asByteArray(chunkObj);
+                if (chunk.length == 0) {
+                    eof = true;
+                    buffer = EMPTY_BYTE_ARRAY;
+                    offset = 0;
+                    return;
+                }
+                buffer = chunk;
+                offset = 0;
+                bytesRead += chunk.length;
+            } catch (PException e) {
+                throw new IOException(e);
+            }
+        }
+
+        int getBytesRead() {
+            return bytesRead;
         }
     }
 
