@@ -168,6 +168,10 @@ def test_strip():
     assert u' test  '.strip() == u'test'
 
 
+def test_splitlines_keepends_type_error():
+    assert "foo\n".splitlines("bla") == ["foo\n"]
+
+
 def assertEqual(value, expected):
     assert value == expected, ("'%s' was expected to be equal to '%s'" % (value, expected))
 

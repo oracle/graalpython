@@ -108,6 +108,7 @@ import com.oracle.graal.python.builtins.objects.slice.SliceNodes.CoerceToIntSlic
 import com.oracle.graal.python.builtins.objects.slice.SliceNodes.ComputeIndices;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltinsClinicProviders.FormatNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.str.StringBuiltinsClinicProviders.SplitNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.str.StringBuiltinsClinicProviders.SplitLinesNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToJavaStringCheckedNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked0Node;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked1Node;
@@ -157,7 +158,6 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.BuiltinClassProfiles.IsBuiltinClassExactProfile;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
@@ -1460,14 +1460,13 @@ public final class StringBuiltins extends PythonBuiltins {
 
     // str.splitlines([keepends])
     @Builtin(name = "splitlines", minNumOfPositionalArgs = 1, parameterNames = {"self", "keepends"})
+    @ArgumentClinic(name = "keepends", conversion = ClinicConversion.Boolean, defaultValue = "false")
     @GenerateNodeFactory
-    public abstract static class SplitLinesNode extends PythonBinaryBuiltinNode {
+    public abstract static class SplitLinesNode extends PythonBinaryClinicBuiltinNode {
 
-        @Specialization
-        static PList doString(TruffleString self, @SuppressWarnings("unused") PNone keepends,
-                        @Bind Node inliningTarget,
-                        @Cached @Shared SplitLinesInnerNode innerNode) {
-            return innerNode.execute(inliningTarget, self, false);
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SplitLinesNodeClinicProviderGen.INSTANCE;
         }
 
         @Specialization
@@ -1477,15 +1476,13 @@ public final class StringBuiltins extends PythonBuiltins {
             return innerNode.execute(inliningTarget, selfTs, keepends);
         }
 
-        @Specialization(replaces = {"doString", "doStringKeepends"})
-        static PList doGeneric(Object self, Object keepends,
+        @Specialization(replaces = "doStringKeepends")
+        static PList doGeneric(Object self, boolean keepends,
                         @Bind Node inliningTarget,
                         @Cached CastToTruffleStringChecked2Node castSelfNode,
-                        @Cached CastToJavaIntExactNode castToJavaIntNode,
                         @Cached @Exclusive SplitLinesInnerNode innerNode) {
             TruffleString selfStr = castSelfNode.cast(inliningTarget, self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "splitlines", self);
-            boolean bKeepends = !PGuards.isPNone(keepends) && castToJavaIntNode.execute(inliningTarget, keepends) != 0;
-            return innerNode.execute(inliningTarget, selfStr, bKeepends);
+            return innerNode.execute(inliningTarget, selfStr, keepends);
         }
 
         @GenerateCached(false)
