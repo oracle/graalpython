@@ -1198,7 +1198,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         private TruffleString doDecodeSource(Object source, TruffleString filename, byte[] bytes, int bytesLen) {
             Charset charset = PythonFileDetector.findEncodingStrict(bytes, bytesLen);
             TruffleString pythonEncoding = CharsetMapping.getPythonEncodingNameFromJavaName(charset.name());
-            CodecsModuleBuiltins.TruffleDecoder decoder = new CodecsModuleBuiltins.TruffleDecoder(pythonEncoding, charset, bytes, bytesLen, CodingErrorAction.REPORT);
+            CodecsModuleBuiltins.TruffleDecoder decoder = new CodecsModuleBuiltins.TruffleDecoder(charset, bytes, bytesLen, CodingErrorAction.REPORT);
             if (!decoder.decodingStep(true)) {
                 int pos = decoder.getInputPosition();
                 Object exception = CallNode.executeUncached(PythonBuiltinClassType.UnicodeDecodeError, pythonEncoding, source, pos, pos + decoder.getErrorLength(), decoder.getErrorReason());

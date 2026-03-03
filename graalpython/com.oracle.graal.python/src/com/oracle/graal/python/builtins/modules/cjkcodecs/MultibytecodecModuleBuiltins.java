@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,7 +47,6 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
-import java.nio.charset.Charset;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -102,13 +101,13 @@ public final class MultibytecodecModuleBuiltins extends PythonBuiltins {
                     PythonModule codec, PythonLanguage language) {
         TruffleString tsName = toTruffleStringUncached(name);
         TruffleString normalizedEncoding = CharsetMapping.normalizeUncached(tsName);
-        Charset charset = CharsetMapping.getCharsetNormalized(normalizedEncoding);
+        CharsetMapping.CharsetWrapper charset = CharsetMapping.getCharsetNormalized(normalizedEncoding);
         if (charset != null) {
             if (cidx != -1) {
-                codecs[cidx] = new MultibyteCodec(tsName, charset, ct);
+                codecs[cidx] = new MultibyteCodec(tsName, charset.charset(), ct);
             }
             if (midx != -1) {
-                DBCSMap h = maps[midx] = new DBCSMap(name, tsName, charset, mt);
+                DBCSMap h = maps[midx] = new DBCSMap(name, tsName, charset.charset(), mt);
                 codec.setAttribute(toTruffleStringUncached(h.charsetMapName),
                                 PFactory.createCapsuleJavaName(language, h, PyMultibyteCodec_CAPSULE_NAME));
             }

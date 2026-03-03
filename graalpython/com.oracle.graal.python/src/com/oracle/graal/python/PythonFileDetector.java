@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -103,11 +103,11 @@ public final class PythonFileDetector implements TruffleFile.FileTypeDetector {
             if (hasBOM && !normalizedEncoding.equalsUncached(T_UTF_UNDERSCORE_8, TS_ENCODING)) {
                 throw new InvalidEncodingException(encoding + " with BOM");
             }
-            Charset charset = CharsetMapping.getCharsetNormalized(normalizedEncoding);
+            CharsetMapping.CharsetWrapper charset = CharsetMapping.getCharsetNormalized(normalizedEncoding);
             if (charset == null) {
                 throw new InvalidEncodingException(encoding);
             }
-            return charset;
+            return charset.charset();
         }
         return null;
     }

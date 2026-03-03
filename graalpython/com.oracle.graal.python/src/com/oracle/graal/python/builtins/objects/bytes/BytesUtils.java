@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -25,14 +25,11 @@
  */
 package com.oracle.graal.python.builtins.objects.bytes;
 
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-
 import java.io.ByteArrayOutputStream;
 
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
 
@@ -471,11 +468,6 @@ public final class BytesUtils {
             return hexChar - 'A' + 10;
         }
         return 37;
-    }
-
-    @TruffleBoundary
-    public static TruffleString createASCIIString(byte[] retbuf, TruffleString.FromByteArrayNode fromByteArrayNode, TruffleString.SwitchEncodingNode switchEncodingNode) {
-        return switchEncodingNode.execute(fromByteArrayNode.execute(retbuf, TruffleString.Encoding.US_ASCII), TS_ENCODING);
     }
 
     @TruffleBoundary

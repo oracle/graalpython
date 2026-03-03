@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -152,6 +152,7 @@ public final class PicklerNodes {
         @Child private BytesNodes.ToBytesNode toBytesNode;
         @Child private PyObjectReprAsTruffleStringNode reprNode;
         @Child private TruffleString.FromByteArrayNode tsFromByteArrayNode;
+        @Child private TruffleString.FromByteArrayWithCompactionUTF32Node tsFromByteArrayWithCompactionNode;
         @Child private TruffleString.CodePointLengthNode tsCodePointLengthNode;
         @Child private TruffleString.CodePointAtIndexUTF32Node tsCodePointAtIndexUTF32Node;
         @Child private TruffleString.FromLongNode tsFromLongNode;
@@ -188,6 +189,14 @@ public final class PicklerNodes {
                 tsFromByteArrayNode = insert(TruffleString.FromByteArrayNode.create());
             }
             return tsFromByteArrayNode;
+        }
+
+        protected TruffleString.FromByteArrayWithCompactionUTF32Node ensureTsFromByteArrayWithCompaction() {
+            if (tsFromByteArrayWithCompactionNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                tsFromByteArrayWithCompactionNode = insert(TruffleString.FromByteArrayWithCompactionUTF32Node.create());
+            }
+            return tsFromByteArrayWithCompactionNode;
         }
 
         protected TruffleString.CodePointLengthNode ensureTsCodePointLengthNode() {

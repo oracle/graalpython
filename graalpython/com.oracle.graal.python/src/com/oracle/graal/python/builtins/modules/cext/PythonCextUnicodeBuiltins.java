@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -80,8 +80,6 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_STRICT;
 import static com.oracle.graal.python.nodes.StringLiterals.T_UTF8;
 import static com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode.castLong;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
-import static com.oracle.truffle.api.strings.TruffleString.Encoding.ISO_8859_1;
-import static com.oracle.truffle.api.strings.TruffleString.Encoding.UTF_16;
 import static com.oracle.truffle.api.strings.TruffleString.Encoding.UTF_16LE;
 import static com.oracle.truffle.api.strings.TruffleString.Encoding.UTF_32LE;
 import static com.oracle.truffle.api.strings.TruffleString.Encoding.UTF_8;
@@ -175,6 +173,7 @@ import com.oracle.truffle.api.profiles.InlinedExactClassProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.api.strings.TruffleString.Encoding;
 import com.oracle.truffle.api.strings.TruffleString.FromNativePointerNode;
+import com.oracle.truffle.api.strings.TruffleString.FromNativePointerWithCompactionUTF32Node;
 import com.oracle.truffle.api.strings.TruffleString.SwitchEncodingNode;
 import com.oracle.truffle.api.strings.TruffleStringBuilder;
 import com.oracle.truffle.api.strings.TruffleStringBuilderUTF32;
@@ -810,11 +809,11 @@ public final class PythonCextUnicodeBuiltins {
     @CApiBuiltin(ret = PyObjectTransfer, args = {Pointer, Py_ssize_t, Int}, call = Ignored)
     abstract static class GraalPyPrivate_Unicode_FromUCS extends CApiTernaryBuiltinNode {
 
-        private static Encoding encodingFromKind(Node inliningTarget, int kind, PRaiseNode raiseNode) throws PException {
+        private static TruffleString.CompactionLevel compactionLevelFromKind(Node inliningTarget, int kind, PRaiseNode raiseNode) throws PException {
             return switch (kind) {
-                case 1 -> ISO_8859_1;
-                case 2 -> UTF_16;
-                case 4 -> TS_ENCODING;
+                case 1 -> TruffleString.CompactionLevel.S1;
+                case 2 -> TruffleString.CompactionLevel.S2;
+                case 4 -> TruffleString.CompactionLevel.S4;
                 default -> throw raiseNode.raiseBadInternalCall(inliningTarget);
             };
         }
@@ -822,19 +821,13 @@ public final class PythonCextUnicodeBuiltins {
         @Specialization
         static Object doNative(Object ptr, long byteLength, int kind,
                         @Bind Node inliningTarget,
-                        @Cached FromNativePointerNode fromNativePointerNode,
-                        @Cached SwitchEncodingNode switchEncodingNode,
+                        @Cached FromNativePointerWithCompactionUTF32Node fromNativePointerNode,
                         @Cached PRaiseNode raiseNode) {
             try {
                 int iByteLength = PInt.intValueExact(byteLength);
-                Encoding srcEncoding = encodingFromKind(inliningTarget, kind, raiseNode);
-                /*
-                 * TODO(fa): TruffleString does currently not support creating strings from UCS1 and
-                 * UCS2 bytes (GR-44312). Remind: UCS1 and UCS2 are actually compacted UTF-32 bytes.
-                 * For now, we use ISO-8859-1 and UTF-16 but that's not entirely correct.
-                 */
-                TruffleString ts = fromNativePointerNode.execute(ptr, 0, iByteLength, srcEncoding, true);
-                return PFactory.createString(PythonLanguage.get(inliningTarget), switchEncodingNode.execute(ts, TS_ENCODING));
+                TruffleString.CompactionLevel compactionLevel = compactionLevelFromKind(inliningTarget, kind, raiseNode);
+                TruffleString ts = fromNativePointerNode.execute(ptr, 0, iByteLength, compactionLevel, true);
+                return PFactory.createString(PythonLanguage.get(inliningTarget), ts);
             } catch (OverflowException e) {
                 throw raiseNode.raise(inliningTarget, MemoryError);
             }

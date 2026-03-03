@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,7 +43,6 @@ package com.oracle.graal.python.util;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toInternedTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
-import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
@@ -76,70 +75,43 @@ import com.oracle.truffle.api.strings.TruffleStringIterator;
  * Utility class for mapping Python encodings to Java charsets
  */
 public class CharsetMapping {
-    private static final Charset UTF_32LE = new PythonUTF32CharsetWrapper(Charset.forName("UTF-32LE"), ByteOrder.LITTLE_ENDIAN);
-    private static final Charset UTF_32LE_BOM = new PythonUTF32CharsetWrapper(Charset.forName("UTF-32LE-BOM"), ByteOrder.LITTLE_ENDIAN);
-    private static final Charset UTF_32BE = new PythonUTF32CharsetWrapper(Charset.forName("UTF-32BE"), ByteOrder.BIG_ENDIAN);
-    private static final Charset UTF_32BE_BOM = new PythonUTF32CharsetWrapper(Charset.forName("UTF-32BE-BOM"), ByteOrder.BIG_ENDIAN);
-    private static final ConcurrentMap<String, Charset> JAVA_CHARSETS = new ConcurrentHashMap<>();
+
+    public enum BOM {
+        UTF_16LE(new byte[]{(byte) 0xff, (byte) 0xfe}),
+        UTF_16BE(new byte[]{(byte) 0xfe, (byte) 0xff}),
+        UTF_32LE(new byte[]{(byte) 0xff, (byte) 0xfe, 0, 0}),
+        UTF_32BE(new byte[]{0, 0, (byte) 0xfe, (byte) 0xff});
+
+        public final byte[] bytes;
+
+        BOM(byte[] bytes) {
+            this.bytes = bytes;
+        }
+    }
+
+    public static final CharsetWrapper UTF_16LE_BOM = new CharsetWrapper(Charset.forName("UnicodeLittle"), TruffleString.Encoding.UTF_16LE, BOM.UTF_16LE, 2);
+    public static final CharsetWrapper UTF_16BE_BOM = new CharsetWrapper(StandardCharsets.UTF_16, TruffleString.Encoding.UTF_16BE, BOM.UTF_16BE, 2);
+
+    public static final CharsetWrapper UTF_32LE = new CharsetWrapper(new PythonUTF32CharsetWrapper(Charset.forName("UTF-32LE"), ByteOrder.LITTLE_ENDIAN), TruffleString.Encoding.UTF_32LE, null, 4);
+    public static final CharsetWrapper UTF_32LE_BOM = new CharsetWrapper(new PythonUTF32CharsetWrapper(Charset.forName("UTF-32LE-BOM"), ByteOrder.LITTLE_ENDIAN), TruffleString.Encoding.UTF_32LE,
+                    BOM.UTF_32LE, 4);
+    public static final CharsetWrapper UTF_32BE = new CharsetWrapper(new PythonUTF32CharsetWrapper(Charset.forName("UTF-32BE"), ByteOrder.BIG_ENDIAN), TruffleString.Encoding.UTF_32BE, null, 4);
+    public static final CharsetWrapper UTF_32BE_BOM = new CharsetWrapper(new PythonUTF32CharsetWrapper(Charset.forName("UTF-32BE-BOM"), ByteOrder.BIG_ENDIAN), TruffleString.Encoding.UTF_32BE,
+                    BOM.UTF_32BE, 4);
+
+    private static final ConcurrentMap<String, CharsetWrapper> JAVA_CHARSETS = new ConcurrentHashMap<>();
     // Name maps are populated by static initializer and are immutable afterwards
     private static final Map<TruffleString, String> CHARSET_NAME_MAP = new HashMap<>();
     private static final Map<String, TruffleString> CHARSET_NAME_MAP_REVERSE = new HashMap<>();
-    private static final TruffleString T_UTF_16_UNDERSCORE = tsLiteral("utf_16");
-    private static final TruffleString T_UTF_32_UNDERSCORE = tsLiteral("utf_32");
 
-    @TruffleBoundary
-    public static Charset getCharsetNormalized(TruffleString normalizedEncoding) {
-        String name = CHARSET_NAME_MAP.get(normalizedEncoding);
-        if (name != null) {
-            return getJavaCharset(name);
-        }
-        return null;
+    public record CharsetWrapper(Charset charset, TruffleString.Encoding tStringEncoding, BOM bom, int stride) {
     }
 
     @TruffleBoundary
-    public static Charset getCharsetForDecodingNormalized(TruffleString normalizedEncoding, byte[] bytes, int len) {
-        if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN) {
-            /*
-             * JDK's charsets for UTF-16 and UTF-32 default to big endian irrespective of the
-             * platform if there is no BOM. The UTF-16-LE and UTF-32-LE charsets reject big endian
-             * BOM. CPython defaults to platform endian and accepts both BOMs. So, in order to get
-             * the behavior we need, we have to take a peek at the possible BOM and if it has a BOM
-             * use the UTF-16/32 encoding and let it detect, otherwise default to UTF-16/32-LE.
-             */
-            if (T_UTF_16_UNDERSCORE.equalsUncached(normalizedEncoding, TS_ENCODING) && hasUTF16BOM(bytes, len)) {
-                return StandardCharsets.UTF_16;
-            } else if (T_UTF_32_UNDERSCORE.equalsUncached(normalizedEncoding, TS_ENCODING)) {
-                Charset charset = getUTF32CharsetForBOM(bytes, len);
-                if (charset != null) {
-                    return charset;
-                }
-            }
-        }
+    public static CharsetWrapper getCharsetNormalized(TruffleString normalizedEncoding) {
         String name = CHARSET_NAME_MAP.get(normalizedEncoding);
         if (name != null) {
             return getJavaCharset(name);
-        }
-        return null;
-    }
-
-    private static boolean hasUTF16BOM(byte[] bytes, int len) {
-        if (len < 2) {
-            return false;
-        }
-        short head = PythonUtils.ARRAY_ACCESSOR.getShort(bytes, 0);
-        return head == (short) 0xFFFE || head == (short) 0xFEFF;
-    }
-
-    private static Charset getUTF32CharsetForBOM(byte[] bytes, int len) {
-        if (len < 4) {
-            return null;
-        }
-        int head = PythonUtils.ARRAY_ACCESSOR.getInt(bytes, 0);
-        if (head == 0xFFFE0000) {
-            return UTF_32BE_BOM;
-        }
-        if (head == 0x0000FEFF) {
-            return UTF_32LE_BOM;
         }
         return null;
     }
@@ -188,19 +160,19 @@ public class CharsetMapping {
         return NormalizeEncodingNameNodeGen.getUncached().execute(null, encoding);
     }
 
-    public static Charset getJavaCharset(String name) {
+    public static CharsetWrapper getJavaCharset(String name) {
         return JAVA_CHARSETS.computeIfAbsent(name, key -> {
             // Important: When adding additional ICU4J charset, the implementation class needs to be
             // added to reflect-config.json
             if (name.equals("UTF-7") || name.equals("HZ")) {
                 try {
-                    return CharsetICU.forNameICU(name);
+                    return new CharsetWrapper(CharsetICU.forNameICU(name), null, null, 1);
                 } catch (UnsupportedCharsetException e) {
                     return null;
                 }
             } else {
                 try {
-                    return Charset.forName(name);
+                    return new CharsetWrapper(Charset.forName(name), null, null, 1);
                 } catch (UnsupportedCharsetException e) {
                     return null;
                 }
@@ -224,12 +196,12 @@ public class CharsetMapping {
 
     static {
         // Pre-initialize standard charset entries
-        JAVA_CHARSETS.put("US-ASCII", StandardCharsets.US_ASCII);
-        JAVA_CHARSETS.put("ISO-8859-1", StandardCharsets.ISO_8859_1);
-        JAVA_CHARSETS.put("UTF-8", StandardCharsets.UTF_8);
-        JAVA_CHARSETS.put("UTF-16BE", StandardCharsets.UTF_16BE);
-        JAVA_CHARSETS.put("UTF-16LE", StandardCharsets.UTF_16LE);
-        JAVA_CHARSETS.put("UTF-16", ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? Charset.forName("UnicodeLittle") : StandardCharsets.UTF_16);
+        JAVA_CHARSETS.put("US-ASCII", new CharsetWrapper(StandardCharsets.US_ASCII, TruffleString.Encoding.US_ASCII, null, 1));
+        JAVA_CHARSETS.put("ISO-8859-1", new CharsetWrapper(StandardCharsets.ISO_8859_1, TruffleString.Encoding.ISO_8859_1, null, 1));
+        JAVA_CHARSETS.put("UTF-8", new CharsetWrapper(StandardCharsets.UTF_8, TruffleString.Encoding.UTF_8, null, 1));
+        JAVA_CHARSETS.put("UTF-16BE", new CharsetWrapper(StandardCharsets.UTF_16BE, TruffleString.Encoding.UTF_16BE, null, 2));
+        JAVA_CHARSETS.put("UTF-16LE", new CharsetWrapper(StandardCharsets.UTF_16LE, TruffleString.Encoding.UTF_16LE, null, 2));
+        JAVA_CHARSETS.put("UTF-16", ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? UTF_16LE_BOM : UTF_16BE_BOM);
         JAVA_CHARSETS.put("UTF-32BE", UTF_32BE);
         JAVA_CHARSETS.put("UTF-32LE", UTF_32LE);
         JAVA_CHARSETS.put("UTF-32", ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? UTF_32LE_BOM : UTF_32BE_BOM);
@@ -238,8 +210,8 @@ public class CharsetMapping {
         addMapping("raw_unicode_escape", "x-python-raw-unicode-escape");
         addMapping("unicode-escape", "x-python-unicode-escape");
         addMapping("unicodeescape", "x-python-unicode-escape");
-        JAVA_CHARSETS.put("x-python-raw-unicode-escape", new PythonRawUnicodeEscapeCharset());
-        JAVA_CHARSETS.put("x-python-unicode-escape", new PythonUnicodeEscapeCharset());
+        JAVA_CHARSETS.put("x-python-raw-unicode-escape", new CharsetWrapper(new PythonRawUnicodeEscapeCharset(), null, null, 1));
+        JAVA_CHARSETS.put("x-python-unicode-escape", new CharsetWrapper(new PythonUnicodeEscapeCharset(), null, null, 1));
 
         addMapping("ascii", "US-ASCII");
         addMapping("big5hkscs", "Big5-HKSCS");

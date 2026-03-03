@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, 2025, Oracle and/or its affiliates.
+/* Copyright (c) 2020, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2020 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -63,7 +63,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.S_TAKES_NO_KEYWORD_ARG
 import static com.oracle.graal.python.nodes.ErrorMessages.UNPACK_REQ_A_BUFFER_OF_N_BYTES;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.StructError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import java.nio.ByteOrder;
 import java.util.HashSet;
@@ -678,9 +677,9 @@ public class StructBuiltins extends PythonBuiltins {
     public abstract static class GetStructFormat extends PythonBuiltinNode {
         @Specialization
         protected Object get(PStruct self,
-                        @Cached TruffleString.FromByteArrayNode fromBytes,
-                        @Cached TruffleString.SwitchEncodingNode switchEncoding) {
-            return switchEncoding.execute(fromBytes.execute(self.getFormat(), TruffleString.Encoding.US_ASCII), TS_ENCODING);
+                        @Cached TruffleString.FromByteArrayWithCompactionUTF32Node fromBytes) {
+            byte[] format = self.getFormat();
+            return fromBytes.execute(format, 0, format.length, TruffleString.CompactionLevel.S1, false);
         }
     }
 }

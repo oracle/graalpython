@@ -118,6 +118,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.UnixSockAddr;
 import com.oracle.graal.python.util.FunctionWithSignature;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.ArrayUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -1919,7 +1920,8 @@ public final class NFIPosixSupport extends PosixSupport {
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode,
                     @Shared("toUtf8") @Cached TruffleString.SwitchEncodingNode switchEncodingToUtf8Node,
                     @Shared("tsCopyBytes") @Cached TruffleString.CopyToByteArrayNode copyToByteArrayNode,
-                    @Shared("tsFromBytes") @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
+                    @Cached TruffleString.FromZeroTerminatedNativePointerNode fromZeroTerminatedNativePointerNode,
+                    @Cached TruffleString.AsManagedNode asManagedNode,
                     @Shared("fromUtf8") @Cached TruffleString.SwitchEncodingNode switchEncodingFromUtf8Node) throws PosixException {
         /*
          * We don't want to link the posix library with libcrypt, because it might not be available
@@ -1963,13 +1965,9 @@ public final class NFIPosixSupport extends PosixSupport {
             if (resultPtr == 0) {
                 throw getErrnoAndThrowPosixException(invokeNode);
             }
-            int len = 0;
-            while (UNSAFE.getByte(resultPtr + len) != 0) {
-                len++;
-            }
-            byte[] resultBytes = new byte[len];
-            UNSAFE.copyMemory(null, resultPtr, resultBytes, Unsafe.ARRAY_BYTE_BASE_OFFSET, len);
-            return createString(resultBytes, 0, resultBytes.length, false, fromByteArrayNode, switchEncodingFromUtf8Node);
+            // TODO PyUnicode_DecodeFSDefault
+            TruffleString utf8 = fromZeroTerminatedNativePointerNode.execute8Bit(resultPtr, 0, UTF_8, false);
+            return asManagedNode.execute(switchEncodingFromUtf8Node.execute(utf8, TS_ENCODING), TS_ENCODING);
         }
     }
 
@@ -2276,13 +2274,7 @@ public final class NFIPosixSupport extends PosixSupport {
                 pathBuf = PythonUtils.arrayCopyOfRange(data, pathOffset, pathOffset + linuxAddrLen);
             } else {
                 // Regular NULL-terminated string
-                int pathLen = -1;
-                for (int i = pathOffset; i < data.length; i++) {
-                    if (data[i] == '\0') {
-                        pathLen = i - pathOffset;
-                        break;
-                    }
-                }
+                int pathLen = ArrayUtils.indexOf(data, pathOffset, data.length, (byte) 0) - pathOffset;
                 assert pathLen >= 0;
                 pathBuf = PythonUtils.arrayCopyOfRange(data, pathOffset, pathOffset + pathLen);
             }
@@ -2546,11 +2538,8 @@ public final class NFIPosixSupport extends PosixSupport {
             throw outOfMemoryPosixError();
         }
         int offset = (int) longOffset;
-        int end = offset;
-        while (end < buffer.length && buffer[end] != '\0') {
-            end++;
-        }
-        if (end == buffer.length) {
+        int end = ArrayUtils.indexOf(buffer, offset, buffer.length, (byte) 0);
+        if (end < 0) {
             throw CompilerDirectives.shouldNotReachHere("Could not find the end of the string");
         }
         // TODO PyUnicode_DecodeFSDefault

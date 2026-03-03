@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -364,8 +364,7 @@ public final class ErrorHandlers {
                         @Cached PyUnicodeEncodeOrTranslateErrorGetStartNode getStartNode,
                         @Cached PyUnicodeEncodeOrTranslateErrorGetEndNode getEndNode,
                         @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
-                        @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode) {
+                        @Cached TruffleString.FromByteArrayWithCompactionUTF32Node fromByteArrayNode) {
             TruffleString src = getObjectNode.execute(inliningTarget, exception);
             int start = getStartNode.execute(inliningTarget, exception);
             int end = getEndNode.execute(inliningTarget, exception);
@@ -378,8 +377,8 @@ public final class ErrorHandlers {
             for (int i = start; i < end; ++i) {
                 pos = appendXmlCharRefReplacement(replacement, pos, codePointAtIndexNode.execute(src, i));
             }
-            TruffleString resultAscii = fromByteArrayNode.execute(replacement, Encoding.US_ASCII, false);
-            return PFactory.createTuple(language, new Object[]{switchEncodingNode.execute(resultAscii, TS_ENCODING), end});
+            TruffleString resultAscii = fromByteArrayNode.execute(replacement, 0, replacement.length, TruffleString.CompactionLevel.S1, false);
+            return PFactory.createTuple(language, new Object[]{resultAscii, end});
         }
 
         @Specialization(guards = "!isEncode(inliningTarget, o, pyObjectTypeCheck)", limit = "1")
@@ -405,8 +404,7 @@ public final class ErrorHandlers {
                         @Cached PyUnicodeDecodeErrorGetEndNode getEndNode,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "3") PythonBufferAccessLibrary accessLib,
-                        @Cached @Shared TruffleString.FromByteArrayNode fromByteArrayNode,
-                        @Cached @Shared TruffleString.SwitchEncodingNode switchEncodingNode) {
+                        @Cached @Shared TruffleString.FromByteArrayWithCompactionUTF32Node fromByteArrayNode) {
             int start = getStartNode.execute(inliningTarget, exception);
             int end = getEndNode.execute(inliningTarget, exception);
             Object object = getObjectNode.execute(inliningTarget, exception);
@@ -424,8 +422,8 @@ public final class ErrorHandlers {
             } finally {
                 accessLib.release(srcBuf, frame, callData);
             }
-            TruffleString resultAscii = fromByteArrayNode.execute(replacement, Encoding.US_ASCII, false);
-            return PFactory.createTuple(language, new Object[]{switchEncodingNode.execute(resultAscii, TS_ENCODING), end});
+            TruffleString resultAscii = fromByteArrayNode.execute(replacement, 0, replacement.length, TruffleString.CompactionLevel.S1, false);
+            return PFactory.createTuple(language, new Object[]{resultAscii, end});
         }
 
         @Specialization(guards = "isEncodeOrTranslate(inliningTarget, exception, pyObjectTypeCheck)", limit = "1")
@@ -437,8 +435,7 @@ public final class ErrorHandlers {
                         @Cached PyUnicodeEncodeOrTranslateErrorGetStartNode getStartNode,
                         @Cached PyUnicodeEncodeOrTranslateErrorGetEndNode getEndNode,
                         @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
-                        @Cached @Shared TruffleString.FromByteArrayNode fromByteArrayNode,
-                        @Cached @Shared TruffleString.SwitchEncodingNode switchEncodingNode) {
+                        @Cached @Shared TruffleString.FromByteArrayWithCompactionUTF32Node fromByteArrayNode) {
             int start = getStartNode.execute(inliningTarget, exception);
             int end = getEndNode.execute(inliningTarget, exception);
             TruffleString src = getObjectNode.execute(inliningTarget, exception);
@@ -462,8 +459,8 @@ public final class ErrorHandlers {
                 int cp = codePointAtIndexNode.execute(src, i);
                 pos = BytesUtils.unicodeNonAsciiEscape(cp, pos, replacement, true);
             }
-            TruffleString resultAscii = fromByteArrayNode.execute(replacement, Encoding.US_ASCII, false);
-            return PFactory.createTuple(language, new Object[]{switchEncodingNode.execute(resultAscii, TS_ENCODING), end});
+            TruffleString resultAscii = fromByteArrayNode.execute(replacement, 0, replacement.length, TruffleString.CompactionLevel.S1, false);
+            return PFactory.createTuple(language, new Object[]{resultAscii, end});
         }
 
         @Specialization(guards = "isNeither(inliningTarget, o, pyObjectTypeCheck)", limit = "1")
@@ -487,8 +484,7 @@ public final class ErrorHandlers {
                         @Cached PyUnicodeEncodeOrTranslateErrorGetStartNode getStartNode,
                         @Cached PyUnicodeEncodeOrTranslateErrorGetEndNode getEndNode,
                         @Cached TruffleString.CodePointAtIndexUTF32Node codePointAtIndexNode,
-                        @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached TruffleString.FromByteArrayWithCompactionUTF32Node fromByteArrayNode,
                         @Cached TruffleString.FromJavaStringNode fromJavaStringNode,
                         @Cached TruffleStringBuilder.AppendStringNode appendStringNode,
                         @Cached TruffleStringBuilder.AppendCodePointNode appendCodePointNode,
@@ -512,7 +508,7 @@ public final class ErrorHandlers {
                     appendCodePointNode.execute(tsb, '}');
                 } else {
                     int len = BytesUtils.unicodeNonAsciiEscape(cp, 0, buf, true);
-                    appendStringNode.execute(tsb, switchEncodingNode.execute(fromByteArrayNode.execute(buf, 0, len, Encoding.US_ASCII, true), TS_ENCODING));
+                    appendStringNode.execute(tsb, fromByteArrayNode.execute(buf, 0, len, TruffleString.CompactionLevel.S1, true));
                 }
             }
             return PFactory.createTuple(language, new Object[]{toStringNode.execute(tsb), end});

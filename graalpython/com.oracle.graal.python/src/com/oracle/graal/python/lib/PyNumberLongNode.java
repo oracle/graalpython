@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,7 +44,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___INT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.J___TRUNC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.T___TRUNC__;
-import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
@@ -241,8 +240,7 @@ public abstract class PyNumberLongNode extends PNodeWithContext {
         @InliningCutoff
         static Object doGeneric(VirtualFrame frame, Object object, int base,
                         @Bind Node inliningTarget,
-                        @Cached TruffleString.FromByteArrayNode fromByteArrayNode,
-                        @Cached TruffleString.SwitchEncodingNode switchEncodingNode,
+                        @Cached TruffleString.FromByteArrayWithCompactionUTF32Node fromByteArrayNode,
                         @Cached PyLongFromUnicodeObject fromString,
                         @Cached(value = "createFor($node)") InteropCallData callData,
                         @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
@@ -256,8 +254,7 @@ public abstract class PyNumberLongNode extends PNodeWithContext {
             try {
                 byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                 int len = bufferLib.getBufferLength(buffer);
-                TruffleString string = fromByteArrayNode.execute(bytes, 0, len, TruffleString.Encoding.US_ASCII, false);
-                string = switchEncodingNode.execute(string, TS_ENCODING);
+                TruffleString string = fromByteArrayNode.execute(bytes, 0, len, TruffleString.CompactionLevel.S1, false);
                 return fromString.execute(inliningTarget, string, base, bytes, len);
             } finally {
                 bufferLib.release(buffer);
