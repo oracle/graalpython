@@ -1277,7 +1277,7 @@ public final class StringBuiltins extends PythonBuiltins {
             if (sep.isEmpty()) {
                 throw raiseNode.raise(inliningTarget, ValueError, ErrorMessages.EMPTY_SEPARATOR);
             }
-            int splits = maxsplit == -1 ? Integer.MAX_VALUE : maxsplit;
+            int splits = maxsplit < 0 ? Integer.MAX_VALUE : maxsplit;
 
             PList list = PFactory.createList(PythonLanguage.get(inliningTarget));
             int lastEnd = 0;

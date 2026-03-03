@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2025, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates.
 # Copyright (C) 1996-2017 Python Software Foundation
 #
 # Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -1093,6 +1093,12 @@ def test_splitlines():
     assert len(str.splitlines("\n\n")) == 2
     assert len(str.splitlines("\n")) == 1
     assert len(str.splitlines("a\nb")) == 2
+
+
+def test_split_negative_maxsplit_matches_unlimited():
+    s = "0x1.e800000000000p+5"
+    assert s.split(s, maxsplit=-84) == ["", ""]
+    assert s.split(s, maxsplit=-1) == ["", ""]
 
 
 def test_literals():
