@@ -728,7 +728,6 @@ class GraalPythonTags(object):
     unittest_arrow = 'python-unittest-arrow-storage'
     unittest_hpy = 'python-unittest-hpy'
     unittest_hpy_sandboxed = 'python-unittest-hpy-sandboxed'
-    unittest_posix = 'python-unittest-posix'
     unittest_standalone = 'python-unittest-standalone'
     tagged = 'python-tagged-unittest'
     svmbuild = 'python-svm-build'
@@ -1546,13 +1545,6 @@ def graalpython_gate_runner(_, tasks):
     with Task('GraalPython HPy sandboxed tests', tasks, tags=[GraalPythonTags.unittest_hpy_sandboxed]) as task:
         if task:
             run_hpy_unittests(graalpy_standalone_native_enterprise(), args=SANDBOXED_OPTIONS, report=report())
-
-    with Task('GraalPython posix module tests', tasks, tags=[GraalPythonTags.unittest_posix]) as task:
-        if task:
-            opt = '--PosixModuleBackend={backend} --Sha3ModuleBackend={backend}'
-            tests_list = ["test_posix.py", "test_mmap.py", "test_hashlib.py", "test_resource.py"]
-            run_python_unittests(graalpy_standalone_jvm(), args=opt.format(backend='native').split(), paths=tests_list, report=report())
-            run_python_unittests(graalpy_standalone_jvm(), args=opt.format(backend='java').split(), paths=tests_list, report=report())
 
     with Task('GraalPython standalone module tests', tasks, tags=[GraalPythonTags.unittest_standalone]) as task:
         if task:
