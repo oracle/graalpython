@@ -1676,13 +1676,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 }
             } else if (uses.contains(DefUse.GlobalImplicit)) {
                 if (scope.isFunction()) {
-                    if (mangled.equals(J_BREAKPOINT)) {
-                        b.beginTag(DebuggerTags.AlwaysHalt.class);
-                        emitNameGlobalOperation(mangled, op, b, true);
-                        b.endTag(DebuggerTags.AlwaysHalt.class);
-                    } else {
-                        emitNameGlobalOperation(mangled, op, b, true);
-                    }
+                    emitNameGlobalOperation(mangled, op, b, true);
                     return;
                 }
             } else if (uses.contains(DefUse.GlobalExplicit)) {
@@ -2196,8 +2190,18 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 } else {
                     assert len(keywords) == 0;
 
+                    boolean isBreakpoint = func instanceof ExprTy.Name && ((ExprTy.Name) func).id.equals(J_BREAKPOINT);
+
+                    if (isBreakpoint) {
+                        b.beginTag(DebuggerTags.AlwaysHalt.class);
+                    }
+
                     func.accept(this); // callable
                     visitArguments(func, args, numArgs);
+
+                    if (isBreakpoint) {
+                        b.endTag(DebuggerTags.AlwaysHalt.class);
+                    }
                 }
             }
 
