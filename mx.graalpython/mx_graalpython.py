@@ -1310,6 +1310,9 @@ def run_python_unittests(python_binary, args=None, paths=None, exclude=None, env
 
 def run_sandboxed_tests(python_binary, report, **kwargs):
     run_python_unittests(python_binary, args=SANDBOXED_OPTIONS, report=report, **kwargs)
+    # TODO the test runner doesn't even find the tests on Darwin
+    if sys.platform == "darwin":
+        return
     tagged_test_path = os.path.relpath(os.path.join(_get_stdlib_home(), 'test'))
     tagged_tests = [
         # compression
