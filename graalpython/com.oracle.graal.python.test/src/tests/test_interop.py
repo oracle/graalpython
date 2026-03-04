@@ -675,7 +675,7 @@ class InteropTests(unittest.TestCase):
             counter = 0;
             def isLoggable(self, logrecord):
                 self.counter = self.counter + 1
-                return self.__super__.isLoggable(logrecord)
+                return super().isLoggable(logrecord)
             def sayHello(self):
                 return 'Hello'
 
@@ -726,9 +726,9 @@ class InteropTests(unittest.TestCase):
 
         class MyLogRecord(LogRecord):
             def getLevel(self):
-                if self.__super__.getLevel() == Level.FINEST:
-                    self.__super__.setLevel(Level.WARNING)
-                return self.__super__.getLevel()
+                if super().getLevel() == Level.FINEST:
+                    super().setLevel(Level.WARNING)
+                return super().getLevel()
 
         message = "log message"
         my_lr1 = MyLogRecord(Level.WARNING, message)

@@ -98,7 +98,7 @@ def import_current_as_named_module_with_delegate(module, module_name, delegate_n
 
 
 @builtin
-def build_java_class(module, ns, name, base, new_style=False):
+def build_java_class(module, ns, name, base, new_style=True):
     if new_style:
         return build_new_style_java_class(ns, name, base)
     import warnings
