@@ -1136,7 +1136,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
      * provides access to the generator frame even before the generator was started.
      */
     @Yield
-    @SuppressWarnings("truffle-interpreted-performance") // blocked by GR-69979
     public static final class YieldGenerator {
         @Specialization
         public static Object doYield(
@@ -1199,7 +1198,6 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
      * Performs some clean-up steps before suspending execution, and updates the generator state.
      */
     @Yield
-    @SuppressWarnings("truffle-interpreted-performance") // blocked by GR-69979
     public static final class YieldValue {
         @Specialization
         public static Object doObject(Object value,

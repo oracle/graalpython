@@ -132,7 +132,7 @@ public class PGenerator extends PythonBuiltinObject {
         }
 
         public Object handleResult(PGenerator generator, ContinuationResult result) {
-            assert result.getContinuationRootNode() == null || result.getContinuationRootNode().getFrameDescriptor() == generator.frame.getFrameDescriptor();
+            assert PBytecodeDSLRootNode.cast(result.getContinuationRootNode()).getFrameDescriptor() == generator.frame.getFrameDescriptor();
             isStarted = true;
             // We must keep the previous root so that we can load its BytecodeNode to resolve BCI to
             // location, the next continuation node may have different BytecodeNode
