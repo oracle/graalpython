@@ -1503,6 +1503,18 @@ class InteropTests(unittest.TestCase):
         assert pl.callStaticFromPython("INFO").getName() == "INFO"
         assert PythonLevel2.parse("INFO").getName() == "INFO"
 
+    def test_java_subclassing_with_new_arguments(self):
+        from java.util.logging import Level
+
+        class PythonLevel(Level, new_style=True):
+            def __new__(cls, misc_value):
+                return super().__new__(cls, "default name", 2)
+
+            def __init__(self, misc_value):
+                self.misc_value = misc_value
+
+        pl = PythonLevel(123)
+        assert pl.misc_value == 123
 
     def test_jython_star_import(self):
         if __graalpython__.jython_emulation_enabled:
