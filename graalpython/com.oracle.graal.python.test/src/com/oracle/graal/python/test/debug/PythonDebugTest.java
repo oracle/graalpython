@@ -600,7 +600,7 @@ public class PythonDebugTest {
             deleteRecursively(tempDir);
         }
     }
-    
+
     @Test
     public void testInlineEvaluationBreakpointBuiltin() throws Throwable {
         final Source source = Source.newBuilder("python", """
@@ -615,12 +615,18 @@ public class PythonDebugTest {
             session.install(Breakpoint.newBuilder(DebuggerTester.getSourceImpl(source)).lineIs(3).build());
             tester.startEval(source);
             expectSuspended((SuspendedEvent event) -> {
+                DebugStackFrame frame = event.getTopStackFrame();
+                assertEquals(1, frame.getSourceSection().getStartLine());
                 event.prepareContinue();
             });
             expectSuspended((SuspendedEvent event) -> {
+                DebugStackFrame frame = event.getTopStackFrame();
+                assertEquals(2, frame.getSourceSection().getStartLine());
                 event.prepareContinue();
             });
             expectSuspended((SuspendedEvent event) -> {
+                DebugStackFrame frame = event.getTopStackFrame();
+                assertEquals(3, frame.getSourceSection().getStartLine());
                 event.prepareContinue();
             });
         }
