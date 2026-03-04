@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -98,7 +98,7 @@ def import_current_as_named_module_with_delegate(module, module_name, delegate_n
 
 
 @builtin
-def build_java_class(module, ns, name, base, new_style=False):
+def build_java_class(module, ns, name, base, new_style=True):
     if new_style:
         return build_new_style_java_class(ns, name, base)
     import warnings
@@ -174,6 +174,11 @@ def build_new_style_java_class(module, ns, name, base):
         def __subclasscheck__(cls, derived):
             return cls is derived or issubclass(derived, JavaClass)
 
+        def __call__(cls, *args, **kwds):
+            java_object = cls.__new__(cls, *args, **kwds)
+            java_object.this.__init__(*args, **kwds)
+            return java_object
+
         def __new__(mcls, name, bases, namespace):
             if bases:
                 new_class = None
@@ -232,7 +237,6 @@ def build_new_style_java_class(module, ns, name, base):
             delegate = object.__new__(cls)
             java_object = polyglot.__new__(JavaClass, *(args + (delegate,)))
             delegate.__this__ = java_object
-            delegate.__init__(*args, **kwds)
             return java_object
 
     return type(name, (DelegateSuperclass,), ns)
