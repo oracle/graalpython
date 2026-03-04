@@ -816,7 +816,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
     }
 
     private static void beginSourceSectionInner(Builder b, SourceRange sourceRange) {
-        if (sourceRange.startLine >= 1) {
+        if (sourceRange.startLine >= 1 && sourceRange != SourceRange.ARTIFICIAL_RANGE) {
             if (sourceRange.startColumn >= 0 && sourceRange.endLine >= sourceRange.startLine && sourceRange.endColumn >= 0) {
                 if (sourceRange.endColumn > 0) {
                     b.beginSourceSection(sourceRange.startLine, sourceRange.startColumn + 1, sourceRange.endLine, sourceRange.endColumn);
