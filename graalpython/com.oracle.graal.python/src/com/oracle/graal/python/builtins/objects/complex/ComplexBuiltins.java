@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -962,13 +962,25 @@ public final class ComplexBuiltins extends PythonBuiltins {
         @Specialization
         static PComplex doInt(PComplex left, int right,
                         @Bind PythonLanguage language) {
-            return PFactory.createComplex(language, left.getReal() + right, left.getImag());
+            return PFactory.createComplex(language, left.getReal() + right, left.getImag() + 0.0);
         }
 
         @Specialization
         static PComplex doDouble(PComplex left, double right,
                         @Bind PythonLanguage language) {
-            return PFactory.createComplex(language, left.getReal() + right, left.getImag());
+            return PFactory.createComplex(language, left.getReal() + right, left.getImag() + 0.0);
+        }
+
+        @Specialization
+        static PComplex doInt(int left, PComplex right,
+                        @Bind PythonLanguage language) {
+            return PFactory.createComplex(language, left + right.getReal(), 0.0 + right.getImag());
+        }
+
+        @Specialization
+        static PComplex doDouble(double left, PComplex right,
+                        @Bind PythonLanguage language) {
+            return PFactory.createComplex(language, left + right.getReal(), 0.0 + right.getImag());
         }
 
         @Specialization
@@ -1078,13 +1090,25 @@ public final class ComplexBuiltins extends PythonBuiltins {
     abstract static class SubNode extends BinaryOpBuiltinNode {
         static PComplex doComplex(PComplex left, double right,
                         @Bind PythonLanguage language) {
-            return PFactory.createComplex(language, left.getReal() - right, left.getImag());
+            return PFactory.createComplex(language, left.getReal() - right, left.getImag() - 0.0);
         }
 
         @Specialization
         static PComplex doComplex(PComplex left, int right,
                         @Bind PythonLanguage language) {
-            return PFactory.createComplex(language, left.getReal() - right, left.getImag());
+            return PFactory.createComplex(language, left.getReal() - right, left.getImag() - 0.0);
+        }
+
+        @Specialization
+        static PComplex doComplex(int left, PComplex right,
+                        @Bind PythonLanguage language) {
+            return PFactory.createComplex(language, left - right.getReal(), 0.0 - right.getImag());
+        }
+
+        @Specialization
+        static PComplex doComplex(double left, PComplex right,
+                        @Bind PythonLanguage language) {
+            return PFactory.createComplex(language, left - right.getReal(), 0.0 - right.getImag());
         }
 
         @Specialization

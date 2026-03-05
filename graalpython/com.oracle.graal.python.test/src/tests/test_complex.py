@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -39,6 +39,7 @@
 import sys
 import unittest
 from math import atan2
+import math
 
 def test_create():
     c = 4 + 4j
@@ -89,6 +90,46 @@ def test_sub():
     assert (2 - c2) == complex(0, -2)
     assert (c2 - 1.5) == complex(0.5, 2)
     assert (1.5 - c2) == complex(-0.5, -2)
+
+
+def test_mixed_real_complex_zero_signs():
+    z = complex(0.0, -0.0)
+
+    def add_int_local():
+        x = 0
+        return z + x, x + z
+
+    def add_float_local():
+        x = 0.0
+        return z + x, x + z
+
+    def add_bool_local():
+        x = False
+        return z + x, x + z
+
+    for left, right in (add_int_local(), add_float_local(), add_bool_local()):
+        assert left == right
+        assert math.copysign(1.0, left.imag) == 1.0
+        assert math.copysign(1.0, right.imag) == 1.0
+
+    def sub_int_local():
+        x = 0
+        return x - z, z - x
+
+    def sub_float_local():
+        x = 0.0
+        return x - z, z - x
+
+    def sub_bool_local():
+        x = False
+        return x - z, z - x
+
+    # Subtraction is not commutative, but sign handling should follow CPython.
+    for left, right in (sub_int_local(), sub_float_local(), sub_bool_local()):
+        assert left == 0j
+        assert right == -0j
+        assert math.copysign(1.0, left.imag) == 1.0
+        assert math.copysign(1.0, right.imag) == -1.0
 
 
 def test_div():
