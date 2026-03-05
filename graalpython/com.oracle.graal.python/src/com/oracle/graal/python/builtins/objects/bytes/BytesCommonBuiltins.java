@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2014, Regents of the University of California
  *
  * All rights reserved.
@@ -96,7 +96,6 @@ import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyUnicodeCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -112,7 +111,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
@@ -1804,30 +1802,22 @@ public final class BytesCommonBuiltins extends PythonBuiltins {
     // bytes.splitlines([keepends])
     // bytearray.splitlines([keepends])
     @Builtin(name = "splitlines", minNumOfPositionalArgs = 1, parameterNames = {"self", "keepends"})
+    @ArgumentClinic(name = "keepends", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "false")
     @GenerateNodeFactory
-    public abstract static class SplitLinesNode extends PythonBinaryBuiltinNode {
+    public abstract static class SplitLinesNode extends PythonBinaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return BytesCommonBuiltinsClinicProviders.SplitLinesNodeClinicProviderGen.INSTANCE;
+        }
+
         @Specialization
-        static PList doSplitlines(Object self, Object keependsObj,
+        static PList doSplitlines(Object self, boolean keepends,
                         @Bind Node inliningTarget,
                         @Bind PythonLanguage language,
-                        @Cached InlinedBranchProfile isPNoneProfile,
-                        @Cached InlinedBranchProfile isBooleanProfile,
-                        @Cached InlinedConditionProfile keependsProfile,
-                        @Cached CastToJavaIntExactNode cast,
                         @Cached BytesNodes.ToBytesNode toBytesNode,
                         @Cached ListNodes.AppendNode appendNode,
                         @Cached BytesNodes.CreateBytesNode create) {
-            boolean keepends;
-            if (keependsObj instanceof Boolean b) {
-                isBooleanProfile.enter(inliningTarget);
-                keepends = b;
-            } else if (PGuards.isPNone(keependsObj)) {
-                isPNoneProfile.enter(inliningTarget);
-                keepends = false;
-            } else {
-                keepends = cast.execute(inliningTarget, keependsObj) != 0;
-            }
-            keepends = keependsProfile.profile(inliningTarget, keepends);
             byte[] bytes = toBytesNode.execute(null, self);
             PList list = PFactory.createList(language);
             int sliceStart = 0;

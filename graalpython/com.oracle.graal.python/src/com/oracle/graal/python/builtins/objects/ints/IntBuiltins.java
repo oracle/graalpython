@@ -1541,8 +1541,9 @@ public final class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static PInt ceil(PInt arg) {
-            return arg;
+        static PInt ceil(PInt arg,
+                        @Bind PythonLanguage language) {
+            return PFactory.createInt(language, arg.getValue());
         }
     }
 

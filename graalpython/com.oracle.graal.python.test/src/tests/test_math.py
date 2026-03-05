@@ -419,6 +419,7 @@ class MathTests(unittest.TestCase):
                 return 'hello'
 
         self.assertEqual(math.ceil(I(22)), 22)
+        self.assertEqual(type(math.ceil(I(22))), int)
         self.assertEqual(math.ceil(I2(256)), 11)
         self.assertEqual(math.ceil(I(156)), 156)
         self.assertEqual(math.ceil(I2(777)), 11)
