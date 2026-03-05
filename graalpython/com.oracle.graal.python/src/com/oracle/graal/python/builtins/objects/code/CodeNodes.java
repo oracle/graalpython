@@ -60,7 +60,6 @@ import com.oracle.graal.python.runtime.IndirectCallData.BoundaryCallData;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.graal.python.util.LazySource;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -168,7 +167,7 @@ public abstract class CodeNodes {
                                     code.variableShouldUnbox,
                                     code.generalizeInputsKeys, code.generalizeInputsIndices, code.generalizeInputsValues, code.generalizeVarsIndices, code.generalizeVarsValues);
                 }
-                rootNode = PBytecodeRootNode.create(context.getLanguage(), code, new LazySource(PythonUtils.createFakeSource()), false);
+                rootNode = PBytecodeRootNode.create(context.getLanguage(), code, PythonUtils.createFakeSource(), false);
                 if (code.isGeneratorOrCoroutine()) {
                     rootNode = new PBytecodeGeneratorFunctionRootNode(context.getLanguage(), rootNode.getFrameDescriptor(), (PBytecodeRootNode) rootNode, code.name);
                 }

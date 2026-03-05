@@ -526,7 +526,7 @@ public final class PCode extends PythonBuiltinObject {
         PBytecodeRootNode outerRootNode = (PBytecodeRootNode) getRootNodeForExtraction();
         PythonLanguage language = outerRootNode.getLanguage();
         RootCallTarget callTarget = language.createCachedCallTarget(
-                        l -> PBytecodeRootNode.createMaybeGenerator(language, codeUnit, outerRootNode.getLazySource(), outerRootNode.isInternal()), codeUnit);
+                        l -> PBytecodeRootNode.createMaybeGenerator(language, codeUnit, outerRootNode.getSource(), outerRootNode.isInternal()), codeUnit);
         RootNode rootNode = callTarget.getRootNode();
         if (rootNode instanceof PBytecodeGeneratorFunctionRootNode generatorRoot) {
             rootNode = generatorRoot.getBytecodeRootNode();

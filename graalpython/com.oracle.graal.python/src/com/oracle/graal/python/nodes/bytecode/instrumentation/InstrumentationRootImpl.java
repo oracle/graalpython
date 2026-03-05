@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -66,7 +66,7 @@ class InstrumentationRootImpl extends InstrumentationRoot {
                     node = node.getParent();
                 }
                 PBytecodeRootNode rootNode = (PBytecodeRootNode) node;
-                if (rootNode.getSource().hasCharacters()) {
+                if (rootNode.getSourceWithCharacters().hasCharacters()) {
                     instrumentationSupport = insert(new InstrumentationSupport(rootNode));
                     rootNode.materializeContainedFunctionsForInstrumentation(materializedTags);
                     notifyInserted(instrumentationSupport);

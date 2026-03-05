@@ -49,6 +49,7 @@ import static com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.FrozenS
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___LOADER__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___ORIGNAME__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.T___PATH__;
+import static com.oracle.graal.python.nodes.StringLiterals.J_PY_EXTENSION;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_PYD;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_SO;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NAME;
@@ -117,6 +118,7 @@ import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -642,8 +644,28 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
     private static RootCallTarget createCallTarget(PythonContext context, FrozenInfo info) {
         return (RootCallTarget) context.getLanguage().cacheCode(new PythonLanguage.CodeCacheKey(info.origName, System.identityHashCode(info.code)), () -> {
             String name = PythonLanguage.FROZEN_FILENAME_PREFIX + info.name + PythonLanguage.FROZEN_FILENAME_SUFFIX;
-            Source source = Source.newBuilder("python", "", name).content(Source.CONTENT_NONE).build();
-            return PythonLanguage.callTargetFromBytecode(context, source, info.code);
+            Source.LiteralBuilder builder = null;
+            try {
+                String fs = context.getEnv().getFileNameSeparator();
+                String basename = context.getStdlibHome() + fs + info.name.toJavaStringUncached().replace(".", fs);
+                String originalPath = basename + J_PY_EXTENSION;
+                TruffleFile originalFile = context.getEnv().getInternalTruffleFile(originalPath);
+                if (!originalFile.isReadable()) {
+                    originalPath = basename + fs + "__init__.py";
+                    originalFile = context.getEnv().getInternalTruffleFile(originalPath);
+                }
+                if (originalFile.isReadable()) {
+                    builder = Source.newBuilder(PythonLanguage.ID, originalFile).content(Source.CONTENT_NONE).name(name);
+                }
+            } catch (UnsupportedOperationException | IllegalArgumentException | SecurityException e) {
+                // Fallthrough
+            }
+            if (builder == null) {
+                builder = Source.newBuilder(PythonLanguage.ID, "", name).content(Source.CONTENT_NONE);
+            }
+            builder.internal(PythonLanguage.shouldMarkSourceInternal(context));
+            builder.mimeType(PythonLanguage.MIME_TYPE);
+            return PythonLanguage.callTargetFromBytecode(context, builder.build(), info.code);
         });
     }
 

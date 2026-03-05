@@ -1553,8 +1553,22 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             byte[] lnoTab = readBytes();
             com.oracle.graal.python.util.Supplier<CallTarget> supplier = () -> {
                 String jFilename = fileName.toJavaStringUncached();
-                Source subSource = Source.newBuilder(PythonLanguage.ID, "", jFilename).content(Source.CONTENT_NONE).build();
-                return PythonLanguage.callTargetFromBytecode(context, subSource, code);
+                String jName = code.qualname.toJavaStringUncached();
+                Source.LiteralBuilder builder = null;
+                try {
+                    TruffleFile file = context.getEnv().getPublicTruffleFile(jFilename);
+                    if (file.isReadable()) {
+                        builder = Source.newBuilder(PythonLanguage.ID, file).content(Source.CONTENT_NONE).name(jName);
+                    }
+                } catch (UnsupportedOperationException | IllegalArgumentException | SecurityException e) {
+                    // Fallthrough
+                }
+                if (builder == null) {
+                    builder = Source.newBuilder(PythonLanguage.ID, "", jName).content(Source.CONTENT_NONE);
+                }
+                builder.internal(PythonLanguage.shouldMarkSourceInternal(context));
+                builder.mimeType(PythonLanguage.MIME_TYPE);
+                return PythonLanguage.callTargetFromBytecode(context, builder.build(), code);
             };
             CallTarget callTarget;
             if (getLanguage().isSingleContext() || cacheKey == 0) {

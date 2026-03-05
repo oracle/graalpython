@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -75,7 +75,7 @@ public final class InstrumentationSupport extends Node {
     final int startLine;
 
     public InstrumentationSupport(PBytecodeRootNode rootNode) {
-        assert rootNode.getSource() != null && rootNode.getSource().hasCharacters();
+        assert rootNode.getSourceWithCharacters() != null && rootNode.getSourceWithCharacters().hasCharacters();
         code = rootNode.getCodeUnit();
         /*
          * TODO GR-40896 this search for min/max line shouldn't be necessary, but the parser doesn't
@@ -108,10 +108,10 @@ public final class InstrumentationSupport extends Node {
                 if (statement == null) {
                     statement = InstrumentedBytecodeStatement.create();
                     try {
-                        statement.setSourceSection(rootNode.getSource().createSection(line));
+                        statement.setSourceSection(rootNode.getSourceWithCharacters().createSection(line));
                     } catch (IllegalArgumentException e) {
                         // happens if source file is not available
-                        statement.setSourceSection(rootNode.getSource().createUnavailableSection());
+                        statement.setSourceSection(rootNode.getSourceWithCharacters().createUnavailableSection());
                     }
                     setStatement(line, statement);
                 }

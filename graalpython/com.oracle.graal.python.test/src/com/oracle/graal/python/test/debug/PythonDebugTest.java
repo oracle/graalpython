@@ -550,6 +550,15 @@ public class PythonDebugTest {
 
     @Test
     public void testSourceFileURI() throws Throwable {
+        testSourceFileURIImpl(false);
+    }
+
+    @Test
+    public void testSourceFileURIBytecode() throws Throwable {
+        testSourceFileURIImpl(true);
+    }
+
+    private void testSourceFileURIImpl(boolean runFromBytecode) throws Throwable {
         if (System.getProperty("os.name").toLowerCase().contains("mac")) {
             // on the mac machines we run with symlinked directories and such, and it's annoying to
             // cater for that
@@ -565,6 +574,11 @@ public class PythonDebugTest {
                             "sys.path.insert(0, '" + tempDir.toString() + "')\n" +
                             "import imported\n" +
                             "imported.sum(2, 3)\n").getBytes());
+
+            if (runFromBytecode) {
+                compileToBytecode(importedFile, importingFile);
+            }
+
             Source source = Source.newBuilder("python", importingFile.toFile()).build();
             try (DebuggerSession session = tester.startSession()) {
                 Breakpoint breakpoint = Breakpoint.newBuilder(importingFile.toUri()).lineIs(4).build();
@@ -600,6 +614,16 @@ public class PythonDebugTest {
         } finally {
             deleteRecursively(tempDir);
         }
+    }
+
+    private void compileToBytecode(Path... files) {
+        StringBuilder sourceCode = new StringBuilder("import py_compile\n");
+        for (Path file : files) {
+            sourceCode.append("py_compile.compile(r\"").append(file).append("\")\n");
+        }
+        Source compileSource = Source.newBuilder("python", sourceCode.toString(), "compile_source_uri.py").buildLiteral();
+        tester.startEval(compileSource);
+        tester.expectDone();
     }
 
     @Test
