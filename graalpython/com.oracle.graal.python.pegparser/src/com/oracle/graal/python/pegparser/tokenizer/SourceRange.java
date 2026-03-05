@@ -66,7 +66,7 @@ public final class SourceRange {
 
     public SourceRange startLineShiftColumn(int shift) {
         assert shift >= 0;
-        if (shift == 0) {
+        if (shift == 0 || this == ARTIFICIAL_RANGE) {
             return this;
         }
         return new SourceRange(startLine, startColumn, startLine, startColumn + shift);
