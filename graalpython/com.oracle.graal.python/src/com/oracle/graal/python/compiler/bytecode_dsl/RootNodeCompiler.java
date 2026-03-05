@@ -4120,6 +4120,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         }
 
         public void emitFunctionDef(StmtTy node, String name, ArgumentsTy args, StmtTy[] body, ExprTy[] decoratorList, ExprTy returns, TypeParamTy[] typeParams) {
+            // For instrumentation, we want to map this statement only to the declaration line, such
             // that, e.g., breakpoints inside the body fire only once the body actually executes and
             // not is declared. There is no simple way to get the exact line width here, so we just
             // approximate it with name width.
