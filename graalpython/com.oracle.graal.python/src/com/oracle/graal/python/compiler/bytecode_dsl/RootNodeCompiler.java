@@ -486,7 +486,7 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
         }
 
         @Override
-        public PBytecodeDSLRootNode createRootNode(PythonContext context, Source source) {
+        public PBytecodeDSLRootNode createRootNode(PythonLanguage language, Source source) {
             return nodes.getNode(0);
         }
 

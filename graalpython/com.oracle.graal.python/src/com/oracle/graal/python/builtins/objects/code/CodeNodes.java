@@ -155,7 +155,7 @@ public abstract class CodeNodes {
                 if (code.flags != flags) {
                     code = code.withFlags(flags);
                 }
-                rootNode = code.createRootNode(context, PythonUtils.createFakeSource());
+                rootNode = code.createRootNode(context.getLanguage(), PythonUtils.createFakeSource());
             } else {
                 BytecodeCodeUnit code = (BytecodeCodeUnit) codeUnit;
                 if (cellvars != null && !Arrays.equals(code.cellvars, cellvars) || freevars != null && !Arrays.equals(code.freevars, freevars) || flags != code.flags) {

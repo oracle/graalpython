@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes.bytecode_dsl;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -67,7 +68,7 @@ public final class BytecodeDSLCodeUnit extends CodeUnit {
     }
 
     public abstract static class BytecodeSupplier {
-        public abstract PBytecodeDSLRootNode createRootNode(PythonContext context, Source source);
+        public abstract PBytecodeDSLRootNode createRootNode(PythonLanguage language, Source source);
 
         public abstract byte[] createSerializedBytecode(PythonContext context);
     }
@@ -79,11 +80,11 @@ public final class BytecodeDSLCodeUnit extends CodeUnit {
     }
 
     @TruffleBoundary
-    public PBytecodeDSLRootNode createRootNode(PythonContext context, Source source) {
+    public PBytecodeDSLRootNode createRootNode(PythonLanguage language, Source source) {
         // We must not cache deserialized root, because the code unit may be shared by multiple
         // engines. The caller is responsible for ensuring the caching of the resulting root node if
         // necessary
-        PBytecodeDSLRootNode rootNode = supplier.createRootNode(context, source);
+        PBytecodeDSLRootNode rootNode = supplier.createRootNode(language, source);
         rootNode.setMetadata(this, null);
         return rootNode;
     }

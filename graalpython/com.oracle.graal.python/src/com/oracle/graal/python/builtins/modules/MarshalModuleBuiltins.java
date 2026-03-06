@@ -1625,10 +1625,10 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         @Override
-        public PBytecodeDSLRootNode createRootNode(PythonContext context, Source source) {
+        public PBytecodeDSLRootNode createRootNode(PythonLanguage language, Source source) {
             BytecodeRootNodes<PBytecodeDSLRootNode> deserialized;
             try {
-                deserialized = PBytecodeDSLRootNodeGen.deserialize(context.getLanguage(), BytecodeConfig.WITH_SOURCE,
+                deserialized = PBytecodeDSLRootNodeGen.deserialize(language, BytecodeConfig.WITH_SOURCE,
                                 () -> SerializationUtils.createByteBufferDataInput(ByteBuffer.wrap(getBytecode())),
                                 /*
                                  * NB: Since a DSL node may reparse multiple times, we cannot reuse
@@ -1643,7 +1643,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             } catch (IOException e) {
                 throw CompilerDirectives.shouldNotReachHere("Deserialization error.");
             }
-            if (bytecodeFile != null && bytecodeOffset >= 0 && cacheKey != 0 && !context.getOption(PythonOptions.KeepBytecodeInMemory)) {
+            if (bytecodeFile != null && bytecodeOffset >= 0 && cacheKey != 0 && !language.getEngineOption(PythonOptions.KeepBytecodeInMemory)) {
                 // Free the serialized bytecode, we will fetch it from the file if needed again
                 serialized = null;
             }

@@ -546,12 +546,12 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return parse(context, source, inputType, topLevel, optimize, interactiveTerminal, argumentNames, futureFeatures);
     }
 
-    public static RootCallTarget callTargetFromBytecode(PythonContext context, Source source, CodeUnit code) {
+    public RootCallTarget callTargetFromBytecode(Source source, CodeUnit code) {
         RootNode rootNode;
         if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
-            rootNode = ((BytecodeDSLCodeUnit) code).createRootNode(context, source);
+            rootNode = ((BytecodeDSLCodeUnit) code).createRootNode(this, source);
         } else {
-            rootNode = PBytecodeRootNode.create(context.getLanguage(), (BytecodeCodeUnit) code, source, source.isInternal());
+            rootNode = PBytecodeRootNode.create(this, (BytecodeCodeUnit) code, source, source.isInternal());
         }
 
         return PythonUtils.getOrCreateCallTarget(rootNode);

@@ -665,7 +665,7 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
             }
             builder.internal(PythonLanguage.shouldMarkSourceInternal(context));
             builder.mimeType(PythonLanguage.MIME_TYPE);
-            return PythonLanguage.callTargetFromBytecode(context, builder.build(), info.code);
+            return context.getLanguage().callTargetFromBytecode(builder.build(), info.code);
         });
     }
 
