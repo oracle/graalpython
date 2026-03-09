@@ -52,7 +52,6 @@ import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
-import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -422,7 +421,7 @@ public class PatternNodes {
                 if (bufferLib.isNative(buffer)) {
                     nativeProfile.enter(inliningTarget);
                     long ptr = bufferLib.getNativePointer(buffer);
-                    return fromNativePointerNode.execute(NativePointer.wrap(ptr), 0, len, TS_ENCODING_BINARY, false);
+                    return fromNativePointerNode.execute(ptr, 0, len, TS_ENCODING_BINARY, false);
                 }
                 fallbackProfile.enter(inliningTarget);
                 byte[] bytes = bufferLib.getCopiedByteArray(buffer);

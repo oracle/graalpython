@@ -50,7 +50,6 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.CastToTruffleStringChecked0Node;
@@ -161,7 +160,7 @@ public abstract class CastToTruffleStringNode extends PNodeWithContext {
             }
             int bytes = PythonUtils.toIntError(length * kind);
 
-            TruffleString ts = fromNative.execute(NativePointer.wrap(data), 0, bytes, compactionLevel, true);
+            TruffleString ts = fromNative.execute(data, 0, bytes, compactionLevel, true);
             return switchEncodingNode.execute(ts, TS_ENCODING);
         }
     }

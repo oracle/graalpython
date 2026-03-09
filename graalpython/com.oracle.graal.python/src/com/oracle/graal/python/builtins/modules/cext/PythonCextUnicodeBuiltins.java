@@ -117,7 +117,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTiming
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativeToPythonInternalNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ReadUnicodeArrayNode;
-import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
@@ -866,7 +865,7 @@ public final class PythonCextUnicodeBuiltins {
             try {
                 int iByteLength = PInt.intValueExact(byteLength);
                 TruffleString.CompactionLevel compactionLevel = compactionLevelFromKind(inliningTarget, kind, raiseNode);
-                TruffleString ts = fromNativePointerNode.execute(NativePointer.wrap(ptr), 0, iByteLength, compactionLevel, true);
+                TruffleString ts = fromNativePointerNode.execute(ptr, 0, iByteLength, compactionLevel, true);
                 return PFactory.createString(PythonLanguage.get(inliningTarget), ts);
             } catch (OverflowException e) {
                 throw raiseNode.raise(inliningTarget, MemoryError);
@@ -905,7 +904,7 @@ public final class PythonCextUnicodeBuiltins {
             try {
                 int iByteLength = PInt.intValueExact(byteLength);
                 Encoding srcEncoding = encodingFromKind(inliningTarget, kind, raiseNode);
-                TruffleString ts = fromNativePointerNode.execute(NativePointer.wrap(ptr), 0, iByteLength, srcEncoding, true);
+                TruffleString ts = fromNativePointerNode.execute(ptr, 0, iByteLength, srcEncoding, true);
                 return PFactory.createString(PythonLanguage.get(inliningTarget), switchEncodingNode.execute(ts, TS_ENCODING));
             } catch (OverflowException e) {
                 throw raiseNode.raise(inliningTarget, MemoryError);

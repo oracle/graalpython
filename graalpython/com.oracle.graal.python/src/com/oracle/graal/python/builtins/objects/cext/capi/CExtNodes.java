@@ -110,7 +110,6 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Ensu
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformExceptionFromNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.TransformPExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
-import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructs;
@@ -433,7 +432,7 @@ public abstract class CExtNodes {
             while (readByteArrayElement(charPtr, length) != 0) {
                 length++;
             }
-            TruffleString nativeBacked = fromNativePointerNode.execute(NativePointer.wrap(charPtr), 0, length, Encoding.UTF_8, copy);
+            TruffleString nativeBacked = fromNativePointerNode.execute(charPtr, 0, length, Encoding.UTF_8, copy);
             return switchEncodingNode.execute(nativeBacked, TS_ENCODING);
         }
     }
