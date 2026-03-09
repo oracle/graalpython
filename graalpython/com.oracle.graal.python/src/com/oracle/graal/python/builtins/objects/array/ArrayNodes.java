@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -51,6 +51,7 @@ import com.oracle.graal.python.runtime.sequence.storage.NativeByteSequenceStorag
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateCached;
 import com.oracle.truffle.api.dsl.GenerateInline;
@@ -100,9 +101,15 @@ public abstract class ArrayNodes {
     }
 
     @GenerateInline
+    @GenerateUncached
     @GenerateCached(false)
     public abstract static class EnsureCapacityNode extends Node {
         public abstract void execute(Node inliningTarget, PArray array, int newCapacity);
+
+        @TruffleBoundary
+        public static void executeUncached(PArray array, int newCapacity) {
+            ArrayNodesFactory.EnsureCapacityNodeGen.getUncached().execute(null, array, newCapacity);
+        }
 
         @Specialization
         static void ensure(Node inliningTarget, PArray array, int newCapacity,
@@ -118,9 +125,15 @@ public abstract class ArrayNodes {
     }
 
     @GenerateInline
+    @GenerateUncached
     @GenerateCached(false)
     public abstract static class SetLengthNode extends Node {
         public abstract void execute(Node inliningTarget, PArray array, int newLength);
+
+        @TruffleBoundary
+        public static void executeUncached(PArray array, int newLength) {
+            ArrayNodesFactory.SetLengthNodeGen.getUncached().execute(null, array, newLength);
+        }
 
         @Specialization
         static void set(Node inliningTarget, PArray array, int newLength,
@@ -177,8 +190,14 @@ public abstract class ArrayNodes {
 
     @GenerateInline
     @GenerateCached(false)
+    @GenerateUncached
     public abstract static class EnsureNativeStorageNode extends Node {
         public abstract NativeByteSequenceStorage execute(Node inliningTarget, PArray array);
+
+        @TruffleBoundary
+        public static NativeByteSequenceStorage executeUncached(PArray array) {
+            return ArrayNodesFactory.EnsureNativeStorageNodeGen.getUncached().execute(null, array);
+        }
 
         @Specialization
         static NativeByteSequenceStorage toNative(Node inliningTarget, PArray array,

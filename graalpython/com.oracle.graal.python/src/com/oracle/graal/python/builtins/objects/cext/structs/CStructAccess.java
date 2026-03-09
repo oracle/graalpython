@@ -50,11 +50,12 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFun
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.NativePtrToPythonNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.transitions.CApiTransitions.PythonToNativeNewRefNode;
-import com.oracle.graal.python.builtins.objects.cext.common.NativePointer;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.ReadCharPtrNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.ReadObjectNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccessFactory.WriteTruffleStringNodeGen;
 import com.oracle.graal.python.nfi2.NativeMemory;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateInline;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -242,14 +243,24 @@ public class CStructAccess {
 
         abstract void execute(long dstPointer, int dstOffset, TruffleString src, int srcOffset, int length, TruffleString.Encoding encoding);
 
+        @TruffleBoundary
+        public static void executeUncached(long dstPointer, int dstOffset, TruffleString src, int srcOffset, int length, TruffleString.Encoding encoding) {
+            WriteTruffleStringNodeGen.getUncached().execute(dstPointer, dstOffset, src, srcOffset, length, encoding);
+        }
+
         public final void write(long dstPointer, TruffleString src, TruffleString.Encoding encoding) {
             execute(dstPointer, 0, src, 0, src.byteLength(encoding), encoding);
+        }
+
+        @TruffleBoundary
+        public static void writeUncached(long dstPointer, TruffleString src, TruffleString.Encoding encoding) {
+            executeUncached(dstPointer, 0, src, 0, src.byteLength(encoding), encoding);
         }
 
         @Specialization
         static void writeLong(long dstPointer, int dstOffset, TruffleString src, int srcOffset, int length, TruffleString.Encoding encoding,
                         @Cached TruffleString.CopyToNativeMemoryNode copyToNativeMemoryNode) {
-            copyToNativeMemoryNode.execute(src, srcOffset, NativePointer.wrap(dstPointer), dstOffset, length, encoding);
+            copyToNativeMemoryNode.execute(src, srcOffset, dstPointer, dstOffset, length, encoding);
         }
     }
 
