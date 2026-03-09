@@ -98,6 +98,8 @@ SKIPPED_PANDAS_BENCHMARKS = [
     "reshape.Explode.time_explode",  # Transient failure GR-61245, exit code -11
 ]
 
+SETUPTOOLS_PIN = "77.0.1"
+
 DEFAULT_PYPERFORMANCE_BENCHMARKS = [
     # "2to3",
     # "chameleon",
@@ -564,7 +566,7 @@ class NumPySuite(PySuite):
 
     BENCHMARK_REQ = [
         "asv==0.5.1",
-        "setuptools==70.3.0",
+        f"setuptools=={SETUPTOOLS_PIN}",
         "distlib==0.3.6",
         "filelock==3.8.0",
         "platformdirs==2.5.2",
@@ -671,7 +673,7 @@ class PandasSuite(PySuite):
 
     BENCHMARK_REQ = [
         "asv==0.5.1",
-        "setuptools==70.3.0",
+        f"setuptools=={SETUPTOOLS_PIN}",
         "distlib==0.3.6",
         "filelock==3.8.0",
         "platformdirs==2.5.2",
@@ -762,8 +764,7 @@ class PandasSuite(PySuite):
             vm.run(workdir, ["-m", "venv", join(workdir, vm_venv)])
             pip = join(workdir, vm_venv, "bin", "pip")
             with tempfile.NamedTemporaryFile('w') as constraints:
-                # Constrain the version of setuptools used to build pandas
-                constraints.write('setuptools==70.3.0\n')
+                constraints.write(f"setuptools=={SETUPTOOLS_PIN}\n")
                 constraints.flush()
                 env = os.environ.copy()
                 env['PIP_CONSTRAINT'] = constraints.name
