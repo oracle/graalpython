@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2020, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -65,6 +65,7 @@ def log(msg):
 def python_flock_blocks_sh_flock(python_flock_type, sh_flock_type):
     os.close(os.open(TEST_FILENAME_FULL_PATH, os.O_WRONLY | os.O_CREAT))
     file = os.open(TEST_FILENAME_FULL_PATH, os.O_WRONLY)
+    p = None
     try:
         fcntl.flock(file, python_flock_type)
         p = subprocess.Popen("flock -%s %s -c 'exit 42'" % (sh_flock_type, TEST_FILENAME_FULL_PATH), shell=True)
@@ -74,10 +75,13 @@ def python_flock_blocks_sh_flock(python_flock_type, sh_flock_type):
         log("unlocking the file...")
         fcntl.flock(file, fcntl.LOCK_UN) # release the lock
         log("checking the retcode...")
-        time.sleep(0.25)
-        assert p.poll() == 42
-        log(f"{p.returncode=}")
+        retcode = p.wait(timeout=5)
+        assert retcode == 42
+        log(f"{retcode=}")
     finally:
+        if p is not None and p.poll() is None:
+            p.terminate()
+            p.wait(timeout=2)
         fcntl.flock(file, fcntl.LOCK_UN)
         os.close(file)
 
