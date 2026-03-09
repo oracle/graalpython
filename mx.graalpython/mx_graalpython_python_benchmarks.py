@@ -77,6 +77,8 @@ SKIPPED_NUMPY_BENCHMARKS = [
     "bench_core.CountNonzero.time_count_nonzero_multi_axis(2, 1000000, <class 'str'>)",  # Times out
     "bench_core.CountNonzero.time_count_nonzero_multi_axis(3, 1000000, <class 'str'>)",  # Times out
     "bench_linalg.LinalgSmallArrays.time_det_small_array",  # TODO fails with numpy.linalg.LinAlgError
+    "bench_indexing.IndexingSeparate.time_mmap_fancy_indexing",  # Hangs in periodic job GR-73912
+    "bench_indexing.IndexingStructured0D.time_array_slice",  # Hangs in periodic job GR-73912
 ]
 
 DEFAULT_PANDAS_BENCHMARKS = [
