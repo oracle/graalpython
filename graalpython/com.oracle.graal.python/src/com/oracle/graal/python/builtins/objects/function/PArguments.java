@@ -196,6 +196,10 @@ public final class PArguments {
         return (PFunction) arguments[INDEX_FUNCTION_OBJECT];
     }
 
+    public static PFunction getFunctionObject(Frame frame) {
+        return getFunctionObject(frame.getArguments());
+    }
+
     public static void setFunctionObject(Object[] arguments, PFunction function) {
         arguments[INDEX_FUNCTION_OBJECT] = function;
     }

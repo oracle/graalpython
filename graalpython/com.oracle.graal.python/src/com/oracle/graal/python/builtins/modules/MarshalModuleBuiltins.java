@@ -1571,14 +1571,12 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 return PythonLanguage.callTargetFromBytecode(context, subSource, code);
             };
             CallTarget callTarget;
-            if (context.getLanguage().isSingleContext() || cacheKey == 0) {
+            if (getLanguage().isSingleContext() || cacheKey == 0) {
                 callTarget = supplier.get();
             } else {
-                // get a new ID every time we deserialize the same filename in the same context
-                long fullCacheKey = cacheKey + context.getDeserializationId(fileName);
-                callTarget = context.getLanguage().cacheCode(new PythonLanguage.CodeCacheKey(fileName, fullCacheKey), supplier);
+                callTarget = getLanguage().cacheCode(new PythonLanguage.CodeCacheKey(fileName, cacheKey), supplier);
             }
-            return PFactory.createCode(context.getLanguage(), (RootCallTarget) callTarget, flags, firstLineNo, lnoTab, fileName);
+            return PFactory.createCode(getLanguage(), (RootCallTarget) callTarget, flags, firstLineNo, lnoTab, fileName);
         }
     }
 

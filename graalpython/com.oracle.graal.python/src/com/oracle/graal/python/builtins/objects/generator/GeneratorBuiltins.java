@@ -71,7 +71,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.InlinedConditionProfile;
 import com.oracle.truffle.api.strings.TruffleString;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PGenerator)
@@ -160,10 +159,8 @@ public final class GeneratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetCodeNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static Object getCode(PGenerator self,
-                        @Bind Node inliningTarget,
-                        @Cached InlinedConditionProfile hasCodeProfile) {
-            return self.getOrCreateCode(inliningTarget, hasCodeProfile);
+        static Object getCode(PGenerator self) {
+            return self.getGeneratorFunction().getCode();
         }
     }
 
@@ -207,7 +204,8 @@ public final class GeneratorBuiltins extends PythonBuiltins {
                 if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
                     BytecodeDSLFrameInfo info = (BytecodeDSLFrameInfo) generatorFrame.getFrameDescriptor().getInfo();
                     if (pyFrame == null) {
-                        pyFrame = MaterializeFrameNode.materializeGeneratorFrame(PythonLanguage.get(readFrameNode), self.getBytecodeNode(), generatorFrame, self.getGlobals(), currentRef);
+                        pyFrame = MaterializeFrameNode.materializeGeneratorFrame(PythonLanguage.get(readFrameNode), self.getBytecodeNode(), generatorFrame, self.getGeneratorFunction(),
+                                        self.getGlobals(), currentRef);
                     }
                     BytecodeLocation location = self.getCurrentLocation();
                     if (location != null) {
@@ -221,7 +219,8 @@ public final class GeneratorBuiltins extends PythonBuiltins {
                 } else {
                     BytecodeFrameInfo info = (BytecodeFrameInfo) generatorFrame.getFrameDescriptor().getInfo();
                     if (pyFrame == null) {
-                        pyFrame = MaterializeFrameNode.materializeGeneratorFrame(PythonLanguage.get(readFrameNode), info.getRootNode(), generatorFrame, self.getGlobals(), currentRef);
+                        pyFrame = MaterializeFrameNode.materializeGeneratorFrame(PythonLanguage.get(readFrameNode), info.getRootNode(), generatorFrame, self.getGeneratorFunction(), self.getGlobals(),
+                                        currentRef);
                     }
                     int bci = self.getBci();
                     if (bci >= 0) {

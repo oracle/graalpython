@@ -884,7 +884,7 @@ public final class WarningsModuleBuiltins extends PythonBuiltins {
                 lineno[0] = f.getLine();
                 RootCallTarget ct = f.getTarget();
                 if (ct != null) {
-                    filename[0] = PCode.extractFileName(ct.getRootNode());
+                    filename[0] = f.getCode().getFilename();
                 } else {
                     filename[0] = T_UNKNOWN_SOURCE;
                 }

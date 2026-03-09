@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates.
  * Copyright (c) 2013, Regents of the University of California
  *
  * All rights reserved.
@@ -857,8 +857,8 @@ public final class PFactory {
      * Frames, traces and exceptions
      */
 
-    public static PFrame createPFrame(PythonLanguage language, PFrame.Reference frameInfo, Node location, boolean hasCustomLocals) {
-        return new PFrame(language, frameInfo, location, hasCustomLocals);
+    public static PFrame createPFrame(PythonLanguage language, PFrame.Reference frameInfo, Node location, PFunction function, boolean hasCustomLocals) {
+        return new PFrame(language, frameInfo, location, function, hasCustomLocals);
     }
 
     public static PFrame createPFrame(PythonLanguage language, Object threadState, PCode code, PythonObject globals, Object localsDict) {

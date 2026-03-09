@@ -144,9 +144,6 @@ public abstract class CodeNodes {
                 ct = deserializeForBytecodeInterpreter(context, codedata, cellvars, freevars, flags);
                 signature = ((PRootNode) ct.getRootNode()).getSignature();
             }
-            if (filename != null) {
-                context.setCodeFilename(ct, filename);
-            }
             return PFactory.createCode(language, ct, signature, nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars, filename, name, qualname, firstlineno, linetable);
         }
 

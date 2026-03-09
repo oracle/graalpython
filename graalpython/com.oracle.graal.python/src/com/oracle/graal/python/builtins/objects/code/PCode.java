@@ -71,7 +71,6 @@ import com.oracle.graal.python.nodes.bytecode_dsl.BytecodeDSLCodeUnit;
 import com.oracle.graal.python.nodes.bytecode_dsl.PBytecodeDSLRootNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.runtime.sequence.storage.BoolSequenceStorage;
@@ -213,38 +212,9 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
-    private static void setRootNodeFileName(RootNode rootNode, TruffleString filename) {
-        RootNode funcRootNode = rootNodeForExtraction(rootNode);
-        PythonContext.get(rootNode).setCodeFilename(funcRootNode.getCallTarget(), filename);
-    }
-
-    @TruffleBoundary
     public static TruffleString extractFileName(RootNode rootNode) {
         RootNode funcRootNode = rootNodeForExtraction(rootNode);
-
-        PythonContext context = PythonContext.get(rootNode);
-        TruffleString filename;
-        if (context != null) {
-            if (rootNode instanceof PBytecodeRootNode) {
-                filename = context.getCodeUnitFilename(((PBytecodeRootNode) rootNode).getCodeUnit());
-            } else {
-                filename = context.getCodeFilename(funcRootNode.getCallTarget());
-            }
-        } else {
-            return toInternedTruffleStringUncached(funcRootNode.getName());
-        }
-        if (filename != null) {
-            // for compiled modules, _imp._fix_co_filename will set the filename
-            return filename;
-        }
-        SourceSection src = funcRootNode.getSourceSection();
-        String jFilename;
-        if (src != null) {
-            jFilename = getSourceSectionFileName(src);
-        } else {
-            jFilename = funcRootNode.getName();
-        }
-        return toInternedTruffleStringUncached(jFilename);
+        return toInternedTruffleStringUncached(funcRootNode.getName());
     }
 
     @TruffleBoundary
@@ -431,20 +401,7 @@ public final class PCode extends PythonBuiltinObject {
     public void setFilename(TruffleString filename) {
         CompilerAsserts.neverPartOfCompilation();
         filename = PythonUtils.internString(filename);
-
         this.filename = filename;
-        RootNode rootNode = rootNodeForExtraction(getRootNode());
-        setRootNodeFileName(rootNode, filename);
-        if (rootNode instanceof PBytecodeRootNode) {
-            PythonContext context = PythonContext.get(rootNode);
-            CodeUnit co = ((PBytecodeRootNode) rootNode).getCodeUnit();
-            context.setCodeUnitFilename(co, filename);
-            for (int i = 0; i < co.constants.length; i++) {
-                if (co.constants[i] instanceof CodeUnit) {
-                    context.setCodeUnitFilename((CodeUnit) co.constants[i], filename);
-                }
-            }
-        }
     }
 
     @TruffleBoundary

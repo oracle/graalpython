@@ -45,6 +45,7 @@ import static com.oracle.graal.python.util.PythonUtils.EMPTY_OBJECT_ARRAY;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.PRootNode;
@@ -173,7 +174,7 @@ public abstract class MaterializeFrameNode extends Node {
     static PFrame freshPFrameCachedFD(Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize,
                     @Bind PythonLanguage language,
                     @Shared("syncValuesNode") @Cached SyncFrameValuesNode syncValuesNode) {
-        PFrame escapedFrame = PFactory.createPFrame(language, PArguments.getCurrentFrameInfo(frameToMaterialize), location, false);
+        PFrame escapedFrame = PFactory.createPFrame(language, PArguments.getCurrentFrameInfo(frameToMaterialize), location, PArguments.getFunctionObject(frameToMaterialize), false);
         return doEscapeFrame(frameToMaterialize, escapedFrame, markAsEscaped, forceSync, location, syncValuesNode);
     }
 
@@ -181,7 +182,7 @@ public abstract class MaterializeFrameNode extends Node {
     static PFrame freshPFrameCustomLocals(Node location, boolean markAsEscaped, @SuppressWarnings("unused") boolean forceSync,
                     Frame frameToMaterialize,
                     @Bind PythonLanguage language) {
-        PFrame escapedFrame = PFactory.createPFrame(language, PArguments.getCurrentFrameInfo(frameToMaterialize), location, true);
+        PFrame escapedFrame = PFactory.createPFrame(language, PArguments.getCurrentFrameInfo(frameToMaterialize), location, PArguments.getFunctionObject(frameToMaterialize), true);
         escapedFrame.setLocalsDict(PArguments.getSpecialArgument(frameToMaterialize));
         return doEscapeFrame(frameToMaterialize, escapedFrame, markAsEscaped, false, location, null);
     }
@@ -190,7 +191,7 @@ public abstract class MaterializeFrameNode extends Node {
     static PFrame freshPFrameForGenerator(Node location, @SuppressWarnings("unused") boolean markAsEscaped, @SuppressWarnings("unused") boolean forceSync, Frame frameToMaterialize) {
         MaterializedFrame generatorFrame = PGenerator.getGeneratorFrame(frameToMaterialize);
         PFrame.Reference frameRef = PArguments.getCurrentFrameInfo(frameToMaterialize);
-        PFrame escapedFrame = materializeGeneratorFrame(location, generatorFrame, PArguments.getGlobals(frameToMaterialize), frameRef);
+        PFrame escapedFrame = materializeGeneratorFrame(location, generatorFrame, PArguments.getFunctionObject(frameToMaterialize), PArguments.getGlobals(frameToMaterialize), frameRef);
         return doEscapeFrame(frameToMaterialize, escapedFrame, markAsEscaped, false, location, null);
     }
 
@@ -209,12 +210,13 @@ public abstract class MaterializeFrameNode extends Node {
         return pyFrame;
     }
 
-    public static PFrame materializeGeneratorFrame(Node location, MaterializedFrame generatorFrame, PythonObject globals, PFrame.Reference frameRef) {
-        return materializeGeneratorFrame(PythonLanguage.get(location), location, generatorFrame, globals, frameRef);
+    public static PFrame materializeGeneratorFrame(Node location, MaterializedFrame generatorFrame, PFunction generatorFunction, PythonObject globals, PFrame.Reference frameRef) {
+        return materializeGeneratorFrame(PythonLanguage.get(location), location, generatorFrame, generatorFunction, globals, frameRef);
     }
 
-    public static PFrame materializeGeneratorFrame(PythonLanguage language, Node location, MaterializedFrame generatorFrame, PythonObject globals, PFrame.Reference frameRef) {
-        PFrame escapedFrame = PFactory.createPFrame(language, frameRef, location, false);
+    public static PFrame materializeGeneratorFrame(PythonLanguage language, Node location, MaterializedFrame generatorFrame, PFunction generatorFunction, PythonObject globals,
+                    PFrame.Reference frameRef) {
+        PFrame escapedFrame = PFactory.createPFrame(language, frameRef, location, generatorFunction, false);
         if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
             BytecodeNode bytecodeNode = BytecodeNode.get(location);
             assert bytecodeNode != null : location;

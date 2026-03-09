@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes.GetCodeRootNode;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.bytecode.PBytecodeGeneratorRootNode;
@@ -92,6 +93,8 @@ public final class PFrame extends PythonBuiltinObject {
      */
     private Node location;
     private RootCallTarget callTarget;
+    private PFunction function;
+    private PCode code;
     private int line = UNINITIALIZED_LINE;
     private int bci = -1;
 
@@ -207,10 +210,11 @@ public final class PFrame extends PythonBuiltinObject {
         }
     }
 
-    public PFrame(PythonLanguage lang, Reference virtualFrameInfo, Node location, boolean hasCustomLocals) {
+    public PFrame(PythonLanguage lang, Reference virtualFrameInfo, Node location, PFunction function, boolean hasCustomLocals) {
         super(PythonBuiltinClassType.PFrame, PythonBuiltinClassType.PFrame.getInstanceShape(lang));
         this.virtualFrameInfo = virtualFrameInfo;
         this.location = location;
+        this.function = function;
         this.hasCustomLocals = hasCustomLocals;
         // Mark everything as current for now. MaterializeFrameNode will set lastCallerFlags to a
         // narrower value if needed
@@ -222,6 +226,7 @@ public final class PFrame extends PythonBuiltinObject {
         super(PythonBuiltinClassType.PFrame, PythonBuiltinClassType.PFrame.getInstanceShape(lang));
         // TODO: frames: extract the information from the threadState object
         this.globals = globals;
+        this.code = code;
         this.location = GetCodeRootNode.executeUncached(code);
         Reference curFrameInfo = new Reference(location != null ? location.getRootNode() : null, null);
         this.virtualFrameInfo = curFrameInfo;
@@ -391,6 +396,13 @@ public final class PFrame extends PythonBuiltinObject {
             }
         }
         return callTarget;
+    }
+
+    public PCode getCode() {
+        if (code == null && function != null) {
+            code = function.getCode();
+        }
+        return code;
     }
 
     public void setGlobals(PythonObject globals) {

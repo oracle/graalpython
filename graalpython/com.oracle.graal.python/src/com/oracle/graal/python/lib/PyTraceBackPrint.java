@@ -56,12 +56,10 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 import com.oracle.graal.python.PythonFileDetector;
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
-import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
@@ -78,7 +76,6 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -220,11 +217,6 @@ public abstract class PyTraceBackPrint {
         return (i > 0) ? name.substringUncached(i + 1, len - i - 1, TS_ENCODING, true) : name;
     }
 
-    private static PCode getCode(PythonLanguage language, TracebackBuiltins.GetTracebackFrameNode getTbFrameNode, PTraceback tb) {
-        final PFrame pFrame = getTbFrameNode.execute(null, tb);
-        return PFactory.createCode(language, pFrame.getTarget());
-    }
-
     protected static PTraceback getNextTb(Node inliningTarget, TracebackBuiltins.MaterializeTruffleStacktraceNode materializeStNode, PTraceback traceback) {
         materializeStNode.execute(inliningTarget, traceback);
         return traceback.getNext();
@@ -355,9 +347,8 @@ public abstract class PyTraceBackPrint {
             tb = getNextTb(inliningTarget, materializeStNode, tb);
         }
         EqualNode tstrEqNode = EqualNode.getUncached();
-        PythonLanguage language = PythonLanguage.get(inliningTarget);
         while (tb != null) {
-            final PCode code = getCode(language, getTbFrameNode, tb);
+            final PCode code = getTbFrameNode.execute(null, tb).getCode();
             if (lastFile == null || code.getFilename() == null ||
                             !tstrEqNode.execute(code.getFilename(), lastFile, TS_ENCODING) ||
                             lastLine == -1 || tb.getLineno() != lastLine ||

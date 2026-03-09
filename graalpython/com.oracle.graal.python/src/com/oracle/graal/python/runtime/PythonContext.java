@@ -137,7 +137,6 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes.StringReplaceNod
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.builtins.objects.thread.PThread;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
@@ -763,32 +762,6 @@ public final class PythonContext extends Python3Core {
     private PythonLocale currentLocale;
 
     @CompilationFinal(dimensions = 1) private Object[] optionValues;
-
-    /*
-     * These maps are used to ensure that each "deserialization" of code in the parser gets a
-     * different instance (inside one context - ASTs can still be shared between contexts).
-     * Deserializing the same code multiple times is an infrequent case, but Python assumes that
-     * these code instances don't share attributes like the associated filename.
-     *
-     * Each time a specific filename is passed to deserialization in the same context, it gets a new
-     * id. The filename is stored in a weak hash map, because the code itself is a
-     * context-independent object.
-     */
-    private final WeakHashMap<CallTarget, TruffleString> codeFilename = new WeakHashMap<>();
-
-    /*
-     * These maps are used to ensure that each "deserialization" of code in the parser gets a
-     * different instance (inside one context - ASTs can still be shared between contexts).
-     * Deserializing the same code multiple times is an infrequent case, but Python assumes that
-     * these code instances don't share attributes like the associated filename.
-     *
-     * Each time a specific filename is passed to deserialization in the same context, it gets a new
-     * id. The filename is stored in a weak hash map, because the code itself is a
-     * context-independent object.
-     */
-    private final WeakHashMap<CodeUnit, TruffleString> codeUnitFilename = new WeakHashMap<>();
-
-    private final ConcurrentHashMap<TruffleString, AtomicLong> deserializationId = new ConcurrentHashMap<>();
 
     @CompilationFinal private long perfCounterStart = System.nanoTime();
 
@@ -2644,28 +2617,6 @@ public final class PythonContext extends Python3Core {
 
     public boolean isFinalizing() {
         return finalizing;
-    }
-
-    public void setCodeFilename(CallTarget callTarget, TruffleString filename) {
-        assert PythonUtils.isInterned(filename);
-        codeFilename.put(callTarget, filename);
-    }
-
-    public TruffleString getCodeFilename(CallTarget callTarget) {
-        return codeFilename.get(callTarget);
-    }
-
-    public void setCodeUnitFilename(CodeUnit co, TruffleString filename) {
-        assert PythonUtils.isInterned(filename);
-        codeUnitFilename.put(co, filename);
-    }
-
-    public TruffleString getCodeUnitFilename(CodeUnit co) {
-        return codeUnitFilename.get(co);
-    }
-
-    public long getDeserializationId(TruffleString fileName) {
-        return deserializationId.computeIfAbsent(fileName, f -> new AtomicLong()).incrementAndGet();
     }
 
     public void ensureNFILanguage(Node nodeForRaise, String optionName, String optionValue) {
