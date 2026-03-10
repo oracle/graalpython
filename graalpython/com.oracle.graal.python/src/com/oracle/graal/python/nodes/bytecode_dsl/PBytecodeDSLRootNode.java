@@ -945,7 +945,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         return co.startLine;
     }
 
-    protected Source getSource() {
+    public Source getSource() {
         SourceSection section = getSourceSection();
         if (section == null) {
             return PythonUtils.createFakeSource();
@@ -1477,7 +1477,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         Object closure,
                         Object annotations,
                         @Bind PBytecodeDSLRootNode rootNode,
-                        @Cached("createCode(rootNode, codeUnit)") PCode cachedCode,
+                        @Cached("getCode(frame,  codeUnit)") PCode cachedCode,
                         @Shared @Cached DynamicObject.PutNode putNode) {
             return createFunction(frame, name, qualifiedName, codeUnit.getCodeUnit().getDocstring(),
                             cachedCode, defaults, kwDefaultsObject, closure, annotations, rootNode, putNode);
@@ -1494,7 +1494,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         Object annotations,
                         @Bind PBytecodeDSLRootNode rootNode,
                         @Shared @Cached DynamicObject.PutNode putNode) {
-            PCode code = createCode(rootNode, codeUnit);
+            PCode code = getCode(frame, codeUnit);
             return createFunction(frame, name, qualifiedName, codeUnit.getCodeUnit().getDocstring(),
                             code, defaults, kwDefaultsObject, closure, annotations, rootNode, putNode);
         }
@@ -1505,13 +1505,9 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
 
         @NeverDefault
-        protected static PCode createCode(PBytecodeDSLRootNode outerRootNode, BytecodeDSLCodeUnitAndRoot codeUnit) {
-            PBytecodeDSLRootNode rootNode = codeUnit.getRootNode(outerRootNode);
-            return PFactory.createCode(
-                            PythonLanguage.get(outerRootNode),
-                            rootNode.getCallTarget(),
-                            rootNode.getSignature(),
-                            codeUnit.getCodeUnit());
+        protected static PCode getCode(VirtualFrame frame, BytecodeDSLCodeUnitAndRoot codeUnit) {
+            PCode thisCode = PArguments.getCodeObject(frame);
+            return thisCode.getOrCreateChildCode(codeUnit.getCodeUnit());
         }
 
         protected static PFunction createFunction(VirtualFrame frame,

@@ -210,6 +210,20 @@ public final class PArguments {
         return getFunctionObject(frame.getArguments());
     }
 
+    public static PCode getCodeObject(Object[] arguments) {
+        Object functionOrCodeObject = getFunctionOrCodeObject(arguments);
+        if (functionOrCodeObject instanceof PFunction function) {
+            return function.getCode();
+        } else if (functionOrCodeObject instanceof PCode code) {
+            return code;
+        }
+        return null;
+    }
+
+    public static PCode getCodeObject(Frame frame) {
+        return getCodeObject(frame.getArguments());
+    }
+
     public static void setFunctionObject(Object[] arguments, PFunction function) {
         arguments[INDEX_FUNCTION_OR_CODE_OBJECT] = function;
     }

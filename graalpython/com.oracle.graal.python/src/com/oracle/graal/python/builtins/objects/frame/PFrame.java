@@ -56,7 +56,6 @@ import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadFrameNode;
 import com.oracle.graal.python.runtime.CallerFlags;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.bytecode.BytecodeFrame;
@@ -92,7 +91,6 @@ public final class PFrame extends PythonBuiltinObject {
      * {@link BytecodeNode} that was executed at the time when the BCI was captured.
      */
     private Node location;
-    private RootCallTarget callTarget;
     private PFunction function;
     private PCode code;
     private int line = UNINITIALIZED_LINE;
@@ -113,8 +111,6 @@ public final class PFrame extends PythonBuiltinObject {
     private boolean localsAccessed;
 
     private boolean traceLine = true;
-
-    private PFrame.Reference backref = null;
 
     /**
      * The last {@link CallerFlags} that were used the last time the frame was synced or passed down
@@ -392,14 +388,7 @@ public final class PFrame extends PythonBuiltinObject {
     }
 
     public RootCallTarget getTarget() {
-        if (callTarget == null) {
-            if (location != null) {
-                callTarget = PythonUtils.getOrCreateCallTarget(location.getRootNode());
-            } else if (getRef() != null && getRef().getRootNode() != null) {
-                callTarget = PythonUtils.getOrCreateCallTarget(getRef().getRootNode());
-            }
-        }
-        return callTarget;
+        return getCode().getRootCallTarget();
     }
 
     public PCode getCode() {

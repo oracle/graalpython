@@ -1187,6 +1187,10 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return createCachedCallTargetUnsafe(rootNodeFunction, true, nodeClass1, nodeClass2, type, name);
     }
 
+    public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, CodeUnit key) {
+        return createCachedCallTargetUnsafe(rootNodeFunction, true, key);
+    }
+
     /**
      * Caches call targets for external C functions created by extensions at runtime.
      * <p>

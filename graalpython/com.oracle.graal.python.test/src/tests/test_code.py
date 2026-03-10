@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -285,3 +285,30 @@ def test_check_lines_dedup():
 
     check_lines(misshappen)
     check_lines(bug93662)
+
+
+def test_code_identity():
+    import sys
+    import marshal
+    import types
+    import _imp
+    def foo():
+        def bar():
+            return sys._getframe()
+
+        return bar
+
+    bar = foo()
+    assert bar.__code__ is foo().__code__
+    i = foo.__code__.co_consts.index(bar.__code__)
+    assert bar.__code__ is foo.__code__.co_consts[i]
+    assert bar.__code__ is bar().f_code
+
+    foo_copy = types.FunctionType(marshal.loads(marshal.dumps(foo.__code__)), globals=foo.__globals__, closure=foo.__closure__)
+    bar_copy = foo_copy()
+    assert foo_copy.__code__ is not foo.__code__
+    _imp._fix_co_filename(foo_copy.__code__, 'asdf')
+    assert foo_copy.__code__.co_filename == 'asdf'
+    assert bar_copy.__code__.co_filename == 'asdf'
+    assert foo.__code__.co_filename != 'asdf'
+    assert bar.__code__.co_filename != 'asdf'

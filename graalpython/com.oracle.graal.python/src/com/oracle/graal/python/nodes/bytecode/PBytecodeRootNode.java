@@ -247,6 +247,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.HostCompilerDirectives.BytecodeInterpreterSwitch;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -668,6 +669,16 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     @TruffleBoundary
+    public static RootNode createMaybeGenerator(PythonLanguage language, BytecodeCodeUnit co, LazySource source, boolean internal) {
+        PBytecodeRootNode bytecodeRootNode = PBytecodeRootNode.create(language, co, source, internal);
+        if (co.isGeneratorOrCoroutine()) {
+            return new PBytecodeGeneratorFunctionRootNode(language, bytecodeRootNode.getFrameDescriptor(), bytecodeRootNode, co.name);
+        } else {
+            return bytecodeRootNode;
+        }
+    }
+
+    @TruffleBoundary
     public static PBytecodeRootNode create(PythonLanguage language, BytecodeCodeUnit co, LazySource lazySource, boolean internal, ParserCallbacksImpl parserCallbacks) {
         BytecodeFrameInfo frameInfo = new BytecodeFrameInfo();
         FrameDescriptor fd = makeFrameDescriptor(co, frameInfo);
@@ -895,7 +906,7 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
         }
     }
 
-    private PythonLanguage getLanguage() {
+    public PythonLanguage getLanguage() {
         return getLanguage(PythonLanguage.class);
     }
 
@@ -2900,22 +2911,24 @@ public final class PBytecodeRootNode extends PRootNode implements BytecodeOSRNod
     }
 
     private MakeFunctionNode insertMakeFunctionNode(Node[] localNodes, int beginBci, BytecodeCodeUnit codeUnit) {
-        return insertChildNode(localNodes, beginBci, MakeFunctionNodeGen.class, () -> MakeFunctionNode.create(getLanguage(PythonLanguage.class), codeUnit, lazySource, internal));
+        return insertChildNode(localNodes, beginBci, MakeFunctionNodeGen.class, () -> MakeFunctionNode.create(codeUnit));
     }
 
     public void materializeContainedFunctionsForInstrumentation(Set<Class<? extends Tag>> materializedTags) {
         usingCachedNodes = true;
-        BytecodeCodeUnit.iterateBytecode(bytecode, (bci, op, oparg, followingArgs) -> {
-            if (op == OpCodes.MAKE_FUNCTION) {
-                BytecodeCodeUnit codeUnit = (BytecodeCodeUnit) consts[oparg];
-                MakeFunctionNode makeFunctionNode = insertMakeFunctionNode(getChildNodes(), bci, codeUnit);
-                RootNode rootNode = makeFunctionNode.getCallTarget().getRootNode();
+        PythonLanguage language = getLanguage();
+        for (int i = 0; i < co.constants.length; i++) {
+            if (co.constants[i] instanceof BytecodeCodeUnit codeUnit) {
+                RootCallTarget callTarget = language.createCachedCallTarget(
+                                l -> PBytecodeRootNode.createMaybeGenerator(language, codeUnit, lazySource, isInternal()),
+                                codeUnit);
+                RootNode rootNode = callTarget.getRootNode();
                 if (rootNode instanceof PBytecodeGeneratorFunctionRootNode) {
                     rootNode = ((PBytecodeGeneratorFunctionRootNode) rootNode).getBytecodeRootNode();
                 }
                 ((PBytecodeRootNode) rootNode).instrumentationRoot.materializeInstrumentableNodes(materializedTags);
             }
-        });
+        }
     }
 
     public Node createInstrumentationMaterializationForwarder() {

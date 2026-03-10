@@ -89,7 +89,6 @@ import com.oracle.graal.python.builtins.objects.module.FrozenModules;
 import com.oracle.graal.python.builtins.objects.module.PythonFrozenModule;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.compiler.CodeUnit;
 import com.oracle.graal.python.lib.PyMemoryViewFromObject;
@@ -729,23 +728,20 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "_fix_co_filename", minNumOfPositionalArgs = 2)
+    @Builtin(name = "_fix_co_filename", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"code", "path"})
     @GenerateNodeFactory
-    public abstract static class FixCoFilename extends PythonBinaryBuiltinNode {
-        @Specialization
-        @TruffleBoundary
-        public Object run(PCode code, PString path,
-                        @Bind Node inliningTarget,
-                        @Cached CastToTruffleStringNode castToStringNode) {
-            code.setFilename(castToStringNode.execute(inliningTarget, path));
-            return PNone.NONE;
-        }
-
+    @ArgumentClinic(name = "path", conversion = ClinicConversion.TString)
+    public abstract static class FixCoFilename extends PythonBinaryClinicBuiltinNode {
         @Specialization
         @TruffleBoundary
         public Object run(PCode code, TruffleString path) {
-            code.setFilename(path);
+            code.fixCoFilename(path);
             return PNone.NONE;
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return ImpModuleBuiltinsClinicProviders.FixCoFilenameClinicProviderGen.INSTANCE;
         }
     }
 

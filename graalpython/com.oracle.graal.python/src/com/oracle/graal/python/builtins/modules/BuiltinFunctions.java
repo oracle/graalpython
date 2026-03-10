@@ -986,10 +986,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         int featureVersion);
 
         private int inheritFlags(VirtualFrame frame, int flags, ReadFrameNode readCallerFrame) {
-            PFrame fr = readCallerFrame.getCurrentPythonFrame(frame);
-            if (fr != null) {
-                PCode code = PFactory.createCode(PythonLanguage.get(this), fr.getTarget());
-                flags |= code.getFlags() & PyCF_MASK;
+            PFrame pyFrame = readCallerFrame.getCurrentPythonFrame(frame);
+            if (pyFrame != null) {
+                flags |= pyFrame.getCode().getFlags() & PyCF_MASK;
             }
             return flags;
         }
@@ -1072,7 +1071,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             } else {
                 ct = getContext().getLanguage().cacheCode(filename, createCode);
             }
-            return wrapRootCallTarget((RootCallTarget) ct);
+            return wrapRootCallTarget((RootCallTarget) ct, filename);
         }
 
         @Specialization(limit = "3")
@@ -1103,7 +1102,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     ModTy mod = AstModuleBuiltins.obj2sst(inliningTarget, context, wSource, getParserInputType(mode, flags));
                     Source source = PythonUtils.createFakeSource(filename);
                     RootCallTarget rootCallTarget = context.getLanguage(inliningTarget).compileModule(context, mod, source, false, optimize, null, null, flags);
-                    return wrapRootCallTarget(rootCallTarget);
+                    return wrapRootCallTarget(rootCallTarget, filename);
                 }
                 TruffleString source = sourceAsString(frame, inliningTarget, wSource, filename, interopLib, acquireLib, bufferLib, switchEncodingNode, raiseNode);
                 checkSource(source);
@@ -1113,7 +1112,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             }
         }
 
-        private static PCode wrapRootCallTarget(RootCallTarget rootCallTarget) {
+        private static PCode wrapRootCallTarget(RootCallTarget rootCallTarget, TruffleString filename) {
             RootNode rootNode = rootCallTarget.getRootNode();
             if (PythonOptions.ENABLE_BYTECODE_DSL_INTERPRETER) {
                 if (rootNode instanceof PBytecodeDSLRootNode bytecodeDSLRootNode) {
@@ -1122,7 +1121,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             } else if (rootNode instanceof PBytecodeRootNode bytecodeRootNode) {
                 bytecodeRootNode.triggerDeferredDeprecationWarnings();
             }
-            return PFactory.createCode(PythonLanguage.get(null), rootCallTarget);
+            return PFactory.createCode(PythonLanguage.get(null), rootCallTarget, filename);
         }
 
         @TruffleBoundary
