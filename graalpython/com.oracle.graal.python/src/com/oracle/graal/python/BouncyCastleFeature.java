@@ -42,13 +42,11 @@ package com.oracle.graal.python;
 
 import java.security.Security;
 
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeReflection;
 import org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport;
 
-import com.oracle.graal.python.builtins.objects.ssl.LazyBouncyCastleProvider;
 import com.oracle.graal.python.runtime.PythonImageBuildOptions;
 
 public class BouncyCastleFeature implements Feature {
