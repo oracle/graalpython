@@ -2347,7 +2347,7 @@ def python_coverage(args):
             '--strict-mode',
             '--tags', args.tags,
         ] + jacoco_args, env=env)
-        run_mx([
+        jacoco_report_cmd = [
             '--strict-compliance',
             '--kill-with-sigquit',
             'jacocoreport',
@@ -2356,7 +2356,14 @@ def python_coverage(args):
             'coverage',
             '--generic-paths',
             '--exclude-src-gen',
-        ], env=env)
+        ]
+        # CI can occasionally leave transiently truncated execution data; retry once to reduce flakiness.
+        try:
+            run_mx(jacoco_report_cmd, env=env)
+        except Exception:  # pylint: disable=broad-except
+            mx.warn("jacocoreport failed, retrying once after a short delay")
+            time.sleep(5)
+            run_mx(jacoco_report_cmd, env=env)
 
     if args.mode == 'truffle':
         executable = graalpy_standalone_jvm()
