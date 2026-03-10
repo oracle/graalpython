@@ -1462,12 +1462,12 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         }
     }
 
-    @Operation(storeBytecodeIndex = true)
+    @Operation(storeBytecodeIndex = true, forceCached = true)
     @ConstantOperand(type = TruffleString.class, name = "name")
     @ConstantOperand(type = TruffleString.class, name = "qualifiedName")
     @ConstantOperand(type = BytecodeDSLCodeUnitAndRoot.class)
     public static final class MakeFunction {
-        @Specialization(guards = "isSingleContext(rootNode)", excludeForUncached = true)
+        @Specialization(guards = "isSingleContext(rootNode)")
         public static Object functionSingleContext(VirtualFrame frame,
                         TruffleString name,
                         TruffleString qualifiedName,
@@ -1478,9 +1478,10 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         Object annotations,
                         @Bind PBytecodeDSLRootNode rootNode,
                         @Cached("getCode(frame,  codeUnit)") PCode cachedCode,
+                        @Shared @Cached("createCodeStableAssumption()") Assumption codeStableAssumption,
                         @Shared @Cached DynamicObject.PutNode putNode) {
             return createFunction(frame, name, qualifiedName, codeUnit.getCodeUnit().getDocstring(),
-                            cachedCode, defaults, kwDefaultsObject, closure, annotations, rootNode, putNode);
+                            cachedCode, defaults, kwDefaultsObject, closure, annotations, codeStableAssumption, rootNode, putNode);
         }
 
         @Specialization(replaces = "functionSingleContext")
@@ -1493,15 +1494,21 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         Object closure,
                         Object annotations,
                         @Bind PBytecodeDSLRootNode rootNode,
+                        @Shared @Cached("createCodeStableAssumption()") Assumption codeStableAssumption,
                         @Shared @Cached DynamicObject.PutNode putNode) {
             PCode code = getCode(frame, codeUnit);
             return createFunction(frame, name, qualifiedName, codeUnit.getCodeUnit().getDocstring(),
-                            code, defaults, kwDefaultsObject, closure, annotations, rootNode, putNode);
+                            code, defaults, kwDefaultsObject, closure, annotations, codeStableAssumption, rootNode, putNode);
         }
 
         @Idempotent
         protected static boolean isSingleContext(Node node) {
             return PythonLanguage.get(node).isSingleContext();
+        }
+
+        @NeverDefault
+        static Assumption createCodeStableAssumption() {
+            return Truffle.getRuntime().createAssumption("code stable assumption");
         }
 
         @NeverDefault
@@ -1514,13 +1521,14 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
                         TruffleString name, TruffleString qualifiedName, TruffleString doc,
                         PCode code, Object[] defaults,
                         Object[] kwDefaultsObject, Object closure, Object annotations,
-                        PBytecodeDSLRootNode node,
+                        Assumption codeStableAssumption, PBytecodeDSLRootNode node,
                         DynamicObject.PutNode putNode) {
             PKeyword[] kwDefaults = new PKeyword[kwDefaultsObject.length];
             // Note: kwDefaultsObject should be a result of operation MakeKeywords, which produces
             // PKeyword[]
             PythonUtils.arraycopy(kwDefaultsObject, 0, kwDefaults, 0, kwDefaults.length);
-            PFunction function = PFactory.createFunction(PythonLanguage.get(node), name, qualifiedName, code, PArguments.getGlobals(frame), defaults, kwDefaults, (PCell[]) closure);
+            PFunction function = PFactory.createFunction(PythonLanguage.get(node), name, qualifiedName, code, PArguments.getGlobals(frame), defaults, kwDefaults, (PCell[]) closure,
+                            codeStableAssumption);
 
             if (annotations != null) {
                 putNode.execute(function, T___ANNOTATIONS__, annotations);

@@ -508,11 +508,6 @@ public final class PFactory {
         return new PFunction(language, name, name, code, globals, closure);
     }
 
-    public static PFunction createFunction(PythonLanguage language, TruffleString name, TruffleString qualname, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues,
-                    PCell[] closure) {
-        return new PFunction(language, name, qualname, code, globals, defaultValues, kwDefaultValues, closure);
-    }
-
     public static PFunction createFunction(PythonLanguage language, TruffleString name, PCode code, PythonObject globals, Object[] defaultValues, PKeyword[] kwDefaultValues, PCell[] closure) {
         return new PFunction(language, name, name, code, globals, defaultValues, kwDefaultValues, closure);
     }
