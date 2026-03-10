@@ -78,6 +78,7 @@ public final class PXMLParser extends PythonBuiltinObject {
 
     private byte[] data = new byte[0];
     private TruffleString base;
+    private TruffleString encoding;
     private Object intern;
 
     private Object startElementHandler = PNone.NONE;
@@ -262,6 +263,14 @@ public final class PXMLParser extends PythonBuiltinObject {
 
     public void setBase(TruffleString base) {
         this.base = base;
+    }
+
+    public TruffleString getEncoding() {
+        return encoding;
+    }
+
+    public void setEncoding(TruffleString encoding) {
+        this.encoding = encoding;
     }
 
     public Object getIntern() {

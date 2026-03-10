@@ -156,7 +156,7 @@ public final class PyExpatModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ParserCreateNode extends PythonBuiltinNode {
         @Specialization
-        static Object create(@SuppressWarnings("unused") Object encoding, Object namespaceSeparator, Object intern,
+        static Object create(Object encoding, Object namespaceSeparator, Object intern,
                         @Bind Node inliningTarget,
                         @Cached XMLParserBuiltins.CreateParserNode createParserNode,
                         @Cached PRaiseNode raiseNode) {
@@ -174,7 +174,7 @@ public final class PyExpatModuleBuiltins extends PythonBuiltins {
             } else {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.INTERN_MUST_BE_A_DICTIONARY);
             }
-            return createParserNode.execute(inliningTarget, sep, internDict);
+            return createParserNode.execute(inliningTarget, encoding, sep, internDict);
         }
     }
 }

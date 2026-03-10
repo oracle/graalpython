@@ -70,7 +70,6 @@ import org.xml.sax.XMLReader;
 import org.xml.sax.ext.Attributes2;
 import org.xml.sax.ext.DefaultHandler2;
 import org.xml.sax.ext.EntityResolver2;
-import org.xml.sax.ext.Locator2;
 import org.xml.sax.helpers.DefaultHandler;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -133,14 +132,21 @@ public final class XMLParserBuiltins extends PythonBuiltins {
     @GenerateInline
     @GenerateCached(false)
     abstract static class CreateParserNode extends Node {
-        abstract Object execute(Node inliningTarget, Object namespaceSeparatorObj, Object intern);
+        abstract Object execute(Node inliningTarget, Object encodingObj, Object namespaceSeparatorObj, Object intern);
 
         @Specialization
-        static Object doIt(Node inliningTarget, Object namespaceSeparatorObj, Object intern,
+        static Object doIt(Node inliningTarget, Object encodingObj, Object namespaceSeparatorObj, Object intern,
                         @Cached PyUnicodeCheckNode unicodeCheckNode,
                         @Cached CastToTruffleStringNode castToTruffleStringNode,
                         @Cached TruffleString.CodePointLengthNode codePointLengthNode,
                         @Cached PRaiseNode raiseNode) {
+            TruffleString encoding = null;
+            if (!(encodingObj instanceof PNone)) {
+                if (!unicodeCheckNode.execute(inliningTarget, encodingObj)) {
+                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.ENCODING_NAME_MUST_BE_A_STRING);
+                }
+                encoding = castToTruffleStringNode.castKnownString(inliningTarget, encodingObj);
+            }
             TruffleString sep = null;
             if (!(namespaceSeparatorObj instanceof PNone)) {
                 if (!unicodeCheckNode.execute(inliningTarget, namespaceSeparatorObj)) {
@@ -155,6 +161,7 @@ public final class XMLParserBuiltins extends PythonBuiltins {
             }
             PythonLanguage language = PythonLanguage.get(inliningTarget);
             PXMLParser parser = PFactory.createXMLParser(PythonBuiltinClassType.XMLParser, PythonBuiltinClassType.XMLParser.getInstanceShape(language), sep);
+            parser.setEncoding(encoding);
             parser.setIntern(intern);
             return parser;
         }
@@ -168,7 +175,7 @@ public final class XMLParserBuiltins extends PythonBuiltins {
         static Object doIt(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") Object arg1, Object arg2,
                         @Bind Node inliningTarget,
                         @Cached CreateParserNode createParserNode) {
-            return createParserNode.execute(inliningTarget, arg2 == PNone.NO_VALUE ? PNone.NONE : arg2, PNone.NONE);
+            return createParserNode.execute(inliningTarget, PNone.NONE, arg2 == PNone.NO_VALUE ? PNone.NONE : arg2, PNone.NONE);
         }
     }
 
@@ -691,8 +698,9 @@ public final class XMLParserBuiltins extends PythonBuiltins {
             if (isFinal && self.getData().length == 0 && PyUnicodeCheckNode.executeUncached(data)) {
                 TruffleString strData = CastToTruffleStringNode.castKnownStringUncached(data);
                 String javaData = strData.toJavaStringUncached();
+                byte[] prologBytes = javaData.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
                 parseNow(self, false, new InputSource(new StringReader(javaData)), javaData::length,
-                                detectXmlDecl(javaData.getBytes(java.nio.charset.StandardCharsets.ISO_8859_1)));
+                                detectXmlDecl(prologBytes), detectDoctypeHasInternalSubset(prologBytes));
                 self.setFinished(true);
                 return;
             }
@@ -732,7 +740,10 @@ public final class XMLParserBuiltins extends PythonBuiltins {
             }
             PythonFileInputStream stream = new PythonFileInputStream(file, self.getBufferSize());
             stream.prefetch();
-            parseNow(self, false, new InputSource(stream), stream::getBytesRead, detectXmlDecl(stream.getXmlDeclBytes()));
+            byte[] prologBytes = stream.getPrologBytes();
+            InputSource source = new InputSource(stream);
+            applyParserEncoding(self, source, detectXmlDecl(prologBytes));
+            parseNow(self, false, source, stream::getBytesRead, detectXmlDecl(prologBytes), detectDoctypeHasInternalSubset(prologBytes));
         }
     }
 
@@ -825,7 +836,7 @@ public final class XMLParserBuiltins extends PythonBuiltins {
         Object create(PXMLParser self, @SuppressWarnings("unused") Object context, @SuppressWarnings("unused") Object encoding,
                         @Bind Node inliningTarget,
                         @Cached CreateParserNode createParserNode) {
-            return createParserNode.execute(inliningTarget, self.getNamespaceSeparator() == null ? PNone.NONE : self.getNamespaceSeparator(), self.getIntern());
+            return createParserNode.execute(inliningTarget, encoding == PNone.NO_VALUE ? PNone.NONE : encoding, self.getNamespaceSeparator() == null ? PNone.NONE : self.getNamespaceSeparator(), self.getIntern());
         }
     }
 
@@ -872,17 +883,29 @@ public final class XMLParserBuiltins extends PythonBuiltins {
 
     @TruffleBoundary
     private static void parseNow(PXMLParser parser, boolean swallowErrors) {
-        int byteLen = parser.getData().length;
-        parseNow(parser, swallowErrors, new InputSource(new ByteArrayInputStream(parser.getData())), () -> byteLen, detectXmlDecl(parser.getData()));
+        byte[] data = parser.getData();
+        int byteLen = data.length;
+        XmlDeclInfo xmlDeclInfo = detectXmlDecl(data);
+        InputSource source = new InputSource(new ByteArrayInputStream(data));
+        applyParserEncoding(parser, source, xmlDeclInfo);
+        parseNow(parser, swallowErrors, source, () -> byteLen, xmlDeclInfo, detectDoctypeHasInternalSubset(data));
     }
 
     @TruffleBoundary
     private static void parseNow(PXMLParser parser, boolean swallowErrors, InputSource source, ByteIndexSupplier byteIndexSupplier) {
-        parseNow(parser, swallowErrors, source, byteIndexSupplier, null);
+        parseNow(parser, swallowErrors, source, byteIndexSupplier, null, false);
     }
 
     @TruffleBoundary
-    private static void parseNow(PXMLParser parser, boolean swallowErrors, InputSource source, ByteIndexSupplier byteIndexSupplier, XmlDeclInfo xmlDeclInfo) {
+    private static void applyParserEncoding(PXMLParser parser, InputSource source, XmlDeclInfo xmlDeclInfo) {
+        TruffleString encoding = parser.getEncoding();
+        if (encoding != null && (xmlDeclInfo == null || xmlDeclInfo.encoding == null)) {
+            source.setEncoding(encoding.toJavaStringUncached());
+        }
+    }
+
+    @TruffleBoundary
+    private static void parseNow(PXMLParser parser, boolean swallowErrors, InputSource source, ByteIndexSupplier byteIndexSupplier, XmlDeclInfo xmlDeclInfo, boolean doctypeHasInternalSubset) {
         final class Handler extends DefaultHandler2 {
             int line = 1;
             int col;
@@ -922,8 +945,6 @@ public final class XMLParserBuiltins extends PythonBuiltins {
             public void startDocument() {
                 if (xmlDeclInfo != null) {
                     call(parser.getXmlDeclHandler(), toOptionalTs(xmlDeclInfo.version), toOptionalTs(xmlDeclInfo.encoding), xmlDeclInfo.standalone);
-                } else if (locator instanceof Locator2 locator2) {
-                    call(parser.getXmlDeclHandler(), toOptionalTs(locator2.getXMLVersion()), toOptionalTs(locator2.getEncoding()), -1);
                 }
             }
 
@@ -932,9 +953,7 @@ public final class XMLParserBuiltins extends PythonBuiltins {
                 if (xmlDeclInfo != null && xmlDeclInfo.standalone == 0) {
                     call(parser.getNotStandaloneHandler());
                 }
-                // We conservatively report an internal subset. This matches minidom builder
-                // expectations and enables DTD callback wiring for entity/notation handling.
-                call(parser.getStartDoctypeDeclHandler(), toTs(name), toTs(systemId), toOptionalTs(publicId), 1);
+                call(parser.getStartDoctypeDeclHandler(), toTs(name), toTs(systemId), toOptionalTs(publicId), doctypeHasInternalSubset ? 1 : 0);
             }
 
             @Override
@@ -1243,14 +1262,15 @@ public final class XMLParserBuiltins extends PythonBuiltins {
     }
 
     private static final class PythonFileInputStream extends InputStream {
+        private static final int PROLOG_CAPTURE_LIMIT = 4096;
+
         private final Object file;
         private final int readSize;
         private byte[] buffer = EMPTY_BYTE_ARRAY;
         private int offset;
         private boolean eof;
         private int bytesRead;
-        private byte[] xmlDeclBytes = EMPTY_BYTE_ARRAY;
-        private boolean xmlDeclComplete;
+        private byte[] prologBytes = EMPTY_BYTE_ARRAY;
 
         private PythonFileInputStream(Object file, int readSize) {
             this.file = file;
@@ -1297,7 +1317,7 @@ public final class XMLParserBuiltins extends PythonBuiltins {
                 buffer = chunk;
                 offset = 0;
                 bytesRead += chunk.length;
-                captureXmlDeclBytes(chunk);
+                capturePrologBytes(chunk);
             } catch (PException e) {
                 throw new IOException(e);
             }
@@ -1307,8 +1327,8 @@ public final class XMLParserBuiltins extends PythonBuiltins {
             return bytesRead;
         }
 
-        byte[] getXmlDeclBytes() {
-            return xmlDeclBytes;
+        byte[] getPrologBytes() {
+            return prologBytes;
         }
 
         void prefetch() {
@@ -1321,21 +1341,15 @@ public final class XMLParserBuiltins extends PythonBuiltins {
             }
         }
 
-        private void captureXmlDeclBytes(byte[] chunk) {
-            if (xmlDeclComplete) {
+        private void capturePrologBytes(byte[] chunk) {
+            if (prologBytes.length >= PROLOG_CAPTURE_LIMIT) {
                 return;
             }
-            int newLen = Math.min(1024, xmlDeclBytes.length + chunk.length);
-            byte[] merged = Arrays.copyOf(xmlDeclBytes, newLen);
-            int canCopy = newLen - xmlDeclBytes.length;
-            System.arraycopy(chunk, 0, merged, xmlDeclBytes.length, canCopy);
-            xmlDeclBytes = merged;
-            for (int i = 1; i < xmlDeclBytes.length; i++) {
-                if (xmlDeclBytes[i - 1] == '?' && xmlDeclBytes[i] == '>') {
-                    xmlDeclComplete = true;
-                    break;
-                }
-            }
+            int newLen = Math.min(PROLOG_CAPTURE_LIMIT, prologBytes.length + chunk.length);
+            byte[] merged = Arrays.copyOf(prologBytes, newLen);
+            int canCopy = newLen - prologBytes.length;
+            System.arraycopy(chunk, 0, merged, prologBytes.length, canCopy);
+            prologBytes = merged;
         }
     }
 
@@ -1343,6 +1357,33 @@ public final class XMLParserBuiltins extends PythonBuiltins {
     }
 
     private record XmlDeclInfo(String version, String encoding, int standalone) {
+    }
+
+    @TruffleBoundary
+    private static boolean detectDoctypeHasInternalSubset(byte[] data) {
+        String text = new String(data, java.nio.charset.StandardCharsets.ISO_8859_1);
+        int idx = text.indexOf("<!DOCTYPE");
+        if (idx < 0) {
+            return false;
+        }
+        boolean inSingleQuote = false;
+        boolean inDoubleQuote = false;
+        for (int i = idx + 9; i < text.length(); i++) {
+            char ch = text.charAt(i);
+            if (ch == '\'' && !inDoubleQuote) {
+                inSingleQuote = !inSingleQuote;
+            } else if (ch == '"' && !inSingleQuote) {
+                inDoubleQuote = !inDoubleQuote;
+            } else if (!inSingleQuote && !inDoubleQuote) {
+                if (ch == '[') {
+                    return true;
+                }
+                if (ch == '>') {
+                    return false;
+                }
+            }
+        }
+        return false;
     }
 
     @TruffleBoundary
