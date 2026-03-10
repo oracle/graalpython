@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.ssl;
 
 import java.security.Provider;
-import java.security.Security;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
@@ -51,7 +50,6 @@ public final class LazyBouncyCastleProvider {
     public static synchronized Provider initProvider() {
         if (securityProvider == null) {
             securityProvider = new BouncyCastleProvider();
-            Security.addProvider(securityProvider);
         }
         return securityProvider;
     }

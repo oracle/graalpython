@@ -66,17 +66,6 @@ public class BouncyCastleFeature implements Feature {
         if (!PythonImageBuildOptions.WITHOUT_SSL) {
             RuntimeClassInitializationSupport support = ImageSingletons.lookup(RuntimeClassInitializationSupport.class);
 
-            if (INITIALIZE_AT_RUNTIME) {
-                // Verify at build time, but reinitialize at runtime
-                support.initializeAtRunTime("org.bouncycastle", "security provider");
-                Security.addProvider(new BouncyCastleProvider());
-            } else {
-                support.initializeAtBuildTime("org.bouncycastle", "security provider");
-                support.initializeAtRunTime("org.bouncycastle.jcajce.provider.drbg.DRBG$Default", "RNG");
-                support.initializeAtRunTime("org.bouncycastle.jcajce.provider.drbg.DRBG$NonceAndIV", "RNG");
-                LazyBouncyCastleProvider.initProvider();
-            }
-
             // SSLBasicKeyDerivation looks up the classes below reflectively since jdk-25+23
             // See https://github.com/openjdk/jdk/pull/24393
             String[] reflectiveClasses = new String[]{
