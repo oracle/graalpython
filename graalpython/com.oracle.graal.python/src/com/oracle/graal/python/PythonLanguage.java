@@ -808,6 +808,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 PFrame pFrame = materializeFrameNode.execute(this, false, true, frame);
                 Object pLocals = getFrameLocalsNode.executeCached(frame, pFrame, true);
                 PArguments.setSpecialArgument(arguments, pLocals);
+                PArguments.setCodeObject(arguments, PFactory.createCode(getLanguage(PythonLanguage.class), callTarget));
                 PArguments.setGlobals(arguments, PArguments.getGlobals(frame));
                 boolean wasAcquired = gilNode.acquire();
                 try {

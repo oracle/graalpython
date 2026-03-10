@@ -625,13 +625,14 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
 
         RootCallTarget callTarget = createCallTarget(core.getContext(), info);
         PythonModule module = globals == null ? PFactory.createPythonModule(name) : globals;
+        PCode code = PFactory.createCode(core.getLanguage(), callTarget);
 
         if (info.isPackage) {
             /* Set __path__ to the empty list */
             WriteAttributeToPythonObjectNode.getUncached().execute(module, T___PATH__, PFactory.createList(core.getLanguage()));
         }
 
-        CallDispatchers.SimpleIndirectInvokeNode.executeUncached(callTarget, PArguments.withGlobals(module));
+        CallDispatchers.SimpleIndirectInvokeNode.executeUncached(callTarget, PArguments.withGlobals(code, module));
 
         Object origName = info.origName == null ? PNone.NONE : info.origName;
         WriteAttributeToPythonObjectNode.getUncached().execute(module, T___ORIGNAME__, origName);

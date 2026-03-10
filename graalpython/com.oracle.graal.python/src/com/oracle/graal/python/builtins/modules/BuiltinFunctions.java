@@ -895,6 +895,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.TypeError, ErrorMessages.CODE_OBJ_NO_FREE_VARIABLES, mode);
             }
             Object[] args = createArguments.execute(frame, inliningTarget, globals, locals, mode);
+            PArguments.setCodeObject(args, code);
             RootCallTarget callTarget = getCallTarget.execute(inliningTarget, code);
             return invoke.execute(frame, inliningTarget, callTarget, args);
         }

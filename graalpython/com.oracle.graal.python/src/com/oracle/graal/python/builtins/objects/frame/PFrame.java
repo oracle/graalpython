@@ -210,11 +210,15 @@ public final class PFrame extends PythonBuiltinObject {
         }
     }
 
-    public PFrame(PythonLanguage lang, Reference virtualFrameInfo, Node location, PFunction function, boolean hasCustomLocals) {
+    public PFrame(PythonLanguage lang, Reference virtualFrameInfo, Node location, Object functionOrCode, boolean hasCustomLocals) {
         super(PythonBuiltinClassType.PFrame, PythonBuiltinClassType.PFrame.getInstanceShape(lang));
         this.virtualFrameInfo = virtualFrameInfo;
         this.location = location;
-        this.function = function;
+        if (functionOrCode instanceof PFunction function) {
+            this.function = function;
+        } else if (functionOrCode instanceof PCode code) {
+            this.code = code;
+        }
         this.hasCustomLocals = hasCustomLocals;
         // Mark everything as current for now. MaterializeFrameNode will set lastCallerFlags to a
         // narrower value if needed

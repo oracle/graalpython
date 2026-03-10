@@ -43,11 +43,13 @@ package com.oracle.graal.python.nodes.exception;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemExit;
+import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
@@ -86,6 +88,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
+import com.oracle.truffle.api.strings.TruffleString;
 
 public final class TopLevelExceptionHandler extends RootNode {
     private final RootCallTarget innerCallTarget;
@@ -317,6 +320,8 @@ public final class TopLevelExceptionHandler extends RootNode {
         PythonContext pythonContext = getContext();
         PythonModule mainModule = null;
         PythonLanguage language = getPythonLanguage();
+        PCode code = PFactory.createCode(language, innerCallTarget, PythonUtils.internString(TruffleString.fromJavaStringUncached(source.getName(), TS_ENCODING)));
+        PArguments.setCodeObject(arguments, code);
         if (source.isInternal()) {
             // internal sources are not run in the main module
             PArguments.setGlobals(arguments, PFactory.createDict(language));

@@ -476,6 +476,7 @@ public abstract class PBytecodeDSLRootNode extends PRootNode implements Bytecode
         @Specialization
         public static void doEnter(VirtualFrame frame,
                         @Bind PBytecodeDSLRootNode root) {
+            assert PArguments.getFunctionOrCodeObject(frame) != null;
             root.calleeContext.enter(frame, root);
         }
     }

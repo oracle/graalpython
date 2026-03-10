@@ -410,7 +410,9 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
             }
             PythonLanguage language = context.getLanguage();
             RootCallTarget callTarget = (RootCallTarget) context.getEnv().parsePublic(source);
+            PCode code = PFactory.createCode(language, callTarget);
             Object[] arguments = PArguments.create();
+            PArguments.setCodeObject(arguments, code);
             PythonModule mainModule = context.getMainModule();
             PDict mainDict = GetOrCreateDictNode.executeUncached(mainModule);
             PArguments.setGlobals(arguments, mainDict);

@@ -857,8 +857,8 @@ public final class PFactory {
      * Frames, traces and exceptions
      */
 
-    public static PFrame createPFrame(PythonLanguage language, PFrame.Reference frameInfo, Node location, PFunction function, boolean hasCustomLocals) {
-        return new PFrame(language, frameInfo, location, function, hasCustomLocals);
+    public static PFrame createPFrame(PythonLanguage language, PFrame.Reference frameInfo, Node location, Object functionOrCode, boolean hasCustomLocals) {
+        return new PFrame(language, frameInfo, location, functionOrCode, hasCustomLocals);
     }
 
     public static PFrame createPFrame(PythonLanguage language, Object threadState, PCode code, PythonObject globals, Object localsDict) {
