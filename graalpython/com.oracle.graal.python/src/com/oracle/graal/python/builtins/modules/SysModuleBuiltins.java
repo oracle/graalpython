@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import static com.oracle.graal.python.PythonLanguage.J_GRAALPYTHON_ID;
 import static com.oracle.graal.python.PythonLanguage.RELEASE_LEVEL;
 import static com.oracle.graal.python.PythonLanguage.RELEASE_SERIAL;
 import static com.oracle.graal.python.PythonLanguage.T_GRAALPYTHON_ID;
@@ -472,10 +471,7 @@ public final class SysModuleBuiltins extends PythonBuiltins {
     private static PSimpleNamespace makeImplementation(PythonLanguage language, PTuple graalpyVersionInfo, TruffleString gmultiarch) {
         final PSimpleNamespace ns = PFactory.createSimpleNamespace(language);
         ns.setAttribute(StringLiterals.T_NAME, T_GRAALPYTHON_ID);
-        /*- 'cache_tag' must match the format of mx.graalpython/mx_graalpython.py:graalpy_ext */
-        ns.setAttribute(T_CACHE_TAG, toTruffleStringUncached(J_GRAALPYTHON_ID +
-                        PythonLanguage.GRAALVM_MAJOR + PythonLanguage.GRAALVM_MINOR + PythonLanguage.DEV_TAG +
-                        "-" + PythonLanguage.MAJOR + PythonLanguage.MINOR));
+        ns.setAttribute(T_CACHE_TAG, toTruffleStringUncached(PythonLanguage.GRAALPY_ABI_VERSION));
         ns.setAttribute(T_VERSION, graalpyVersionInfo);
         ns.setAttribute(T__MULTIARCH, gmultiarch);
         ns.setAttribute(tsLiteral("hexversion"), PythonLanguage.GRAALVM_MAJOR << 24 | PythonLanguage.GRAALVM_MINOR << 16 | PythonLanguage.GRAALVM_MICRO << 8 | RELEASE_LEVEL << 4 | RELEASE_SERIAL);

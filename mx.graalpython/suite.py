@@ -630,7 +630,7 @@ suite = {
             "max_jobs": "1",
             "ninja_targets": ["all"],
             "cmakeConfig": {
-                "GRAALPY_VER": "<py_ver:binary><graal_ver:binary><release_level:binary><dev_tag:none>",
+                "GRAALPY_VER": "<py_ver:binary><graal_ver:binary><release_level:binary><abi_version>",
             },
             "results": [
                 "graalpy_versions"
