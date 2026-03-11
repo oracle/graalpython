@@ -390,9 +390,6 @@ suite = {
                 "truffle:TRUFFLE_XZ",
                 "truffle:TRUFFLE_ICU4J",
                 "regex:TREGEX",
-                "BOUNCYCASTLE-PROVIDER",
-                "BOUNCYCASTLE-PKIX",
-                "BOUNCYCASTLE-UTIL",
             ],
             "requires": [
                 "java.logging",
@@ -1123,11 +1120,6 @@ suite = {
                 "jdk.management",
                 "jdk.unsupported",
                 "jdk.security.auth",
-            ],
-            "exclude": [
-                "BOUNCYCASTLE-PROVIDER",
-                "BOUNCYCASTLE-PKIX",
-                "BOUNCYCASTLE-UTIL",
             ],
             "description": "GraalPy, a high-performance embeddable Python 3 runtime. This artifact includes the core language runtime without standard libraries. It is not recommended to depend on the artifact directly. Instead, use \'org.graalvm.polyglot:python\' or \'org.graalvm.polyglot:python-community\' to ensure all dependencies are pulled in correctly.",
             "maven": {
