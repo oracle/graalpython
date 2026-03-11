@@ -56,6 +56,7 @@ import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 
+import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -67,11 +68,6 @@ import java.util.Map;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
-import org.bouncycastle.crypto.CipherParameters;
-import org.bouncycastle.crypto.Digest;
-import org.bouncycastle.crypto.generators.PKCS5S2ParametersGenerator;
-import org.bouncycastle.crypto.params.KeyParameter;
-import org.bouncycastle.jcajce.provider.util.DigestFactory;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
@@ -104,7 +100,6 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.runtime.IndirectCallData.InteropCallData;
 import com.oracle.graal.python.runtime.object.PFactory;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -479,10 +474,8 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                         @Cached TruffleString.ToJavaStringNode toJavaStringNode,
                         @Cached PRaiseNode raiseNode) {
             try {
-                Digest digest = getDigest(toJavaStringNode.execute(hashName));
-                if (digest == null) {
-                    throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.UnsupportedDigestmodError, UNSUPPORTED_HASH_TYPE, hashName);
-                }
+                String javaHashName = toJavaStringNode.execute(hashName);
+                Mac mac = createPbkdf2Mac(javaHashName);
                 if (iterations < 1) {
                     throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ITERATION_VALUE_MUST_BE_GREATER_THAN_ZERO);
                 }
@@ -491,11 +484,10 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                 }
                 long dklen;
                 if (noDklenProfile.profile(inliningTarget, PGuards.isPNone(dklenObj))) {
-                    dklen = digest.getDigestSize();
+                    dklen = mac.getMacLength();
                 } else {
                     dklen = asLongNode.execute(frame, inliningTarget, dklenObj);
                 }
-                dklen *= Byte.SIZE;
                 if (dklen < 1) {
                     throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, KEY_LENGTH_MUST_BE_GREATER_THAN_ZERO);
                 }
@@ -504,7 +496,9 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                 }
                 byte[] passwordBytes = passwordLib.getInternalOrCopiedExactByteArray(password);
                 byte[] saltBytes = saltLib.getInternalOrCopiedExactByteArray(salt);
-                return PFactory.createBytes(language, generate(digest, passwordBytes, saltBytes, (int) iterations, (int) dklen));
+                return PFactory.createBytes(language, generate(javaHashName, mac, passwordBytes, saltBytes, (int) iterations, (int) dklen));
+            } catch (java.security.GeneralSecurityException e) {
+                throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.UnsupportedDigestmodError, UNSUPPORTED_HASH_TYPE, hashName);
             } finally {
                 passwordLib.release(password);
                 saltLib.release(salt);
@@ -512,20 +506,61 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static Digest getDigest(String name) {
-            name = name.toLowerCase();
-            return DigestFactory.getDigest(NAME_MAPPINGS.getOrDefault(name, name));
+        private static Mac createPbkdf2Mac(String name) {
+            String algorithm = getPbkdf2Algorithm(name);
+            if (algorithm == null) {
+                return null;
+            }
+            try {
+                return Mac.getInstance(algorithm);
+            } catch (NoSuchAlgorithmException e) {
+                return null;
+            }
+        }
+
+        private static String getPbkdf2Algorithm(String name) {
+            return switch (name.toLowerCase()) {
+                case "sha1" -> "HmacSHA1";
+                case "sha224" -> "HmacSHA224";
+                case "sha256" -> "HmacSHA256";
+                case "sha384" -> "HmacSHA384";
+                case "sha512" -> "HmacSHA512";
+                default -> null;
+            };
         }
 
         @TruffleBoundary
-        private static byte[] generate(Digest digest, byte[] password, byte[] salt, int iterations, int dklen) {
-            PKCS5S2ParametersGenerator generator = new PKCS5S2ParametersGenerator(digest);
-            generator.init(password, salt, iterations);
-            CipherParameters cipherParameters = generator.generateDerivedParameters(dklen);
-            if (!(cipherParameters instanceof KeyParameter keyParameter)) {
-                throw CompilerDirectives.shouldNotReachHere("unexpected cipher parameters");
+        private static byte[] generate(String hashName, Mac mac, byte[] password, byte[] salt, int iterations, int dklen) throws java.security.GeneralSecurityException {
+            try {
+                String algorithm = mac.getAlgorithm();
+                mac.init(new SecretKeySpec(password, algorithm));
+                int digestLength = mac.getMacLength();
+                byte[] derivedKey = new byte[dklen];
+                byte[] block = new byte[digestLength];
+                byte[] u = new byte[digestLength];
+                byte[] blockIndex = new byte[Integer.BYTES];
+                int blockCount = (dklen + digestLength - 1) / digestLength;
+                for (int i = 1; i <= blockCount; i++) {
+                    ByteBuffer.wrap(blockIndex).putInt(i);
+                    mac.update(salt);
+                    mac.update(blockIndex);
+                    byte[] initial = mac.doFinal();
+                    System.arraycopy(initial, 0, block, 0, digestLength);
+                    System.arraycopy(initial, 0, u, 0, digestLength);
+                    for (int j = 1; j < iterations; j++) {
+                        u = mac.doFinal(u);
+                        for (int k = 0; k < digestLength; k++) {
+                            block[k] ^= u[k];
+                        }
+                    }
+                    int offset = (i - 1) * digestLength;
+                    int length = Math.min(digestLength, dklen - offset);
+                    System.arraycopy(block, 0, derivedKey, offset, length);
+                }
+                return derivedKey;
+            } catch (InvalidKeyException e) {
+                throw new IllegalStateException(e);
             }
-            return keyParameter.getKey();
         }
     }
 }

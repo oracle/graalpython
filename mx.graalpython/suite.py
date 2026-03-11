@@ -1083,7 +1083,11 @@ suite = {
                 "BOUNCYCASTLE-UTIL",
             ],
             "description": "Optional GraalPy BouncyCastle integration.",
-            "maven": False,
+            "maven": {
+                "artifactId": "python-bouncycastle-support",
+                "groupId": "org.graalvm.python",
+                "tag": ["public"],
+            },
         },
 
         "GRAALPYTHON": {
