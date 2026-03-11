@@ -418,7 +418,6 @@ suite = {
                 "GRAALPYTHON",
                 "BOUNCYCASTLE-PROVIDER",
                 "BOUNCYCASTLE-PKIX",
-                "BOUNCYCASTLE-UTIL",
             ],
             "requires": [
                 "java.logging",
@@ -1077,7 +1076,6 @@ suite = {
             "exclude": [
                 "BOUNCYCASTLE-PROVIDER",
                 "BOUNCYCASTLE-PKIX",
-                "BOUNCYCASTLE-UTIL",
             ],
             "description": "Optional GraalPy BouncyCastle integration.",
             "maven": {
@@ -1477,7 +1475,6 @@ suite = {
                 "graalpython:GRAALPYTHON_BOUNCYCASTLE",
                 "graalpython:BOUNCYCASTLE-PROVIDER",
                 "graalpython:BOUNCYCASTLE-PKIX",
-                "graalpython:BOUNCYCASTLE-UTIL",
                 "sdk:TOOLS_FOR_STANDALONE",
             ],
             "dynamicDistDependencies": "graalpy_standalone_deps",
