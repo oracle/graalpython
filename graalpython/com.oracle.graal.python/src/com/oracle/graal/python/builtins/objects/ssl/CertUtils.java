@@ -81,6 +81,7 @@ import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.RSAPrivateCrtKeySpec;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -340,6 +341,7 @@ public final class CertUtils {
     // private static
 
     private static final class DerValue {
+        private static final byte INTEGER = 0x02;
         private static final byte OCTET_STRING = 0x04;
         private static final byte OBJECT_IDENTIFIER = 0x06;
         private static final byte SEQUENCE = 0x10;
@@ -405,6 +407,31 @@ public final class CertUtils {
             return Arrays.copyOfRange(data, contentStart, contentStart + contentLen);
         }
 
+        BigInteger getInteger() throws CertificateParsingException {
+            if (contentTag != INTEGER) {
+                throw new CertificateParsingException(ERROR_MESSAGE);
+            }
+            return new BigInteger(getRawData());
+        }
+
+        List<DerValue> getSequenceElements() throws CertificateParsingException {
+            if (contentTag != SEQUENCE) {
+                throw new CertificateParsingException(ERROR_MESSAGE);
+            }
+            ArrayList<DerValue> values = new ArrayList<>();
+            int offset = contentStart;
+            int end = contentStart + contentLen;
+            while (offset < end) {
+                DerValue value = new DerValue(data, offset, end);
+                values.add(value);
+                offset = value.contentStart + value.contentLen;
+            }
+            if (offset != end) {
+                throw new CertificateParsingException(ERROR_MESSAGE);
+            }
+            return values;
+        }
+
         DerValue getObjectIdentifier() throws CertificateParsingException {
             if (contentTag != OBJECT_IDENTIFIER) {
                 return null;
@@ -454,14 +481,6 @@ public final class CertUtils {
             } else {
                 return null;
             }
-        }
-
-        List<DerValue> getSequenceElements() throws CertificateParsingException {
-            List<DerValue> result = new ArrayList<>();
-            iterateSequence((e, r) -> {
-                result.add(e);
-            }, result);
-            return result;
         }
 
         @FunctionalInterface
@@ -733,10 +752,17 @@ public final class CertUtils {
                     }
                     privateKey = decodeEncryptedPrivateKey(algorithm, block.content(), password);
                     break;
+                } else if ("RSA PRIVATE KEY".equals(block.type())) {
+                    if (block.headers().isEmpty()) {
+                        privateKey = decodeRsaPrivateKey(block.content());
+                    } else {
+                        if (password == null) {
+                            throw new NeedsPasswordException();
+                        }
+                        privateKey = getPrivateKeyWithBC(password, pemText);
+                    }
+                    break;
                 }
-            }
-            if (privateKey == null) {
-                privateKey = getPrivateKeyWithBC(inliningTarget, raiseNode, password, cert, pemText);
             }
         } catch (IOException | DecoderException | GeneralSecurityException | OperatorCreationException | PKCSException e) {
             throw raiseNode.get(inliningTarget).raiseSSLError(null, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
@@ -835,6 +861,33 @@ public final class CertUtils {
         return getKeyFactory(algorithm).generatePrivate(keySpec);
     }
 
+    private static PrivateKey decodeRsaPrivateKey(byte[] encoded) throws InvalidKeySpecException, NoSuchAlgorithmException {
+        try {
+            DerValue sequence = new DerValue(encoded).getSequence();
+            List<DerValue> values = sequence.getSequenceElements();
+            if (values.size() < 9) {
+                throw new InvalidKeySpecException("Invalid RSA private key");
+            }
+            BigInteger version = values.get(0).getInteger();
+            if (!BigInteger.ZERO.equals(version) && !BigInteger.ONE.equals(version)) {
+                throw new InvalidKeySpecException("Unsupported RSA private key version");
+            }
+            RSAPrivateCrtKeySpec keySpec = new RSAPrivateCrtKeySpec(
+                            values.get(1).getInteger(),
+                            values.get(2).getInteger(),
+                            values.get(3).getInteger(),
+                            values.get(4).getInteger(),
+                            values.get(5).getInteger(),
+                            values.get(6).getInteger(),
+                            values.get(7).getInteger(),
+                            values.get(8).getInteger());
+            return getKeyFactory("RSA").generatePrivate(keySpec);
+        } catch (CertificateParsingException e) {
+            throw new InvalidKeySpecException("Invalid RSA private key", e);
+        }
+    }
+
+
     private static KeyFactory getKeyFactory(String algorithm) throws NoSuchAlgorithmException {
         Provider provider = getPreferredSecurityProvider();
         return provider != null ? KeyFactory.getInstance(algorithm, provider) : KeyFactory.getInstance(algorithm);
@@ -853,12 +906,10 @@ public final class CertUtils {
         return Security.getProvider(providerName);
     }
 
-    private static PrivateKey getPrivateKeyWithBC(Node inliningTarget, PConstructAndRaiseNode.Lazy raiseNode, char[] password, X509Certificate cert, String pemText)
-                    throws IOException, NeedsPasswordException, DecoderException, OperatorCreationException, PKCSException, GeneralSecurityException {
+    private static PrivateKey getPrivateKeyWithBC(char[] password, String pemText)
+                    throws IOException, NeedsPasswordException, DecoderException, OperatorCreationException, PKCSException {
         PEMParser pemParser = new PEMParser(new java.io.StringReader(pemText));
         JcaPEMKeyConverter converter = new JcaPEMKeyConverter();
-        Provider provider = LazyBouncyCastleProvider.initProvider();
-        converter.setProvider(provider);
         Object object;
         while ((object = pemParser.readObject()) != null) {
             PrivateKeyInfo pkInfo;
@@ -869,7 +920,6 @@ public final class CertUtils {
                     throw new NeedsPasswordException();
                 }
                 JcePEMDecryptorProviderBuilder decryptor = new JcePEMDecryptorProviderBuilder();
-                decryptor.setProvider(provider);
                 PEMKeyPair keyPair = ((PEMEncryptedKeyPair) object).decryptKeyPair(decryptor.build(password));
                 pkInfo = keyPair.getPrivateKeyInfo();
             } else if (object instanceof PKCS8EncryptedPrivateKeyInfo) {
@@ -877,7 +927,6 @@ public final class CertUtils {
                     throw new NeedsPasswordException();
                 }
                 JceOpenSSLPKCS8DecryptorProviderBuilder decryptor = new JceOpenSSLPKCS8DecryptorProviderBuilder();
-                decryptor.setProvider(provider);
                 pkInfo = ((PKCS8EncryptedPrivateKeyInfo) object).decryptPrivateKeyInfo(decryptor.build(password));
             } else if (object instanceof PrivateKeyInfo) {
                 pkInfo = (PrivateKeyInfo) object;
