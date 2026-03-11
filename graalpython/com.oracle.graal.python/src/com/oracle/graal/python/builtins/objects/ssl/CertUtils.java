@@ -95,17 +95,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
-import org.bouncycastle.openssl.PEMEncryptedKeyPair;
-import org.bouncycastle.openssl.PEMKeyPair;
-import org.bouncycastle.openssl.PEMParser;
-import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
-import org.bouncycastle.openssl.jcajce.JceOpenSSLPKCS8DecryptorProviderBuilder;
-import org.bouncycastle.openssl.jcajce.JcePEMDecryptorProviderBuilder;
-import org.bouncycastle.operator.OperatorCreationException;
-import org.bouncycastle.pkcs.PKCS8EncryptedPrivateKeyInfo;
-import org.bouncycastle.pkcs.PKCSException;
-import org.bouncycastle.util.encoders.DecoderException;
 
 import javax.crypto.EncryptedPrivateKeyInfo;
 import javax.crypto.SecretKey;
@@ -759,12 +748,14 @@ public final class CertUtils {
                         if (password == null) {
                             throw new NeedsPasswordException();
                         }
-                        privateKey = getPrivateKeyWithBC(password, pemText);
+                        privateKey = SSLBouncyCastleSupportProvider.loadPrivateKey(password, pemText);
                     }
                     break;
                 }
             }
-        } catch (IOException | DecoderException | GeneralSecurityException | OperatorCreationException | PKCSException e) {
+        } catch (SSLBouncyCastleSupportProvider.MissingBouncyCastleException e) {
+            throw raiseNode.get(inliningTarget).raiseSSLError(null, SSLErrorCode.ERROR_SSL, toTruffleStringUncached(e.getMessage()));
+        } catch (IOException | GeneralSecurityException e) {
             throw raiseNode.get(inliningTarget).raiseSSLError(null, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
         }
         if (privateKey == null) {
@@ -904,38 +895,6 @@ public final class CertUtils {
             return null;
         }
         return Security.getProvider(providerName);
-    }
-
-    private static PrivateKey getPrivateKeyWithBC(char[] password, String pemText)
-                    throws IOException, NeedsPasswordException, DecoderException, OperatorCreationException, PKCSException {
-        PEMParser pemParser = new PEMParser(new java.io.StringReader(pemText));
-        JcaPEMKeyConverter converter = new JcaPEMKeyConverter();
-        Object object;
-        while ((object = pemParser.readObject()) != null) {
-            PrivateKeyInfo pkInfo;
-            if (object instanceof PEMKeyPair) {
-                pkInfo = ((PEMKeyPair) object).getPrivateKeyInfo();
-            } else if (object instanceof PEMEncryptedKeyPair) {
-                if (password == null) {
-                    throw new NeedsPasswordException();
-                }
-                JcePEMDecryptorProviderBuilder decryptor = new JcePEMDecryptorProviderBuilder();
-                PEMKeyPair keyPair = ((PEMEncryptedKeyPair) object).decryptKeyPair(decryptor.build(password));
-                pkInfo = keyPair.getPrivateKeyInfo();
-            } else if (object instanceof PKCS8EncryptedPrivateKeyInfo) {
-                if (password == null) {
-                    throw new NeedsPasswordException();
-                }
-                JceOpenSSLPKCS8DecryptorProviderBuilder decryptor = new JceOpenSSLPKCS8DecryptorProviderBuilder();
-                pkInfo = ((PKCS8EncryptedPrivateKeyInfo) object).decryptPrivateKeyInfo(decryptor.build(password));
-            } else if (object instanceof PrivateKeyInfo) {
-                pkInfo = (PrivateKeyInfo) object;
-            } else {
-                continue;
-            }
-            return converter.getPrivateKey(pkInfo);
-        }
-        return null;
     }
 
     private static void checkPrivateKey(Node inliningTarget, PConstructAndRaiseNode.Lazy raiseNode, PythonContext context, PrivateKey privateKey, PublicKey publicKey) {

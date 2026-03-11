@@ -418,7 +418,7 @@ suite = {
             "subDir": "graalpython",
             "sourceDirs": ["src"],
             "dependencies": [
-                "com.oracle.graal.python",
+                "GRAALPYTHON",
                 "BOUNCYCASTLE-PROVIDER",
                 "BOUNCYCASTLE-PKIX",
                 "BOUNCYCASTLE-UTIL",
@@ -1063,6 +1063,25 @@ suite = {
             "dependencies": [
                 "com.oracle.graal.python.bouncycastle",
             ],
+            "distDependencies": [
+                "GRAALPYTHON",
+                "truffle:TRUFFLE_API",
+                "tools:TRUFFLE_PROFILER",
+                "regex:TREGEX",
+                "sdk:POLYGLOT",
+                "sdk:NATIVEIMAGE",
+                "sdk:COLLECTIONS",
+                "truffle:TRUFFLE_NFI",
+                "truffle:TRUFFLE_NFI_LIBFFI",
+                "truffle:TRUFFLE_NFI_PANAMA",
+                "truffle:TRUFFLE_ICU4J",
+                "truffle:TRUFFLE_XZ",
+            ],
+            "exclude": [
+                "BOUNCYCASTLE-PROVIDER",
+                "BOUNCYCASTLE-PKIX",
+                "BOUNCYCASTLE-UTIL",
+            ],
             "description": "Optional GraalPy BouncyCastle integration.",
             "maven": False,
         },
@@ -1459,6 +1478,7 @@ suite = {
             "distDependencies": [
                 "graalpython:GRAALPYTHON-LAUNCHER",
                 "graalpython:GRAALPYTHON",
+                "graalpython:GRAALPYTHON_BOUNCYCASTLE",
                 "graalpython:BOUNCYCASTLE-PROVIDER",
                 "graalpython:BOUNCYCASTLE-PKIX",
                 "graalpython:BOUNCYCASTLE-UTIL",

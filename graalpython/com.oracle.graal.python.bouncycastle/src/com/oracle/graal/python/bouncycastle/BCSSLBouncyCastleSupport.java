@@ -46,6 +46,7 @@ import java.security.GeneralSecurityException;
 import java.security.PrivateKey;
 
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openssl.PEMEncryptedKeyPair;
 import org.bouncycastle.openssl.PEMKeyPair;
 import org.bouncycastle.openssl.PEMParser;
@@ -60,6 +61,8 @@ import com.oracle.graal.python.builtins.objects.ssl.CertUtils.NeedsPasswordExcep
 import com.oracle.graal.python.builtins.objects.ssl.SSLBouncyCastleSupport;
 
 public final class BCSSLBouncyCastleSupport implements SSLBouncyCastleSupport {
+    @SuppressWarnings("unused") private static final Class<?> PROVIDER_CLASS = BouncyCastleProvider.class;
+
     @Override
     public PrivateKey loadPrivateKey(char[] password, String pemText) throws IOException, NeedsPasswordException, GeneralSecurityException {
         try (PEMParser pemParser = new PEMParser(new StringReader(pemText))) {

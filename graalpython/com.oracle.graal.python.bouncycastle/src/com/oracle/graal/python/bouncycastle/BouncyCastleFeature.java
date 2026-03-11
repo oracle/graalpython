@@ -38,57 +38,41 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python;
+package com.oracle.graal.python.bouncycastle;
 
 import java.security.Security;
 
-import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeReflection;
-import org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport;
-
-import com.oracle.graal.python.runtime.PythonImageBuildOptions;
 
 public class BouncyCastleFeature implements Feature {
 
-    /*
-     * Will soon be default in native image. We'll still need the old way to support older
-     * native-image in JDK 21. I guess then it would be something like:
-     *
-     * INITIALIZE_AT_RUNTIME = Runtime.version().feature() >= 26;
-     */
-    private static final boolean INITIALIZE_AT_RUNTIME = false;
-
     @Override
     public void afterRegistration(AfterRegistrationAccess access) {
-        if (!PythonImageBuildOptions.WITHOUT_SSL) {
-            RuntimeClassInitializationSupport support = ImageSingletons.lookup(RuntimeClassInitializationSupport.class);
-
-            // SSLBasicKeyDerivation looks up the classes below reflectively since jdk-25+23
-            // See https://github.com/openjdk/jdk/pull/24393
-            String[] reflectiveClasses = new String[]{
-                            "com.sun.crypto.provider.HKDFKeyDerivation$HKDFSHA256",
-                            "com.sun.crypto.provider.HKDFKeyDerivation$HKDFSHA384",
-                            "com.sun.crypto.provider.HKDFKeyDerivation$HKDFSHA512",
-                            "sun.security.pkcs11.P11HKDF",
-            };
-            for (String name : reflectiveClasses) {
-                try {
-                    Class.forName(name);
-                } catch (SecurityException | ClassNotFoundException e) {
-                    return;
-                }
+        // SSLBasicKeyDerivation looks up the classes below reflectively since jdk-25+23
+        // See https://github.com/openjdk/jdk/pull/24393
+        String[] reflectiveClasses = new String[]{
+                        "com.sun.crypto.provider.HKDFKeyDerivation$HKDFSHA256",
+                        "com.sun.crypto.provider.HKDFKeyDerivation$HKDFSHA384",
+                        "com.sun.crypto.provider.HKDFKeyDerivation$HKDFSHA512",
+                        "sun.security.pkcs11.P11HKDF",
+        };
+        for (String name : reflectiveClasses) {
+            try {
+                Class.forName(name);
+            } catch (SecurityException | ClassNotFoundException e) {
+                return;
             }
-            // For backwards compatibility with older JDKs, we only do this if we found
-            // all those classes
-            Security.addProvider(Security.getProvider("SunJCE"));
-            for (String name : reflectiveClasses) {
-                try {
-                    RuntimeReflection.register(Class.forName(name));
-                    RuntimeReflection.register(Class.forName(name).getConstructors());
-                } catch (SecurityException | ClassNotFoundException e) {
-                    throw new RuntimeException("Could not register " + name + " for reflective access!", e);
-                }
+        }
+        // For backwards compatibility with older JDKs, we only do this if we found
+        // all those classes
+        Security.addProvider(Security.getProvider("SunJCE"));
+        for (String name : reflectiveClasses) {
+            try {
+                RuntimeReflection.register(Class.forName(name));
+                RuntimeReflection.register(Class.forName(name).getConstructors());
+            } catch (SecurityException | ClassNotFoundException e) {
+                throw new RuntimeException("Could not register " + name + " for reflective access!", e);
             }
         }
     }
