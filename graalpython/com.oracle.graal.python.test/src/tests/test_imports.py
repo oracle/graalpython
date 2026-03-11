@@ -146,6 +146,11 @@ def test_imp_fix_co_filename():
     assert code.co_filename == old_name + '_more_path'
 
 
+def test_imp_source_hash():
+    import _imp
+    assert _imp.source_hash(123456789, b'hello!').hex() == '04e61e229a23a446'
+
+
 def test_recursive_import_from():
     if sys.version_info.minor >= 6:
         import package.recpkg

@@ -54,7 +54,7 @@ import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_PYD;
 import static com.oracle.graal.python.nodes.StringLiterals.T_EXT_SO;
 import static com.oracle.graal.python.nodes.StringLiterals.T_NAME;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
-import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR;
+import static com.oracle.graal.python.util.PythonUtils.ARRAY_ACCESSOR_LE;
 import static com.oracle.graal.python.util.PythonUtils.TS_ENCODING;
 import static com.oracle.graal.python.util.PythonUtils.internString;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
@@ -63,9 +63,6 @@ import static com.oracle.graal.python.util.PythonUtils.tsLiteral;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
-
-import org.bouncycastle.crypto.macs.SipHash;
-import org.bouncycastle.crypto.params.KeyParameter;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
@@ -744,14 +741,66 @@ public final class ImpModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         public static byte[] hashSource(long magicNumber, byte[] bytes, int length) {
-            SipHash sipHash = new SipHash(1, 3);
-            byte[] key = new byte[16];
-            ARRAY_ACCESSOR.putLong(key, 0, magicNumber);
-            sipHash.init(new KeyParameter(key));
-            sipHash.update(bytes, 0, length);
-            byte[] out = new byte[sipHash.getMacSize()];
-            sipHash.doFinal(out, 0);
+            long hash = sipHash13(magicNumber, 0, bytes, length);
+            byte[] out = new byte[Long.BYTES];
+            ARRAY_ACCESSOR_LE.putLong(out, 0, hash);
             return out;
+        }
+
+        private static long sipHash13(long k0, long k1, byte[] src, int length) {
+            long b = ((long) length) << 56;
+            long v0 = k0 ^ 0x736f6d6570736575L;
+            long v1 = k1 ^ 0x646f72616e646f6dL;
+            long v2 = k0 ^ 0x6c7967656e657261L;
+            long v3 = k1 ^ 0x7465646279746573L;
+            int offset = 0;
+            while (length - offset >= Long.BYTES) {
+                long mi = ARRAY_ACCESSOR_LE.getLong(src, offset);
+                offset += Long.BYTES;
+                v3 ^= mi;
+                long[] state = singleRound(v0, v1, v2, v3);
+                v0 = state[0];
+                v1 = state[1];
+                v2 = state[2];
+                v3 = state[3];
+                v0 ^= mi;
+            }
+            long tail = 0;
+            int remaining = length - offset;
+            for (int i = 0; i < remaining; i++) {
+                tail |= ((long) src[offset + i] & 0xffL) << (Byte.SIZE * i);
+            }
+            b |= tail;
+            v3 ^= b;
+            long[] state = singleRound(v0, v1, v2, v3);
+            v0 = state[0];
+            v1 = state[1];
+            v2 = state[2];
+            v3 = state[3];
+            v0 ^= b;
+            v2 ^= 0xff;
+            for (int i = 0; i < 3; i++) {
+                state = singleRound(v0, v1, v2, v3);
+                v0 = state[0];
+                v1 = state[1];
+                v2 = state[2];
+                v3 = state[3];
+            }
+            return (v0 ^ v1) ^ (v2 ^ v3);
+        }
+
+        private static long[] singleRound(long v0, long v1, long v2, long v3) {
+            v0 += v1;
+            v2 += v3;
+            v1 = Long.rotateLeft(v1, 13) ^ v0;
+            v3 = Long.rotateLeft(v3, 16) ^ v2;
+            v0 = Long.rotateLeft(v0, 32);
+            v2 += v1;
+            v0 += v3;
+            v1 = Long.rotateLeft(v1, 17) ^ v2;
+            v3 = Long.rotateLeft(v3, 21) ^ v0;
+            v2 = Long.rotateLeft(v2, 32);
+            return new long[]{v0, v1, v2, v3};
         }
 
         @Override
