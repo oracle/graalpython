@@ -786,6 +786,7 @@ class ReferencesTestCase(TestBase):
 
         del alist[:]
         gc.collect()
+        gc_collect() # <- GraalPy change
         self.assertEqual(alist, [])
 
     def test_gc_during_ref_creation(self):
@@ -798,6 +799,7 @@ class ReferencesTestCase(TestBase):
         thresholds = gc.get_threshold()
         gc.set_threshold(1, 1, 1)
         gc.collect()
+        gc_collect() # <- GraalPy change
         class A:
             pass
 
@@ -902,6 +904,7 @@ class ReferencesTestCase(TestBase):
         # Same when dead.
         del x, y
         gc.collect()
+        gc_collect() # <- GraalPy change
         for op in ops:
             self.assertRaises(TypeError, op, a, b)
 
@@ -914,6 +917,7 @@ class ReferencesTestCase(TestBase):
         self.assertEqual(hash(a), hash(42))
         del x, y
         gc.collect()
+        gc_collect() # <- GraalPy change
         # Dead weakrefs:
         # - retain their hash is they were hashed when alive;
         # - otherwise, cannot be hashed.
@@ -1192,6 +1196,7 @@ class WeakMethodTestCase(unittest.TestCase):
         _eq(a, ALWAYS_EQ)
         del x, y, z
         gc.collect()
+        gc_collect() # <- GraalPy change
         # Dead WeakMethods compare by identity
         refs = a, b, c, d, e, f
         for q in refs:
@@ -1236,9 +1241,11 @@ class MappingTestCase(TestBase):
             pass
         del items
         gc.collect()
+        gc_collect() # <- GraalPy change
         n1 = len(dct)
         del it
         gc.collect()
+        gc_collect() # <- GraalPy change
         n2 = len(dct)
         # one item may be kept alive inside the iterator
         self.assertIn(n1, (0, 1))
@@ -1257,6 +1264,7 @@ class MappingTestCase(TestBase):
         for th in range(1, 100):
             N = 20
             gc.collect(0)
+            gc_collect() # <- GraalPy change
             gc.set_threshold(th, th, th)
             items = [RefCycle() for i in range(N)]
             dct = dict_type(cons(o) for o in items)
@@ -1428,6 +1436,7 @@ class MappingTestCase(TestBase):
         # Destroy an object
         del objects[-1]
         gc.collect()    # just in case
+        gc_collect() # <- GraalPy change
         # We have removed either the first consumed object, or another one
         self.assertIn(len(list(it)), [len(objects), len(objects) - 1])
         del it
@@ -1508,10 +1517,12 @@ class MappingTestCase(TestBase):
                 # Schedule a key/value for removal and recreate it
                 v = objects.pop().arg
                 gc.collect()      # just in case
+                gc_collect() # <- GraalPy change
                 yield Object(v), v
             finally:
                 it = None           # should commit all removals
                 gc.collect()
+                gc_collect() # <- GraalPy change
         self.check_weak_destroy_and_mutate_while_iterating(dict, testcontext)
         # Issue #21173: len() fragile when keys are both implicitly and
         # explicitly removed.
@@ -1535,10 +1546,12 @@ class MappingTestCase(TestBase):
                 # Schedule a key/value for removal and recreate it
                 k = objects.pop().arg
                 gc.collect()      # just in case
+                gc_collect() # <- GraalPy change
                 yield k, Object(k)
             finally:
                 it = None           # should commit all removals
                 gc.collect()
+                gc_collect() # <- GraalPy change
         self.check_weak_destroy_and_mutate_while_iterating(dict, testcontext)
         dict, objects = self.make_weak_valued_dict()
         self.check_weak_del_and_len_while_iterating(dict, testcontext)
@@ -1907,6 +1920,7 @@ class MappingTestCase(TestBase):
                 lst.pop(i)
                 if gc_ctr % 10000 == 0:
                     gc.collect()  # just in case
+                    gc_collect() # <- GraalPy change
 
         self.assertIn(type_, (weakref.WeakKeyDictionary, weakref.WeakValueDictionary))
 
