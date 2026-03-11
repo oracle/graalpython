@@ -414,6 +414,29 @@ suite = {
             "spotbugsIgnoresGenerated": True,
         },
 
+        "com.oracle.graal.python.bouncycastle": {
+            "subDir": "graalpython",
+            "sourceDirs": ["src"],
+            "dependencies": [
+                "com.oracle.graal.python",
+                "BOUNCYCASTLE-PROVIDER",
+                "BOUNCYCASTLE-PKIX",
+                "BOUNCYCASTLE-UTIL",
+            ],
+            "requires": [
+                "java.logging",
+                "java.management",
+                "jdk.management",
+                "jdk.unsupported",
+                "jdk.security.auth",
+            ],
+            "jacoco": "include",
+            "checkstyle": "com.oracle.graal.python",
+            "javaCompliance": "17+",
+            "workingSets": "Truffle,Python",
+            "spotbugsIgnoresGenerated": True,
+        },
+
         # GRAALPYTHON_UNIT_TESTS
         "com.oracle.graal.python.test": {
             "subDir": "graalpython",
@@ -1034,6 +1057,14 @@ suite = {
                 "MIT",
                 "PSF-License",
             ],
+        },
+
+        "GRAALPYTHON_BOUNCYCASTLE": {
+            "dependencies": [
+                "com.oracle.graal.python.bouncycastle",
+            ],
+            "description": "Optional GraalPy BouncyCastle integration.",
+            "maven": False,
         },
 
         "GRAALPYTHON": {
