@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -181,16 +181,16 @@ def test_circular_import_valid():
 
 import time as package25274  #has to be in global space for the next test
 def test_local_property_25274():
-    
+
     def mytest():
         assert len(locals()) == 0
         import package25274.sub25274
         assert 'package25274' in locals()
         assert package25274.top_property == 10
         assert package25274.sub25274.sub_property == 20
-        
+
     mytest()
     assert hasattr(package25274, 'tzname')
 
 
-    
+

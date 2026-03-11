@@ -95,7 +95,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-
 import javax.crypto.EncryptedPrivateKeyInfo;
 import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
@@ -877,7 +876,6 @@ public final class CertUtils {
             throw new InvalidKeySpecException("Invalid RSA private key", e);
         }
     }
-
 
     private static KeyFactory getKeyFactory(String algorithm) throws NoSuchAlgorithmException {
         Provider provider = getPreferredSecurityProvider();
