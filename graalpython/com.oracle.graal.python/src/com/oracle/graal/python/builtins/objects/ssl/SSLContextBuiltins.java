@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -76,7 +76,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
 
-import org.bouncycastle.util.encoders.DecoderException;
+import com.oracle.graal.python.builtins.objects.ssl.CertUtils.BadBase64Exception;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
@@ -637,7 +637,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                 LOGGER.fine(() -> String.format("set_default_verify_paths file: %s. path: %s", file != null ? file.getPath() : "None", path != null ? path.getPath() : "None"));
                 try {
                     self.setCAEntries(CertUtils.loadVerifyLocations(file, path));
-                } catch (IOException | DecoderException | GeneralSecurityException | NoCertificateFoundException ex) {
+                } catch (IOException | GeneralSecurityException | NoCertificateFoundException ex) {
                     // do not raise any errors
                     LOGGER.log(Level.FINER, "", ex);
                 }
@@ -756,7 +756,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                         self.setCAEntries(CertUtils.loadVerifyLocations(file, path));
                     } catch (NoCertificateFoundException e) {
                         throw constructAndRaiseNode.get(inliningTarget).raiseSSLError(frame, SSLErrorCode.ERROR_NO_CERTIFICATE_OR_CRL_FOUND, ErrorMessages.NO_CERTIFICATE_OR_CRL_FOUND);
-                    } catch (IOException | DecoderException e) {
+                    } catch (IOException e) {
                         throw constructAndRaiseNode.get(inliningTarget).raiseSSLError(frame, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.X509_PEM_LIB);
                     }
                 }
@@ -792,7 +792,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                         throw raiseNode.get(inliningTarget).raiseSSLError(null, SSLErrorCode.ERROR_NO_START_LINE, ErrorMessages.SSL_PEM_NO_START_LINE);
                     }
                     return certificates;
-                } catch (DecoderException e) {
+                } catch (BadBase64Exception e) {
                     throw raiseNode.get(inliningTarget).raiseSSLError(null, SSLErrorCode.ERROR_BAD_BASE64_DECODE, ErrorMessages.BAD_BASE64_DECODE);
                 } catch (IOException e) {
                     throw raiseNode.get(inliningTarget).raiseSSLError(null, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
@@ -889,7 +889,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                     if (certs.length == 0) {
                         throw raiseNode.get(inliningTarget).raiseSSLError(null, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
                     }
-                } catch (IOException | DecoderException e) {
+                } catch (IOException e) {
                     throw raiseNode.get(inliningTarget).raiseSSLError(null, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
                 }
                 // if keyReader and certReader are from the same file, key is expected to come first

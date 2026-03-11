@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -81,14 +81,13 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
-import org.bouncycastle.cert.X509CRLHolder;
-import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.openssl.PEMEncryptedKeyPair;
 import org.bouncycastle.openssl.PEMKeyPair;
 import org.bouncycastle.openssl.PEMParser;
@@ -140,6 +139,17 @@ public final class CertUtils {
         public NeedsPasswordException() {
             super("Needs password to decrypt private key");
         }
+    }
+
+    public static final class BadBase64Exception extends IOException {
+        private static final long serialVersionUID = -8554489203372180057L;
+
+        public BadBase64Exception(Throwable cause) {
+            super(cause);
+        }
+    }
+
+    private record PemBlock(String type, byte[] content) {
     }
 
     /**
@@ -609,20 +619,85 @@ public final class CertUtils {
     @TruffleBoundary
     public static List<Object> getCertificates(BufferedReader r, boolean onlyCertificates) throws IOException, CertificateException, CRLException {
         List<Object> l = new ArrayList<>();
-        PEMParser pemParser = new PEMParser(r);
         CertificateFactory factory = CertificateFactory.getInstance("X.509");
-        Object object;
-        while ((object = pemParser.readObject()) != null) {
-            if (object instanceof X509CertificateHolder) {
-                // TODO use the X509CertificateHolder directly without conversion
-                l.add(factory.generateCertificate(new ByteArrayInputStream(((X509CertificateHolder) object).getEncoded())));
-            }
-            if (!onlyCertificates && object instanceof X509CRLHolder) {
-                // TODO use the X509CRLHolder directly without conversion
-                l.add(factory.generateCRL(new ByteArrayInputStream(((X509CRLHolder) object).getEncoded())));
+        for (PemBlock block : readPemBlocks(r)) {
+            if ("CERTIFICATE".equals(block.type())) {
+                l.add(factory.generateCertificate(new ByteArrayInputStream(block.content())));
+            } else if (!onlyCertificates && ("X509 CRL".equals(block.type()) || "CRL".equals(block.type()))) {
+                l.add(factory.generateCRL(new ByteArrayInputStream(block.content())));
             }
         }
         return l;
+    }
+
+    private static List<PemBlock> readPemBlocks(BufferedReader reader) throws IOException {
+        StringBuilder text = new StringBuilder();
+        char[] buffer = new char[8192];
+        int read;
+        while ((read = reader.read(buffer)) != -1) {
+            text.append(buffer, 0, read);
+        }
+
+        String data = text.toString();
+        List<PemBlock> blocks = new ArrayList<>();
+        int fromIndex = 0;
+        while (true) {
+            int begin = data.indexOf("-----BEGIN ", fromIndex);
+            if (begin < 0) {
+                return blocks;
+            }
+            int typeStart = begin + "-----BEGIN ".length();
+            int typeEnd = data.indexOf("-----", typeStart);
+            if (typeEnd < 0) {
+                throw new IOException("Malformed PEM header");
+            }
+            String type = data.substring(typeStart, typeEnd);
+            int contentStart = typeEnd + "-----".length();
+            if (contentStart < data.length() && data.charAt(contentStart) == '\r') {
+                contentStart++;
+            }
+            if (contentStart < data.length() && data.charAt(contentStart) == '\n') {
+                contentStart++;
+            }
+
+            String endMarker = "-----END " + type + "-----";
+            int end = data.indexOf(endMarker, contentStart);
+            if (end < 0) {
+                throw new IOException("Missing PEM footer");
+            }
+
+            String content = data.substring(contentStart, end);
+            if (isCertificatePemType(type)) {
+                blocks.add(new PemBlock(type, decodePemContent(content)));
+            }
+            fromIndex = end + endMarker.length();
+        }
+    }
+
+    private static boolean isCertificatePemType(String type) {
+        return "CERTIFICATE".equals(type) || "X509 CRL".equals(type) || "CRL".equals(type);
+    }
+
+    private static byte[] decodePemContent(String content) throws IOException {
+        StringBuilder base64 = new StringBuilder(content.length());
+        for (String line : content.split("\\R")) {
+            String trimmed = line.trim();
+            if (trimmed.isEmpty()) {
+                continue;
+            }
+            if (trimmed.indexOf(':') >= 0) {
+                throw new IOException("Unexpected PEM headers");
+            }
+            base64.append(trimmed);
+        }
+        if (base64.length() == 0) {
+            throw new IOException("Empty PEM content");
+        }
+        try {
+            return Base64.getMimeDecoder().decode(base64.toString());
+        } catch (IllegalArgumentException e) {
+            throw new BadBase64Exception(e);
+        }
     }
 
     // No BoundaryCallContext: constructs and raises only builtin errors
