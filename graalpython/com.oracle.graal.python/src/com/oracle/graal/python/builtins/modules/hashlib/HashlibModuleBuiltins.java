@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -88,7 +88,6 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrar
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageNodes;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.ssl.LazyBouncyCastleProvider;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -172,7 +171,6 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
         PythonLanguage language = core.getLanguage();
         PythonModule self = core.lookupBuiltinModule(T_HASHLIB);
         EconomicMapStorage storage = EconomicMapStorage.create();
-        LazyBouncyCastleProvider.initProvider();
         ArrayList<String> digests = new ArrayList<>();
         for (var provider : Security.getProviders()) {
             for (var service : provider.getServices()) {
