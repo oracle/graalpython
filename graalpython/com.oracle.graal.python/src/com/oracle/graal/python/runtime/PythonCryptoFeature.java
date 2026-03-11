@@ -38,39 +38,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.bouncycastle;
+package com.oracle.graal.python.runtime;
 
 import java.security.Security;
 
 import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeReflection;
 
-public class BouncyCastleFeature implements Feature {
+public final class PythonCryptoFeature implements Feature {
+
+    private static final String[] HKDF_REFLECTIVE_CLASSES = {
+                    "com.sun.crypto.provider.HKDFKeyDerivation$HKDFSHA256",
+                    "com.sun.crypto.provider.HKDFKeyDerivation$HKDFSHA384",
+                    "com.sun.crypto.provider.HKDFKeyDerivation$HKDFSHA512",
+                    "sun.security.pkcs11.P11HKDF",
+    };
 
     @Override
     public void afterRegistration(AfterRegistrationAccess access) {
-        // SSLBasicKeyDerivation looks up the classes below reflectively since jdk-25+23
-        // See https://github.com/openjdk/jdk/pull/24393
-        String[] reflectiveClasses = new String[]{
-                        "com.sun.crypto.provider.HKDFKeyDerivation$HKDFSHA256",
-                        "com.sun.crypto.provider.HKDFKeyDerivation$HKDFSHA384",
-                        "com.sun.crypto.provider.HKDFKeyDerivation$HKDFSHA512",
-                        "sun.security.pkcs11.P11HKDF",
-        };
-        for (String name : reflectiveClasses) {
+        for (String name : HKDF_REFLECTIVE_CLASSES) {
             try {
                 Class.forName(name);
             } catch (SecurityException | ClassNotFoundException e) {
                 return;
             }
         }
-        // For backwards compatibility with older JDKs, we only do this if we found
-        // all those classes
         Security.addProvider(Security.getProvider("SunJCE"));
-        for (String name : reflectiveClasses) {
+        for (String name : HKDF_REFLECTIVE_CLASSES) {
             try {
-                RuntimeReflection.register(Class.forName(name));
-                RuntimeReflection.register(Class.forName(name).getConstructors());
+                Class<?> clazz = Class.forName(name);
+                RuntimeReflection.register(clazz);
+                RuntimeReflection.register(clazz.getConstructors());
             } catch (SecurityException | ClassNotFoundException e) {
                 throw new RuntimeException("Could not register " + name + " for reflective access!", e);
             }
