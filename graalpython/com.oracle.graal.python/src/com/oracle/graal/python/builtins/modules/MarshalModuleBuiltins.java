@@ -1677,6 +1677,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             this.language = language;
         }
 
+        @TruffleBoundary
         public void serialize(SerializerContext context, DataOutput buffer, Object object) throws IOException {
             /*
              * NB: Since the deserializer uses a fresh Marshal instance for each object (see below)
