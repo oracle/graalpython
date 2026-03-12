@@ -75,38 +75,32 @@ public final class BCSSLBouncyCastleSupport implements SSLBouncyCastleSupport {
             JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider(provider);
             Object object;
             while ((object = pemParser.readObject()) != null) {
-                try {
-                    PrivateKeyInfo pkInfo;
-                    if (object instanceof PEMKeyPair) {
-                        pkInfo = ((PEMKeyPair) object).getPrivateKeyInfo();
-                    } else if (object instanceof PEMEncryptedKeyPair) {
-                        if (password == null) {
-                            throw new NeedsPasswordException();
-                        }
-                        JcePEMDecryptorProviderBuilder decryptor = new JcePEMDecryptorProviderBuilder().setProvider(provider);
-                        PEMKeyPair keyPair = ((PEMEncryptedKeyPair) object).decryptKeyPair(decryptor.build(password));
-                        pkInfo = keyPair.getPrivateKeyInfo();
-                    } else if (object instanceof PKCS8EncryptedPrivateKeyInfo) {
-                        if (password == null) {
-                            throw new NeedsPasswordException();
-                        }
-                        JceOpenSSLPKCS8DecryptorProviderBuilder decryptor = new JceOpenSSLPKCS8DecryptorProviderBuilder().setProvider(provider);
-                        pkInfo = ((PKCS8EncryptedPrivateKeyInfo) object).decryptPrivateKeyInfo(decryptor.build(password));
-                    } else if (object instanceof PrivateKeyInfo) {
-                        pkInfo = (PrivateKeyInfo) object;
-                    } else {
-                        continue;
+                PrivateKeyInfo pkInfo;
+                if (object instanceof PEMKeyPair) {
+                    pkInfo = ((PEMKeyPair) object).getPrivateKeyInfo();
+                } else if (object instanceof PEMEncryptedKeyPair) {
+                    if (password == null) {
+                        throw new NeedsPasswordException();
                     }
-                    PrivateKey privateKey = converter.getPrivateKey(pkInfo);
-                    if (privateKey == null) {
-                        throw new RuntimeException("BC converter returned null for " + object.getClass().getName());
+                    JcePEMDecryptorProviderBuilder decryptor = new JcePEMDecryptorProviderBuilder().setProvider(provider);
+                    PEMKeyPair keyPair = ((PEMEncryptedKeyPair) object).decryptKeyPair(decryptor.build(password));
+                    pkInfo = keyPair.getPrivateKeyInfo();
+                } else if (object instanceof PKCS8EncryptedPrivateKeyInfo) {
+                    if (password == null) {
+                        throw new NeedsPasswordException();
                     }
-                    return privateKey;
-                } catch (OperatorCreationException | PKCSException e) {
-                    throw new RuntimeException("BC failed for " + object.getClass().getName(), e);
+                    JceOpenSSLPKCS8DecryptorProviderBuilder decryptor = new JceOpenSSLPKCS8DecryptorProviderBuilder().setProvider(provider);
+                    pkInfo = ((PKCS8EncryptedPrivateKeyInfo) object).decryptPrivateKeyInfo(decryptor.build(password));
+                } else if (object instanceof PrivateKeyInfo) {
+                    pkInfo = (PrivateKeyInfo) object;
+                } else {
+                    continue;
                 }
+                return converter.getPrivateKey(pkInfo);
             }
-            throw new RuntimeException("BC found no supported key objects");
+            return null;
+        } catch (OperatorCreationException | PKCSException e) {
+            throw new GeneralSecurityException(e);
         }
     }
 }

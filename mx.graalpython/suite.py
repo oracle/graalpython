@@ -903,7 +903,6 @@ suite = {
                 # From mx.graalpython/native-image.properties
                 "--add-exports", "org.graalvm.nativeimage/org.graalvm.nativeimage.impl=ALL-UNNAMED",
                 "--add-exports", "org.graalvm.py/com.oracle.graal.python.builtins.objects.ssl=ALL-UNNAMED",
-                "-H:AdditionalSecurityProviders=org.bouncycastle.jce.provider.BouncyCastleProvider",
                 "-R:StackSize=16777216",
                 "-H:+AddAllCharsets",
                 "-H:IncludeLocales=no,be,ro,ru,es,se,in,ka,hu,hr,bg,is,mk,da,nn,cs,sq,fr,pl,fo,bs,kl,fa,sv,it,uk,af,tg,ps,de",
