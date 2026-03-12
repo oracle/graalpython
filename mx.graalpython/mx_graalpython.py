@@ -2482,6 +2482,45 @@ def python_coverage(args):
         mx.run(cmdargs)
 
 
+def abi_check(_args):
+    for tool in ("abidw", "abidiff"):
+        if not shutil.which(tool):
+            mx.abort(f"Required tool '{tool}' was not found on PATH")
+
+    standalone_home = graalpy_standalone_home('jvm', dev=True, build=True)
+    shared_library = os.path.join(
+        standalone_home,
+        'lib',
+        f'graalpy{graal_version_short("major_minor")}',
+        'libpython-native.so',
+    )
+    if not os.path.exists(shared_library):
+        mx.abort(f"Could not find shared library to check: {shared_library}")
+
+    baseline = os.path.join(SUITE.dir, 'abi', f'abi-{GRAALPY_ABI_VERSION}.xml')
+    if not os.path.exists(baseline):
+        mx.abort(f"Could not find ABI baseline: {baseline}")
+
+    args = ['--suppressions', os.path.join(SUITE.dir, 'abi', 'suppressions-base.ini')]
+    versioned_suppressions = os.path.join(SUITE.dir, 'abi', f'suppressions-{GRAALPY_ABI_VERSION}.ini')
+    if os.path.exists(versioned_suppressions):
+        args += ['--suppressions', versioned_suppressions]
+
+    with tempfile.TemporaryDirectory(prefix='graalpy-abi-') as tmpdir:
+        dump_path = os.path.join(tmpdir, 'abi-current.xml')
+        run([
+            'abidw',
+            '--out-file', dump_path,
+            shared_library,
+        ])
+        run([
+            'abidiff',
+            *args,
+            baseline,
+            dump_path,
+        ], nonZeroIsFatal=True)
+
+
 class GraalpythonBuildTask(mx.ProjectBuildTask):
     class PrefixingOutput():
         def __init__(self, prefix, printfunc):
@@ -2913,6 +2952,7 @@ mx.update_commands(SUITE, {
     'nativeclean': [nativeclean, ''],
     'python-src-import': [mx_graalpython_import.import_python_sources, ''],
     'python-coverage': [python_coverage, ''],
+    'abi-check': [abi_check, ''],
     'punittest': [punittest, ''],
     'graalpytest': [graalpytest, '[-h] [--python PYTHON] [TESTS]'],
     'clean': [python_clean, '[--just-pyc]'],
