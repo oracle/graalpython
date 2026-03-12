@@ -756,7 +756,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                         self.setCAEntries(CertUtils.loadVerifyLocations(file, path));
                     } catch (NoCertificateFoundException e) {
                         throw constructAndRaiseNode.get(inliningTarget).raiseSSLError(frame, SSLErrorCode.ERROR_NO_CERTIFICATE_OR_CRL_FOUND, ErrorMessages.NO_CERTIFICATE_OR_CRL_FOUND);
-                    } catch (IOException e) {
+                    } catch (IOException | CertificateException | CRLException e) {
                         throw constructAndRaiseNode.get(inliningTarget).raiseSSLError(frame, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.X509_PEM_LIB);
                     }
                 }
@@ -794,7 +794,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                     return certificates;
                 } catch (BadBase64Exception e) {
                     throw raiseNode.get(inliningTarget).raiseSSLError(null, SSLErrorCode.ERROR_BAD_BASE64_DECODE, ErrorMessages.BAD_BASE64_DECODE);
-                } catch (IOException e) {
+                } catch (IOException | CertificateException | CRLException e) {
                     throw raiseNode.get(inliningTarget).raiseSSLError(null, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
                 }
             }
@@ -889,7 +889,7 @@ public final class SSLContextBuiltins extends PythonBuiltins {
                     if (certs.length == 0) {
                         throw raiseNode.get(inliningTarget).raiseSSLError(null, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
                     }
-                } catch (IOException e) {
+                } catch (IOException | CertificateException | CRLException e) {
                     throw raiseNode.get(inliningTarget).raiseSSLError(null, SSLErrorCode.ERROR_SSL_PEM_LIB, ErrorMessages.SSL_PEM_LIB);
                 }
                 // if keyReader and certReader are from the same file, key is expected to come first

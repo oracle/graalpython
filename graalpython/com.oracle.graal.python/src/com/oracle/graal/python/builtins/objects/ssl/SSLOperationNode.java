@@ -554,6 +554,10 @@ public abstract class SSLOperationNode extends PNodeWithContext {
         if (e.getCause() instanceof CertificateException) {
             throw raiseNode.get(inliningTarget).raiseSSLError(null, SSLErrorCode.ERROR_CERT_VERIFICATION, ErrorMessages.CERTIFICATE_VERIFY_FAILED, e.toString());
         }
-        throw raiseNode.get(inliningTarget).raiseSSLError(null, SSLErrorCode.ERROR_SSL, toTruffleStringUncached(e.toString()));
+        String message = e.toString();
+        if (message.contains("Unrecognized SSL message, plaintext connection?")) {
+            message = "before TLS handshake with data";
+        }
+        throw raiseNode.get(inliningTarget).raiseSSLError(null, SSLErrorCode.ERROR_SSL, toTruffleStringUncached(message));
     }
 }
