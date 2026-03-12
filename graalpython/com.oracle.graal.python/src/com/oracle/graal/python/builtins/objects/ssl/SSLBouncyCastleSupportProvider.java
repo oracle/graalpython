@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.ssl;
 
 import java.io.IOException;
-import java.lang.ModuleLayer;
 import java.security.GeneralSecurityException;
 import java.security.PrivateKey;
 import java.util.Iterator;
