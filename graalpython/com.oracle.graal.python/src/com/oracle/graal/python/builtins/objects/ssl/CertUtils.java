@@ -156,6 +156,9 @@ public final class CertUtils {
     private record KeyPemBlock(String type, byte[] content, Map<String, String> headers) {
     }
 
+    private record PemBlockWithContent(String type, String content, int nextIndex) {
+    }
+
     /**
      * openssl v3_purp.c#check_ca
      */
@@ -730,7 +733,11 @@ public final class CertUtils {
         String algorithm = cert.getPublicKey().getAlgorithm();
         try {
             String pemText = readText(reader);
-            for (KeyPemBlock block : readPrivateKeyPemBlocks(new BufferedReader(new java.io.StringReader(pemText)))) {
+            int fromIndex = 0;
+            PemBlockWithContent rawBlock;
+            while ((rawBlock = findNextPemBlock(pemText, fromIndex)) != null) {
+                fromIndex = rawBlock.nextIndex();
+                KeyPemBlock block = decodePrivateKeyPemBlock(rawBlock.type(), rawBlock.content());
                 if ("PRIVATE KEY".equals(block.type())) {
                     privateKey = decodePrivateKey(algorithm, block.content());
                     break;
@@ -765,37 +772,30 @@ public final class CertUtils {
         return privateKey;
     }
 
-    private static List<KeyPemBlock> readPrivateKeyPemBlocks(BufferedReader reader) throws IOException {
-        String data = readText(reader);
-        List<KeyPemBlock> blocks = new ArrayList<>();
-        int fromIndex = 0;
-        while (true) {
-            int begin = data.indexOf("-----BEGIN ", fromIndex);
-            if (begin < 0) {
-                return blocks;
-            }
-            int typeStart = begin + "-----BEGIN ".length();
-            int typeEnd = data.indexOf("-----", typeStart);
-            if (typeEnd < 0) {
-                throw new IOException("Malformed PEM header");
-            }
-            String type = data.substring(typeStart, typeEnd);
-            int contentStart = typeEnd + "-----".length();
-            if (contentStart < data.length() && data.charAt(contentStart) == '\r') {
-                contentStart++;
-            }
-            if (contentStart < data.length() && data.charAt(contentStart) == '\n') {
-                contentStart++;
-            }
-            String endMarker = "-----END " + type + "-----";
-            int end = data.indexOf(endMarker, contentStart);
-            if (end < 0) {
-                throw new IOException("Missing PEM footer");
-            }
-            String content = data.substring(contentStart, end);
-            blocks.add(decodePrivateKeyPemBlock(type, content));
-            fromIndex = end + endMarker.length();
+    private static PemBlockWithContent findNextPemBlock(String data, int fromIndex) throws IOException {
+        int begin = data.indexOf("-----BEGIN ", fromIndex);
+        if (begin < 0) {
+            return null;
         }
+        int typeStart = begin + "-----BEGIN ".length();
+        int typeEnd = data.indexOf("-----", typeStart);
+        if (typeEnd < 0) {
+            throw new IOException("Malformed PEM header");
+        }
+        String type = data.substring(typeStart, typeEnd);
+        int contentStart = typeEnd + "-----".length();
+        if (contentStart < data.length() && data.charAt(contentStart) == '\r') {
+            contentStart++;
+        }
+        if (contentStart < data.length() && data.charAt(contentStart) == '\n') {
+            contentStart++;
+        }
+        String endMarker = "-----END " + type + "-----";
+        int end = data.indexOf(endMarker, contentStart);
+        if (end < 0) {
+            throw new IOException("Missing PEM footer");
+        }
+        return new PemBlockWithContent(type, data.substring(contentStart, end), end + endMarker.length());
     }
 
     private static KeyPemBlock decodePrivateKeyPemBlock(String type, String content) throws IOException {
@@ -853,7 +853,7 @@ public final class CertUtils {
 
     private static PrivateKey decodeRsaPrivateKey(byte[] encoded) throws InvalidKeySpecException, NoSuchAlgorithmException {
         try {
-            DerValue sequence = new DerValue(encoded).getSequence();
+            DerValue sequence = new DerValue(encoded);
             List<DerValue> values = sequence.getSequenceElements();
             if (values.size() < 9) {
                 throw new InvalidKeySpecException("Invalid RSA private key");
@@ -900,29 +900,59 @@ public final class CertUtils {
          * Check that the private key matches the public key by signing and verifying a short piece
          * of data.
          */
+        byte[] data = new byte[128];
+        context.getSecureRandom().nextBytes(data);
         try {
-            Signature sign;
-            try {
-                sign = Signature.getInstance(String.format("SHA256with%s", privateKey.getAlgorithm()));
-            } catch (NoSuchAlgorithmException e) {
-                sign = Signature.getInstance(String.format("SHA1with%s", privateKey.getAlgorithm()));
+            String signatureAlgorithm = privateKey.getAlgorithm();
+            if ("EC".equals(signatureAlgorithm)) {
+                signatureAlgorithm = "ECDSA";
             }
-            sign.initSign(privateKey);
-            byte[] data = new byte[128];
-            context.getSecureRandom().nextBytes(data);
-            sign.update(data);
-            byte[] signature = sign.sign();
-            sign.initVerify(publicKey);
-            sign.update(data);
-            if (sign.verify(signature)) {
-                return;
+            try {
+                if (checkPrivateKey("SHA256with%s".formatted(signatureAlgorithm), privateKey, publicKey, data)) {
+                    return;
+                }
+            } catch (NoSuchAlgorithmException e) {
+                if (checkPrivateKey("SHA1with%s".formatted(signatureAlgorithm), privateKey, publicKey, data)) {
+                    return;
+                }
             }
         } catch (NoSuchAlgorithmException e) {
             throw raiseNode.get(inliningTarget).raiseSSLError(null, SSLErrorCode.ERROR_SSL, e);
-        } catch (SignatureException | InvalidKeyException e) {
+        } catch (SignatureException e) {
             // fallthrough
         }
         throw raiseNode.get(inliningTarget).raiseSSLError(null, SSLErrorCode.ERROR_KEY_VALUES_MISMATCH, ErrorMessages.KEY_VALUES_MISMATCH);
+    }
+
+    private static boolean checkPrivateKey(String signatureAlgorithm, PrivateKey privateKey, PublicKey publicKey, byte[] data) throws NoSuchAlgorithmException, SignatureException {
+        Provider preferredProvider = getPreferredSecurityProvider();
+        if (preferredProvider != null && checkPrivateKey(signatureAlgorithm, preferredProvider, privateKey, publicKey, data)) {
+            return true;
+        }
+        Provider[] providers = Security.getProviders("Signature." + signatureAlgorithm);
+        if (providers != null) {
+            for (Provider provider : providers) {
+                if ((preferredProvider == null || !preferredProvider.getName().equals(provider.getName())) && checkPrivateKey(signatureAlgorithm, provider, privateKey, publicKey, data)) {
+                    return true;
+                }
+            }
+        }
+        return checkPrivateKey(signatureAlgorithm, (Provider) null, privateKey, publicKey, data);
+    }
+
+    private static boolean checkPrivateKey(String signatureAlgorithm, Provider provider, PrivateKey privateKey, PublicKey publicKey, byte[] data) throws NoSuchAlgorithmException, SignatureException {
+        try {
+            Signature signature = provider != null ? Signature.getInstance(signatureAlgorithm, provider) : Signature.getInstance(signatureAlgorithm);
+            signature.initSign(privateKey);
+            signature.update(data);
+            byte[] signed = signature.sign();
+            signature.initVerify(publicKey);
+            signature.update(data);
+            boolean verified = signature.verify(signed);
+            return verified;
+        } catch (InvalidKeyException e) {
+            return false;
+        }
     }
 
     @TruffleBoundary

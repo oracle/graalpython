@@ -418,6 +418,7 @@ suite = {
                 "GRAALPYTHON",
                 "BOUNCYCASTLE-PROVIDER",
                 "BOUNCYCASTLE-PKIX",
+                "BOUNCYCASTLE-UTIL",
             ],
             "requires": [
                 "java.logging",
@@ -881,6 +882,7 @@ suite = {
             "default_vm_args": [
                 "--vm.Xss16777216", # request 16M of stack
                 '--vm.-enable-native-access=org.graalvm.shadowed.jline',
+                '--vm.-add-modules=graalpython.bouncycastle,org.bouncycastle.provider,org.bouncycastle.pkix,org.bouncycastle.util',
             ],
             "multitarget": [
                 {"os": ["linux"], "libc": ["glibc", "default"], "compiler": ["llvm-toolchain", "host", "*"]},
@@ -900,6 +902,8 @@ suite = {
             "build_args": [
                 # From mx.graalpython/native-image.properties
                 "--add-exports", "org.graalvm.nativeimage/org.graalvm.nativeimage.impl=ALL-UNNAMED",
+                "--add-exports", "org.graalvm.py/com.oracle.graal.python.builtins.objects.ssl=ALL-UNNAMED",
+                "-H:AdditionalSecurityProviders=org.bouncycastle.jce.provider.BouncyCastleProvider",
                 "-R:StackSize=16777216",
                 "-H:+AddAllCharsets",
                 "-H:IncludeLocales=no,be,ro,ru,es,se,in,ka,hu,hr,bg,is,mk,da,nn,cs,sq,fr,pl,fo,bs,kl,fa,sv,it,uk,af,tg,ps,de",
@@ -1076,6 +1080,7 @@ suite = {
             "exclude": [
                 "BOUNCYCASTLE-PROVIDER",
                 "BOUNCYCASTLE-PKIX",
+                "BOUNCYCASTLE-UTIL",
             ],
             "description": "Optional GraalPy BouncyCastle integration.",
             "maven": {
@@ -1090,6 +1095,10 @@ suite = {
                 "name": "org.graalvm.py",
                 "exports": [
                     "com.oracle.graal.python.* to org.graalvm.py.enterprise",
+                    "com.oracle.graal.python.builtins.objects.ssl to graalpython.bouncycastle",
+                ],
+                "uses": [
+                    "com.oracle.graal.python.builtins.objects.ssl.SSLBouncyCastleSupport",
                 ],
             },
             "useModulePath": True,
@@ -1475,6 +1484,7 @@ suite = {
                 "graalpython:GRAALPYTHON_BOUNCYCASTLE",
                 "graalpython:BOUNCYCASTLE-PROVIDER",
                 "graalpython:BOUNCYCASTLE-PKIX",
+                "graalpython:BOUNCYCASTLE-UTIL",
                 "sdk:TOOLS_FOR_STANDALONE",
             ],
             "dynamicDistDependencies": "graalpy_standalone_deps",

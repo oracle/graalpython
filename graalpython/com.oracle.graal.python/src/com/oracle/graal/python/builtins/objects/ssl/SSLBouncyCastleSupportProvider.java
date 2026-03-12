@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.ssl;
 
 import java.io.IOException;
+import java.lang.ModuleLayer;
 import java.security.GeneralSecurityException;
 import java.security.PrivateKey;
 import java.util.Iterator;
@@ -60,15 +61,37 @@ public final class SSLBouncyCastleSupportProvider {
     }
 
     private static SSLBouncyCastleSupport getSupport() throws MissingBouncyCastleException {
+        Throwable failure = null;
         try {
-            Iterator<SSLBouncyCastleSupport> iterator = ServiceLoader.load(SSLBouncyCastleSupport.class, SSLBouncyCastleSupport.class.getClassLoader()).iterator();
-            if (iterator.hasNext()) {
-                return iterator.next();
+            SSLBouncyCastleSupport support = getSupport(ServiceLoader.load(ModuleLayer.boot(), SSLBouncyCastleSupport.class));
+            if (support != null) {
+                return support;
             }
         } catch (ServiceConfigurationError | LinkageError e) {
-            throw new MissingBouncyCastleException(e);
+            failure = e;
         }
-        throw new MissingBouncyCastleException(null);
+        try {
+            SSLBouncyCastleSupport support = getSupport(ServiceLoader.load(SSLBouncyCastleSupport.class));
+            if (support != null) {
+                return support;
+            }
+        } catch (ServiceConfigurationError | LinkageError e) {
+            failure = e;
+        }
+        try {
+            SSLBouncyCastleSupport support = getSupport(ServiceLoader.load(SSLBouncyCastleSupport.class, SSLBouncyCastleSupportProvider.class.getClassLoader()));
+            if (support != null) {
+                return support;
+            }
+        } catch (ServiceConfigurationError | LinkageError e) {
+            failure = e;
+        }
+        throw new MissingBouncyCastleException(failure);
+    }
+
+    private static SSLBouncyCastleSupport getSupport(ServiceLoader<SSLBouncyCastleSupport> serviceLoader) {
+        Iterator<SSLBouncyCastleSupport> iterator = serviceLoader.iterator();
+        return iterator.hasNext() ? iterator.next() : null;
     }
 
     public static final class MissingBouncyCastleException extends GeneralSecurityException {

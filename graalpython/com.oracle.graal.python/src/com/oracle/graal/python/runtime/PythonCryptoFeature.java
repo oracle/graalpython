@@ -40,10 +40,13 @@
  */
 package com.oracle.graal.python.runtime;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.security.Security;
 
 import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeReflection;
+import org.graalvm.nativeimage.hosted.RuntimeResourceAccess;
 
 public final class PythonCryptoFeature implements Feature {
 
@@ -53,9 +56,16 @@ public final class PythonCryptoFeature implements Feature {
                     "com.sun.crypto.provider.HKDFKeyDerivation$HKDFSHA512",
                     "sun.security.pkcs11.P11HKDF",
     };
+    private static final String BC_SSL_SUPPORT_CLASS = "com.oracle.graal.python.bouncycastle.BCSSLBouncyCastleSupport";
+    private static final String BC_SSL_SERVICE_RESOURCE = "META-INF/services/com.oracle.graal.python.builtins.objects.ssl.SSLBouncyCastleSupport";
 
     @Override
     public void afterRegistration(AfterRegistrationAccess access) {
+        registerHkdfReflection();
+        registerOptionalBouncyCastleSupport();
+    }
+
+    private static void registerHkdfReflection() {
         for (String name : HKDF_REFLECTIVE_CLASSES) {
             try {
                 Class.forName(name);
@@ -72,6 +82,23 @@ public final class PythonCryptoFeature implements Feature {
             } catch (SecurityException | ClassNotFoundException e) {
                 throw new RuntimeException("Could not register " + name + " for reflective access!", e);
             }
+        }
+    }
+
+    private static void registerOptionalBouncyCastleSupport() {
+        try {
+            Class<?> clazz = Class.forName(BC_SSL_SUPPORT_CLASS);
+            RuntimeReflection.register(clazz);
+            RuntimeReflection.register(clazz.getConstructors());
+            try (InputStream stream = clazz.getClassLoader().getResourceAsStream(BC_SSL_SERVICE_RESOURCE)) {
+                if (stream != null) {
+                    RuntimeResourceAccess.addResource(clazz.getModule(), BC_SSL_SERVICE_RESOURCE, stream.readAllBytes());
+                }
+            }
+        } catch (ClassNotFoundException e) {
+            return;
+        } catch (SecurityException | IOException e) {
+            throw new RuntimeException("Could not register optional BouncyCastle SSL support for native image.", e);
         }
     }
 }
