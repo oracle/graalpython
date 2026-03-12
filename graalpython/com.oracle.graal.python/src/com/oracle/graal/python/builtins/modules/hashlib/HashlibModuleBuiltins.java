@@ -474,7 +474,6 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                         @Cached PRaiseNode raiseNode) {
             try {
                 String javaHashName = toJavaStringNode.execute(hashName);
-                Mac mac = createPbkdf2Mac(javaHashName);
                 if (iterations < 1) {
                     throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.ValueError, ITERATION_VALUE_MUST_BE_GREATER_THAN_ZERO);
                 }
@@ -483,7 +482,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                 }
                 long dklen;
                 if (noDklenProfile.profile(inliningTarget, PGuards.isPNone(dklenObj))) {
-                    dklen = mac.getMacLength();
+                    dklen = getPbkdf2MacLength(javaHashName);
                 } else {
                     dklen = asLongNode.execute(frame, inliningTarget, dklenObj);
                 }
@@ -495,7 +494,7 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
                 }
                 byte[] passwordBytes = passwordLib.getInternalOrCopiedExactByteArray(password);
                 byte[] saltBytes = saltLib.getInternalOrCopiedExactByteArray(salt);
-                return PFactory.createBytes(language, generate(javaHashName, mac, passwordBytes, saltBytes, (int) iterations, (int) dklen));
+                return PFactory.createBytes(language, generate(javaHashName, passwordBytes, saltBytes, (int) iterations, (int) dklen));
             } catch (java.security.GeneralSecurityException e) {
                 throw raiseNode.raise(inliningTarget, PythonBuiltinClassType.UnsupportedDigestmodError, UNSUPPORTED_HASH_TYPE, hashName);
             } finally {
@@ -505,16 +504,24 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static Mac createPbkdf2Mac(String name) {
+        private static int getPbkdf2MacLength(String name) throws NoSuchAlgorithmException {
+            return switch (name.toLowerCase()) {
+                case "sha1" -> 20;
+                case "sha224" -> 28;
+                case "sha256" -> 32;
+                case "sha384" -> 48;
+                case "sha512" -> 64;
+                default -> throw new NoSuchAlgorithmException(name);
+            };
+        }
+
+        @TruffleBoundary
+        private static Mac createPbkdf2Mac(String name) throws NoSuchAlgorithmException {
             String algorithm = getPbkdf2Algorithm(name);
             if (algorithm == null) {
-                return null;
+                throw new NoSuchAlgorithmException(name);
             }
-            try {
-                return Mac.getInstance(algorithm);
-            } catch (NoSuchAlgorithmException e) {
-                return null;
-            }
+            return Mac.getInstance(algorithm);
         }
 
         private static String getPbkdf2Algorithm(String name) {
@@ -529,7 +536,8 @@ public final class HashlibModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static byte[] generate(String hashName, Mac mac, byte[] password, byte[] salt, int iterations, int dklen) throws java.security.GeneralSecurityException {
+        private static byte[] generate(String hashName, byte[] password, byte[] salt, int iterations, int dklen) throws java.security.GeneralSecurityException {
+            Mac mac = createPbkdf2Mac(hashName);
             try {
                 String algorithm = mac.getAlgorithm();
                 mac.init(new SecretKeySpec(password, algorithm));
