@@ -90,7 +90,8 @@ import com.oracle.truffle.api.strings.TruffleString;
                 PythonBuiltinClassType.PIntInfo,
                 PythonBuiltinClassType.PHashInfo,
                 PythonBuiltinClassType.PThreadInfo,
-                PythonBuiltinClassType.PUnraisableHookArgs})
+                PythonBuiltinClassType.PUnraisableHookArgs,
+                PythonBuiltinClassType.PExceptHookArgs})
 public class InstantiableStructSequenceBuiltins extends PythonBuiltins {
 
     public static final TpSlots SLOTS = InstantiableStructSequenceBuiltinsSlotsGen.SLOTS;
