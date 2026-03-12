@@ -118,7 +118,7 @@ public class SSLCipherSelector {
             if (cipherString.startsWith("@STRENGTH")) {
                 selected.sort(Comparator.comparingInt(SSLCipher::getStrengthBits).reversed());
             } else if (cipherString.startsWith("@SECLEVEL=")) {
-                throw PRaiseNode.raiseStatic(node, NotImplementedError, toTruffleStringUncached("@SECLEVEL not implemented"));
+                handleSecurityLevel(node, cipherString);
             } else {
                 EncapsulatingNodeReference nodeRef = EncapsulatingNodeReference.getCurrent();
                 Node prev = nodeRef.set(node);
@@ -138,6 +138,21 @@ public class SSLCipherSelector {
                 }
             }
         }
+    }
+
+    private static void handleSecurityLevel(Node node, String cipherString) {
+        String levelString = cipherString.substring("@SECLEVEL=".length());
+        if ("1".equals(levelString)) {
+            return;
+        }
+        if (levelString.isEmpty() || levelString.chars().anyMatch(ch -> ch < '0' || ch > '9')) {
+            throw PRaiseNode.raiseStatic(node,
+                            NotImplementedError,
+                            toTruffleStringUncached("Unsupported OpenSSL cipher string directive: " + cipherString));
+        }
+        throw PRaiseNode.raiseStatic(node,
+                        NotImplementedError,
+                        toTruffleStringUncached("Unsupported OpenSSL security level @SECLEVEL=" + levelString + "; only @SECLEVEL=1 is supported"));
     }
 
     private static List<SSLCipher> getCiphersForCipherString(Node node, String cipherString) {

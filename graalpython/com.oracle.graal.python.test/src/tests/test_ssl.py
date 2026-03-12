@@ -426,3 +426,5 @@ class CipherTests(unittest.TestCase):
             get_cipher_list("ALL:!ALL:ADH")
         with self.assertRaisesRegex(ssl.SSLError, "No cipher can be selected"):
             get_cipher_list("ALL:@XXX")
+        with self.assertRaisesRegex(NotImplementedError, "only @SECLEVEL=1 is supported"):
+            get_cipher_list("@SECLEVEL=2:ALL")
