@@ -1,7 +1,8 @@
 # PROJECT KNOWLEDGE BASE
 
 ## OVERVIEW
-GraalPy (GraalVM Python) implementation: Java (Truffle) + C (CPython C-API compatibility) + Python stdlib/overrides, built and tested via the `mx` build tool.
+GraalPy is an alternative implementation of Python. The reference implementation of Python is CPython and GraalPy aims to be as compatible with CPython as possible.
+It consists of: Java (Truffle) + C (CPython C-API compatibility) + Python stdlib/overrides, built and tested via the `mx` build tool.
 
 ## STRUCTURE
 ```text

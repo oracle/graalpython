@@ -5,6 +5,36 @@ on:
   workflow_dispatch:
 
 jobs:
+  abi-check:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install libabigail
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y abigail-tools
+
+      - name: Get mx and labsjdk
+        shell: bash
+        run: |
+          git config --global http.timeout 600
+          git clone https://github.com/graalvm/mx
+          ./mx/mx fetch-jdk -A --jdk-id labsjdk-ce-latest
+
+      - name: Setup mx and JAVA_HOME
+        shell: bash
+        run: |
+          echo "$(pwd)/mx/" >> "$GITHUB_PATH"
+          echo "JAVA_HOME=$HOME/.mx/jdks/labsjdk-ce-latest" >> "$GITHUB_ENV"
+          echo "JVMCI_VERSION_CHECK=ignore" >> "$GITHUB_ENV"
+
+      - name: Run abi-check
+        shell: bash
+        run: mx abi-check
+
   build-standalone-artifacts:
     if: github.event.pull_request.draft == false && success()
     uses: ./.github/workflows/ci-matrix-gen.yml
