@@ -518,6 +518,21 @@ public final class PythonCextDictBuiltins {
         }
     }
 
+    @CApiBuiltin(ret = PyObjectTransfer, args = {PyObject}, call = Direct)
+    abstract static class PyDict_Items extends CApiUnaryBuiltinNode {
+        @Specialization
+        static Object items(PDict dict,
+                        @Cached ConstructListNode listNode,
+                        @Bind PythonLanguage language) {
+            return listNode.execute(null, PFactory.createDictItemsView(language, dict));
+        }
+
+        @Fallback
+        Object fallback(Object dict) {
+            throw raiseFallback(dict, PythonBuiltinClassType.PDict);
+        }
+    }
+
     @CApiBuiltin(ret = Int, args = {PyObject, PyObject, Int}, call = Direct)
     abstract static class PyDict_Merge extends CApiTernaryBuiltinNode {
 
