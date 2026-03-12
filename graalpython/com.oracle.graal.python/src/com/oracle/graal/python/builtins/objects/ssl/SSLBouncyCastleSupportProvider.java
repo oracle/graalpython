@@ -75,6 +75,9 @@ public final class SSLBouncyCastleSupportProvider {
                 return support;
             }
         } catch (ServiceConfigurationError | LinkageError e) {
+            if (failure != null) {
+                e.addSuppressed(failure);
+            }
             failure = e;
         }
         try {
@@ -83,6 +86,9 @@ public final class SSLBouncyCastleSupportProvider {
                 return support;
             }
         } catch (ServiceConfigurationError | LinkageError e) {
+            if (failure != null) {
+                e.addSuppressed(failure);
+            }
             failure = e;
         }
         throw new MissingBouncyCastleException(failure);
