@@ -145,7 +145,7 @@ public class SSLCipherSelector {
         if ("1".equals(levelString)) {
             return;
         }
-        if (levelString.isEmpty() || levelString.chars().anyMatch(ch -> ch < '0' || ch > '9')) {
+        if (!isDecimalDigits(levelString)) {
             throw PRaiseNode.raiseStatic(node,
                             NotImplementedError,
                             toTruffleStringUncached("Unsupported OpenSSL cipher string directive: " + cipherString));
@@ -153,6 +153,19 @@ public class SSLCipherSelector {
         throw PRaiseNode.raiseStatic(node,
                         NotImplementedError,
                         toTruffleStringUncached("Unsupported OpenSSL security level @SECLEVEL=" + levelString + "; only @SECLEVEL=1 is supported"));
+    }
+
+    private static boolean isDecimalDigits(String value) {
+        if (value.isEmpty()) {
+            return false;
+        }
+        for (int i = 0; i < value.length(); i++) {
+            char ch = value.charAt(i);
+            if (ch < '0' || ch > '9') {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static List<SSLCipher> getCiphersForCipherString(Node node, String cipherString) {
