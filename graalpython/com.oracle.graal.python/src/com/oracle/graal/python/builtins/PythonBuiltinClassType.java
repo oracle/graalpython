@@ -988,9 +988,9 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
                                     Type used to pass arguments to sys.unraisablehook.""")),
     PExceptHookArgs(
-            "_ExceptHookArgs",
-            PTuple,
-            newBuilder().publishInModule(J__THREAD).slots(StructSequenceBuiltins.SLOTS, InstantiableStructSequenceBuiltins.SLOTS).doc("""
+                    "_ExceptHookArgs",
+                    PTuple,
+                    newBuilder().publishInModule(J__THREAD).slots(StructSequenceBuiltins.SLOTS, InstantiableStructSequenceBuiltins.SLOTS).doc("""
                                     _ExceptHookArgs
 
                                     Type used to pass arguments to _thread._excepthook.""")),

@@ -109,13 +109,13 @@ import com.oracle.truffle.api.strings.TruffleString;
 public final class ThreadModuleBuiltins extends PythonBuiltins {
 
     public static final StructSequence.BuiltinTypeDescriptor EXCEPTHOOK_ARGS_DESC = new StructSequence.BuiltinTypeDescriptor(
-            PythonBuiltinClassType.PExceptHookArgs,
-            4,
-            new String[]{
-                    "exc_type", "exc_value", "exc_traceback", "thread"},
-            new String[]{
-                    "Exception type", "Exception value", "Exception traceback",
-                    "Exception thread"});
+                    PythonBuiltinClassType.PExceptHookArgs,
+                    4,
+                    new String[]{
+                                    "exc_type", "exc_value", "exc_traceback", "thread"},
+                    new String[]{
+                                    "Exception type", "Exception value", "Exception traceback",
+                                    "Exception thread"});
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -200,8 +200,8 @@ public final class ThreadModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object getExceptHook(PythonModule self,
-                             Object exceptHookArgs,
-                             @Cached PRaiseNode raiseNode) {
+                        Object exceptHookArgs,
+                        @Cached PRaiseNode raiseNode) {
 
             Object argsType = GetClassNode.GetPythonObjectClassNode.executeUncached((PythonObject) exceptHookArgs);
             if (!TypeNodes.IsSameTypeNode.executeUncached(argsType, PythonBuiltinClassType.PExceptHookArgs))
