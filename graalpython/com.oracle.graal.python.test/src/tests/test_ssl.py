@@ -1,4 +1,4 @@
-# Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2021, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -426,5 +426,7 @@ class CipherTests(unittest.TestCase):
             get_cipher_list("ALL:!ALL:ADH")
         with self.assertRaisesRegex(ssl.SSLError, "No cipher can be selected"):
             get_cipher_list("ALL:@XXX")
-        with self.assertRaisesRegex(NotImplementedError, "only @SECLEVEL=1 is supported"):
-            get_cipher_list("@SECLEVEL=2:ALL")
+        import sys
+        if sys.implementation.name == "graalpy":
+            with self.assertRaisesRegex(NotImplementedError, "only @SECLEVEL=1 is supported"):
+                get_cipher_list("@SECLEVEL=2:ALL")
