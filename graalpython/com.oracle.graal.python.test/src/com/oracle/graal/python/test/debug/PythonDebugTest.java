@@ -601,6 +601,37 @@ public class PythonDebugTest {
         }
     }
 
+    @Test
+    public void testInlineEvaluationBreakpointBuiltin() throws Throwable {
+        final Source source = Source.newBuilder("python", """
+                        a = 1
+                        breakpoint()
+                        b = 2
+                        breakpoint # not invoking, therefore no breakpoint inserted
+                        """, "test_inline.py").buildLiteral();
+
+        try (DebuggerSession session = tester.startSession()) {
+            session.install(Breakpoint.newBuilder(DebuggerTester.getSourceImpl(source)).lineIs(1).build());
+            session.install(Breakpoint.newBuilder(DebuggerTester.getSourceImpl(source)).lineIs(3).build());
+            tester.startEval(source);
+            expectSuspended((SuspendedEvent event) -> {
+                DebugStackFrame frame = event.getTopStackFrame();
+                assertEquals(1, frame.getSourceSection().getStartLine());
+                event.prepareContinue();
+            });
+            expectSuspended((SuspendedEvent event) -> {
+                DebugStackFrame frame = event.getTopStackFrame();
+                assertEquals(2, frame.getSourceSection().getStartLine());
+                event.prepareContinue();
+            });
+            expectSuspended((SuspendedEvent event) -> {
+                DebugStackFrame frame = event.getTopStackFrame();
+                assertEquals(3, frame.getSourceSection().getStartLine());
+                event.prepareContinue();
+            });
+        }
+    }
+
     private void expectSuspended(SuspendedCallback callback) {
         tester.expectSuspended(callback);
     }
