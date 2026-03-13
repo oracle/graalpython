@@ -164,6 +164,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToTruffleStringNode;
 import com.oracle.graal.python.nodes.util.ToNativePrimitiveStorageNode;
+import com.oracle.graal.python.pegparser.InputType;
 import com.oracle.graal.python.runtime.ExecutionContext;
 import com.oracle.graal.python.runtime.ExecutionContext.BoundaryCallContext;
 import com.oracle.graal.python.runtime.ExecutionContext.InteropCallContext;
@@ -394,7 +395,8 @@ public final class GraalPythonModuleBuiltins extends PythonBuiltins {
                     TruffleFile file = context.getPublicTruffleFileRelaxed(inputFilePath);
                     builder = Source.newBuilder(PythonLanguage.ID, file);
                 }
-                source = builder.mimeType(PythonLanguage.getCompileMimeType(0, 0)).build();
+                builder = PythonLanguage.setPythonOptions(builder, InputType.FILE, 0, 0);
+                source = builder.build();
                 // TODO we should handle non-IO errors better
             } catch (IOException e) {
                 ErrorAndMessagePair error = OSErrorEnum.fromException(e, TruffleString.EqualNode.getUncached());

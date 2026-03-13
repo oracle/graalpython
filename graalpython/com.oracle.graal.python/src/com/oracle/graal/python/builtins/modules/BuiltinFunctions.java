@@ -1030,7 +1030,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 }
             }
             if ((flags & PyCF_ONLY_AST) != 0) {
-                Source source = PythonLanguage.newSource(context, code, filename, mayBeFromFile, PythonLanguage.MIME_TYPE);
+                Source source = PythonLanguage.newSource(context, code, filename, mayBeFromFile, InputType.FILE, optimize, flags);
                 ParserCallbacksImpl parserCb = new ParserCallbacksImpl(source, PythonOptions.isPExceptionWithJavaStacktrace(getLanguage()));
 
                 EnumSet<AbstractParser.Flags> compilerFlags = EnumSet.noneOf(AbstractParser.Flags.class);
@@ -1054,14 +1054,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
             CallTarget ct;
             TruffleString finalCode = code;
             Supplier<CallTarget> createCode = () -> {
-                if (type == InputType.FILE) {
-                    Source source = PythonLanguage.newSource(context, finalCode, filename, mayBeFromFile, PythonLanguage.getCompileMimeType(optimize, flags));
-                    return context.getEnv().parsePublic(source);
-                } else if (type == InputType.EVAL) {
-                    Source source = PythonLanguage.newSource(context, finalCode, filename, mayBeFromFile, PythonLanguage.getEvalMimeType(optimize, flags));
+                Source source = PythonLanguage.newSource(context, finalCode, filename, mayBeFromFile, type, optimize, flags);
+                if (type != InputType.SINGLE) {
                     return context.getEnv().parsePublic(source);
                 } else {
-                    Source source = PythonLanguage.newSource(context, finalCode, filename, mayBeFromFile, PythonLanguage.MIME_TYPE);
                     boolean allowIncomplete = (flags & PyCF_ALLOW_INCOMPLETE_INPUT) != 0;
                     return context.getLanguage().parse(context, source, InputType.SINGLE, false, optimize, false, allowIncomplete, null, FutureFeature.fromFlags(flags));
                 }
@@ -1211,7 +1207,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         private RuntimeException raiseInvalidSyntax(TruffleString filename, String format, Object... args) {
             PythonContext context = getContext();
             // Create non-empty source to avoid overwriting the message with "unexpected EOF"
-            Source source = PythonLanguage.newSource(context, T_SPACE, filename, mayBeFromFile, null);
+            Source source = PythonLanguage.newSource(context, T_SPACE, filename, mayBeFromFile, InputType.FILE, 0, 0);
             SourceRange sourceRange = new SourceRange(1, 0, 1, 0);
             TruffleString message = toTruffleStringUncached(String.format(format, args));
             throw raiseSyntaxError(ParserCallbacks.ErrorType.Syntax, sourceRange, message, source, PythonOptions.isPExceptionWithJavaStacktrace(context.getLanguage()));
