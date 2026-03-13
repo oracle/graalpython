@@ -108,7 +108,7 @@ public abstract class PyObjectReprAsObjectNode extends PNodeWithContext {
         if (checkNode.execute(inliningTarget, result)) {
             return result;
         } else {
-            throw raiseTypeError(inliningTarget, obj, raiseNode);
+            throw raiseTypeError(inliningTarget, result, raiseNode);
         }
     }
 
