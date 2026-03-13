@@ -57,6 +57,7 @@ import static com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompilerU
 import static com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompilerUtils.hasDefaultArgs;
 import static com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompilerUtils.hasDefaultKwargs;
 import static com.oracle.graal.python.compiler.bytecode_dsl.BytecodeDSLCompilerUtils.len;
+import static com.oracle.graal.python.nodes.BuiltinNames.J_BREAKPOINT;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.J___TYPE_PARAMS__;
 import static com.oracle.graal.python.util.PythonUtils.codePointsToInternedTruffleString;
@@ -156,6 +157,7 @@ import com.oracle.truffle.api.bytecode.BytecodeLocal;
 import com.oracle.truffle.api.bytecode.BytecodeParser;
 import com.oracle.truffle.api.bytecode.BytecodeRootNodes;
 import com.oracle.truffle.api.bytecode.serialization.BytecodeSerializer;
+import com.oracle.truffle.api.debug.DebuggerTags;
 import com.oracle.truffle.api.instrumentation.StandardTags.StatementTag;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.strings.TruffleString;
@@ -2188,8 +2190,18 @@ public final class RootNodeCompiler implements BaseBytecodeDSLVisitor<BytecodeDS
                 } else {
                     assert len(keywords) == 0;
 
+                    boolean isBreakpoint = func instanceof ExprTy.Name && ((ExprTy.Name) func).id.equals(J_BREAKPOINT);
+
+                    if (isBreakpoint) {
+                        b.beginTag(DebuggerTags.AlwaysHalt.class);
+                    }
+
                     func.accept(this); // callable
                     visitArguments(func, args, numArgs);
+
+                    if (isBreakpoint) {
+                        b.endTag(DebuggerTags.AlwaysHalt.class);
+                    }
                 }
             }
 
