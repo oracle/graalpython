@@ -42,6 +42,7 @@ package com.oracle.graal.python.nodes.exception;
 
 import static com.oracle.graal.python.builtins.modules.io.IONodes.T_WRITE;
 import static com.oracle.graal.python.nodes.BuiltinNames.T_SYS;
+import static com.oracle.graal.python.nodes.BuiltinNames.T___BUILTINS__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemExit;
 import static com.oracle.graal.python.util.PythonUtils.toTruffleStringUncached;
 
@@ -52,6 +53,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.ExceptionNodes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
@@ -67,6 +69,7 @@ import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.PythonSourceOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
@@ -92,6 +95,7 @@ public final class TopLevelExceptionHandler extends RootNode {
     private final PException exception;
     private final SourceSection sourceSection;
     private final Source source;
+    private final boolean newGlobals;
 
     @Child private GilNode gilNode = GilNode.create();
 
@@ -113,6 +117,7 @@ public final class TopLevelExceptionHandler extends RootNode {
         if (child instanceof PBytecodeRootNode) {
             instrumentationForwarder = ((PBytecodeRootNode) child).createInstrumentationMaterializationForwarder();
         }
+        this.newGlobals = source.getOptions(language).get(PythonSourceOptions.NewGlobals);
     }
 
     public TopLevelExceptionHandler(PythonLanguage language, PException exception) {
@@ -121,6 +126,7 @@ public final class TopLevelExceptionHandler extends RootNode {
         this.innerCallTarget = null;
         this.exception = exception;
         this.source = null;
+        this.newGlobals = false;
     }
 
     private PythonLanguage getPythonLanguage() {
@@ -321,10 +327,15 @@ public final class TopLevelExceptionHandler extends RootNode {
             // internal sources are not run in the main module
             PArguments.setGlobals(arguments, PFactory.createDict(language));
         } else {
-            mainModule = pythonContext.getMainModule();
-            PDict mainDict = GetOrCreateDictNode.executeUncached(mainModule);
-            PArguments.setGlobals(arguments, mainDict);
-            PArguments.setSpecialArgument(arguments, mainDict);
+            PDict globals;
+            if (newGlobals) {
+                globals = PFactory.createDict(language, new PKeyword[]{new PKeyword(T___BUILTINS__, pythonContext.getBuiltins())});
+            } else {
+                mainModule = pythonContext.getMainModule();
+                globals = GetOrCreateDictNode.executeUncached(mainModule);
+            }
+            PArguments.setGlobals(arguments, globals);
+            PArguments.setSpecialArgument(arguments, globals);
             PArguments.setException(arguments, PException.NO_EXCEPTION);
         }
         // At the top level we don't have a real Python frame at hand, so we go through

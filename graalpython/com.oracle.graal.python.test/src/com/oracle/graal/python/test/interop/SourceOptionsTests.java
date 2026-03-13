@@ -38,32 +38,58 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.runtime;
+package com.oracle.graal.python.test.interop;
 
-import org.graalvm.options.OptionCategory;
-import org.graalvm.options.OptionDescriptors;
-import org.graalvm.options.OptionKey;
-import org.graalvm.options.OptionStability;
+import static org.junit.Assert.assertEquals;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.truffle.api.Option;
+import java.io.IOException;
 
-@Option.Group(PythonLanguage.ID)
-public final class PythonSourceOptions {
-    private PythonSourceOptions() {
+import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.Source;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+import com.oracle.graal.python.test.PythonTests;
+
+public class SourceOptionsTests extends PythonTests {
+    private Context context;
+
+    @Before
+    public void setUpTest() {
+        Context.Builder builder = Context.newBuilder();
+        builder.allowExperimentalOptions(true);
+        builder.allowAllAccess(true);
+        context = builder.build();
     }
 
-    @Option(category = OptionCategory.USER, stability = OptionStability.STABLE, help = "Optimization level used when compiling this source") //
-    public static final OptionKey<Integer> Optimize = new OptionKey<>(0);
+    @After
+    public void tearDown() {
+        context.close();
+    }
 
-    @Option(category = OptionCategory.EXPERT, stability = OptionStability.STABLE, help = "Compiler flags used when compiling this source") //
-    public static final OptionKey<Integer> Flags = new OptionKey<>(0);
+    @Test
+    public void testDefaultUsesMainModuleGlobals() {
+        context.eval("python", "x = 41");
+        assertEquals(42, context.eval("python", "x + 1").asInt());
+    }
 
-    @Option(category = OptionCategory.INTERNAL, stability = OptionStability.STABLE, help = "Compilation kind for this source: file, eval, or single") //
-    public static final OptionKey<String> Kind = new OptionKey<>("");
+    @Test
+    public void testNewGlobalsIsolatedFromMainModule() throws IOException {
+        context.eval("python", "x = 41");
 
-    @Option(category = OptionCategory.USER, stability = OptionStability.STABLE, help = "Run this source with a fresh globals dictionary instead of the main module globals") //
-    public static final OptionKey<Boolean> NewGlobals = new OptionKey<>(false);
+        Source source = Source.newBuilder("python", "x = 100\nx + 1", "new-globals.py").option("python.NewGlobals", "true").build();
 
-    public static final OptionDescriptors DESCRIPTORS = new PythonSourceOptionsOptionDescriptors();
+        assertEquals(101, context.eval(source).asInt());
+        assertEquals(42, context.eval("python", "x + 1").asInt());
+    }
+
+    @Test
+    public void testSeparateNewGlobalsExecutionsDoNotShareState() throws IOException {
+        Source writeSource = Source.newBuilder("python", "x = 100", "new-globals-write.py").option("python.NewGlobals", "true").build();
+        Source readSource = Source.newBuilder("python", "x = globals().get('x', 0)\nx + 1", "new-globals-read.py").option("python.NewGlobals", "true").build();
+
+        context.eval(writeSource);
+        assertEquals(1, context.eval(readSource).asInt());
+    }
 }
