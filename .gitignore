@@ -98,3 +98,5 @@ pom-mx.xml
 .aider*
 *.iprof.gz
 compile_commands.json
+/.jdtls*
+/.agent-shell*
