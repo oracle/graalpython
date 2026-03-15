@@ -94,6 +94,7 @@ SKIPPED_PANDAS_BENCHMARKS = [
     "reshape.Cut.peakmem_cut_interval",  # Times out
     "reshape.Cut.time_cut_interval",  # Times out
     "reshape.GetDummies.time_get_dummies_1d_sparse",  # Times out
+    "reshape.PivotTable.time_pivot_table_categorical",  # Hangs in periodic job GR-74045
     "reshape.PivotTable.time_pivot_table_margins",  # Times out
     "reshape.WideToLong.time_wide_to_long_big",  # Times out
     "reshape.Cut.time_qcut_datetime",  # Transient failure GR-61245, exit code -11
