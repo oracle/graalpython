@@ -681,6 +681,7 @@ class PandasSuite(PySuite):
         "platformdirs==2.5.2",
         "six==1.16.0",
         "virtualenv==20.16.3",
+        "packaging==24.0",
         "jinja2",
         f"numpy=={NumPySuite.VERSION}",
         f"pandas=={VERSION}",
