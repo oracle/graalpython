@@ -1,4 +1,4 @@
-# Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -42,6 +42,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import textwrap
 import unittest
 
 BINDIR = 'bin' if sys.platform != 'win32' else 'Scripts'
@@ -66,22 +67,54 @@ class VenvTest(unittest.TestCase):
         import struct
         with tempfile.TemporaryDirectory() as d:
             tmpfile = os.path.join(d, "venvlauncher.exe")
+            launcher_command = f'"{os.path.realpath(sys.executable)}" -S'
             shutil.copy(os.path.join(venv.__path__[0], "scripts", "nt", "graalpy.exe"), tmpfile)
             with open(tmpfile, "ab") as f:
-                sz = f.write(sys.executable.encode("utf-16le"))
+                sz = f.write(launcher_command.encode("utf-16le"))
                 assert f.write(struct.pack("@I", sz)) == 4
             try:
                 out = subprocess.check_output([tmpfile, "-c", """if True:
                 import sys, os
                 x = os
                 print("Hello", sys.executable)
+                print("Base", sys._base_executable)
                 print("Original", __graalpython__.venvlauncher_command)
                 """], env={"PYLAUNCHER_DEBUG": "1"}, text=True)
             except subprocess.CalledProcessError as err:
                 out = err.output.decode(errors="replace") if err.output else ""
             print("out=", out, sep="\n")
             assert f"Hello {tmpfile}" in out, out
-            assert f'Original "{sys.executable}"' in out, out
+            assert f"Base {os.path.realpath(sys.executable)}" in out, out
+            assert f'Original {launcher_command}' in out, out
+
+    def test_nested_windows_venv_preserves_base_executable(self):
+        if sys.platform != "win32" or sys.implementation.name != "graalpy":
+            return
+        expected_base = os.path.realpath(getattr(sys, "_base_executable", sys.executable))
+        with tempfile.TemporaryDirectory() as outer_dir, tempfile.TemporaryDirectory() as inner_root:
+            inner_dir = os.path.join(inner_root, "inner")
+            extra_args = [
+                f'--vm.Dpython.EnableBytecodeDSLInterpreter={repr(__graalpython__.is_bytecode_dsl_interpreter).lower()}'
+            ]
+            subprocess.check_output([sys.executable] + extra_args + ["-m", "venv", outer_dir, "--without-pip"], stderr=subprocess.STDOUT)
+            outer_python = os.path.join(outer_dir, BINDIR, f"python{EXESUF}")
+            out = subprocess.check_output([
+                outer_python,
+                "-c",
+                textwrap.dedent(f"""
+                    import os
+                    import sys
+                    import venv
+
+                    inner_dir = {inner_dir!r}
+                    venv.EnvBuilder(with_pip=False).create(inner_dir)
+                    print("OUTER_BASE", os.path.realpath(sys._base_executable))
+                    with open(os.path.join(inner_dir, "pyvenv.cfg"), encoding="utf-8") as cfg:
+                        print(cfg.read())
+                """)
+            ], text=True)
+            assert f"OUTER_BASE {expected_base}" in out, out
+            assert f"base-executable = {expected_base}" in out, out
 
     def test_create_and_use_basic_venv(self):
         run = None
