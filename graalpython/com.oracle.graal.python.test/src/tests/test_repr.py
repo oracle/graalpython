@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2018, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -66,3 +66,15 @@ def test_repr_no_failures():
     assert_not_raises(lambda: repr(a_func))
     assert_not_raises(lambda: repr(object()))
     assert_not_raises(lambda: repr(x))
+
+
+def test_repr_type_error_includes_returned_value():
+    class ReprReturnsInt:
+        def __repr__(self):
+            return 42
+
+    try:
+        repr(ReprReturnsInt())
+        assert False
+    except TypeError as e:
+        assert str(e) == "__repr__ returned non-string (type int)"
