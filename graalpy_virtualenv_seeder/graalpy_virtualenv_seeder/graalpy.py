@@ -1,4 +1,4 @@
-# Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2022, 2026, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -126,6 +126,7 @@ except ImportError:
         def set_pyenv_cfg(self):
             # GraalPy needs an additional entry in pyvenv.cfg on Windows
             super().set_pyenv_cfg()
+            self.pyenv_cfg["base-executable"] = self.interpreter.system_executable
             self.pyenv_cfg["venvlauncher_command"] = self.interpreter.system_executable
 
 

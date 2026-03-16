@@ -1,4 +1,4 @@
-/* Copyright (c) 2023, Oracle and/or its affiliates.
+/* Copyright (c) 2023, 2026, Oracle and/or its affiliates.
  * Copyright (C) 1996-2023 Python Software Foundation
  *
  * Licensed under the PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
@@ -7,13 +7,16 @@
 
 #include <windows.h>
 #include <pathcch.h>
+#include <shellapi.h>
 #include <stringapiset.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <share.h>
+#include <string.h>
 
 #pragma comment(lib, "Pathcch.lib")
+#pragma comment(lib, "Shell32.lib")
 
 #define MAXLEN PATHCCH_MAX_CCH
 #define MSGSIZE 1024
@@ -200,9 +203,57 @@ launchEnvironment(wchar_t *env, wchar_t *exe)
 
 #define GRAAL_PYTHON_ARGS L"GRAAL_PYTHON_ARGS="
 #define GRAAL_PYTHON_EXE_ARG L"--python.Executable="
-#define GRAAL_PYTHON_BASE_EXE_ARG L"--python.VenvlauncherCommand="
+#define GRAAL_PYTHON_BASE_EXECUTABLE_ARG L"--python.BaseExecutable="
+#define GRAAL_PYTHON_VENVLAUNCHER_COMMAND_ARG L"--python.VenvlauncherCommand="
 #define GRAAL_PYTHON_COMMAND_CFG "venvlauncher_command = "
+#define GRAAL_PYTHON_BASE_EXECUTABLE_CFG "base-executable = "
 #define PYVENV_CFG L"pyvenv.cfg"
+
+static int
+copyUtf8ToWideChar(const char *in, int inLen, wchar_t *out, size_t outLen)
+{
+    if (outLen == 0) {
+        return 0;
+    }
+    int written = MultiByteToWideChar(CP_UTF8, 0, in, inLen, out, (int)outLen - 1);
+    if (written <= 0) {
+        return 0;
+    }
+    out[written] = L'\0';
+    return written;
+}
+
+static int
+readPyVenvCfgValue(FILE *pyvenvCfgFile, const char *key, wchar_t *out, size_t outLen)
+{
+    char line[MAXLEN];
+    size_t keyLen = strlen(key);
+
+    rewind(pyvenvCfgFile);
+    while (fgets(line, sizeof(line), pyvenvCfgFile) != NULL) {
+        if (strncmp(line, key, keyLen) == 0) {
+            size_t valueLen = strcspn(line + keyLen, "\r\n");
+            return copyUtf8ToWideChar(line + keyLen, (int)valueLen, out, outLen);
+        }
+    }
+    return 0;
+}
+
+static int
+extractBaseExecutable(const wchar_t *command, wchar_t *out, size_t outLen)
+{
+    int cmdArgc = 0;
+    wchar_t **cmdArgv = CommandLineToArgvW(command, &cmdArgc);
+    if (cmdArgv == NULL || cmdArgc < 1) {
+        if (cmdArgv != NULL) {
+            LocalFree(cmdArgv);
+        }
+        return -1;
+    }
+    int rc = wcscpy_s(out, outLen, cmdArgv[0]);
+    LocalFree(cmdArgv);
+    return rc;
+}
 
 int
 wmain(int argc, wchar_t ** argv)
@@ -221,15 +272,15 @@ wmain(int argc, wchar_t ** argv)
     wchar_t * newExeStart = NULL;
     memset(newExecutable, 0, sizeof(newExecutable));
 
+    wchar_t baseExecutable[MAXLEN];
+    memset(baseExecutable, 0, sizeof(baseExecutable));
+
     wchar_t currentExecutable[MAXLEN];
     int currentExecutableSize = sizeof(currentExecutable) / sizeof(currentExecutable[0]);
     memset(currentExecutable, 0, sizeof(currentExecutable));
 
     wchar_t pyvenvCfg[MAXLEN];
     memset(pyvenvCfg, 0, sizeof(pyvenvCfg));
-
-    char pyvenvcfg_command[MAXLEN];
-    memset(pyvenvcfg_command, 0, sizeof(pyvenvcfg_command));
 
     if (isEnvVarSet(L"PYLAUNCHER_DEBUG")) {
         setvbuf(stderr, (char *)NULL, _IONBF, 0);
@@ -260,24 +311,12 @@ wmain(int argc, wchar_t ** argv)
     }
     if (pyvenvCfgFile) {
         debug(L"pyvenv.cfg at %s\n", pyvenvCfg);
-        int i = 0;
-        while (fread_s(pyvenvcfg_command + i, sizeof(pyvenvcfg_command), 1, 1, pyvenvCfgFile)) {
-            if (pyvenvcfg_command[i] == GRAAL_PYTHON_COMMAND_CFG[i]) {
-                ++i;
-            } else {
-                i = 0;
-            }
-            if (strcmp(GRAAL_PYTHON_COMMAND_CFG, pyvenvcfg_command) == 0) {
-                for (i = 0; i < sizeof(pyvenvcfg_command); ++i) {
-                    if (fread_s(pyvenvcfg_command + i, sizeof(pyvenvcfg_command), 1, 1, pyvenvCfgFile) < 1
-                        || pyvenvcfg_command[i] == '\r'
-                        || pyvenvcfg_command[i] == '\n') {
-                        newExecutableSize = MultiByteToWideChar(CP_UTF8, 0, pyvenvcfg_command, i, newExecutable + 1, sizeof(newExecutable) - 2) * sizeof(newExecutable[0]);
-                        break;
-                    }
-                }
-                break;
-            }
+        newExecutableSize = readPyVenvCfgValue(pyvenvCfgFile, GRAAL_PYTHON_COMMAND_CFG, newExecutable + 1, MAXLEN - 1) * sizeof(newExecutable[0]);
+        if (newExecutableSize) {
+            debug(L"new executable from pyvenv.cfg: %s\n", newExecutable + 1);
+        }
+        if (readPyVenvCfgValue(pyvenvCfgFile, GRAAL_PYTHON_BASE_EXECUTABLE_CFG, baseExecutable, MAXLEN)) {
+            debug(L"base executable from pyvenv.cfg: %s\n", baseExecutable);
         }
     } else {
         debug(L"no pyvenv.cfg at %s\n", pyvenvCfg);
@@ -323,6 +362,19 @@ wmain(int argc, wchar_t ** argv)
     }
     debug(L"new exe: %s\n", newExeStart);
 
+    if (!baseExecutable[0]) {
+        exitCode = extractBaseExecutable(newExeStart, baseExecutable, MAXLEN);
+        if (exitCode) {
+            debug(L"Failed to extract base executable from launcher command, using current executable instead\n");
+            exitCode = wcscpy_s(baseExecutable, MAXLEN, currentExecutable);
+            if (exitCode) {
+                winerror(exitCode, L"Failed to copy current executable into base executable");
+                goto abort;
+            }
+        }
+    }
+    debug(L"base executable: %s\n", baseExecutable);
+
     // calculate the size of the new environment, that is, the size of the previous environment
     // plus the size of the GRAAL_PYTHON_ARGS variable with the arguments to pass on
     env = GetEnvironmentStringsW();
@@ -340,8 +392,10 @@ wmain(int argc, wchar_t ** argv)
     envSize += wcslen(GRAAL_PYTHON_ARGS);
     // need room to specify original launcher path
     envSize += 1 + wcslen(GRAAL_PYTHON_EXE_ARG) + wcslen(currentExecutable);
-    // need room to specify base launcher path
-    envSize += 1 + wcslen(GRAAL_PYTHON_BASE_EXE_ARG) + wcslen(newExeStart);
+    // need room to specify base executable path
+    envSize += 1 + wcslen(GRAAL_PYTHON_BASE_EXECUTABLE_ARG) + wcslen(baseExecutable);
+    // need room to specify original launcher command
+    envSize += 1 + wcslen(GRAAL_PYTHON_VENVLAUNCHER_COMMAND_ARG) + wcslen(newExeStart);
     for (int i = 1; i < argc; ++i) {
         // env needs room for \v and arg, no \0
         envSize = envSize + 1 + wcslen(argv[i]);
@@ -406,14 +460,34 @@ wmain(int argc, wchar_t ** argv)
     newEnvCur[0] = L'\v';
     --envSize;
     ++newEnvCur;
-    exitCode = wcscpy_s(newEnvCur, envSize, GRAAL_PYTHON_BASE_EXE_ARG);
+    exitCode = wcscpy_s(newEnvCur, envSize, GRAAL_PYTHON_BASE_EXECUTABLE_ARG);
     if (exitCode) {
-        winerror(exitCode, L"Failed to copy %s", GRAAL_PYTHON_BASE_EXE_ARG);
+        winerror(exitCode, L"Failed to copy %s", GRAAL_PYTHON_BASE_EXECUTABLE_ARG);
         goto abort;
     }
     debug(L"%s", newEnvCur);
-    envSize = envSize - wcslen(GRAAL_PYTHON_BASE_EXE_ARG);
-    newEnvCur = newEnvCur + wcslen(GRAAL_PYTHON_BASE_EXE_ARG);
+    envSize = envSize - wcslen(GRAAL_PYTHON_BASE_EXECUTABLE_ARG);
+    newEnvCur = newEnvCur + wcslen(GRAAL_PYTHON_BASE_EXECUTABLE_ARG);
+    exitCode = wcscpy_s(newEnvCur, envSize, baseExecutable);
+    if (exitCode) {
+        winerror(exitCode, L"Failed to copy %s into env", baseExecutable);
+        goto abort;
+    }
+    debug(L"%s", newEnvCur);
+    envSize = envSize - wcslen(baseExecutable);
+    newEnvCur = newEnvCur + wcslen(baseExecutable);
+    // specify original launcher command
+    newEnvCur[0] = L'\v';
+    --envSize;
+    ++newEnvCur;
+    exitCode = wcscpy_s(newEnvCur, envSize, GRAAL_PYTHON_VENVLAUNCHER_COMMAND_ARG);
+    if (exitCode) {
+        winerror(exitCode, L"Failed to copy %s", GRAAL_PYTHON_VENVLAUNCHER_COMMAND_ARG);
+        goto abort;
+    }
+    debug(L"%s", newEnvCur);
+    envSize = envSize - wcslen(GRAAL_PYTHON_VENVLAUNCHER_COMMAND_ARG);
+    newEnvCur = newEnvCur + wcslen(GRAAL_PYTHON_VENVLAUNCHER_COMMAND_ARG);
     exitCode = wcscpy_s(newEnvCur, envSize, newExeStart);
     if (exitCode) {
         winerror(exitCode, L"Failed to copy %s into env", newExeStart);
