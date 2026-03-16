@@ -292,6 +292,21 @@ index c6d15d7..b52c846 100644
  
      @classmethod
      def load(cls, path=None):
+diff --git a/asv/plugins/virtualenv.py b/asv/plugins/virtualenv.py
+--- a/asv/plugins/virtualenv.py
++++ b/asv/plugins/virtualenv.py
+@@ -3,7 +3,10 @@
+ 
+ from __future__ import absolute_import, division, unicode_literals, print_function
+ 
+-from distutils.version import LooseVersion
++try:
++    from packaging.version import parse as LooseVersion
++except:
++    from distutils.version import LooseVersion
+ import sys
+ import re
+ import os
 diff --git a/asv/plugins/comparisonlist.py b/asv/plugins/comparisonlist.py
 new file mode 100644
 index 0000000..dfe078f
