@@ -56,6 +56,7 @@ typedef struct {
 /* Get the object given the GC head */
 #define FROM_MEM_HEAD(g) ((void *)(((mem_head_t *)g)+1))
 
+#define GRAALPY_MEM_HEAD_MAGIC ((size_t)0x47505241574D454DULL)
 #define MAX_COLLECTION_RETRIES (7)
 #define COLLECTION_DELAY_INCREMENT (50)
 
@@ -72,6 +73,32 @@ typedef struct {
 } GraalPyMem_t;
 
 static GraalPyMem_t _GraalPyMem_State = { 0, 0, 0 };
+
+static void
+_GraalPyMem_InitHeader(mem_head_t *ptr_with_head, size_t size)
+{
+    ptr_with_head->size = size;
+    ptr_with_head->dummy = GRAALPY_MEM_HEAD_MAGIC;
+}
+
+static void
+_GraalPyMem_FatalInvalidHeader(const char *func, void *ptr, const mem_head_t *ptr_with_head)
+{
+    GraalPyPrivate_Log(PY_TRUFFLE_LOG_INFO,
+            "%s: invalid raw allocation header for ptr=%p head=%p size=%lu dummy=0x%lx\n",
+            func, ptr, ptr_with_head, (unsigned long) ptr_with_head->size, (unsigned long) ptr_with_head->dummy);
+    Py_FatalError("invalid GraalPy raw allocation header");
+}
+
+static mem_head_t *
+_GraalPyMem_GetValidatedHead(const char *func, void *ptr)
+{
+    mem_head_t *ptr_with_head = AS_MEM_HEAD(ptr);
+    if (UNLIKELY(ptr_with_head->dummy != GRAALPY_MEM_HEAD_MAGIC)) {
+        _GraalPyMem_FatalInvalidHeader(func, ptr, ptr_with_head);
+    }
+    return ptr_with_head;
+}
 
 #if 0 // GraalPy change
 /* bpo-35053: Declare tracemalloc configuration here rather than
@@ -435,7 +462,7 @@ _GraalPyMem_RawMalloc(void *ctx, size_t size)
         state->allocated_memory -= size;
         return NULL;
     }
-    ptr_with_head->size = size;
+    _GraalPyMem_InitHeader(ptr_with_head, size);
     return FROM_MEM_HEAD(ptr_with_head);
 }
 
@@ -468,7 +495,7 @@ _GraalPyMem_RawCalloc(void *ctx, size_t nelem, size_t elsize)
         return NULL;
     }
     memset(ptr_with_head, 0, total);
-    ptr_with_head->size = nbytes;
+    _GraalPyMem_InitHeader(ptr_with_head, nbytes);
     return FROM_MEM_HEAD(ptr_with_head);
 }
 
@@ -484,7 +511,7 @@ _GraalPyMem_RawRealloc(void *ctx, void *ptr, size_t size)
         size = 1;
 
     if (ptr != NULL) {
-        old = AS_MEM_HEAD(ptr);
+        old = _GraalPyMem_GetValidatedHead(__func__, ptr);
         old_size = old->size;
     } else {
         old = NULL;
@@ -510,7 +537,7 @@ _GraalPyMem_RawRealloc(void *ctx, void *ptr, size_t size)
         state->allocated_memory -= old_size - size;
     }
 
-    ptr_with_head->size = size;
+    _GraalPyMem_InitHeader(ptr_with_head, size);
     return FROM_MEM_HEAD(ptr_with_head);
 }
 
@@ -524,7 +551,7 @@ _GraalPyMem_RawFree(void *ctx, void *ptr)
     if (ptr == NULL)
         return;
     GraalPyMem_t *state = (GraalPyMem_t *)ctx;
-    mem_head_t *ptr_with_head = AS_MEM_HEAD(ptr);
+    mem_head_t *ptr_with_head = _GraalPyMem_GetValidatedHead(__func__, ptr);
     const size_t size = ptr_with_head->size;
     if (state->allocated_memory < size) {
         GraalPyPrivate_Log(PY_TRUFFLE_LOG_INFO,
