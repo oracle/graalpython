@@ -732,7 +732,7 @@ public final class CertUtils {
         PrivateKey privateKey = null;
         String algorithm = cert.getPublicKey().getAlgorithm();
         try {
-            String pemText = readText(reader);
+            String pemText = reader.readAllAsString();
             int fromIndex = 0;
             PemBlockWithContent rawBlock;
             while ((rawBlock = findNextPemBlock(pemText, fromIndex)) != null) {
@@ -826,16 +826,6 @@ public final class CertUtils {
         } catch (IllegalArgumentException e) {
             throw new BadBase64Exception(e);
         }
-    }
-
-    private static String readText(BufferedReader reader) throws IOException {
-        StringBuilder text = new StringBuilder();
-        char[] buffer = new char[8192];
-        int read;
-        while ((read = reader.read(buffer)) != -1) {
-            text.append(buffer, 0, read);
-        }
-        return text.toString();
     }
 
     private static PrivateKey decodePrivateKey(String algorithm, byte[] encoded) throws NoSuchAlgorithmException, InvalidKeySpecException {
