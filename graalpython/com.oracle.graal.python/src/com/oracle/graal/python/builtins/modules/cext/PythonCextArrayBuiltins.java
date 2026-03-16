@@ -66,6 +66,7 @@ import com.oracle.graal.python.builtins.objects.cext.structs.CFields;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess;
 import com.oracle.graal.python.builtins.objects.cext.structs.CStructAccess.WriteTruffleStringNode;
 import com.oracle.graal.python.nfi2.NativeMemory;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.strings.TruffleString;
 
 public final class PythonCextArrayBuiltins {
@@ -141,9 +142,9 @@ public final class PythonCextArrayBuiltins {
 
     private static PArray expectArray(long arrayPtr, String where) {
         Object obj = NativeToPythonNode.executeRawUncached(arrayPtr);
-        if (obj instanceof PArray array) {
-            return array;
+        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.UNLIKELY_PROBABILITY, !(obj instanceof PArray))) {
+            throw PythonCextBuiltins.badInternalCall(where, "arrayPtr");
         }
-        throw PythonCextBuiltins.badInternalCall(where, "arrayPtr");
+        return (PArray) obj;
     }
 }
