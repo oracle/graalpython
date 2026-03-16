@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -96,6 +96,8 @@
 #define PY_TRUFFLE_LOG_FINEST 0x20
 #define PY_TRUFFLE_DEBUG_CAPI 0x40
 #define PY_TRUFFLE_PYTHON_GC 0x80
+#define PY_TRUFFLE_POISON_NATIVE_MEMORY_ON_FREE 0x100
+#define PY_TRUFFLE_SAMPLE_NATIVE_MEMORY_ALLOC_SITES 0x200
 
 typedef struct mmap_object mmap_object;
 typedef struct _gc_runtime_state GCState; // originally in 'gcmodule.c'
@@ -231,6 +233,12 @@ static MUST_INLINE int GraalPyPrivate_Debug_CAPI() {
 
 static MUST_INLINE int GraalPyPrivate_PythonGC() {
     return Py_Truffle_Options & PY_TRUFFLE_PYTHON_GC;
+}
+static MUST_INLINE int GraalPyPrivate_PoisonNativeMemoryOnFree() {
+    return Py_Truffle_Options & PY_TRUFFLE_POISON_NATIVE_MEMORY_ON_FREE;
+}
+static MUST_INLINE int GraalPyPrivate_SampleNativeMemoryAllocSites() {
+    return Py_Truffle_Options & PY_TRUFFLE_SAMPLE_NATIVE_MEMORY_ALLOC_SITES;
 }
 
 static void

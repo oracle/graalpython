@@ -399,6 +399,12 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, usageSyntax = "<bytes>", help = "Initial native memory heap size that triggers a GC (default: 256 MB).") //
     public static final OptionKey<Long> InitialNativeMemory = new OptionKey<>(1L << 28);
 
+    @EngineOption @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Poison GraalPy raw allocator headers and payloads before freeing native memory blocks.", stability = OptionStability.EXPERIMENTAL) //
+    public static final OptionKey<Boolean> PoisonNativeMemoryOnFree = new OptionKey<>(false);
+
+    @EngineOption @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Record a lightweight rolling history of GraalPy raw native memory allocation sites for allocator debugging.", stability = OptionStability.EXPERIMENTAL) //
+    public static final OptionKey<Boolean> SampleNativeMemoryAllocSites = new OptionKey<>(false);
+
     @Option(category = OptionCategory.EXPERT, usageSyntax = "true|false", help = "Use the panama backend for NFI.", stability = OptionStability.EXPERIMENTAL) //
     public static final OptionKey<Boolean> UsePanama = new OptionKey<>(false); // see [GR-67358]
 

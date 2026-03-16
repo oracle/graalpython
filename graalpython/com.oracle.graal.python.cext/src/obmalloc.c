@@ -40,6 +40,9 @@
  */
 #include "capi.h"
 #include "pycore_pymem.h"
+#ifdef MS_WINDOWS
+#include <windows.h>
+#endif
 
 /*
  * This header needs to be 16 bytes long to ensure that allocations will still be aligned to 16 byte boundaries.
@@ -50,6 +53,15 @@ typedef struct {
 	size_t dummy;
 } mem_head_t;
 
+typedef struct {
+    void *ptr;
+    void *stack[12];
+    size_t size;
+    size_t depth;
+    unsigned long long serial;
+    char operation;
+} GraalPyMemSample_t;
+
 /* Get an object's GC head */
 #define AS_MEM_HEAD(o) ((mem_head_t *)(o)-1)
 
@@ -57,6 +69,12 @@ typedef struct {
 #define FROM_MEM_HEAD(g) ((void *)(((mem_head_t *)g)+1))
 
 #define GRAALPY_MEM_HEAD_MAGIC ((size_t)0x47505241574D454DULL)
+#define GRAALPY_MEM_HEAD_POISON ((size_t)0xDDDDBAD0DDDDBAD0ULL)
+#define GRAALPY_MEM_SAMPLE_RING_SIZE (4096)
+#define GRAALPY_MEM_SAMPLE_HISTORY (8)
+#define GRAALPY_MEM_SAMPLE_STACK_DEPTH (12)
+#define GRAALPY_MEM_SAMPLE_STACK_SKIP (2)
+#define GRAALPY_MEM_SAMPLE_USEFUL_DEPTH (10)
 #define MAX_COLLECTION_RETRIES (7)
 #define COLLECTION_DELAY_INCREMENT (50)
 
@@ -73,6 +91,86 @@ typedef struct {
 } GraalPyMem_t;
 
 static GraalPyMem_t _GraalPyMem_State = { 0, 0, 0 };
+static GraalPyMemSample_t _GraalPyMem_Samples[GRAALPY_MEM_SAMPLE_RING_SIZE] = {{0}};
+static unsigned long long _GraalPyMem_SampleSerial = 0;
+static size_t _GraalPyMem_SampleIndex = 0;
+
+static MUST_INLINE int
+_GraalPyMem_PoisonOnFreeEnabled(void)
+{
+    return GraalPyPrivate_PoisonNativeMemoryOnFree();
+}
+
+static MUST_INLINE int
+_GraalPyMem_SampleAllocSitesEnabled(void)
+{
+    return GraalPyPrivate_SampleNativeMemoryAllocSites();
+}
+
+static void
+_GraalPyMem_CaptureSampleStack(GraalPyMemSample_t *sample)
+{
+#if (__linux__ && __GNU_LIBRARY__)
+    void *frames[GRAALPY_MEM_SAMPLE_STACK_DEPTH];
+    int depth = backtrace(frames, GRAALPY_MEM_SAMPLE_STACK_DEPTH);
+    size_t start = depth > GRAALPY_MEM_SAMPLE_STACK_SKIP ? GRAALPY_MEM_SAMPLE_STACK_SKIP : (size_t) depth;
+    sample->depth = (size_t) depth - start;
+    if (sample->depth > GRAALPY_MEM_SAMPLE_USEFUL_DEPTH) {
+        sample->depth = GRAALPY_MEM_SAMPLE_USEFUL_DEPTH;
+    }
+    memcpy(sample->stack, frames + start, sample->depth * sizeof(void *));
+#elif defined(MS_WINDOWS)
+    sample->depth = (size_t) CaptureStackBackTrace(GRAALPY_MEM_SAMPLE_STACK_SKIP,
+                    GRAALPY_MEM_SAMPLE_USEFUL_DEPTH, sample->stack, NULL);
+#else
+    sample->depth = 0;
+#endif
+}
+
+static void
+_GraalPyMem_RecordSample(char operation, void *ptr, size_t size)
+{
+    if (UNLIKELY(ptr == NULL)) {
+        return;
+    }
+    if (LIKELY(!_GraalPyMem_SampleAllocSitesEnabled())) {
+        return;
+    }
+
+    size_t index = _GraalPyMem_SampleIndex++ % GRAALPY_MEM_SAMPLE_RING_SIZE;
+    GraalPyMemSample_t *sample = &_GraalPyMem_Samples[index];
+    sample->ptr = ptr;
+    sample->size = size;
+    sample->serial = ++_GraalPyMem_SampleSerial;
+    sample->operation = operation;
+    _GraalPyMem_CaptureSampleStack(sample);
+}
+
+static void
+_GraalPyMem_LogRecentSamples(const char *func, void *ptr)
+{
+    if (LIKELY(!_GraalPyMem_SampleAllocSitesEnabled())) {
+        return;
+    }
+
+    size_t next_index = _GraalPyMem_SampleIndex;
+    int printed = 0;
+    for (size_t offset = 0; offset < GRAALPY_MEM_SAMPLE_RING_SIZE && printed < GRAALPY_MEM_SAMPLE_HISTORY; offset++) {
+        size_t index = (next_index + GRAALPY_MEM_SAMPLE_RING_SIZE - offset - 1) % GRAALPY_MEM_SAMPLE_RING_SIZE;
+        const GraalPyMemSample_t *sample = &_GraalPyMem_Samples[index];
+        if (sample->ptr == ptr && sample->serial != 0) {
+            GraalPyPrivate_Log(PY_TRUFFLE_LOG_INFO,
+                    "%s: recent raw memory sample #%llu op=%c ptr=%p size=%lu depth=%lu\n",
+                    func, sample->serial, sample->operation, sample->ptr, (unsigned long) sample->size, (unsigned long) sample->depth);
+            for (size_t frame_index = 0; frame_index < sample->depth; frame_index++) {
+                GraalPyPrivate_Log(PY_TRUFFLE_LOG_INFO,
+                        "%s: sample #%llu frame[%lu]=%p\n",
+                        func, sample->serial, (unsigned long) frame_index, sample->stack[frame_index]);
+            }
+            printed++;
+        }
+    }
+}
 
 static void
 _GraalPyMem_InitHeader(mem_head_t *ptr_with_head, size_t size)
@@ -82,11 +180,27 @@ _GraalPyMem_InitHeader(mem_head_t *ptr_with_head, size_t size)
 }
 
 static void
+_GraalPyMem_PoisonBlock(mem_head_t *ptr_with_head, size_t size)
+{
+    if (LIKELY(!_GraalPyMem_PoisonOnFreeEnabled())) {
+        return;
+    }
+
+    memset(ptr_with_head, 0xDB, sizeof(mem_head_t) + size);
+    ptr_with_head->size = GRAALPY_MEM_HEAD_POISON;
+    ptr_with_head->dummy = GRAALPY_MEM_HEAD_POISON;
+}
+
+static void
 _GraalPyMem_FatalInvalidHeader(const char *func, void *ptr, const mem_head_t *ptr_with_head)
 {
+    const char *reason = (ptr_with_head->size == GRAALPY_MEM_HEAD_POISON && ptr_with_head->dummy == GRAALPY_MEM_HEAD_POISON)
+            ? "poisoned raw allocation header"
+            : "invalid raw allocation header";
     GraalPyPrivate_Log(PY_TRUFFLE_LOG_INFO,
-            "%s: invalid raw allocation header for ptr=%p head=%p size=%lu dummy=0x%lx\n",
-            func, ptr, ptr_with_head, (unsigned long) ptr_with_head->size, (unsigned long) ptr_with_head->dummy);
+            "%s: %s for ptr=%p head=%p size=%lu dummy=0x%lx\n",
+            func, reason, ptr, ptr_with_head, (unsigned long) ptr_with_head->size, (unsigned long) ptr_with_head->dummy);
+    _GraalPyMem_LogRecentSamples(func, ptr);
     Py_FatalError("invalid GraalPy raw allocation header");
 }
 
@@ -352,7 +466,9 @@ PyMem_RawMalloc(size_t size)
      */
     if (size > (size_t)PY_SSIZE_T_MAX)
         return NULL;
-    return _PyMem_Raw.malloc(_PyMem_Raw.ctx, size);
+    void *ptr = _PyMem_Raw.malloc(_PyMem_Raw.ctx, size);
+    _GraalPyMem_RecordSample('m', ptr, size == 0 ? 1 : size);
+    return ptr;
 }
 
 void *
@@ -361,7 +477,10 @@ PyMem_RawCalloc(size_t nelem, size_t elsize)
     /* see PyMem_RawMalloc() */
     if (elsize != 0 && nelem > (size_t)PY_SSIZE_T_MAX / elsize)
         return NULL;
-    return _PyMem_Raw.calloc(_PyMem_Raw.ctx, nelem, elsize);
+    void *ptr = _PyMem_Raw.calloc(_PyMem_Raw.ctx, nelem, elsize);
+    size_t nbytes = (nelem == 0 || elsize == 0) ? 1 : nelem * elsize;
+    _GraalPyMem_RecordSample('c', ptr, nbytes);
+    return ptr;
 }
 
 void*
@@ -370,11 +489,14 @@ PyMem_RawRealloc(void *ptr, size_t new_size)
     /* see PyMem_RawMalloc() */
     if (new_size > (size_t)PY_SSIZE_T_MAX)
         return NULL;
-    return _PyMem_Raw.realloc(_PyMem_Raw.ctx, ptr, new_size);
+    void *new_ptr = _PyMem_Raw.realloc(_PyMem_Raw.ctx, ptr, new_size);
+    _GraalPyMem_RecordSample('r', new_ptr, new_size == 0 ? 1 : new_size);
+    return new_ptr;
 }
 
 void PyMem_RawFree(void *ptr)
 {
+    _GraalPyMem_RecordSample('f', ptr, 0);
     _PyMem_Raw.free(_PyMem_Raw.ctx, ptr);
 }
 
@@ -560,5 +682,6 @@ _GraalPyMem_RawFree(void *ctx, void *ptr)
         state->allocated_memory = size;
     }
     state->allocated_memory -= size;
+    _GraalPyMem_PoisonBlock(ptr_with_head, size);
     free(ptr_with_head);
 }
