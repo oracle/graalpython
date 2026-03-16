@@ -1434,6 +1434,11 @@ class RaiseSignalTest(unittest.TestCase):
         self.addCleanup(signal.signal, signal.SIGINT, old_signal)
 
         signal.raise_signal(signal.SIGINT)
+        # GraalPy change: our signals are not delivered synchronously, so give it a few tries
+        retries = 10
+        while not is_ok and retries:
+            time.sleep(0.1)
+            retries -= 1
         self.assertTrue(is_ok)
 
     def test__thread_interrupt_main(self):
